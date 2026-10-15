@@ -406,3 +406,25 @@
 **`.gdignore`** (`docs/maps/`)
 - An empty `.gdignore` file makes Godot skip a folder: the plan drawings there are for reading, not textures to import.
 
+
+### M8 — Modes
+
+**Area3D as a trigger zone** (`bomb/bomb.gd`, the maps' `bomb_sites`)
+- With `monitoring` on, an `Area3D` keeps track of which bodies are inside it; `overlaps_body(body)` asks about one, `get_overlapping_bodies()` lists them all. That's Unity's trigger collider with `OnTriggerStay`, or `Physics.OverlapBox`. The area's `collision_mask` decides which bodies count (here 6: the player and the bots).
+- The list is updated once per physics step, so a body you just teleported is only "inside" one step later.
+- `monitoring` was off in the maps until the bomb needed it: a monitoring area costs a little every physics step even when nobody asks.
+
+**A `Callable` in a variable as a hook** (`Bomb.kit_check`)
+- `var kit_check: Callable = func(defuser: Character) -> bool: return false` holds a function, like a C# `Func<Character, bool>` field. M7's economy will put its own check in it, and the bomb doesn't need to know where kits come from. `kit_check.call(defuser)` runs it.
+
+**Teleporting a smoothed node** (`Bomb._place()`)
+- With physics interpolation on (D-010), a node moved in `_physics_process` is drawn sliding between its old and new place. After a jump, such as the bomb dropping to the floor or appearing on the next carrier, `reset_physics_interpolation()` tells Godot not to smooth that one move. Unity's `Rigidbody.interpolation` has the same problem; there you'd set the position on the Rigidbody and the transform.
+
+**Text you can see through walls** (the bomb's marker)
+- `Label3D.no_depth_test = true` draws the text on top of everything, like a waypoint marker; `fixed_size` keeps it the same size on screen at any distance. Unity would use a world-space canvas with a shader that ignores depth.
+
+**Holding a key in a test** (`tests/bomb_test.gd`)
+- `Input.action_press("use")` and `Input.action_release("use")` hold and release an action as if the key were down, so the test goes through the real `PlayerController` → `CharacterInput` path. Unity's Input System has `InputTestFixture.Press()` for the same thing.
+
+**Audio buses that don't exist yet**
+- `AudioStreamPlayer3D.bus = &"Effects"` names a bus of the audio bus layout (Unity's Audio Mixer groups). If the layout has no such bus, the sound plays on *Master* instead, without an error, so a sound can be put on a bus before the settings task creates it.

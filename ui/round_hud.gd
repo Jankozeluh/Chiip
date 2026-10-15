@@ -32,6 +32,11 @@ const SCORE_BOX_DARKEN := 0.55
 const SWITCHING_COLOR := Color(1.0, 0.85, 0.4)
 const ATTACK_TEXT := "You attack: push to the far end"
 const DEFEND_TEXT := "You defend: hold your end"
+## The side lines in bomb rounds; %s is the sites, e.g. "A or B".
+const ATTACK_BOMB_TEXT := "You attack: plant the bomb at %s"
+const DEFEND_BOMB_TEXT := "You defend: guard %s"
+## What the timer shows once the bomb is planted (the round clock has stopped; as in CS, the fuse isn't shown).
+const BOMB_TIMER_TEXT := "BOMB"
 
 var _manager: RoundManager
 var _ui_scale: float = 1.0
@@ -157,12 +162,19 @@ func _refresh() -> void:
 		RoundManager.Phase.FREEZE:
 			_set_timer(_manager.time_left, FREEZE_TIMER_COLOR)
 		RoundManager.Phase.LIVE:
-			_set_timer(_manager.time_left, LOW_TIME_COLOR if _manager.time_left <= LOW_TIME else Color.WHITE)
+			if _manager.is_bomb_planted():
+				_set_timer_text(BOMB_TIMER_TEXT, LOW_TIME_COLOR)
+			else:
+				_set_timer(_manager.time_left, LOW_TIME_COLOR if _manager.time_left <= LOW_TIME else Color.WHITE)
 		# At the round end and the match end the timer keeps what it showed.
 
 
 func _set_timer(seconds: float, color: Color) -> void:
-	_timer.text = format_time(seconds)
+	_set_timer_text(format_time(seconds), color)
+
+
+func _set_timer_text(text: String, color: Color) -> void:
+	_timer.text = text
 	if _timer_color != color:
 		_timer_color = color
 		_timer.add_theme_color_override("font_color", color)
@@ -242,7 +254,7 @@ func _show_phase_message() -> void:
 		_set_message(_title, "Switching sides", SWITCHING_COLOR)
 	_set_message(_line1, _countdown_text(), Color.WHITE)
 	var attacking := _manager.get_side(Teams.viewer_team) == Teams.Side.ATTACKING
-	_set_message(_line2, ATTACK_TEXT if attacking else DEFEND_TEXT, Color.WHITE)
+	_set_message(_line2, _side_text(attacking), Color.WHITE)
 	_show_match_point()
 
 
@@ -268,10 +280,28 @@ func _show_match_point() -> void:
 		_set_message(_line3, "Enemy match point", Teams.text_color_for(them))
 
 
+## What your side has to do this half: push or hold, or in bomb rounds plant or guard the sites.
+func _side_text(attacking: bool) -> String:
+	if _manager.bomb == null:
+		return ATTACK_TEXT if attacking else DEFEND_TEXT
+	var letters: Array[String] = []
+	for site in _manager.bomb.get_sites():
+		letters.append(Bomb.site_letter(site))
+	letters.sort()
+	if attacking:
+		return ATTACK_BOMB_TEXT % " or ".join(letters)
+	return DEFEND_BOMB_TEXT % " and ".join(letters)
+
+
 ## Why the round ended, said for your side. A time-out always goes to the defenders.
 func _reason_text(won: bool, reason: RoundManager.EndReason) -> String:
-	if reason == RoundManager.EndReason.ELIMINATION:
-		return "Enemy team eliminated" if won else "Your team was eliminated"
+	match reason:
+		RoundManager.EndReason.ELIMINATION:
+			return "Enemy team eliminated" if won else "Your team was eliminated"
+		RoundManager.EndReason.BOMB_EXPLODED:
+			return "The bomb exploded"
+		RoundManager.EndReason.BOMB_DEFUSED:
+			return "The bomb was defused"
 	return "Time ran out: you held your end" if won else "Time ran out: the defenders held their end"
 
 

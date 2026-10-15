@@ -275,7 +275,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 - [ ] **Maps 1, 2 and 3** in TrenchBroom (D-032), each one blockout → bot test → detail: navmesh, side spawns, bomb sites, bot attack routes and hold spots. Three distinct looks within the no-desert rule (D-031). *Blockouts and bot tests done early (2026-10-15): Depot, Square, Spillway, see [MAPS.md](MAPS.md) (D-060–D-062); detail pass still open*
 - [ ] **Map rotation:** match setup picks a map or "Rotation"; after a match, "Next map" continues to the next one
 - [ ] Baked lighting (lightmaps) for the maps, moved from M3, and a decision on baked vs. real-time lighting
-- [ ] **Bomb:** carry, plant, timer, explosion, defuse (faster with a kit)
+- [x] **Bomb:** carry, plant, timer, explosion, defuse (faster with a kit). Built as `bomb/bomb.tscn` (D-080, provisional): an attacker carries it, hold **E** in a site for 3.2 s to plant, 40 s fuse with faster beeps, hold E next to it for 10 s to defuse (the kit is a hook for M7), the plant stops the round clock, the blast is lethal out to ~13 m; dropped on death, picked up by attackers; HUD tag, prompts, progress bar and messages. New `tests/bomb_test.tscn` (26 checks)
 - [ ] **Bots play the objective:** attack a site, plant, rotate, defuse
 - [ ] **Team respawn mode** (like CoD's Team Deathmatch): you respawn about 3 s after dying, at a spawn point away from enemies; the first team to a kill limit wins, or the team with most kills when the time runs out. Grows out of today's Practice arena
 - [ ] **Bots in the respawn mode:** hunt in small groups instead of attacking and holding

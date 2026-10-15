@@ -119,6 +119,7 @@ func get_input(_delta: float) -> CharacterInput:
 	_reload_queued = false
 	input.crouch = Input.is_action_pressed("crouch")
 	input.walk = Input.is_action_pressed("walk")
+	input.use = Input.is_action_pressed("use")
 	input.shoot = Input.is_action_pressed("shoot") and not _shooting_blocked
 	return input
 

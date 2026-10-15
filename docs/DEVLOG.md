@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — M8 modes
+
+Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6 (its own worktree).
+
+**Done**
+- **The bomb** (D-080, provisional): CS's rules on the three quick maps. A random attacker carries it on their back; hold **E** inside site A or B for 3.2 s to plant (you can't move meanwhile, and letting go starts over); the round clock stops and the timer shows "BOMB"; it beeps faster and faster and explodes after 40 s (lethal out to about 13 m); a defender holds E next to it for 10 s to defuse (a kit will halve that in M7: `Bomb.kit_check` is the hook). If the carrier dies, the bomb drops and the next attacker who walks over it picks it up. After a plant, the defenders must defuse even if every attacker is dead. New `use` input action (E) and `CharacterInput.use`, so bots will plant and defuse by the same rule. HUD: a BOMB tag, plant/defuse prompts with a progress bar, and messages. Generated beep, key-press, wire-click and explosion sounds. New `tests/bomb_test.tscn` (26 checks); all other suites still pass (movement 13, weapon 20, bot 16, round 74, tactics 4, ui 35, maps 15).
+
+**Next:** bots play the objective (carry, plant, rotate, retake, defuse), then the team respawn mode.
+
 ## 2026-10-15 — Three quick maps (M8, started early)
 
 Built alongside M5 in its own branch (`m8-maps`), so the game has a map rotation.

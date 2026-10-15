@@ -1,5 +1,5 @@
 extends SceneTree
-## Tool: generates Chiip's placeholder sounds (weapon, footsteps) as .wav files (D-020).
+## Tool: generates Chiip's placeholder sounds (weapon, footsteps, bomb) as .wav files (D-020).
 ##
 ## Run from the project folder, then let Godot import the new files:
 ##
@@ -24,6 +24,11 @@ func _init() -> void:
 	# Added after the weapon sounds so those stay identical when regenerated.
 	for i in 3:
 		_save("footstep_%d.wav" % (i + 1), _footstep(rng))
+	# M8: the bomb (D-080). Added last, so the sounds above stay identical.
+	_save("bomb_beep.wav", _bomb_beep())
+	_save("bomb_plant.wav", _keypad_press(rng))
+	_save("bomb_defuse.wav", _wire_click(rng))
+	_save("bomb_explosion.wav", _explosion(rng))
 	quit()
 
 
@@ -84,6 +89,61 @@ func _clack(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var bright := noise - low_pass
 		var hits := exp(-t * 90.0) + (exp(-(t - 0.035) * 90.0) * 0.7 if t >= 0.035 else 0.0)
 		samples[i] = bright * hits + sin(TAU * 700.0 * t) * exp(-t * 50.0) * 0.4
+	return _finish(samples)
+
+
+## The planted bomb's beep: a short, high square-wave pip, easy to pick out
+## over gunfire (most energy around 2 kHz).
+func _bomb_beep() -> PackedFloat32Array:
+	var samples := _silence(0.09)
+	for i in samples.size():
+		var t := float(i) / MIX_RATE
+		var square := signf(sin(TAU * 1950.0 * t)) * 0.6 + sin(TAU * 1950.0 * t) * 0.4
+		var envelope := minf(t / 0.004, 1.0) * exp(-maxf(t - 0.05, 0.0) * 120.0)
+		samples[i] = square * envelope
+	return _finish(samples)
+
+
+## One key press while planting: a plastic click and a keypad blip.
+func _keypad_press(rng: RandomNumberGenerator) -> PackedFloat32Array:
+	var samples := _silence(0.08)
+	for i in samples.size():
+		var t := float(i) / MIX_RATE
+		var click := rng.randf_range(-1.0, 1.0) * exp(-t * 500.0)
+		var blip := sin(TAU * 2600.0 * t) * (exp(-maxf(t - 0.01, 0.0) * 60.0) if t >= 0.01 else 0.0)
+		samples[i] = click * 0.6 + blip * 0.5
+	return _finish(samples)
+
+
+## One snip while defusing: a dry metal click and a short ring.
+func _wire_click(rng: RandomNumberGenerator) -> PackedFloat32Array:
+	var samples := _silence(0.07)
+	var low_pass := 0.0
+	for i in samples.size():
+		var t := float(i) / MIX_RATE
+		var noise := rng.randf_range(-1.0, 1.0)
+		low_pass += (noise - low_pass) * 0.35
+		samples[i] = (noise - low_pass) * exp(-t * 300.0) + sin(TAU * 3400.0 * t) * exp(-t * 90.0) * 0.35
+	return _finish(samples)
+
+
+## The bomb going off: a crack, a roar of low noise that rolls off slowly and
+## a deep thump that drops in pitch.
+func _explosion(rng: RandomNumberGenerator) -> PackedFloat32Array:
+	var samples := _silence(1.8)
+	var low_pass := 0.0
+	var lower_pass := 0.0
+	var phase := 0.0
+	for i in samples.size():
+		var t := float(i) / MIX_RATE
+		var noise := rng.randf_range(-1.0, 1.0)
+		low_pass += (noise - low_pass) * 0.08
+		lower_pass += (low_pass - lower_pass) * 0.05
+		var crack := noise * exp(-t * 40.0)
+		var roar := low_pass * exp(-t * 3.0) * 4.0 + lower_pass * exp(-t * 1.8) * 12.0
+		phase += TAU * lerpf(70.0, 28.0, minf(t * 2.0, 1.0)) / MIX_RATE
+		var thump := sin(phase) * exp(-t * 4.0)
+		samples[i] = crack * 0.35 + roar * 0.7 + thump * 0.9
 	return _finish(samples)
 
 

@@ -31,7 +31,7 @@ For practice mode, add `-- --practice`:
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 blockouts, see [docs/MAPS.md](docs/MAPS.md)), and the test map (the default). In the game, open the console and type `map depot`, `map square` or `map spillway`.
+**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 blockouts, see [docs/MAPS.md](docs/MAPS.md)), and the test map (the default). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
 
 To play a different map from the start, add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:
 
@@ -52,6 +52,7 @@ To play a different map from the start, add `-- --map` and the map scene, e.g. `
 | Shoot | Left mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
@@ -122,6 +123,12 @@ Automated checks run without a window in about a second each:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/ui_test.tscn
+```
+
+The bomb test plays short bomb rounds on Depot (plant, explosion, drop and pickup, defuse):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
 ```
 
 The maps test plays bot rounds on all three quick maps and takes a minute or two:

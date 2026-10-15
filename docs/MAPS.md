@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-063.
+> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed and without baked lighting. They play as bomb rounds (D-080). Decisions: D-060–D-063.
 
 ## Playing them
 
@@ -54,7 +54,7 @@ Every map scene has the same nodes, like the test map:
 | `Navigation` | `NavigationRegion3D`, mesh in `maps/<name>_navmesh.tres` | Bots |
 | `Spawns` | `DefendSpawn1–5` (`defend_spawns`), `AttackSpawn1–5` (`attack_spawns`) | Round manager |
 | `Tactics` | 7 `Hold…` markers (`hold_points`, facing the angle to hold) and `RouteWest`, `RouteMid`, `RouteEast` (`attack_routes`, waypoints in order) | Bot round plans (D-045) |
-| `Objectives` | `BombSiteA`, `BombSiteB`: `Area3D` (group `bomb_sites`) on the triggers layer, watching players and bots but switched off (no logic yet), with a floating letter | M8 bomb |
+| `Objectives` | `BombSiteA`, `BombSiteB`: `Area3D` (group `bomb_sites`) on the triggers layer, watching players and bots, with a floating letter. Saved with `monitoring` off; the bomb switches it on (D-080) | Bomb rounds |
 | `Respawns` | `North1–3`, `South1–3`, `West1–3`, `East1–3` (`respawn_points`, also `bot_spawns` and `player_spawns`) | Practice now, respawn mode later |
 | `Practice` | 14–16 `Patrol…` markers (`patrol_points`) | Practice bots |
 | `Lamps`, `Sun`, `WorldEnvironment` | Lighting and the map's sky and fog | — |
@@ -136,5 +136,5 @@ The blockouts were generated once from a small layout script (outside the reposi
 
 - **Your playtest:** how they feel, what to change, and the final names.
 - **Detail pass (M8):** props, trim, signs, lamps, and baked lighting once it's decided.
-- **Bomb logic (M8):** the `bomb_sites` areas are ready; switch on `monitoring` when planting needs them.
+- **Bomb logic:** done (D-080): plant anywhere on the floor inside a site's area.
 - **Respawn mode (M8):** pick a `respawn_points` marker away from enemies.

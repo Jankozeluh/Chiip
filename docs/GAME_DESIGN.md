@@ -172,7 +172,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - You plus bot teammates vs. a bot team: 1–5 per side, 3v3 by default.
 - Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (1:55) → round end (5 s). During freeze time you can look around, crouch and reload, but not move, jump or shoot.
 - At each round start everyone is back at their side's spawn with full health and a full rifle.
-- A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too.
+- A round is won by eliminating the other team, or through the bomb (section 4.7: on maps with bomb sites the explosion wins it for the attackers and a defuse for the defenders). If time runs out before a plant, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too (after a plant: the attackers).
 - Whoever dies stays dead until the next round. During the round-end pause the survivors can still move and shoot, but the result stands.
 - **After you die in a match you spectate** (D-046), like CS, in first person only:
   - For about **2 s** you still see your own view from where you fell, with "Killed by …", so you see who got you.
@@ -204,9 +204,15 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 
 ### 4.7 Bomb mode
 
-- Attackers carry the bomb to one of two bombsites and plant it, which takes a few seconds.
-- Defenders defuse it, faster with a defuse kit.
-- A planted bomb explodes after ~40 s *(tune)*.
+Bomb rounds are the round mode on every map with bomb sites (the three quick maps; the test map has none and keeps plain elimination rounds). CS's rules (D-080, *tune*):
+
+- **Carrying:** at each round start a random attacker has the bomb, strapped to their back where everyone can see it. If the carrier dies, it drops where they fell; the first attacker to walk over it picks it up. Defenders can't. Attackers see a dropped bomb's marker through walls (CS shows it on their radar), and get the message "The bomb was dropped".
+- **Planting:** hold **Use (E)** inside a bomb site, standing on the floor, for **3.2 s**. You can look around and crouch, but not move or shoot. Letting go starts it over. Defenders within 20 m hear the key presses.
+- **After the plant:** the round clock stops and the timer shows "BOMB"; everyone is told the site ("Bomb planted at A") and sees the bomb's marker. The bomb beeps faster and faster (once a second at first, about 8 times a second at the end) and explodes after **40 s**.
+- **Defusing:** a defender holds **Use** within **1.5 m** of the bomb for **10 s** (**5 s** with a defuse kit, sold from M7). The same lock and restart rule as planting; only one defender defuses at a time.
+- **Winning:** the explosion wins the round for the attackers, a defuse for the defenders. After the plant, killing every attacker doesn't end the round (the defenders still have to defuse), and killing every defender wins it for the attackers at once. Before the plant, the usual rules: elimination, or the defenders on time-out.
+- **The blast:** 500 damage at the bomb, falling off like a bell curve: lethal out to about 13.5 m, 50 damage at about 18 m, nothing beyond about 22 m. Walls don't shield. Nobody gets a kill for it.
+- **HUD:** a gold "BOMB" tag above your weapon while you carry it; "Hold E to plant" / "Hold E to defuse" under the crosshair where you can; "Planting" / "Defusing" with a progress bar while you do. Freeze time says "You attack: plant the bomb at A or B" or "You defend: guard A and B"; the round-end banner says "The bomb exploded" or "The bomb was defused".
 
 ### 4.8 Audio
 
@@ -259,7 +265,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Walk (silent) | Shift |
 | Reload | R |
 | Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades, 5 bomb |
-| Use / defuse | E |
+| Use: plant / defuse the bomb (hold) | E |
 | Buy menu | B |
 | Scoreboard (hold, in a match) | Tab |
 | Developer console | ` (backtick / tilde key) |

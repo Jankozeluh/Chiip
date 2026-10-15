@@ -46,6 +46,7 @@ Chiip/
 ├── player/            The player: a Character variant with keyboard/mouse controller and camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene (a Character variant) and its AI controller
+├── bomb/              The bomb of bomb rounds: scene and rules (M8, D-080)
 ├── maps/              Test maps and playable maps
 │   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
 │   └── props/         Reusable map objects (target dummy)
@@ -158,7 +159,7 @@ Chiip/
 | Scoreboard | Hold Tab: both teams' kills, deaths, assists, damage and who is alive | M5 | Built: `Scoreboard` + `ScoreboardTable` (D-050), also used by the match-end screen |
 | UI theme | One `Theme` for every menu, scaled for the window | M5 | Built: `chiip_theme.tres`, `UiTheme`, preview (D-057); the settings, main and pause menus (tasks 9 to 12) use it |
 | Economy | Money, rewards, buy menu | M7 | Planned |
-| Bomb | Plant, defuse, explosion | M8 | Planned |
+| Bomb | Carry, drop, plant, fuse, defuse, explosion | M8 | Built: `Bomb` (`bomb/`), added by the round manager on maps with bomb sites; `BombHud` shows it (D-080) |
 
 ## Input actions
 
@@ -176,6 +177,7 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `toggle_debug` | F3 | Debug overlay |
 | `toggle_console` | key left of 1 (`` ` `` / `~`; on Czech keyboards the key under Esc) | Developer console |
 | `scoreboard` | Tab (hold) | Scoreboard overlay (polls `Input.is_action_pressed`; ignored while the console is open) |
+| `use` | E (hold) | PlayerController → `CharacterInput.use` → the bomb (plant, defuse) |
 
 ## How the player camera works
 
@@ -261,13 +263,15 @@ Map (test_map.tscn)
 7. The match: first to `rounds_to_win` rounds (5, 10 or 15). `_end_round()` adds the round to `score[winner]` *before* emitting `round_ended`. When the `ROUND_END` pause is over, `_after_round_end()` decides what comes next: if a team has `rounds_to_win`, it freezes everyone, sets `winner`, enters `MATCH_END` and emits `match_ended(winner)`, and nothing happens after that; otherwise, if the round just played was number `rounds_to_win − 1`, it flips `attacking_team` and emits `sides_swapped`, and then the next round starts. After the flip each team spawns at the other end; team numbers, colors and stats don't change. The longest match is `2 × rounds_to_win − 1` rounds, so there is no draw.
 8. `MatchEndScreen` (in `main.tscn`, above the HUD) listens to `match_ended`, reads `score` and, through its `ScoreboardTable`, `get_members()` and `get_stats()`, and shows the result. Its buttons only emit signals; `main.gd` restarts the map or quits.
 9. Spectating doesn't touch the round manager: `PlayerController` notices your own death (`died`) and your respawn at the next round start (`on_respawned()`), and the HUD follows its `view_target_changed` signal (D-046).
+10. **Bomb rounds** (D-080): on a map with `bomb_sites` areas (and `MatchSettings.bomb_rounds` on) the round manager adds a `Bomb` (`bomb/bomb.tscn`) to the map at the match start. At every round start, after the respawns, `Bomb.start_round()` gives it to a random attacker; `Bomb.active` is on only in the live round. The bomb reads each character's `is_holding_use()` (from `CharacterInput.use`): a carrier inside a site plants, a defender within 1.5 m defuses, and meanwhile `Character.busy` blocks moving and shooting the way `frozen` does. Its `planted`, `exploded` and `defused` signals reach the round manager, which stops counting `time_left` after the plant, ends the round with `EndReason.BOMB_EXPLODED` / `BOMB_DEFUSED`, and after a plant ends it by elimination only when the defenders are all dead. `BombHud` (in `hud.tscn`) reads `RoundManager.bomb` every frame and listens to its `picked_up`, `dropped` and `planted` signals. Bots find the bomb through its group `bomb`.
 
 ## Sound
 
 - **Your own** footsteps (−12 dB) and gunshots play through `AudioStreamPlayer` (no position, both ears). **Everyone else's** play through `AudioStreamPlayer3D`, from where they are: footsteps +2 dB, unit size 10 m, fading out at 30 m; gunshots unit size 20 m, out to 120 m (D-038). `Character.is_local_player()` decides which, through `CharacterController.is_local()`.
 - The 3D listener is the player's camera inside the world `SubViewport` (`audio_listener_enable_3d` is on). While you spectate a teammate that camera sits at their head, so you hear from where they are, as in CS; no sound routing changes.
 - Footsteps play only for loud steps (running). Walking and crouch-walking are silent, matching what bots can hear (D-035).
-- Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device.
+- **The bomb** (D-080) plays its beep, the plant key presses, the defuse clicks and the explosion through `AudioStreamPlayer3D`s on the bomb (bus `Effects`; a bus that doesn't exist yet falls back to Master). The sounds are generated by `tools/generate_sounds.gd`.
+- Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device. The bomb test sets the bomb's four sound exports to null.
 
 ## How a character and its weapon work together
 
@@ -292,7 +296,7 @@ Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit va
 | 2 | player | 2 | The player's body (collides with world and bots: mask 5) |
 | 3 | bots | 4 | Bot bodies (and any `Character` by default; mask 7), target dummies |
 | 4 | hitboxes | 8 | Head / chest / stomach / arm / leg zones (`Area3D`) that bullets hit |
-| 5 | triggers | 16 | Buy zones, bombsites |
+| 5 | triggers | 16 | Buy zones (M7), bomb sites (`bomb_sites` areas, mask 6: player and bots; `Bomb` switches their `monitoring` on and asks `overlaps_body()`) |
 
 Bullets test **world + hitboxes** (mask 9) only.
 
@@ -307,6 +311,7 @@ Run the checks from the project folder:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/round_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 200000 res://tests/tactics_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/ui_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 400000 res://tests/maps_test.tscn
 ```
 

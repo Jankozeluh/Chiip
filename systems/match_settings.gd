@@ -28,3 +28,18 @@ extends Resource
 @export var round_time: float = 115.0
 ## Seconds between a round's result and the next round's freeze time.
 @export var round_end_time: float = 5.0
+
+@export_group("Bomb")
+## Play bomb rounds on maps with bomb sites (D-080): one attacker carries the
+## bomb, a plant stops the round clock, and the round can also end with the
+## bomb exploding or being defused. Off, or on a map without bomb sites,
+## rounds are won by elimination and time only.
+@export var bomb_rounds: bool = true
+## Seconds a planted bomb ticks before it explodes. CS: 40.
+@export var bomb_fuse_time: float = 40.0
+## Seconds of holding Use inside a bomb site to plant. CS: 3.2.
+@export var plant_time: float = 3.2
+## Seconds of holding Use next to the planted bomb to defuse it without a kit. CS: 10.
+@export var defuse_time: float = 10.0
+## Seconds to defuse with a defuse kit (bought from M7 on). CS: 5.
+@export var kit_defuse_time: float = 5.0
