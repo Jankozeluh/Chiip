@@ -14,18 +14,18 @@
 
 All textures come from **ambientCG** (https://ambientcg.com) under **CC0 1.0 Universal** (public domain). Free for any use, including commercial, and attribution isn't required, but we credit them anyway. Each one was shrunk to 64 × 64 and reduced to 16 colors with `tools/make_retro_texture.gd`. Only the processed files are kept in the project.
 
-| File | ambientCG asset | Contrast setting |
-|---|---|---|
-| `assets/textures/concrete_floor.png` | Concrete034 | 3.0 |
-| `assets/textures/plaster_wall.png` | Plaster001 | 3.0 |
-| `assets/textures/stone_beige.png` | Bricks075A | 1.1 |
-| `assets/textures/bricks_red.png` | Bricks097 | 1.1 |
-| `assets/textures/sand.png` | Ground080 | 3.0 |
-| `assets/textures/wood_planks.png` | Planks037A | 1.4 |
-| `assets/textures/metal_plates.png` | MetalPlates006 | 2.0 |
-| `assets/textures/painted_plaster.png` | PaintedPlaster017 | 2.5 |
+| File | ambientCG asset | Contrast | Brightness |
+|---|---|---|---|
+| `assets/textures/concrete_floor.png` | Concrete034 | 3.0 | 0.62 |
+| `assets/textures/plaster_wall.png` | Plaster001 | 3.0 | 0.8 |
+| `assets/textures/stone_beige.png` | Bricks075A | 1.1 | 1.0 |
+| `assets/textures/bricks_red.png` | Bricks097 | 1.1 | 1.0 |
+| `assets/textures/sand.png` | Ground080 | 3.0 | 1.0 |
+| `assets/textures/wood_planks.png` | Planks037A | 1.4 | 1.0 |
+| `assets/textures/metal_plates.png` | MetalPlates006 | 2.0 | 1.0 |
+| `assets/textures/painted_plaster.png` | PaintedPlaster017 | 2.5 | 0.85 |
 
-To recreate one: download `<asset>_1K-JPG.zip` from ambientCG, extract `<asset>_1K-JPG_Color.jpg`, and run the tool with the contrast value above (see CLAUDE.md).
+To recreate one: download `<asset>_1K-JPG.zip` from ambientCG, extract `<asset>_1K-JPG_Color.jpg`, and run the tool with the contrast and brightness values above (see CLAUDE.md).
 
 ## Fonts
 

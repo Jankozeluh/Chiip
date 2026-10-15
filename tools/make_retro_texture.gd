@@ -3,7 +3,7 @@ extends SceneTree
 ##
 ## Run from the project folder, then let Godot import the result:
 ##
-##     Godot --headless --path . --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast]
+##     Godot --headless --path . --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast] [brightness]
 ##     Godot --headless --path . --import
 ##
 ## - <source image>: path to a PNG or JPG anywhere on disk.
@@ -13,6 +13,8 @@ extends SceneTree
 ## - [contrast]: how far colors are pushed away from the average (default 1.0 =
 ##   unchanged). Photos of smooth surfaces turn almost flat at 64 × 64; 2–3
 ##   brings back the punchy look of 90s textures.
+## - [brightness]: multiplies all colors (default 1.0). Below 1 darkens
+##   surfaces that would glare in sunlight, such as white plaster.
 ##
 ## Steps: crop to a square, shrink in halving steps (like mipmaps, so detail
 ## averages out instead of flickering), boost contrast, reduce to a small
@@ -26,12 +28,13 @@ const K_MEANS_ROUNDS := 12
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() < 2:
-		printerr("Usage: -- <source image> <name> [size] [colors] [contrast]")
+		printerr("Usage: -- <source image> <name> [size] [colors] [contrast] [brightness]")
 		quit(1)
 		return
 	var size := int(args[2]) if args.size() > 2 else 64
 	var color_count := int(args[3]) if args.size() > 3 else 16
 	var contrast := float(args[4]) if args.size() > 4 else 1.0
+	var brightness := float(args[5]) if args.size() > 5 else 1.0
 	var image := Image.load_from_file(args[0])
 	if image == null:
 		printerr("Could not load ", args[0])
@@ -41,11 +44,13 @@ func _init() -> void:
 	image = _crop_to_square(image)
 	_shrink(image, size)
 	_boost_contrast(image, contrast)
+	if not is_equal_approx(brightness, 1.0):
+		image.adjust_bcs(brightness, 1.0, 1.0)
 	_reduce_colors(image, color_count)
 	var path := OUTPUT_FOLDER + args[1] + ".png"
 	var error := image.save_png(path)
 	_write_import_settings(path)
-	print("%s: %s (%d × %d, %d colors, contrast %.1f)" % [path, error_string(error), size, size, color_count, contrast])
+	print("%s: %s (%d × %d, %d colors, contrast %.1f, brightness %.2f)" % [path, error_string(error), size, size, color_count, contrast, brightness])
 	quit(0 if error == OK else 1)
 
 

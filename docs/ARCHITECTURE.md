@@ -81,7 +81,7 @@ Chiip/
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players + a blocky first-person model (`Viewmodel`) with a muzzle flash (gradient quad + orange light). Instanced in the player under `Head/Camera3D` |
 | `ui/hud.tscn` + `.gd` | HUD: crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
-| `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
+| `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, optional contrast and brightness, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
 | `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
 | `tools/export_trenchbroom_config.gd` | Writes Chiip's TrenchBroom game configuration (GameConfig.cfg, icon, FGD) into TrenchBroom's games folder |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
