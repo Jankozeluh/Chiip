@@ -1,0 +1,154 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/props/target_dummy.gd" id="dummy_script"]
+[ext_resource type="Script" path="res://weapons/hitbox.gd" id="hitbox_script"]
+
+[sub_resource type="StandardMaterial3D" id="head_material"]
+albedo_color = Color(0.85, 0.3, 0.25, 1)
+
+[sub_resource type="StandardMaterial3D" id="chest_material"]
+albedo_color = Color(0.3, 0.45, 0.7, 1)
+
+[sub_resource type="StandardMaterial3D" id="stomach_material"]
+albedo_color = Color(0.3, 0.62, 0.6, 1)
+
+[sub_resource type="StandardMaterial3D" id="arms_material"]
+albedo_color = Color(0.4, 0.55, 0.8, 1)
+
+[sub_resource type="StandardMaterial3D" id="legs_material"]
+albedo_color = Color(0.3, 0.3, 0.36, 1)
+
+[sub_resource type="BoxMesh" id="head_mesh"]
+material = SubResource("head_material")
+size = Vector3(0.24, 0.26, 0.26)
+
+[sub_resource type="BoxShape3D" id="head_shape"]
+size = Vector3(0.24, 0.26, 0.26)
+
+[sub_resource type="BoxMesh" id="chest_mesh"]
+material = SubResource("chest_material")
+size = Vector3(0.46, 0.38, 0.26)
+
+[sub_resource type="BoxShape3D" id="chest_shape"]
+size = Vector3(0.46, 0.38, 0.26)
+
+[sub_resource type="BoxMesh" id="stomach_mesh"]
+material = SubResource("stomach_material")
+size = Vector3(0.42, 0.25, 0.24)
+
+[sub_resource type="BoxShape3D" id="stomach_shape"]
+size = Vector3(0.42, 0.25, 0.24)
+
+[sub_resource type="BoxMesh" id="arm_mesh"]
+material = SubResource("arms_material")
+size = Vector3(0.12, 0.6, 0.14)
+
+[sub_resource type="BoxShape3D" id="arm_shape"]
+size = Vector3(0.12, 0.6, 0.14)
+
+[sub_resource type="BoxMesh" id="leg_mesh"]
+material = SubResource("legs_material")
+size = Vector3(0.18, 0.85, 0.2)
+
+[sub_resource type="BoxShape3D" id="leg_shape"]
+size = Vector3(0.18, 0.85, 0.2)
+
+[sub_resource type="CapsuleShape3D" id="body_shape"]
+radius = 0.3
+height = 1.8
+
+[node name="TargetDummy" type="Node3D"]
+script = ExtResource("dummy_script")
+
+[node name="Body" type="StaticBody3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body"]
+position = Vector3(0, 0.9, 0)
+shape = SubResource("body_shape")
+
+[node name="Hitboxes" type="Node3D" parent="."]
+
+[node name="Head" type="Area3D" parent="Hitboxes"]
+position = Vector3(0, 1.63, 0)
+script = ExtResource("hitbox_script")
+zone = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/Head"]
+shape = SubResource("head_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/Head"]
+mesh = SubResource("head_mesh")
+
+[node name="Chest" type="Area3D" parent="Hitboxes"]
+position = Vector3(0, 1.29, 0)
+script = ExtResource("hitbox_script")
+zone = 2
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/Chest"]
+shape = SubResource("chest_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/Chest"]
+mesh = SubResource("chest_mesh")
+
+[node name="Stomach" type="Area3D" parent="Hitboxes"]
+position = Vector3(0, 0.975, 0)
+script = ExtResource("hitbox_script")
+zone = 1
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/Stomach"]
+shape = SubResource("stomach_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/Stomach"]
+mesh = SubResource("stomach_mesh")
+
+[node name="LeftArm" type="Area3D" parent="Hitboxes"]
+position = Vector3(-0.31, 1.18, 0)
+script = ExtResource("hitbox_script")
+zone = 3
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/LeftArm"]
+shape = SubResource("arm_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/LeftArm"]
+mesh = SubResource("arm_mesh")
+
+[node name="RightArm" type="Area3D" parent="Hitboxes"]
+position = Vector3(0.31, 1.18, 0)
+script = ExtResource("hitbox_script")
+zone = 3
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/RightArm"]
+shape = SubResource("arm_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/RightArm"]
+mesh = SubResource("arm_mesh")
+
+[node name="LeftLeg" type="Area3D" parent="Hitboxes"]
+position = Vector3(-0.11, 0.425, 0)
+script = ExtResource("hitbox_script")
+zone = 4
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/LeftLeg"]
+shape = SubResource("leg_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/LeftLeg"]
+mesh = SubResource("leg_mesh")
+
+[node name="RightLeg" type="Area3D" parent="Hitboxes"]
+position = Vector3(0.11, 0.425, 0)
+script = ExtResource("hitbox_script")
+zone = 4
+
+[node name="Shape" type="CollisionShape3D" parent="Hitboxes/RightLeg"]
+shape = SubResource("leg_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Hitboxes/RightLeg"]
+mesh = SubResource("leg_mesh")
+
+[node name="TotalLabel" type="Label3D" parent="."]
+position = Vector3(0, 2.15, 0)
+billboard = 1
+font_size = 40
+outline_size = 10

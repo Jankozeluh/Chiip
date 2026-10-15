@@ -42,6 +42,7 @@ Chiip/
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene, AI, state machine
 ├── maps/              Test maps and playable maps
+│   └── props/         Reusable map objects (target dummy)
 ├── ui/                HUD, menus, developer console
 ├── systems/           Global systems (autoloads): game state, rounds, settings, console commands
 ├── shaders/           Shaders (grid placeholder now, retro look in M3)
@@ -61,6 +62,8 @@ Chiip/
 | `weapons/rifle.tres` | The Rifle's data (AK-like) |
 | `weapons/weapon.gd` | `Weapon` node: firing, ammo, reload. Signals `fired`, `ammo_changed`, `reload_started`, `reload_finished` |
 | `weapons/bullet_impact.tscn` | Bullet hole (16 × 16 pixel radial gradient quad) and a burst of sparks |
+| `weapons/hitbox.gd` | `Hitbox` (`Area3D`): one damage zone with its multiplier; emits `hit` |
+| `maps/props/target_dummy.tscn` + `.gd` | `TargetDummy`: CS-sized, color-coded hitboxes (head red, chest blue, stomach teal, arms light blue, legs dark), floating damage numbers, running total, optional side-to-side movement |
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players. Instanced in the player under `Head/Camera3D` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
@@ -72,7 +75,7 @@ Chiip/
 | Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
 | Debug overlay | Speed and position readout | M1 | Built |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
-| Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
+| Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M5) |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |
 | Bot AI | Navigation, perception, state machine, aim | M4 | Planned |
@@ -113,6 +116,7 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 - The click that recaptures the mouse, and clicks while the mouse is free, never fire.
 - Shots start at `Player.get_eye_position()` and use `Player.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the player's own body.
 - Recoil has two parts. `Weapon._get_shot_direction()` adds the spray pattern offset to the aim. `Weapon.view_punch` (half the pattern, smoothed every frame) is added to the camera rotation in `Player._process`. The aim itself never changes, so the view returns to it as recoil wears off.
+- When a ray hits a `Hitbox`, the weapon computes `damage × range_modifier^(distance / 500 units)` and calls `Hitbox.receive_hit()`, which applies the zone multiplier and emits `hit` to whoever owns the hitbox (the dummy now, bots in M4).
 - Bullet holes are parented to whatever was hit, so they move with moving targets. Each weapon keeps its last 100.
 
 ## Physics layers

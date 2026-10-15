@@ -13,6 +13,7 @@
 - Hitscan shots (ray against world + hitboxes, up to 208 m) and bullet impacts: a pixelated hole plus sparks, attached to what was hit, last 100 kept. Check: a shot aimed at the peek wall hit 0.0 mm from the aim point at 28 m.
 - Accuracy: shots land at a random spot in a cone (0.12° standing, 0.08° crouched, up to +4.5° running, +9° in the air). Measured 20 taps per stance: every shot inside its cone.
 - Spray pattern and aim punch: shots follow the 30-point pattern exactly, the view kicks by half the pattern, and recoil wears off at 12 shots/s once you stop (a 10-shot burst is gone after a 1 s pause).
+- Hit zones (`Hitbox` areas: head ×4, stomach ×1.25, chest/arms ×1, legs ×0.75), damage falloff (×0.98 per 500 units), and a target dummy with floating damage numbers and a running total. Measured: headshot 142.9 at 5 m, 135.2 at 40 m.
 
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 

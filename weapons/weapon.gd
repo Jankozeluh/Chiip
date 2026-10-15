@@ -202,14 +202,27 @@ func _shoot_bullet(direction: Vector3) -> void:
 	if result.is_empty():
 		return
 	var hit_position: Vector3 = result.position
+	var distance := from.distance_to(hit_position)
+	var zone := ""
+	var damage := 0.0
+	if result.collider is Hitbox:
+		var hitbox := result.collider as Hitbox
+		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance), hit_position)
+		zone = hitbox.get_zone_name()
 	last_hit = {
 		"position": hit_position,
-		"distance": from.distance_to(hit_position),
-		"zone": "",
-		"damage": 0.0,
+		"distance": distance,
+		"zone": zone,
+		"damage": damage,
 	}
 	_spawn_impact(hit_position, result.normal, result.collider)
 	hit_landed.emit(last_hit)
+
+
+## How much damage is left after the bullet travels [param distance] metres:
+## [member WeaponData.range_modifier] for every 500 units (12.7 m), as in CS.
+func _get_damage_falloff(distance: float) -> float:
+	return pow(data.range_modifier, distance / Player.UNITS_TO_METRES / 500.0)
 
 
 ## Leaves a bullet hole and sparks, attached to what was hit so it moves along with it.

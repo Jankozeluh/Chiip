@@ -88,7 +88,17 @@ Starting physics values, CS:GO-like *(tune)*:
   | Stomach | ×1.25 |
   | Legs | ×0.75 |
 
-- **Armor** reduces body damage, and a **helmet** reduces headshot damage.
+- **Measured with the Rifle** (one shot per zone at a dummy):
+
+  | Zone | 5 m | 40 m |
+  |---|---|---|
+  | Head | 142.9 | 135.2 |
+  | Stomach | 44.7 | 42.2 |
+  | Chest / arms | 35.7 | 33.8 |
+  | Legs | 26.8 | 25.3 |
+
+  A headshot kills an unarmored player (100 HP) at any distance on the range. Damage is shown rounded down, as in CS.
+- **Armor** reduces body damage, and a **helmet** reduces headshot damage (M5).
 - Later (backlog): wallbangs (shooting through thin surfaces) and tagging (getting hit slows you down).
 
 ### 4.3 Weapons
