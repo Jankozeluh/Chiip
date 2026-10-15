@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 924 750" width="924" height="750" font-family="Helvetica, Arial, sans-serif">
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#3a4250" stroke-width="1.2" stroke-opacity="0.5"/></pattern><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#55606e"/></marker><marker id="arr_West" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2f7dd1"/></marker><marker id="arr_Mid" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8a4fd1"/></marker><marker id="arr_East" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1c9c7a"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="24.0" y="24.0" width="576.0" height="228.0" fill="#e9ebee"/>
+<rect x="24.0" y="468.0" width="576.0" height="228.0" fill="#e9ebee"/>
+<rect x="24.0" y="252.0" width="216.0" height="216.0" fill="#e9ebee"/>
+<rect x="384.0" y="252.0" width="216.0" height="216.0" fill="#e9ebee"/>
+<rect x="240.0" y="252.0" width="144.0" height="216.0" fill="#dde1e6"/>
+<rect x="504.0" y="24.0" width="96.0" height="168.0" fill="#d3dcc6" stroke="#7d8b6c" stroke-width="1"/>
+<rect x="540.0" y="192.0" width="60.0" height="144.0" fill="#d3dcc6" stroke="#7d8b6c" stroke-width="1"/>
+<rect x="540.0" y="336.0" width="60.0" height="60.0" fill="#e1e8f0" stroke="#7a8796" stroke-width="1"/>
+<line x1="570.0" y1="384.0" x2="570.0" y2="348.0" stroke="#55606e" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="468.0" y="150.0" width="36.0" height="36.0" fill="#e1e8f0" stroke="#7a8796" stroke-width="1"/>
+<line x1="475.2" y1="168.0" x2="496.8" y2="168.0" stroke="#55606e" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="36.0" y="60.0" width="102.0" height="96.0" fill="#f5b942" fill-opacity="0.3" stroke="#d48a00" stroke-width="2" stroke-dasharray="6,3"/>
+<text x="87.0" y="108.0" font-size="36" font-weight="bold" fill="#b06f00" fill-opacity="0.8" text-anchor="middle" dominant-baseline="central">A</text>
+<rect x="510.0" y="60.0" width="90.0" height="114.0" fill="#f5b942" fill-opacity="0.3" stroke="#d48a00" stroke-width="2" stroke-dasharray="6,3"/>
+<text x="555.0" y="117.0" font-size="36" font-weight="bold" fill="#b06f00" fill-opacity="0.8" text-anchor="middle" dominant-baseline="central">B</text>
+<rect x="343.2" y="297.6" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="264.0" y="427.2" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="246.0" y="258.0" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="78.0" y="114.0" width="24.0" height="24.0" fill="#b0b8c3"/>
+<rect x="33.6" y="182.4" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="196.8" y="340.8" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="31.2" y="430.8" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="250.8" y="202.8" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="576.0" y="598.8" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="484.8" y="586.8" width="14.4" height="14.4" fill="#b0b8c3"/>
+<rect x="546.0" y="96.0" width="24.0" height="24.0" fill="#b0b8c3"/>
+<rect x="300.0" y="342.0" width="78.0" height="12.0" fill="#76808e"/>
+<rect x="246.0" y="390.0" width="78.0" height="12.0" fill="#76808e"/>
+<rect x="54.0" y="468.0" width="30.0" height="72.0" fill="#76808e"/>
+<rect x="102.0" y="396.0" width="138.0" height="30.0" fill="#76808e"/>
+<rect x="24.0" y="312.0" width="90.0" height="30.0" fill="#76808e"/>
+<rect x="96.0" y="216.0" width="30.0" height="72.0" fill="#76808e"/>
+<rect x="156.0" y="216.0" width="30.0" height="72.0" fill="#76808e"/>
+<rect x="66.0" y="24.0" width="72.0" height="30.0" fill="#76808e"/>
+<rect x="384.0" y="198.0" width="84.0" height="24.0" fill="#76808e"/>
+<rect x="192.0" y="468.0" width="48.0" height="48.0" fill="#76808e"/>
+<rect x="384.0" y="474.0" width="48.0" height="42.0" fill="#76808e"/>
+<rect x="384.0" y="432.0" width="42.0" height="30.0" fill="#76808e"/>
+<rect x="264.0" y="150.0" width="60.0" height="48.0" fill="#76808e"/>
+<rect x="336.0" y="510.0" width="24.0" height="36.0" fill="#76808e"/>
+<rect x="462.0" y="468.0" width="84.0" height="30.0" fill="#76808e"/>
+<rect x="540.0" y="528.0" width="60.0" height="36.0" fill="#76808e"/>
+<rect x="492.0" y="234.0" width="48.0" height="36.0" fill="#4c5562"/>
+<rect x="426.0" y="252.0" width="36.0" height="180.0" fill="#76808e"/>
+<rect x="540.0" y="240.0" width="30.0" height="36.0" fill="#76808e"/>
+<rect x="570.0" y="306.0" width="30.0" height="24.0" fill="#76808e"/>
+<rect x="510.0" y="30.0" width="24.0" height="24.0" fill="#76808e"/>
+<rect x="240.0" y="252.0" width="18.0" height="6.0" fill="#4c5562"/>
+<rect x="288.0" y="252.0" width="96.0" height="6.0" fill="#4c5562"/>
+<rect x="240.0" y="462.0" width="96.0" height="6.0" fill="#4c5562"/>
+<rect x="366.0" y="462.0" width="18.0" height="6.0" fill="#4c5562"/>
+<rect x="240.0" y="258.0" width="6.0" height="36.0" fill="#4c5562"/>
+<rect x="240.0" y="324.0" width="6.0" height="138.0" fill="#4c5562"/>
+<rect x="378.0" y="258.0" width="6.0" height="138.0" fill="#4c5562"/>
+<rect x="378.0" y="426.0" width="6.0" height="36.0" fill="#4c5562"/>
+<rect x="156.0" y="24.0" width="30.0" height="144.0" fill="#4c5562"/>
+<rect x="156.0" y="552.0" width="30.0" height="144.0" fill="#4c5562"/>
+<rect x="438.0" y="24.0" width="30.0" height="120.0" fill="#4c5562"/>
+<rect x="438.0" y="552.0" width="30.0" height="144.0" fill="#4c5562"/>
+<rect x="12.0" y="12.0" width="600.0" height="12.0" fill="#2f343b"/>
+<rect x="12.0" y="696.0" width="600.0" height="12.0" fill="#2f343b"/>
+<rect x="12.0" y="24.0" width="12.0" height="672.0" fill="#2f343b"/>
+<rect x="600.0" y="24.0" width="12.0" height="672.0" fill="#2f343b"/>
+<rect x="258.0" y="252.0" width="30.0" height="6.0" fill="url(#hatch)" stroke="#3a4250" stroke-width="1"/>
+<rect x="336.0" y="462.0" width="30.0" height="6.0" fill="url(#hatch)" stroke="#3a4250" stroke-width="1"/>
+<rect x="240.0" y="294.0" width="6.0" height="30.0" fill="url(#hatch)" stroke="#3a4250" stroke-width="1"/>
+<rect x="378.0" y="396.0" width="6.0" height="30.0" fill="url(#hatch)" stroke="#3a4250" stroke-width="1"/>
+<rect x="240.0" y="252.0" width="144.0" height="216.0" fill="url(#hatch)" stroke="#3a4250" stroke-width="1"/>
+<circle cx="258.0" cy="42.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="366.0" cy="42.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="312.0" cy="108.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="258.0" cy="678.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="366.0" cy="678.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="312.0" cy="612.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="60.0" cy="444.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="60.0" cy="264.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="168.0" cy="336.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="504.0" cy="432.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="504.0" cy="312.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<circle cx="576.0" cy="504.0" r="6.6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<path d="M240.0,588.0 L156.0,504.0 L78.0,408.0 L132.0,360.0 L141.0,252.0 L108.0,180.0 L54.0,102.0" fill="none" stroke="#2f7dd1" stroke-width="2.5" stroke-dasharray="7,4" marker-end="url(#arr_West)"/>
+<path d="M336.0,588.0 L351.0,480.0 L350.4,420.0 L342.0,372.0 L276.0,372.0 L273.0,288.0 L273.0,228.0 L300.0,180.0" fill="none" stroke="#8a4fd1" stroke-width="2.5" stroke-dasharray="7,4" marker-end="url(#arr_Mid)"/>
+<path d="M384.0,588.0 L447.0,528.0 L447.0,456.0 L492.0,408.0 L477.0,288.0 L477.0,228.0 L459.0,168.0 L486.0,168.0 L540.0,120.0" fill="none" stroke="#1c9c7a" stroke-width="2.5" stroke-dasharray="7,4" marker-end="url(#arr_East)"/>
+<line x1="114.0" y1="96.0" x2="115.3" y2="138.0" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="109.2" y="91.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 114.0 96.0)"/>
+<line x1="54.0" y1="198.0" x2="82.2" y2="229.1" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="49.2" y="193.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 54.0 198.0)"/>
+<line x1="276.0" y1="204.0" x2="275.2" y2="246.0" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="271.2" y="199.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 276.0 204.0)"/>
+<line x1="348.0" y1="324.0" x2="314.4" y2="349.2" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="343.2" y="319.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 348.0 324.0)"/>
+<line x1="540.0" y1="138.0" x2="530.1" y2="178.8" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="535.2" y="133.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 540.0 138.0)"/>
+<line x1="582.0" y1="216.0" x2="579.4" y2="257.9" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="577.2" y="211.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 582.0 216.0)"/>
+<line x1="408.0" y1="174.0" x2="427.4" y2="211.2" stroke="#c0392b" stroke-width="1.5"/>
+<rect x="403.2" y="169.2" width="9.6" height="9.6" fill="#c0392b" transform="rotate(45 408.0 174.0)"/>
+<circle cx="240.0" cy="66.0" r="7.2" fill="#1f4e8c"/>
+<circle cx="276.0" cy="66.0" r="7.2" fill="#1f4e8c"/>
+<circle cx="312.0" cy="66.0" r="7.2" fill="#1f4e8c"/>
+<circle cx="348.0" cy="66.0" r="7.2" fill="#1f4e8c"/>
+<circle cx="384.0" cy="66.0" r="7.2" fill="#1f4e8c"/>
+<circle cx="240.0" cy="654.0" r="7.2" fill="#8c3b1f"/>
+<circle cx="276.0" cy="654.0" r="7.2" fill="#8c3b1f"/>
+<circle cx="312.0" cy="654.0" r="7.2" fill="#8c3b1f"/>
+<circle cx="348.0" cy="654.0" r="7.2" fill="#8c3b1f"/>
+<circle cx="384.0" cy="654.0" r="7.2" fill="#8c3b1f"/>
+<text x="312.0" y="414.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Warehouse</text>
+<text x="84.0" y="366.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Container yard</text>
+<text x="570.0" y="300.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Dock</text>
+<text x="444.0" y="348.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Boxcar</text>
+<text x="516.0" y="222.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Hut</text>
+<text x="294.0" y="222.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Forecourt</text>
+<text x="312.0" y="36.0" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Defenders</text>
+<text x="312.0" y="691.2" font-size="12" font-weight="bold" fill="#1d2127" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="3">Attackers</text>
+<line x1="24.0" y1="734.0" x2="144.0" y2="734.0" stroke="#222" stroke-width="3"/>
+<text x="150.0" y="738.0" font-size="12" fill="#222">10 m</text>
+<text x="618.0" y="738.0" font-size="12" fill="#222" text-anchor="end">north is up &#183; 48 &#215; 56 m</text>
+<text x="634" y="22" font-size="16" font-weight="bold" fill="#222">Map 1: Depot</text>
+<rect x="634" y="36" width="16" height="12" fill="#4c5562"/>
+<text x="658" y="46" font-size="12" fill="#222">Wall / building</text>
+<rect x="634" y="56" width="16" height="12" fill="#76808e"/>
+<text x="658" y="66" font-size="12" fill="#222">Tall cover (blocks sight)</text>
+<rect x="634" y="76" width="16" height="12" fill="#b0b8c3"/>
+<text x="658" y="86" font-size="12" fill="#222">Low cover (shoot over)</text>
+<rect x="634" y="96" width="16" height="12" fill="url(#hatch)" stroke="#3a4250"/>
+<text x="658" y="106" font-size="12" fill="#222">Roofed (indoors)</text>
+<rect x="634" y="116" width="16" height="12" fill="#e1e8f0" stroke="#7a8796"/>
+<text x="658" y="126" font-size="12" fill="#222">Ramp (arrow points up)</text>
+<rect x="634" y="136" width="16" height="12" fill="#d3dcc6" stroke="#7d8b6c"/>
+<text x="658" y="146" font-size="12" fill="#222">Raised floor</text>
+<rect x="634" y="156" width="16" height="12" fill="#f5b942" fill-opacity="0.35" stroke="#d48a00" stroke-dasharray="4,2"/>
+<text x="658" y="166" font-size="12" fill="#222">Bomb site (placeholder)</text>
+<circle cx="642" cy="182" r="6" fill="#1f4e8c"/>
+<text x="658" y="186" font-size="12" fill="#222">Defenders' spawn</text>
+<circle cx="642" cy="202" r="6" fill="#8c3b1f"/>
+<text x="658" y="206" font-size="12" fill="#222">Attackers' spawn</text>
+<rect x="638" y="217" width="9" height="9" fill="#c0392b" transform="rotate(45 642 222)"/>
+<text x="658" y="226" font-size="12" fill="#222">Defender hold spot + view</text>
+<circle cx="642" cy="242" r="6" fill="none" stroke="#2e9d4f" stroke-width="1.6"/>
+<text x="658" y="246" font-size="12" fill="#222">Respawn point (respawn mode)</text>
+<line x1="634" y1="262" x2="650" y2="262" stroke="#2f7dd1" stroke-width="2.5" stroke-dasharray="6,3"/>
+<text x="658" y="266" font-size="12" fill="#222">Attack route: west</text>
+<line x1="634" y1="282" x2="650" y2="282" stroke="#8a4fd1" stroke-width="2.5" stroke-dasharray="6,3"/>
+<text x="658" y="286" font-size="12" fill="#222">Attack route: mid</text>
+<line x1="634" y1="302" x2="650" y2="302" stroke="#1c9c7a" stroke-width="2.5" stroke-dasharray="6,3"/>
+<text x="658" y="306" font-size="12" fill="#222">Attack route: east</text>
+<text x="634" y="334" font-size="11.5" fill="#333">Indoor mid, open side lanes.</text>
+<text x="634" y="350" font-size="11.5" fill="#333">Mid: S-bend through the warehouse,</text>
+<text x="634" y="366" font-size="11.5" fill="#333">racks block door-to-door views.</text>
+<text x="634" y="382" font-size="11.5" fill="#333">A: container yard, low and tall cover.</text>
+<text x="634" y="398" font-size="11.5" fill="#333">B: on the 1.2 m loading dock;</text>
+<text x="634" y="414" font-size="11.5" fill="#333">ramps from the track and the south.</text>
+</svg>
