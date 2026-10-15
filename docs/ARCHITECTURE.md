@@ -52,13 +52,15 @@ Chiip/
 | File | What it is |
 |---|---|
 | `maps/test_map.tscn` | M1 movement test map and the current main scene: jump boxes (32/48/64/80 u), platform with a 25° ramp and stairs, crouch tunnel, peek walls |
+| `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
+| `player/player.gd` | `Player` class: mouse look and CS-style movement |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
 ## Systems
 
 | System | Purpose | Milestone | Status |
 |---|---|---|---|
-| Player controller | Mouse look, CS-style movement | M1 | Planned |
+| Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, ground movement |
 | Debug overlay | Speed and position readout | M1 | Planned |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | Planned |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
@@ -84,6 +86,14 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `shoot` / `aim` | Left / right mouse button | Debug overlay now, weapons from M2 |
 | `toggle_mouse` | Esc | Player (frees or captures the mouse) |
 | `toggle_debug` | F3 | Debug overlay |
+
+## How the player camera works
+
+Physics interpolation (D-010) draws the player's body smoothly between physics ticks. If the camera were a normal child of the body, mouse look would only be applied once per tick and then smoothed, which adds a small delay. Instead:
+
+1. Mouse movement updates two angles (`_yaw`, `_pitch`) immediately in `_unhandled_input`.
+2. Each physics tick, the body turns to `_yaw`, so movement keys follow your view.
+3. Each rendered frame, `_process` places the camera at the head's *interpolated* position and applies the angles directly. The camera is `top_level` (ignores its parent's transform) and has interpolation off.
 
 ## Physics layers (planned, finalized in M2)
 

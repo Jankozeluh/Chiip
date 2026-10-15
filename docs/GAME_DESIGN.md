@@ -47,6 +47,10 @@ Starting physics values, CS:GO-like *(tune)*:
 | Stop speed | 80 units/s |
 | Air acceleration | 12 |
 
+**Body:** 1.83 m tall (72 units), eyes at 1.63 m (64 units), 0.8 m wide.
+
+**View:** CS's default field of view, 90° horizontally on a 4:3 screen. Widescreen shows more at the sides, as in CS.
+
 **Units:** 1 Godot unit = 1 metre. CS values are converted with 1 Source unit ≈ 2.54 cm, which makes the 72-unit-tall CS player about 1.83 m tall.
 
 **Skills the movement must support:** counter-strafing (tapping the opposite key to stop instantly), jiggle peeking and crouch-jumping onto boxes.

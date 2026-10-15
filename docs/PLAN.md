@@ -44,9 +44,9 @@
 - [x] Decide the renderer and physics tick rate (see open questions)
 - [x] Define input actions (move, jump, crouch, walk, …) in the Input Map
 - [x] Build a test map from simple blocks: floor, walls, boxes, ramps, stairs
-- [ ] Player scene: `CharacterBody3D` with a collision capsule and a camera
-- [ ] Mouse look with a captured cursor, using CS's sensitivity formula so your CS sensitivity carries over
-- [ ] CS-style ground movement: acceleration, friction, top speed
+- [x] Player scene: `CharacterBody3D` with a collision capsule and a camera
+- [x] Mouse look with a captured cursor, using CS's sensitivity formula so your CS sensitivity carries over
+- [x] CS-style ground movement: acceleration, friction, top speed
 - [ ] Walking (Shift) and crouching (Ctrl) with a smooth camera height change
 - [ ] Jumping and air movement (air acceleration, air strafing)
 - [ ] Debug overlay showing speed and position, like CS's `cl_showpos`

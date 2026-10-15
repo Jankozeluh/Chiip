@@ -10,6 +10,7 @@
 - Engine settings: Forward+ renderer, Jolt physics, 128 ticks per second with physics interpolation, CS gravity (D-008 to D-011).
 - Input actions for movement, jump, crouch, walk, shoot/aim, freeing the mouse and the debug overlay, bound by physical key position (D-012).
 - Test map (`maps/test_map.tscn`): CS crate heights (32/48/64/80 units), a platform with a 25° ramp and stairs (invisible clip ramp, D-013), a 1.5 m crouch tunnel and peek walls, all in a world-space grid "developer texture" (D-014). Verified every surface height with headless raycasts.
+- Player (`player/player.tscn` + `player.gd`): capsule with CS dimensions, CS-style mouse look and Quake/Source ground movement (friction, acceleration, stop speed). Headless check: top speed 6.350 m/s (exactly 250 u/s), full stop 0.41 s after releasing the key (D-015, D-016).
 
 ## 2026-10-15 — Session 1: Choosing the game
 
