@@ -10,6 +10,8 @@ extends RefCounted
 ##   the defenders' end: they check the hold spots and the defenders' spawn.
 ## - [b]Defenders[/b] each take a different hold spot near their end and hold
 ##   its angle. They leave it only for fights they hear close by (rotating).
+## - [b]Team respawn[/b] (D-083): [method plan_hunt] puts each team's bots into
+##   groups of about two that hunt together; see [HuntPlan].
 ## - [b]Bomb rounds[/b] (D-081): the attackers pick one site at random. The
 ##   carrier's group takes the route that ends nearest to it, and after their
 ##   routes everyone clears the spots around that site instead of the whole
@@ -104,6 +106,26 @@ static func _plan_defence(bots: Array[BotController], holds: Array[Node], rng: R
 		spots.append((marker as Node3D).global_transform)
 	for i in bots.size():
 		bots[i].defend(spots[i % spots.size()], spots)
+
+
+## Groups the bots among [param members] (one team) for the team respawn
+## mode, like the attack groups: about two per group. Gives each of them the
+## order to hunt, and returns the team's shared [HuntPlan]. The map's patrol
+## points are the places to roam.
+static func plan_hunt(members: Array[Character], map: Node, rng: RandomNumberGenerator) -> HuntPlan:
+	var plan := HuntPlan.new()
+	for marker in _find_in_map(map, BotController.PATROL_GROUP):
+		plan.roam_points.append((marker as Node3D).global_position)
+	var bots := _bots_of(members)
+	_shuffle(bots, rng)
+	var group_count := maxi(1, ceili(bots.size() / float(GROUP_SIZE)))
+	for i in group_count:
+		plan.groups.append([])
+	for i in bots.size():
+		plan.groups[i % group_count].append(bots[i])
+	for bot in bots:
+		bot.hunt(plan)
+	return plan
 
 
 ## The round's bomb on [param map], or null.

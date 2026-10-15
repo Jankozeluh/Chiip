@@ -148,7 +148,7 @@ Chiip/
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M7) |
 | HUD | Crosshair, ammo, health, timer, score, kill feed, banners | M2 → M5 | Built: crosshair, ammo, weapon name, health, spectate line; round HUD (top bar, countdown and side, banners, kill feed, D-047) |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Built: low-res world, palette with dithering, two HUD styles |
-| Bot AI | Navigation, perception, state machine, aim, round tactics | M4, M5, M8 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels; attack routes, hold spots, holding fire for teammates (M5); the bomb: target site, plant, fetch, guard, retake, defuse, getting unstuck (M8, D-081) |
+| Bot AI | Navigation, perception, state machine, aim, round tactics | M4, M5, M8 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels; attack routes, hold spots, holding fire for teammates (M5); the bomb: target site, plant, fetch, guard, retake, defuse, getting unstuck (M8, D-081); hunting in pairs in the respawn mode (`HuntPlan`, D-083) |
 | Developer console | `bot_add`, `noclip` and similar commands | M4 | Built: help, clear, bot_add, bot_kick, bot_difficulty, god, noclip, mp_friendlyfire, map |
 | Character animation | Walk cycle now; rigged models, animation blending, first-person arms later | M4 → M6 | Built: procedural walk placeholder (`SoldierBody`) |
 | Teams | Two teams, viewer-relative colors, attack/defend spawn ends, friendly fire | M5 | Built: `Teams`, 10 spawns on the test map (D-042) |
@@ -285,6 +285,8 @@ The round manager runs a fixed sequence and asks a few overridable methods for t
 | `_after_round_end()` | next round, half time or match end | match end |
 
 `is_team_respawn()` tells views which texts to use. `RespawnMatch.overtime` and `overtime_started` mark overtime.
+
+**Bots** (D-083): `_plan_bots()` calls `BotTactics.plan_hunt()` once per team, which groups the bots and returns the team's `HuntPlan` (groups, roam points, the latest sighting, each group's goal). The `RespawnMatch` keeps the plans, advances their clock in `_live_tick()`, and after every respawn gives the bot its hunt order again (`BotController.hunt(plan)`; respawning resets a bot's orders to patrol) and notes the respawn (`HuntPlan.note_respawn()`, which decides who leads). Bots read the plan and report their sightings to it every tick they see or hear an enemy.
 
 ## Sound
 

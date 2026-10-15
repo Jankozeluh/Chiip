@@ -58,8 +58,9 @@ enum GameMode {
 @export var kit_defuse_time: float = 5.0
 
 @export_group("Team respawn")
-## Kills a team needs to win a team respawn match (D-082). CoD: 75 at 6v6; 30 suits 3v3.
-@export var kill_limit: int = 30
+## Kills a team needs to win a team respawn match (D-082, D-083). CoD: 75 at
+## 6v6. 50 takes bots-only 3v3 matches about 4 minutes.
+@export var kill_limit: int = 50
 ## Seconds a team respawn match lasts; then the team with more kills wins (a
 ## tie goes to overtime: the next kill wins). CoD: 10 minutes.
 @export var time_limit: float = 600.0

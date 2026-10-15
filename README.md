@@ -25,7 +25,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip
 ```
 
-For the **team respawn** mode (like Call of Duty's Team Deathmatch: respawn after 3 s, first team to 30 kills wins), add `-- --respawn`, e.g. on Depot:
+For the **team respawn** mode (like Call of Duty's Team Deathmatch: respawn after 3 s, first team to 50 kills wins; bots hunt in pairs), add `-- --respawn`, e.g. on Depot:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/depot.tscn --respawn

@@ -12,12 +12,17 @@ extends Node
 ## bots-only 3v3 on the map and measures the time from the round going live to
 ## first contact (the first bot to notice an enemy), which should be 5–10 s,
 ## and how rounds end. The rounds are bomb rounds (D-080), so it also counts
-## the bots' plants, explosions and defuses (D-081). Quits with the number of
-## failed checks as the exit code.
+## the bots' plants, explosions and defuses (D-081). Last, a bots-only team
+## respawn match to 20 kills (D-082, D-083): it must end by the kill limit
+## within 3 minutes, and the kills shouldn't all happen in one third of the map.
+## Quits with the number of failed checks as the exit code.
 
 const MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"]
 ## Rounds to play on each map.
 const ROUNDS_TO_PLAY := 4
+## The team respawn match on each map: kills to win, and the time it must take at most.
+const RESPAWN_KILLS := 20
+const RESPAWN_MAX_TIME := 180.0
 ## First contact should come this many seconds after the round goes live (D-049).
 const CONTACT_MIN := 5.0
 const CONTACT_MAX := 10.0
@@ -73,6 +78,10 @@ func _check_map(path: String) -> void:
 	_check_on_mesh()
 	_check_reachable()
 	await _play_rounds()
+	_rounds.queue_free()
+	_rounds = null
+	await get_tree().physics_frame
+	await _play_respawn()
 	_rounds = null
 	_map.queue_free()
 	await get_tree().physics_frame
@@ -199,6 +208,77 @@ func _play_rounds() -> void:
 	_check("Rounds are decided by fighting or the bomb, not by running out the clock",
 			_results.size() == ROUNDS_TO_PLAY and decided >= ROUNDS_TO_PLAY - 1,
 			"%d of %d rounds ended by elimination or the bomb" % [decided, _results.size()])
+
+
+## A bots-only team respawn match on the map (whose round match has just been
+## removed, so its bots are gone too): it must reach the kill limit in time.
+## Reports the pace and where the kills happened, by thirds of the map.
+func _play_respawn() -> void:
+	for character in _map.get_children():
+		if character is Character:
+			character.queue_free()
+	await get_tree().physics_frame
+	var settings := MatchSettings.new()
+	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	settings.freeze_time = 0.5
+	settings.kill_limit = RESPAWN_KILLS
+	settings.time_limit = RESPAWN_MAX_TIME
+	var match_rules := RespawnMatch.new()
+	_rounds = match_rules
+	match_rules.settings = settings
+	match_rules.rng.seed = 9
+	var kills: Array[Vector3] = []
+	var ended := []
+	match_rules.character_killed.connect(func(victim: Character, _killer: Character, _headshot: bool) -> void: kills.append(victim.global_position))
+	match_rules.round_ended.connect(func(winner: int, reason: RoundManager.EndReason) -> void: ended.append([winner, reason, _live_ticks / 128.0]))
+	match_rules.phase_changed.connect(func(phase: RoundManager.Phase) -> void:
+		if phase == RoundManager.Phase.LIVE:
+			_live_ticks = 0)
+	_map.add_child(match_rules)
+	for i in 2:
+		await get_tree().physics_frame
+	var participants := match_rules.get_participants()
+	for i in participants.size():
+		_silence(participants[i])
+		(participants[i].get_node("BotController") as BotController).rng.seed = i + 1
+		participants[i].weapon.rng.seed = i + 1
+	var ticks := 0
+	while ended.is_empty() and ticks < 128 * (RESPAWN_MAX_TIME + 10.0):
+		await get_tree().physics_frame
+		ticks += 1
+	# Kills by thirds of the map (west/mid/east × north/mid/south).
+	var bounds := _map_bounds()
+	var cells := {}
+	for spot in kills:
+		var column: int = clampi(floori((spot.x - bounds.position.x) / bounds.size.x * 3.0), 0, 2)
+		var row: int = clampi(floori((spot.z - bounds.position.y) / bounds.size.y * 3.0), 0, 2)
+		var key: String = ["W", "M", "E"][column] + "-" + ["N", "M", "S"][row]
+		cells[key] = cells.get(key, 0) + 1
+	var busiest := 0
+	for key in cells:
+		busiest = maxi(busiest, cells[key])
+	var result: Array = ended[0] if not ended.is_empty() else [-1, -1, -1.0]
+	_check("Team respawn: bots-only, first to %d kills within %.0f s" % [RESPAWN_KILLS, RESPAWN_MAX_TIME],
+			result[1] == RoundManager.EndReason.KILL_LIMIT,
+			"ended %s after %.0f s, score %s, %d kills (%.1f per minute)" % [RoundManager.EndReason.keys()[result[1]] if result[1] >= 0 else "not",
+					result[2], match_rules.score, kills.size(), kills.size() / maxf(result[2], 1.0) * 60.0])
+	_check("Team respawn: the fights spread over the map (no third of a third has 90% of the kills)",
+			kills.size() > 0 and busiest <= kills.size() * 0.9, "kills by area: %s" % [cells])
+
+
+## The map's floor area in x and z (from the spawn and respawn markers), as a Rect2 of (x, z).
+func _map_bounds() -> Rect2:
+	var rect := Rect2()
+	var first := true
+	for group in [Teams.ATTACK_SPAWN_GROUP, Teams.DEFEND_SPAWN_GROUP, RespawnMatch.RESPAWN_GROUP]:
+		for marker in _in_map(group):
+			var point := Vector2((marker as Node3D).global_position.x, (marker as Node3D).global_position.z)
+			if first:
+				rect = Rect2(point, Vector2.ZERO)
+				first = false
+			else:
+				rect = rect.expand(point)
+	return rect
 
 
 ## Notes the live time of the first [param kind] event ("contact" or "damage")

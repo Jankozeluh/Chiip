@@ -13,7 +13,9 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 
 - **Team respawn mode** (D-082, provisional), like CoD's Team Deathmatch: `-- --respawn`. Respawn 3 s after dying at the safest respawn point (far from enemies, out of their sight), first team to 30 kills or most kills after 10 minutes, overtime on a tie. Built as `RespawnMatch`, a subclass of the round manager with one long round, so the HUD, kill feed, scoreboard and end screen work as they are. New `tests/respawn_test.tscn` (15 checks; it caught the round's own point being added to the kills).
 
-**Next:** bots in the respawn mode hunt in small groups.
+- **Bots hunt in pairs** in the respawn mode (D-083, provisional): each team's bots form groups of about two with a shared `HuntPlan`; the member alive the longest leads, to a teammate's sighting within 25 m or roaming the patrol points, and the other follows about 6 m behind watching a flank. Measuring where kills happened showed everyone piling into mid (80–90%) when every bot answered every sighting and gunshot, hence the 25 m reach. The kill limit went from 30 to 50: bots-only matches score about 20 kills a minute. 4 new respawn checks (19 in all), and the maps test now plays a respawn match on every map (to 20 kills in 84–124 s).
+
+**Next:** the full sound pass.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

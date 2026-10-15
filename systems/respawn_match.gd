@@ -43,6 +43,8 @@ const SCORE_JITTER := 3.0
 var overtime: bool = false
 ## Character → seconds until it comes back.
 var _respawn_left: Dictionary = {}
+## Each team's shared hunting plan for its bots (index = team number).
+var _hunt_plans: Array[HuntPlan] = []
 
 
 func is_team_respawn() -> bool:
@@ -86,12 +88,16 @@ func _add_bomb() -> void:
 	pass
 
 
-## Bots roam the map (task 4 makes them hunt in groups).
+## The bots of each team hunt in groups of about two, sharing what they see (D-083).
 func _plan_bots() -> void:
-	for member in _participants:
-		var brain := member.get_node_or_null("BotController") as BotController
-		if brain != null:
-			brain.patrol()
+	_hunt_plans.clear()
+	for team in Teams.COUNT:
+		_hunt_plans.append(BotTactics.plan_hunt(get_members(team), get_parent(), rng))
+
+
+## The hunting plan of [param team]'s bots.
+func get_hunt_plan(team: int) -> HuntPlan:
+	return _hunt_plans[team] if team < _hunt_plans.size() else null
 
 
 func _round_duration() -> float:
@@ -99,6 +105,8 @@ func _round_duration() -> float:
 
 
 func _live_tick(delta: float) -> void:
+	for plan in _hunt_plans:
+		plan.time += delta
 	for character: Character in _respawn_left.keys():
 		if not is_instance_valid(character):
 			_respawn_left.erase(character)
@@ -108,6 +116,7 @@ func _live_tick(delta: float) -> void:
 			_respawn_left.erase(character)
 			var spot := pick_spawn(character)
 			character.respawn(spot.origin, spot.basis.get_euler().y)
+			_rejoin_hunt(character)
 
 
 ## In overtime the clock has run out and stays at 0:00.
@@ -160,6 +169,15 @@ func _after_round_end() -> void:
 
 
 # --- Helpers ---
+
+
+## A bot that comes back hunts with its group again (respawning reset its orders).
+func _rejoin_hunt(character: Character) -> void:
+	var brain := character.get_node_or_null("BotController") as BotController
+	var plan := get_hunt_plan(character.team)
+	if brain != null and plan != null:
+		brain.hunt(plan)
+		plan.note_respawn(brain)
 
 
 func _leader() -> int:

@@ -25,6 +25,11 @@ extends CharacterController
 ## same Use command as the player. A bot keeps defusing (or planting) when an
 ## enemy shows up only if it is nearly done.
 ##
+## In the team respawn mode (D-083) bots hunt in small groups ([HuntPlan]): the
+## group's leader runs to the team's freshest enemy sighting, or roams between
+## the map's patrol points, and the others follow a few metres behind,
+## watching the flanks. Every bot reports what it sees and hears to the plan.
+##
 ## What it knows comes from its [BotSenses]; how well it fights comes from its
 ## [BotDifficulty]. Movement uses a [NavigationAgent3D] (sibling node).
 
@@ -37,6 +42,8 @@ enum Role {
 	ATTACK,
 	## Hold a spot near its own end, watching the angle the spot faces.
 	DEFEND,
+	## Team respawn: hunt the enemy with its group (see [HuntPlan]).
+	HUNT,
 }
 
 ## The fastest the bot turns its view while walking, in degrees per second.
@@ -80,6 +87,21 @@ const STICK_PROGRESS := 0.7
 const GUARD_SWEEP_DEGREES := 25.0
 ## Where a planting or defusing bot looks: down at the bomb, in degrees.
 const BOMB_LOOK_PITCH := -50.0
+## A hunting follower stays this far behind its leader (metres)...
+const FOLLOW_DISTANCE := 2.5
+## ...and this far to the side, left or right by its place in the group (metres).
+const FOLLOW_SIDE := 1.2
+## A follower farther than this from its leader (metres) runs to catch up instead of following.
+const REGROUP_DISTANCE := 18.0
+## A leader walks (half speed, silent) while a follower is this far behind (metres).
+const WAIT_DISTANCE := 6.0
+## A group answers a teammate's sighting only within this distance (metres);
+## farther groups keep roaming, so the whole team doesn't pile into one fight.
+const LEAD_REACH := 25.0
+## How far off the leader's view a follower looks, to cover a flank (degrees).
+const FLANK_DEGREES := 50.0
+## Seconds a hunting leader looks around at a roam point before moving on.
+const ROAM_LOOK_TIME := 1.2
 ## A bot walking slower than this (m/s) isn't getting anywhere.
 const STUCK_SPEED := 0.6
 ## Seconds of getting nowhere before a stuck bot jumps, and before it backs off
@@ -151,6 +173,9 @@ var _plant_deadline: float = INF
 var _stuck_time: float = 0.0
 var _backup_left: float = 0.0
 var _backup_direction: Vector3 = Vector3.ZERO
+## Team respawn: the team's shared plan, and how long the bot has looked around at its roam point.
+var _hunt_plan: HuntPlan
+var _roam_look_left: float = 0.0
 ## Randomness for aim error and decisions. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
 
@@ -222,15 +247,31 @@ func defend(spot: Transform3D, all_spots: Array[Transform3D]) -> void:
 	move_to(spot.origin)
 
 
+## Orders (team respawn mode): hunt the enemy with this bot's group in [param plan].
+func hunt(plan: HuntPlan) -> void:
+	role = Role.HUNT
+	_reset_objective()
+	_hunt_plan = plan
+	_roam_look_left = 0.0
+
+
 ## The site this bot's team attacks this round, or null.
 func get_target_site() -> Area3D:
 	return _target_site
+
+
+## The team plan this bot hunts with (team respawn mode), or null.
+func get_hunt_plan() -> HuntPlan:
+	return _hunt_plan
 
 
 func get_input(delta: float) -> CharacterInput:
 	if not character.frozen:
 		_live_time += delta
 	_update_state()
+	if role == Role.HUNT and _hunt_plan != null and _senses.get_lead_age() < 0.2:
+		# Call it out: the whole team learns where the enemy is.
+		_hunt_plan.report(_senses.last_known_position)
 	var input := CharacterInput.new()
 	match state:
 		State.PATROL:
@@ -278,13 +319,16 @@ func _update_state() -> void:
 ## Whether the bot leaves its orders to check on an enemy last seen or heard at [param point].
 ## In bomb rounds the carrier never does (it fights what it sees, then carries
 ## on), the bot fetching a dropped bomb doesn't either, and after the plant
-## only enemies near the bomb count.
+## only enemies near the bomb count. Hunting bots (team respawn) only check
+## what is within [constant LEAD_REACH], like the sightings they answer.
 func _wants_to_check(point: Vector3) -> bool:
 	if _objective_live():
 		if _bomb.carrier == character or _is_fetching():
 			return false
 		if _bomb.is_planted():
 			return _bomb.global_position.distance_to(point) <= BOMB_CHECK_DISTANCE
+	if role == Role.HUNT:
+		return character.global_position.distance_to(point) <= LEAD_REACH
 	return role != Role.DEFEND or character.global_position.distance_to(point) <= ROTATE_DISTANCE
 
 
@@ -318,6 +362,8 @@ func _follow_orders(input: CharacterInput, delta: float) -> void:
 			_advance(input, delta)
 		Role.DEFEND:
 			_hold(input, delta)
+		Role.HUNT:
+			_hunt(input, delta)
 		_:
 			if has_arrived():
 				_pick_patrol_point()
@@ -481,6 +527,77 @@ func _on_weapon_fired(_spray_shot: int) -> void:
 	if _shots_in_burst >= limit:
 		_shots_in_burst = 0
 		_pause_left = difficulty.burst_pause
+
+
+# --- Team respawn: hunting in groups ---
+
+
+func _hunt(input: CharacterInput, delta: float) -> void:
+	if _hunt_plan == null:
+		return
+	var leader := _hunt_plan.get_leader(self)
+	if leader != null and leader != self:
+		var distance := _flat_distance(character.global_position, leader.character.global_position)
+		if distance <= REGROUP_DISTANCE:
+			_follow(leader.character, input, delta)
+			return
+		# Far behind (just came back): run to where the group is.
+		_go_near(leader.character.global_position, 2.0)
+		_walk(input, delta, true)
+		return
+	_lead_hunt(input, delta)
+
+
+## Leading the group (or hunting alone): run to the team's freshest sighting
+## if it is within [constant LEAD_REACH], otherwise roam from patrol point to patrol point, looking left and right at
+## each before moving on.
+func _lead_hunt(input: CharacterInput, delta: float) -> void:
+	var goal := _hunt_plan.get_goal(self)
+	if _hunt_plan.has_lead() and _flat_distance(_hunt_plan.get_lead(), character.global_position) <= LEAD_REACH:
+		goal = _hunt_plan.get_lead()
+		_hunt_plan.set_goal(self, goal)
+		_roam_look_left = 0.0
+	elif _roam_look_left > 0.0:
+		_roam_look_left -= delta
+		var side := -1.0 if _roam_look_left > ROAM_LOOK_TIME * 0.5 else 1.0
+		_turn_toward(_look_around_yaw + deg_to_rad(LOOK_AROUND_DEGREES) * side, 0.0, WALK_TURN_SPEED, delta)
+		if _roam_look_left > 0.0:
+			return
+		goal = _hunt_plan.pick_roam_goal(self, character.global_position, rng)
+	elif goal == Vector3.INF:
+		goal = _hunt_plan.pick_roam_goal(self, character.global_position, rng)
+	elif has_arrived() and _agent.target_position.is_equal_approx(goal):
+		# At the roam point: look around before moving on.
+		_roam_look_left = ROAM_LOOK_TIME
+		_look_around_yaw = _yaw
+		return
+	_go_to(goal)
+	# Let a partner who fell behind catch up: walk (quietly) until they're close.
+	for partner in _hunt_plan.get_partners(self):
+		if _flat_distance(character.global_position, partner.character.global_position) > WAIT_DISTANCE:
+			input.walk = true
+	_walk(input, delta, true)
+
+
+## Following the leader: a few metres behind and to one side, looking off to
+## that side so the group covers more than one direction.
+func _follow(leader: Character, input: CharacterInput, delta: float) -> void:
+	var group := _hunt_plan.groups[_hunt_plan.get_group_index(self)]
+	var side := 1.0 if group.find(self) % 2 == 1 else -1.0
+	var view := Basis(Vector3.UP, leader.get_aim_angles().x)
+	var spot := leader.global_position + view * Vector3(FOLLOW_SIDE * side, 0.0, FOLLOW_DISTANCE)
+	spot = NavigationServer3D.map_get_closest_point(character.get_world_3d().navigation_map, spot)
+	if _flat_distance(character.global_position, spot) > 1.0:
+		_go_near(spot, 1.0)
+		_walk(input, delta, false)
+	_turn_toward(leader.get_aim_angles().x + deg_to_rad(FLANK_DEGREES) * -side, 0.0, WALK_TURN_SPEED, delta)
+
+
+## Walks toward [param point], asking for a new path only once the goal has
+## moved more than [param slack] metres (a moving target like a teammate).
+func _go_near(point: Vector3, slack: float) -> void:
+	if _agent.target_position.distance_to(point) > slack:
+		move_to(point)
 
 
 # --- Bomb rounds ---

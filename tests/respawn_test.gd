@@ -11,8 +11,11 @@ extends Node
 ## with full health at a respawn point, the choice of respawn point (away from
 ## the enemies and out of their sight), the kill limit, the time limit with a
 ## leader, overtime on a tie, the HUD's texts, and that the main scene runs the
-## mode from the match settings with spectating off. Quits with the number of
-## failed checks as the exit code.
+## mode from the match settings with spectating off. Then bots-only matches
+## check the bots' hunting (D-083): groups of about two, followers staying with
+## their leader, sightings answered by the groups near them only, and groups
+## coming back together after a respawn. Quits with the number of failed checks
+## as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
 const HUD_SCENE := preload("res://ui/hud.tscn")
@@ -40,6 +43,8 @@ func _ready() -> void:
 	await _test_time_limit()
 	await _test_overtime()
 	await _test_main_scene()
+	await _test_hunting_groups()
+	await _test_sightings()
 	_free_match()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -191,18 +196,88 @@ func _test_main_scene() -> void:
 	main.queue_free()
 
 
+# --- Bots hunting ---
+
+
+func _test_hunting_groups() -> void:
+	await _new_match(false)
+	var sizes := []
+	for team in Teams.COUNT:
+		var plan := _rounds.get_hunt_plan(team)
+		var team_sizes := plan.groups.map(func(group: Array) -> int: return group.size())
+		team_sizes.sort()
+		sizes.append(team_sizes)
+	var hunting := _rounds.get_participants().all(func(member: Character) -> bool:
+		return (member.get_node("BotController") as BotController).role == BotController.Role.HUNT)
+	_check("Every bot hunts, each team in groups of about two (3 bots: a pair and a single)",
+			hunting and sizes == [[1, 2], [1, 2]], "hunting %s, group sizes %s" % [hunting, sizes])
+	# Without enemies to fight, team 0's pair roams the map.
+	await _go_live(false)
+	_remove_team(1)
+	var plan := _rounds.get_hunt_plan(0)
+	var pair: Array = plan.groups.filter(func(group: Array) -> bool: return group.size() == 2)[0]
+	var distances: Array[float] = []
+	var moved := 0.0
+	var start: Vector3 = (pair[0] as BotController).character.global_position
+	for i in 30:
+		await _wait_seconds(0.5)
+		var leader := plan.get_leader(pair[0])
+		var follower: BotController = pair[1] if leader == pair[0] else pair[0]
+		if follower.state == BotController.State.PATROL and leader.character.is_alive() and follower.character.is_alive():
+			distances.append(_flat(leader.character.global_position, follower.character.global_position))
+		moved = maxf(moved, _flat(start, leader.character.global_position))
+	distances.sort()
+	var median := distances[distances.size() / 2] if not distances.is_empty() else INF
+	_check("A follower stays within about 6 m of its leader while the pair roams the map, never straggling past 12 m",
+			distances.size() >= 20 and median <= 7.0 and distances[-1] <= 12.0 and moved >= 15.0,
+			"median %.1f m over %d samples (largest %.1f m), the leader got %.0f m from its start" % [median, distances.size(), distances[-1] if not distances.is_empty() else -1.0, moved])
+
+
+func _test_sightings() -> void:
+	await _new_match(false)
+	await _go_live(false)
+	_remove_team(1)
+	var plan := _rounds.get_hunt_plan(0)
+	var pair_leader := plan.get_leader((plan.groups.filter(func(group: Array) -> bool: return group.size() == 2)[0] as Array)[0])
+	var single: BotController = (plan.groups.filter(func(group: Array) -> bool: return group.size() == 1)[0] as Array)[0]
+	# Put the single far from the pair, then call out a sighting near the pair only.
+	for bot: BotController in [single] + plan.get_partners(pair_leader) + [pair_leader]:
+		var at: Vector3 = _map.get_node("Respawns/West1" if bot == single else "Respawns/East1").global_position
+		await _teleport(bot.character, at + Vector3(0.0, 0.0, 2.0 if bot != pair_leader and bot != single else 0.0))
+		# Respawning reset its orders, as it does in a match; the match gives them back.
+		bot.hunt(plan)
+	var lead := NavigationServer3D.map_get_closest_point(_map.get_world_3d().navigation_map, pair_leader.character.global_position + Vector3(0.0, 0.0, -12.0))
+	plan.report(lead)
+	await _wait_seconds(0.3)
+	_check("A teammate's sighting is answered by the group near it, not by one across the map",
+			plan.get_goal(pair_leader).is_equal_approx(lead) and not plan.get_goal(single).is_equal_approx(lead),
+			"pair heading for the sighting: %s, single heading for it: %s (%.0f m away)" % [plan.get_goal(pair_leader).is_equal_approx(lead), plan.get_goal(single).is_equal_approx(lead), _flat(single.character.global_position, lead)])
+	var before := _flat(pair_leader.character.global_position, lead)
+	await _wait_seconds(2.0)
+	var after := _flat(pair_leader.character.global_position, lead)
+	_check("The group runs to the sighting", after < before - 5.0, "%.1f m → %.1f m" % [before, after])
+
+
 # --- Helpers ---
 
 
-## A fresh team respawn match on Depot with the short test rules, a HUD, and every bot silenced.
-func _new_match() -> void:
+## A fresh team respawn match on Depot with the short test rules, a HUD, and
+## every bot silenced. Without [param with_player] the map's Player is removed
+## (a bots-only match, every bot seeded; no HUD).
+func _new_match(with_player: bool = true) -> void:
 	_free_match()
 	_results.clear()
 	_match_ends.clear()
 	_map = MAP_SCENE.instantiate()
-	add_child(_map)
 	_player = _map.get_node("Player")
-	_silence(_player)
+	if not with_player:
+		_player.free()
+		_player = null
+	add_child(_map)
+	if not with_player:
+		await _wait_ticks(30)
+	else:
+		_silence(_player)
 	var settings := MatchSettings.new()
 	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
 	settings.freeze_time = 0.5
@@ -217,8 +292,15 @@ func _new_match() -> void:
 	_rounds.match_ended.connect(func(winner: int) -> void: _match_ends.append(winner))
 	_map.add_child(_rounds)
 	await _wait_ticks(2)
-	for character in _rounds.get_participants():
-		_silence(character)
+	var participants := _rounds.get_participants()
+	for i in participants.size():
+		_silence(participants[i])
+		var brain := participants[i].get_node_or_null("BotController") as BotController
+		if brain != null:
+			brain.rng.seed = i + 1
+			participants[i].weapon.rng.seed = i + 1
+	if _player == null:
+		return
 	Teams.set_viewer_team(_player.team)
 	_hud = HUD_SCENE.instantiate()
 	add_child(_hud)
@@ -238,21 +320,30 @@ func _free_match() -> void:
 		_map = null
 
 
-## Waits for the live phase, then freezes every bot, so none of them moves or shoots.
-func _go_live() -> void:
+## Waits for the live phase, then (with [param freeze_bots]) freezes every bot, so none of them moves or shoots.
+func _go_live(freeze_bots: bool = true) -> void:
 	var ticks := 0
 	while _rounds.phase != RoundManager.Phase.LIVE and ticks < 128 * 5:
 		await get_tree().physics_frame
 		ticks += 1
-	for member in _rounds.get_participants():
-		if member != _player:
-			member.frozen = true
+	if freeze_bots:
+		for member in _rounds.get_participants():
+			if member != _player:
+				member.frozen = true
 	await _wait_ticks(2)
 
 
 func _teleport(character: Character, at: Vector3) -> void:
 	character.respawn(at, character.rotation.y)
 	await _wait_ticks(3)
+
+
+## Takes [param team]'s bots out of the match, so the other team's bots have nobody to fight.
+func _remove_team(team: int) -> void:
+	for member in _rounds.get_members(team):
+		member.get_parent().remove_child(member)
+		member.queue_free()
+	await _wait_ticks(1)
 
 
 func _markers(group: String) -> Array:
