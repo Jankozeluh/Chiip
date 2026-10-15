@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme and saved settings (sensitivity, field of view, video, audio, crosshair, key bindings; set from the console for now) are in (tasks 1–9 of 13), so F5 starts a 3v3 match to 5 rounds won; the menus follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) and the settings menu (opened with the console command `settings` for now) are in (tasks 1–10 of 13), so F5 starts a 3v3 match to 5 rounds won; the menus follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -53,8 +53,9 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
+| Settings menu | Type `settings` in the console (the main and pause menus will open it later); Esc or Back closes it |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, and the settings commands (see *Settings* below). Up/down arrows recall earlier commands.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, `settings` (opens the settings menu), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 
 ## Settings
 
@@ -64,7 +65,15 @@ Your settings are saved the moment you change them and apply at once. They live 
 ~/Library/Application Support/Godot/app_userdata/Chiip/settings.cfg
 ```
 
-Until the settings menu exists (M5 task 10), change them from the developer console (the key left of 1). Without a value, a command shows the current one:
+Open the **settings menu** by typing `settings` in the developer console (the key left of 1); the main menu and the pause menu will open it too. It has five tabs, and every change applies and is saved at once, with no Apply button:
+
+- **Game:** mouse sensitivity (CS's scale: a slider and a number field you can type an exact value into), invert Y, field of view (90 across a 4:3 screen, like CS).
+- **Video:** fullscreen, V-Sync, frame rate limit, pixel resolution (270 to 720 lines), palette effect, pixelated HUD.
+- **Audio:** master, effects and interface volume.
+- **Crosshair:** color (swatches or a `#RRGGBB` code), opacity, size, gap, thickness, outline, center dot and dynamic, with a live preview on a dark and a light background.
+- **Controls:** click a slot, then press the new key or mouse button (Esc cancels, Backspace clears the slot). Every action has a primary and a secondary slot. A key belongs to one action: if it was in use, the other action loses it and the menu tells you which.
+
+"Reset tab to defaults" puts the tab you are on back. Esc or Back closes the menu. The same settings can also be set from the console; without a value, a command shows the current one:
 
 | Command | What it sets | Default |
 |---|---|---|

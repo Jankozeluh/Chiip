@@ -3,11 +3,20 @@ extends CanvasLayer
 ## Developer console, like CS's: open it with the key left of 1 (` / ~),
 ## type a command and press Enter. "help" lists the commands.
 ##
-## While it's open, the player's controls ignore the keyboard and mouse.
-## Up and down recall earlier commands; Esc or the console key closes it.
+## While it's open, the player's controls ignore the keyboard and mouse: it
+## registers with [MenuState] like the menus do. Up and down recall earlier
+## commands; Esc or the console key closes it. The output shows the last
+## [constant VISIBLE_LINES] lines; the mouse wheel and Page Up / Page Down
+## scroll back through the last [constant HISTORY_LINES], so a long answer such
+## as [code]help[/code] is never lost.
 
-## How many output lines are kept on screen.
-const MAX_LINES := 14
+## How many output lines show at once. The panel is as tall as this many lines
+## need: [code]help[/code] (one line per command, plus the echo of the command) fits.
+const VISIBLE_LINES := 16
+## How many output lines are kept to scroll back through.
+const HISTORY_LINES := 200
+## How many lines the mouse wheel scrolls per notch.
+const WHEEL_LINES := 3
 const MAPS_FOLDER := "res://maps/"
 const DIFFICULTY_PATH := "res://bots/difficulty_%s.tres"
 
@@ -23,7 +32,10 @@ var _commands: Dictionary = {}
 var _history: Array[String] = []
 var _history_index: int = 0
 var _lines: Array[String] = []
+## How many lines the output is scrolled back from the newest (0 = showing the end).
+var _scroll_back: int = 0
 
+@onready var _panel: PanelContainer = $Panel
 @onready var _output: Label = $Panel/Margin/Box/Output
 @onready var _input_line: LineEdit = $Panel/Margin/Box/Input
 
@@ -32,11 +44,15 @@ func _ready() -> void:
 	visible = false
 	is_open = false
 	_input_line.text_submitted.connect(_on_text_submitted)
+	_output.max_lines_visible = VISIBLE_LINES
 	_register_commands()
-	print_line("Chiip console. Type 'help' for the list of commands.")
+	print_line("Chiip console. Type 'help' for the list of commands (mouse wheel or Page Up scrolls back).")
 
 
 func _input(event: InputEvent) -> void:
+	# A menu waiting for a key to bind would lose it to the console key.
+	if MenuState.capturing_input:
+		return
 	if event.is_action_pressed("toggle_console") or (is_open and event.is_action_pressed("toggle_mouse")):
 		set_open(not is_open)
 		get_viewport().set_input_as_handled()
@@ -45,19 +61,28 @@ func _input(event: InputEvent) -> void:
 		if key == KEY_UP or key == KEY_DOWN:
 			_browse_history(-1 if key == KEY_UP else 1)
 			get_viewport().set_input_as_handled()
+		elif key == KEY_PAGEUP or key == KEY_PAGEDOWN:
+			scroll_output(VISIBLE_LINES - 2 if key == KEY_PAGEUP else 2 - VISIBLE_LINES)
+			get_viewport().set_input_as_handled()
+	elif is_open and event is InputEventMouseButton and event.is_pressed() and _panel.get_global_rect().has_point((event as InputEventMouseButton).position):
+		var button := (event as InputEventMouseButton).button_index
+		if button == MOUSE_BUTTON_WHEEL_UP or button == MOUSE_BUTTON_WHEEL_DOWN:
+			scroll_output(WHEEL_LINES if button == MOUSE_BUTTON_WHEEL_UP else -WHEEL_LINES)
+			get_viewport().set_input_as_handled()
 
 
-## Opens or closes the console.
+## Opens or closes the console. It registers with [MenuState], so the mouse is
+## shown while it is open and captured again when the last menu closes.
 func set_open(open: bool) -> void:
 	is_open = open
 	visible = open
 	if open:
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		MenuState.open(self)
 		_input_line.clear()
 		_input_line.grab_focus()
 	else:
 		_input_line.release_focus()
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		MenuState.close(self)
 
 
 ## Scales the console; 1.0 is the size it's designed for (a 720-pixel-tall
@@ -66,12 +91,41 @@ func set_ui_scale(factor: float) -> void:
 	UiTheme.apply(self, factor)
 
 
-## Adds a line to the console output.
+## Adds a line to the console output (and scrolls down to it).
 func print_line(text: String) -> void:
 	_lines.append(text)
-	while _lines.size() > MAX_LINES:
+	while _lines.size() > HISTORY_LINES:
 		_lines.pop_front()
+	_scroll_back = 0
+	_refresh_output()
+
+
+## Scrolls the output back ([param lines] > 0, towards older lines) or forward
+## (< 0), as far as there are lines. Page Up, Page Down and the mouse wheel do this.
+func scroll_output(lines: int) -> void:
+	_scroll_back += lines
+	_refresh_output()
+
+
+## The names of all commands, sorted (what [code]help[/code] lists).
+func get_command_names() -> Array:
+	var names := _commands.keys()
+	names.sort()
+	return names
+
+
+## The lines the output shows right now, oldest first (for tests).
+func get_visible_lines() -> Array[String]:
+	var first := maxi(0, _lines.size() - VISIBLE_LINES - _scroll_back)
+	return _lines.slice(first, first + VISIBLE_LINES)
+
+
+## Shows the last [constant VISIBLE_LINES] lines, or the ones [member _scroll_back] lines before them.
+func _refresh_output() -> void:
+	var hidden := maxi(0, _lines.size() - VISIBLE_LINES)
+	_scroll_back = clampi(_scroll_back, 0, hidden)
 	_output.text = "\n".join(_lines)
+	_output.lines_skipped = hidden - _scroll_back
 
 
 ## Runs one command line, e.g. "bot_add hard". Public so tests can use it.
@@ -113,7 +167,7 @@ func _browse_history(step: int) -> void:
 
 func _register_commands() -> void:
 	register_command("help", _cmd_help, "help", "List all commands")
-	register_command("clear", func(_args: Array) -> void: _lines.clear(); _output.text = "", "clear", "Clear the console")
+	register_command("clear", func(_args: Array) -> void: _lines.clear(); _refresh_output(), "clear", "Clear the console")
 	register_command("bot_add", _cmd_bot_add, "bot_add [easy|normal|hard] [ally|enemy]", "Add a bot (ally = on your team)")
 	register_command("bot_kick", _cmd_bot_kick, "bot_kick [all]", "Remove the newest bot, or all bots")
 	register_command("bot_difficulty", _cmd_bot_difficulty, "bot_difficulty <easy|normal|hard>", "Set the skill of all bots, including new ones")
@@ -125,13 +179,12 @@ func _register_commands() -> void:
 	register_command("fov", _cmd_setting.bind(&"fov", "fov"), "fov [70-110]", "Field of view across a 4:3 screen, like CS (no value: show)")
 	register_command("volume", _cmd_setting.bind(&"master_volume", "volume"), "volume [0-1]", "Master volume (no value: show)")
 	register_command("fps_max", _cmd_setting.bind(&"fps_cap", "fps_max"), "fps_max [0|30-1000]", "Frame rate limit, 0 = unlimited (no value: show)")
+	register_command("settings", _cmd_settings, "settings", "Open the settings menu (Esc closes it)")
 	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting and key back to its default")
 
 
 func _cmd_help(_args: Array) -> void:
-	var names := _commands.keys()
-	names.sort()
-	for command_name in names:
+	for command_name in get_command_names():
 		print_line("%-40s %s" % [_commands[command_name][1], _commands[command_name][2]])
 
 
@@ -236,6 +289,17 @@ func _cmd_setting(args: Array, key: StringName, command_name: String) -> void:
 			return
 		settings.set_value(key, text.to_float())
 	print_line("%s = %s" % [command_name, settings.get_value(key)])
+
+
+## Opens the settings menu over the game and closes the console, so the menu has
+## the keyboard and the mouse. The main and pause menus open it too (tasks 11 and 12).
+func _cmd_settings(_args: Array) -> void:
+	if main == null:
+		print_line("There is no game to open the settings menu in.")
+		return
+	main.open_settings()
+	# Opened first: the mouse stays free for the menu when the console closes.
+	set_open(false)
 
 
 func _cmd_settings_reset(_args: Array) -> void:

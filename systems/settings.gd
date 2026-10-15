@@ -95,6 +95,18 @@ const MOUSE_BUTTON_NAMES := {
 	MOUSE_BUTTON_XBUTTON1: "Mouse 4", MOUSE_BUTTON_XBUTTON2: "Mouse 5",
 }
 
+## Names for keys that [method OS.get_keycode_string] spells in a way a menu
+## shouldn't show ("QuoteLeft" for the key left of 1, "Kp 1" for the keypad).
+const KEY_NAMES := {
+	KEY_QUOTELEFT: "`", KEY_MINUS: "-", KEY_EQUAL: "=", KEY_BRACKETLEFT: "[", KEY_BRACKETRIGHT: "]",
+	KEY_BACKSLASH: "\\", KEY_SEMICOLON: ";", KEY_APOSTROPHE: "'", KEY_COMMA: ",", KEY_PERIOD: ".", KEY_SLASH: "/",
+	KEY_PAGEUP: "Page Up", KEY_PAGEDOWN: "Page Down", KEY_CAPSLOCK: "Caps Lock",
+	KEY_KP_0: "Num 0", KEY_KP_1: "Num 1", KEY_KP_2: "Num 2", KEY_KP_3: "Num 3", KEY_KP_4: "Num 4",
+	KEY_KP_5: "Num 5", KEY_KP_6: "Num 6", KEY_KP_7: "Num 7", KEY_KP_8: "Num 8", KEY_KP_9: "Num 9",
+	KEY_KP_ENTER: "Num Enter", KEY_KP_ADD: "Num +", KEY_KP_SUBTRACT: "Num -", KEY_KP_MULTIPLY: "Num *",
+	KEY_KP_DIVIDE: "Num /", KEY_KP_PERIOD: "Num .",
+}
+
 ## Where changes are saved ([code]""[/code]: nowhere). Set by [method load_from_disk].
 var save_path: String = ""
 ## True for the shared instance: changes also reach the engine (window, frame
@@ -250,16 +262,18 @@ static func has_setting(key: StringName) -> bool:
 	return SCHEMA.has(key)
 
 
-## The text of a key or mouse button binding, for menus: "W", "Space", "Left Mouse".
-## Empty for null and other kinds of events.
+## The text of a key or mouse button binding, for menus: "W", "Space", "`",
+## "Num 1", "Left Mouse". Empty for null and other kinds of events.
 static func binding_text(event: InputEvent) -> String:
 	if event is InputEventKey:
 		var code := (event as InputEventKey).physical_keycode
 		# Shows what is printed on the key in the player's layout (Z on a Czech
 		# keyboard's Y position). Headless runs have no keyboard layout.
 		if DisplayServer.get_name() != "headless":
-			code = DisplayServer.keyboard_get_label_from_physical(code)
-		return OS.get_keycode_string(code)
+			var label := DisplayServer.keyboard_get_label_from_physical(code)
+			if label != KEY_NONE:
+				code = label
+		return KEY_NAMES.get(code, OS.get_keycode_string(code))
 	if event is InputEventMouseButton:
 		var button := (event as InputEventMouseButton).button_index
 		return MOUSE_BUTTON_NAMES.get(button, "Mouse %d" % button)
@@ -324,6 +338,37 @@ func set_binding(action: StringName, event: InputEvent, slot: int = 0) -> bool:
 		_bindings[action][slot] = clean
 		_bindings_changed()
 	return true
+
+
+## True if [param event] is something a binding can hold: a key or one of the
+## mouse buttons (the wheel included). The settings menu asks before it binds.
+static func can_bind(event: InputEvent) -> bool:
+	return _clean_event(event) != null
+
+
+## Binds [param event] to slot [param slot] of [param action] and takes it away
+## from every other slot that holds it, so a key or button belongs to one
+## action only: the later bind wins, as CS's [code]bind[/code] does (D-059).
+## Returns what lost it, as an array of [code][action, slot][/code] pairs (the
+## other slot of the same action included), empty if nothing did. Does nothing
+## and returns an empty array when the event can't be bound ([method can_bind])
+## or the action or slot is wrong. Saved once, and the key is never bound twice
+## in the [InputMap] in between.
+func bind_exclusive(action: StringName, event: InputEvent, slot: int = 0) -> Array:
+	var lost: Array = []
+	if not _bindings.has(action) or slot < 0 or slot >= BINDING_SLOTS or not can_bind(event):
+		return lost
+	var wanted := _event_to_text(_clean_event(event))
+	_batch_depth += 1
+	for other in BINDABLE_ACTIONS:
+		for other_slot in BINDING_SLOTS:
+			if (other != action or other_slot != slot) and _event_to_text(_bindings[other][other_slot]) == wanted:
+				clear_binding(other, other_slot)
+				lost.append([other, other_slot])
+	set_binding(action, event, slot)
+	_batch_depth -= 1
+	_flush()
+	return lost
 
 
 ## Leaves slot [param slot] of [param action] without a key.

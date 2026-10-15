@@ -10,6 +10,10 @@ extends CharacterController
 ## In a match, once you are dead the same camera shows a living teammate's view
 ## instead (first-person spectating, like CS): see [method spectate_next].
 ## That is presentation only: no game rule depends on it.
+##
+## While a menu or the developer console is open ([method MenuState.blocks_gameplay])
+## the controller ignores keys, buttons and mouse movement: the character stands
+## still and doesn't shoot, and the view stays where it was.
 
 ## Emitted when the view moves to a teammate you now watch, or back to your own
 ## body. [param target] is the character the view belongs to, you included. The
@@ -51,6 +55,8 @@ var _reload_queued: bool = false
 ## True while a click shouldn't shoot: after freeing the mouse, and for the
 ## click that captures it again, until the button is released.
 var _shooting_blocked: bool = false
+## True while a menu or the console was open at the last frame (see [MenuState]).
+var _was_blocked: bool = false
 ## The teammate whose eyes the camera uses, or null for your own view.
 var _view_target: Character
 ## Seconds left until the view moves to a living teammate. Only counts down
@@ -73,7 +79,7 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if DevConsole.is_open:
+	if MenuState.blocks_gameplay():
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_look((event as InputEventMouseMotion).screen_relative)
@@ -106,8 +112,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func get_input(_delta: float) -> CharacterInput:
 	var input := CharacterInput.new()
-	if DevConsole.is_open:
-		# Typing in the console shouldn't move or shoot.
+	if MenuState.blocks_gameplay():
+		# Typing in the console or clicking in a menu shouldn't move or shoot,
+		# and a jump or reload pressed just before it opened shouldn't happen after.
+		_jump_queued = false
+		_reload_queued = false
 		input.yaw = _yaw
 		input.pitch = _pitch
 		return input
@@ -188,6 +197,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
+	var blocked := MenuState.blocks_gameplay()
+	if _was_blocked and not blocked:
+		# A menu or the console just closed and the mouse is captured again: the
+		# button that closed it must not fire a shot (and a stale block from before goes).
+		_shooting_blocked = Input.is_action_pressed("shoot")
+	_was_blocked = blocked
 	var source := get_view_target()
 	var head := source.head.get_global_transform_interpolated()
 	# Position: where the head is drawn this frame (smoothed between physics ticks).

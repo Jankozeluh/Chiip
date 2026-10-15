@@ -265,13 +265,14 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Scoreboard (hold, in a match) | Tab |
 | Developer console | ` (backtick / tilde key) |
 | Free / capture the mouse | Esc / click |
+| Settings menu | Console command `settings` for now; the main menu and the pause menu open it later |
 | Debug overlay | F3 |
 
-Keys are bound by physical position, so they stay in the same place on any keyboard layout (e.g. Czech QWERTZ). These are the defaults: every action except Esc can be rebound (each with a second key or button), see section 7. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
+Keys are bound by physical position, so they stay in the same place on any keyboard layout (e.g. Czech QWERTZ). These are the defaults: every action except Esc can be rebound (each with a second key or button) in the settings menu, see section 7; a key belongs to one action, so binding it takes it away from the one that had it, as in CS. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
 
 ## 7. Settings that matter to CS players
 
-Settings are saved in a file (`settings.cfg` in the game's user data folder, D-058) the moment they change and apply at once, with no Apply button. They are the player's own, never part of the match rules. The settings menu (M5 task 10) edits them; until then the console commands `sensitivity`, `fov`, `volume`, `fps_max` and `settings_reset` do. Defaults are today's behaviour.
+Settings are saved in a file (`settings.cfg` in the game's user data folder, D-058) the moment they change and apply at once, with no Apply button. They are the player's own, never part of the match rules. The settings menu (D-059; the console command `settings` opens it, the main and pause menus will) edits them in tabs for Game, Video, Audio, Crosshair and Controls, and the console commands `sensitivity`, `fov`, `volume`, `fps_max` and `settings_reset` do too: whichever changes a value, the other follows. "Reset tab to defaults" in the menu puts one tab back. Defaults are today's behaviour.
 
 | Section | Setting | Default | Range |
 |---|---|---|---|
@@ -280,13 +281,13 @@ Settings are saved in a file (`settings.cfg` in the game's user data folder, D-0
 | Game | **Field of view** the CS way: degrees across a 4:3 screen (90 there is what CS means by 90); a wider window shows more to the sides | 90 | 70 – 110 |
 | Video | Fullscreen | off | |
 | Video | V-Sync | on | |
-| Video | Frame limit (CS's `fps_max`), 0 = unlimited; the menu will offer 60, 120, 144 and 240 | unlimited | 0 or 30 – 1000 |
+| Video | Frame limit (CS's `fps_max`), 0 = unlimited; the menu offers Unlimited, 60, 120, 144 and 240 (the console takes any value) | unlimited | 0 or 30 – 1000 |
 | Video | **Pixel resolution**: height of the 3D world image in pixels (D-048) | 480 | 270, 360, 480, 540, 720 |
 | Video | Palette effect, the retro color limit and dithering (D-030) | on | |
 | Video | Pixelated HUD, the whole window at the low resolution (D-027) | off | |
 | Audio | Master, Effects (footsteps and shots) and Interface (menus) volume, each on its own audio bus | 1.0 each | 0 – 1 |
-| Crosshair | Color, size (line length), gap, thickness, outline, center dot and dynamic, like CS's crosshair settings (the sizes are in pixels at 720p and scale with the window) | green, 7 px, gap 4, thickness 2, outline on, no dot, static (D-021) | size 1 – 30, gap 0 – 20, thickness 1 – 8 |
-| Controls | Keys and mouse buttons of move, jump, crouch, walk, shoot, aim, reload, scoreboard, debug overlay and console, each with a primary and a secondary binding; Esc stays fixed. A key is bound by physical position (D-012) | section 6 | |
+| Crosshair | Color (swatches or a hex code) and opacity, size (line length), gap, thickness, outline, center dot and dynamic, like CS's crosshair settings; the menu shows a live preview on a dark and a light background (the sizes are in pixels at 720p and scale with the window) | green, 7 px, gap 4, thickness 2, outline on, no dot, static (D-021) | size 1 – 30, gap 0 – 20, thickness 1 – 8 |
+| Controls | Keys and mouse buttons of move, jump, crouch, walk, shoot, aim, reload, scoreboard, debug overlay and console, each with a primary and a secondary binding; Esc stays fixed. A key is bound by physical position (D-012). In the menu you click a slot and press the new key or mouse button (Esc cancels, Backspace clears the slot). **A key belongs to one action:** binding it takes it from whatever had it, and the menu says which action lost it (D-059) | section 6 | |
 
 - The crosshair was built in M2 (`ui/crosshair.gd`, D-021). Dynamic mode widens the gap to match the actual inaccuracy cone, e.g. +38 px at 720p for 4.5°.
 - A value outside its range is clamped; the file can be edited by hand, and anything unreadable falls back to the default.

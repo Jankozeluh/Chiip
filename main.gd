@@ -1,7 +1,8 @@
 extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
-## the HUD, debug overlay, hold-Tab scoreboard and match-end screen on top.
+## the HUD, debug overlay, hold-Tab scoreboard, match-end screen, settings menu
+## and developer console on top.
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
@@ -44,6 +45,7 @@ const UI_DESIGN_HEIGHT := 720.0
 @onready var _console: DevConsole = $DevConsole
 @onready var _scoreboard: Scoreboard = $Scoreboard
 @onready var _match_end_screen: MatchEndScreen = $MatchEndScreen
+@onready var _settings_menu: SettingsMenu = $SettingsMenu
 
 ## The map currently loaded.
 var _map: Node
@@ -67,6 +69,18 @@ func _ready() -> void:
 ## The map currently loaded.
 func get_map() -> Node:
 	return _map
+
+
+## Opens the settings menu over the game (console: settings). The main menu
+## and the pause menu open the same menu; it reports back with its
+## [signal SettingsMenu.closed].
+func open_settings() -> void:
+	_settings_menu.open()
+
+
+## The settings menu, so a menu that wants to know when it closes can connect to it.
+func get_settings_menu() -> SettingsMenu:
+	return _settings_menu
 
 
 ## Replaces the current map with the scene at [param path] (console: map).
@@ -182,6 +196,7 @@ func apply_pixel_settings() -> void:
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_settings_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 
 
 func _on_setting_changed(key: StringName) -> void:

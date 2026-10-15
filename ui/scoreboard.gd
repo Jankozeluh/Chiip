@@ -11,8 +11,9 @@ extends CanvasLayer
 ## movement, and no part of it takes mouse clicks (clicks must still reach
 ## [PlayerController]). It shows only in a match: [method set_round_manager]
 ## gets the manager from [code]main.gd[/code], or null in practice mode, where
-## it never appears. It stays hidden while the developer console is open and
-## once the match is over (the [MatchEndScreen] shows the final table then).
+## it never appears. It stays hidden while the developer console or a menu is
+## open ([MenuState]) and once the match is over (the [MatchEndScreen] shows
+## the final table then).
 ##
 ## Its look comes from the UI theme (D-057): the panel, the header and the
 ## scores use theme type variations, and [method set_ui_scale] hands the
@@ -55,12 +56,12 @@ func set_ui_scale(factor: float) -> void:
 	_table.set_ui_scale(factor)
 
 
-## True while Tab is held in a match that is under way, with the console closed.
+## True while Tab is held in a match that is under way, with the console and the menus closed.
 func _should_show() -> bool:
 	return is_instance_valid(_manager) \
 			and _manager.round_number > 0 \
 			and _manager.phase != RoundManager.Phase.MATCH_END \
-			and not DevConsole.is_open \
+			and not MenuState.blocks_gameplay() \
 			and Input.is_action_pressed("scoreboard")
 
 

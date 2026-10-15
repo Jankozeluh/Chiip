@@ -412,3 +412,43 @@
 
 **`StringName` comparisons** (`tests/settings_test.gd`)
 - `&"name"` is a `StringName`: a string that is stored once and compared by address, which is why signal and action names use them. `==` between a `StringName` and a `String` works, but sorting an array of `StringName`s orders them by address, not alphabetically; convert to `String` first (the test does).
+
+**`TabContainer` and `ScrollContainer`** (`ui/settings_menu.tscn`)
+- A `TabContainer` turns each of its child controls into a tab, and the *node's name* is the tab's title ("Game", "Video"...); only the selected child is visible. `tabs.current_tab = 3` switches, `get_tab_bar()` gives the row of tab buttons (to give it the keyboard focus). Unity's UI has no tab view; you build one from a toggle group and panels you show and hide.
+- A tab container is as big as the page it is *showing* needs, so switching tabs can resize the panel around it. The crosshair page's widest row made the whole settings panel jump from 960 to 1068 px when you opened that tab (the other tabs were fine), so a test has to visit every tab to see it.
+- A `ScrollContainer` is Unity's *Scroll Rect*: a child taller than it is scrolls (mouse wheel, scroll bar). Set `horizontal_scroll_mode = 0` (disabled) for a vertical list; the child is then as wide as the container. The Controls list scrolls because 13 rows don't fit under the tabs.
+- A `Slider` also reacts to the mouse wheel by default (`scrollable = true`), so scrolling a page over a slider would change its value. `slider.scrollable = false` stops that.
+
+**Sliders, text fields and drop-downs that must not echo** (`SettingsMenu`)
+- Setting a control from code usually fires its signal, which would write the value straight back. `slider.set_value_no_signal(v)` and `check_box.set_pressed_no_signal(b)` change what is shown *without* emitting (Unity: `Slider.SetValueWithoutNotify`, `Toggle.SetIsOnWithoutNotify`); the settings menu uses them whenever `Settings.changed` tells it to follow, so there is no loop. Assigning `line_edit.text = "..."` doesn't emit `text_changed` either (only typing does).
+- An `OptionButton` (Unity's Dropdown) holds items with a text and an id: `add_item("144 fps", 144)`. `item_selected(index)` passes the *index*, not the id, so the handler asks `get_item_id(index)`; `select(index)` shows an item from code without a signal, and `get_item_index(id)` finds it.
+- `LineEdit` signals: `text_submitted` on Enter, `focus_exited` when you click away, `text_changed` while typing. A number field commits on the first two and ignores text that isn't a number; the menu accepts "1,5" as well as "1.5", because a Czech keyboard types a comma.
+- `"%d" % 28.999999` is `28` (it cuts off), and `0.29 * 100` is `28.999999999999996`, so a field that shows percent rounds first (`roundi()`).
+
+**Capturing the next key press, for rebinding** (`SettingsMenu.listen()`)
+- While a slot waits, the menu reads events in `_input()` and ends each one it uses with `get_viewport().set_input_as_handled()`, so the key doesn't also reach the game, the console key or the menu's own Esc. Only a key *press* (not its release, not an `echo` repeat) is bound. `InputEventMouseButton` presses work the same, and the mouse wheel is a button press too (`MOUSE_BUTTON_WHEEL_UP`).
+- A `Button` emits `pressed` when the mouse button is *released*, so the click that started the waiting is over before the menu listens, but the menu also ignores a press in the same frame (`Engine.get_process_frames()` is the frame counter) in case a button fires on press.
+- Order of `_input()`: later nodes in the scene tree are called first, so the console (last in `main.tscn`) sees Esc before the settings menu; whoever handles the event ends the walk with `set_input_as_handled()`. A hidden `CanvasLayer` still receives `_input()`, so a menu checks its own `visible`. Unity's closest thing is the order of `EventSystem` handlers, but there you rarely care.
+- A static flag (`MenuState.capturing_input`) lets code that can't be told directly (the console) stand down while the menu waits.
+
+**A static class that keeps a list of nodes** (`ui/menu_state.gd`)
+- Like `Settings` and `Teams`, `MenuState` is a class with only `static` members: `static var _open: Array` holds the open menus and `static func open(menu)` changes it, with no node and no autoload (so tests and tools can use it). It is Unity's static class with a static list, or a ScriptableObject singleton.
+- A node freed while it is in such a list leaves a dead entry; `is_instance_valid(entry)` tells, and the list is cleaned each time it is read. (Keep such a list untyped: `Array[Node]` complains about the freed element.)
+
+**Several menus at once** (`MenuState.is_top()`)
+- Stacked menus (settings over a pause menu, the console over settings) need to know which one is on top: the last one opened. Only that one reacts to Esc, so one key press closes one menu, not all of them. A single `bool` like `DevConsole.is_open` can't say that.
+
+**Scene unique names: `%Name`** (`SettingsMenu`)
+- A node with *Access as Unique Name* (`unique_name_in_owner = true` in a hand-written `.tscn`) can be found from anywhere in the same scene with `%Name`, wherever it sits in the tree: `@onready var _tabs: TabContainer = %Tabs`. Unity has no direct match (`transform.Find` needs a path); it is like a name that is unique within one prefab.
+
+**`Callable.bind()` puts the bound arguments last** (`SettingsMenu`)
+- `button.pressed.connect(start_listening.bind(action, slot))` calls `start_listening(action, slot)` when `pressed` (no arguments) fires. But for a signal or call *with* arguments, the bound ones come *after* them: a callable made with `set_value.bind(id)` and called with `(value)` runs `set_value(value, id)`, the wrong order for `set_value(key, value)`. A small lambda says what you mean: `func(value): _settings.set_value(id, value)`.
+
+**Showing part of a `Label`** (`DevConsole`)
+- `label.max_lines_visible = 16` and `label.lines_skipped = n` make a `Label` show only a window of its lines, and its minimum height follows the lines shown, so a long text neither grows the panel nor needs a scroll container. The console keeps 200 lines in the label and moves the window for the mouse wheel and Page Up / Down (Unity: TextMeshPro's *Max Visible Lines* and a scroll offset).
+
+**A color square inside a button** (`SettingsMenu`, the crosshair swatches)
+- A `Button` is not a container, so a child is placed by its anchors: a `MarginContainer` with `set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)` and `mouse_filter = IGNORE` fills the button, and a `ColorRect` inside it leaves a margin around the color. The button keeps its theme frame, hover and focus ring, and no stylebox override is needed (an override would not be scaled by `UiTheme`).
+
+**Driving input in a test, again** (`tests/ui_test.gd`)
+- `Input.parse_input_event(event)` followed by `Input.flush_buffered_events()` makes the event arrive *now* through the same path a real key takes (`_input()`, the GUI, `_unhandled_input()`), so a test can press a key and check its effect in the same frame. Events built by hand need both `keycode` and `physical_keycode` to look like real keyboard events. A test that sends a key press must send the release too, or the key stays down in `Input`.

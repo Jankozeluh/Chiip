@@ -30,6 +30,10 @@ var dynamic: bool = Settings.get_default(&"crosshair_dynamic")
 var spread_degrees: float = 0.0
 ## The camera whose field of view converts degrees to pixels (dynamic mode).
 var camera: Camera3D
+## The vertical field of view in degrees to use in dynamic mode when there is no
+## [member camera]: the settings menu's preview has none and still shows how the
+## gap opens. 0 means no spread.
+var fallback_fov: float = 0.0
 
 ## Line length, gap and thickness at scale 1, as the settings give them.
 var _base_sizes: Vector3 = Vector3(length, gap, thickness)
@@ -95,7 +99,8 @@ func _draw() -> void:
 
 ## How many pixels the inaccuracy cone covers on screen, from the camera's field of view.
 func _spread_in_pixels() -> float:
-	if camera == null:
+	var fov := camera.fov if camera != null else fallback_fov
+	if fov <= 0.0:
 		return 0.0
 	var half_screen_height := get_viewport_rect().size.y / 2.0
-	return tan(deg_to_rad(spread_degrees)) / tan(deg_to_rad(camera.fov / 2.0)) * half_screen_height
+	return tan(deg_to_rad(spread_degrees)) / tan(deg_to_rad(fov / 2.0)) * half_screen_height
