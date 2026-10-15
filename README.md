@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** Planning. There is no playable build yet. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** Milestone 1. You can move around a test map with CS-style movement. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -11,7 +11,35 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 
 ## Running the game
 
-Not possible yet. The Godot project is created in Milestone 1, and this section will then explain how to open and run it.
+**From the Godot editor** (recommended):
+1. Open Godot. In the Project Manager, click **Import**, select this folder's `project.godot`, and open it.
+2. Press **F5** (or the ▶ button at the top right) to play. The game starts on the test map.
+
+**From the terminal**, without opening the editor:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip
+```
+
+## Controls (so far)
+
+| Action | Key |
+|---|---|
+| Move | W A S D |
+| Look | Mouse |
+| Jump | Space or mouse wheel down |
+| Crouch (crouch in the air to crouch-jump) | Ctrl |
+| Walk (silent) | Shift |
+| Free / capture the mouse | Esc / click |
+| Debug overlay (speed, position, jump peak) | F3 |
+
+## Tests
+
+Automated movement checks run without a window in under a second:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/movement_test.tscn
+```
 
 ## Documentation
 

@@ -55,6 +55,7 @@ Chiip/
 | `maps/test_map.tscn` | M1 movement test map and the current main scene: jump boxes (32/48/64/80 u), platform with a 25° ramp and stairs, crouch tunnel, peek walls |
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
 | `player/player.gd` | `Player` class: mouse look and CS-style movement |
+| `ui/debug_overlay.tscn` + `.gd` | F3 readout: speed, position, jump peak, stance, shoot/aim buttons |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
@@ -63,7 +64,7 @@ Chiip/
 | System | Purpose | Milestone | Status |
 |---|---|---|---|
 | Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
-| Debug overlay | Speed and position readout | M1 | Planned |
+| Debug overlay | Speed and position readout | M1 | Built |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | Planned |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |

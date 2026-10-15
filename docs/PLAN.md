@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M1 — Project setup & movement (in progress)
+> **Current milestone:** M1 — Project setup & movement (built, waiting for your playtest)
 
 ## How this plan works
 
@@ -49,9 +49,10 @@
 - [x] CS-style ground movement: acceleration, friction, top speed
 - [x] Walking (Shift) and crouching (Ctrl) with a smooth camera height change
 - [x] Jumping and air movement (air acceleration, air strafing)
-- [ ] Debug overlay showing speed and position, like CS's `cl_showpos`
+- [x] Debug overlay showing speed and position, like CS's `cl_showpos`
 - [x] All movement values editable in the Godot editor for tuning
-- [ ] Check whether Ctrl + click works as crouch + shoot on macOS
+- [ ] Check whether Ctrl + click works as crouch + shoot on macOS (**your test:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay)
+- [ ] Playtest and tune the feel (**your test:** compare with CS, including a 360° turn with your CS sensitivity)
 
 **Done when:** you can run, walk, crouch and jump around the test map, counter-strafing stops you quickly, and it feels right to you as a CS player.
 

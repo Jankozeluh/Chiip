@@ -93,6 +93,13 @@
 **Coroutines with `await`** (`tests/movement_test.gd`)
 - `await get_tree().physics_frame` pauses a function until the next physics tick, like `yield return new WaitForFixedUpdate()` in a Unity coroutine. Any function that uses `await` becomes a coroutine, and callers `await` it too.
 
+**2D UI on top of 3D** (`ui/debug_overlay.tscn`)
+- A `CanvasLayer` draws its children on top of the 3D view, like a Screen Space Overlay Canvas in Unity. UI elements are `Control` nodes. `Label` is a text element, like Unity's Text/TextMeshPro.
+- Per-node style changes are *theme overrides* (font, size, colors) in the Inspector.
+
+**Pointing one node at another**
+- `@export var player: Player` lets you drag the Player node into the overlay's Inspector slot, like assigning a reference in Unity's Inspector. In the `.tscn` file this is saved as a node path, and the node's header lists it under `node_paths`. The editor handles this for you.
+
 **Instancing scenes**
 - `player.tscn` is its own scene. The test map contains an *instance* of it, like placing a prefab. Changes to `player.tscn` apply to every instance.
 

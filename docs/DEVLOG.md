@@ -13,6 +13,13 @@
 - Player (`player/player.tscn` + `player.gd`): capsule with CS dimensions, CS-style mouse look and Quake/Source ground movement (friction, acceleration, stop speed). Headless check: top speed 6.350 m/s (exactly 250 u/s), full stop 0.41 s after releasing the key (D-015, D-016).
 - Walking, crouching (two capsules, in-air crouch lifts the legs), jumping (press-only, bunny-hop cap, exact height) and air strafing (D-017).
 - Automated movement tests (`tests/movement_test.tscn`), 13 checks, all passing in under a second (D-018). Counter-strafe reaches accurate speed in 78 ms vs. 211 ms when just releasing the key.
+- Debug overlay (`ui/debug_overlay.tscn`, F3): speed in m/s and u/s, position, jump peak, stance, and shoot/aim buttons for the Ctrl + click test.
+- Visual check through Godot's Movie Maker mode (renders frames to PNG): the map, lighting and overlay look right. Found and fixed a missing `node_paths` entry that left the overlay without its player reference.
+- README now explains how to run the game and the tests. CLAUDE.md lists the verified command-line commands and two gotchas.
+
+**Decisions:** D-008 to D-018 in [DECISIONS.md](DECISIONS.md).
+
+**Next:** You playtest M1: movement feel compared with CS, sensitivity (a 360° turn), and Ctrl + click on macOS. Then we tune, close M1, and start M2 (shooting).
 
 ## 2026-10-15 — Session 1: Choosing the game
 

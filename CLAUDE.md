@@ -40,4 +40,12 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 
 - Open the editor: `/Applications/Godot.app/Contents/MacOS/Godot -e --path /Users/kozeluhj/Documents/Games/Chiip`
 - Run the game: `/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip`
-- Headless script checks: to be verified and added in M1.
+- Import assets and refresh the class cache (run after adding scripts with `class_name`): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import`
+- Run the movement tests: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 res://tests/movement_test.tscn` (exit code = number of failures)
+- Smoke-run the game headless: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 300`
+- Visual check: `/Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1280x720 --write-movie <scratchpad>/frame.png --quit-after 45` writes PNG frames. This opens a window briefly and can capture the user's mouse.
+
+## Gotchas
+
+- In hand-written `.tscn` files, a node that sets an exported *node* variable needs `node_paths=PackedStringArray("var_name")` in its `[node]` header, or the reference silently stays null.
+- Input bindings created from code need `device = -1` (all devices), like bindings made in the editor.
