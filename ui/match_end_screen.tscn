@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://ui/match_end_screen.gd" id="screen_script"]
+[ext_resource type="PackedScene" path="res://ui/scoreboard_table.tscn" id="table_scene"]
 
 [sub_resource type="StyleBoxFlat" id="panel_style"]
 bg_color = Color(0.06, 0.07, 0.09, 0.96)
@@ -73,9 +74,9 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "0"
 
-[node name="Teams" type="VBoxContainer" parent="Panel/Margin/Content"]
+[node name="Table" parent="Panel/Margin/Content" instance=ExtResource("table_scene")]
 layout_mode = 2
-theme_override_constants/separation = 12
+dim_dead = false
 
 [node name="Spacer" type="Control" parent="Panel/Margin/Content"]
 layout_mode = 2

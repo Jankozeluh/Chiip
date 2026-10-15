@@ -176,6 +176,7 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
   - **Freeze time, centre:** "Round 3 · starts in 4", and your side this half: "You attack: push to the far end" or "You defend: hold your end". After half time "Switching sides" is shown above it, and a team one round from winning gets "Match point" (yours, blue), "Enemy match point" (red) or "Match point for both teams" below it.
   - **Round end, centre:** "Round won" (blue) or "Round lost" (red), and why, said for your side: "Enemy team eliminated" / "Your team was eliminated", "Time ran out: you held your end" / "Time ran out: the defenders held their end".
   - **Kill feed, top right:** one line per death, "Killer > Victim" with each name in its team's color and a gold "HS" after a headshot kill; a death without a killer shows only the victim. Lines that involve you (a kill of yours or your own death) have a darker background and a white outline. The newest line is at the bottom, at most 5 lines show, each fades out after 5 s, and the feed starts empty in every round.
+- **Scoreboard** (D-050, hold **Tab**, matches only): while you hold the key a panel appears in the middle of the screen, and it is gone when you let go. It never pauses the game, blocks movement or takes mouse clicks, so you can peek at it while moving. At the top "Round 3" and the score, yours in blue and theirs in red; below it both teams as tables, yours first under a blue header, the enemy under a red one. One row per player: name, kills, deaths, assists and damage (rounded), best first (most kills, then most damage, then the order they joined). Your own row is highlighted and marked "(you)". **Players who are dead this round are dimmed**, so you see at a glance who is still alive. The numbers follow the match while you hold it. It stays closed while the developer console is open and once the match is over (the end screen shows the final table, where nobody is dimmed). Practice mode has no scoreboard.
 - **Stats** for the scoreboard: kills (a teamkill counts −1), deaths, assists (more than 40 damage to an enemy someone else kills, as in CS) and damage (health actually removed, so a 142-damage headshot on a 30 HP enemy counts 30).
 - **Practice** (`-- --practice` for now, a main-menu entry later): today's bot arena without rounds; bots and you respawn after 3 s, so there is no spectating.
 - Match: first to **5** (default), **10** or **15** rounds. Sides swap at half time, after 4, 9 or 14 rounds, so a draw is impossible. The teams keep their numbers and colors; only who attacks and who defends flips, so each team starts the next round at the other end of the map. The longest match is 9, 19 or 29 rounds.
@@ -235,7 +236,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades, 5 bomb |
 | Use / defuse | E |
 | Buy menu | B |
-| Scoreboard | Tab |
+| Scoreboard (hold, in a match) | Tab |
 | Developer console | ` (backtick / tilde key) |
 | Free / capture the mouse | Esc / click |
 | Debug overlay | F3 |

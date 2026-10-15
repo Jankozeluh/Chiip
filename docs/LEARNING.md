@@ -318,7 +318,7 @@
 - `visible = false` on a `Node3D` hides it and everything below it (meshes, the muzzle-flash light), like `SetActive(false)` on a GameObject, except physics, areas and sounds keep working. That is why one line hides your whole first-person rifle: the `Weapon` node is the parent of its model. A node under a hidden parent reports `is_visible_in_tree() == false` even when its own `visible` is true.
 
 **`is_instance_valid()`** (`PlayerController._physics_process`)
-- A variable that holds a node keeps pointing at it after `queue_free()`, and using it then is an error. `is_instance_valid(node)` says whether it still exists. Unity's `if (obj != null)` does this implicitly, because Unity overloads `==` for destroyed objects; in GDScript ask explicitly with `is_instance_valid()` before touching a node that may have been freed.
+- A variable that holds a node keeps pointing at it after it's freed, and calling anything on it then is an error. `is_instance_valid(node)` says whether it still exists. In Godot 4.7 a freed node also compares `== null` as true (measured in M5 task 7), much like Unity's overloaded `==` for destroyed objects, but `is_instance_valid()` says what you mean and is the safe habit before touching a node that may have been freed.
 
 **`get_nodes_in_group()` returns scene-tree order**
 - The nodes of a group come back in the order they stand in the scene tree, the same every time. Spectating relies on it for a stable "next teammate", with no list to keep.
@@ -351,3 +351,21 @@
 
 **`@warning_ignore`** (`RoundHud.format_time`)
 - `total / 60` with two ints truncates, and GDScript warns about it (`INTEGER_DIVISION`). `@warning_ignore("integer_division")` on the line above says "I meant that". C# divides ints silently.
+
+**One scene used in two places, with a property changed on the instance** (`ui/scoreboard_table.tscn`)
+- The scoreboard table is its own scene, instanced inside the hold-Tab overlay and inside the match-end screen. In a `.tscn` an instance is `[node name="Table" parent="..." instance=ExtResource("table_scene")]`, and any `@export` of its root can be set right under it: the match-end screen says `dim_dead = false`, the overlay leaves the default. That is a Unity nested prefab with an *override* on one instance: the scene stays the single place to change the look, and each user only states how it differs. In the editor you change it in the Inspector of the instanced node (a changed value gets a revert arrow).
+
+**`CenterContainer`** (`ui/scoreboard.tscn`)
+- A `CenterContainer` centers its child at the child's minimum size, however big the window is or how many rows the child grows to. Anchored to the full screen, it is the simple way to put a panel in the middle without anchor and offset arithmetic (Unity: anchors at the center with a pivot of 0.5, or a Layout Group with *Child Alignment* middle). It also keeps the panel's parent a container, which matters for `UiScale.apply_tree()`: that scales the offsets of controls that are *not* in a container, and a centered panel's offsets are worked out by the layout, so they must not be remembered and scaled.
+
+**`CanvasLayer.layer` is the draw order** (`Scoreboard`)
+- A `CanvasLayer`'s `layer` number decides what draws on top: higher is in front, like a Unity Canvas's *Sort Order*. The HUD sits on the default layer 1, the scoreboard on 3, the match-end screen on 5 and the console on 10, so Tab never covers the end screen or the console, whatever the order of the nodes in the scene tree.
+
+**Arrays compare by value** (`ScoreboardTable.refresh`)
+- `[1, "a"] == [1, "a"]` is `true`: `==` on arrays and dictionaries compares them element by element (and the elements that are nodes by identity). A C# `List` would compare references. The table builds a small "signature" array of everything it shows (names, kills, deaths, alive, …) each time `refresh()` runs and rebuilds its rows only when it differs from the last one, so asking for a refresh every frame costs almost nothing.
+
+**Holding an action in a test** (`tests/round_test.gd`)
+- `Input.action_press("scoreboard")` makes the game see the action as held, as if the key were down, until `Input.action_release("scoreboard")`; `Input.is_action_pressed()` and every script that polls it react. Unity's Input System test fixture has `Press()` and `Release()` for the same. The Tab binding itself is tested the other way round, by sending a real key press through `Input.parse_input_event()` and reading the action.
+
+**`:=` can't infer a type from a Variant**
+- `var x := dictionary[key]`, `var x := array.map(...)[0]` or `var x := array_of_untyped[3]` are parse errors ("Cannot infer the type"), because the value is a `Variant`. Write the type: `var x: String = …`. C# always knows what a `List<string>` indexer returns; GDScript only knows it for typed arrays (`Array[Character]`) and typed functions, so there `:=` works and for the rest you name the type.

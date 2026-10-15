@@ -23,11 +23,21 @@ extends Node
 ## lines, fading out), the round-end banners for a win and a loss by elimination
 ## and on time-out, "Switching sides" and match point, and that the HUD can be
 ## handed another round manager (or none, as in practice mode) without
-## duplicates and never blocks the mouse. Quits with the number of failed checks
-## as the exit code (0 means everything passed).
+## duplicates and never blocks the mouse. The last part is the scoreboard (task
+## 7): the Tab action, the table of both teams (your team first, rows with the
+## stats from the round manager, sorted by kills then damage, dead rows dimmed,
+## your row highlighted, rebuilt only on changes), and the hold-Tab overlay (shows
+## only while the key is held in a match, follows the match, hides while the
+## console is open or the match is over, never takes the mouse, scales, copes
+## with a replaced or missing round manager), and the match-end screen that uses
+## the same table. Quits with the number of failed checks as the exit code (0
+## means everything passed).
 
 const MAP_SCENE := preload("res://maps/test_map.tscn")
 const HUD_SCENE := preload("res://ui/hud.tscn")
+const TABLE_SCENE := preload("res://ui/scoreboard_table.tscn")
+const SCOREBOARD_SCENE := preload("res://ui/scoreboard.tscn")
+const MATCH_END_SCENE := preload("res://ui/match_end_screen.tscn")
 const FREEZE_TIME := 0.5
 const ROUND_TIME := 2.0
 const ROUND_END_TIME := 0.5
@@ -114,6 +124,7 @@ func _run_all() -> void:
 	await _test_short_matches()
 	await _test_spectating()
 	await _test_round_hud()
+	await _test_scoreboard()
 
 
 func _test_round_start() -> void:
@@ -662,6 +673,305 @@ func _test_hud_wiring() -> void:
 					KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME + 0.2, feed.get_line_count()])
 	_free_hud(hud)
 
+## The scoreboard (task 7): the input action, the table of both teams, the
+## hold-Tab overlay, and the match-end screen that now uses the same table.
+func _test_scoreboard() -> void:
+	await _test_scoreboard_action()
+	await _test_scoreboard_table()
+	await _test_scoreboard_overlay()
+	await _test_scoreboard_in_match_end_screen()
+
+
+func _test_scoreboard_action() -> void:
+	var events := InputMap.action_get_events("scoreboard") if InputMap.has_action("scoreboard") else []
+	var key := events[0] as InputEventKey if events.size() == 1 else null
+	_check("The 'scoreboard' action exists and is bound to Tab, by physical key and for all devices",
+			key != null and key.physical_keycode == KEY_TAB and key.keycode == KEY_NONE and key.device == -1,
+			"%d event(s); physical key %s, device %s" % [events.size(),
+					key.physical_keycode if key != null else "none", key.device if key != null else "none"])
+	# And it really answers to the key: a Tab press and release through the input path.
+	var states: Array[bool] = []
+	for pressed in [true, false]:
+		var event := InputEventKey.new()
+		event.physical_keycode = KEY_TAB
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		await _wait_ticks(2)
+		states.append(Input.is_action_pressed("scoreboard"))
+	_check("Pressing the Tab key holds the action and releasing it lets go", states == [true, false], "held after press / release: %s" % [states])
+
+
+## The table on its own: layout, stats, sorting, dimming, highlight, rebuilding.
+## One 3v3 match with a long round; the test deals the damage directly (Bot1 and
+## Bot2 are your teammates, Bot3 to Bot5 the enemies).
+func _test_scoreboard_table() -> void:
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	_hold_bots()
+	var table := TABLE_SCENE.instantiate() as ScoreboardTable
+	add_child(table)
+	table.show_match(_rounds)
+
+	# Layout: both teams, yours first under a blue header, theirs under a red one.
+	var team_boxes := table.get_children().map(func(box: Node) -> String: return String(box.name))
+	var your_header := _row_cells(table.get_node("Team0/Header"))
+	var their_header := _row_cells(table.get_node("Team1/Header"))
+	_check("The table lists both teams, yours first under a blue 'Your team' header, then the enemy under a red one, 3 rows each",
+			team_boxes == ["Team0", "Team1"] and your_header == ["Your team", "Kills", "Deaths", "Assists", "Damage"]
+					and their_header[0] == "Enemy team" and _header_color(table, 0) == Teams.FRIENDLY_COLOR
+					and _header_color(table, 1) == Teams.ENEMY_COLOR
+					and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
+					and table.get_displayed(0).all(func(member: Character) -> bool: return member.team == 0),
+			"boxes %s, headers %s / %s, rows %d and %d" % [team_boxes, your_header, their_header,
+					table.get_displayed(0).size(), table.get_displayed(1).size()])
+	Teams.set_viewer_team(1)
+	table.refresh()
+	team_boxes = table.get_children().map(func(box: Node) -> String: return String(box.name))
+	var flipped_title: String = _row_cells(table.get_node("Team1/Header"))[0]
+	var flipped_color := _header_color(table, 1)
+	Teams.set_viewer_team(0)
+	table.refresh()
+	_check("Seen from team 1, team 1 comes first under the blue header and team 0 follows in red",
+			team_boxes == ["Team1", "Team0"] and flipped_title == "Your team" and flipped_color == Teams.FRIENDLY_COLOR,
+			"boxes %s, team 1's title '%s' and color %s" % [team_boxes, flipped_title, flipped_color])
+
+	# Stats: Bot1 hurts both Bot3 and Bot4 by 80, Bot2 finishes them (kills 2,
+	# damage 20 + 20, and Bot1 gets 2 assists); you hurt Bot5 by 20.6 and Bot5
+	# hurts you by 30. Bot5 and the three on your side live.
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var mates := _rounds.get_members(0).filter(func(member: Character) -> bool: return member != _player)
+	var bot1: Character = mates[0]
+	var bot2: Character = mates[1]
+	var enemies := _rounds.get_members(1)
+	var bot3: Character = enemies[0]
+	var bot4: Character = enemies[1]
+	var bot5: Character = enemies[2]
+	bot3.take_damage(80.0, Hitbox.Zone.STOMACH, bot1)
+	bot4.take_damage(80.0, Hitbox.Zone.STOMACH, bot1)
+	bot3.take_damage(500.0, Hitbox.Zone.CHEST, bot2)
+	bot4.take_damage(500.0, Hitbox.Zone.CHEST, bot2)
+	bot5.take_damage(20.6, Hitbox.Zone.CHEST, _player)
+	_player.take_damage(30.0, Hitbox.Zone.CHEST, bot5)
+	await _wait_ticks(2)
+	table.refresh()
+	# name, kills, deaths, assists, damage (rounded)
+	var expected := {
+		_player: [_player.name + " (you)", "0", "0", "0", "21"],
+		bot1: [bot1.name, "0", "0", "2", "160"],
+		bot2: [bot2.name, "2", "0", "0", "40"],
+		bot3: [bot3.name, "0", "1", "0", "0"],
+		bot4: [bot4.name, "0", "1", "0", "0"],
+		bot5: [bot5.name, "0", "0", "0", "30"],
+	}
+	var wrong := ""
+	for member: Character in expected:
+		var stats := _rounds.get_stats(member)
+		var from_stats := [member.name + " (you)" if member == _player else String(member.name),
+				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))]
+		var shown := _row_cells(table.get_row(member))
+		var wanted: Array = (expected[member] as Array).map(func(cell: Variant) -> String: return String(cell))
+		if shown != wanted or shown != from_stats:
+			wrong += "%s shows %s (expected %s, get_stats() says %s); " % [member.name, shown, wanted, from_stats]
+	_check("Every row shows name, kills, deaths, assists and rounded damage, as get_stats() has them (you are marked '(you)', 20.6 damage reads 21)",
+			wrong.is_empty(), "all six rows match" if wrong.is_empty() else wrong)
+	_check("Rows are sorted by kills, then damage, then join order: Bot2 (2 kills) before Bot1 (more damage) before you; Bot5 (30 damage) before Bot3 and Bot4",
+			_names(table.get_displayed(0)) == _names([bot2, bot1, _player]) and _names(table.get_displayed(1)) == _names([bot5, bot3, bot4]),
+			"your team %s, enemies %s" % [_names(table.get_displayed(0)), _names(table.get_displayed(1))])
+	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
+	_check("Dead players' rows are dimmed (Bot3 and Bot4), the rows of the living are not",
+			_names(dimmed) == _names([bot3, bot4]) and is_equal_approx(table.get_row(bot3).modulate.a, ScoreboardTable.DEAD_ROW_ALPHA),
+			"dimmed rows: %s" % [_names(dimmed)])
+	var highlighted := _rounds.get_participants().filter(func(member: Character) -> bool: return _is_highlighted(table.get_row(member)))
+	_check("Only your own row is highlighted",
+			_names(highlighted) == _names([_player]), "highlighted rows: %s" % [_names(highlighted)])
+
+	# Refreshing: nothing changed means the same rows; a change shows up.
+	var row_before := table.get_row(_player)
+	table.refresh()
+	var kept := table.get_row(_player) == row_before
+	bot5.take_damage(10.0, Hitbox.Zone.CHEST, _player)
+	table.refresh()
+	var damage_now: String = _row_cells(table.get_row(_player))[4]
+	_check("refresh() leaves the rows alone when nothing changed and shows new damage when it did (31 after 10 more)",
+			kept and damage_now == "31", "rows kept: %s, your damage now '%s'" % [kept, damage_now])
+
+	# The next round: everyone is back, so nothing is dimmed; the stats stay.
+	bot5.take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	table.refresh()
+	dimmed = _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
+	var yours := _row_cells(table.get_row(_player))
+	_check("In the next round everyone is alive again and nothing is dimmed, while the numbers carry over (you: 1 kill, 100 damage; Bot2 still first)",
+			_rounds.round_number == 2 and dimmed.is_empty() and yours == [_player.name + " (you)", "1", "0", "0", "100"]
+					and _names(table.get_displayed(0)) == _names([bot2, _player, bot1]),
+			"round %d, dimmed %s, your row %s, your team %s" % [_rounds.round_number, _names(dimmed), yours, _names(table.get_displayed(0))])
+	remove_child(table)
+	table.queue_free()
+
+
+## The hold-Tab overlay, in a match with a long round.
+func _test_scoreboard_overlay() -> void:
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	_hold_bots()
+	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
+	add_child(board)
+	board.set_round_manager(_rounds)
+	var table := board.get_node("Center/Panel/Margin/Content/Table") as ScoreboardTable
+	await _wait_ticks(2)
+	var before := board.visible
+	Input.action_press("scoreboard")
+	await _wait_ticks(2)
+	var held := board.visible
+	Input.action_release("scoreboard")
+	await _wait_ticks(2)
+	_check("The overlay is hidden until Tab is held, shows while it is held and hides when it is let go",
+			not before and held and not board.visible, "before %s, held %s, after release %s" % [before, held, board.visible])
+
+	Input.action_press("scoreboard")
+	await _wait_ticks(2)
+	var header := _board_header(board)
+	var blue := Teams.text_color_for(0)
+	var red := Teams.text_color_for(1)
+	_check("The header shows the round and the score, yours in blue and theirs in red, above the table of both teams",
+			header["round"] == "Round 1" and header["yours"] == "0" and header["theirs"] == "0"
+					and header["yours_color"] == blue and header["theirs_color"] == red
+					and table.get_child_count() == 2 and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3,
+			"header %s, %d team box(es)" % [header, table.get_child_count()])
+
+	# It follows the match while held, with no refresh call: damage, a kill, a dead row.
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var enemies := _rounds.get_members(1)
+	enemies[0].take_damage(40.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(2)
+	var after_damage := _row_cells(table.get_row(_player))
+	enemies[0].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(2)
+	var after_kill := _row_cells(table.get_row(_player))
+	_check("While it is held the table follows the match without being asked: damage (40), then a kill (1 kill, 100 damage) and the victim's row dimmed",
+			after_damage[4] == "40" and after_kill[1] == "1" and after_kill[4] == "100"
+					and table.get_row(enemies[0]).modulate.a < 1.0 and table.get_row(enemies[1]).modulate.a == 1.0,
+			"after the damage %s, after the kill %s, victim's row alpha %.2f" % [after_damage, after_kill, table.get_row(enemies[0]).modulate.a])
+
+	# It doesn't block movement or pause the game.
+	var start := _player.global_position
+	Input.action_press("move_forward")
+	await _wait_seconds(0.3)
+	Input.action_release("move_forward")
+	var moved := _player.global_position.distance_to(start)
+	_check("It doesn't pause or block anything: with the overlay up you still walk (moved %.1f m in 0.3 s)" % moved,
+			board.visible and moved > 0.5 and not get_tree().paused, "visible %s, moved %.2f m, paused %s" % [board.visible, moved, get_tree().paused])
+
+	# The developer console owns the keyboard while it is open.
+	DevConsole.is_open = true
+	await _wait_ticks(2)
+	var with_console := board.visible
+	DevConsole.is_open = false
+	await _wait_ticks(2)
+	_check("Tab is ignored while the developer console is open (and counts again when it closes)",
+			not with_console and board.visible, "visible with the console open: %s, after closing it: %s" % [with_console, board.visible])
+
+	# Nothing in it takes a click.
+	var blocking: Array[String] = []
+	for control: Control in board.find_children("*", "Control", true, false):
+		if control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			blocking.append(String(control.name))
+	_check("No part of the overlay takes mouse clicks, so they still reach the player controls",
+			blocking.is_empty(), "controls that would take clicks: %s" % [blocking])
+
+	# Scaling: the panel and the rows, also rows built after the scale was set.
+	board.set_ui_scale(1.5)
+	var panel := board.get_node("Center/Panel") as Control
+	var width_scaled := panel.custom_minimum_size.x
+	var font_scaled := _row_font_size(table.get_row(_player))
+	enemies[1].take_damage(10.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(2)
+	var font_rebuilt := _row_font_size(table.get_row(_player))
+	board.set_ui_scale(1.0)
+	var font_back := _row_font_size(table.get_row(_player))
+	_check("UI scale 1.5 scales the panel (640 -> 960) and the rows, also rows rebuilt afterwards (font 16 -> 24); 1.0 restores them",
+			width_scaled == 960.0 and font_scaled == 24 and font_rebuilt == 24 and font_back == 16 and panel.custom_minimum_size.x == 640.0,
+			"panel %.0f, row font %d, after a rebuild %d, back at 1.0: %d" % [width_scaled, font_scaled, font_rebuilt, font_back])
+
+	# After a round: the score and the next round's number.
+	await _win_round(0)
+	await _wait_ticks(2)
+	header = _board_header(board)
+	var round_one_won: bool = header["round"] == "Round 1" and header["yours"] == "1" and header["theirs"] == "0"
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	var next_header := _board_header(board)
+	_check("After winning round 1 the header reads 'Round 1' and 1 - 0; the next round it reads 'Round 2' with the score kept",
+			round_one_won and next_header["round"] == "Round 2" and next_header["yours"] == "1" and next_header["theirs"] == "0",
+			"after the round: %s; next round: %s" % [header, next_header])
+
+	# A replaced round manager (Play again loads a new map) shows nothing until the new one arrives; null (practice) never shows.
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	await _wait_ticks(2)
+	var stale := board.visible
+	board.set_round_manager(_rounds)
+	await _wait_ticks(2)
+	var new_header := _board_header(board)
+	var fresh: bool = board.visible and new_header["round"] == "Round 1" and new_header["yours"] == "0" and table.get_displayed(0).size() == 3
+	board.set_round_manager(null)
+	await _wait_ticks(2)
+	var practice := board.visible
+	_check("A replaced round manager (Play again) is never read: the overlay stays hidden until the new one is handed over, then shows the new match; with none (practice mode) it never shows",
+			not stale and fresh and not practice,
+			"visible with the old manager gone: %s, with the new one: %s (%s), with none: %s" % [stale, fresh, new_header, practice])
+	Input.action_release("scoreboard")
+
+	# The match is over: the end screen shows the final table instead.
+	await _new_match(1)
+	_hold_bots()
+	board.set_round_manager(_rounds)
+	Input.action_press("scoreboard")
+	await _win_round(0)
+	await _wait_ticks(2)
+	var last_pause := board.visible and _rounds.phase == RoundManager.Phase.ROUND_END
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	await _wait_ticks(2)
+	var at_match_end := board.visible
+	Input.action_release("scoreboard")
+	_check("It still shows in the last round's pause, and hides once the match is over (the match-end screen takes over)",
+			last_pause and not at_match_end, "in the last pause: %s, at the match end: %s" % [last_pause, at_match_end])
+	remove_child(board)
+	board.queue_free()
+
+
+## The match-end screen builds its scoreboard from the same table, with the
+## final numbers (nobody dimmed, although the losers are dead).
+func _test_scoreboard_in_match_end_screen() -> void:
+	await _new_match(1)
+	_hold_bots()
+	var screen := MATCH_END_SCENE.instantiate() as MatchEndScreen
+	add_child(screen)
+	screen.set_round_manager(_rounds)
+	await _win_round(0)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	await _wait_ticks(2)
+	var table := screen.get_node("Panel/Margin/Content/Table") as ScoreboardTable
+	var title := screen.get_node("Panel/Margin/Content/Title") as Label
+	var team_boxes := table.get_children().map(func(box: Node) -> String: return String(box.name))
+	var dead := _rounds.get_participants().filter(func(member: Character) -> bool: return not member.is_alive())
+	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
+	var yours := _row_cells(table.get_row(_player))
+	_check("The match-end screen shows 'Victory' and the same table: your team first, 3 rows each, your row marked with 3 kills and 300 damage, and nobody dimmed although the 3 enemies are dead",
+			screen.visible and title.text == "Victory" and team_boxes == ["Team0", "Team1"] and table.get_displayed(0).size() == 3
+					and table.get_displayed(1).size() == 3 and yours == [_player.name + " (you)", "3", "0", "0", "300"]
+					and _is_highlighted(table.get_row(_player)) and dead.size() == 3 and dimmed.is_empty(),
+			"visible %s, title '%s', boxes %s, your row %s, %d dead, dimmed %s" % [screen.visible, title.text, team_boxes, yours, dead.size(), _names(dimmed)])
+	screen.set_ui_scale(2.0)
+	var font_scaled := _row_font_size(table.get_row(_player))
+	screen.set_ui_scale(1.0)
+	var font_back := _row_font_size(table.get_row(_player))
+	screen.set_round_manager(null)
+	_check("The screen scales the table's rows with itself (font 16 -> 32 -> 16), and handing it no round manager hides it and empties the table",
+			font_scaled == 32 and font_back == 16 and not screen.visible and table.get_child_count() == 0,
+			"row font at 2.0: %d, back at 1.0: %d, visible %s, %d team box(es) left" % [font_scaled, font_back, screen.visible, table.get_child_count()])
+	remove_child(screen)
+	screen.queue_free()
+
+
 
 # --- Helpers ---
 
@@ -762,6 +1072,42 @@ func _check_banner(hud: Node, label: String, outcomes: Dictionary) -> void:
 			center == ["Round won" if won else "Round lost", reason_text, "", ""] and _center_color(hud, "Title") == color
 					and (not by_time or timer == "0:00"),
 			"center %s, title color %s (expected %s), timer %s" % [center, _center_color(hud, "Title"), color, timer])
+
+
+## The text of every label in a scoreboard row or header, left to right.
+func _row_cells(row: Node) -> Array:
+	return row.find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text)
+
+
+func _header_color(table: ScoreboardTable, team: int) -> Color:
+	return ((table.get_node("Team%d/Header" % team) as Control).get_theme_stylebox("panel") as StyleBoxFlat).bg_color
+
+
+## True if the row has the highlight background of your own row.
+func _is_highlighted(row: Control) -> bool:
+	var background := row.get_theme_stylebox("panel") as StyleBoxFlat
+	return background != null and background.bg_color == ScoreboardTable.YOU_ROW_COLOR
+
+
+func _row_font_size(row: Node) -> int:
+	return (row.find_children("*", "Label", true, false)[0] as Label).get_theme_font_size("font_size")
+
+
+func _names(characters: Array) -> Array:
+	return characters.map(func(character: Character) -> String: return String(character.name))
+
+
+## What the overlay's header shows: the round label, both scores and their colors.
+func _board_header(board: Scoreboard) -> Dictionary:
+	var your_score := board.get_node("Center/Panel/Margin/Content/Score/YourScore") as Label
+	var their_score := board.get_node("Center/Panel/Margin/Content/Score/EnemyScore") as Label
+	return {
+		"round": (board.get_node("Center/Panel/Margin/Content/RoundLabel") as Label).text,
+		"yours": your_score.text,
+		"theirs": their_score.text,
+		"yours_color": your_score.get_theme_color("font_color"),
+		"theirs_color": their_score.get_theme_color("font_color"),
+	}
 
 
 func _distance_to_own_spawn(member: Character) -> float:

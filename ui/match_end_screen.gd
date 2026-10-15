@@ -1,8 +1,9 @@
 class_name MatchEndScreen
 extends CanvasLayer
 ## The screen shown when a match is over: "Victory" or "Defeat" for your team,
-## the final score and a scoreboard of both teams, with "Play again" and "Quit"
-## buttons. Hidden until the [RoundManager] emits [signal RoundManager.match_ended].
+## the final score and a scoreboard of both teams (a [ScoreboardTable]), with
+## "Play again" and "Quit" buttons. Hidden until the [RoundManager] emits
+## [signal RoundManager.match_ended].
 ##
 ## It only shows state and reports button clicks; [code]main.gd[/code] reacts to
 ## [signal play_again_pressed] and [signal quit_pressed]. Teams have no names:
@@ -14,12 +15,6 @@ signal play_again_pressed
 ## Emitted when the player clicks "Quit".
 signal quit_pressed
 
-## Font size (at the 720-pixel design height) of the scoreboard rows.
-const ROW_FONT_SIZE := 16
-## Width (design pixels) of each number column of the scoreboard.
-const STAT_COLUMN_WIDTH := 96.0
-## Background of your own row in the scoreboard.
-const YOU_ROW_COLOR := Color(1, 1, 1, 0.16)
 ## Meta key under which a control's unscaled values are remembered.
 const BASE_META := "match_end_base"
 ## Theme constants that make up a container's spacing, scaled with the UI.
@@ -34,7 +29,7 @@ var _ui_scale: float = 1.0
 @onready var _your_score: Label = $Panel/Margin/Content/Score/YourScore
 @onready var _dash: Label = $Panel/Margin/Content/Score/Dash
 @onready var _enemy_score: Label = $Panel/Margin/Content/Score/EnemyScore
-@onready var _teams: VBoxContainer = $Panel/Margin/Content/Teams
+@onready var _table: ScoreboardTable = $Panel/Margin/Content/Table
 @onready var _play_again: Button = $Panel/Margin/Content/Buttons/PlayAgain
 @onready var _quit: Button = $Panel/Margin/Content/Buttons/Quit
 
@@ -62,6 +57,7 @@ func _process(_delta: float) -> void:
 ## listening to the previous round manager.
 func set_round_manager(manager: RoundManager) -> void:
 	visible = false
+	_table.show_match(null)
 	if is_instance_valid(_manager) and _manager.match_ended.is_connected(_on_match_ended):
 		_manager.match_ended.disconnect(_on_match_ended)
 	_manager = manager
@@ -86,12 +82,8 @@ func _on_match_ended(winner: int) -> void:
 	_dash.text = "-"
 	_enemy_score.text = str(_manager.score[them])
 	_enemy_score.add_theme_color_override("font_color", _text_color(them))
-	for child in _teams.get_children():
-		_teams.remove_child(child)
-		child.queue_free()
-	_add_team(you)
-	_add_team(them)
-	_scale_tree(_teams)
+	# Final numbers: the table doesn't dim the players who died in the last round.
+	_table.show_match(_manager)
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_play_again.grab_focus()
@@ -102,71 +94,16 @@ func _text_color(team: int) -> Color:
 	return Teams.color_for(team).lightened(0.35)
 
 
-## Adds a team's colored header and one row per player, best first.
-func _add_team(team: int) -> void:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	_teams.add_child(box)
-	var title := "Your team" if team == Teams.viewer_team else "Enemy team"
-	var header_background := StyleBoxFlat.new()
-	header_background.bg_color = Teams.color_for(team)
-	box.add_child(_make_row([title, "Kills", "Deaths", "Assists", "Damage"], Color.WHITE, header_background))
-	var members := _manager.get_members(team)
-	var join_order := _manager.get_participants()
-	members.sort_custom(func(a: Character, b: Character) -> bool:
-		var stats_a := _manager.get_stats(a)
-		var stats_b := _manager.get_stats(b)
-		if stats_a.kills != stats_b.kills:
-			return stats_a.kills > stats_b.kills
-		if not is_equal_approx(stats_a.damage, stats_b.damage):
-			return stats_a.damage > stats_b.damage
-		return join_order.find(a) < join_order.find(b))
-	for member in members:
-		var stats := _manager.get_stats(member)
-		var is_you := member.is_local_player()
-		var row_background: StyleBox = StyleBoxEmpty.new()
-		if is_you:
-			var highlight := StyleBoxFlat.new()
-			highlight.bg_color = YOU_ROW_COLOR
-			row_background = highlight
-		box.add_child(_make_row([
-				"%s (you)" % member.name if is_you else String(member.name),
-				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))],
-				Color.WHITE if is_you else Color(0.8, 0.8, 0.8), row_background))
-
-
-## One scoreboard line: a background, then the [param cells] side by side. The
-## first cell (the name) takes the free width, the others are fixed-width numbers.
-func _make_row(cells: Array[String], font_color: Color, background: StyleBox) -> PanelContainer:
-	var row := PanelContainer.new()
-	row.add_theme_stylebox_override("panel", background)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 2)
-	margin.add_theme_constant_override("margin_bottom", 2)
-	row.add_child(margin)
-	var line := HBoxContainer.new()
-	margin.add_child(line)
-	for i in cells.size():
-		var label := Label.new()
-		label.text = cells[i]
-		label.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
-		label.add_theme_color_override("font_color", font_color)
-		if i == 0:
-			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		else:
-			label.custom_minimum_size.x = STAT_COLUMN_WIDTH
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		line.add_child(label)
-	return row
-
-
 ## Scales [param node] and everything below it: font sizes, minimum sizes and
 ## container spacing. Containers place their children themselves, so unlike the
 ## HUD there are no offsets to scale. A control's original values are
-## remembered on first use, so this can run again with another factor.
+## remembered on first use, so this can run again with another factor. The
+## scoreboard table scales itself (its rows come and go), so it is handed the
+## factor instead of being walked.
 func _scale_tree(node: Node) -> void:
+	if node is ScoreboardTable:
+		(node as ScoreboardTable).set_ui_scale(_ui_scale)
+		return
 	if node is Control:
 		_scale_control(node as Control)
 	for child in node.get_children():

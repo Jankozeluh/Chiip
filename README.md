@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, and the round HUD (timer, score, players alive, kill feed, round banners) are in (tasks 1–6 of 13), so F5 starts a 3v3 match to 5 rounds won; the scoreboard, menus and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners) and a hold-Tab scoreboard are in (tasks 1–7 of 13), so F5 starts a 3v3 match to 5 rounds won; menus and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -50,6 +50,7 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Shoot | Left mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 

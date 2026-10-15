@@ -1,0 +1,75 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/scoreboard.gd" id="scoreboard_script"]
+[ext_resource type="PackedScene" path="res://ui/scoreboard_table.tscn" id="table_scene"]
+
+[sub_resource type="StyleBoxFlat" id="panel_style"]
+bg_color = Color(0.06, 0.07, 0.09, 0.88)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.32, 0.36, 1)
+
+[node name="Scoreboard" type="CanvasLayer"]
+layer = 3
+visible = false
+script = ExtResource("scoreboard_script")
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(640, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("panel_style")
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="Content" type="VBoxContainer" parent="Center/Panel/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="RoundLabel" type="Label" parent="Center/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.77, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+text = "Round 1"
+horizontal_alignment = 1
+
+[node name="Score" type="HBoxContainer" parent="Center/Panel/Margin/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="YourScore" type="Label" parent="Center/Panel/Margin/Content/Score"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "0"
+
+[node name="Dash" type="Label" parent="Center/Panel/Margin/Content/Score"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "-"
+
+[node name="EnemyScore" type="Label" parent="Center/Panel/Margin/Content/Score"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "0"
+
+[node name="Table" parent="Center/Panel/Margin/Content" instance=ExtResource("table_scene")]
+layout_mode = 2
