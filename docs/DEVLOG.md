@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 11: crew, classes and arsenal planned
+
+**Done**
+- You asked for retro character sprites with three or four classes. I built a prototype that renders Doom/Quake-style 8-direction sprites from 3D shapes (4 classes, 15 animation frames, 2 team palettes). You liked it as a first shot but chose rigged 3D models for the game, with distinct characters and a full arsenal. The prototype is kept as a concept-art tool in `tools/concept/`. Its team palettes still predate D-031 and D-041 and get replaced in M6 task 1.
+- Decisions D-051 to D-056: characters stay rigged 3D, with a 3D viewmodel; four classes (Rifleman, Bulwark, Marksman, Scout), each a look plus one passive perk; a crew told apart by silhouette, with team colour painted at runtime; models, textures and animations come from a generator; hit zones follow each body; class picked at match start and changeable in freeze time; the arsenal is five primaries, two pistols, the knife and three grenades.
+- Reworked the plan: M6 is now *Crew & animation* (10 tasks, from concept sheets to first-person arms), and M7 *Arsenal, perks & economy*, which adds weapon models, holds and the class perks. Added the classes to GAME_DESIGN.md (section 4.9) and the arsenal to section 4.3.
+
+**Next:** M5 continues in its own session. M6 starts with the concept sheets, in a fresh session.
+
 ## 2026-10-15 — Look tweak, and three quick maps
 
 **Done**

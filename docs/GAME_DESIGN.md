@@ -119,13 +119,21 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 | Spray | 30-shot pattern: climbs ~6° over 10 shots, sways left to −2.3°, then right to +1.95° | Similar shape |
 | Aim punch | The view kicks 50% of the pattern; recoil wears off at 12 shots per second | ~50% |
 
-| Slot | Role | CS reference |
-|---|---|---|
-| Knife | Melee, fastest movement | Knife |
-| Pistol | Default sidearm | Glock / USP |
-| Rifle | Main automatic weapon, one-tap headshots | AK-47 / M4 |
-| Sniper | One-shot body kill, slow, scoped | AWP |
-| Grenades | High explosive, flash, smoke | HE / flashbang / smoke |
+The arsenal (D-056), working names until M7:
+
+| Slot | Weapon | Role | CS reference |
+|---|---|---|---|
+| Primary | Rifle (AK-style) | Main automatic weapon, one-tap headshots | AK-47 |
+| Primary | Carbine | More accurate than the rifle, less damage | M4 |
+| Primary | SMG | Cheap and fast to move with, for eco and anti-eco rounds | MP9 / MAC-10 |
+| Primary | Pump shotgun | Close range, holds tight corners | Nova |
+| Primary | Sniper rifle | One-shot body kill, slow, scoped | AWP |
+| Pistol | Service pistol | Free default sidearm | Glock / USP |
+| Pistol | Hand cannon | Expensive, one-tap headshots | Desert Eagle |
+| Knife | Knife | Melee, fastest movement | Knife |
+| Grenades | High explosive, flashbang, smoke | Utility | HE / flashbang / smoke |
+
+Every weapon is generated from one part list (D-054) and comes as a world model (drops and pickups), a third-person model in the character's hand, a first-person model with arms, and buy-menu and kill-feed icons.
 
 ### 4.4 Bots
 
@@ -210,6 +218,21 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 - Walking (Shift) and crouch-walking are silent for everyone.
 - While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.
 
+### 4.9 Classes
+
+Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy anything, so the economy stays CS-like. The signature gun is only what the class holds in the class menu. You pick a class at match start and can change it during freeze time; bots get a mix. Perks switch on in M7; until then the classes differ only in looks.
+
+| Class *(working name)* | Build and silhouette | Perk *(tune)* | Signature gun |
+|---|---|---|---|
+| **Rifleman** | 1.82 m, stocky, upright. High-cut helmet, goggles, plate carrier | **Quick Hands:** reloads and weapon switches 15% faster | AK-style rifle |
+| **Bulwark** | 1.92 m, broad, slight hunch. Closed helmet with a gas mask, shoulder plates | **Plated:** with armor on, takes 10% less damage than other classes and the armor wears down 30% slower. No effect without armor | Pump shotgun |
+| **Marksman** | 1.88 m, lanky. Long coat, hood, scarf | **Steady:** scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster | Sniper rifle |
+| **Scout** | 1.72 m, slim. Beanie, balaclava, glowing goggles, a radio with an antenna | **Light Step:** running footsteps carry 70% as far (a deliberate exception to D-038) | SMG |
+
+- **Silhouette first** (D-053): height, build, posture and headgear make each class recognisable at a glance, even as a dark shape.
+- **Team colour** is painted at runtime: every class wears a neutral kit (greys, olive-greys, charcoal; never desert tones, D-031) with team-colour parts such as jacket panels, armbands and a helmet stripe. They show blue on your team and red on the enemy team (D-041).
+- **Hit zones follow each body** (D-055): the Bulwark is the biggest target and the Scout the smallest. Perks balance the difference.
+
 ## 5. Look and feel
 
 The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
@@ -217,6 +240,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 - Low internal render resolution (480 lines), upscaled crisply so pixels stay sharp (D-027, D-048).
 - Pixelated textures with nearest-neighbor filtering, so no smoothing. Anisotropic filtering keeps floors sharp into the distance.
 - Simple geometry: blocky architecture and low-poly models.
+- Characters and weapons: minimalistic and pixelated, in a CS/Quake/CoD-like style. Low-poly models built from rigid pieces, like late-90s shooters, with palette-limited pixel textures, made by a generator (D-054). First person shows 3D arms and gun (D-051).
 - World image limited to 16 shades per color channel with light ordered dithering (D-030, D-048).
 - Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Baked lightmaps are being evaluated in M3.
 - **Clarity rule:** enemies must always stand out from the background.

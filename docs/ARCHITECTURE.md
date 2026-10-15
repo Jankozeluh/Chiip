@@ -109,6 +109,7 @@ Chiip/
 | `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
 | `tools/export_trenchbroom_config.gd` | Writes Chiip's TrenchBroom game configuration (GameConfig.cfg, icon, FGD) into TrenchBroom's games folder |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
+| `tools/concept/` | Concept-art tool in Python (not Godot): renders 8-direction sprite turnarounds of character designs from 3D shapes (D-051). Has a `.gdignore`, so Godot skips the folder. Needs Python 3 with numpy and Pillow (`requirements.txt`); writes its output outside the project |
 | `assets/materials/*.tres` | One `StandardMaterial3D` per texture: world triplanar mapping at Quake's density (64 px = 64 units = 1.63 m, `uv1_scale` 0.6152), nearest filtering with mipmaps and anisotropic filtering (sharp at grazing angles), matte (roughness 1, specular 0.2) |
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
 | `assets/fonts/Silkscreen-*.ttf` | Pixel font: the project's default UI font (*Project Settings → GUI → Theme → Custom Font*) and the font of all 3D labels. Imported without antialiasing, hinting or subpixel positioning so pixels stay sharp |
