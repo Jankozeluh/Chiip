@@ -37,6 +37,8 @@ Movement is based on Counter-Strike, which inherited it from Quake: you accelera
 | Crouching (Ctrl) | 34% of running | | Better accuracy, smaller target |
 | Jump height | ~57 units | ~1.45 m | Big accuracy penalty while in the air |
 
+Ground acceleration is based on 250 u/s times the stance factor, whatever weapon you hold, as in CS:GO (D-023).
+
 Starting physics values, CS:GO-like *(tune)*:
 
 | Setting | Value |
@@ -57,15 +59,15 @@ Starting physics values, CS:GO-like *(tune)*:
 
 **Crouch-jump:** crouching in the air pulls your legs up, so press crouch while airborne, or together with jump. This raises your feet from 57 to 75 units, enough to land on a 64-unit crate.
 
-**Measured in M1** (by `tests/movement_test.gd`):
+**Measured** (by `tests/movement_test.gd`, holding the Rifle):
 
 | Check | Result |
 |---|---|
-| Run / walk / crouch top speed | 250 / 130 / 85 u/s |
-| Time to drop below 34% speed (accurate shooting) | 78 ms counter-strafing, 211 ms releasing the key |
+| Run / walk / crouch top speed | 215 / 112 / 73 u/s (250 / 130 / 85 with nothing in hand) |
+| Time to drop below 34% speed (accurate shooting) | 70 ms counter-strafing, 203 ms releasing the key |
 | Standing jump / crouch-jump, feet height | 57 u / 75 u |
 | Speed you can add sideways in the air | 0.76 m/s (30 u/s) |
-| Bunny-hop cap | 1.2 × run speed |
+| Bunny-hop cap | 1.2 × run speed (6.55 m/s with the Rifle) |
 
 ### 4.2 Shooting
 

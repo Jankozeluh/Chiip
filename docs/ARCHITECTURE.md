@@ -59,6 +59,8 @@ Chiip/
 | `systems/physics_layers.gd` | `PhysicsLayers` constants: bit values of the named physics layers |
 | `weapons/weapon_data.gd` | `WeaponData` resource: every number of a weapon (damage, fire rate, ammo, accuracy, spray pattern, recoil, sounds) |
 | `weapons/rifle.tres` | The Rifle's data (AK-like) |
+| `weapons/weapon.gd` | `Weapon` node: firing, ammo, reload. Signals `fired`, `ammo_changed`, `reload_started`, `reload_finished` |
+| `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players. Instanced in the player under `Head/Camera3D` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
@@ -68,7 +70,7 @@ Chiip/
 |---|---|---|---|
 | Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
 | Debug overlay | Speed and position readout | M1 | Built |
-| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | Planned |
+| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |
@@ -101,6 +103,13 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 1. Mouse movement updates two angles (`_yaw`, `_pitch`) immediately in `_unhandled_input`.
 2. Each physics tick, the body turns to `_yaw`, so movement keys follow your view.
 3. Each rendered frame, `_process` places the camera at the head's *interpolated* position and applies the angles directly. The camera is `top_level` (ignores its parent's transform) and has interpolation off.
+
+## How the player and the weapon work together
+
+- The weapon scene sits under the player's camera, so a first-person model will follow the view.
+- Each physics tick the player sets `weapon.trigger_held` from the shoot button. The player processes first and its children after, so the weapon sees the new value in the same tick.
+- R calls `weapon.reload()`. The weapon sets the player's top speed (`Player.get_max_speed()`).
+- The click that recaptures the mouse, and clicks while the mouse is free, never fire.
 
 ## Physics layers
 

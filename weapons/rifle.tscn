@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon.gd" id="weapon_script"]
+[ext_resource type="Resource" path="res://weapons/rifle.tres" id="rifle_data"]
+
+[node name="Rifle" type="Node3D"]
+script = ExtResource("weapon_script")
+data = ExtResource("rifle_data")
+
+[node name="ShotAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
+max_polyphony = 4
+
+[node name="HandlingAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0

@@ -49,3 +49,5 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 
 - In hand-written `.tscn` files, a node that sets an exported *node* variable needs `node_paths=PackedStringArray("var_name")` in its `[node]` header, or the reference silently stays null.
 - Input bindings created from code need `device = -1` (all devices), like bindings made in the editor.
+- In a `--script` that extends `SceneTree`, nodes added in `_init()` aren't ready yet, so `@onready` variables are null. Await a few `physics_frame`s first.
+- A script error inside a headless run can leave Godot running forever. Always pass `--quit-after <frames>` as a safety net (macOS has no `timeout` command).

@@ -37,9 +37,9 @@ func _run_all() -> void:
 	await _reset()
 	_check("Lands on the floor", _player.is_on_floor() and absf(_player.global_position.y) < 0.01,
 			"feet at y = %.3f m" % _player.global_position.y)
-	await _test_top_speed("Running", [], _player.max_speed)
-	await _test_top_speed("Walking (Shift)", ["walk"], _player.max_speed * _player.walk_speed_factor)
-	await _test_top_speed("Crouching (Ctrl)", ["crouch"], _player.max_speed * _player.crouch_speed_factor)
+	await _test_top_speed("Running", [], _player.get_max_speed())
+	await _test_top_speed("Walking (Shift)", ["walk"], _player.get_max_speed() * _player.walk_speed_factor)
+	await _test_top_speed("Crouching (Ctrl)", ["crouch"], _player.get_max_speed() * _player.crouch_speed_factor)
 	await _test_stopping()
 	await _test_jump_height()
 	await _test_crouch_jump()
@@ -60,7 +60,7 @@ func _test_top_speed(label: String, held_actions: Array[String], expected: float
 
 
 func _test_stopping() -> void:
-	var accurate_speed := _player.max_speed * ACCURATE_SPEED_FACTOR
+	var accurate_speed := _player.get_max_speed() * ACCURATE_SPEED_FACTOR
 
 	await _reset()
 	Input.action_press("move_right")
@@ -117,7 +117,7 @@ func _test_bunny_hop_cap() -> void:
 	_press_jump()
 	await _wait_ticks(2)
 	var speed := _horizontal_speed()
-	var cap := _player.max_speed * _player.bunny_hop_cap
+	var cap := _player.get_max_speed() * _player.bunny_hop_cap
 	_check("Bunny hop speed cap", absf(speed - cap) < 0.01,
 			"%.2f m/s after jumping at 10 m/s (cap %.2f m/s)" % [speed, cap])
 

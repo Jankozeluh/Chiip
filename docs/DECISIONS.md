@@ -176,6 +176,14 @@
 
 **Alternatives:** Hitboxes as physics bodies, which would also push things around.
 
+## D-023 — Ground acceleration uses a fixed 250 u/s base, like CS:GO (2026-10-15)
+
+**Decision:** How hard you accelerate on the ground comes from the empty-handed top speed (250 u/s) times the stance factor (1 running, 0.52 walking, 0.34 crouching), not from the held weapon's speed. The weapon only limits your top speed.
+
+**Why:** Found by the movement tests once the rifle was added. With a 215 u/s weapon, crouch-walking (73 u/s) gained less speed per tick than friction removed, so you couldn't crouch-walk at all. CS:GO bases acceleration on 250 u/s for the same reason.
+
+**Consequence:** Counter-strafing with the rifle reaches accurate speed in 70 ms.
+
 ## Open questions
 
 | Question | Decide in |

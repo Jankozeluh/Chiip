@@ -24,11 +24,12 @@ const MAX_PITCH_DEGREES := 89.0
 @export var invert_y: bool = false
 
 @export_group("Speed")
-## Top running speed. CS: 250 units/s with the knife out.
+## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
+## A held weapon sets its own top speed; see [method get_max_speed].
 @export var max_speed: float = 250.0 * UNITS_TO_METRES
-## Walking (Shift) speed as a fraction of max_speed. CS: 0.52.
+## Walking (Shift) speed as a fraction of the top speed. CS: 0.52.
 @export var walk_speed_factor: float = 0.52
-## Crouching speed as a fraction of max_speed. CS: 0.34.
+## Crouching speed as a fraction of the top speed. CS: 0.34.
 @export var crouch_speed_factor: float = 0.34
 
 @export_group("Ground")
@@ -50,7 +51,7 @@ const MAX_PITCH_DEGREES := 89.0
 @export_group("Jump")
 ## How high your feet rise in a standing jump. CS: about 57 units.
 @export var jump_height: float = 57.0 * UNITS_TO_METRES
-## Jumping caps your horizontal speed at this multiple of max_speed, so bunny
+## Jumping caps your horizontal speed at this multiple of the top speed, so bunny
 ## hopping can't build up speed. Source engine: 1.2.
 @export var bunny_hop_cap: float = 1.2
 
@@ -71,11 +72,16 @@ var _yaw: float = 0.0
 var _pitch: float = 0.0
 ## Set when jump is pressed and used up by the next physics tick.
 var _jump_queued: bool = false
+## True while a click shouldn't shoot: after freeing the mouse, and for the
+## click that captures it again, until the button is released.
+var _shooting_blocked: bool = false
 ## Current eye height above the feet. Moves smoothly toward the standing or crouched height.
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
 var _hull_height_difference: float = 0.0
 
+## The gun in your hands.
+@onready var weapon: Weapon = $Head/Camera3D/Weapon
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera3D
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
@@ -94,6 +100,7 @@ func _ready() -> void:
 	# of following its parent, so mouse look has no physics-tick delay.
 	_camera.top_level = true
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	weapon.equip(self)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -104,18 +111,29 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Remember the press; the next physics tick decides whether you jump.
 		# This also catches mouse-wheel jumps, which press and release instantly.
 		_jump_queued = true
+	elif event.is_action_pressed("reload"):
+		weapon.reload()
 	elif event.is_action_pressed("toggle_mouse"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			_shooting_blocked = true
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			_shooting_blocked = false
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		# This click only captures the mouse; it shouldn't also fire a shot.
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_shooting_blocked = true
+	elif event.is_action_released("shoot") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_shooting_blocked = false
 
 
 func _physics_process(delta: float) -> void:
 	# Face where the mouse points, so "forward" is where you look.
 	rotation.y = _yaw
+	# The weapon processes after the player (children run after their parent),
+	# so it sees this tick's trigger state.
+	weapon.trigger_held = Input.is_action_pressed("shoot") and not _shooting_blocked
 
 	var on_ground := is_on_floor()
 	var wants_jump := _jump_queued
@@ -133,7 +151,7 @@ func _physics_process(delta: float) -> void:
 	if on_ground:
 		velocity.y = 0.0
 		_apply_friction(delta)
-		_accelerate(wish_direction, wish_speed, ground_acceleration, delta)
+		_accelerate(wish_direction, wish_speed, _get_stance_factor() * max_speed, delta)
 		move_and_slide()
 	else:
 		_air_accelerate(wish_direction, wish_speed, delta)
@@ -152,6 +170,14 @@ func _process(_delta: float) -> void:
 	_camera.global_rotation = Vector3(_pitch, _yaw, 0.0)
 
 
+## Top running speed right now: set by the held weapon (CS: rifles 215 u/s),
+## or [member max_speed] with nothing in hand.
+func get_max_speed() -> float:
+	if weapon != null and weapon.data != null:
+		return weapon.data.max_speed_units * UNITS_TO_METRES
+	return max_speed
+
+
 ## Turns the view by a mouse movement measured in mouse counts.
 func _look(mouse_motion: Vector2) -> void:
 	var radians_per_count := deg_to_rad(sensitivity * DEGREES_PER_MOUSE_COUNT)
@@ -167,13 +193,18 @@ func _get_wish_direction() -> Vector3:
 	return (transform.basis * Vector3(input.x, 0.0, input.y)).normalized()
 
 
-## Returns the top speed for the current stance: crouching, walking or running.
+## Returns the top speed for the current stance and weapon.
 func _get_wish_speed() -> float:
+	return get_max_speed() * _get_stance_factor()
+
+
+## Returns the speed fraction for the current stance: crouching, walking or running.
+func _get_stance_factor() -> float:
 	if is_crouching:
-		return max_speed * crouch_speed_factor
+		return crouch_speed_factor
 	if Input.is_action_pressed("walk"):
-		return max_speed * walk_speed_factor
-	return max_speed
+		return walk_speed_factor
+	return 1.0
 
 
 ## Slows you down on the ground (Quake/Source friction).
@@ -190,15 +221,20 @@ func _apply_friction(delta: float) -> void:
 	velocity.z *= new_speed / speed
 
 
-## Speeds you up toward wish_direction until you reach wish_speed in that
-## direction (Quake/Source acceleration). Speed in other directions isn't
-## capped, which is what makes counter-strafing and air strafing work.
-func _accelerate(wish_direction: Vector3, wish_speed: float, acceleration: float, delta: float) -> void:
+## Speeds you up on the ground toward wish_direction until you reach
+## wish_speed in that direction (Quake/Source acceleration). Speed in other
+## directions isn't capped, which is what makes counter-strafing work.
+##
+## How hard you accelerate comes from [param acceleration_speed]: CS:GO uses
+## the empty-handed top speed (250 u/s) scaled for walking or crouching, not
+## the weapon's speed. Otherwise crouch-walking with a rifle (73 u/s) couldn't
+## overcome friction at all.
+func _accelerate(wish_direction: Vector3, wish_speed: float, acceleration_speed: float, delta: float) -> void:
 	var current_speed := velocity.dot(wish_direction)
 	var add_speed := wish_speed - current_speed
 	if add_speed <= 0.0:
 		return
-	var accel_speed := minf(acceleration * wish_speed * delta, add_speed)
+	var accel_speed := minf(ground_acceleration * acceleration_speed * delta, add_speed)
 	velocity += wish_direction * accel_speed
 
 
@@ -219,7 +255,7 @@ func _air_accelerate(wish_direction: Vector3, wish_speed: float, delta: float) -
 ## Launches you upward and caps horizontal speed (CS's bunny hop limit).
 func _jump() -> void:
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	var speed_cap := max_speed * bunny_hop_cap
+	var speed_cap := get_max_speed() * bunny_hop_cap
 	if horizontal.length() > speed_cap:
 		horizontal = horizontal.normalized() * speed_cap
 	# The upward speed needed to rise exactly jump_height: v = √(2 · g · h).
