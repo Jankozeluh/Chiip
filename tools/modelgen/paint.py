@@ -45,7 +45,7 @@ MATERIALS = {
     'skin':    dict(slot='SKIN', base=10, grain=0.06),
     'brow':    dict(slot='SKIN', base=5, grain=0.0),
     'mask':    dict(ramp='charcoal', base=5, grain=0.10, pattern='rib'),
-    'glove':   dict(ramp='grey', base=4, grain=0.12),
+    'glove':   dict(slot='GLOVE', base=4, grain=0.12),
     'sole':    dict(ramp='grey', base=2, grain=0.05),
     'metal':   dict(ramp='gunmetal', base=7, grain=0.25, pattern='speckle'),
     'polymer': dict(ramp='grey', base=4, grain=0.10),
@@ -69,13 +69,17 @@ def _luma(rgb_lin):
     return rgb_lin[..., 0] * 0.2126 + rgb_lin[..., 1] * 0.7152 + rgb_lin[..., 2] * 0.0722
 
 
+# Slots a class kit may leave out (the concept sheets don't paint them).
+SLOT_DEFAULTS = {'GLOVE': ('grey', 0, 15)}
+
+
 def material_ramp(mat, kit, skin):
     """(ramp name, lo, hi, is_team) for a material under a class kit."""
     md = MATERIALS[mat]
     if 'ramp' in md:
         return md['ramp'], 0, 15, False
     slot = md['slot']
-    sv = skin if slot == 'SKIN' else 'TEAM' if slot == 'TEAM' else kit[slot]
+    sv = skin if slot == 'SKIN' else 'TEAM' if slot == 'TEAM' else kit.get(slot, SLOT_DEFAULTS.get(slot))
     if sv == 'TEAM':
         return TEAM_RAMP, 0, 15, True
     if isinstance(sv, tuple):

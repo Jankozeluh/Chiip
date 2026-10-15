@@ -22,7 +22,10 @@ extends Node3D
 ## gun but leaves the torso aiming; deaths lie on the floor and respawning stands up again; a
 ## character picks the death from the last hit and where the killer stood; and only whoever
 ## looks through a character's eyes sees its viewmodel. Task 7 checks that every class has its
-## model, textures, hit zones and clips, and that the hit zones grow with the class. These checks put a still body
+## model, textures, hit zones and clips, and that the hit zones grow with the class. Task 9 checks
+## the first-person arms: each class's own arms in the weapon's viewmodel with the gun on their
+## weapon bone and the muzzle flash at its muzzle, sleeves in the team colour, shots and reloads
+## playing their clips, and hidden arms not animating. These checks put a still body
 ## (animated = false, the rest pose) under the older ones, which measure the zones as made.
 ## Quits with the number of failed checks as the exit code (0 means everything passed).
 
@@ -73,6 +76,7 @@ func _run_all() -> void:
 	await _test_character_deaths()
 	await _test_first_person()
 	await _test_classes()
+	await _test_first_person_arms()
 
 
 func _test_model_and_material() -> void:
@@ -537,6 +541,74 @@ func _test_classes() -> void:
 	_check("The hit zones grow with the body: the Scout is the smallest target, the Bulwark the biggest",
 			volumes.size() == 4 and volumes["scout"] == volumes.values().min() and volumes["bulwark"] == volumes.values().max(),
 			str(volumes))
+
+
+## Task 9: a character's weapon holds its class's first-person arms, with the gun and the muzzle
+## flash on their weapon bone, the sleeves in the team colour, and clips for shots and reloads.
+func _test_first_person_arms() -> void:
+	var ok := true
+	var details := ""
+	for class_data in ClassData.all():
+		var bot := BOT_SCENE.instantiate() as Character
+		bot.footstep_sound = null
+		bot.class_data = class_data
+		add_child(bot)
+		await _wait_ticks(2)
+		var arms := bot.weapon.get_node_or_null("Viewmodel/Arms") as Node3D
+		var gun := arms.find_child("Gun", true, false) as BoneAttachment3D if arms != null else null
+		var flash := bot.weapon.find_child("MuzzleFlash", true, false) as Node3D
+		var right_arms := arms != null and arms.scene_file_path == class_data.arms_model.resource_path
+		var gun_ok := gun != null and gun.bone_name == "weapon" and flash != null and flash.get_parent() == gun
+		details += " %s: arms %s, gun on weapon bone %s;" % [class_data.id, right_arms, gun_ok]
+		if not right_arms or not gun_ok:
+			ok = false
+		bot.queue_free()
+		await _wait_ticks(2)
+	_check("Every class's weapon holds that class's first-person arms, with the gun and the muzzle flash on their weapon bone",
+			ok, details)
+
+	# The player's arms (the bot's controller would let go of the trigger every tick).
+	var player := (load("res://player/player.tscn") as PackedScene).instantiate() as Character
+	player.footstep_sound = null
+	var silent := (player.get_node("Head/Camera3D/Weapon") as Weapon).data.duplicate() as WeaponData
+	silent.shot_sound = null
+	silent.dry_fire_sound = null
+	silent.reload_sound = null
+	(player.get_node("Head/Camera3D/Weapon") as Weapon).data = silent
+	player.team = 1
+	add_child(player)
+	await _wait_ticks(2)
+	player.set_first_person(false)
+	await _wait_ticks(1)
+	var weapon := player.weapon
+	var arms_player := weapon.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var hidden_idle := arms_player != null and not arms_player.active
+	player.set_first_person(true)
+	var sleeve_color: Color = (weapon.get_node("Viewmodel/Arms").find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D) \
+			.get_instance_shader_parameter("team_color")
+	Teams.set_viewer_team(player.team)
+	var friendly: Color = (weapon.get_node("Viewmodel/Arms").find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D) \
+			.get_instance_shader_parameter("team_color")
+	_check("The sleeves wear the team colour (your own team blue), and hidden arms don't animate",
+			friendly == Teams.FRIENDLY_COLOR and hidden_idle and arms_player.active,
+			"sleeves %s with the viewer on its team (were %s before), arms player idle while hidden: %s" % [friendly, sleeve_color, hidden_idle])
+	await _wait_ticks(70)
+	Input.action_press("shoot")
+	await _wait_ticks(3)
+	var after_shot := String(arms_player.current_animation)
+	Input.action_release("shoot")
+	await _wait_ticks(2)
+	weapon.magazine = 3
+	weapon.reload()
+	await _wait_ticks(2)
+	var reloading := String(arms_player.current_animation)
+	var reload_speed := arms_player.get_playing_speed()
+	_check("A shot plays the arms' kick and a reload plays their reload, stretched to the weapon's reload time",
+			after_shot == "fp_fire" and reloading == "fp_reload" and is_equal_approx(reload_speed, 2.5 / weapon.data.reload_time),
+			"after a shot: %s, after reload(): %s at speed %.2f" % [after_shot, reloading, reload_speed])
+	Teams.set_viewer_team(0)
+	player.queue_free()
+	await _wait_ticks(2)
 
 
 ## A crew body with the default model (the Rifleman) in the scene: still, in its rest pose,

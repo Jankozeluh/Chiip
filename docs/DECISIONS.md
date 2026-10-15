@@ -680,6 +680,18 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Choosing the class only in match setup, once (simpler, but D-052 wants a change during freeze time); locking the class for a half (rejected in D-052); random bot classes with repeats (a team could be three Scouts, and the mix would not show all classes); applying the perks now without armour or scopes (the Bulwark's and the Marksman's perks would do nothing yet, and the numbers would be tuned blind); drawing the class offsets from `rng` itself (more direct, but it shifts every later draw and changes which team attacks and who fights whom in the seeded tests).
 
+## D-079 — First-person arms come from the generator, one set per class (2026-10-15) — *provisional*
+
+**Decision:**
+- **Each class has its own first-person arms model** (`assets/models/crew/<class>_arms.glb`, from `tools/modelgen/fparms.py`): the class's own arm pieces (team-colour sleeves, its gloves and a wrist detail) on a 7-bone skeleton whose root is the camera, sharing the body's texture and material. The class data points at it (`ClassData.arms_model`), and the character puts it into its weapon's viewmodel.
+- **The weapon owns its gun model** (`Weapon.gun_model`, the AK in M6) and puts it on the arms' weapon bone, with the muzzle flash at `muzzle_point`; M7's weapons each bring their own.
+- **Clips for what the hands do, code for what follows the player:** `fp_draw`, `fp_idle`, `fp_fire` and `fp_reload` are solved with the same IK as the body (so the hands stay on the gun); sway (lag behind the turning view) and bob (in step with the footsteps) are computed every frame, because they depend on the mouse and the feet.
+- **The gun sits low on the right**, the grip at (0.20, −0.165, −0.36) m from the camera and turned 4° inward, like a CS viewmodel.
+
+**Why:** The plan asks for arms made by the same generator, with each class's gloves and sleeves; seeing your class's own arms is the cheapest way to feel which class you play. Sharing the body's texture keeps one material per class and puts the team colour on the sleeves for free. Clips keep the first-person kick and reload consistent with the third-person ones and editable in one place.
+
+**Alternatives:** One arms model for everyone (cheaper, but your class wouldn't show in first person); rendering the third-person body's arms from the eye (they are posed for third person and would clip into the camera); a second camera for the viewmodel with its own field of view, so the gun never pokes into walls (a known limitation since M2; later).
+
 ## Open questions
 
 | Question | Decide in |

@@ -16,6 +16,7 @@ assets/models/crew/:
     <class>_albedo.png       palette-limited colours; team parts in neutral grey
     <class>_mask.png         red = team colour, green = glows (see paint.py)
     <class>_hit_zones.tres   the hit-zone boxes per bone (a HitZones resource, D-055)
+    <class>_arms.glb         first-person arms with their clips (fparms.py); shares the albedo
 Then run Godot's import (CLAUDE.md) so the game sees the new files.
 """
 import argparse
@@ -29,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import anims  # noqa: E402
 import crew  # noqa: E402
+import fparms  # noqa: E402
 import weapons  # noqa: E402
 from geometry import Atlas, PieceMesh  # noqa: E402
 from gltf import Glb  # noqa: E402
@@ -70,7 +72,8 @@ def build(name):
     meshes = [PieceMesh(p, atlas) for p in pieces]
     atlas.pack()
     cd = crew.CLASSES[name]
-    albedo, mask = Painter(cd['kit'], cd['skin'], seed=sum(map(ord, name))).paint(meshes, atlas)
+    kit = dict(cd['kit'], GLOVE=crew.GLOVES[name])
+    albedo, mask = Painter(kit, cd['skin'], seed=sum(map(ord, name))).paint(meshes, atlas)
     model = dict(name=name, s=s, body=body, pieces=pieces, atlas=atlas, meshes=meshes, albedo=albedo, mask=mask)
     rig = anims.Rig(body, weapons.GUNS[HELD_GUN]()[1])
     rig.points = bone_points(model)
@@ -94,19 +97,23 @@ def bone_points(model):
     return {b: np.unique(np.round(np.concatenate(v), 4), axis=0) for b, v in pts.items()}
 
 
-def skinned_arrays(model):
-    """vertex arrays in model space at rest, each vertex bound fully to its piece's bone."""
-    rest = model['body'].rest_globals()
+def skinned_arrays(model, meshes=None, rest=None, index_of=None):
+    """vertex arrays in model space at rest, each vertex bound fully to its piece's bone.
+    By default the whole body on the body's skeleton; the first-person arms pass their own
+    meshes, rest pose and bone indices."""
+    meshes = model['meshes'] if meshes is None else meshes
+    rest = model['body'].rest_globals() if rest is None else rest
+    index_of = INDEX if index_of is None else index_of
     atlas = model['atlas']
     tex_w, tex_h = atlas.width, atlas.height()
     verts = {}
     pos, nrm, uv, joint, index = [], [], [], [], []
-    for pm in model['meshes']:
+    for pm in meshes:
         p = pm.piece
         rot, origin = rest[p.bone]
         basis = rot @ p.basis()
         place = origin + rot @ p.pos
-        bone = INDEX[p.bone]
+        bone = index_of[p.bone]
         for tri, normals, texel in pm.triangles(atlas):
             for k in range(3):
                 v = place + basis @ tri[k]
@@ -126,6 +133,39 @@ def skinned_arrays(model):
     weights = np.zeros((len(pos), 4), np.float32)
     weights[:, 0] = 1.0
     return np.array(pos), np.array(nrm), np.array(uv), np.array(index, np.uint32), joints, weights
+
+
+def write_arms_glb(model, path):
+    """the class's first-person arms (fparms.py): its own arm pieces on a 7-bone camera-space
+    skeleton, sharing the body's texture atlas, with the first-person clips."""
+    name = model['name']
+    arms = fparms.ArmsRig(model['body'], weapons.GUNS[HELD_GUN]()[1])
+    meshes = [pm for pm in model['meshes'] if pm.piece.bone in fparms.ARM_BONES]
+    rest = arms.rest_globals()
+    pos, nrm, uv, idx, joints, weights = skinned_arrays(model, meshes, rest, fparms.INDEX)
+    g = Glb()
+    rots = arms.rest_rotations()
+    node_of = {}
+    for b in reversed(fparms.BONES):
+        kids = [node_of[c] for c in fparms.BONES if fparms.PARENT[c] == b]
+        node_of[b] = g.node(b, translation=arms.off[b], rotation=quat(rots[b]), children=kids)
+    tex = g.texture(f'{name}_albedo.png')
+    mesh = g.mesh(f'{name}_arms', pos, nrm, uv, idx, g.material(name, tex), joints, weights)
+    ibm = []
+    for b in fparms.BONES:
+        r, p = rest[b]
+        m = np.eye(4)
+        m[:3, :3] = r.T
+        m[:3, 3] = -r.T @ p
+        ibm.append(m)
+    skin = g.skin(f'{name}_arms', [node_of[b] for b in fparms.BONES], ibm, node_of['view'])
+    g.root(node_of['view'])
+    g.root(g.node('arms', mesh=mesh, skin=skin))
+    clips = fparms.clips(arms)
+    for clip, loop, channels in clips:
+        g.animation(clip + ('-loop' if loop else ''), [(node_of[b], kind, t, v) for b, kind, t, v in channels])
+    g.write(path)
+    return len(idx) // 3, len(clips)
 
 
 def write_glb(model, path, animations=()):
@@ -276,6 +316,8 @@ def main():
         glb_path = os.path.join(a.out, f'{name}.glb')
         # Godot's importer loops animations whose names end in "-loop" and drops the suffix.
         nv, nt = write_glb(model, glb_path, [(n + ('-loop' if loop else ''), ch) for n, loop, ch in clips])
+        arms_tris, arms_clips = write_arms_glb(model, os.path.join(a.out, f'{name}_arms.glb'))
+        print(f'  first-person arms: {arms_tris} triangles, {arms_clips} animations')
         boxes = hit_zones(model)
         write_hit_zones(boxes, os.path.join(a.out, f'{name}_hit_zones.tres'))
         for bone, zone, centre, size in boxes:

@@ -5,6 +5,11 @@ extends Node3D
 ## All numbers come from [member data]. The holder sets [member trigger_held]
 ## every physics tick and calls [method reload]. Other nodes (HUD, debug
 ## overlay) listen to the signals instead of polling.
+##
+## First person (M6, D-079): the [code]Viewmodel[/code] holds the holder's class arms
+## ([method set_arms], a generated [code]<class>_arms.glb[/code]) with [member gun_model] on their
+## weapon bone. Their clips play the draw, the shot kick and the reload; sway (the gun lags
+## when you turn) and bob (it rocks when you run) are added in code.
 
 ## Emitted for every shot. [param spray_shot] is the shot's number within the current spray (1 = first).
 signal fired(spray_shot: int)
@@ -25,19 +30,28 @@ const ACCURATE_SPEED_FRACTION := 0.34
 const VIEW_PUNCH_SMOOTHING := 30.0
 ## How long the muzzle flash stays visible, in seconds.
 const MUZZLE_FLASH_TIME := 0.04
-## How far the gun model jumps back and up on each shot, and how long it takes to settle.
-const KICK_OFFSET := Vector3(0.0, 0.005, 0.035)
-const KICK_ANGLE_DEGREES := 2.5
-const KICK_RETURN_TIME := 0.09
-## How far the gun model dips while reloading.
-const RELOAD_DIP_OFFSET := Vector3(0.0, -0.1, 0.0)
-const RELOAD_DIP_ANGLE_DEGREES := -35.0
+## Sway: how far the first-person gun lags behind the view when you turn, in metres per
+## radian per second of turning, at most SWAY_LIMIT, and how fast it catches up (per second).
+const SWAY_PER_TURN_SPEED := 0.006
+const SWAY_LIMIT := 0.025
+const SWAY_RETURN := 12.0
+## Bob: how far the first-person gun rocks sideways and dips at full running speed, in metres,
+## over one cycle of two steps (Character.STEP_DISTANCE × 2).
+const BOB_SIDEWAYS := 0.007
+const BOB_DOWN := 0.005
+const BOB_CYCLE_DISTANCE := 3.6
+## Length of the arms' reload clip in seconds; it is stretched to the weapon's reload time.
+const ARMS_RELOAD_CLIP_TIME := 2.5
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
 
 ## The weapon's stats.
 @export var data: WeaponData
+## The gun model in first person, held on the arms' weapon bone (tools/modelgen/weapons.py).
+@export var gun_model: PackedScene
+## Where that model's muzzle is, in weapon space: the muzzle flash goes there.
+@export var muzzle_point: Vector3 = Vector3(0.0, 0.022, -0.58)
 
 ## Set by the holder: true while the fire button is held.
 var trigger_held: bool = false
@@ -71,9 +85,16 @@ var _time_since_shot: float = 0.0
 var _impacts: Array[Node3D] = []
 ## Seconds the muzzle flash stays visible.
 var _flash_time_left: float = 0.0
-## Where the gun model sits when nothing is happening.
-var _viewmodel_rest: Transform3D
-var _kick_tween: Tween
+## The first-person arms (a class's arms model) and their clips, once set.
+var _arms: Node3D
+var _arms_player: AnimationPlayer
+var _arms_meshes: Array[MeshInstance3D] = []
+## The team colour of the arms' sleeves.
+var _arms_color: Color = Teams.FRIENDLY_COLOR
+## Sway offset (x right, y up) and the view angles of the last frame it was measured at.
+var _sway: Vector2 = Vector2.ZERO
+var _last_view_angles: Vector2 = Vector2.ZERO
+var _bob_phase: float = 0.0
 
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
@@ -86,7 +107,6 @@ var _kick_tween: Tween
 func _ready() -> void:
 	magazine = data.magazine_size
 	reserve = data.reserve_ammo
-	_viewmodel_rest = _viewmodel.transform
 
 
 ## Shows or hides the first-person model (gun, muzzle flash, kick). Only whoever looks through
@@ -94,6 +114,54 @@ func _ready() -> void:
 ## ([method Character.set_first_person]).
 func set_viewmodel_visible(on: bool) -> void:
 	$Viewmodel.visible = on
+	# Nobody sees hidden arms, so their clips needn't run (a bot's, until someone spectates it).
+	if _arms_player != null:
+		_arms_player.active = on
+
+
+## Puts a class's first-person arms into the viewmodel: [param arms_scene] is a generated
+## [code]<class>_arms.glb[/code] and [param material] the class's crew material (the arms share the
+## body's texture, see [method CrewBody.material_for]). The gun goes on their weapon bone with the
+## muzzle flash at its muzzle, and the arms draw the gun. Calling it again swaps the arms.
+func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
+	if _arms != null:
+		_muzzle_flash.reparent(_viewmodel, false)
+		_viewmodel.remove_child(_arms)
+		_arms.queue_free()
+	_arms_meshes.clear()
+	_arms = arms_scene.instantiate() as Node3D
+	_arms.name = "Arms"
+	_viewmodel.add_child(_arms)
+	for node in _arms.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		mesh.material_override = material
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_arms_meshes.append(mesh)
+	set_arms_team_color(_arms_color)
+	var skeletons := _arms.find_children("*", "Skeleton3D", true, false)
+	if not skeletons.is_empty() and gun_model != null:
+		var mount := BoneAttachment3D.new()
+		mount.name = "Gun"
+		mount.bone_name = "weapon"
+		(skeletons[0] as Skeleton3D).add_child(mount)
+		var gun := gun_model.instantiate()
+		mount.add_child(gun)
+		for node in gun.find_children("*", "MeshInstance3D", true, false):
+			(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_muzzle_flash.reparent(mount, false)
+		_muzzle_flash.position = muzzle_point
+	var players := _arms.find_children("*", "AnimationPlayer", true, false)
+	_arms_player = players[0] as AnimationPlayer if not players.is_empty() else null
+	if _arms_player != null:
+		_arms_player.active = _viewmodel.visible
+	_play_arms("fp_draw")
+
+
+## Paints the arms' sleeves in [param color] (the holder's team as the viewer sees it).
+func set_arms_team_color(color: Color) -> void:
+	_arms_color = color
+	for mesh in _arms_meshes:
+		mesh.set_instance_shader_parameter("team_color", color)
 
 
 ## Hands the weapon to its holder, who supplies aim and movement state.
@@ -136,9 +204,10 @@ func refill() -> void:
 	_spray_position = 0.0
 	_cooldown = 0.0
 	trigger_held = false
-	_viewmodel.transform = _viewmodel_rest
+	_sway = Vector2.ZERO
 	ammo_changed.emit(magazine, reserve)
 	reload_finished.emit()
+	_play_arms("fp_draw")
 
 
 ## Starts a reload if the magazine isn't full and there are spare rounds.
@@ -147,6 +216,7 @@ func reload() -> void:
 		return
 	_reload_time_left = data.reload_time
 	reload_started.emit()
+	_play_arms("fp_reload", ARMS_RELOAD_CLIP_TIME / maxf(data.reload_time, 0.1))
 
 
 func _physics_process(delta: float) -> void:
@@ -177,30 +247,47 @@ func _process(delta: float) -> void:
 	_update_viewmodel(delta)
 
 
-## Hides the muzzle flash after a moment, and dips the gun while reloading.
+## Hides the muzzle flash after a moment, and moves the first-person gun: it lags behind the
+## view when you turn (sway) and rocks with your steps (bob).
 func _update_viewmodel(delta: float) -> void:
 	if _flash_time_left > 0.0:
 		_flash_time_left -= delta
 		_muzzle_flash.visible = _flash_time_left > 0.0
-	if is_reloading():
-		# 0 → 1 → 0 over the reload: down, hold, back up.
-		var dip := sin(PI * (1.0 - _reload_time_left / data.reload_time))
-		_viewmodel.transform = _viewmodel_rest.translated_local(RELOAD_DIP_OFFSET * dip).rotated_local(
-				Vector3.RIGHT, deg_to_rad(RELOAD_DIP_ANGLE_DEGREES) * dip)
+	var view := get_parent() as Node3D
+	if view == null or delta <= 0.0:
+		return
+	var angles := Vector2(view.global_rotation.y, view.global_rotation.x)
+	var turn := Vector2(wrapf(angles.x - _last_view_angles.x, -PI, PI), angles.y - _last_view_angles.y) / delta
+	_last_view_angles = angles
+	var target := (Vector2(turn.x, -turn.y) * SWAY_PER_TURN_SPEED).limit_length(SWAY_LIMIT)
+	_sway = _sway.lerp(target, 1.0 - exp(-SWAY_RETURN * delta))
+	var bob := Vector2.ZERO
+	if _wielder != null and _wielder.is_on_floor():
+		var speed := Vector2(_wielder.velocity.x, _wielder.velocity.z).length()
+		_bob_phase = fmod(_bob_phase + speed * delta * TAU / BOB_CYCLE_DISTANCE, TAU)
+		var strength := clampf(speed / maxf(_wielder.get_max_speed(), 0.1), 0.0, 1.0)
+		bob = Vector2(sin(_bob_phase) * BOB_SIDEWAYS, -absf(sin(_bob_phase)) * BOB_DOWN) * strength
+	var offset := _sway + bob
+	_viewmodel.transform = Transform3D(Basis.from_euler(Vector3(_sway.y * 1.5, -_sway.x * 1.5, 0.0)),
+			Vector3(offset.x, offset.y, 0.0))
 
 
-## Muzzle flash and a kick of the gun model, which springs back with a tween.
+## Muzzle flash and the arms' kick.
 func _play_shot_effects() -> void:
 	_muzzle_flash.visible = true
 	_muzzle_flash.rotation.z = randf() * TAU
 	_flash_time_left = MUZZLE_FLASH_TIME
-	if _kick_tween != null:
-		_kick_tween.kill()
-	_viewmodel.transform = _viewmodel_rest.translated_local(KICK_OFFSET).rotated_local(
-			Vector3.RIGHT, deg_to_rad(KICK_ANGLE_DEGREES))
-	_kick_tween = create_tween()
-	_kick_tween.tween_property(_viewmodel, "transform", _viewmodel_rest, KICK_RETURN_TIME) \
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_play_arms("fp_fire")
+
+
+## Plays a clip of the first-person arms (from the start, at [param speed]) and goes back to
+## idling after it.
+func _play_arms(clip: StringName, speed: float = 1.0) -> void:
+	if _arms_player == null or not _arms_player.has_animation(clip):
+		return
+	_arms_player.play(clip, 0.03, speed)
+	_arms_player.seek(0.0, true)
+	_arms_player.queue(&"fp_idle")
 
 
 ## Lets the spray pattern wear off once you stop firing. While firing
@@ -343,7 +430,6 @@ func _update_reload(delta: float) -> void:
 		var loaded := mini(data.magazine_size - magazine, reserve)
 		magazine += loaded
 		reserve -= loaded
-		_viewmodel.transform = _viewmodel_rest
 		ammo_changed.emit(magazine, reserve)
 		reload_finished.emit()
 

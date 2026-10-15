@@ -21,6 +21,10 @@ from rig import Body
 
 CLASSES = concept.CLASSES
 
+# Each class's gloves (a ramp span; seen up close in first person, task 9).
+GLOVES = {'rifleman': ('olive', 0, 10), 'bulwark': ('charcoal', 0, 11), 'marksman': ('stone', 1, 11),
+          'scout': ('charcoal', 0, 7)}
+
 
 def body_of(name, s):
     cd = CLASSES[name]
@@ -179,6 +183,17 @@ def parts(name, s):
         add('forearm_' + side, 'cyl', (0.051 * w, 0.042 * w, b.forearm), axis=ax, mat='sleeve', zone='arms')
         if tor in ('carrier', 'heavy'):
             add('forearm_' + side, 'ell', (0.051 * w,) * 3, (0, 0, 0), 'gear_dk', 'arms', sides=8, rings=4)
+        # a wrist detail of the class's own, seen in first person: a forearm plate (Bulwark),
+        # the coat's cuff (Marksman), a wrist band (Scout)
+        if tor == 'heavy':
+            add('forearm_' + side, 'box', (b.forearm * 0.55, 0.11 * w, 0.12 * w), (x * b.forearm * 0.45, 0.012, 0), 'plate',
+                'arms', bevel=0.012)
+        elif cd.get('coat'):
+            add('forearm_' + side, 'cyl', (0.060 * w, 0.062 * w, 0.075), (x * (b.forearm - 0.09), 0, 0), 'coat', 'arms',
+                axis='+x' if x > 0 else '-x', sides=8)
+        elif tor == 'slim':
+            add('forearm_' + side, 'cyl', (0.047 * w, 0.047 * w, 0.03), (x * (b.forearm - 0.055), 0, 0), 'polymer',
+                'arms', axis='+x' if x > 0 else '-x', sides=8)
         gs = 1.12 if tor == 'heavy' else 1.0
         add('hand_' + side, 'ell', (0.052 * gs, 0.032 * gs, 0.038 * gs), (x * 0.04, 0, 0), 'glove', 'arms',
             sides=8, rings=4)

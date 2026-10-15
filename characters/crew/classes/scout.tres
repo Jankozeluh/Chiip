@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://characters/crew/class_data.gd" id="class_script"]
 [ext_resource type="PackedScene" path="res://assets/models/crew/scout.glb" id="model"]
 [ext_resource type="Resource" path="res://assets/models/crew/scout_hit_zones.tres" id="hit_zones"]
+[ext_resource type="PackedScene" path="res://assets/models/crew/scout_arms.glb" id="arms_model"]
 
 [resource]
 script = ExtResource("class_script")
@@ -12,6 +13,7 @@ role = "Short and slim: the lurker"
 height = 1.72
 model = ExtResource("model")
 hit_zones = ExtResource("hit_zones")
+arms_model = ExtResource("arms_model")
 signature_weapon = "SMG"
 look = "Beanie, balaclava and glowing goggles, fitted team-colour jacket, slim rig, radio pack with a whip antenna."
 perk_name = "Light Step"

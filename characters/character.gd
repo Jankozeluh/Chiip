@@ -180,6 +180,7 @@ func _ready() -> void:
 		_controller.set_look_angles(_input.yaw, _input.pitch)
 	if weapon != null:
 		weapon.equip(self)
+	_set_up_arms()
 	# Only the player at this computer looks through these eyes; everyone else sees the body.
 	set_first_person(is_local_player())
 
@@ -308,6 +309,8 @@ func get_chest_position() -> Vector3:
 ## viewer sees it (see [method Teams.color_for]). Call it after the viewer's team changes.
 func update_team_color() -> void:
 	body.set_team_color(Teams.color_for(team))
+	if weapon != null:
+		weapon.set_arms_team_color(Teams.color_for(team))
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -459,9 +462,19 @@ func _apply_class() -> void:
 	_hitboxes.clear()
 	body.set_class(class_data)
 	_gather_hitboxes()
+	_set_up_arms()
 	if not is_alive():
 		for hitbox in _hitboxes:
 			hitbox.collision_layer = 0
+
+
+## Puts the class's first-person arms into the weapon's viewmodel (D-079): its own sleeves
+## and gloves, painted with the class's material in this character's team colour.
+func _set_up_arms() -> void:
+	if weapon == null or class_data == null or class_data.arms_model == null:
+		return
+	weapon.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
+	weapon.set_arms_team_color(Teams.color_for(team))
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:

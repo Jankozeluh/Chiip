@@ -77,8 +77,9 @@ func _test_class_data() -> void:
 	var texts_ok := true
 	for data in classes:
 		texts_ok = texts_ok and data.role != "" and data.signature_weapon != "" and data.look != "" \
-				and data.perk_name != "" and data.perk_description != "" and data.arms_model == null
-	_check("Every class has a role, a signature gun, a look and a perk text (arms come in task 9)", texts_ok, "")
+				and data.perk_name != "" and data.perk_description != "" and data.arms_model != null \
+				and data.arms_model.resource_path == "res://assets/models/crew/%s_arms.glb" % data.id
+	_check("Every class has a role, a signature gun, a look, a perk text and its own first-person arms", texts_ok, "")
 	_check("ClassData.find() finds a class by id and gives null for an unknown one",
 			ClassData.find(&"scout") == classes[3] and ClassData.find(&"nobody") == null,
 			"scout is %s" % ClassData.find(&"scout").display_name)

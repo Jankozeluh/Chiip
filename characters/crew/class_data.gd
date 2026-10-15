@@ -36,8 +36,8 @@ const PATHS: Array[String] = [
 @export var model: PackedScene
 ## The class's hit-zone boxes, made by the generator for the same body (see [HitZones]).
 @export var hit_zones: HitZones
-## The first-person arms and gloves the class shows in its own view. Filled in by M6 task 9;
-## null until then.
+## The first-person arms and gloves the class shows in its own view (a generated
+## [code]<class>_arms.glb[/code], D-079); [Character] puts them into its weapon's viewmodel.
 @export var arms_model: PackedScene
 ## The gun the class is meant to carry, as text for the class menu ("AK-style rifle"). Classes
 ## don't restrict weapons (D-052), and in M6 everyone carries the AK-style rifle.

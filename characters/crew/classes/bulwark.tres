@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://characters/crew/class_data.gd" id="class_script"]
 [ext_resource type="PackedScene" path="res://assets/models/crew/bulwark.glb" id="model"]
 [ext_resource type="Resource" path="res://assets/models/crew/bulwark_hit_zones.tres" id="hit_zones"]
+[ext_resource type="PackedScene" path="res://assets/models/crew/bulwark_arms.glb" id="arms_model"]
 
 [resource]
 script = ExtResource("class_script")
@@ -12,6 +13,7 @@ role = "Tall and broad: the anchor"
 height = 1.92
 model = ExtResource("model")
 hit_zones = ExtResource("hit_zones")
+arms_model = ExtResource("arms_model")
 signature_weapon = "Pump shotgun"
 look = "Closed helmet with a team stripe over a gas mask, big grey shoulder plates edged in team colour, front plates, team-colour sleeves, ammo pack."
 perk_name = "Plated"
