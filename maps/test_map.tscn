@@ -441,3 +441,79 @@ position = Vector3(3, 0, 84)
 [node name="AttackSpawn5" type="Marker3D" parent="Arena" groups=["attack_spawns"]]
 position = Vector3(6, 0, 84)
 
+[node name="Tactics" type="Node3D" parent="."]
+
+[node name="HoldPlatform" type="Marker3D" parent="Tactics" groups=["hold_points"]]
+position = Vector3(-14, 2, -8)
+rotation = Vector3(0, -3.0367, 0)
+
+[node name="HoldWestFlank" type="Marker3D" parent="Tactics" groups=["hold_points"]]
+position = Vector3(-24, 0, -14)
+rotation = Vector3(0, -2.8753, 0)
+
+[node name="HoldPeekLeft" type="Marker3D" parent="Tactics" groups=["hold_points"]]
+position = Vector3(-7.5, 0, -21)
+rotation = Vector3(0, -3.0731, 0)
+
+[node name="HoldGap" type="Marker3D" parent="Tactics" groups=["hold_points"]]
+position = Vector3(0, 0, -24)
+rotation = Vector3(0, 3.1416, 0)
+
+[node name="HoldPeekRight" type="Marker3D" parent="Tactics" groups=["hold_points"]]
+position = Vector3(7.5, 0, -21)
+rotation = Vector3(0, 3.0731, 0)
+
+[node name="HoldTunnel" type="Marker3D" parent="Tactics" groups=["hold_points"]]
+position = Vector3(17.5, 0, -12)
+rotation = Vector3(0, 2.9649, 0)
+
+[node name="RouteWest" type="Node3D" parent="Tactics" groups=["attack_routes"]]
+
+[node name="Point1" type="Marker3D" parent="Tactics/RouteWest"]
+position = Vector3(-26, 0, 60)
+
+[node name="Point2" type="Marker3D" parent="Tactics/RouteWest"]
+position = Vector3(-27, 0, 30)
+
+[node name="Point3" type="Marker3D" parent="Tactics/RouteWest"]
+position = Vector3(-22, 0, 8)
+
+[node name="Point4" type="Marker3D" parent="Tactics/RouteWest"]
+position = Vector3(-20, 0, -4)
+
+[node name="Point5" type="Marker3D" parent="Tactics/RouteWest"]
+position = Vector3(-22, 0, -16)
+
+[node name="RouteMiddle" type="Node3D" parent="Tactics" groups=["attack_routes"]]
+
+[node name="Point1" type="Marker3D" parent="Tactics/RouteMiddle"]
+position = Vector3(2, 0, 62)
+
+[node name="Point2" type="Marker3D" parent="Tactics/RouteMiddle"]
+position = Vector3(-2, 0, 44)
+
+[node name="Point3" type="Marker3D" parent="Tactics/RouteMiddle"]
+position = Vector3(-1, 0, 14)
+
+[node name="Point4" type="Marker3D" parent="Tactics/RouteMiddle"]
+position = Vector3(7.5, 0, -2)
+
+[node name="Point5" type="Marker3D" parent="Tactics/RouteMiddle"]
+position = Vector3(2, 0, -14)
+
+[node name="RouteEast" type="Node3D" parent="Tactics" groups=["attack_routes"]]
+
+[node name="Point1" type="Marker3D" parent="Tactics/RouteEast"]
+position = Vector3(24, 0, 62)
+
+[node name="Point2" type="Marker3D" parent="Tactics/RouteEast"]
+position = Vector3(26, 0, 31)
+
+[node name="Point3" type="Marker3D" parent="Tactics/RouteEast"]
+position = Vector3(22, 0, 8)
+
+[node name="Point4" type="Marker3D" parent="Tactics/RouteEast"]
+position = Vector3(21, 0, -4)
+
+[node name="Point5" type="Marker3D" parent="Tactics/RouteEast"]
+position = Vector3(22, 0, -16)

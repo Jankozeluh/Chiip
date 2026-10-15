@@ -7,8 +7,9 @@ extends Node3D
 ## bots against a player that stands still (no keyboard input). Bots hold their
 ## position (like holding an angle) except in the walking check. Checks walking,
 ## vision, gradual noticing, hearing, reaction time, never shooting through
-## walls, that bots can win, that difficulty matters, dying, and friendly fire
-## (off: teammates take no damage and bullets pass through them; on: a third).
+## walls, that bots can win, that difficulty matters, dying, friendly fire
+## (off: teammates take no damage and bullets pass through them; on: a third),
+## and holding fire while a teammate is in the line of fire.
 ## Random numbers are seeded, so every run gives the same results. Quits with the number of failed checks as
 ## the exit code (0 means everything passed).
 
@@ -48,6 +49,7 @@ func _run_all() -> void:
 	await _test_dies_at_100_damage()
 	await _test_friendly_fire_off()
 	await _test_friendly_fire_on()
+	await _test_holds_fire_for_teammates()
 	await _test_bullets_pass_through_teammates()
 
 
@@ -268,6 +270,28 @@ func _test_bullets_pass_through_teammates() -> void:
 			control == [true, false] and test == [false, true],
 			"teammate in front, enemy behind. Friendly fire on: teammate hit = %s, enemy hit = %s. Off: teammate hit = %s, enemy hit = %s" % [
 					control[0], control[1], test[0], test[1]])
+
+
+func _test_holds_fire_for_teammates() -> void:
+	# A bot faces the player 10 m away with a teammate standing right between
+	# them. It must not shoot until the teammate steps 3 m aside.
+	await _place_player(Vector3(0, 0, 0))
+	_player.god_mode = true
+	var bot := await _add_bot(Vector3(0, 0, 10), Vector3(0, 1.6, 0), "normal", 3)
+	var mate := await _add_target(Vector3(0, 0, 5), bot.team)
+	var shots := [0]
+	bot.weapon.fired.connect(func(_spray_shot: int) -> void: shots[0] += 1)
+	await _wait_seconds(2.5)
+	var engaged := _brain(bot).state == BotController.State.ENGAGE
+	var while_blocked: int = shots[0]
+	mate.respawn(Vector3(3, 0, 5), 0.0)
+	await _wait_seconds(2.5)
+	_check("Holds fire while a teammate is in the line of fire", engaged and while_blocked == 0 and shots[0] > 0,
+			"fighting the player: %s; shots with the teammate in the way: %d, after it stepped aside: %d" % [
+					engaged, while_blocked, shots[0] - while_blocked])
+	_player.god_mode = false
+	await _remove(bot)
+	await _remove(mate)
 
 
 # --- Helpers ---

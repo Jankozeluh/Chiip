@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds and the match flow are in (tasks 1–3 of 13), so F5 starts a 3v3 match you can play to the end; menus, HUD and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow and bots that attack and defend are in (tasks 1–4 of 13), so F5 starts a 3v3 match to 5 rounds won; menus, round HUD and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -98,6 +98,10 @@ Automated checks run without a window in about a second each:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/round_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/tactics_test.tscn
 ```
 
 ## Documentation

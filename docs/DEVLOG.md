@@ -24,7 +24,11 @@
 - Visual check in the real main scene at 1280 × 720 and 1920 × 1080: 3v3 and 5v5, Victory and Defeat. 5v5 fills 576 of 720 px, so it fits. "Play again" starts a fresh match, hides the screen and captures the mouse again.
 - Found and fixed: from round 2 on, a respawned bot sometimes stood 0.7 m beside its spawn marker. The physics engine (Jolt) moves a teleported body only at the next physics step, so a bot moving in the same tick bumped into a teammate's *old* position and got pushed. A character now skips moving on the tick it respawns; three headless matches showed no offsets afterwards, and the half-time check requires 0.5 m again.
 
-**Next:** task 4, bots play rounds (the attacking side pushes, defenders hold angles and rotate).
+- **Task 4, bots play rounds** (D-045). New `bots/bot_tactics.gd` (`BotTactics`) gives every bot orders at each round start. Attackers form loose groups of about two, take different routes toward the defenders' end (start 0.6 s apart, waypoints spread a little), then clear that end at walking speed. Defenders each hold a different spot and watch its angle, and only leave it for enemies within 35 m. Bots don't shoot while a teammate is in the line of fire. The test map got a `Tactics` node with six hold spots and three attack routes (west, middle, east).
+- Found while watching matches: after a search, an attacker could walk 30 m back to a waypoint it had already passed. It now carries on from the route leg it's nearest to.
+- New tactics test (`tests/tactics_test.tscn`, 4 checks, seeded bots-only 3v3, identical on every run): orders; defenders on different spots within 8° of their angles after 8 s; attackers at least 36 m out of spawn after 10 s, on two routes; four rounds all won by elimination, after 27–47 s. New bot check: no shots while a teammate is in the way, 18 once it steps aside. Earlier, with wandering bots, rounds often ran into the clock.
+
+**Next:** task 5, spectating (watch a living teammate after you die).
 
 ## 2026-10-15 — Session 9: M4 closed, M5 planned
 

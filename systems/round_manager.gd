@@ -192,6 +192,7 @@ func _start_round() -> void:
 	_damage_this_life.clear()
 	for team in Teams.COUNT:
 		_spawn_team(team)
+	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng)
 	_set_frozen(true)
 	_set_phase(Phase.FREEZE, settings.freeze_time)
 	round_started.emit(round_number)

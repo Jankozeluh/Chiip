@@ -130,7 +130,7 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 ### 4.4 Bots
 
 - Find their way around the map using a navigation mesh.
-- Behaviour states: patrol or move to the objective → engage an enemy → search the last known position. Planting and defusing come later.
+- Behaviour states: follow the round's orders (attack, defend, or patrol in practice) → engage an enemy → search the last known position. Planting and defusing come later.
 - **Vision:** a field-of-view cone plus a line-of-sight check, so no wallhacks.
 - **Hearing:** running footsteps and gunshots reveal your position. Walking is silent.
 - **Difficulty** comes from reaction time, aim accuracy, spray control and decision speed. Presets *(tune)*:
@@ -149,6 +149,12 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 
   Measured against a player standing still at 10 m with the bot holding an angle (3 runs each, after the M4 playtest tuning): first shot after ~1.4 / ~0.95 / ~0.6 s, kill after ~4.3 / 2–4 / 1.1–1.5 s. A moving target is much harder for them.
 - **States:** patrol → engage (enemy noticed) → search (walk to the last known position, look left, right and ahead) → patrol. Hearing you run, or being shot, makes a bot come and check. A bot can also *hold* a position (watch one direction) instead of patrolling.
+- **In a match** (D-045) every bot gets orders at the start of each round:
+  - **Attackers** split into loose groups of about two (3 attackers: a pair and a single). Each group takes one of the map's attack routes (the test map has a west, a middle and an east lane), its members setting off 0.6 s apart with a little spread, so they don't walk in single file. At the end of the route they *clear* the defenders' end: they check the hold spots and the defenders' spawn at random, **walking** (silent), until the round is over.
+  - **Defenders** each take a different hold spot near their end (the test map has six: the platform, the west flank, both ends of the peek walls, the gap between them, beside the tunnel) and watch its angle, letting the view drift ±10°. They leave the spot only for enemies seen or heard within **35 m**, so a fight far up the map doesn't pull everyone out. After a fight or a search they hold the nearest spot.
+  - After a detour (a fight or a search), attackers carry on from the part of their route they're nearest to, instead of walking back.
+- **Holding fire:** a bot doesn't shoot while a living teammate (you included) is within 0.6 m of its line of fire, whether or not friendly fire is on.
+- Measured in a bots-only 3v3 on the test map: defenders are on their spots after about 7 s, attackers are 36 m out of spawn after 10 s, the first fight starts after about 12 s, and rounds end by elimination after 27–47 s.
 - **Turning** eases in and out like a hand on a mouse (no constant-speed snapping), so tracking a moving target lags a little.
 - **Animation:** procedural walk cycle (legs swing from the hips, arms a little, the body bobs), a placeholder until real animated models (D-039).
 

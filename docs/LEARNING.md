@@ -290,6 +290,9 @@
 **Teleporting a physics body**
 - Setting `global_position` on a `CharacterBody3D` doesn't move it inside the physics engine (Jolt) right away: the engine picks up the new position at the next physics step. Until then, other bodies' `move_and_slide()` still collide with the *old* position. When the round manager teleports everyone in one tick, a bot could be pushed off its spawn by where a teammate stood a moment ago. `Character.respawn()` therefore makes the character skip moving for the rest of that tick. In Unity, `Rigidbody.position` and `Physics.SyncTransforms()` deal with the same problem.
 
+**Geometry helpers** (`BotController._skip_passed_waypoints()`)
+- `Geometry2D` and `Geometry3D` are static helper classes for common maths, like parts of Unity's `Vector3`/`Mathf`/`Physics` utilities: `Geometry2D.get_closest_point_to_segment(point, a, b)` finds the nearest point on a line segment, used to tell which leg of its route a bot is on.
+
 **A typing quirk with enums**
 - `Teams` and `Character` refer to each other (`Teams.damage_factor(victim: Character, …)`, `Character` calls `Teams`). In that kind of cycle GDScript can treat `Teams.Side` written in a third script as a different type from `Side` inside `Teams`, and refuse the call ("argument should be Side but is Teams.Side"). `Teams.spawn_group()` takes the side as an `int` to avoid it. Enums are ints underneath, so nothing is lost but the type check.
 
