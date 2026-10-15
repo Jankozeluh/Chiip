@@ -44,7 +44,7 @@ Chiip/
 ├── characters/        Shared Character (movement + CS rules), input commands, controller base
 ├── player/            The player: a Character variant with keyboard/mouse controller and camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
-├── bots/              Bot scene, AI, state machine
+├── bots/              Bot scene (a Character variant) and its AI controller
 ├── maps/              Test maps and playable maps
 │   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
 │   └── props/         Reusable map objects (target dummy)
@@ -74,6 +74,8 @@ Chiip/
 | `characters/soldier_body.tscn` | The visible body with CS hit zones (`Hitbox` areas): `Upper` (head, chest, stomach, arms; sinks 0.457 m when crouching) and `Legs`. Chest and arm meshes are in the `team_colored` group and get the character's team color |
 | `characters/character_input.gd` | `CharacterInput`: one tick of commands (move direction, look yaw/pitch, jump, crouch, walk, shoot, reload), like CS's "usercmd" |
 | `characters/character_controller.gd` | `CharacterController`: base for whatever drives a character (`get_input()`, `set_look_angles()`, `get_camera()`) |
+| `bots/bot.tscn` | A bot: inherits `character.tscn`, red team color, the rifle under `Head` (aims with the head's pitch), a `NavigationAgent3D` and a `BotController`. On the bots layer |
+| `bots/bot_controller.gd` | `BotController`: the bot's brain. Walks paths from its `NavigationAgent3D` by "pressing" the movement keys toward the next waypoint, turning its view at a limited speed (360°/s while walking) |
 | `player/player.tscn` | The player: inherits `character.tscn`, adds `Head/Camera3D` with the rifle and a `PlayerController`. On the player layer |
 | `player/player_controller.gd` | `PlayerController`: keyboard and mouse → commands, CS sensitivity, mouse capture (no shot on the recapture click), first-person camera with recoil kick |
 | `ui/debug_overlay.tscn` + `.gd` | F3 readout: speed, position, jump peak, stance, shoot/aim buttons, weapon inaccuracy, built-up recoil, last hit (zone, damage, distance) |
@@ -181,7 +183,7 @@ Character (CharacterBody3D, character.gd)        ← simulates commands by CS ru
 1. Each physics tick, `Character._physics_process` asks its controller for a `CharacterInput` (`get_input()`): the *pull* model guarantees the command is fresh for this tick.
 2. The character applies it: it faces `yaw`, tilts the head to `pitch`, sets `weapon.trigger_held` and reloads, then moves, jumps and crouches by the CS rules.
 3. The player's controller reads keys in `get_input()` and the mouse in `_unhandled_input()`; its camera follows the head every rendered frame, so mouse look stays instant.
-4. A bot's controller (M4) fills the same command from its AI; in M8 a network controller will fill it from packets. The character can't tell the difference.
+4. A bot's controller fills the same command from its AI (walking: movement keys toward the next path point); in M8 a network controller will fill it from packets. The character can't tell the difference.
 
 ## How a character and its weapon work together
 
