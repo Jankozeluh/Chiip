@@ -19,6 +19,8 @@
 - New main scene `main.tscn`: the world renders at 640 × 360 in a `SubViewport` and is scaled up with sharp pixels; HUD and overlay on top. Two styles: sharp HUD (B) and pixelated HUD (A). Mouse sensitivity is identical in both (2.200° for 100 counts). Found: text placed in the 3D world (dummy labels, damage numbers) becomes unreadable at 360 lines; to be fixed with the pixel font.
 - Retro texture tool (`tools/make_retro_texture.gd`): square crop, shrink in halving steps, k-means palette, lossless + mipmapped import. Tested on a generated brick image: crisp 64 × 64, 12 colors, tiles cleanly.
 - You picked style B (sharp HUD) from screenshots, approved all 8 textures, the func_godot addon and the Silkscreen font, and will install TrenchBroom yourself (D-027, D-028).
+- Downloaded the 8 ambientCG textures (sizes matched ambientCG's listing to the byte) and turned them into 64 × 64, 16-color textures. Smooth surfaces came out almost flat, so the tool got a contrast option (2–3 for concrete, plaster, sand, metal). Started `docs/CREDITS.md`.
+- You installed TrenchBroom.
 
 ## 2026-10-15 — Session 4: M2 shooting
 

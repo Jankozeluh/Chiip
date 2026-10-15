@@ -35,7 +35,7 @@ Chiip/
 ├── docs/              All documentation
 ├── addons/            Third-party Godot plugins only
 ├── assets/            Shared raw assets
-│   ├── textures/
+│   ├── textures/      Retro 64 × 64 textures (sources in docs/CREDITS.md)
 │   ├── models/
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   └── fonts/
@@ -73,6 +73,7 @@ Chiip/
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
 | `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
+| `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
 | `assets/sounds/*.wav` | Generated 22 kHz mono sounds, referenced by `weapons/rifle.tres` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `tests/weapon_test.tscn` + `.gd` | Automated weapon checks: fire rate, ammo, reloads, inaccuracy, first-shot accuracy, zone damage, falloff, spray pattern, recovery |

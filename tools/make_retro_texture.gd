@@ -3,17 +3,21 @@ extends SceneTree
 ##
 ## Run from the project folder, then let Godot import the result:
 ##
-##     Godot --headless --path . --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors]
+##     Godot --headless --path . --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast]
 ##     Godot --headless --path . --import
 ##
 ## - <source image>: path to a PNG or JPG anywhere on disk.
 ## - <name>: output file name without extension; saved as res://assets/textures/<name>.png.
 ## - [size]: output width and height in pixels (default 64, Quake-style).
 ## - [colors]: how many colors the texture keeps (default 16).
+## - [contrast]: how far colors are pushed away from the average (default 1.0 =
+##   unchanged). Photos of smooth surfaces turn almost flat at 64 × 64; 2–3
+##   brings back the punchy look of 90s textures.
 ##
 ## Steps: crop to a square, shrink in halving steps (like mipmaps, so detail
-## averages out instead of flickering), reduce to a small palette with k-means,
-## then save the PNG and import settings for sharp pixels (lossless, with mipmaps).
+## averages out instead of flickering), boost contrast, reduce to a small
+## palette with k-means, then save the PNG and import settings for sharp
+## pixels (lossless, with mipmaps).
 
 const OUTPUT_FOLDER := "res://assets/textures/"
 const K_MEANS_ROUNDS := 12
@@ -22,11 +26,12 @@ const K_MEANS_ROUNDS := 12
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() < 2:
-		printerr("Usage: -- <source image> <name> [size] [colors]")
+		printerr("Usage: -- <source image> <name> [size] [colors] [contrast]")
 		quit(1)
 		return
 	var size := int(args[2]) if args.size() > 2 else 64
 	var color_count := int(args[3]) if args.size() > 3 else 16
+	var contrast := float(args[4]) if args.size() > 4 else 1.0
 	var image := Image.load_from_file(args[0])
 	if image == null:
 		printerr("Could not load ", args[0])
@@ -35,11 +40,12 @@ func _init() -> void:
 	image.convert(Image.FORMAT_RGB8)
 	image = _crop_to_square(image)
 	_shrink(image, size)
+	_boost_contrast(image, contrast)
 	_reduce_colors(image, color_count)
 	var path := OUTPUT_FOLDER + args[1] + ".png"
 	var error := image.save_png(path)
 	_write_import_settings(path)
-	print("%s: %s (%d × %d, %d colors)" % [path, error_string(error), size, size, color_count])
+	print("%s: %s (%d × %d, %d colors, contrast %.1f)" % [path, error_string(error), size, size, color_count, contrast])
 	quit(0 if error == OK else 1)
 
 
@@ -55,6 +61,24 @@ func _shrink(image: Image, size: int) -> void:
 		image.resize(image.get_width() / 2, image.get_height() / 2, Image.INTERPOLATE_BILINEAR)
 	if image.get_width() != size:
 		image.resize(size, size, Image.INTERPOLATE_BILINEAR)
+
+
+## Moves every pixel's color away from the image's average color by [param amount].
+func _boost_contrast(image: Image, amount: float) -> void:
+	if is_equal_approx(amount, 1.0):
+		return
+	var average := Color(0, 0, 0)
+	for y in image.get_height():
+		for x in image.get_width():
+			average += image.get_pixel(x, y)
+	average /= image.get_width() * image.get_height()
+	for y in image.get_height():
+		for x in image.get_width():
+			var color := image.get_pixel(x, y)
+			image.set_pixel(x, y, Color(
+					clampf(average.r + (color.r - average.r) * amount, 0.0, 1.0),
+					clampf(average.g + (color.g - average.g) * amount, 0.0, 1.0),
+					clampf(average.b + (color.b - average.b) * amount, 0.0, 1.0)))
 
 
 ## Replaces every pixel with the nearest of [param color_count] palette colors,

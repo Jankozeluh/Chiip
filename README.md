@@ -59,6 +59,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
 | [DEVLOG.md](docs/DEVLOG.md) | Diary of each work session: what changed and what's next |
 | [LEARNING.md](docs/LEARNING.md) | Godot concepts learned along the way, compared to Unity |
+| [CREDITS.md](docs/CREDITS.md) | Third-party assets and tools, with sources and licenses |
 
 ## How we work
 

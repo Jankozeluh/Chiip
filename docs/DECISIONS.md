@@ -216,7 +216,7 @@
 
 ## D-028 — Downloads approved for M3 (2026-10-15)
 
-**Decision:** Eight ambientCG CC0 textures (Concrete034, Plaster001, Bricks075A, Bricks097, Ground080, Planks037A, MetalPlates006, PaintedPlaster017), the `func_godot` 2025.12 addon (MIT) and the Silkscreen font (OFL). The user installs TrenchBroom themselves. Only the processed 64 × 64 textures are kept in the project, and the original downloads are deleted.
+**Decision:** Eight ambientCG CC0 textures (Concrete034, Plaster001, Bricks075A (actually beige stone), Bricks097, Ground080, Planks037A, MetalPlates006, PaintedPlaster017), the `func_godot` 2025.12 addon (MIT) and the Silkscreen font (OFL). The user installs TrenchBroom themselves. Only the processed 64 × 64 textures are kept in the project, and the original downloads are deleted.
 
 ## Open questions
 

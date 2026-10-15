@@ -28,7 +28,7 @@ Update the "Last updated" date on every document you change.
 - Work milestone by milestone and task by task, following docs/PLAN.md. Ask the user before starting a new milestone or changing the plan.
 - The game must still run after every task.
 - Once git is set up in M1, commit after each finished task, with the message prefixed by the milestone, e.g. `M1: Add crouching`.
-- Use third-party assets only if their license allows it, and record each one in docs/CREDITS.md (created in M3).
+- Use third-party assets only if their license allows it, and record each one in docs/CREDITS.md. Ask the user before every download (file, source, size). Downloads go to the scratchpad, each in its own folder; only processed results go into the project.
 
 ## Code conventions
 
@@ -43,7 +43,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Import assets and refresh the class cache (run after adding scripts with `class_name`): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import`
 - Run the tests (exit code = number of failures): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn`, and the same with `res://tests/weapon_test.tscn`
 - Regenerate the placeholder sounds, then import them: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/generate_sounds.gd` and then the import command above
-- Make a retro texture: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors]`, then the import command
+- Make a retro texture: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast]`, then the import command. Record the source and settings in docs/CREDITS.md
 - Smoke-run the game headless: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 300`
 - Visual check: `/Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1280x720 --write-movie <scratchpad>/frame.png --quit-after 45` writes PNG frames. This opens a window briefly and can capture the user's mouse.
 
