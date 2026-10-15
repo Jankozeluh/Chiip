@@ -14,7 +14,11 @@
 - `modelgen.py rifleman` writes `assets/models/crew/rifleman.glb` (50 pieces, 2,106 triangles, 17 bones), `rifleman_albedo.png` (256 × 352, every texel from the concept palette, team parts in neutral grey) and `rifleman_mask.png`. The body is scaled so the model is exactly 1.82 m tall (Godot measures the mesh at 1.820 m).
 - Godot imports it as `Skeleton3D` + skinned `MeshInstance3D`, with the external texture and nearest filtering read from the glTF sampler. New turntable `characters/crew/crew_preview.tscn` shows the generated models in the game's daylight. Fixed on the way: the shelf packer now places the tallest rectangles first (the atlas shrank from 256 × 1024), and the helmet's cut now covers the forehead and leaves the ears free.
 
-**Next:** Task 3, the team-colour shader.
+- **Task 3, the team-colour shader** (D-073). `characters/crew/crew.gdshader` samples the albedo and the mask texture: where the mask's red channel is set it multiplies the neutral grey of the albedo by the team colour (a grey of linear 0.5 shows the colour exactly, darker and lighter greys keep the baked shading), and the green channel makes texels glow. The colour is an `instance uniform`, so every character of a class shares one `ShaderMaterial` (`CrewBody.material_for()`) and still has its own colour, set with `set_instance_shader_parameter()`. New `CrewBody` (`characters/crew/crew_body.tscn` + `.gd`) instantiates a class model, applies the material to its meshes and has `set_team_color()` / `get_team_color()`.
+- `SoldierBody` got the same two calls and now owns its clothes material (the `team_colored` meshes), so `Character.update_team_color()` is just `body.set_team_color(Teams.color_for(team))` and works with either body; task 4 swaps the bodies. The turntable builds each class as a `CrewBody`, starts in blue, and T switches between blue and red (`-- --enemy` starts in red). Checked a render against a plain material with the same colour: the sleeves match to within a few units, so the `source_color` hint converts the instance colour to linear as it should.
+- New `tests/crew_test.tscn` (15 checks): the model is built with the crew shader and both textures, one shared material per class, the per-instance colour (blue, red, changed later), the texture contract (mask has team texels, every team texel is neutral grey in the albedo, no glow on the Rifleman), and a `Character` recolouring with `Teams.set_viewer_team()` in both directions.
+
+**Next:** Task 4, hit zones on bones.
 
 ## 2026-10-15 — Session 11: crew, classes and arsenal planned
 

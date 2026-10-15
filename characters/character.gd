@@ -82,8 +82,8 @@ const DEATH_FALL_TIME := 0.45
 
 @export_group("Team")
 ## Which team this character is on: 0 or 1. Teams have no names (see [Teams]).
-## Characters only fight the other team, and the clothes are blue for the
-## viewer's own team and red for the other. Changing it recolors the body.
+## Characters only fight the other team, and the team parts of the body are blue
+## for the viewer's own team and red for the other. Changing it recolors the body.
 @export var team: int = 0:
 	set(value):
 		team = value
@@ -127,8 +127,6 @@ var _alive_collision_layer: int = 0
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
 var _hull_height_difference: float = 0.0
-## The clothes material on chest and arms, colored by [method update_team_color].
-var _clothes := StandardMaterial3D.new()
 ## The body tipping over after death, stopped if the character respawns first.
 var _fall_tween: Tween
 ## Set by [method respawn]: skip moving for the rest of this tick. The physics
@@ -140,6 +138,7 @@ var _respawned_this_tick: bool = false
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
 ## The visible body with its hit zones and walk animation (characters/soldier_body.tscn).
+## It paints its team parts through [code]set_team_color()[/code].
 @onready var body: SoldierBody = $Body
 @onready var _footstep_audio: AudioStreamPlayer = $FootstepAudio
 @onready var _footstep_audio_3d: AudioStreamPlayer3D = $FootstepAudio3D
@@ -258,10 +257,10 @@ func get_visibility_points() -> Array[Vector3]:
 	return [get_eye_position(), global_position + Vector3.UP * (_eye_height - 0.35)]
 
 
-## Gives the clothes the color of this character's team as the viewer sees it
-## (see [method Teams.color_for]). Call it after the viewer's team changes.
+## Paints the body's team parts in the color of this character's team as the
+## viewer sees it (see [method Teams.color_for]). Call it after the viewer's team changes.
 func update_team_color() -> void:
-	_clothes.albedo_color = Teams.color_for(team)
+	body.set_team_color(Teams.color_for(team))
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -387,15 +386,13 @@ func _die(killer: Character) -> void:
 	died.emit(killer)
 
 
-## Finds the body's hit zones and gives the clothes this character's team color.
+## Finds the body's hit zones and gives the body this character's team color.
 func _set_up_body() -> void:
 	update_team_color()
 	for node in body.find_children("*", "", true, false):
 		if node is Hitbox:
 			_hitboxes.append(node)
 			(node as Hitbox).hit.connect(_on_hitbox_hit)
-		elif node is MeshInstance3D and node.is_in_group("team_colored"):
-			(node as MeshInstance3D).material_override = _clothes
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:

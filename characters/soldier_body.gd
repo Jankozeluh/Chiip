@@ -7,6 +7,9 @@ extends Node3D
 ##
 ## The [Character] calls [method update_pose] every physics tick. Hit zones
 ## move with the limbs, like CS hitboxes follow the animation.
+##
+## Meshes in the [code]team_colored[/code] group (chest and arms) share one clothes
+## material that [method set_team_color] paints; [CrewBody] has the same colour calls.
 
 ## Distance covered by one full walk cycle (two steps), in metres. Matches
 ## Character.STEP_DISTANCE so footsteps land in time with the legs.
@@ -24,12 +27,20 @@ const SWING_RESPONSIVENESS := 8.0
 var _phase: float = 0.0
 ## How strong the swing is right now: 0 = standing, 1 = full run.
 var _swing: float = 0.0
+## The clothes material of the meshes in the team_colored group, painted by [method set_team_color].
+var _clothes := StandardMaterial3D.new()
 
 @onready var _upper: Node3D = $Upper
 @onready var _left_hip: Node3D = $Legs/LeftHip
 @onready var _right_hip: Node3D = $Legs/RightHip
 @onready var _left_shoulder: Node3D = $Upper/LeftShoulder
 @onready var _right_shoulder: Node3D = $Upper/RightShoulder
+
+
+func _ready() -> void:
+	for node in find_children("*", "MeshInstance3D", true, false):
+		if node.is_in_group("team_colored"):
+			(node as MeshInstance3D).material_override = _clothes
 
 
 ## Moves the limbs for this tick. [param speed] is the horizontal speed in m/s,
@@ -56,3 +67,13 @@ func reset_pose() -> void:
 		joint.rotation = Vector3.ZERO
 	_upper.position.y = 0.0
 	rotation = Vector3.ZERO
+
+
+## Paints the clothes (chest and arms) in [param color] (see [method Teams.color_for]).
+func set_team_color(color: Color) -> void:
+	_clothes.albedo_color = color
+
+
+## The colour the clothes are painted in.
+func get_team_color() -> Color:
+	return _clothes.albedo_color

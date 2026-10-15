@@ -594,6 +594,20 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Smooth skinning with blended weights (softer joints, but weight painting and a less retro look); per-class skeletons (more freedom, but four animation sets); an A-pose rest; UV unwrapping per shape type (less texture waste, more code); the team mask in the albedo's alpha; textures embedded in the `.glb` (Godot would compress them).
 
+## D-073 — Team colour through a shader with a per-instance colour (2026-10-15)
+
+**Decision:**
+- **One shader for every crew model** (`characters/crew/crew.gdshader`). It reads the class's albedo and mask textures; where the mask's red channel is set, the albedo's grey is multiplied by the team colour (`team_color * grey / TEAM_BASE`, with `TEAM_BASE` 0.5 as in `tools/modelgen/paint.py`), so the baked light and dark of the grey survive; the green channel adds emission so glowing texels ignore the lights. Everything else is matte (roughness 1, specular 0.2), like the world materials.
+- **The colour is an `instance uniform`**, set from code with `set_instance_shader_parameter("team_color", …)`. The `ShaderMaterial` is therefore shared: `CrewBody.material_for(model_path)` builds one per class model (textures found next to the `.glb`: `x.glb` → `x_albedo.png`, `x_mask.png`) and caches it, while each character's meshes carry their own colour.
+- **`CrewBody` and `SoldierBody` have the same colour calls** (`set_team_color()`, `get_team_color()`), and `Character.update_team_color()` calls the body. `SoldierBody` owns its clothes material now, so `Character` no longer knows how a body is painted and task 4 can swap bodies without touching it.
+
+**Why:** Team colour depends on who is looking (D-041, D-042), and `Teams.set_viewer_team()` has to recolour everyone at once: a per-instance parameter changes one value per mesh and nothing else. A shared material keeps every character of a class on the same draw settings (the cost that matters when 10 animated characters are on screen in task 10). Keeping the shading in the grey means the artist-side textures stay palette-limited and the team parts still look lit and worn, instead of flat.
+
+**Alternatives:**
+- *One material per character*, as `Character` did with a `StandardMaterial3D` for the blocky body: simple, but then every character is its own material (10 characters, 10 materials per class), each holding its own references to the textures.
+- *Baking a blue and a red texture* and swapping: doubles the textures, and only works if there are exactly two colours (a spectator or a team-colour setting later would need more).
+- *The team mask in the albedo's alpha*: one texture fewer, but Godot's import can alter colour under alpha (alpha border fixing, premultiplying) and would break the palette; two textures are clearer (D-072).
+
 ## Open questions
 
 | Question | Decide in |
