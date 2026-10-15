@@ -2,6 +2,20 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Three quick maps (M8, started early)
+
+Built alongside M5 in its own branch (`m8-maps`), so the game has a map rotation.
+
+**Done**
+- You approved three layouts from top-down plans and kept the placeholder names: **Depot** (freight yard: indoor warehouse mid, container yard, loading dock), **Square** (old town: open plaza mid, zig-zag alley, covered market hall) and **Spillway** (dry water works: sunken channel mid, pump house, tank yard with a terrace). Each is 46–48 × 56 m with three lanes, two bomb sites, 5 spawns per side, bot routes and hold spots, 12 respawn points and patrol points (D-060). Plans, rules and numbers: [MAPS.md](MAPS.md).
+- Each map has its own lighting mood within cool daylight: today's daylight, a low morning sun, and an overcast sky (D-062).
+- New `tests/maps_test.tscn` checks every map's markers, navmesh and paths, and plays seeded bot rounds. First contact (median of 4 rounds): Depot 5.7 s, Square 6.6 s, Spillway 5.8 s; every round ended by elimination after 9–23 s (D-061).
+- New `tools/map_report.gd` (sizes, walking distances, sightlines) and `tools/map_screenshots.gd` (screenshots through the real game without touching the mouse).
+- Tuning: deeper spawn yards on Depot and Spillway (contact was 3.4–5.1 s), overlapping obstacles, offset doors and gates against long diagonals (they were 45–60 m; now at most 44 m on Depot, 35 m on Square, 38 m on Spillway), a dock ramp on Depot that couldn't be walked onto, and channel fences on Spillway the terrace could see over.
+- All existing test suites still pass (movement 13, weapon 20, bot 16, round 26, tactics 4), and the maps test passes 15 of 15.
+
+**Next:** Your playtest with `map depot`, `map square` and `map spillway`, and the final names. Then the detail pass and the bomb and respawn logic in M8.
+
 ## 2026-10-15 — Look tweak, and three quick maps
 
 **Done**

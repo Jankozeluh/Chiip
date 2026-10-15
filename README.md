@@ -30,7 +30,9 @@ For practice mode, add `-- --practice`:
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom comparison room:
+**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 blockouts, see [docs/MAPS.md](docs/MAPS.md)), and the test map (the default). In the game, open the console and type `map depot`, `map square` or `map spillway`.
+
+To play a different map from the start, add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/comparison/trenchbroom_room.tscn
@@ -52,7 +54,7 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map depot` or `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
 
 ## Making maps with TrenchBroom
 
@@ -106,6 +108,12 @@ Automated checks run without a window in about a second each:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/tactics_test.tscn
 ```
 
+The maps test plays bot rounds on all three quick maps and takes a minute or two:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 400000 res://tests/maps_test.tscn
+```
+
 ## Documentation
 
 All design, planning and technical notes live in [`docs/`](docs/):
@@ -116,6 +124,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | [GAME_DESIGN.md](docs/GAME_DESIGN.md) | What the game is: pillars, mechanics, controls, look |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
+| [MAPS.md](docs/MAPS.md) | The quick maps: plans, layouts, map rules, measurements |
 | [DEVLOG.md](docs/DEVLOG.md) | Diary of each work session: what changed and what's next |
 | [LEARNING.md](docs/LEARNING.md) | Godot concepts learned along the way, compared to Unity |
 | [CREDITS.md](docs/CREDITS.md) | Third-party assets and tools, with sources and licenses |

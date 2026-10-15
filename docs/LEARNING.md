@@ -325,3 +325,19 @@
 
 **Simulating input in a test** (`tests/round_test.gd`)
 - `Input.parse_input_event(event)` pushes an event (e.g. an `InputEventMouseButton`) through the same path real input takes, so `_unhandled_input()` sees it. Unity's Input System has `InputTestFixture` for this. In a headless run there is no display server, so `Input.mouse_mode` always reads *visible*: the test treats every click as the click that recaptures the mouse, and the real click is checked in a windowed run.
+
+### M8 — Quick maps (started early)
+
+**Level design words used in docs/MAPS.md**
+- A **lane** is one of the main routes from one spawn to the other (west, mid, east); **connectors** link lanes. A **sightline** is a straight, open view; short ones mean fights happen at close range. **Timing** is how long it takes each side to reach a spot, which decides where the first fight happens.
+- Obstacles have to **overlap** to block views: two boxes side by side with a gap still let a diagonal through. Offset doors and "gates" with something right behind them do the same job.
+
+**TrenchBroom axes vs Godot** (`maps/*.map`)
+- func_godot turns TrenchBroom's (X, Y, Z) into Godot's (Y, Z, X): TrenchBroom's Z is up, like Unity's Y. In TrenchBroom's top view the map is turned 90°: Godot's north (−z) is on the left. 39.37 units are one metre (1 unit = 1 inch, like CS).
+
+**The navigation map needs a moment** (`tests/maps_test.gd`)
+- After a map with a `NavigationRegion3D` is added, `NavigationServer3D` picks up its mesh a few physics frames later; queries before that answer for the old map or the origin. Wait until `map_get_regions()` holds only the new region and `map_get_iteration_id()` has gone up. Unity's NavMesh is ready as soon as the scene loads.
+
+**`.gdignore`** (`docs/maps/`)
+- An empty `.gdignore` file makes Godot skip a folder: the plan drawings there are for reading, not textures to import.
+

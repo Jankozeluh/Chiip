@@ -11,6 +11,7 @@ Things only you can check, kept here until done instead of moving from milestone
 - [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
 - [ ] **TrenchBroom hands-on:** set up and try TrenchBroom (see README, "Making maps with TrenchBroom") before M8, so the map-tool choice (D-032) can be confirmed.
+- [ ] **Playtest the three quick maps:** `map depot`, `map square`, `map spillway` in the console (docs/MAPS.md). How do they feel, what should change, and what should they be called?
 
 ## How this plan works
 
@@ -32,7 +33,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M5 | Rounds & game flow | 🟨 | Full matches against bots, with teammates, menus and settings |
 | M6 | Characters & animation | ⬜ | Soldiers that run, crouch, aim, reload and die with real animations; your own arms and rifle on screen |
 | M7 | Economy & arsenal | ⬜ | Earn money and buy weapons between rounds |
-| M8 | Modes & 3 quick maps | ⬜ | Bomb rounds and team respawn matches on three small, fast maps in rotation |
+| M8 | Modes & 3 quick maps | 🟨 | Bomb rounds and team respawn matches on three small, fast maps in rotation |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
 | — | Backlog | — | Ideas for later |
 
@@ -245,12 +246,14 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** inheritance vs. composition in Godot, particle systems, more advanced UI.
 
-## M8 — Modes & 3 quick maps ⬜
+## M8 — Modes & 3 quick maps 🟨
+
+*Started early: the three map blockouts were built alongside M5 (2026-10-15). The rest of M8 follows M7.*
 
 **Goal:** fast, action-packed maps like Call of Duty's, three of them in rotation, playable in two modes: CS-style bomb rounds and a team respawn mode (D-049).
 
-- [ ] **Map rules:** small and fast: about 40–60 m across, three lanes with connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map works in both modes: two bomb sites plus spawn zones for respawning. Sketch all three on paper first
-- [ ] **Maps 1, 2 and 3** in TrenchBroom (D-032), each one blockout → bot test → detail: navmesh, side spawns, bomb sites, bot attack routes and hold spots. Three distinct looks within the no-desert rule (D-031)
+- [x] **Map rules:** small and fast: about 40–60 m across, three lanes with connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map works in both modes: two bomb sites plus spawn zones for respawning. Sketch all three on paper first
+- [ ] **Maps 1, 2 and 3** in TrenchBroom (D-032), each one blockout → bot test → detail: navmesh, side spawns, bomb sites, bot attack routes and hold spots. Three distinct looks within the no-desert rule (D-031). *Blockouts and bot tests done early (2026-10-15): Depot, Square, Spillway, see [MAPS.md](MAPS.md) (D-060–D-062); detail pass still open*
 - [ ] **Map rotation:** match setup picks a map or "Rotation"; after a match, "Next map" continues to the next one
 - [ ] Baked lighting (lightmaps) for the maps, moved from M3, and a decision on baked vs. real-time lighting
 - [ ] **Bomb:** carry, plant, timer, explosion, defuse (faster with a kit)

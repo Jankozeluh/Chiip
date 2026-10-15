@@ -452,6 +452,36 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** One map in M8 and two more in their own milestone, or after multiplayer (multiplayer sooner, with fewer maps). Rounds only, with all the action coming from the small maps. The respawn mode as the main mode.
 
+## D-060 — Three quick-map blockouts: Depot, Square, Spillway (2026-10-15)
+
+**Decision:**
+- Three layouts, each with a different middle: **Depot** (indoor mid, open sides), **Square** (open mid, tight sides), **Spillway** (sunken mid, high sides). Details, plans and numbers are in [MAPS.md](MAPS.md). Names are placeholders you picked.
+- Same conventions as the test map, plus two new marker groups for M8: `bomb_sites` (an `Area3D` per site on the triggers layer, switched off until the bomb exists) and `respawn_points` (12 per map in four zones, also used as Practice spawns now).
+- Building rules for every map: no steps (ramps of 26° or less), gaps at least 2.5 m wide, tall cover 2.2 m or more, low cover 1.2 m or less, walls next to raised floors tall enough not to be seen over, open floor at each site's centre.
+- The blockouts were generated once from a layout script kept outside the repository. From now on the `.map` files are the only source, edited in TrenchBroom.
+
+**Why:** Three different middles give three different ways to play the same three-lane idea, so the maps don't blur together in a rotation. Putting the bomb sites and respawn points in now means M8's bomb and respawn mode only add logic, not map work. Keeping the generator out avoids two sources of truth once you start editing in TrenchBroom.
+
+**Alternatives:** Three maps on one template with different textures (quicker, but they would play alike); placing the bomb sites when the bomb exists (the maps would have to be reopened and retuned); keeping the layout script in `tools/` (faster retuning by code, but any regeneration would overwrite your TrenchBroom edits).
+
+## D-061 — Measuring first contact and sightlines (2026-10-15)
+
+**Decision:**
+- **First contact** is the moment the first bot notices an enemy (`BotSenses.enemy_spotted`), timed from the round going live, in a seeded bots-only 3v3. `tests/maps_test.tscn` plays 4 rounds per map and requires a median of 5–10 s; it also checks the markers, that every marker stands on the navmesh, and that both spawns can walk to both sites.
+- **Sightlines** are measured by `tools/map_report.gd`: eye-height rays (1.63 m) between every pair of spots you can walk to, sampled every 1.5 m. Targets: no spawn-to-spawn views, the longest views around 40 m. Result: Depot 44 m (3 pairs over 40 m), Square 35 m, Spillway 38 m.
+
+**Why:** Bots play the same rounds a player would, so their timing is the closest automatic measure of "action within 5–10 s"; a fixed seed makes it repeatable. The sightline report found long diagonals that the plans didn't show, which is how most of the tuning was guided. Only reachable spots count, so the tops of crates don't produce fake lines.
+
+**Alternatives:** Timing by walking distance only (ignores defenders moving up and sound); requiring every single round in 5–10 s (one slow round would fail a good map); a stricter 30 m sightline limit (would need far more blockers on the open Depot).
+
+## D-062 — A lighting mood per map, all within cool daylight (2026-10-15)
+
+**Decision:** Depot uses today's `cool_daylight.tres`. Square gets `clear_morning.tres` (paler sky, a little more haze) with a low sun, 24° high, for long shadows. Spillway gets `overcast.tres` (grey sky, stronger ambient light, more fog) with a weak high sun. All neutral or cool, with warm light only from lamps (D-031).
+
+**Why:** Three distinct looks were asked for, and lighting changes the mood most with the textures we already have. Real-time lights keep it adjustable until baked lighting is decided in M8.
+
+**Alternatives:** One environment for all three (less distinct); night or dusk maps (darker than the clarity rule allows for now).
+
 ## Open questions
 
 | Question | Decide in |
