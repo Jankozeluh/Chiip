@@ -14,8 +14,12 @@ extends Node
 ## attackers, dropping on death and picking up (attackers only), defusing (only
 ## next to the bomb, starting over when let go, the kit hook), the attackers'
 ## deaths not ending a planted round, the defenders' deaths ending it, and what
-## the HUD shows for each step. Quits with the number of failed checks as the
-## exit code.
+## the HUD shows for each step. Then bots-only matches check that bots play the
+## objective (D-081): the carrier takes the bomb to the team's target site and
+## plants it, the nearest attacker fetches a dropped bomb, attackers guard the
+## planted bomb, defenders retake and defuse it while the others cover, and a
+## defender only keeps defusing under fire when it is nearly done. Quits with
+## the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
 const TEST_MAP_SCENE := preload("res://maps/test_map.tscn")
@@ -41,6 +45,10 @@ func _ready() -> void:
 	await _test_drop_and_pickup()
 	await _test_defuse()
 	await _test_after_the_plant()
+	await _test_bots_plant()
+	await _test_bots_fetch()
+	await _test_bots_retake()
+	await _test_bots_stick()
 	Input.action_release("use")
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -274,7 +282,159 @@ func _test_after_the_plant() -> void:
 			bomb.actor == null and bomb.is_planted(), "actor %s, state %s" % [bomb.actor, Bomb.State.keys()[bomb.state]])
 
 
+# --- Bots and the objective ---
+
+
+func _test_bots_plant() -> void:
+	await _new_bot_match()
+	var bomb := _rounds.bomb
+	await _wait_for_live()
+	# Leave one defender, frozen at the attackers' spawn: nobody meets it while the attackers take a site.
+	var defenders := _rounds.get_members(_rounds.get_defending_team())
+	defenders[0].take_damage(500.0, Hitbox.Zone.CHEST, null)
+	defenders[1].take_damage(500.0, Hitbox.Zone.CHEST, null)
+	defenders[2].frozen = true
+	await _teleport(defenders[2], _marker_position(Teams.ATTACK_SPAWN_GROUP, 0))
+	var carrier := bomb.carrier
+	var target := (carrier.get_node("BotController") as BotController).get_target_site()
+	var planted_at := [-1.0]
+	bomb.planted.connect(func(_site: Area3D, _planter: Character) -> void: planted_at[0] = _rounds.settings.round_time - _rounds.time_left)
+	await _wait_until(func() -> bool: return bomb.is_planted(), 40.0)
+	_check("The carrier bot takes the bomb to its team's target site and plants it",
+			bomb.is_planted() and target != null and bomb.site == target and planted_at[0] > 0.0 and planted_at[0] < 30.0,
+			"planted %s at %s after %.1f s (target %s)" % [bomb.is_planted(), Bomb.site_letter(bomb.site), planted_at[0], Bomb.site_letter(target)])
+	await _wait_seconds(10.0)
+	var guards := _rounds.get_members(_rounds.attacking_team).filter(func(member: Character) -> bool: return member.is_alive())
+	var distances := guards.map(func(member: Character) -> float: return _flat(member.global_position, bomb.global_position))
+	_check("After the plant the attackers guard the bomb from a few metres away",
+			guards.size() == 3 and distances.all(func(distance: float) -> bool: return distance <= BotController.GUARD_MAX * 1.3),
+			"distances %s m" % [", ".join(distances.map(func(distance: float) -> String: return "%.1f" % distance))])
+
+
+func _test_bots_fetch() -> void:
+	await _new_bot_match()
+	var bomb := _rounds.bomb
+	await _wait_for_live()
+	var first := bomb.carrier
+	first.take_damage(500.0, Hitbox.Zone.CHEST, null)
+	await _wait_until(func() -> bool: return bomb.state == Bomb.State.CARRIED and bomb.carrier != first, 8.0)
+	_check("When the carrier dies, another attacker bot picks the bomb up",
+			bomb.state == Bomb.State.CARRIED and bomb.carrier != first and bomb.carrier.team == _rounds.attacking_team,
+			"state %s, carrier %s (first carrier %s)" % [Bomb.State.keys()[bomb.state], bomb.carrier, first.name])
+
+
+func _test_bots_retake() -> void:
+	await _new_bot_match()
+	var bomb := _rounds.bomb
+	await _wait_for_live()
+	var attackers := _rounds.get_members(_rounds.attacking_team)
+	var site_a := _site("A")
+	await _teleport(attackers[0], _site_floor(site_a))
+	bomb.start_round(attackers[0], _rounds.attacking_team)
+	bomb.plant(site_a, attackers[0])
+	for attacker in attackers:
+		attacker.take_damage(500.0, Hitbox.Zone.CHEST, null)
+	var covering := [0]
+	await _wait_until(func() -> bool:
+		if bomb.actor != null:
+			# While one defuses, how many teammates stand close by?
+			var near := _rounds.get_members(_rounds.get_defending_team()).filter(func(member: Character) -> bool:
+				return member != bomb.actor and member.is_alive() and _flat(member.global_position, bomb.global_position) <= BotController.COVER_DISTANCE + 2.0)
+			covering[0] = maxi(covering[0], near.size())
+		return bomb.state != Bomb.State.PLANTED, 40.0)
+	_check("Defender bots retake the planted bomb and defuse it; the others cover the defuser",
+			bomb.state == Bomb.State.DEFUSED and _results == [[_rounds.get_defending_team(), RoundManager.EndReason.BOMB_DEFUSED]]
+			and covering[0] >= 1,
+			"state %s, results %s, at most %d teammates covering" % [Bomb.State.keys()[bomb.state], _results, covering[0]])
+
+
+## A defender far into its defuse keeps going when an enemy shows up; early in it, it stops and fights.
+func _test_bots_stick() -> void:
+	for nearly_done in [true, false]:
+		await _new_bot_match()
+		var bomb := _rounds.bomb
+		await _wait_for_live()
+		var attackers := _rounds.get_members(_rounds.attacking_team)
+		var site_a := _site("A")
+		await _teleport(attackers[0], _site_floor(site_a))
+		bomb.start_round(attackers[0], _rounds.attacking_team)
+		bomb.plant(site_a, attackers[0])
+		# One frozen attacker stays alive (it can't shoot) and waits out of sight.
+		for attacker in attackers.slice(1):
+			attacker.take_damage(500.0, Hitbox.Zone.CHEST, null)
+		var enemy := attackers[0]
+		enemy.frozen = true
+		await _teleport(enemy, _marker_position(Teams.ATTACK_SPAWN_GROUP, 0))
+		var defenders := _rounds.get_members(_rounds.get_defending_team())
+		var defuser: Character = defenders[0]
+		for other in defenders.slice(1):
+			other.take_damage(500.0, Hitbox.Zone.CHEST, null)
+		await _wait_until(func() -> bool: return bomb.actor == defuser, 20.0)
+		var wanted := 0.8 if nearly_done else 0.2
+		await _wait_until(func() -> bool: return bomb.progress >= wanted, 12.0)
+		# The enemy steps out in front of the defuser, 6 m away.
+		var view := Basis.from_euler(Vector3(0.0, defuser.get_aim_angles().x, 0.0))
+		await _teleport(enemy, defuser.global_position + view * Vector3(0.0, 0.0, -6.0))
+		await _wait_seconds(1.5)
+		var state := (defuser.get_node("BotController") as BotController).state
+		if nearly_done:
+			_check("A defender 80% into the defuse keeps defusing when an enemy shows up",
+					state == BotController.State.ENGAGE and (bomb.actor == defuser or bomb.state == Bomb.State.DEFUSED),
+					"bot state %s, actor %s, bomb %s" % [BotController.State.keys()[state], bomb.actor, Bomb.State.keys()[bomb.state]])
+		else:
+			_check("A defender 20% into the defuse stops to fight an enemy who shows up",
+					state == BotController.State.ENGAGE and bomb.actor == null and bomb.is_planted(),
+					"bot state %s, actor %s, bomb %s" % [BotController.State.keys()[state], bomb.actor, Bomb.State.keys()[bomb.state]])
+
+
 # --- Helpers ---
+
+
+## A bots-only 3v3 on Depot (the map's Player removed), every bot seeded.
+func _new_bot_match() -> void:
+	_free_map()
+	_results.clear()
+	_map = MAP_SCENE.instantiate()
+	_map.get_node("Player").free()
+	add_child(_map)
+	await _wait_ticks(30)
+	var settings := MatchSettings.new()
+	settings.freeze_time = 0.5
+	settings.round_end_time = 2.0
+	_rounds = RoundManager.new()
+	_rounds.settings = settings
+	_rounds.rng.seed = 3
+	_rounds.round_ended.connect(func(winner: int, reason: RoundManager.EndReason) -> void: _results.append([winner, reason]))
+	_map.add_child(_rounds)
+	await _wait_ticks(2)
+	var participants := _rounds.get_participants()
+	for i in participants.size():
+		_silence(participants[i])
+		(participants[i].get_node("BotController") as BotController).rng.seed = i + 1
+		participants[i].weapon.rng.seed = i + 1
+	for property in ["beep_sound", "plant_sound", "defuse_sound", "explosion_sound"]:
+		_rounds.bomb.set(property, null)
+
+
+func _wait_for_live() -> void:
+	await _wait_until(func() -> bool: return _rounds.phase == RoundManager.Phase.LIVE, 5.0)
+
+
+## Waits until [param condition] is true, at most [param seconds].
+func _wait_until(condition: Callable, seconds: float) -> void:
+	var ticks := 0
+	while not condition.call() and ticks < seconds * Engine.physics_ticks_per_second:
+		await get_tree().physics_frame
+		ticks += 1
+
+
+func _marker_position(group: String, index: int) -> Vector3:
+	var markers := get_tree().get_nodes_in_group(group).filter(func(node: Node) -> bool: return _map.is_ancestor_of(node))
+	return (markers[index] as Node3D).global_position
+
+
+func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 ## Starts a match on a fresh copy of [param scene] in which you attack (or

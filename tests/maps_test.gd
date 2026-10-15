@@ -11,7 +11,9 @@ extends Node
 ## mesh, and that both spawns can walk to both bomb sites. Then it plays a seeded
 ## bots-only 3v3 on the map and measures the time from the round going live to
 ## first contact (the first bot to notice an enemy), which should be 5–10 s,
-## and how rounds end. Quits with the number of failed checks as the exit code.
+## and how rounds end. The rounds are bomb rounds (D-080), so it also counts
+## the bots' plants, explosions and defuses (D-081). Quits with the number of
+## failed checks as the exit code.
 
 const MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"]
 ## Rounds to play on each map.
@@ -26,8 +28,12 @@ var _map: Node3D
 var _rounds: RoundManager
 var _failures: int = 0
 var _live_ticks: int = 0
-## Per round: {"contact": s or -1, "damage": s or -1, "length": s, "reason": EndReason}.
+## Per round: {"contact": s or -1, "damage": s or -1, "length": s, "reason": EndReason,
+## and "plant": "A at 23 s" if the bomb was planted}.
 var _results: Array[Dictionary] = []
+## Plants over all maps, and rounds won by the bomb (exploded or defused).
+var _plants_total: int = 0
+var _bomb_endings_total: int = 0
 var _current: Dictionary = {}
 
 
@@ -39,6 +45,10 @@ func _ready() -> void:
 		maps = [args[map_arg + 1]]
 	for path in maps:
 		await _check_map(path)
+	if maps.size() == MAPS.size():
+		_check("Bots play the objective: they plant in some rounds, and some rounds end with the bomb",
+				_plants_total >= 2 and _bomb_endings_total >= 1,
+				"%d plants, %d rounds ended by the bomb exploding or being defused, over %d rounds" % [_plants_total, _bomb_endings_total, ROUNDS_TO_PLAY * MAPS.size()])
 	if _failures == 0:
 		print("\nAll checks passed.")
 	else:
@@ -145,6 +155,11 @@ func _play_rounds() -> void:
 	_map.add_child(_rounds)
 	for i in 2:
 		await get_tree().physics_frame
+	if _rounds.bomb != null:
+		for property in ["beep_sound", "plant_sound", "defuse_sound", "explosion_sound"]:
+			_rounds.bomb.set(property, null)
+		_rounds.bomb.planted.connect(func(site: Area3D, _planter: Character) -> void:
+			_current["plant"] = "%s at %.0f s" % [Bomb.site_letter(site), _live_ticks / 128.0])
 	var participants := _rounds.get_participants()
 	for i in participants.size():
 		var character := participants[i]
@@ -163,22 +178,27 @@ func _play_rounds() -> void:
 		ticks += 1
 	var contacts: Array[float] = []
 	var lines: Array[String] = []
-	var eliminations := 0
+	var decided := 0
 	for result in _results:
 		contacts.append(result["contact"])
-		if result["reason"] == RoundManager.EndReason.ELIMINATION:
-			eliminations += 1
-		lines.append("contact %.1f s, first hit %.1f s, round %.0f s (%s): %s" % [result["contact"], result["damage"], result["length"],
-				RoundManager.EndReason.keys()[result["reason"]].to_lower(), result.get("where", "no contact")])
+		if result["reason"] != RoundManager.EndReason.TIME:
+			decided += 1
+		if result.has("plant"):
+			_plants_total += 1
+		if result["reason"] == RoundManager.EndReason.BOMB_EXPLODED or result["reason"] == RoundManager.EndReason.BOMB_DEFUSED:
+			_bomb_endings_total += 1
+		lines.append("contact %.1f s, first hit %.1f s, round %.0f s (%s%s): %s" % [result["contact"], result["damage"], result["length"],
+				RoundManager.EndReason.keys()[result["reason"]].to_lower(), ", planted " + result["plant"] if result.has("plant") else "",
+				result.get("where", "no contact")])
 	print("  " + "\n  ".join(lines))
 	contacts.sort()
 	var median := (contacts[contacts.size() / 2] + contacts[(contacts.size() - 1) / 2]) / 2.0 if not contacts.is_empty() else -1.0
 	_check("First contact %.0f–%.0f s after the round goes live (median of %d rounds)" % [CONTACT_MIN, CONTACT_MAX, ROUNDS_TO_PLAY],
 			_results.size() == ROUNDS_TO_PLAY and median >= CONTACT_MIN and median <= CONTACT_MAX,
 			"median %.1f s; every round: %s" % [median, ", ".join(contacts.map(func(c: float) -> String: return "%.1f" % c))])
-	_check("Rounds are decided by fighting, not by running out the clock",
-			_results.size() == ROUNDS_TO_PLAY and eliminations >= ROUNDS_TO_PLAY - 1,
-			"%d of %d rounds ended by elimination" % [eliminations, _results.size()])
+	_check("Rounds are decided by fighting or the bomb, not by running out the clock",
+			_results.size() == ROUNDS_TO_PLAY and decided >= ROUNDS_TO_PLAY - 1,
+			"%d of %d rounds ended by elimination or the bomb" % [decided, _results.size()])
 
 
 ## Notes the live time of the first [param kind] event ("contact" or "damage")

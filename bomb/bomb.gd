@@ -154,6 +154,16 @@ func get_site_of(character: Character) -> Area3D:
 	return null
 
 
+## The floor in the middle of [param area]: the bottom of its box (the site
+## areas stand on the floor), or its centre for another shape.
+static func get_site_floor(area: Area3D) -> Vector3:
+	for child in area.get_children():
+		var shape := child as CollisionShape3D
+		if shape != null and shape.shape is BoxShape3D:
+			return shape.global_position + Vector3.DOWN * (shape.shape as BoxShape3D).size.y * 0.5
+	return area.global_position
+
+
 ## The letter of [param area] for messages: "A" for a node named BombSiteA.
 static func site_letter(area: Area3D) -> String:
 	return String(area.name).trim_prefix("BombSite") if area != null else ""

@@ -148,7 +148,7 @@ Chiip/
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M7) |
 | HUD | Crosshair, ammo, health, timer, score, kill feed, banners | M2 → M5 | Built: crosshair, ammo, weapon name, health, spectate line; round HUD (top bar, countdown and side, banners, kill feed, D-047) |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Built: low-res world, palette with dithering, two HUD styles |
-| Bot AI | Navigation, perception, state machine, aim, round tactics | M4, M5 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels; attack routes, hold spots, holding fire for teammates (M5) |
+| Bot AI | Navigation, perception, state machine, aim, round tactics | M4, M5, M8 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels; attack routes, hold spots, holding fire for teammates (M5); the bomb: target site, plant, fetch, guard, retake, defuse, getting unstuck (M8, D-081) |
 | Developer console | `bot_add`, `noclip` and similar commands | M4 | Built: help, clear, bot_add, bot_kick, bot_difficulty, god, noclip, mp_friendlyfire, map |
 | Character animation | Walk cycle now; rigged models, animation blending, first-person arms later | M4 → M6 | Built: procedural walk placeholder (`SoldierBody`) |
 | Teams | Two teams, viewer-relative colors, attack/defend spawn ends, friendly fire | M5 | Built: `Teams`, 10 spawns on the test map (D-042) |

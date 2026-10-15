@@ -16,6 +16,15 @@ extends CharacterController
 ##
 ## In a match, [BotTactics] gives every bot its orders at the start of each round.
 ##
+## In bomb rounds (D-081) the orders bend around the [Bomb]: the carrier walks
+## its route and then plants at the team's target site, the other attackers
+## clear around that site, the nearest attacker fetches a dropped bomb, and
+## after the plant the attackers guard the bomb from spots that see it.
+## Defenders hold their spots until the plant, then all retake: the first one
+## at the bomb defuses while the others cover it. Planting and defusing use the
+## same Use command as the player. A bot keeps defusing (or planting) when an
+## enemy shows up only if it is nearly done.
+##
 ## What it knows comes from its [BotSenses]; how well it fights comes from its
 ## [BotDifficulty]. Movement uses a [NavigationAgent3D] (sibling node).
 
@@ -53,6 +62,32 @@ const HOLD_SWEEP_DEGREES := 10.0
 const HOLD_SWEEP_SPEED := 0.5
 ## A teammate this close to the line of fire (metres) makes the bot hold fire.
 const LINE_OF_FIRE_CLEARANCE := 0.6
+## How far a plant spot lies from the middle of the site, at most (metres).
+const PLANT_SPREAD := 1.0
+## Seconds of round time the carrier keeps for walking to a site and planting:
+## with less left, it stops following its route and goes straight to plant.
+const PLANT_RESERVE := 30.0
+## Attackers guard the planted bomb from this far away (metres), where they can see it.
+const GUARD_MIN := 5.0
+const GUARD_MAX := 10.0
+## Defenders covering a teammate's defuse stop this far from the bomb (metres).
+const COVER_DISTANCE := 7.0
+## After the plant, bots only go and check enemies seen or heard this close to the bomb (metres).
+const BOMB_CHECK_DISTANCE := 15.0
+## A bot keeps planting or defusing when an enemy shows up once it is this far along.
+const STICK_PROGRESS := 0.7
+## How far a guarding or covering bot's view drifts to each side, in degrees.
+const GUARD_SWEEP_DEGREES := 25.0
+## Where a planting or defusing bot looks: down at the bomb, in degrees.
+const BOMB_LOOK_PITCH := -50.0
+## A bot walking slower than this (m/s) isn't getting anywhere.
+const STUCK_SPEED := 0.6
+## Seconds of getting nowhere before a stuck bot jumps, and before it backs off
+## to the side and asks for a new path (like a CS bot that's stuck).
+const STUCK_JUMP_TIME := 0.5
+const STUCK_BACKUP_TIME := 1.2
+## Seconds a stuck bot backs off before following its path again.
+const BACKUP_DURATION := 0.5
 
 ## How well this bot fights.
 @export var difficulty: BotDifficulty = preload("res://bots/difficulty_normal.tres")
@@ -100,6 +135,22 @@ var _start_delay: float = 0.0
 var _hold_spot: Transform3D = Transform3D.IDENTITY
 var _hold_spots: Array[Transform3D] = []
 var _hold_time: float = 0.0
+## Bomb rounds: the round's bomb (null without one), the site this bot's team
+## attacks, where the carrier plants, and where the bot guards or covers after
+## the plant.
+var _bomb: Bomb
+var _target_site: Area3D
+var _plant_spot: Vector3 = Vector3.INF
+var _guard_spot: Vector3 = Vector3.INF
+## Seconds of live round so far, and when the carrier stops following its
+## route and goes straight to plant.
+var _live_time: float = 0.0
+var _plant_deadline: float = INF
+## Seconds spent trying to walk without moving, and the back-off of a stuck bot
+## (seconds left, and which way).
+var _stuck_time: float = 0.0
+var _backup_left: float = 0.0
+var _backup_direction: Vector3 = Vector3.ZERO
 ## Randomness for aim error and decisions. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
 
@@ -137,33 +188,48 @@ func on_respawned() -> void:
 ## Orders: walk between patrol points (practice mode).
 func patrol() -> void:
 	role = Role.PATROL
+	_reset_objective()
 	_pick_patrol_point()
 
 
 ## Orders: after [param delay] seconds of live round, follow [param route] (world
 ## positions in order), then keep checking [param clear_points] at random,
-## walking silently, until the round is over.
-func attack(route: Array[Vector3], clear_points: Array[Vector3], delay: float) -> void:
+## walking silently, until the round is over. In a bomb round [param
+## target_site] is where the team plants, and a carrier stops following the
+## route after [param plant_deadline] seconds of live round.
+func attack(route: Array[Vector3], clear_points: Array[Vector3], delay: float, target_site: Area3D = null, plant_deadline: float = INF) -> void:
 	role = Role.ATTACK
+	_reset_objective()
 	_route = route
 	_route_index = 0
 	_clear_points = clear_points
 	_start_delay = delay
+	_target_site = target_site
+	_plant_deadline = plant_deadline
 	_aim_for_route()
 
 
 ## Orders: go to [param spot] and hold the angle it faces. [param all_spots]
 ## are every hold spot of the team's end; after leaving to check on a fight,
-## the bot holds whichever is nearest.
+## the bot holds whichever is nearest. In a bomb round, a plant overrides this:
+## every defender retakes.
 func defend(spot: Transform3D, all_spots: Array[Transform3D]) -> void:
 	role = Role.DEFEND
+	_reset_objective()
 	_hold_spot = spot
 	_hold_spots = all_spots
 	_hold_time = 0.0
 	move_to(spot.origin)
 
 
+## The site this bot's team attacks this round, or null.
+func get_target_site() -> Area3D:
+	return _target_site
+
+
 func get_input(delta: float) -> CharacterInput:
+	if not character.frozen:
+		_live_time += delta
 	_update_state()
 	var input := CharacterInput.new()
 	match state:
@@ -171,6 +237,10 @@ func get_input(delta: float) -> CharacterInput:
 			_follow_orders(input, delta)
 		State.ENGAGE:
 			_engage(input, delta)
+			if _should_stick_to_bomb():
+				# Nearly done: finish the plant or defuse instead of fighting back.
+				input.use = true
+				input.shoot = false
 		State.SEARCH:
 			_search(input, delta)
 	input.yaw = _yaw
@@ -206,7 +276,15 @@ func _update_state() -> void:
 
 
 ## Whether the bot leaves its orders to check on an enemy last seen or heard at [param point].
+## In bomb rounds the carrier never does (it fights what it sees, then carries
+## on), the bot fetching a dropped bomb doesn't either, and after the plant
+## only enemies near the bomb count.
 func _wants_to_check(point: Vector3) -> bool:
+	if _objective_live():
+		if _bomb.carrier == character or _is_fetching():
+			return false
+		if _bomb.is_planted():
+			return _bomb.global_position.distance_to(point) <= BOMB_CHECK_DISTANCE
 	return role != Role.DEFEND or character.global_position.distance_to(point) <= ROTATE_DISTANCE
 
 
@@ -232,6 +310,8 @@ func _start_engaging(enemy: Character) -> void:
 
 func _follow_orders(input: CharacterInput, delta: float) -> void:
 	if hold_position:
+		return
+	if _play_objective(input, delta):
 		return
 	match role:
 		Role.ATTACK:
@@ -403,17 +483,232 @@ func _on_weapon_fired(_spray_shot: int) -> void:
 		_pause_left = difficulty.burst_pause
 
 
+# --- Bomb rounds ---
+
+
+func _reset_objective() -> void:
+	_bomb = get_tree().get_first_node_in_group(Bomb.GROUP) as Bomb
+	_target_site = null
+	_plant_spot = Vector3.INF
+	_guard_spot = Vector3.INF
+	_live_time = 0.0
+	_plant_deadline = INF
+
+
+## True while there is a bomb and the round is live (planting, defusing and picking up work).
+func _objective_live() -> bool:
+	return is_instance_valid(_bomb) and _bomb.active
+
+
+## What the bomb asks of this bot right now, ahead of its usual orders.
+## Returns true when it took over this tick.
+func _play_objective(input: CharacterInput, delta: float) -> bool:
+	if not _objective_live():
+		return false
+	match role:
+		Role.ATTACK:
+			return _attack_objective(input, delta)
+		Role.DEFEND:
+			return _defend_objective(input, delta)
+	return false
+
+
+func _attack_objective(input: CharacterInput, delta: float) -> bool:
+	match _bomb.state:
+		Bomb.State.CARRIED:
+			# The others escort: their route, then clearing around the target site.
+			if _bomb.carrier != character or _start_delay > 0.0:
+				return false
+			if _route_index < _route.size() and _live_time < _plant_deadline:
+				return false
+			_go_plant(input, delta)
+			return true
+		Bomb.State.DROPPED:
+			if not _is_fetching():
+				return false
+			_go_to(_bomb.global_position)
+			_walk(input, delta, true)
+			return true
+		Bomb.State.PLANTED:
+			_guard_bomb(input, delta)
+			return true
+	return false
+
+
+## The carrier: to the plant spot in the target site, then hold Use until planted.
+func _go_plant(input: CharacterInput, delta: float) -> void:
+	if not is_instance_valid(_target_site):
+		_target_site = _nearest_site()
+	if _plant_spot == Vector3.INF:
+		_plant_spot = _pick_plant_spot(_target_site)
+	var in_site := _bomb.get_site_of(character) != null
+	if in_site and (_flat_distance(character.global_position, _plant_spot) < 1.0 or has_arrived()):
+		input.use = true
+		_turn_toward(_yaw, deg_to_rad(BOMB_LOOK_PITCH), WALK_TURN_SPEED, delta)
+		return
+	_go_to(_plant_spot)
+	_walk(input, delta, true)
+	if has_arrived() and not in_site:
+		# The path ended short of the site: step straight in.
+		input.move = _keys_for_direction(_flat_direction_to(_plant_spot))
+
+
+## Attackers after the plant: go to a spot near the bomb that sees it, and watch it.
+func _guard_bomb(input: CharacterInput, delta: float) -> void:
+	if _guard_spot == Vector3.INF:
+		_guard_spot = _pick_guard_spot()
+	if _flat_distance(character.global_position, _guard_spot) > 1.0 and not (has_arrived() and _agent.target_position.is_equal_approx(_guard_spot)):
+		_go_to(_guard_spot)
+		_walk(input, delta, true)
+		return
+	_watch(_bomb.global_position + Vector3.UP * 0.3, false, input, delta)
+
+
+## Defenders: hold their spots until the plant; then retake. The first at the
+## bomb defuses, the others cover the defuser from a few metres away.
+func _defend_objective(input: CharacterInput, delta: float) -> bool:
+	if not _bomb.is_planted():
+		return false
+	if _bomb.actor == character:
+		input.use = true
+		_turn_toward(_yaw, deg_to_rad(BOMB_LOOK_PITCH), WALK_TURN_SPEED, delta)
+		return true
+	var distance := _flat_distance(character.global_position, _bomb.global_position)
+	if _bomb.actor != null and distance <= COVER_DISTANCE:
+		# A teammate is defusing: watch away from the bomb, where attackers come from.
+		_watch(_bomb.global_position, true, input, delta)
+		return true
+	if _bomb.actor == null and distance <= Bomb.DEFUSE_DISTANCE - 0.3:
+		input.use = true
+		return true
+	_go_to(_bomb.global_position)
+	_walk(input, delta, true)
+	if has_arrived():
+		# The path ends a little short of the bomb: step up to it.
+		input.move = _keys_for_direction(_flat_direction_to(_bomb.global_position))
+	return true
+
+
+## Holding a spot after the plant: look at [param point] (or straight away from
+## it with [param away]), letting the view drift from side to side.
+func _watch(point: Vector3, away: bool, _input: CharacterInput, delta: float) -> void:
+	_hold_time += delta
+	var to_point := point - character.get_eye_position()
+	if away:
+		to_point = Vector3(-to_point.x, 0.0, -to_point.z)
+	if Vector2(to_point.x, to_point.z).length() < 0.1:
+		return
+	var yaw := atan2(-to_point.x, -to_point.z) + deg_to_rad(GUARD_SWEEP_DEGREES) * sin(_hold_time * HOLD_SWEEP_SPEED * 1.4)
+	_turn_toward(yaw, 0.0 if away else asin(to_point.normalized().y), WALK_TURN_SPEED, delta)
+
+
+## True when a plant or defuse of this bot is nearly done, or a defuse can't
+## wait (the fuse would run out before another full defuse).
+func _should_stick_to_bomb() -> bool:
+	if not _objective_live() or _bomb.actor != character:
+		return false
+	if _bomb.progress >= STICK_PROGRESS:
+		return true
+	return _bomb.is_defusing(character) and _bomb.fuse_left < _bomb.get_defuse_time(character) + 1.0
+
+
+## True when this bot is the attacker (among the bots) nearest to the dropped bomb, so it goes and picks it up.
+func _is_fetching() -> bool:
+	if not is_instance_valid(_bomb) or _bomb.state != Bomb.State.DROPPED or role != Role.ATTACK:
+		return false
+	var mine := _flat_distance(character.global_position, _bomb.global_position)
+	for node in get_tree().get_nodes_in_group("characters"):
+		var other := node as Character
+		if other == character or other.team != character.team or not other.is_alive():
+			continue
+		if other.get_node_or_null("BotController") is BotController and _flat_distance(other.global_position, _bomb.global_position) < mine:
+			return false
+	return true
+
+
+func _nearest_site() -> Area3D:
+	var nearest: Area3D = null
+	for site in _bomb.get_sites():
+		if nearest == null or _flat_distance(site.global_position, character.global_position) < _flat_distance(nearest.global_position, character.global_position):
+			nearest = site
+	return nearest
+
+
+## A walkable spot near the middle of [param site] (the middle of every site is open floor).
+func _pick_plant_spot(site: Area3D) -> Vector3:
+	var point := Bomb.get_site_floor(site) + Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)) * PLANT_SPREAD
+	return NavigationServer3D.map_get_closest_point(character.get_world_3d().navigation_map, point)
+
+
+## A walkable spot 5–10 m from the planted bomb from which the bot's eyes see
+## it, or one next to the bomb if no such spot is found.
+func _pick_guard_spot() -> Vector3:
+	var map := character.get_world_3d().navigation_map
+	var space := character.get_world_3d().direct_space_state
+	var bomb_point := _bomb.global_position + Vector3.UP * 0.3
+	for attempt in 16:
+		var angle := rng.randf() * TAU
+		var point := _bomb.global_position + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(GUARD_MIN, GUARD_MAX)
+		point = NavigationServer3D.map_get_closest_point(map, point)
+		var distance := _flat_distance(point, _bomb.global_position)
+		if distance < GUARD_MIN * 0.8 or distance > GUARD_MAX * 1.2 or absf(point.y - _bomb.global_position.y) > 2.0:
+			continue
+		var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * character.stand_eye_height, bomb_point, PhysicsLayers.WORLD)
+		if space.intersect_ray(query).is_empty():
+			return point
+	return NavigationServer3D.map_get_closest_point(map, _bomb.global_position + Vector3(2.0, 0.0, 0.0))
+
+
+## Walks toward [param point], asking for a new path only when the goal changed.
+func _go_to(point: Vector3) -> void:
+	if not _agent.target_position.is_equal_approx(point):
+		move_to(point)
+
+
+func _flat_direction_to(point: Vector3) -> Vector3:
+	var offset := point - character.global_position
+	offset.y = 0.0
+	return offset.normalized() if offset.length() > 0.01 else Vector3.ZERO
+
+
 # --- Moving and looking ---
 
 
 ## Follows the current path. With [param face_path] the bot looks where it walks.
+## A bot that gets nowhere (pressed against the side of a ramp or a corner the
+## path cuts) jumps after [constant STUCK_JUMP_TIME], and after [constant
+## STUCK_BACKUP_TIME] backs off to one side and asks for a new path.
 func _walk(input: CharacterInput, delta: float, face_path: bool) -> void:
 	var direction := _get_walk_direction()
 	if direction == Vector3.ZERO:
+		_stuck_time = 0.0
 		return
 	if face_path:
 		_turn_toward(atan2(-direction.x, -direction.z), 0.0, WALK_TURN_SPEED, delta)
+	if _backup_left > 0.0:
+		_backup_left -= delta
+		input.move = _keys_for_direction(_backup_direction)
+		return
 	input.move = _keys_for_direction(direction)
+	_check_stuck(input, direction, delta)
+
+
+func _check_stuck(input: CharacterInput, direction: Vector3, delta: float) -> void:
+	var speed := Vector2(character.velocity.x, character.velocity.z).length()
+	if speed >= STUCK_SPEED or character.frozen or character.busy or not character.is_on_floor():
+		_stuck_time = 0.0
+		return
+	var before := _stuck_time
+	_stuck_time += delta
+	if before < STUCK_JUMP_TIME and _stuck_time >= STUCK_JUMP_TIME:
+		input.jump = true
+	elif _stuck_time >= STUCK_BACKUP_TIME:
+		_stuck_time = 0.0
+		_backup_left = BACKUP_DURATION
+		var side := 1.0 if rng.randf() < 0.5 else -1.0
+		_backup_direction = (-direction + direction.cross(Vector3.UP) * side).normalized()
+		# Same goal, fresh path from where the bot ends up.
+		_agent.target_position = _agent.target_position
 
 
 func _pick_patrol_point() -> void:

@@ -108,12 +108,12 @@ A dry concrete water works. **Sunken mid, high sides.**
 
 ## Measurements
 
-From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the round going live) and `tools/map_report.gd`. Walking distances follow the navmesh from the middle spawn marker.
+From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the round going live; since D-081 they are bomb rounds) and `tools/map_report.gd`. Walking distances follow the navmesh from the middle spawn marker.
 
 | | Depot | Square | Spillway |
 |---|---|---|---|
-| First contact, each round (median) | 5.3, 5.6, 5.8, 6.2 s (5.7 s) | 5.6, 6.5, 6.7, 7.1 s (6.6 s) | 5.5, 5.7, 6.0, 9.2 s (5.8 s) |
-| Round length (all ended by elimination) | 9–16 s | 9–23 s | 11–17 s |
+| First contact, each round (median), bomb rounds (D-081) | 5.4, 5.4, 5.5, 6.0 s (5.4 s) | 6.0, 6.2, 7.2, 9.1 s (6.7 s) | 5.5, 5.6, 6.0, 6.7 s (5.8 s) |
+| Round length (bomb rounds; before the bomb all ended by elimination in 9–23 s) | 31–43 s | 19–50 s | 15–31 s |
 | Spawn to spawn, walking (straight line) | 52 m (49 m) | 62 m (50 m) | 52 m (51 m) |
 | Attackers to A / B | 57 m / 52 m | 65 m / 54 m | 51 m / 53 m |
 | Defenders to A / B | 25 m / 23 m | 18 m / 20 m | 20 m / 21 m |
@@ -121,6 +121,7 @@ From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the roun
 | Longest sightline | 44 m | 35 m | 38 m |
 | Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 | 375 / 0 |
 | Spawn-to-spawn views | 0 | 0 | 0 |
+| Bomb rounds with bots (D-081): plants in 4 rounds, how they ended | 4 plants: 4 defused | 4 plants: 2 defused, 2 elimination | 3 plants: 1 defused, 2 elimination; 1 round decided before a plant |
 
 At 5.5 m/s (rifle in hand) a 52 m walk takes about 9.5 s. Contact comes earlier because defenders move up to their hold spots and toward the sound of footsteps.
 

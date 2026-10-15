@@ -9,7 +9,9 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 **Done**
 - **The bomb** (D-080, provisional): CS's rules on the three quick maps. A random attacker carries it on their back; hold **E** inside site A or B for 3.2 s to plant (you can't move meanwhile, and letting go starts over); the round clock stops and the timer shows "BOMB"; it beeps faster and faster and explodes after 40 s (lethal out to about 13 m); a defender holds E next to it for 10 s to defuse (a kit will halve that in M7: `Bomb.kit_check` is the hook). If the carrier dies, the bomb drops and the next attacker who walks over it picks it up. After a plant, the defenders must defuse even if every attacker is dead. New `use` input action (E) and `CharacterInput.use`, so bots will plant and defuse by the same rule. HUD: a BOMB tag, plant/defuse prompts with a progress bar, and messages. Generated beep, key-press, wire-click and explosion sounds. New `tests/bomb_test.tscn` (26 checks); all other suites still pass (movement 13, weapon 20, bot 16, round 74, tactics 4, ui 35, maps 15).
 
-**Next:** bots play the objective (carry, plant, rotate, retake, defuse), then the team respawn mode.
+- **Bots play the objective** (D-081, provisional): the attackers pick a target site; the carrier's group takes the route that ends nearest to it and the carrier plants there; the nearest bot fetches a dropped bomb; after the plant the attackers watch the bomb from 5–10 m. Every defender retakes; one defuses while the others cover, and a bot keeps defusing under fire only when it's 70% done. Testing found a bot stuck against the side of Depot's dock ramp for 100 s, so stuck bots now jump and then back off and find a new path. 6 new bot checks (bomb test: 32); in the maps test the bots planted in 11 of 12 rounds and no round ran out of time.
+
+**Next:** the team respawn mode.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

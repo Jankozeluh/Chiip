@@ -138,7 +138,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 ### 4.4 Bots
 
 - Find their way around the map using a navigation mesh.
-- Behaviour states: follow the round's orders (attack, defend, or patrol in practice) → engage an enemy → search the last known position. Planting and defusing come later.
+- Behaviour states: follow the round's orders (attack, defend, or patrol in practice) → engage an enemy → search the last known position. In bomb rounds the orders include planting and defusing (see below).
 - **Vision:** a field-of-view cone plus a line-of-sight check, so no wallhacks.
 - **Hearing:** running footsteps and gunshots reveal your position. Walking is silent.
 - **Difficulty** comes from reaction time, aim accuracy, spray control and decision speed. Presets *(tune)*:
@@ -161,6 +161,8 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
   - **Attackers** split into loose groups of about two (3 attackers: a pair and a single). Each group takes one of the map's attack routes (the test map has a west, a middle and an east lane), its members setting off 0.6 s apart with a little spread, so they don't walk in single file. At the end of the route they *clear* the defenders' end: they check the hold spots and the defenders' spawn at random, **walking** (silent), until the round is over.
   - **Defenders** each take a different hold spot near their end (the test map has six: the platform, the west flank, both ends of the peek walls, the gap between them, beside the tunnel) and watch its angle, letting the view drift ±10°. They leave the spot only for enemies seen or heard within **35 m**, so a fight far up the map doesn't pull everyone out. After a fight or a search they hold the nearest spot.
   - After a detour (a fight or a search), attackers carry on from the part of their route they're nearest to, instead of walking back.
+- **In bomb rounds** (D-081): the attackers pick one site at random. The carrier's group takes the route that ends nearest to it, and after their routes all attackers clear around that site. The carrier plants near the site's middle, or goes straight there when less than 30 s of round time would be left for it. The attacker bot nearest a dropped bomb fetches it. After the plant the attackers watch the bomb from 5–10 m away; every defender retakes: the first at the bomb defuses and the others cover within 7 m, looking away from it. A bot planting or defusing stops to fight an enemy who shows up unless it's at least 70% done (or the fuse wouldn't allow a restart). The carrier and the fetcher don't go and check noises, and after the plant bots only check enemies within 15 m of the bomb.
+- **Getting unstuck:** a bot that tries to walk but gets nowhere for 0.5 s jumps (like a CS bot); after 1.2 s it backs off to the side and finds a new path.
 - **Holding fire:** a bot doesn't shoot while a living teammate (you included) is within 0.6 m of its line of fire, whether or not friendly fire is on.
 - Measured in a bots-only 3v3 on the test map: defenders are on their spots after about 7 s, attackers are 36 m out of spawn after 10 s, the first fight starts after about 12 s, and rounds end by elimination after 27–47 s.
 - **Turning** eases in and out like a hand on a mouse (no constant-speed snapping), so tracking a moving target lags a little.

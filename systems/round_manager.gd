@@ -214,7 +214,7 @@ func _start_round() -> void:
 		_spawn_team(team)
 	if bomb != null:
 		bomb.start_round(_pick_bomb_carrier(), attacking_team)
-	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng)
+	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng, settings.round_time)
 	_set_frozen(true)
 	_set_phase(Phase.FREEZE, settings.freeze_time)
 	round_started.emit(round_number)
