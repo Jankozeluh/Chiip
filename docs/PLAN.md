@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow (all 13 tasks built; playtest next)
+> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks); your playtest is in "Your open checks". Next: M6 and the other milestones.
 
 ## Your open checks
 
@@ -10,6 +10,16 @@ Things only you can check, kept here until done instead of moving from milestone
 
 - [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
+- [ ] **M5 playtest** (rounds & game flow). Start the game: the main menu appears. Then:
+  - **Play** a default match (3v3, first to 5). In freeze time you can look but not move or shoot, and the line in the middle says whether you attack or defend.
+  - Watch the bots: blue teammates and red enemies attack in loose pairs along three lanes or hold angles near the north end. Rounds should end in fights, not drag on.
+  - **Round HUD:** timer, score, alive squares, kill feed (HS marks, your kills outlined), "Round won/lost" banners, "Switching sides" after round 4, "Match point".
+  - **Die once:** 2 s on your death view, then you watch a teammate through their eyes; click for the next one.
+  - **Hold Tab** for the scoreboard. At the end: Victory/Defeat with the scoreboard, **Play again**, **Main menu**.
+  - **Esc** pauses (the game freezes): Resume, Settings, Leave match.
+  - **Settings:** set your CS sensitivity and FOV, volumes, the crosshair (live preview), and rebind a key. Quit and restart: they're still there.
+  - **Match setup:** try 1v5 or 5v5, Hard bots and friendly fire on; also **Practice** (the old arena, bots respawn).
+  - Tell me: bot difficulty and tactics, round pacing (1:55 on this map), whether the UI is readable, and anything confusing.
 - [ ] **TrenchBroom hands-on:** set up and try TrenchBroom (see README, "Making maps with TrenchBroom") before M8, so the map-tool choice (D-032) can be confirmed.
 
 ## How this plan works
@@ -29,7 +39,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M2 | Shooting | ✅ | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ✅ | The test map looks like a 90s shooter |
 | M4 | Bots | ✅ | Bots hunt you and shoot back |
-| M5 | Rounds & game flow | 🟨 | Full matches against bots, with teammates, menus and settings |
+| M5 | Rounds & game flow | ✅ | Full matches against bots, with teammates, menus and settings |
 | M6 | Crew & animation | ⬜ | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
 | M7 | Arsenal, perks & economy | ⬜ | Earn money, buy from the full arsenal, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ⬜ | Bomb rounds and team respawn matches on three small, fast maps in rotation |
@@ -173,7 +183,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Multiplayer:** decided, it comes in M9 after the single-player game (D-033). M4 builds the command-driven character, which M9 will reuse for network players.
 
-## M5 — Rounds & game flow 🟨
+## M5 — Rounds & game flow ✅
 
 **Goal:** a real game. Start a match from the main menu, fight round after round with bot teammates against a bot team, and play until one team wins. Settings are saved to disk. (Health came early, in M4.)
 
@@ -193,7 +203,9 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 10. [x] **Settings menu.** Tabs for Game, Video, Audio, Crosshair (with a live preview) and Controls (click an action, then press its new key). *(Sonnet)* Built as `ui/settings_menu.tscn` + `.gd` (`SettingsMenu`, D-059), a reusable themed menu that hides until `open()` and emits `closed`: Game (sensitivity slider with an exact number field, invert Y, field of view), Video (fullscreen, V-Sync, frame limit, pixel resolution, palette effect, pixelated HUD), Audio (three volume sliders), Crosshair (color swatches and a hex code, opacity, size, gap, thickness, outline, dot, dynamic, with a live preview: a real `Crosshair` on a dark and a light patch) and Controls (click a slot, press the new key or mouse button; Esc cancels, Backspace clears; a key belongs to one action, so the other one loses it, and a line says so). Every control writes to `Settings` at once and follows its `changed` signal; "Reset tab to defaults" per tab. New `ui/menu_state.gd` (`MenuState`) is the one place that says a menu is open (the console registers too): the player controller ignores input, the Tab scoreboard stays hidden and the mouse is shown, then captured again when the last menu closes. Opened for now by the console command `settings` (tasks 11 and 12 add the menus that open it); the console output now scrolls (mouse wheel, Page Up / Down) and shows 16 lines, so `help` fits. `ui_test` grew from 35 to 78 checks.
 11. [x] **Main menu and match setup.** Main menu: Play, Practice, Settings, Quit, over a slow camera flight across the map. Play opens match setup: team sizes (1–5 per side, you included; 3v3 by default), bot difficulty, match length (first to 5, 10 or 15; 5 by default) and friendly fire. Practice is today's respawning bot arena, kept for warm-ups and testing. *(Sonnet)* Built as `ui/main_menu.tscn` + `.gd` (`MainMenu`, now the project's main scene, D-064): the title CHIIP and four themed buttons over the test map rendered like the game (its `Player` removed before it enters the tree, so nothing plays) with a camera that flies an 80 s loop (`MenuFlight`: `Path3D` + `PathFollow3D`). Play opens `ui/match_setup.tscn` (`MatchSetup`): your team and the enemy team 1–5, Easy / Normal / Hard, first to 5 / 10 / 15, friendly fire Off / On and a map (every scene in `res://maps/`), Back and Start; the choices are stored in `Settings` (a new `[match]` section) so the next start offers the same match. Start and Practice leave a `GameLaunch` description (static variables) and change to `main.tscn`, which reads it; `-- --match`, `--practice` and `--map` still skip the menu. The match-end screen's Quit became **Main menu**, and the console got `disconnect`. `ui_test` grew from 78 to 111 checks.
 12. [x] **Pause menu.** Esc pauses the game: Resume, Settings, Leave match. Single-player only; in M9 it becomes an overlay that doesn't pause. *(Sonnet)* Built as `ui/pause_menu.tscn` + `.gd` (`PauseMenu`, D-065): Esc opens a themed panel (Paused; Resume, Settings, Leave match / Leave practice) and sets `get_tree().paused`, so the whole world stands still (round timer, bots, weapons, tweens, sounds); the pause menu, settings menu, console and Tab scoreboard have `process_mode = Always`. Esc resumes; in the settings menu (opened from the pause menu) it comes back; the console and the match-end screen take it first. The action `toggle_mouse` is now `pause` (Esc, fixed). Leave unpauses and calls `return_to_menu()`. `ui_test` has 132 checks now.
-13. [x] **Tests and checks.** Rounds end on elimination and on time-out, with the right winner. Score, half-time swap and match end. Friendly fire off and on. Settings survive a save and load. The existing 45 checks still pass. A full 3v3 match runs without errors. *(Sonnet writes, Haiku runs and reports)* Built as `tests/match_test.tscn` (a whole seeded 3v3 match, first to 5, through the real game scene, 13 checks) and `tools/run_tests.sh` (all suites with one command, a summary table, non-zero exit on any failure) (D-066); elimination and time-out winners, score, half time and match end were already checked by `round_test`, friendly fire off and on by `bot_test`, and saving and loading by `settings_test`. Eight suites, 339 checks (movement 13, weapon 20, bot 16, round 74, tactics 4, ui 132, settings 67, match 13), all passing.
+13. [x] **Tests and checks.** Rounds end on elimination and on time-out, with the right winner. Score, half-time swap and match end. Friendly fire off and on. Settings survive a save and load. The existing 45 checks still pass. A full 3v3 match runs without errors. *(Sonnet writes, Haiku runs and reports)* Built as `tests/match_test.tscn` (a whole seeded 3v3 match, first to 5, through the real game scene, 13 checks) and `tools/run_tests.sh` (all suites with one command, a summary table, non-zero exit on any failure) (D-066); elimination and time-out winners, score, half time and match end were already checked by `round_test`, friendly fire off and on by `bot_test`, and saving and loading by `settings_test`. Eight suites, 340 checks (movement 13, weapon 20, bot 17, round 74, tactics 4, ui 132, settings 67, match 13), all passing (bot 17 after the long-duel fix, D-067).
+
+**Built:** all 13 tasks on 2026-10-15. The full-match test also found one AI stall, fixed in D-067 (attackers close in instead of trading shots at long range). Your playtest is in "Your open checks" at the top.
 
 **Done when:** you can start a match from the main menu, play it to the end with bot teammates against bots, see the score, kill feed and scoreboard, change settings, and find them still there after restarting the game.
 

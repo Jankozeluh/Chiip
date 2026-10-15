@@ -641,6 +641,16 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** A match of six bots (no player) like `tactics_test`: simpler, but then no HUD state for "you" and no Victory or Defeat. Driving the real player with scripted input: much more code for little extra, since the player's own movement and shooting have their own suites. Starting the round manager alone on the map (as `round_test` does): doesn't exercise `main.gd`, `GameLaunch`, the HUD wiring or the match-end screen. A longer or random-seeded run (or many seeds in one go): slower and flakier; the default seed was run with four other seeds by hand and all passed. A test framework (GUT, gdUnit4) or a Makefile / CI file: more machinery than eight scenes and one script need (D-018). Reading the exit code only in the runner: exit code 0 hides a parse error, so counting PASS lines is needed.
 
+## D-067 — Attackers close in instead of trading shots at long range (2026-10-15)
+
+**Decision:** an attacking bot that has fought one enemy for more than 6 s at over 35 m stops shooting at enemies beyond 35 m for 4 s and walks toward the enemy, facing it (its search behaviour). Within 35 m it fights normally again. Defenders keep holding and shooting at any range.
+
+**Why:** The full-match test (D-066) showed a round that ran out the clock: the last attacker and a holding defender saw each other 58 m apart, just inside sight range, and traded bursts for over a minute without hitting, because a fighting bot stops to shoot. At that range a bot's aim error is about a metre, so neither wins. A CS player wouldn't stand there either: they'd push to a closer angle. Holding defenders are fine with a long duel, since the clock is on their side.
+
+**Checked:** a new bot check puts an attacker and a holding defender 58 m apart (both in god mode). The attacker fights at long range first, then closes to 35 m after 10.4 s; with the rule switched off it stays at 48 m for the whole 20 s. In the seeded full match, the all-bot attacking rounds now all end by elimination; the remaining time-outs are rounds where only the idle test player was left attacking.
+
+**Alternatives:** a shorter sight range (hides the problem, and you'd see bots that can't see you); better aim at long range (makes bots snipe with a rifle, unfair); a cover-seeking AI (better, much more work; backlog "smarter team AI").
+
 ## Open questions
 
 | Question | Decide in |

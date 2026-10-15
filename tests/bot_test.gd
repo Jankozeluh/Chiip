@@ -9,7 +9,8 @@ extends Node3D
 ## vision, gradual noticing, hearing, reaction time, never shooting through
 ## walls, that bots can win, that difficulty matters, dying, friendly fire
 ## (off: teammates take no damage and bullets pass through them; on: a third),
-## and holding fire while a teammate is in the line of fire.
+## holding fire while a teammate is in the line of fire, and attackers closing
+## in instead of trading shots at long range.
 ## Random numbers are seeded, so every run gives the same results. Quits with the number of failed checks as
 ## the exit code (0 means everything passed).
 
@@ -50,6 +51,7 @@ func _run_all() -> void:
 	await _test_friendly_fire_off()
 	await _test_friendly_fire_on()
 	await _test_holds_fire_for_teammates()
+	await _test_attackers_close_in()
 	await _test_bullets_pass_through_teammates()
 
 
@@ -292,6 +294,35 @@ func _test_holds_fire_for_teammates() -> void:
 	_player.god_mode = false
 	await _remove(bot)
 	await _remove(mate)
+
+
+func _test_attackers_close_in() -> void:
+	# An attacker and a holding defender see each other 58 m apart (bots rarely
+	# hit at that range). Both are in god mode, so only movement decides: the
+	# attacker must not trade shots there forever but close in below 35 m.
+	await _place_player(Vector3(0, 0, WALL_Z - 5.0))
+	var defender := await _add_bot(Vector3(28, 0, 20), Vector3(-30, 1.6, 20), "normal", 4)
+	defender.team = _player.team
+	var attacker := await _add_bot(Vector3(-30, 0, 20), Vector3(28, 1.6, 20), "normal", 5, false)
+	var route: Array[Vector3] = [Vector3(26, 0, 20)]
+	_brain(attacker).attack(route, [] as Array[Vector3], 0.0)
+	defender.god_mode = true
+	attacker.god_mode = true
+	var engaged_far := false
+	var closest := INF
+	var ticks := 0
+	while ticks < 128 * 20 and closest > BotController.LONG_RANGE:
+		await get_tree().physics_frame
+		ticks += 1
+		var distance := attacker.global_position.distance_to(defender.global_position)
+		closest = minf(closest, distance)
+		if _brain(attacker).state == BotController.State.ENGAGE and distance > BotController.LONG_RANGE + 5.0:
+			engaged_far = true
+	_check("Attackers don't stall in long-range duels: they close in", engaged_far and closest <= BotController.LONG_RANGE,
+			"fought at long range first: %s; closest %.1f m after %.1f s (must reach %.0f m within 20 s)" % [
+					engaged_far, closest, ticks / 128.0, BotController.LONG_RANGE])
+	await _remove(attacker)
+	await _remove(defender)
 
 
 # --- Helpers ---

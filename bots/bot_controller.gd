@@ -53,6 +53,13 @@ const HOLD_SWEEP_DEGREES := 10.0
 const HOLD_SWEEP_SPEED := 0.5
 ## A teammate this close to the line of fire (metres) makes the bot hold fire.
 const LINE_OF_FIRE_CLEARANCE := 0.6
+## Fights beyond this distance (metres) are long-range duels, where bots rarely hit.
+const LONG_RANGE := 35.0
+## After this many seconds of a long-range duel, an attacker stops trading
+## shots and closes in (a holding defender is happy to wait out the clock).
+const LONG_DUEL_PATIENCE := 6.0
+## How long an attacker closing in ignores enemies beyond LONG_RANGE, in seconds.
+const CLOSE_IN_TIME := 4.0
 
 ## How well this bot fights.
 @export var difficulty: BotDifficulty = preload("res://bots/difficulty_normal.tres")
@@ -100,6 +107,8 @@ var _start_delay: float = 0.0
 var _hold_spot: Transform3D = Transform3D.IDENTITY
 var _hold_spots: Array[Transform3D] = []
 var _hold_time: float = 0.0
+## Seconds left in which this attacker closes in on far enemies instead of shooting at them.
+var _close_in_left: float = 0.0
 ## Randomness for aim error and decisions. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
 
@@ -130,6 +139,7 @@ func set_look_angles(yaw: float, pitch: float) -> void:
 func on_respawned() -> void:
 	state = State.PATROL
 	_target = null
+	_close_in_left = 0.0
 	_senses.reset()
 	patrol()
 
@@ -164,6 +174,7 @@ func defend(spot: Transform3D, all_spots: Array[Transform3D]) -> void:
 
 
 func get_input(delta: float) -> CharacterInput:
+	_close_in_left = maxf(_close_in_left - delta, 0.0)
 	_update_state()
 	var input := CharacterInput.new()
 	match state:
@@ -183,9 +194,13 @@ func get_input(delta: float) -> CharacterInput:
 
 func _update_state() -> void:
 	_senses.notice_time_scale = difficulty.notice_time_scale
-	if _senses.visible_enemy != null:
-		if state != State.ENGAGE or _senses.visible_enemy != _target:
-			_start_engaging(_senses.visible_enemy)
+	var enemy := _senses.visible_enemy
+	if enemy != null and _closing_in_on(enemy):
+		# Not worth a shot from here: treat it like a lead and go toward it (search).
+		enemy = null
+	if enemy != null:
+		if state != State.ENGAGE or enemy != _target:
+			_start_engaging(enemy)
 		state = State.ENGAGE
 	elif state == State.ENGAGE or (state == State.PATROL and _senses.has_lead()):
 		if _wants_to_check(_senses.last_known_position):
@@ -203,6 +218,12 @@ func _update_state() -> void:
 	elif state == State.SEARCH and not _senses.has_lead():
 		state = State.PATROL
 		_resume_orders()
+
+
+## True while an attacker closes in on [param enemy] instead of trading shots
+## with it at long range (see [constant LONG_DUEL_PATIENCE]).
+func _closing_in_on(enemy: Character) -> bool:
+	return _close_in_left > 0.0 and character.global_position.distance_to(enemy.global_position) > LONG_RANGE
 
 
 ## Whether the bot leaves its orders to check on an enemy last seen or heard at [param point].
@@ -341,6 +362,11 @@ func _engage(input: CharacterInput, delta: float) -> void:
 	_time_on_target += delta
 	_reaction_left -= delta
 	_pause_left -= delta
+	if (role == Role.ATTACK and _time_on_target > LONG_DUEL_PATIENCE
+			and character.global_position.distance_to(_target.global_position) > LONG_RANGE):
+		# A long-range duel nobody wins: stop shooting and close the distance
+		# (from the next tick the bot walks toward the enemy, facing it).
+		_close_in_left = CLOSE_IN_TIME
 
 	# Aim: where the target is, minus the recoil the bot pulls against, plus a
 	# human error that shrinks as the aim settles.

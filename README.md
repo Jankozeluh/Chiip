@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) the settings menu, the main menu with match setup (Play, Practice, Settings, Quit over a camera flight) and the pause menu (Esc: Resume, Settings, Leave match) are in, with the tests for all of it (all 13 tasks built, playtest next), so F5 opens the main menu and Play starts a match you set up. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M5 built: CS-style movement, a rifle with CS-like recoil, the retro look, bots, and full matches (main menu, match setup, 1–5 per side with bot teammates, rounds with freeze time, round HUD, kill feed, scoreboard, spectating, pause menu, settings saved to disk). The M5 playtest is pending (checklist in [docs/PLAN.md](docs/PLAN.md), "Your open checks"). Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
