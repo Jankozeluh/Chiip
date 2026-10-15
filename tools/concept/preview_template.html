@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Retro Ops Operators</title>
+<title>Chiip Crew</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #12100e;
-  --panel: #1c1916;
-  --panel-2: #26221d;
-  --line: #3a332b;
-  --text: #ebe2d2;
-  --muted: #9d9383;
-  --faint: #6b6357;
-  --team: #d4492a;
-  --team-soft: rgba(212, 73, 42, .16);
+  --bg: #111214;
+  --panel: #1a1b1e;
+  --panel-2: #232528;
+  --line: #34373b;
+  --text: #e4e6e8;
+  --muted: #979ba0;
+  --faint: #63676c;
+  --team: #4066b3;
+  --team-soft: rgba(64, 102, 179, .18);
   --gold: #d1a538;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --pixel: "Silkscreen", "IBM Plex Mono", monospace;
 }
-body[data-team="wardens"] { --team: #4b88e6; --team-soft: rgba(75, 136, 230, .16); }
+body[data-team="red"] { --team: #b8382e; --team-soft: rgba(184, 56, 46, .18); }
 * { box-sizing: border-box; }
 html { background: var(--bg); }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--mono); }
@@ -36,7 +36,7 @@ h2 { font: 400 13px/1 var(--pixel); color: var(--muted); letter-spacing: .08em; 
 .top { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
 @media (max-width: 900px) { .top { grid-template-columns: 1fr; } }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
-.stage-wrap { display: flex; justify-content: center; background: #0b0a09; border-radius: 4px; overflow: hidden; cursor: grab; touch-action: none; }
+.stage-wrap { display: flex; justify-content: center; background: #0b0c0d; border-radius: 4px; overflow: hidden; cursor: grab; touch-action: none; }
 .stage-wrap:active { cursor: grabbing; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
 .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
@@ -57,11 +57,8 @@ h2 { font: 400 13px/1 var(--pixel); color: var(--muted); letter-spacing: .08em; 
 .anims { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; }
 .role { color: var(--muted); font-size: 12px; margin: 2px 0 12px; }
 .ctitle { font: 400 20px/1.1 var(--pixel); }
-.stats { display: grid; grid-template-columns: 64px 1fr 40px; gap: 6px 10px; align-items: center; font-size: 12px; margin-bottom: 14px; }
-.stats .k { color: var(--muted); }
-.bar { height: 8px; background: #0e0c0b; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--team); transition: width .25s, background .2s; }
-.stats .v { text-align: right; font-variant-numeric: tabular-nums; }
+.facts { display: grid; grid-template-columns: 72px 1fr; gap: 4px 10px; font-size: 12.5px; margin-bottom: 14px; }
+.facts .k { color: var(--muted); }
 .weapon { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
 .weapon b { color: var(--text); font-weight: 600; }
 .feature { border-left: 3px solid var(--gold); background: rgba(209, 165, 56, .07); padding: 10px 12px; border-radius: 0 4px 4px 0; margin-bottom: 12px; }
@@ -71,11 +68,11 @@ h2 { font: 400 13px/1 var(--pixel); color: var(--muted); letter-spacing: .08em; 
 section { margin-top: 20px; }
 .dirs { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
 @media (max-width: 760px) { .dirs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.dirs figure { margin: 0; background: #0b0a09; border: 1px solid var(--line); border-radius: 4px; padding: 4px 0 6px; cursor: pointer; }
+.dirs figure { margin: 0; background: #0b0c0d; border: 1px solid var(--line); border-radius: 4px; padding: 4px 0 6px; cursor: pointer; }
 .dirs figure.on { border-color: var(--team); }
 .dirs canvas { width: 100%; height: auto; aspect-ratio: 1; }
 .dirs figcaption { text-align: center; font-size: 11px; color: var(--muted); }
-.lineup-wrap { overflow-x: auto; background: #0b0a09; border-radius: 4px; }
+.lineup-wrap { overflow-x: auto; background: #0b0c0d; border-radius: 4px; }
 .lineup-wrap canvas { margin: 0 auto; }
 .spec { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
 @media (max-width: 760px) { .spec { grid-template-columns: 1fr; } }
@@ -88,11 +85,11 @@ td code, p code { color: var(--gold); }
 kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; font-size: 11px; }
 </style>
 </head>
-<body data-team="raiders">
+<body data-team="blue">
 <div class="wrap">
   <header>
-    <h1>RETRO OPS <span>//</span> OPERATORS</h1>
-    <div class="sub">4 classes · 2 teams · 8 directions · 15 frames · 96×96 cells</div>
+    <h1>CHIIP <span>//</span> CREW</h1>
+    <div class="sub" id="sub"></div>
   </header>
 
   <div class="top">
@@ -119,10 +116,10 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3p
       <div class="anims" id="anims"></div>
       <div class="ctitle" id="cTitle"></div>
       <div class="role" id="cRole"></div>
-      <div class="stats" id="cStats"></div>
-      <div class="weapon" id="cWeapon"></div>
+      <div class="facts" id="cFacts"></div>
       <div class="feature"><div class="fname" id="fName"></div><p id="fText"></p></div>
-      <p class="look" id="cLook"></p>
+      <p class="look" id="cSil"></p>
+      <p class="look" id="cLook" style="margin-top:8px"></p>
     </div>
   </div>
 
@@ -145,7 +142,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3p
     <div>
       <h2>Palette</h2>
       <canvas class="pal" id="pal" width="16" height="16"></canvas>
-      <p class="note">16 ramps × 16 shades. Indices 224–254 are fullbright (muzzle flash, NVG glow): draw them unlit. Index 255 is transparent in the <code>_indexed.png</code> sheets.</p>
+      <p class="note">16 ramps × 16 shades: neutral kit ramps, skin, wood, metal, the two team ramps (blue = <code>Teams.FRIENDLY_COLOR</code>, red = <code>Teams.ENEMY_COLOR</code>) and two fullbright ramps (indices 224–254: muzzle flash and goggle glow, drawn unlit). Index 255 is transparent in the <code>_indexed.png</code> sheets.</p>
     </div>
   </section>
 </div>
@@ -159,15 +156,18 @@ const TEAMS = Object.keys(M.teams);
 const DIRNAMES = ['Front', 'Front-right', 'Right', 'Back-right', 'Back', 'Back-left', 'Left', 'Front-left'];
 const A = M.animations;
 const row = (a, i = 0) => A[a].row + i;
-const SEQ = {
-  idle:   { label: 'Idle',   s: [[row('idle'), 1000]] },
-  run:    { label: 'Run',    s: [0, 1, 2, 3].map(i => [row('run', i), 125]) },
-  shoot:  { label: 'Shoot',  s: [[row('aim'), 450], [row('fire'), 70], [row('aim'), 70], [row('fire'), 70], [row('aim'), 70], [row('fire'), 70], [row('aim'), 600]] },
-  crouch: { label: 'Crouch', s: [[row('crouch'), 450], [row('crouch_fire'), 70], [row('crouch'), 70], [row('crouch_fire'), 70], [row('crouch'), 700]] },
-  pain:   { label: 'Pain',   s: [[row('idle'), 600], [row('pain'), 260], [row('idle'), 500]] },
-  death:  { label: 'Death',  s: [0, 1, 2, 3].map(i => [row('death', i), 120]).concat([[row('death', 4), 1500]]) },
+const ALL_SEQ = {
+  idle:   { need: ['idle'], label: 'Idle', s: () => [[row('idle'), 1000]] },
+  aim:    { need: ['aim'], label: 'Aim', s: () => [[row('aim'), 1000]] },
+  run:    { need: ['run'], label: 'Run', s: () => [0, 1, 2, 3].map(i => [row('run', i), 125]) },
+  shoot:  { need: ['aim', 'fire'], label: 'Shoot', s: () => [[row('aim'), 450], [row('fire'), 70], [row('aim'), 70], [row('fire'), 70], [row('aim'), 70], [row('fire'), 70], [row('aim'), 600]] },
+  crouch: { need: ['crouch', 'crouch_fire'], label: 'Crouch', s: () => [[row('crouch'), 450], [row('crouch_fire'), 70], [row('crouch'), 70], [row('crouch_fire'), 70], [row('crouch'), 700]] },
+  pain:   { need: ['idle', 'pain'], label: 'Pain', s: () => [[row('idle'), 600], [row('pain'), 260], [row('idle'), 500]] },
+  death:  { need: ['death'], label: 'Death', s: () => [0, 1, 2, 3].map(i => [row('death', i), 120]).concat([[row('death', 4), 1500]]) },
 };
-const st = { cls: CLASSES[0], team: TEAMS[0], anim: 'run', dir: 1, spin: false, bg: 'level' };
+const SEQ = {};
+for (const [k, v] of Object.entries(ALL_SEQ)) if (v.need.every(a => a in A)) SEQ[k] = { label: v.label, s: v.s() };
+const st = { cls: CLASSES[0], team: TEAMS[0], anim: 'run' in SEQ ? 'run' : 'idle', dir: 1, spin: false, bg: 'level' };
 
 const sheets = {};
 let pending = 0;
@@ -200,7 +200,7 @@ function makeLevel(w, h, horizon) {
       const by = Math.floor(y / 8), bx = Math.floor((x + (by % 2) * 8) / 16);
       const mortar = y % 8 === 7 || (x + (by % 2) * 8) % 16 === 15;
       const tone = ((bx * 7 + by * 13) % 5) * 3;
-      [r, gr, b] = mortar ? [30, 26, 22] : [66 + tone, 56 + tone, 45 + tone];
+      [r, gr, b] = mortar ? [26, 27, 29] : [60 + tone, 62 + tone, 65 + tone];
       const lit = 1 - Math.abs(x - w / 2) / w * 0.9 - (horizon - y) / horizon * 0.25;
       r *= lit; gr *= lit; b *= lit;
     } else {
@@ -208,7 +208,7 @@ function makeLevel(w, h, horizon) {
       const ty = Math.floor(Math.pow(d, 0.7) * 9), tx = Math.floor((x - w / 2) / (14 + d * 26) + 100);
       const edge = (Math.pow(d, 0.7) * 9) % 1 < 0.09;
       const tone = ((tx * 5 + ty * 11) % 4) * 3;
-      [r, gr, b] = edge ? [28, 25, 21] : [52 + tone, 46 + tone, 39 + tone];
+      [r, gr, b] = edge ? [24, 25, 27] : [48 + tone, 50 + tone, 52 + tone];
       const lit = 0.65 + d * 0.45 - Math.abs(x - w / 2) / w * 0.5;
       r *= lit; gr *= lit; b *= lit;
     }
@@ -258,7 +258,7 @@ function buildUI() {
   });
   const ts = $('teamSeg');
   TEAMS.forEach(t => {
-    const b = document.createElement('button'); b.dataset.team = t; b.textContent = M.teams[t].title;
+    const b = document.createElement('button'); b.dataset.team = t; b.textContent = M.teams[t].title; b.title = M.teams[t].blurb;
     b.onclick = () => { st.team = t; refresh(); };
     ts.append(b);
   });
@@ -324,20 +324,16 @@ function refresh() {
 
   const c = M.classes[st.cls];
   $('cTitle').textContent = c.title;
-  $('cRole').textContent = c.role;
-  const st_ = $('cStats'); st_.innerHTML = '';
-  [['Health', c.stats.health, 200], ['Armor', c.stats.armor, 200], ['Speed', c.stats.speed, 280]].forEach(([k, v, max]) => {
+  $('cRole').textContent = M.teams[st.team].blurb;
+  const fx = $('cFacts'); fx.innerHTML = '';
+  [['Height', c.height.toFixed(2) + ' m'], ['Gun', c.weapon], ['Team colour', Math.round(c.team_share * 100) + '% of the front view']].forEach(([k, v]) => {
     const kk = document.createElement('div'); kk.className = 'k'; kk.textContent = k;
-    const bar = document.createElement('div'); bar.className = 'bar';
-    const i = document.createElement('i'); i.style.width = (v / max * 100) + '%'; bar.append(i);
-    const vv = document.createElement('div'); vv.className = 'v'; vv.textContent = v;
-    st_.append(kk, bar, vv);
+    const vv = document.createElement('div'); vv.textContent = v;
+    fx.append(kk, vv);
   });
-  $('cWeapon').innerHTML = '';
-  const wb = document.createElement('b'); wb.textContent = 'Weapon  ';
-  $('cWeapon').append(wb, document.createTextNode(c.stats.weapon));
-  $('fName').textContent = c.feature.name;
-  $('fText').textContent = c.feature.text;
+  $('fName').textContent = 'Perk: ' + c.perk.name;
+  $('fText').textContent = c.perk.text;
+  $('cSil').textContent = c.silhouette;
   $('cLook').textContent = c.look;
 
   document.querySelectorAll('.cls').forEach(btn => {
@@ -373,6 +369,8 @@ function tick(now) {
 }
 
 function boot() {
+  const nFrames = Object.values(A).reduce((n, a) => n + a.frames, 0);
+  $('sub').textContent = `${CLASSES.length} classes · blue and red · 8 directions · ${nFrames} frames · ${CELL}×${CELL} cells`;
   levelBg = makeLevel(SW, SH, HORIZON);
   checkBg = makeChecker(SW, SH);
   const lu = $('lineup');

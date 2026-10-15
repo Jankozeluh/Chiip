@@ -222,7 +222,7 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 
 Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy anything, so the economy stays CS-like. The signature gun is only what the class holds in the class menu. You pick a class at match start and can change it during freeze time; bots get a mix. Perks switch on in M7; until then the classes differ only in looks.
 
-| Class *(working name)* | Build and silhouette | Perk *(tune)* | Signature gun |
+| Class | Build and silhouette | Perk *(tune)* | Signature gun |
 |---|---|---|---|
 | **Rifleman** | 1.82 m, stocky, upright. High-cut helmet, goggles, plate carrier | **Quick Hands:** reloads and weapon switches 15% faster | AK-style rifle |
 | **Bulwark** | 1.92 m, broad, slight hunch. Closed helmet with a gas mask, shoulder plates | **Plated:** with armor on, takes 10% less damage than other classes and the armor wears down 30% slower. No effect without armor | Pump shotgun |
@@ -230,7 +230,8 @@ Four classes, each with its own look and **one passive perk** (D-052). Classes d
 | **Scout** | 1.72 m, slim. Beanie, balaclava, glowing goggles, a radio with an antenna | **Light Step:** running footsteps carry 70% as far (a deliberate exception to D-038) | SMG |
 
 - **Silhouette first** (D-053): height, build, posture and headgear make each class recognisable at a glance, even as a dark shape.
-- **Team colour** is painted at runtime: every class wears a neutral kit (greys, olive-greys, charcoal; never desert tones, D-031) with team-colour parts such as jacket panels, armbands and a helmet stripe. They show blue on your team and red on the enemy team (D-041).
+- **Team colour** is painted at runtime: every class wears a neutral kit (greys, olive-greys, charcoal; never desert tones, D-031) with team-colour parts. They show blue on your team and red on the enemy team (D-041). Everyone has armbands; on top of that the Rifleman has a helmet stripe, shoulder straps and patches, the Bulwark shoulder plates and a helmet stripe, the Marksman a scarf, and the Scout a beanie and rig straps. That is 8–12% of the body for every class, visible from every side (D-064).
+- **Looks** are set by the approved concept sheets (D-064), made with `tools/concept/spritegen.py`.
 - **Hit zones follow each body** (D-055): the Bulwark is the biggest target and the Scout the smallest. Perks balance the difference.
 
 ## 5. Look and feel

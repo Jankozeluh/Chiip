@@ -535,12 +535,26 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** The earlier "2 rifles, a sniper, maybe an SMG or a shotgun"; more weapons per slot.
 
+## D-064 — The crew's looks and class names (2026-10-15)
+
+**Decision:** You approved the concept sheets from `tools/concept/spritegen.py` as the look of the four classes and kept the working names Rifleman, Bulwark, Marksman and Scout. The model generator (M6 task 2) builds from these sheets:
+- **Bodies** (height to the top of the head, build, posture): Rifleman 1.82 m, stocky and upright; Bulwark 1.92 m, the widest, hunched forward with bent knees and a wide stance; Marksman 1.88 m, long-legged, narrow and slightly stooped; Scout 1.72 m, slim, knees bent, ready to move. The numbers are in `CLASSES` in the tool.
+- **Headgear and kit:** Rifleman: high-cut helmet with ear cups and goggles, plate carrier, hydration pack, olive-grey uniform. Bulwark: closed helmet over a gas mask with a front filter; shoulder, chest, groin, thigh and shin plates; charcoal with grey plates. Marksman: hood with a pointed crown, scarf over the lower face, a long dark-grey coat to below the knee, lean rig. Scout: beanie, black balaclava, glowing green goggles, slim rig, radio pack with a whip antenna, thigh holster.
+- **Team-colour parts** (the mask the shader paints, D-053): armbands on everyone. Plus: Rifleman, a helmet stripe, the carrier's shoulder straps, a chest patch and a patch on the pack; Bulwark, the shoulder plates and a helmet stripe; Marksman, the scarf, its cowl and its tail down the back; Scout, the beanie and the rig straps. That is 8–12% of the visible body from the front for every class, and some team colour shows from every direction.
+- **Palette:** the kit ramps are grey, light grey, olive-grey, moss, charcoal and ink: no tan or sand (D-031), and no blue or red tint, so the team colours are the only saturated colours on a character. The team ramps are built around `Teams.FRIENDLY_COLOR` and `Teams.ENEMY_COLOR`. Warm colours appear only on skin and the AK's wood; the Scout's goggles glow green.
+- **Signature guns:** an AK-style rifle with wood furniture, gas tube and curved magazine; a pump shotgun with a magazine tube and a ribbed pump (replaces the prototype's machine gun); a bolt-action sniper rifle with a scope and an olive-grey stock; a compact SMG with the magazine in the grip, a foregrip and a folding stock.
+- **The coat** is one rigid piece on the pelvis in the sheets. The generator may split it into flaps on the thighs, so the legs don't poke through it when running.
+- **Style:** the prototype sprites are the reference for "the characters like I showed you": small, chunky, pixelated figures with flat colour blocks. The tool now uses less texture noise than the prototype.
+
+**Why:** You approved the looks as shown and chose to keep the working names. The silhouettes were checked as black shapes from the front and the side: the Bulwark is wide at the shoulders, the Marksman narrow with a coat that flares, the Scout short with an antenna, and the Rifleman the medium shape between them. Similar team-colour shares make every class equally easy to tell as friend or enemy (the clarity rule).
+
+**Alternatives:** The names Wolf, Bear, Heron and Fox (callsigns that match the silhouettes; they would also avoid "Scout", which is a sniper rifle in CS 1.6), or Vanguard, Bulwark, Overwatch and Runner. A whole team-coloured jacket or helmet (a stronger team read, but less of the kit stays neutral). Coat tails on each thigh (in the render they looked like baggy trousers).
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
 | Weapon names | M7 |
-| Class names (Rifleman, Bulwark, Marksman, Scout are working names) | M6, with the concept sheets |
 | Team names and the game's setting/theme | Any time |
 | Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |
