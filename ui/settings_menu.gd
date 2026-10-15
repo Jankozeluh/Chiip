@@ -5,9 +5,9 @@ extends CanvasLayer
 ##
 ## One reusable scene, [code]ui/settings_menu.tscn[/code]: it hides itself until
 ## [method open] is called and tells the owner with [signal closed] when the
-## player leaves it (Back or Esc). The main menu and the pause menu (tasks 11
-## and 12) open the same scene; for now the console command [code]settings[/code]
-## does. While it is open it registers with [MenuState], so the player's controls
+## player leaves it (Back or Esc). The main menu (task 11, which holds an
+## instance of its own) and the console command [code]settings[/code] in a game
+## open this scene, and the pause menu (task 12) will too. While it is open it registers with [MenuState], so the player's controls
 ## ignore the keyboard and mouse and the mouse is shown.
 ##
 ## It has no Apply button. Every control writes to [Settings] the moment it

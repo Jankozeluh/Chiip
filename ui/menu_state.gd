@@ -1,8 +1,8 @@
 class_name MenuState
 extends RefCounted
 ## One shared answer to "is a menu open?" (D-059): the settings menu, the
-## developer console and, in tasks 11 and 12, the main and pause menus all
-## register here, and everything that must stop reacting while a menu is up
+## developer console, the main menu and match setup (task 11) and, in task 12,
+## the pause menu all register here, and everything that must stop reacting while a menu is up
 ## asks here. The player controller ignores movement, shooting and looking, the
 ## hold-Tab scoreboard stays hidden, and the mouse is shown while the first menu
 ## opens and captured again when the last one closes.

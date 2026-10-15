@@ -38,6 +38,9 @@ const DEFAULTS := {
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
 	&"crosshair_color": Color(0.2, 1.0, 0.2), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
+	# The last match setup (D-064): D-041's match, on the test map.
+	&"match_team_size": 3, &"match_enemy_team_size": 3, &"match_difficulty": "normal", &"match_rounds_to_win": 5,
+	&"match_friendly_fire": false, &"match_map": "res://maps/test_map.tscn",
 }
 
 var _failures: int = 0
@@ -379,6 +382,8 @@ func _test_saving() -> void:
 			result == ERR_FILE_NOT_FOUND and not FileAccess.file_exists(TEMP_PATH) and writer.sensitivity == 1.0 and writer.save_path == TEMP_PATH,
 			"result %d, file exists %s" % [result, FileAccess.file_exists(TEMP_PATH)])
 	_check("Without a file to save to, save_to_disk() reports it", Settings.new().save_to_disk() == ERR_UNCONFIGURED, "an instance that never loaded")
+	_check("is_loaded() is false until load_from_disk() has run (a missing file counts), so the menu and main.gd read the file once between them",
+			not Settings.new().is_loaded() and writer.is_loaded() and not _settings.is_loaded(), "fresh %s, writer %s, shared %s" % [Settings.new().is_loaded(), writer.is_loaded(), _settings.is_loaded()])
 	writer.sensitivity = 2.31
 	var saved := _read_cfg(TEMP_PATH)
 	_check("The first change creates the file, with the value in its section",
@@ -402,17 +407,30 @@ func _test_saving() -> void:
 	writer.crosshair_outline = false
 	writer.crosshair_dot = true
 	writer.crosshair_dynamic = true
+	writer.match_team_size = 5
+	writer.match_enemy_team_size = 2
+	writer.match_difficulty = "hard"
+	writer.match_rounds_to_win = 10
+	writer.match_friendly_fire = true
+	writer.match_map = "res://maps/comparison/csg_room.tscn"
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
 	writer.set_binding(&"shoot", _key(KEY_F), 1)
 	saved = _read_cfg(TEMP_PATH)
 	var sections := saved.get_sections() if saved != null else PackedStringArray()
-	_check("Every change is saved at once, in the sections game, video, audio, crosshair and controls (the crosshair's keys without their prefix)",
-			sections == PackedStringArray(["game", "video", "audio", "crosshair", "controls"]) and saved.has_section_key("crosshair", "gap")
+	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match and controls (the crosshair's keys without their prefix)",
+			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "controls"]) and saved.has_section_key("crosshair", "gap")
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
+	_check("The last match setup is the [match] section: team_size, enemy_team_size, difficulty, rounds_to_win, friendly_fire and map, without the prefix",
+			saved.get_value("match", "team_size", 0) == 5 and saved.get_value("match", "enemy_team_size", 0) == 2
+					and saved.get_value("match", "difficulty", "") == "hard" and saved.get_value("match", "rounds_to_win", 0) == 10
+					and saved.get_value("match", "friendly_fire", false) == true
+					and saved.get_value("match", "map", "") == "res://maps/comparison/csg_room.tscn"
+					and saved.get_section_keys("match").size() == 6,
+			"keys %s" % [saved.get_section_keys("match")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)
 	var differing: Array[String] = []
@@ -475,6 +493,23 @@ func _test_unreadable_values() -> void:
 			rewritten != null and is_equal_approx(rewritten.get_value("game", "sensitivity", 0.0), 2.0) and not rewritten.has_section("unknown_section")
 					and rewritten.get_value("audio", "master_volume", -1.0) == 0.0,
 			"sensitivity in file %s" % [rewritten.get_value("game", "sensitivity", "none") if rewritten != null else "no file"])
+	_write_text(TEMP_PATH, "\n".join([
+		"[match]", "team_size = 9", "enemy_team_size = \"many\"", "difficulty = \"impossible\"", "rounds_to_win = 7",
+		"friendly_fire = 1", "map = 5", ""]))
+	var match_settings := Settings.new()
+	match_settings.load_from_disk(TEMP_PATH)
+	_check("A hand-edited [match] section is forgiven: a team of 9 is clamped to 5, text for a number, an unknown difficulty, a number for a bool and a number for the map fall back to the defaults, 7 rounds snaps to 5",
+			match_settings.match_team_size == 5 and match_settings.match_enemy_team_size == 3 and match_settings.match_difficulty == "normal"
+					and match_settings.match_rounds_to_win == 5 and not match_settings.match_friendly_fire
+					and match_settings.match_map == Settings.DEFAULT_MAP,
+			"team %d, enemy %d, difficulty %s, rounds %d, friendly fire %s, map %s" % [match_settings.match_team_size, match_settings.match_enemy_team_size,
+					match_settings.match_difficulty, match_settings.match_rounds_to_win, match_settings.match_friendly_fire, match_settings.match_map])
+	_write_text(TEMP_PATH, "[match]\nrounds_to_win = 12\ndifficulty = \"hard\"\nteam_size = 0\n")
+	match_settings.load_from_disk(TEMP_PATH)
+	_check("... a length between the offered ones snaps to the nearest (12 → 10), a valid difficulty is kept, a team of 0 is raised to 1, and a missing key keeps its default",
+			match_settings.match_rounds_to_win == 10 and match_settings.match_difficulty == "hard" and match_settings.match_team_size == 1
+					and match_settings.match_enemy_team_size == 3,
+			"rounds %d, difficulty %s, team %d" % [match_settings.match_rounds_to_win, match_settings.match_difficulty, match_settings.match_team_size])
 	print("(Godot prints a ConfigFile parse error next: the check loads a broken file on purpose.)")
 	_write_text(TEMP_PATH, "[game]\nsensitivity = 3.5\nthis is not a settings file [[[\nfov = abc\n")
 	var broken := Settings.new()

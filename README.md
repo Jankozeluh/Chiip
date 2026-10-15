@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) and the settings menu (opened with the console command `settings` for now) are in (tasks 1–10 of 13), so F5 starts a 3v3 match to 5 rounds won; the menus follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) the settings menu, and the main menu with match setup (Play, Practice, Settings, Quit over a camera flight) are in (tasks 1–11 of 13), so F5 opens the main menu and Play starts a match you set up; the pause menu follows. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -13,25 +13,32 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 
 **From the Godot editor** (recommended):
 1. Open Godot. In the Project Manager, click **Import**, select this folder's `project.godot`, and open it.
-2. Press **F5** (or the ▶ button at the top right) to play. A 3v3 match starts on the test map: you and two bot teammates (blue) against three bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
+2. Press **F5** (or the ▶ button at the top right) to play. The **main menu** opens over a slow camera flight across the test map: **Play**, **Practice**, **Settings** and **Quit** (Esc closes match setup and the settings menu; on the main page it does nothing).
+   **Play** opens match setup: the size of your team and of the enemy team (1–5 each, you included in yours), the bots' difficulty (Easy, Normal, Hard), the match length (first to 5, 10 or 15 rounds), friendly fire and the map. The defaults are a 3v3 match, Normal bots, first to 5, friendly fire off, on the test map, and the game remembers your last choices. **Start** begins the match: you and your bot teammates (blue) against the bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
-   A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Quit** buttons.
-3. For the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), run with `-- --practice` (see below).
+   A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Main menu** buttons.
+3. **Practice** in the main menu is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
 
-**From the terminal**, without opening the editor:
+**From the terminal**, without opening the editor (this opens the main menu):
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip
 ```
 
-For practice mode, add `-- --practice`:
+To skip the menu and start a default 3v3 match on the test map at once (handy for development; it ignores your saved match setup), add `-- --match`:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --match
+```
+
+For practice mode (also straight into the game), add `-- --practice`:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom comparison room:
+To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. the TrenchBroom comparison room:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/comparison/trenchbroom_room.tscn
@@ -53,9 +60,9 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
-| Settings menu | Type `settings` in the console (the main and pause menus will open it later); Esc or Back closes it |
+| Settings menu | **Settings** in the main menu, or type `settings` in the console during a game (the pause menu will open it later); Esc or Back closes it |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, `settings` (opens the settings menu), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 
 ## Settings
 
@@ -65,7 +72,7 @@ Your settings are saved the moment you change them and apply at once. They live 
 ~/Library/Application Support/Godot/app_userdata/Chiip/settings.cfg
 ```
 
-Open the **settings menu** by typing `settings` in the developer console (the key left of 1); the main menu and the pause menu will open it too. It has five tabs, and every change applies and is saved at once, with no Apply button:
+Open the **settings menu** with **Settings** in the main menu, or by typing `settings` in the developer console (the key left of 1) during a game; the pause menu will open it too. It has five tabs, and every change applies and is saved at once, with no Apply button:
 
 - **Game:** mouse sensitivity (CS's scale: a slider and a number field you can type an exact value into), invert Y, field of view (90 across a 4:3 screen, like CS).
 - **Video:** fullscreen, V-Sync, frame rate limit, pixel resolution (270 to 720 lines), palette effect, pixelated HUD.
@@ -81,9 +88,9 @@ Open the **settings menu** by typing `settings` in the developer console (the ke
 | `fov [70-110]` | Field of view the CS way, degrees across a 4:3 screen | 90 |
 | `volume [0-1]` | Master volume | 1.0 |
 | `fps_max [0\|30-1000]` | Frame rate limit, 0 = unlimited | 0 |
-| `settings_reset` | Everything back to its default, key bindings included | |
+| `settings_reset` | Everything back to its default, key bindings and the remembered match setup included | |
 
-The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) and the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
+The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (team sizes, difficulty, match length, friendly fire and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
 
 ## Making maps with TrenchBroom
 

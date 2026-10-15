@@ -4,6 +4,13 @@ extends Node
 ## the HUD, debug overlay, hold-Tab scoreboard, match-end screen, settings menu
 ## and developer console on top.
 ##
+## The game starts from the main menu (ui/main_menu.tscn, the project's main
+## scene), which leaves a [GameLaunch] description for [method _load_map] to read
+## (D-064); started directly, with the command-line shortcuts or by a test, it
+## uses its exported values below. The match-end screen's "Main menu" button and
+## the console's [code]disconnect[/code] come back to the menu with
+## [method return_to_menu].
+##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
 ## are added here, depending on [member mode]: a match ([RoundManager]) on maps
@@ -23,18 +30,20 @@ enum Mode {
 }
 
 ## The HUD and overlay are laid out for a window this many pixels tall.
-const UI_DESIGN_HEIGHT := 720.0
+const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 
-## The map to play. Can be overridden from the command line:
+## The map to play. The main menu's match setup overrides it with its choice
+## ([GameLaunch]); from the command line, [code]-- --map <scene>[/code] does:
 ## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]
 @export var map_scene: PackedScene = preload("res://maps/test_map.tscn")
-## Match or practice. [code]-- --practice[/code] on the command line picks practice.
+## Match or practice. The menu's Play and Practice choose; [code]-- --practice[/code]
+## on the command line picks practice (a match is the default).
 @export var mode: Mode = Mode.MATCH
 ## The rules of a match: team sizes, bot skill, length, friendly fire.
 @export var match_settings: MatchSettings = MatchSettings.new()
 ## Read the player's settings file ([method Settings.load_from_disk]) when the
-## game starts, and save every change to it. Tests that load this scene turn it
-## off so they never touch the real file.
+## game starts (unless the main menu already did), and save every change to it.
+## Tests that load this scene turn it off so they never touch the real file.
 @export var load_settings: bool = true
 
 @onready var _world: SubViewportContainer = $World
@@ -53,14 +62,14 @@ var _map: Node
 
 func _ready() -> void:
 	var settings := Settings.get_instance()
-	if load_settings:
+	if load_settings and not settings.is_loaded():
 		var result := settings.load_from_disk()
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
 	settings.changed.connect(_on_setting_changed)
 	_console.main = self
 	_match_end_screen.play_again_pressed.connect(restart_match)
-	_match_end_screen.quit_pressed.connect(get_tree().quit)
+	_match_end_screen.main_menu_pressed.connect(return_to_menu)
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -97,8 +106,23 @@ func restart_match() -> void:
 	change_map(_map.scene_file_path)
 
 
-## Loads the map from the command line (-- --map ...) or [member map_scene].
+## Leaves the game for the main menu (the match-end screen's "Main menu" button,
+## console: disconnect). The game scene is freed and the menu scene starts; the
+## menus and the console in the game close with it.
+func return_to_menu() -> void:
+	get_tree().change_scene_to_file(GameLaunch.MENU_SCENE)
+
+
+## Loads the map from the command line (-- --map ...) or [member map_scene],
+## unless the main menu left a [GameLaunch] description: that one wins (the
+## command line is ignored then, so a game started with [code]-- --map[/code]
+## and left for the menu plays what the menu says). [code]-- --practice[/code]
+## picks practice; [code]-- --match[/code] needs no code here (a match is the
+## default of [member mode]), it only tells the main menu to skip itself.
 func _load_map() -> void:
+	if GameLaunch.is_pending():
+		_spawn_map(_take_launch())
+		return
 	var scene := map_scene
 	var args := OS.get_cmdline_user_args()
 	var map_arg := args.find("--map")
@@ -107,6 +131,16 @@ func _load_map() -> void:
 	if args.has("--practice"):
 		mode = Mode.PRACTICE
 	_spawn_map(scene)
+
+
+## Takes over the [GameLaunch] description (once: it is cleared): sets [member mode]
+## and [member match_settings] from it and returns its map scene.
+func _take_launch() -> PackedScene:
+	mode = Mode.PRACTICE if GameLaunch.practice else Mode.MATCH
+	match_settings = GameLaunch.match_settings
+	var scene := load(GameLaunch.map_path) as PackedScene
+	GameLaunch.clear()
+	return scene
 
 
 ## Puts the map into the world viewport, adds the game rules, and connects
@@ -152,7 +186,10 @@ func _add_game_rules() -> Node:
 		rounds.settings = match_settings
 		rules = rounds
 	elif has_navigation:
-		rules = ArenaRules.new()
+		var arena := ArenaRules.new()
+		# The difficulty chosen in the menu (Normal, like ArenaRules' own default, otherwise).
+		arena.bot_difficulty = match_settings.bot_difficulty
+		rules = arena
 	if rules != null:
 		# Named like the class, so the console finds it ("ArenaRules").
 		rules.name = rules.get_script().get_global_name()
@@ -174,23 +211,7 @@ func _map_has_group(group: String) -> bool:
 ## shaders/palette_limit.gdshader). Runs when one of them changes and when the
 ## window is resized.
 func apply_pixel_settings() -> void:
-	var settings := Settings.get_instance()
-	var pixel_height := settings.pixel_height
-	_palette_effect.visible = settings.palette_effect
-	var window := get_tree().root
-	var ui_height: float
-	if settings.pixelate_hud:
-		var aspect := float(window.size.x) / window.size.y
-		window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
-		window.content_scale_size = Vector2i(roundi(pixel_height * aspect), pixel_height)
-		window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
-		_world.stretch_shrink = 1
-		ui_height = pixel_height
-	else:
-		window.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
-		# The SubViewport renders at the container's size divided by this.
-		_world.stretch_shrink = maxi(1, roundi(float(window.size.y) / pixel_height))
-		ui_height = window.size.y
+	var ui_height := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
 	_hud.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_debug_overlay.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)

@@ -1,0 +1,129 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/main_menu.gd" id="menu_script"]
+[ext_resource type="Script" path="res://ui/menu_flight.gd" id="flight_script"]
+[ext_resource type="Shader" path="res://shaders/palette_limit.gdshader" id="palette_shader"]
+[ext_resource type="PackedScene" path="res://ui/match_setup.tscn" id="setup_scene"]
+[ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
+
+[sub_resource type="ShaderMaterial" id="palette_material"]
+shader = ExtResource("palette_shader")
+
+[node name="MainMenu" type="Node"]
+script = ExtResource("menu_script")
+
+[node name="World" type="SubViewportContainer" parent="."]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch = true
+stretch_shrink = 2
+
+[node name="SubViewport" type="SubViewport" parent="World"]
+size = Vector2i(640, 360)
+render_target_update_mode = 4
+
+[node name="PaletteEffect" type="CanvasLayer" parent="World/SubViewport"]
+visible = false
+
+[node name="Rect" type="ColorRect" parent="World/SubViewport/PaletteEffect"]
+material = SubResource("palette_material")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Flight" type="Node3D" parent="World/SubViewport"]
+script = ExtResource("flight_script")
+
+[node name="Path" type="Path3D" parent="World/SubViewport/Flight"]
+
+[node name="Follow" type="PathFollow3D" parent="World/SubViewport/Flight/Path"]
+rotation_mode = 0
+
+[node name="Camera" type="Camera3D" parent="World/SubViewport/Flight/Path/Follow"]
+current = true
+fov = 70.0
+
+[node name="Page" type="CanvasLayer" parent="."]
+
+[node name="Margin" type="MarginContainer" parent="Page"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 72
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 72
+theme_override_constants/margin_bottom = 48
+
+[node name="Column" type="VBoxContainer" parent="Page/Margin"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="Panel" type="PanelContainer" parent="Page/Margin/Column"]
+layout_mode = 2
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(380, 0)
+theme_type_variation = &"OverlayPanel"
+
+[node name="PanelMargin" type="MarginContainer" parent="Page/Margin/Column/Panel"]
+layout_mode = 2
+theme_type_variation = &"PanelMarginWide"
+
+[node name="Content" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin"]
+layout_mode = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "CHIIP"
+horizontal_alignment = 1
+
+[node name="Tagline" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Tactical shooter against bots"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 12)
+
+[node name="PlayButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Play"
+
+[node name="PracticeButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Practice"
+
+[node name="SettingsButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Settings"
+
+[node name="QuitButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Quit"
+
+[node name="MatchSetup" parent="." instance=ExtResource("setup_scene")]
+
+[node name="SettingsMenu" parent="." instance=ExtResource("settings_menu_scene")]

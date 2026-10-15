@@ -8,8 +8,8 @@ extends RefCounted
 ## static variable like [Noises]) rather than an autoload, because autoloads
 ## aren't loaded when Godot runs a [code]--script[/code] and tests would break.
 ##
-## Nothing reads the disk until the game calls [method load_from_disk] (main.gd
-## at startup, the main menu later). A new instance starts with the defaults,
+## Nothing reads the disk until the game calls [method load_from_disk] (the main
+## menu at startup, or main.gd when it is started directly). A new instance starts with the defaults,
 ## which equal the project's behaviour before there were settings, so tests run
 ## on defaults and never touch the player's real file. Saving starts with that
 ## call too: after it, every change is written to the file it loaded.
@@ -28,6 +28,13 @@ extends RefCounted
 ##
 ## Settings are local to this computer and never game rules (they are not part
 ## of a match, so M9's host won't send them).
+##
+## The [code][match][/code] section is not a preference but a memory: the last
+## choices made in the main menu's match setup (team sizes, bot difficulty, match
+## length, friendly fire, map, D-064), so the next start offers the same match.
+## They are stored, clamped and saved like every other setting;
+## [method GameLaunch.match_settings_from] turns them into the [MatchSettings]
+## a match is played by.
 
 ## Emitted after a setting changed and was applied. [param key] is the
 ## setting's name, e.g. [code]&"sensitivity"[/code], or [code]&"bindings"[/code]
@@ -48,6 +55,12 @@ const BUS_INTERFACE := &"Interface"
 const PIXEL_HEIGHTS: Array[int] = [270, 360, 480, 540, 720]
 ## The frame rate limits the menu offers (0 = unlimited). Any value from 30 to 1000 works.
 const FPS_CAPS: Array[int] = [0, 60, 120, 144, 240]
+## The match lengths match setup offers: rounds a team must win (D-044).
+const MATCH_LENGTHS: Array[int] = [5, 10, 15]
+## The bot difficulties match setup offers: the names of bots/difficulty_*.tres, easiest first.
+const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
+## The map match setup starts with, and the one the main menu flies over.
+const DEFAULT_MAP := "res://maps/test_map.tscn"
 ## How many keys or buttons one action can have (primary and secondary).
 const BINDING_SLOTS := 2
 ## CS's field of view is measured across a 4:3 screen: 90° there. [method vertical_fov] converts.
@@ -62,8 +75,9 @@ const BINDABLE_ACTIONS: Array[StringName] = [
 ## Every setting: its section in the file, its default and its limits. The
 ## defaults are today's behaviour (D-016, D-048, D-021). A value outside
 ## [code]min[/code]..[code]max[/code] is clamped; [code]choices[/code] snaps to
-## the nearest listed value; [code]off[/code] is the value that means "no limit"
-## (anything at or below it). In the file the section's name is dropped from
+## the nearest listed value (a text setting's [code]choices[/code] must match one
+## of them, else it falls back to the default); [code]off[/code] is the value
+## that means "no limit" (anything at or below it). In the file the section's name is dropped from
 ## the key (the crosshair's [code]crosshair_gap[/code] is [code]gap[/code]).
 const SCHEMA := {
 	&"sensitivity": {"section": "game", "default": 1.0, "min": 0.05, "max": 10.0},
@@ -85,6 +99,13 @@ const SCHEMA := {
 	&"crosshair_outline": {"section": "crosshair", "default": true},
 	&"crosshair_dot": {"section": "crosshair", "default": false},
 	&"crosshair_dynamic": {"section": "crosshair", "default": false},
+	# The last match setup (D-064). The defaults are D-041's: 3v3, Normal, first to 5, friendly fire off.
+	&"match_team_size": {"section": "match", "default": 3, "min": 1, "max": 5},
+	&"match_enemy_team_size": {"section": "match", "default": 3, "min": 1, "max": 5},
+	&"match_difficulty": {"section": "match", "default": "normal", "choices": DIFFICULTIES},
+	&"match_rounds_to_win": {"section": "match", "default": 5, "choices": MATCH_LENGTHS},
+	&"match_friendly_fire": {"section": "match", "default": false},
+	&"match_map": {"section": "match", "default": DEFAULT_MAP},
 }
 
 ## The names of the mouse buttons a binding can use, by button index (for menus).
@@ -210,6 +231,32 @@ var crosshair_dynamic: bool:
 	get: return _values[&"crosshair_dynamic"]
 	set(value): set_value(&"crosshair_dynamic", value)
 
+## Players on your team in the next match, you included, 1 to 5 (match setup).
+var match_team_size: int:
+	get: return _values[&"match_team_size"]
+	set(value): set_value(&"match_team_size", value)
+## Bots on the enemy team in the next match, 1 to 5.
+var match_enemy_team_size: int:
+	get: return _values[&"match_enemy_team_size"]
+	set(value): set_value(&"match_enemy_team_size", value)
+## How well the bots fight: one of [constant DIFFICULTIES] ("easy", "normal" or "hard").
+var match_difficulty: String:
+	get: return _values[&"match_difficulty"]
+	set(value): set_value(&"match_difficulty", value)
+## Rounds a team must win: one of [constant MATCH_LENGTHS].
+var match_rounds_to_win: int:
+	get: return _values[&"match_rounds_to_win"]
+	set(value): set_value(&"match_rounds_to_win", value)
+## Teammates hurt each other in the next match.
+var match_friendly_fire: bool:
+	get: return _values[&"match_friendly_fire"]
+	set(value): set_value(&"match_friendly_fire", value)
+## The map scene of the next match, e.g. [constant DEFAULT_MAP]. Nothing checks
+## that it still exists: match setup falls back to the default map when it doesn't.
+var match_map: String:
+	get: return _values[&"match_map"]
+	set(value): set_value(&"match_map", value)
+
 
 func _init() -> void:
 	for key: StringName in SCHEMA:
@@ -251,7 +298,7 @@ static func get_range(key: StringName) -> Vector2:
 	var entry: Dictionary = SCHEMA[key]
 	if entry.has("min"):
 		return Vector2(entry["min"], entry["max"])
-	if entry.has("choices"):
+	if entry.has("choices") and typeof(entry["default"]) == TYPE_INT:
 		var choices: Array = entry["choices"]
 		return Vector2(choices.min(), choices.max())
 	return Vector2.ZERO
@@ -437,6 +484,13 @@ func load_from_disk(path: String = SETTINGS_PATH) -> Error:
 	_dirty = false
 	apply_all()
 	return OK
+
+
+## True once [method load_from_disk] has run (a missing file counts: the defaults
+## stay). The main menu and main.gd both load the settings at startup and use this
+## to read the file only once.
+func is_loaded() -> bool:
+	return save_path != ""
 
 
 ## Writes every setting and key binding to [param path], or to [member save_path]
@@ -630,6 +684,12 @@ static func _sanitize(key: StringName, value: Variant) -> Variant:
 			if entry.has("off") and number <= entry["off"]:
 				return entry["off"]
 			return clampi(number, entry["min"], entry["max"])
+		TYPE_STRING:
+			if typeof(value) != TYPE_STRING:
+				return fallback
+			if entry.has("choices") and not (entry["choices"] as Array).has(value):
+				return fallback
+			return value
 		TYPE_COLOR:
 			if typeof(value) != TYPE_COLOR:
 				return fallback

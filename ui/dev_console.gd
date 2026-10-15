@@ -12,7 +12,7 @@ extends CanvasLayer
 
 ## How many output lines show at once. The panel is as tall as this many lines
 ## need: [code]help[/code] (one line per command, plus the echo of the command) fits.
-const VISIBLE_LINES := 16
+const VISIBLE_LINES := 17
 ## How many output lines are kept to scroll back through.
 const HISTORY_LINES := 200
 ## How many lines the mouse wheel scrolls per notch.
@@ -180,7 +180,8 @@ func _register_commands() -> void:
 	register_command("volume", _cmd_setting.bind(&"master_volume", "volume"), "volume [0-1]", "Master volume (no value: show)")
 	register_command("fps_max", _cmd_setting.bind(&"fps_cap", "fps_max"), "fps_max [0|30-1000]", "Frame rate limit, 0 = unlimited (no value: show)")
 	register_command("settings", _cmd_settings, "settings", "Open the settings menu (Esc closes it)")
-	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting and key back to its default")
+	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting, key and the match setup back to its default")
+	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu")
 
 
 func _cmd_help(_args: Array) -> void:
@@ -292,7 +293,7 @@ func _cmd_setting(args: Array, key: StringName, command_name: String) -> void:
 
 
 ## Opens the settings menu over the game and closes the console, so the menu has
-## the keyboard and the mouse. The main and pause menus open it too (tasks 11 and 12).
+## the keyboard and the mouse. The main menu's Settings button opens it too, and the pause menu will (task 12).
 func _cmd_settings(_args: Array) -> void:
 	if main == null:
 		print_line("There is no game to open the settings menu in.")
@@ -304,7 +305,16 @@ func _cmd_settings(_args: Array) -> void:
 
 func _cmd_settings_reset(_args: Array) -> void:
 	Settings.get_instance().reset_to_defaults()
-	print_line("All settings and keys are back to their defaults.")
+	print_line("All settings, keys and the match setup are back to their defaults.")
+
+
+## Leaves the game for the main menu, like CS's disconnect (D-064). The current
+## match is dropped; the menu's Play starts a new one.
+func _cmd_disconnect(_args: Array) -> void:
+	if main == null:
+		print_line("There is no game to leave.")
+		return
+	main.return_to_menu()
 
 
 # --- Helpers ---

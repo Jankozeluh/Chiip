@@ -81,7 +81,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(200, 40)
 text = "Play again"
 
-[node name="Quit" type="Button" parent="Panel/Margin/Content/Buttons"]
+[node name="MainMenu" type="Button" parent="Panel/Margin/Content/Buttons"]
 layout_mode = 2
 custom_minimum_size = Vector2(200, 40)
-text = "Quit"
+text = "Main menu"

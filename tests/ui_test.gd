@@ -16,7 +16,12 @@ extends Node
 ## (listening, Esc, the click that started it, the clash rule, Backspace, the
 ## console key, reset), closing, the player ignoring input while a menu is
 ## open, scaling by 1.5, and the console's `settings` command, `help` and
-## scrollback. Later tasks (main and pause menus) add their own checks here.
+## scrollback. The main menu and match setup (task 11, D-064) add checks for
+## the menu's buttons and its background without a player, the camera flight,
+## Esc, match setup's defaults, controls, stored choices and map list, the
+## launch description and what main.gd builds from it, the match-end screen's
+## "Main menu" button and the way back to the menu. The pause menu (task 12)
+## adds its own checks here.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -29,8 +34,12 @@ const CONSOLE_SCENE := preload("res://ui/dev_console.tscn")
 const PREVIEW_SCENE := preload("res://ui/theme_preview.tscn")
 const SETTINGS_MENU_SCENE := preload("res://ui/settings_menu.tscn")
 const MAIN_SCENE := preload("res://main.tscn")
+const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
+const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const THEME_PATH := "res://ui/chiip_theme.tres"
 const FONT_PATH := "res://assets/fonts/Silkscreen-Regular.ttf"
+## The file the match setup and scene-change checks store settings in instead of the real one.
+const TEMP_PATH := "user://test_ui_settings.cfg"
 ## Every type variation the menus use: name → the type it varies. Menus may rely on these.
 const VARIATIONS := {
 	"TitleLabel": "Label", "ScoreLabel": "Label", "HeaderLabel": "Label", "DimLabel": "Label",
@@ -74,6 +83,10 @@ func _ready() -> void:
 	await _test_menu_blocks_the_player()
 	await _test_menu_scaling()
 	await _test_console_and_menus()
+	await _test_main_menu()
+	await _test_match_setup()
+	await _test_game_launch()
+	await _test_scene_flow()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -476,18 +489,24 @@ func _test_match_end_screen() -> void:
 	var panel := screen.get_node("Panel") as PanelContainer
 	var table := screen.get_node("Panel/Margin/Content/Table") as ScoreboardTable
 	var play_again := screen.get_node("Panel/Margin/Content/Buttons/PlayAgain") as Button
-	var quit := screen.get_node("Panel/Margin/Content/Buttons/Quit") as Button
+	var main_menu_button := screen.get_node("Panel/Margin/Content/Buttons/MainMenu") as Button
 	_check("The match-end screen still shows 'Victory' and builds its table (3 + 3 rows), with 'Play again' focused",
 			screen.visible and title.text == "Victory" and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
 					and play_again.has_focus(),
 			"visible %s, title '%s', rows %d + %d, focus on Play again: %s" % [
 					screen.visible, title.text, table.get_displayed(0).size(), table.get_displayed(1).size(), play_again.has_focus()])
+	var menu_presses: Array[int] = [0]
+	screen.main_menu_pressed.connect(func() -> void: menu_presses[0] += 1)
+	main_menu_button.pressed.emit()
+	_check("The second button says 'Main menu' (it was Quit) and reports `main_menu_pressed` when clicked; 'Play again' keeps its name",
+			main_menu_button.text == "Main menu" and play_again.text == "Play again" and menu_presses[0] == 1 and not screen.has_signal("quit_pressed"),
+			"texts '%s' and '%s', presses %d" % [play_again.text, main_menu_button.text, menu_presses[0]])
 	_check("Its look comes from theme variations: a modal panel with the accent frame, a 48 px title, 16 px buttons; the buttons are themed in every state",
 			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel"
 					and title.get_theme_font_size("font_size") == 48 and play_again.get_theme_font_size("font_size") == 16
 					and (panel.get_theme_stylebox("panel") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette")
-					and (quit.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left == 2
-					and (quit.get_theme_stylebox("focus") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette"),
+					and (main_menu_button.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left == 2
+					and (main_menu_button.get_theme_stylebox("focus") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette"),
 			"panel '%s', title %d px, button %d px" % [panel.theme_type_variation, title.get_theme_font_size("font_size"), play_again.get_theme_font_size("font_size")])
 	var overrides := _style_or_size_overrides(screen)
 	_check("Nothing in the match-end screen carries a stylebox or font-size override of its own, so the theme alone decides its look",
@@ -557,7 +576,8 @@ func _test_settings_menu_building() -> void:
 	var uncovered: Array[StringName] = []
 	for key: StringName in Settings.SCHEMA:
 		var has_control := menu.get_slider(key) != null or menu.get_check(key) != null or menu.get_option(key) != null
-		if not has_control and key != &"crosshair_color":
+		# The [match] section is match setup's, not the settings menu's.
+		if not has_control and key != &"crosshair_color" and Settings.SCHEMA[key]["section"] != "match":
 			uncovered.append(key)
 	var panel := menu.get_node("Panel") as PanelContainer
 	var title := menu.get_node("Panel/Margin/Content/Title") as Label
@@ -1044,6 +1064,484 @@ func _test_console_and_menus() -> void:
 	settings.reset_to_defaults()
 
 
+# --- The main menu and match setup (D-064) ---
+
+
+## The main menu: four themed buttons over a background without a player, a calm
+## camera flight, scaled with the window, and Esc.
+func _test_main_menu() -> void:
+	var settings := Settings.get_instance()
+	MenuState.reset()
+	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
+	menu.load_settings = false
+	add_child(menu)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var texts: Array[String] = []
+	var big := true
+	for button in menu.get_buttons():
+		texts.append(button.text)
+		big = big and button.theme_type_variation == &"BigButton" and button.visible
+	var title := menu.get_node("Page/Margin/Column/Panel/PanelMargin/Content/Title") as Label
+	var panel := menu.get_node("Page/Margin/Column/Panel") as PanelContainer
+	_check("The main menu shows the title CHIIP and the buttons Play, Practice, Settings and Quit (big themed buttons on an overlay panel), with Play focused, and the mouse is free",
+			title.text == "CHIIP" and texts == ["Play", "Practice", "Settings", "Quit"] and big and panel.theme_type_variation == &"OverlayPanel"
+					and menu.get_buttons()[0].has_focus() and MenuState.is_top(menu) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+			"title '%s', buttons %s, focus on Play %s, on top %s" % [title.text, texts, menu.get_buttons()[0].has_focus(), MenuState.is_top(menu)])
+
+	# The background: the test map without its player, so nothing plays.
+	var background := menu.get_background()
+	var viewport := menu.get_node("World/SubViewport") as SubViewport
+	var flight := menu.get_flight()
+	var players := background.find_children("Player", "", true, false)
+	var characters := background.find_children("*", "Character", true, false)
+	var controllers := background.find_children("*", "PlayerController", true, false)
+	var rules := background.get_children().filter(func(node: Node) -> bool: return node is RoundManager or node is ArenaRules)
+	var cameras := viewport.find_children("*", "Camera3D", true, false)
+	_check("The background is the test map rendered in the low-res world viewport, and its Player node was removed before it entered the tree: no player, no character, no controller, no game rules",
+			background != null and background.scene_file_path == "res://maps/test_map.tscn" and background.get_parent() == viewport
+					and background.get_node_or_null("Player") == null and players.is_empty() and characters.is_empty() and controllers.is_empty() and rules.is_empty(),
+			"map '%s', players %d, characters %d, controllers %d, rules %d" % [
+					background.scene_file_path if background != null else "none", players.size(), characters.size(), controllers.size(), rules.size()])
+	_check("The only camera is the flight's, and it is the one the viewport renders (the map's player camera went with the player)",
+			cameras.size() == 1 and cameras[0] == flight.get_camera() and viewport.get_camera_3d() == flight.get_camera() and flight.get_camera().current,
+			"%d camera(s), the viewport's is the flight's: %s" % [cameras.size(), viewport.get_camera_3d() == flight.get_camera()])
+
+	# The flight: slow, smooth, closed, inside the level.
+	var camera := flight.get_camera()
+	flight.set_time(0.0)
+	var start := camera.global_position
+	var previous := start
+	var previous_yaw := 0.0
+	var max_speed := 0.0
+	var max_turn := 0.0
+	var lowest := INF
+	var highest := -INF
+	var inside := true
+	var step := 0.25
+	var time := step
+	while time <= flight.loop_seconds + 0.01:
+		flight.set_time(time)
+		var position := camera.global_position
+		var forward := -camera.global_basis.z
+		var yaw := atan2(-forward.x, -forward.z)
+		max_speed = maxf(max_speed, position.distance_to(previous) / step)
+		if time > step:
+			max_turn = maxf(max_turn, absf(rad_to_deg(wrapf(yaw - previous_yaw, -PI, PI))) / step)
+		lowest = minf(lowest, position.y)
+		highest = maxf(highest, position.y)
+		inside = inside and absf(position.x) < 31.0 and position.z > -31.0 and position.z < 87.0
+		previous = position
+		previous_yaw = yaw
+		time += step
+	var closed := camera.global_position.distance_to(start) < 0.05
+	flight.set_time(flight.loop_seconds * 0.5)
+	var halfway := camera.global_position
+	_check("The camera flies a calm loop across the map: one lap in %.0f s (60 to 90), never faster than 5 m/s or turning faster than 30°/s, 4 to 6 m up, inside the walls, and the loop closes where it began" % flight.loop_seconds,
+			flight.loop_seconds >= 60.0 and flight.loop_seconds <= 90.0 and max_speed < 5.0 and max_turn < 30.0 and lowest >= 3.6 and highest <= 6.4
+					and inside and closed and halfway.distance_to(start) > 20.0 and flight.get_loop_length() > 150.0,
+			"%.1f m/s at most, %.1f°/s at most, %.1f to %.1f m up, inside %s, closed %s, %.0f m long, halfway %.0f m from the start" % [
+					max_speed, max_turn, lowest, highest, inside, closed, flight.get_loop_length(), halfway.distance_to(start)])
+	var before_time := flight.get_time()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("It keeps flying by itself: the clock runs while the menu is shown", flight.get_time() > before_time, "%.3f s → %.3f s" % [before_time, flight.get_time()])
+
+	# Rendered like the game: the video settings reach the background and the menus scale with the window.
+	var effect := menu.get_node("World/SubViewport/PaletteEffect") as CanvasLayer
+	var world := menu.get_node("World") as SubViewportContainer
+	var window := get_tree().root
+	var effect_on := effect.visible
+	settings.palette_effect = false
+	var effect_off := not effect.visible
+	settings.palette_effect = true
+	var start_button := menu.get_buttons()[0]
+	# A headless window is 64 pixels tall and goes back to that every frame: change it and check in the same frame.
+	window.size = Vector2i(1280, 720)
+	menu.apply_pixel_settings()
+	var at_720 := [world.stretch_shrink, panel.custom_minimum_size.x, start_button.get_theme_font_size("font_size"),
+			menu.get_match_setup().get_node("Panel").custom_minimum_size.x, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
+	window.size = Vector2i(1920, 1080)
+	menu.apply_pixel_settings()
+	var at_1080 := [world.stretch_shrink, panel.custom_minimum_size.x, start_button.get_theme_font_size("font_size"),
+			menu.get_match_setup().get_node("Panel").custom_minimum_size.x, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
+	settings.pixel_height = 270
+	var low_res := world.stretch_shrink
+	settings.pixel_height = 480
+	_check("The background follows the video settings like the game: the palette effect switches with its setting, and in a 720-pixel window the world is 360 lines (scaled 2×), in a 1080 one 540 lines (2×), 270 lines gives 4×",
+			effect_on and effect_off and at_720[0] == 2 and at_1080[0] == 2 and low_res == 4,
+			"effect on %s, off %s; shrink %s at 720, %s at 1080, %d at 270 lines" % [effect_on, effect_off, at_720[0], at_1080[0], low_res])
+	_check("The menus scale with the window like the other menus: at 720 the page panel is 380 wide with 32 px buttons, match setup 780 and settings 960 wide; at 1080 exactly 1.5 times that (570, 48 px, 1170, 1440)",
+			at_720 == [2, 380.0, 32, 780.0, 960.0] and at_1080 == [2, 570.0, 48, 1170.0, 1440.0], "720: %s, 1080: %s" % [at_720, at_1080])
+	var overrides := _own_overrides(menu.get_node("Page")) + _own_overrides(menu.get_match_setup())
+	_check("Nothing in the main page or match setup carries a stylebox or font-size override of its own, so the theme alone decides their look",
+			overrides.is_empty(), "controls with overrides: %s" % [overrides])
+	window.size = Vector2i(1280, 720)
+	menu.apply_pixel_settings()
+	settings.reset_to_defaults()
+
+	# Esc: closes match setup or the settings menu, whichever is on top; on the main page it does nothing.
+	var setup := menu.get_match_setup()
+	var settings_menu := menu.get_settings_menu()
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var nothing_happened := MenuState.is_top(menu) and not setup.is_open() and not settings_menu.is_open() and menu.get_buttons().all(func(b: Button) -> bool: return b.visible)
+	menu.get_buttons()[0].pressed.emit()
+	var setup_opened := setup.is_open() and MenuState.is_top(setup) and setup.get_start_button().has_focus()
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var setup_closed := not setup.is_open() and MenuState.is_top(menu) and menu.get_buttons()[0].has_focus()
+	menu.get_buttons()[2].pressed.emit()
+	var settings_opened := settings_menu.is_open() and MenuState.is_top(settings_menu) and not setup.is_open()
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var settings_closed := not settings_menu.is_open() and MenuState.is_top(menu) and menu.get_buttons()[2].has_focus()
+	menu.get_buttons()[0].pressed.emit()
+	setup.get_back_button().pressed.emit()
+	var by_back := not setup.is_open() and MenuState.is_top(menu)
+	_check("Esc does nothing on the main page; Play opens match setup (Start focused) and Esc closes it; Settings opens the settings menu and Esc closes it; Back closes match setup; the main menu stays the menu on the bottom of MenuState and the mouse stays free",
+			nothing_happened and setup_opened and setup_closed and settings_opened and settings_closed and by_back and MenuState.is_any_open()
+					and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+			"Esc on the page %s, setup opened %s, closed by Esc %s, settings opened %s, closed by Esc %s, Back %s" % [
+					nothing_happened, setup_opened, setup_closed, settings_opened, settings_closed, by_back])
+	_check("Only the command line skips the menu: --match, --practice and --map ask for the game, nothing else does",
+			MainMenu.wants_game(PackedStringArray(["--match"])) and MainMenu.wants_game(PackedStringArray(["--practice"]))
+					and MainMenu.wants_game(PackedStringArray(["--map", "res://maps/test_map.tscn"])) and not MainMenu.wants_game(PackedStringArray())
+					and not MainMenu.wants_game(PackedStringArray(["--verbose"])),
+			"match %s, practice %s, map %s, none %s" % [MainMenu.wants_game(PackedStringArray(["--match"])), MainMenu.wants_game(PackedStringArray(["--practice"])),
+					MainMenu.wants_game(PackedStringArray(["--map", "x"])), MainMenu.wants_game(PackedStringArray())])
+	remove_child(menu)
+	menu.queue_free()
+	await get_tree().process_frame
+	_check("When the main menu goes away it lets go of everything: nothing stays open",
+			not MenuState.is_any_open(), "open menus: %s" % MenuState.is_any_open())
+	MenuState.reset()
+	settings.reset_to_defaults()
+
+
+## Match setup on its own, with a Settings instance of its own: defaults, controls, stored choices, maps.
+func _test_match_setup() -> void:
+	# A Settings.new() only holds values: it never saves and never touches the engine.
+	var stored := Settings.new()
+	var setup := MATCH_SETUP_SCENE.instantiate() as MatchSetup
+	setup.settings = stored
+	add_child(setup)
+	await get_tree().process_frame
+	var defaults := MatchSettings.new()
+	var rules := setup.build_match_settings()
+	var team_buttons := setup.get_segment_buttons(&"match_team_size")
+	var enemy_buttons := setup.get_segment_buttons(&"match_enemy_team_size")
+	var difficulty_buttons := setup.get_segment_buttons(&"match_difficulty")
+	var length_buttons := setup.get_segment_buttons(&"match_rounds_to_win")
+	var fire_buttons := setup.get_segment_buttons(&"match_friendly_fire")
+	_check("Match setup is hidden until opened, and offers team sizes 1 to 5 (yours and the enemy's), Easy / Normal / Hard, First to 5 / 10 / 15, friendly fire Off / On, a map, Back and Start",
+			not setup.visible and team_buttons.size() == 5 and enemy_buttons.size() == 5 and _texts(difficulty_buttons) == ["Easy", "Normal", "Hard"]
+					and _texts(length_buttons) == ["First to 5", "First to 10", "First to 15"] and _texts(fire_buttons) == ["Off", "On"]
+					and _texts(team_buttons) == ["1", "2", "3", "4", "5"] and setup.get_map_option() != null
+					and setup.get_back_button().text == "Back" and setup.get_start_button().text == "Start",
+			"team %s, difficulty %s, length %s, friendly fire %s" % [_texts(team_buttons), _texts(difficulty_buttons), _texts(length_buttons), _texts(fire_buttons)])
+	_check("The defaults are 3v3, Normal bots, first to 5, friendly fire off, on the test map, and they equal MatchSettings' own defaults (D-041)",
+			_pressed(team_buttons) == 2 and _pressed(enemy_buttons) == 2 and _pressed(difficulty_buttons) == 1 and _pressed(length_buttons) == 0 and _pressed(fire_buttons) == 0
+					and setup.get_map_path() == Settings.DEFAULT_MAP and rules.team_size == 3 and rules.enemy_team_size == 3
+					and rules.bot_difficulty.display_name == "normal" and rules.rounds_to_win == 5 and not rules.friendly_fire
+					and rules.team_size == defaults.team_size and rules.enemy_team_size == defaults.enemy_team_size
+					and rules.bot_difficulty == defaults.bot_difficulty and rules.rounds_to_win == defaults.rounds_to_win
+					and rules.friendly_fire == defaults.friendly_fire and rules.freeze_time == defaults.freeze_time and rules.round_time == defaults.round_time,
+			"pressed: team %d, enemy %d, difficulty %d, length %d, fire %d; map %s; %d v %d, %s, first to %d" % [
+					_pressed(team_buttons), _pressed(enemy_buttons), _pressed(difficulty_buttons), _pressed(length_buttons), _pressed(fire_buttons),
+					setup.get_map_path(), rules.team_size, rules.enemy_team_size, rules.bot_difficulty.display_name, rules.rounds_to_win])
+	var summary_before := setup.get_summary()
+
+	# Changing the controls changes the match, and what is stored.
+	(team_buttons[1] as Button).button_pressed = true
+	(enemy_buttons[4] as Button).button_pressed = true
+	(difficulty_buttons[2] as Button).button_pressed = true
+	(length_buttons[2] as Button).button_pressed = true
+	(fire_buttons[1] as Button).button_pressed = true
+	rules = setup.build_match_settings()
+	_check("Pressing 2, 5, Hard, First to 15 and friendly fire On gives a match of 2 against 5, hard bots, first to 15, friendly fire on (the round timings stay at their defaults), and each row has exactly one button pressed",
+			rules.team_size == 2 and rules.enemy_team_size == 5 and rules.bot_difficulty.display_name == "hard" and rules.rounds_to_win == 15 and rules.friendly_fire
+					and rules.freeze_time == defaults.freeze_time and rules.round_end_time == defaults.round_end_time
+					and _pressed(team_buttons) == 1 and _pressed(enemy_buttons) == 4 and _pressed(difficulty_buttons) == 2
+					and _pressed_count(team_buttons) == 1 and _pressed_count(enemy_buttons) == 1 and _pressed_count(difficulty_buttons) == 1
+					and _pressed_count(length_buttons) == 1 and _pressed_count(fire_buttons) == 1,
+			"%d v %d, %s, first to %d, friendly fire %s" % [rules.team_size, rules.enemy_team_size, rules.bot_difficulty.display_name, rules.rounds_to_win, rules.friendly_fire])
+	_check("The choices are stored in the Settings instance (its [match] values), and the summary line follows them",
+			stored.match_team_size == 2 and stored.match_enemy_team_size == 5 and stored.match_difficulty == "hard" and stored.match_rounds_to_win == 15
+					and stored.match_friendly_fire and setup.get_summary() != summary_before and setup.get_summary().contains("1 bot ")
+					and setup.get_summary().contains("5 bots") and setup.get_summary().contains("Hard") and setup.get_summary().contains("first to 15"),
+			"stored %d/%d/%s/%d/%s; summary '%s'" % [stored.match_team_size, stored.match_enemy_team_size, stored.match_difficulty,
+					stored.match_rounds_to_win, stored.match_friendly_fire, setup.get_summary()])
+	# A change from outside (the console, a loaded file) moves the buttons.
+	stored.match_team_size = 5
+	stored.match_difficulty = "easy"
+	_check("A change made outside the panel moves the buttons: team size 5 and Easy are pressed now",
+			_pressed(team_buttons) == 4 and _pressed(difficulty_buttons) == 0 and _pressed_count(team_buttons) == 1 and _pressed_count(difficulty_buttons) == 1,
+			"team %d, difficulty %d" % [_pressed(team_buttons), _pressed(difficulty_buttons)])
+	stored.match_team_size = 2
+	stored.match_difficulty = "hard"
+
+	# The choices survive a restart: written to a file and read by another instance, they come back.
+	_remove_temp_file()
+	stored.match_map = "res://maps/comparison/csg_room.tscn"
+	var saved := stored.save_to_disk(TEMP_PATH)
+	var restarted := Settings.new()
+	var loaded := restarted.load_from_disk(TEMP_PATH)
+	var second := MATCH_SETUP_SCENE.instantiate() as MatchSetup
+	second.settings = restarted
+	add_child(second)
+	await get_tree().process_frame
+	var again := second.build_match_settings()
+	_check("After a restart (the choices saved to a file and loaded by a new Settings) the panel offers the same match: 2 against 5, hard, first to 15, friendly fire on, with the same buttons pressed",
+			saved == OK and loaded == OK and again.team_size == 2 and again.enemy_team_size == 5 and again.bot_difficulty.display_name == "hard"
+					and again.rounds_to_win == 15 and again.friendly_fire
+					and _pressed(second.get_segment_buttons(&"match_team_size")) == 1 and _pressed(second.get_segment_buttons(&"match_difficulty")) == 2
+					and _pressed(second.get_segment_buttons(&"match_rounds_to_win")) == 2 and _pressed(second.get_segment_buttons(&"match_friendly_fire")) == 1,
+			"save %d, load %d, %d v %d, %s, first to %d" % [saved, loaded, again.team_size, again.enemy_team_size, again.bot_difficulty.display_name, again.rounds_to_win])
+	_remove_temp_file()
+	remove_child(second)
+	second.queue_free()
+
+	# The map list.
+	var on_disk: Array[String] = []
+	for file in DirAccess.get_files_at("res://maps/"):
+		if file.ends_with(".tscn"):
+			on_disk.append("res://maps/" + file)
+	on_disk.sort()
+	var option := setup.get_map_option()
+	var shown: Array[String] = []
+	for index in option.item_count:
+		shown.append(option.get_item_text(index))
+	_check("The map list is every scene directly in res://maps/ (like the console's map command), test_map among them, listed by name: %s" % [shown],
+			setup.get_map_paths() == on_disk and on_disk.has("res://maps/test_map.tscn") and option.item_count == on_disk.size()
+					and GameLaunch.list_maps() == on_disk and shown.has("Test Map"),
+			"on disk %s, offered %s" % [on_disk, setup.get_map_paths()])
+	var other := 1 - maxi(0, setup.get_map_paths().find("res://maps/test_map.tscn"))
+	var picked_other := setup.get_map_paths().size() > 1
+	if picked_other:
+		option.select(other)
+		option.item_selected.emit(other)
+	var map_stored := not picked_other or (stored.match_map == setup.get_map_paths()[other] and setup.get_map_path() == setup.get_map_paths()[other])
+	stored.match_map = "res://maps/gone.tscn"
+	var fell_back := setup.get_map_path() == Settings.DEFAULT_MAP and option.selected == setup.get_map_paths().find(Settings.DEFAULT_MAP)
+	_check("Choosing another map (when there is one) is stored, and a stored map that no longer exists falls back to the test map",
+			map_stored and fell_back, "stored %s, with a missing map the panel offers %s" % [map_stored, setup.get_map_path()])
+
+	# Opening, Esc, Back, Start; scaling.
+	var signals: Array[String] = []
+	setup.started.connect(func() -> void: signals.append("started"))
+	setup.closed.connect(func() -> void: signals.append("closed"))
+	MenuState.reset()
+	setup.open()
+	var opened := setup.visible and MenuState.is_top(setup) and MenuState.blocks_gameplay() and setup.get_start_button().has_focus()
+	setup.get_start_button().pressed.emit()
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var by_esc := not setup.visible and not MenuState.is_any_open()
+	setup.open()
+	setup.get_back_button().pressed.emit()
+	var by_back := not setup.visible and not MenuState.is_any_open()
+	setup.close()
+	_check("Opening puts match setup on top of MenuState with Start focused; Start reports `started` (and leaves the panel to the menu), Esc and Back close it and emit `closed` once each, closing it again does nothing",
+			opened and by_esc and by_back and signals == ["started", "closed", "closed"],
+			"opened %s, Esc %s, Back %s, signals %s" % [opened, by_esc, by_back, signals])
+	var panel := setup.get_node("Panel") as PanelContainer
+	var title := setup.get_node("Panel/Margin/Content/Title") as Label
+	var segment := team_buttons[0] as Button
+	setup.set_ui_scale(1.5)
+	var scaled := [panel.custom_minimum_size.x, title.get_theme_font_size("font_size"), segment.custom_minimum_size.x, setup.get_start_button().custom_minimum_size]
+	setup.set_ui_scale(1.0)
+	var back_at_one := [panel.custom_minimum_size.x, title.get_theme_font_size("font_size"), segment.custom_minimum_size.x, setup.get_start_button().custom_minimum_size]
+	_check("Match setup is a themed modal panel and scales exactly: 780 / 48 px title / 56 px buttons / 200 × 40 Start at 1.0, 1170 / 72 / 84 / 300 × 60 at 1.5",
+			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel"
+					and scaled == [1170.0, 72, 84.0, Vector2(300, 60)] and back_at_one == [780.0, 48, 56.0, Vector2(200, 40)],
+			"1.5: %s, 1.0: %s" % [scaled, back_at_one])
+	remove_child(setup)
+	setup.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
+
+
+## The launch description: what the menu leaves and what main.gd builds from it, without changing scenes.
+func _test_game_launch() -> void:
+	var settings := Settings.new()
+	settings.match_team_size = 2
+	settings.match_enemy_team_size = 4
+	settings.match_difficulty = "hard"
+	settings.match_rounds_to_win = 10
+	settings.match_friendly_fire = true
+	var rules := GameLaunch.match_settings_from(settings)
+	_check("GameLaunch turns the stored choices into MatchSettings (2 v 4, hard, first to 10, friendly fire), and an unknown difficulty name gives Normal",
+			rules.team_size == 2 and rules.enemy_team_size == 4 and rules.bot_difficulty.display_name == "hard" and rules.rounds_to_win == 10
+					and rules.friendly_fire and GameLaunch.difficulty_named("bogus").display_name == "normal" and GameLaunch.difficulty_named("easy").display_name == "easy",
+			"%d v %d, %s, first to %d" % [rules.team_size, rules.enemy_team_size, rules.bot_difficulty.display_name, rules.rounds_to_win])
+
+	# A match: main.gd reads the description once and builds a round manager with those exact settings.
+	_check("Nothing is pending until the menu leaves a description", not GameLaunch.is_pending(), "pending %s" % GameLaunch.is_pending())
+	GameLaunch.start_match("res://maps/test_map.tscn", rules)
+	var pending := GameLaunch.is_pending() and not GameLaunch.practice and GameLaunch.match_settings == rules
+	var main := MAIN_SCENE.instantiate()
+	main.load_settings = false
+	add_child(main)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	var round_manager := main.get_map().get_node_or_null("RoundManager") as RoundManager
+	var player_team := Teams.viewer_team
+	_check("main.gd started with a match description builds a RoundManager with those settings on that map: 2 on your team (you and a bot), 4 enemy bots, hard, first to 10, friendly fire on",
+			pending and round_manager != null and round_manager.settings == rules and main.mode == main.Mode.MATCH
+					and main.get_map().scene_file_path == "res://maps/test_map.tscn" and round_manager.get_members(player_team).size() == 2
+					and round_manager.get_members(Teams.other(player_team)).size() == 4 and Teams.friendly_fire
+					and main.get_map().get_node_or_null("ArenaRules") == null,
+			"pending %s, manager %s, members %d + %d, friendly fire %s" % [pending, round_manager != null,
+					round_manager.get_members(player_team).size() if round_manager != null else -1,
+					round_manager.get_members(Teams.other(player_team)).size() if round_manager != null else -1, Teams.friendly_fire])
+	_check("The description is used once: after main.gd read it nothing is pending, and its player and settings are cleared",
+			not GameLaunch.is_pending() and GameLaunch.match_settings == null and GameLaunch.map_path == Settings.DEFAULT_MAP,
+			"pending %s" % GameLaunch.is_pending())
+	var main_menu_connected := (main.get_node("MatchEndScreen") as MatchEndScreen).main_menu_pressed.is_connected(main.return_to_menu)
+	var console := main.get_node("DevConsole") as DevConsole
+	_check("The match-end screen's Main menu button and the console command `disconnect` lead back to the menu (main.return_to_menu)",
+			main_menu_connected and console.get_command_names().has("disconnect"),
+			"button connected %s, commands %s" % [main_menu_connected, console.get_command_names()])
+	main.queue_free()
+	await get_tree().process_frame
+	Teams.friendly_fire = false
+	MenuState.reset()
+
+	# Practice: the respawning arena, with the chosen difficulty.
+	GameLaunch.start_practice("res://maps/test_map.tscn", GameLaunch.difficulty_named("hard"))
+	var practice := MAIN_SCENE.instantiate()
+	practice.load_settings = false
+	add_child(practice)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var arena := practice.get_map().get_node_or_null("ArenaRules") as ArenaRules
+	_check("A practice description gives ArenaRules (no round manager) with the chosen difficulty: hard bots in the respawning arena on the test map",
+			arena != null and practice.get_map().get_node_or_null("RoundManager") == null and practice.mode == practice.Mode.PRACTICE
+					and arena.bot_difficulty.display_name == "hard" and not GameLaunch.is_pending(),
+			"arena %s, difficulty %s, mode %d" % [arena != null, arena.bot_difficulty.display_name if arena != null else "none", practice.mode])
+	practice.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
+
+	# Another map from the description, and the defaults when there is none.
+	GameLaunch.start_match("res://maps/comparison/csg_room.tscn", rules)
+	var other_map := MAIN_SCENE.instantiate()
+	other_map.load_settings = false
+	add_child(other_map)
+	await get_tree().process_frame
+	var other_path: String = other_map.get_map().scene_file_path
+	other_map.queue_free()
+	await get_tree().process_frame
+	var direct := MAIN_SCENE.instantiate()
+	direct.load_settings = false
+	add_child(direct)
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	var direct_rounds := direct.get_map().get_node_or_null("RoundManager") as RoundManager
+	_check("The description also picks the map (the CSG room here), and a main.tscn started without one (the tests, -- --match) plays today's default: a 3v3 match on the test map",
+			other_path == "res://maps/comparison/csg_room.tscn" and direct.get_map().scene_file_path == "res://maps/test_map.tscn"
+					and direct_rounds != null and direct_rounds.settings.team_size == 3 and direct_rounds.settings.enemy_team_size == 3
+					and direct_rounds.settings.bot_difficulty.display_name == "normal" and direct_rounds.settings.rounds_to_win == 5,
+			"first map %s, default map %s, manager %s" % [other_path, direct.get_map().scene_file_path, direct_rounds != null])
+	direct.queue_free()
+	await get_tree().process_frame
+	Teams.friendly_fire = false
+	GameLaunch.clear()
+	MenuState.reset()
+	Settings.get_instance().reset_to_defaults()
+
+
+## The real way through the scenes, in a scene of its own so the test scene stays:
+## the menu's Start changes to the game scene, which plays what was chosen, and
+## the match-end screen's Main menu button changes back. The settings are loaded
+## from a temporary file first, so neither scene reads or writes the real one.
+func _test_scene_flow() -> void:
+	var tree := get_tree()
+	var shared := Settings.get_instance()
+	_remove_temp_file()
+	shared.load_from_disk(TEMP_PATH)
+	var holder := Node.new()
+	tree.root.add_child(holder)
+	tree.current_scene = holder
+	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
+	holder.add_child(menu)
+	await tree.process_frame
+	await tree.process_frame
+	var setup := menu.get_match_setup()
+	menu.get_buttons()[0].pressed.emit()
+	(setup.get_segment_buttons(&"match_team_size")[1] as Button).button_pressed = true
+	(setup.get_segment_buttons(&"match_enemy_team_size")[3] as Button).button_pressed = true
+	(setup.get_segment_buttons(&"match_difficulty")[0] as Button).button_pressed = true
+	(setup.get_segment_buttons(&"match_rounds_to_win")[1] as Button).button_pressed = true
+	var saved_file := FileAccess.file_exists(TEMP_PATH)
+	setup.get_start_button().pressed.emit()
+	await tree.process_frame
+	await tree.process_frame
+	await tree.process_frame
+	await tree.physics_frame
+	var game := tree.current_scene
+	var rounds: RoundManager = game.get_map().get_node_or_null("RoundManager") if game != null and game.has_method("get_map") else null
+	_check("The real flow: Play, the chosen 2v4 / Easy / first to 10 and Start change the scene to the game, which plays exactly that (the menu is gone, and the choices were saved to the settings file)",
+			game != null and game.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(menu) and saved_file and rounds != null
+					and rounds.settings.team_size == 2 and rounds.settings.enemy_team_size == 4 and rounds.settings.bot_difficulty.display_name == "easy"
+					and rounds.settings.rounds_to_win == 10 and not MenuState.is_any_open(),
+			"scene '%s', menu freed %s, manager %s, settings file written %s" % [game.scene_file_path if game != null else "none", not is_instance_valid(menu), rounds != null, saved_file])
+	if game != null and game.has_method("return_to_menu"):
+		(game.get_node("MatchEndScreen") as MatchEndScreen).main_menu_pressed.emit()
+		await tree.process_frame
+		await tree.process_frame
+		await tree.process_frame
+	var back := tree.current_scene as MainMenu
+	_check("The match-end screen's Main menu button changes back to the main menu scene, which shows the same choices and has the mouse free",
+			back != null and back.scene_file_path == GameLaunch.MENU_SCENE and MenuState.is_top(back)
+					and _pressed(back.get_match_setup().get_segment_buttons(&"match_team_size")) == 1
+					and _pressed(back.get_match_setup().get_segment_buttons(&"match_enemy_team_size")) == 3
+					and _pressed(back.get_match_setup().get_segment_buttons(&"match_difficulty")) == 0
+					and _pressed(back.get_match_setup().get_segment_buttons(&"match_rounds_to_win")) == 1
+					and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+			"scene '%s'" % [tree.current_scene.scene_file_path if tree.current_scene != null else "none"])
+	if back != null:
+		# Practice from the menu: the arena with the difficulty chosen before (Easy), and the console's `disconnect` leads back.
+		back.get_buttons()[1].pressed.emit()
+		await tree.process_frame
+		await tree.process_frame
+		await tree.process_frame
+		var practice := tree.current_scene
+		var arena: ArenaRules = practice.get_map().get_node_or_null("ArenaRules") if practice != null and practice.has_method("get_map") else null
+		_check("The Practice button changes to the game scene in practice mode: the respawning arena (no rounds) on the test map, with the difficulty last chosen in match setup (Easy here)",
+				practice != null and practice.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(back) and arena != null
+						and arena.bot_difficulty.display_name == "easy" and practice.get_map().scene_file_path == Settings.DEFAULT_MAP
+						and practice.get_map().get_node_or_null("RoundManager") == null,
+				"scene '%s', arena %s, difficulty %s" % [practice.scene_file_path if practice != null else "none", arena != null,
+						arena.bot_difficulty.display_name if arena != null else "none"])
+		if practice != null and practice.has_node("DevConsole"):
+			(practice.get_node("DevConsole") as DevConsole).run("disconnect")
+			await tree.process_frame
+			await tree.process_frame
+			await tree.process_frame
+		var again := tree.current_scene as MainMenu
+		_check("The console command `disconnect` leaves the game for the main menu too",
+				again != null and again.scene_file_path == GameLaunch.MENU_SCENE and MenuState.is_top(again),
+				"scene '%s'" % [tree.current_scene.scene_file_path if tree.current_scene != null else "none"])
+		if again != null:
+			again.free()
+	else:
+		_failures += 1
+		print("FAIL  Practice and disconnect checks skipped: there was no menu to go back to")
+	tree.current_scene = self
+	if is_instance_valid(holder):
+		holder.free()
+	await tree.process_frame
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	shared.reset_to_defaults()
+	shared.save_path = ""
+	_remove_temp_file()
+
+
 ## The real settings file is exactly as it was when the test started.
 func _test_real_file_untouched() -> void:
 	var now := FileAccess.get_md5(Settings.SETTINGS_PATH) if FileAccess.file_exists(Settings.SETTINGS_PATH) else ""
@@ -1280,6 +1778,32 @@ func _image_colors(image: Image) -> Array[Color]:
 			if not colors.has(color):
 				colors.append(color)
 	return colors
+
+
+## The texts of buttons.
+func _texts(buttons: Array) -> Array[String]:
+	var texts: Array[String] = []
+	for button: Button in buttons:
+		texts.append(button.text)
+	return texts
+
+
+## The index of the first pressed button (-1 if none).
+func _pressed(buttons: Array) -> int:
+	for index in buttons.size():
+		if (buttons[index] as Button).button_pressed:
+			return index
+	return -1
+
+
+## How many of the buttons are pressed.
+func _pressed_count(buttons: Array) -> int:
+	return buttons.filter(func(button: Button) -> bool: return button.button_pressed).size()
+
+
+func _remove_temp_file() -> void:
+	if FileAccess.file_exists(TEMP_PATH):
+		DirAccess.remove_absolute(TEMP_PATH)
 
 
 func _check(check_name: String, passed: bool, detail: String) -> void:

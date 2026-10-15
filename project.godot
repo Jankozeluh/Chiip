@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Chiip"
 config/description="A single-player CS-style tactical FPS against bots, with a retro Quake look."
-run/main_scene="res://main.tscn"
+run/main_scene="res://ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 

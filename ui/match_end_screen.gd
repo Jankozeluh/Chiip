@@ -2,19 +2,19 @@ class_name MatchEndScreen
 extends CanvasLayer
 ## The screen shown when a match is over: "Victory" or "Defeat" for your team,
 ## the final score and a scoreboard of both teams (a [ScoreboardTable]), with
-## "Play again" and "Quit" buttons. Hidden until the [RoundManager] emits
+## "Play again" and "Main menu" buttons. Hidden until the [RoundManager] emits
 ## [signal RoundManager.match_ended].
 ##
 ## It only shows state and reports button clicks; [code]main.gd[/code] reacts to
-## [signal play_again_pressed] and [signal quit_pressed]. Teams have no names:
+## [signal play_again_pressed] and [signal main_menu_pressed]. Teams have no names:
 ## your team (from [member Teams.viewer_team]) is blue and listed first, the
 ## enemy team red. Its look comes from the UI theme (D-057): the panel, title,
 ## scores and buttons use theme type variations.
 
 ## Emitted when the player clicks "Play again".
 signal play_again_pressed
-## Emitted when the player clicks "Quit".
-signal quit_pressed
+## Emitted when the player clicks "Main menu".
+signal main_menu_pressed
 
 var _manager: RoundManager
 
@@ -24,13 +24,13 @@ var _manager: RoundManager
 @onready var _enemy_score: Label = $Panel/Margin/Content/Score/EnemyScore
 @onready var _table: ScoreboardTable = $Panel/Margin/Content/Table
 @onready var _play_again: Button = $Panel/Margin/Content/Buttons/PlayAgain
-@onready var _quit: Button = $Panel/Margin/Content/Buttons/Quit
+@onready var _main_menu: Button = $Panel/Margin/Content/Buttons/MainMenu
 
 
 func _ready() -> void:
 	visible = false
 	_play_again.pressed.connect(play_again_pressed.emit)
-	_quit.pressed.connect(quit_pressed.emit)
+	_main_menu.pressed.connect(main_menu_pressed.emit)
 
 
 func _input(event: InputEvent) -> void:
