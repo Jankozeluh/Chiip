@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M4 — Bots (in progress)
+> **Current milestone:** M4 — Bots (built, waiting for your playtest)
 
 ## Your open checks
 

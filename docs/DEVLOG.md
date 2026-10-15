@@ -24,6 +24,12 @@
 - Developer console (key left of 1): `help`, `bot_add`, `bot_kick`, `bot_difficulty`, `god`, `noclip`, `map`, `clear`, with history. `main.gd` can now switch maps at runtime. All commands checked.
 - Bot arena on the test map: 11 patrol points, 4 bot spawns in the far corners, your spawn; all on walkable floor. Fixed two bots spawning on the same marker (spawns now prefer free markers).
 - Bot tests (`tests/bot_test.tscn`): 11 checks, all passing, seeded so every run is identical. All three suites: 44 checks pass.
+- Visual check: the red bot is easy to pick out against the range and the blue dummies; it spots you, stops and shoots.
+- You asked when settings and proper UI come: menus, a settings menu (sensitivity, FOV, volume, crosshair, keys) saved to disk, and the round HUD are M5. Until then, tuning happens in the Inspector.
+
+**Decisions:** D-034 to D-036 in [DECISIONS.md](DECISIONS.md).
+
+**Next:** You playtest M4: fight the 2 bots on the test map (console: `bot_add hard`, `bot_difficulty easy`, `god`, …) and tell me how fair and fun they feel. Then we tune, close M4 and plan M5 (rounds, menus, settings).
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 
