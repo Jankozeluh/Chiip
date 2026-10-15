@@ -2,6 +2,13 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 7: M3 closed, M4 planned
+
+**Done**
+- You playtested M3: the look is good. **M3 is closed.**
+- Wrote the detailed M4 plan (bots, 12 tasks). Central idea: every character is driven by per-tick input commands (like CS's "usercmd"), so bots follow exactly the same rules as you, which is also the structure multiplayer needs.
+- Put the multiplayer question to you before M4 (see DECISIONS.md).
+
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 
 **Done**
