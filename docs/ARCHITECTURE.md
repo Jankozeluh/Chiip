@@ -71,7 +71,7 @@ Chiip/
 |---|---|---|---|
 | Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
 | Debug overlay | Speed and position readout | M1 | Built |
-| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts |
+| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |

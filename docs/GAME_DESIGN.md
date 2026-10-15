@@ -77,6 +77,7 @@ Starting physics values, CS:GO-like *(tune)*:
   - Inaccuracy grows with movement speed, jumping and sustained fire. Crouching reduces it.
   - Each automatic weapon has a fixed, learnable **spray pattern** plus a little random spread.
   - Recoil recovers over time once you stop shooting.
+  - Shots land at a random spot inside a cone around your aim. The distance from the center is uniform (as in CS), so on average shots land halfway out and most hit near the middle. Measured with 20 taps each: standing 0.057° average / 0.115° worst (cone 0.12°), running 2.5° / 4.4° (cone 4.6°).
 - **Damage by hit zone** (CS-like multipliers *(tune)*):
 
   | Zone | Multiplier |

@@ -123,6 +123,10 @@
 - The result is a `Dictionary` with `position`, `normal`, `collider`, …, and it's empty when nothing was hit.
 - There's also a `RayCast3D` node, a ray that's always on and is good for constant checks. One-off queries like shots use `intersect_ray`.
 
+**Random numbers you can repeat** (`Weapon.rng`)
+- `randf()` uses a global generator, like `UnityEngine.Random.value`. A `RandomNumberGenerator` object has its own `seed`: the same seed gives the same numbers every run, like `new System.Random(seed)`. The weapon uses its own generator for spread, so tests can make shots repeatable.
+- `inverse_lerp(a, b, value)` tells where a value sits between a and b (0 to 1), like `Mathf.InverseLerp`. It turns movement speed into "how much of the running penalty applies".
+
 **Spawning scenes** (`Weapon._spawn_impact`)
 - `const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")` loads a scene when the script loads. `IMPACT_SCENE.instantiate()` + `add_child()` is Unity's `Instantiate(prefab, parent)`, and `queue_free()` is `Destroy()`.
 - `look_at(target, up)` turns a node so its −Z axis points at the target.

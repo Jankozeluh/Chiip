@@ -19,6 +19,8 @@ signal hit_landed(hit: Dictionary)
 
 ## When the reload sound plays, as fractions of the reload time: magazine out, magazine in, bolt.
 const RELOAD_SOUND_STEPS: Array[float] = [0.1, 0.6, 0.85]
+## Below this fraction of top speed you count as standing still (CS: about 34%).
+const ACCURATE_SPEED_FRACTION := 0.34
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
@@ -64,6 +66,21 @@ func _ready() -> void:
 func equip(wielder: Player) -> void:
 	_wielder = wielder
 	ammo_changed.emit(magazine, reserve)
+
+
+## The current radius of the cone shots land in, in degrees. Stance,
+## movement speed and being in the air all add to it.
+func get_inaccuracy() -> float:
+	if _wielder == null:
+		return 0.0
+	var inaccuracy := data.crouching_inaccuracy if _wielder.is_crouching else data.standing_inaccuracy
+	var top_speed := _wielder.get_max_speed()
+	var speed := Vector2(_wielder.velocity.x, _wielder.velocity.z).length()
+	var move_fraction := clampf(inverse_lerp(top_speed * ACCURATE_SPEED_FRACTION, top_speed, speed), 0.0, 1.0)
+	inaccuracy += data.moving_inaccuracy * move_fraction
+	if not _wielder.is_on_floor():
+		inaccuracy += data.air_inaccuracy
+	return inaccuracy
 
 
 ## True while a reload is in progress.
@@ -121,10 +138,17 @@ func _fire() -> void:
 	ammo_changed.emit(magazine, reserve)
 
 
-## The direction this shot travels.
+## The direction this shot travels: your aim plus random spread.
 func _get_shot_direction() -> Vector3:
 	var aim := _wielder.get_aim_angles()
-	return _direction_from_angles(aim.x, aim.y)
+	# Random spread: pick a random direction around the aim and a random
+	# distance up to the inaccuracy. As in CS, the distance is uniform, so
+	# most shots land near the middle of the cone.
+	var spread_direction := rng.randf() * TAU
+	var spread := deg_to_rad(get_inaccuracy()) * rng.randf()
+	var yaw := aim.x + cos(spread_direction) * spread
+	var pitch := aim.y + sin(spread_direction) * spread
+	return _direction_from_angles(yaw, pitch)
 
 
 ## Hitscan: finds the first thing on the bullet's path, instantly (no travel time).
