@@ -250,3 +250,8 @@
 **Sound in 3D** (`characters/character.tscn`, `weapons/rifle.tscn`)
 - `AudioStreamPlayer3D` plays a sound from its position; volume and left/right panning follow the listener (the current camera). *Unit Size* sets how far it stays loud, *Max Distance* where it fades out completely. Like a Unity AudioSource with Spatial Blend 1.
 - `AudioStreamRandomizer` is a sound resource that picks one of several streams each time it plays, with random pitch and volume, so repeated sounds don't sound like a loop. Like a Unity audio "random container".
+
+**Tweens on physics ticks and timers** (`Character._die`, `ArenaRules`)
+- `create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)` runs a tween on physics ticks, so physics interpolation smooths it like other movement. Use it for anything that moves a physics-interpolated node.
+- `await get_tree().create_timer(3.0).timeout` waits 3 seconds without blocking the game, like `yield return new WaitForSeconds(3)` in a Unity coroutine.
+- `func.bind(extra)` adds an argument to a signal connection: `bot.died.connect(_on_died.bind(bot))` tells the handler *which* bot died.

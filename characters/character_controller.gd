@@ -25,6 +25,11 @@ func set_look_angles(_yaw: float, _pitch: float) -> void:
 	pass
 
 
+## Called after the character respawns, to reset whatever the controller remembers.
+func on_respawned() -> void:
+	pass
+
+
 ## True for the player sitting at this computer: their own sounds play
 ## without position (in both ears) instead of from a point in the world.
 func is_local() -> bool:

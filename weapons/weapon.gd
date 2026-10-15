@@ -121,6 +121,19 @@ func is_reloading() -> bool:
 	return _reload_time_left > 0.0
 
 
+## Full magazine and reserve again, no reload or recoil in progress (on respawn).
+func refill() -> void:
+	magazine = data.magazine_size
+	reserve = data.reserve_ammo
+	_reload_time_left = 0.0
+	_spray_position = 0.0
+	_cooldown = 0.0
+	trigger_held = false
+	_viewmodel.transform = _viewmodel_rest
+	ammo_changed.emit(magazine, reserve)
+	reload_finished.emit()
+
+
 ## Starts a reload if the magazine isn't full and there are spare rounds.
 func reload() -> void:
 	if is_reloading() or magazine >= data.magazine_size or reserve <= 0:

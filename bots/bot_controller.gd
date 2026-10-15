@@ -79,6 +79,13 @@ func set_look_angles(yaw: float, pitch: float) -> void:
 	_pitch = pitch
 
 
+func on_respawned() -> void:
+	state = State.PATROL
+	_target = null
+	_senses.reset()
+	_pick_patrol_point()
+
+
 func get_input(delta: float) -> CharacterInput:
 	_update_state()
 	var input := CharacterInput.new()

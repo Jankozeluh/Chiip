@@ -55,6 +55,13 @@ func forget() -> void:
 	_time_since_lead = INF
 
 
+## Forgets everything, including what it sees right now (e.g. after respawning).
+func reset() -> void:
+	forget()
+	visible_enemy = null
+	_time_until_check = 0.0
+
+
 ## True if [param other] is an enemy the bot could see right now: alive, in
 ## range, inside the view cone and not hidden behind the world.
 func can_see(other: Character) -> bool:

@@ -15,6 +15,7 @@ var player: Character
 @onready var _ammo_label: Label = $AmmoLabel
 @onready var _weapon_label: Label = $WeaponLabel
 @onready var _health_label: Label = $HealthLabel
+@onready var _death_label: Label = $DeathLabel
 
 
 ## Shows this player's weapon on the HUD.
@@ -25,6 +26,8 @@ func set_player(new_player: Character) -> void:
 	weapon.reload_started.connect(_update_weapon_label)
 	weapon.reload_finished.connect(_update_weapon_label)
 	player.damaged.connect(func(_amount: float, _zone: Hitbox.Zone, _attacker: Character) -> void: _update_health())
+	player.died.connect(_on_player_died)
+	player.respawned.connect(_on_player_respawned)
 	_crosshair.camera = player.get_camera()
 	_update_health()
 	_on_ammo_changed(weapon.magazine, weapon.reserve)
@@ -36,6 +39,7 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_ammo_label, factor)
 	UiScale.apply(_weapon_label, factor)
 	UiScale.apply(_health_label, factor)
+	UiScale.apply(_death_label, factor)
 	_crosshair.set_ui_scale(factor)
 
 
@@ -60,3 +64,15 @@ func _update_weapon_label() -> void:
 func _update_health() -> void:
 	_health_label.text = "+ %d" % ceili(player.health)
 	_health_label.modulate = LOW_AMMO_COLOR if player.health <= LOW_HEALTH else Color.WHITE
+
+
+func _on_player_died(killer: Character) -> void:
+	_death_label.text = ("Killed by %s" % killer.name if killer != null else "You died") + "\nRespawning..."
+	_death_label.visible = true
+	_crosshair.visible = false
+
+
+func _on_player_respawned() -> void:
+	_death_label.visible = false
+	_crosshair.visible = true
+	_update_health()

@@ -23,11 +23,17 @@ signal damaged(amount: float, zone: Hitbox.Zone, attacker: Character)
 signal died(killer: Character)
 ## Emitted for each footstep. [param loud] is false when walking or crouching (silent, as in CS).
 signal footstep(loud: bool)
+## Emitted after [method respawn] brings the character back.
+signal respawned
 
 ## CS/Source distance units to metres (1 unit ≈ 1 inch).
 const UNITS_TO_METRES := 0.0254
 ## Distance covered per footstep, in metres (about 3 steps per second at full run).
 const STEP_DISTANCE := 1.8
+## Where the eyes (and a player's camera) end up after dying: close to the floor.
+const DEAD_EYE_HEIGHT := 0.35
+## Seconds the body takes to fall over.
+const DEATH_FALL_TIME := 0.45
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -104,6 +110,8 @@ var _controller: CharacterController
 var _hitboxes: Array[Hitbox] = []
 ## Distance walked since the last footstep.
 var _distance_since_step: float = 0.0
+## The body's physics layer while alive (dead bodies don't block anyone).
+var _alive_collision_layer: int = 0
 ## Current eye height above the feet. Moves smoothly toward the standing or crouched height.
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
@@ -130,6 +138,7 @@ func _ready() -> void:
 	_hull_height_difference = standing_shape.height - crouching_shape.height
 	_set_crouch_hull(false)
 	health = max_health
+	_alive_collision_layer = collision_layer
 	add_to_group("characters")
 	_set_up_body()
 	for child in get_children():
@@ -284,12 +293,45 @@ func _play_footstep() -> void:
 		_footstep_audio_3d.play()
 
 
+## Brings the character back at [param at], facing [param yaw], with full
+## health and a full weapon.
+func respawn(at: Vector3, yaw: float) -> void:
+	global_position = at
+	rotation.y = yaw
+	velocity = Vector3.ZERO
+	health = max_health
+	is_crouching = false
+	_set_crouch_hull(false)
+	_eye_height = stand_eye_height
+	head.position.y = _eye_height
+	_upper_body.position.y = 0.0
+	body.rotation = Vector3.ZERO
+	collision_layer = _alive_collision_layer
+	for hitbox in _hitboxes:
+		hitbox.collision_layer = PhysicsLayers.HITBOXES
+	_input = CharacterInput.new()
+	_input.yaw = yaw
+	if _controller != null:
+		_controller.set_look_angles(yaw, 0.0)
+		_controller.on_respawned()
+	if weapon != null:
+		weapon.refill()
+	reset_physics_interpolation()
+	respawned.emit()
+
+
 func _die(killer: Character) -> void:
 	if weapon != null:
 		weapon.trigger_held = false
-	# Dead bodies can't be hit again.
+	# Dead bodies can't be hit again, and don't block anyone.
 	for hitbox in _hitboxes:
 		hitbox.set_deferred("collision_layer", 0)
+	set_deferred("collision_layer", 0)
+	# Tip the body over backwards around the feet. Run the tween on physics
+	# ticks so physics interpolation smooths it like any other movement.
+	var fall := create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	fall.tween_property(body, "rotation:x", -PI / 2.0, DEATH_FALL_TIME) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	died.emit(killer)
 
 
@@ -391,10 +433,13 @@ func _update_crouch(on_ground: bool, delta: float) -> void:
 		_try_stand_up(on_ground)
 
 	var target_eye_height := crouch_eye_height if is_crouching else stand_eye_height
+	if not is_alive():
+		target_eye_height = DEAD_EYE_HEIGHT
 	var eye_speed := (stand_eye_height - crouch_eye_height) / crouch_transition_time
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
 	head.position.y = _eye_height
-	_upper_body.position.y = _eye_height - stand_eye_height
+	if is_alive():
+		_upper_body.position.y = _eye_height - stand_eye_height
 
 
 func _crouch(on_ground: bool) -> void:

@@ -98,6 +98,11 @@ func is_local() -> bool:
 	return true
 
 
+func on_respawned() -> void:
+	_jump_queued = false
+	_reload_queued = false
+
+
 func _process(_delta: float) -> void:
 	# Position: where the head is drawn this frame (smoothed between physics ticks).
 	camera.global_position = character.head.get_global_transform_interpolated().origin
