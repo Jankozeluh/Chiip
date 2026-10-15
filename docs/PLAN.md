@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M1 — Project setup & movement (built, waiting for your playtest)
+> **Current milestone:** M2 — Shooting (planned, waiting for your go-ahead)
 
 ## How this plan works
 
@@ -17,7 +17,7 @@
 | # | Milestone | Status | What you can play at the end |
 |---|---|---|---|
 | M0 | Plan & documentation | ✅ | Nothing yet. This plan and the docs exist |
-| M1 | Project setup & movement | 🟨 | Run, walk, crouch and jump around a test map |
+| M1 | Project setup & movement | ✅ | Run, walk, crouch and jump around a test map |
 | M2 | Shooting | ⬜ | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ⬜ | The test map looks like a 90s shooter |
 | M4 | Bots | ⬜ | Bots hunt you and shoot back |
@@ -35,7 +35,7 @@
 - [x] Create the project folder and the documentation structure
 - [x] Write the README, game design, plan, architecture, decision log, devlog and learning notes
 
-## M1 — Project setup & movement 🟨
+## M1 — Project setup & movement ✅
 
 **Goal:** a first-person player that moves like in CS, on a simple test map.
 
@@ -51,8 +51,9 @@
 - [x] Jumping and air movement (air acceleration, air strafing)
 - [x] Debug overlay showing speed and position, like CS's `cl_showpos`
 - [x] All movement values editable in the Godot editor for tuning
-- [ ] Check whether Ctrl + click works as crouch + shoot on macOS (**your test:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay)
-- [ ] Playtest and tune the feel (**your test:** compare with CS, including a 360° turn with your CS sensitivity)
+- [x] Playtest the feel: confirmed good on 2026-10-15, no tuning needed
+
+*Moved to M2:* the Ctrl + click and sensitivity checks weren't part of the playtest report, and they matter once you can shoot.
 
 **Done when:** you can run, walk, crouch and jump around the test map, counter-strafing stops you quickly, and it feels right to you as a CS player.
 
@@ -60,22 +61,39 @@
 
 ## M2 — Shooting ⬜
 
-**Goal:** one rifle with CS-like accuracy and recoil, tested on targets.
+**Goal:** one rifle with CS-like accuracy and recoil, tested on targets in a shooting range.
 
-- [ ] Weapon system foundation, with weapon stats stored as a data file (Resource)
-- [ ] Hitscan shooting with a raycast from the camera
-- [ ] Fire rate, magazine, reserve ammo and reloading
-- [ ] Inaccuracy from moving and jumping, and less of it when crouching
-- [ ] Spray pattern, recoil recovery and camera kick
-- [ ] Bullet impacts (decals or particles) so you see where shots land
-- [ ] Target dummy with hit zones (head, chest, stomach, legs) that shows damage numbers
-- [ ] HUD: crosshair (configurable like CS) and ammo counter
-- [ ] Placeholder weapon model in first person and a gunshot sound
-- [ ] Shooting range on the test map with static and moving targets
+**Your checks, carried over from M1:**
+- [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click, and we change the crouch key or work around it before crouch-shooting matters.
+- [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
 
-**Done when:** first shots are accurate when standing still, moving ruins accuracy, the spray pattern is learnable, and headshots deal ×4 damage.
+**Tasks**, in order, one commit each:
 
-**You learn:** Resources (Godot's ScriptableObjects), raycasts and physics layers, signals, Control nodes for UI, 3D audio.
+1. [ ] **Physics layers.** Name the layers (world, player, bots, hitboxes, triggers) in Project Settings and assign them, so bullets know what they can hit and players don't collide with hitboxes.
+2. [ ] **Weapon data.** A `WeaponData` resource (Godot's ScriptableObject) holding every number: damage, fire rate, magazine, reload time, movement speed, accuracy, recoil. The first data file is `weapons/rifle.tres` with AK-like starting values: 36 damage, 600 rounds/min, 30 + 90 rounds, 2.5 s reload, 215 u/s while held.
+3. [ ] **Firing and ammo.** Full-auto while the button is held, magazine and reserve ammo, reload with R, an empty click. Holding the rifle slows you from 250 to 215 u/s, as in CS. The click that recaptures the mouse doesn't fire.
+4. [ ] **Hitscan and impacts.** Each shot casts a ray from the center of your view up to 208 m (CS: 8192 units). Bullet holes and sparks appear where it lands; the oldest holes disappear after 64.
+5. [ ] **Accuracy.** Each shot lands randomly inside a cone. The cone is tiny standing still (accurate first shot), smaller crouched, grows with speed above 34% of top speed, and is huge in the air.
+6. [ ] **Spray pattern and recoil.** A fixed, learnable pattern stored in the weapon data so it can be edited: it climbs for about 10 shots, then sways left and right. The view kicks with part of the recoil (CS-style aim punch) and returns to where you aimed. The pattern resets after a short pause in firing.
+7. [ ] **Hit zones and damage.** Hitboxes for head ×4, chest and arms ×1, stomach ×1.25 and legs ×0.75, plus damage falloff with distance. A target dummy shows each hit as a floating number, plus a running total.
+8. [ ] **HUD.** A CS-style crosshair with adjustable size, gap, thickness, color, outline and center dot, optionally dynamic (opens up while moving and spraying). An ammo counter.
+9. [ ] **Viewmodel.** A blocky placeholder rifle in first person, with a muzzle flash and a kick on every shot. It may poke into walls when you stand right against them; proper viewmodel rendering comes later.
+10. [ ] **Sounds.** Placeholder gunshot, empty-click and reload sounds (see the decisions below).
+11. [ ] **Shooting range** on the test map: dummies at 5, 10, 20 and 40 m, a dummy moving side to side, and a large spray wall where bullet holes show your spray pattern.
+12. [ ] **Debug overlay.** Adds current inaccuracy, the shot number within the spray, and the last hit's zone, distance and damage.
+13. [ ] **Weapon tests.** Automated checks for fire rate, magazine and reload timing, first-shot accuracy, inaccuracy while moving, damage per zone, falloff, and the spray pattern repeating identically.
+
+**Done when:** first shots standing still hit where you aim, shooting while running sprays everywhere, counter-strafing then shooting hits, the spray pattern can be learned on the spray wall, and a headshot does 4× damage (144, a one-tap like the AK).
+
+**You learn:** Resources, raycasts with `intersect_ray`, physics layers and masks, `Area3D`, signals (weapon → HUD, hitbox → target), custom drawing with `_draw()` for the crosshair, Tweens for kick and flash, particles, audio players, and random numbers with seeds (so tests are repeatable).
+
+**Decisions before starting** (the default applies if you don't choose):
+
+| Question | Default |
+|---|---|
+| The rifle's name | "Rifle" as a working name; final weapon names are decided in M6 |
+| Sounds | Generated by code: short retro noise bursts, no downloads. Alternative: a free CC0 sound pack, downloaded only with your OK |
+| Default crosshair | Static and CS-like: green, small gap, no dot. Dynamic is a setting |
 
 ## M3 — Retro look & map tools ⬜
 

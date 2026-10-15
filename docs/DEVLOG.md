@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 3: M1 closed, M2 planned
+
+**Done**
+- You playtested M1: the movement feels good and needs no tuning. **M1 is closed.**
+- The Ctrl + click and sensitivity checks weren't reported, so they moved to M2. They matter once you can shoot.
+- Wrote the detailed M2 plan: 13 tasks from physics layers to weapon tests, with three decisions to make first (rifle name, sounds, default crosshair).
+
+**Next:** Your go-ahead for M2, and answers to the three decisions (or accept the defaults).
+
 ## 2026-10-15 — Session 2: M1 project setup & movement
 
 **Done**
