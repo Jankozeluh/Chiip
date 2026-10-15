@@ -19,7 +19,10 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 
 - **Lighting decided: real-time** (D-085, provisional). Screenshots of today's lighting, SSAO, and SSAO with SDFGI on Depot ([maps/lighting_depot.jpg](maps/lighting_depot.jpg)): SSAO barely shows at 480 lines, SDFGI brings the blue sky back into the shadows and darkens the warehouse, and lightmaps would need a re-bake by hand after every map edit. New `tools/frame_timing.gd` and a `--lighting` option for the screenshot tool.
 
-**Next:** the performance check and the first macOS export.
+- **First macOS build** (D-086): downloaded the official Godot 4.7.2 export templates (1.28 GB, checksum verified, your OK), added an export preset (universal, ad-hoc signed, tests and tools left out) and turned on ETC2/ASTC compression, which Apple Silicon exports require. `builds/macos/Chiip.app` (165 MB) runs: headless matches on Depot and Square, and a window on Metal. The export found two old bugs: the TrenchBroom comparison room's player pointed at a script renamed in M4, and the console's map list didn't work in exported games; both fixed.
+- **Performance:** 5v5 on all three maps holds the display rate (slowest 1% of frames 19–22 ms, about 2 ms of physics per frame for 10 bots). macOS keeps V-Sync on and Metal reports no GPU times, so `tools/frame_timing.gd` reports frame and CPU times.
+
+**Next:** map rotation, once the coordinating session has merged M5's match setup and menus into this branch.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

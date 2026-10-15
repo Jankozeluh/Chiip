@@ -12,6 +12,11 @@ Things only you can check, kept here until done instead of moving from milestone
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
 - [ ] **TrenchBroom hands-on:** set up and try TrenchBroom (see README, "Making maps with TrenchBroom") before M8, so the map-tool choice (D-032) can be confirmed.
 - [ ] **Playtest the three quick maps:** `map depot`, `map square`, `map spillway` in the console (docs/MAPS.md). How do they feel, what should change, and what should they be called?
+- [ ] **M8 playtest: bomb rounds** (`-- --map res://maps/depot.tscn`, also Square and Spillway). As an attacker with the bomb: hold **E** inside A or B to plant (3.2 s, you can't move); does the gold BOMB tag, the "Hold E to plant" prompt and the bar read well? As a defender: retake and hold E next to the bomb (10 s). Do the bots plant, guard the bomb, retake and defuse believably? Are 40 s of fuse and the blast (lethal to ~13 m) right for maps this small? (D-080, D-081)
+- [ ] **M8 playtest: team respawn** (`-- --map res://maps/square.tscn --respawn`). Do you respawn somewhere safe (never in front of an enemy)? Is a match to **50 kills** (about 4 minutes with bots) the right length, and do the bots hunting in pairs feel like CoD? Does Depot's fighting pile up too much in the warehouse? (D-082, D-083)
+- [ ] **M8 playtest: sound.** With headphones: can you tell gravel, concrete, metal (container and warehouse roofs) and wood (crates) apart by the footsteps? Is the headshot "dink" satisfying and the body hit clear? Are the round stingers, the "go" beep, the bomb-planted alert and menu clicks pleasant, or too loud? (D-084)
+- [ ] **M8: the exported app.** Double-click `builds/macos/Chiip.app` in the `m8-maps` worktree (or re-export, README "Exporting the game"): does it start, play a match and quit normally? (D-086)
+- [ ] **M8: lighting.** Look at `docs/maps/lighting_depot.jpg`: is staying with real-time lighting (left column) right, or do you want SSAO as a video setting, or a lightmap bake once the maps are final? (D-085)
 
 ## How this plan works
 
@@ -267,7 +272,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 ## M8 — Modes & 3 quick maps 🟨
 
-*Started early: the three map blockouts were built alongside M5 (2026-10-15). The rest of M8 follows M7.*
+*Started early: the three map blockouts were built alongside M5 (2026-10-15), and the modes, sound, lighting decision and first export followed in the same branch (`m8-maps`), in parallel with M5–M7. Waiting for: map rotation (needs M5's match setup), your playtest, and the maps' detail pass.*
 
 **Goal:** fast, action-packed maps like Call of Duty's, three of them in rotation, playable in two modes: CS-style bomb rounds and a team respawn mode (D-049).
 
@@ -280,7 +285,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 - [x] **Team respawn mode** (like CoD's Team Deathmatch): you respawn about 3 s after dying, at a spawn point away from enemies; the first team to a kill limit wins, or the team with most kills when the time runs out. Grows out of today's Practice arena. Built as `RespawnMatch` (D-082, provisional): 30 kills (50 since D-083) or 10 minutes, overtime on a tie, 3 s respawns at the safest `respawn_points` marker (far from enemies, out of their sight); `MatchSettings.game_mode`, `-- --respawn` from the terminal. New `tests/respawn_test.tscn` (15 checks)
 - [x] **Bots in the respawn mode:** hunt in small groups instead of attacking and holding. Built as `HuntPlan` + the HUNT role (D-083, provisional): pairs per team, the longest-living member leads to a teammate's sighting within 25 m or roams the patrol points, the other follows about 6 m behind watching a flank; the kill limit is now 50 (bots-only matches score about 20 kills a minute). 4 new checks in the respawn test; the maps test plays a respawn match on every map
 - [x] Full sound pass: weapons, footsteps on different surfaces, bomb beeps, UI. Built (D-084, provisional): footsteps on hard, gravel, metal and wood floors (the floor's texture comes from func_godot's metadata, via Chiip's own worldspawn class); bullet impacts per surface, body hits and a CS-like headshot "dink"; the bomb's sounds plus a planted alert; menu hover and click, round start, round won and lost stingers. 24 generated sounds, no downloads. New `tests/sound_test.tscn` (8 checks)
-- [ ] Performance check and the first exported macOS build
+- [x] Performance check and the first exported macOS build. Done (D-086): 5v5 on all three maps holds the display rate (slowest 1% of frames 19–22 ms, ~2 ms physics for 10 bots); a universal, ad-hoc signed `builds/macos/Chiip.app` (165 MB) from the new `export_presets.cfg`, after installing the official 4.7.2 export templates (checksum verified). The export also found and fixed a broken player script in the TrenchBroom comparison room and the console's map list in exported builds
 
 **Done when:** you can play both modes on all three maps against bots, the rotation moves from map to map, and it runs from an exported app.
 

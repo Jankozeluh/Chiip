@@ -442,6 +442,12 @@
 - **LightmapGI** bakes light into textures, like Unity's Progressive Lightmapper, but only from the editor's *Bake Lightmaps* button; there is no script call for it.
 - On macOS V-Sync is enforced by the system, so even `--disable-vsync` stays at the display's rate, and `RenderingServer.viewport_get_measured_render_time_gpu()` returns 0 with Metal.
 
+**Exporting a game** (D-086)
+- An **export preset** (`export_presets.cfg`, *Project → Export…*) is like a Unity build profile: platform, file name, what to include, signing. `--export-release "<preset>" <path>` builds from the command line.
+- **Export templates** are Godot's prebuilt game executables for each platform (Unity installs these as "build support" modules). They must match the engine version exactly and live outside the project.
+- The game's content goes into one **`.pck`** file next to the executable, like Unity's data folder or asset bundles. Text scenes are converted to binary on the way, which is why `DirAccess` sees `.remap` files in an exported game and `ResourceLoader.list_directory()` is the safe way to list them.
+- Apple Silicon only runs signed code; an **ad-hoc signature** (no Apple account) is enough on the Mac that built it. Sharing builds needs a Developer ID and notarization.
+
 **Text you can see through walls** (the bomb's marker)
 - `Label3D.no_depth_test = true` draws the text on top of everything, like a waypoint marker; `fixed_size` keeps it the same size on screen at any distance. Unity would use a world-space canvas with a shader that ignores depth.
 

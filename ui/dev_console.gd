@@ -248,10 +248,12 @@ func _load_difficulty(level: String) -> BotDifficulty:
 
 
 ## Map scenes in maps/ and its subfolders, as names the map command accepts.
+## Uses ResourceLoader's listing, which also works in an exported game, where
+## scenes are stored converted (DirAccess would only see "depot.tscn.remap").
 func _list_maps() -> PackedStringArray:
 	var maps := PackedStringArray()
 	for folder in ["", "comparison/"]:
-		for file in DirAccess.get_files_at(MAPS_FOLDER + folder):
+		for file in ResourceLoader.list_directory(MAPS_FOLDER + folder):
 			if file.ends_with(".tscn"):
 				maps.append(folder + file.trim_suffix(".tscn"))
 	return maps

@@ -124,3 +124,7 @@ common/physics_jitter_fix=0.0
 3d/physics_engine="Jolt Physics"
 3d/default_gravity=20.32
 common/physics_interpolation=true
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true

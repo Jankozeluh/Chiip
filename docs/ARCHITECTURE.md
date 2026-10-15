@@ -345,6 +345,13 @@ Run the checks from the project folder:
 
 `--headless` means no window, and `--fixed-fps 128` runs exactly one physics tick per frame as fast as possible. `--quit-after` is a safety net in case a script error stops a test from finishing. Each check prints PASS or FAIL, and the exit code is the number of failures. The weapon test seeds the spread so every run fires the same shots, and uses a silent copy of the rifle data because headless runs have no audio device. When a test file uses a `class_name` for the first time, run `Godot --headless --path . --import` first so Godot knows the class.
 
+## Exporting (D-086)
+
+- `export_presets.cfg` holds one preset, **macOS**: a universal `.app`, ad-hoc signed, exported to `builds/macos/Chiip.app`. `builds/` is gitignored and has a `.gdignore`, so Godot never imports a build. `tests/*` and `tools/*` are excluded from the export.
+- Exports need the export templates of the exact engine version (`~/Library/Application Support/Godot/export_templates/4.7.2.stable/`) and, for Apple Silicon, `rendering/textures/vram_compression/import_etc2_astc`.
+- In an exported game text scenes and resources are converted to binary and reached through `.remap` files: code that lists `res://` folders must use `ResourceLoader.list_directory()` (the console's `map` list does).
+- `tools/frame_timing.gd` measures frame times of a real match (in the editor build, with a window).
+
 ## Naming conventions
 
 These follow the official Godot style guide.

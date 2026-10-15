@@ -693,6 +693,22 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Baking once the maps are final (the README keeps the steps; reconsider in a detail pass, with a grey custom environment for the bake); SSAO as an option in the video settings (cheap, small effect); SDFGI with a grey sky for the bounce (fixes the tint, keeps the dark interiors and the cost); `VoxelGI` per map (another bake step).
 
+## D-086 — The first macOS build: universal, ad-hoc signed, tests and tools left out (2026-10-15) — *provisional*
+
+**Decision:**
+- **Export preset "macOS"** in `export_presets.cfg` (checked in): a **universal** app (Apple Silicon and Intel), bundle id `org.chiip.game`, version 0.8.0, exported to `builds/macos/Chiip.app` (gitignored; `builds/.gdignore` keeps Godot from importing it). `tests/` and `tools/` are left out. Built with `Godot --headless --path . --export-release "macOS" builds/macos/Chiip.app` (README, "Exporting the game").
+- **Ad-hoc signed, not notarized:** Godot's built-in signing with no identity. Apple Silicon Macs only run signed code, and an ad-hoc signature is enough for an app built on this Mac. On another Mac it would need right-click → Open (or a Developer ID and notarization, which need a paid Apple account).
+- **ETC2/ASTC texture compression switched on** (`rendering/textures/vram_compression/import_etc2_astc`): Godot refuses to export for Apple Silicon without it. Our pixel textures aren't VRAM-compressed, so nothing visible changes.
+- **The export templates** (1.28 GB, official, checksum verified, CREDITS.md) are installed in the user's Godot folder, outside the project.
+- **Two fixes the export found:** the TrenchBroom comparison room still pointed its player at `player/player.gd`, a script renamed in M4, so that map had been broken since then; it now uses the player scene's own script. And the console's `map` list read `res://maps/` with `DirAccess`, which in an exported game only sees `depot.tscn.remap` (scenes are stored converted); it now uses `ResourceLoader.list_directory()`.
+- **Performance** (`tools/frame_timing.gd`, Apple M5, 1080p window, world 960 × 540): 5v5 on Depot (rounds), Square (team respawn) and Spillway (rounds) all hold the display rate (the window ran at 60 Hz with the editor open next to it), slowest 1% of frames 19–22 ms, about 2 ms of physics per frame for 10 bots and 0.2 ms of CPU to prepare the world's rendering, 157–187 draw calls. macOS keeps V-Sync on and Metal reports no GPU timings, so there's no "frames to spare" number; M3 measured 120 fps on this machine with the display at 120 Hz.
+
+**Why:** A universal build runs on any recent Mac at the cost of a bigger download (165 MB); arm64-only would halve it but shut out Intel Macs. Ad-hoc signing is the minimum that runs on Apple Silicon without an Apple account. Leaving tests and tools out keeps developer scripts out of the game. Putting builds in an ignored folder of the project keeps one place for them.
+
+**Checked:** the exported app ran headless with no errors on Depot (rounds), Square (team respawn) and the TrenchBroom comparison room, and in a window it started on Metal (Apple M5, Forward+) and quit cleanly. `codesign` shows an ad-hoc signature. All test suites pass.
+
+**Alternatives:** arm64 only (smaller, Apple Silicon only); a `.dmg` or `.zip` (for sharing; the `.app` is enough for testing here); no signing (won't launch on Apple Silicon); Developer ID signing and notarization (later, with an Apple developer account, before sharing builds); exporting everything including tests (harmless but bigger and untidy).
+
 ## Open questions
 
 | Question | Decide in |

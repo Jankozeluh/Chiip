@@ -64,6 +64,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Measure a map (sizes, walking distances, sightlines): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 20000 --script res://tools/map_report.gd -- res://maps/depot.tscn`
 - Screenshots of a map without touching the mouse (opens a window briefly): `/Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1280x720 --quit-after 3000 --script res://tools/map_screenshots.gd -- --map res://maps/depot.tscn --out <scratchpad folder>` (add `--lighting ssao` or `sdfgi` to compare lighting)
 - Frame times of a real match (opens a window for ~20 s): `/Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1920x1080 --disable-vsync --quit-after 30000 --script res://tools/frame_timing.gd -- --map res://maps/depot.tscn --bots 5` (add `--respawn`, `--seconds <n>`). macOS keeps V-Sync on and Metal reports no GPU time, so read the slowest-1% frame time and the CPU times
+- Export the macOS app (export templates must be installed): `mkdir -p builds/macos && touch builds/.gdignore`, then `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "macOS" builds/macos/Chiip.app`. Smoke-test it headless: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`
 - Install Chiip's TrenchBroom config: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/export_trenchbroom_config.gd -- "$HOME/Library/Application Support/TrenchBroom/games/Chiip"`
 - Play a specific map: add `-- --map res://maps/comparison/csg_room.tscn` to the run command
 - Smoke-run the game headless: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 300`
@@ -79,6 +80,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Multiplayer comes in M9 (D-033). Follow "Keeping multiplayer possible" in docs/ARCHITECTURE.md in all gameplay code.
 - Keep Chiip visually distinct from Counter-Strike: no desert/dust palettes, no CS-like map layouts or names (D-031).
 - Headless runs use a dummy audio driver where sounds never finish; anything still "playing" at exit is reported as leaked. Tests use silent weapon data.
+- In an exported game scenes are stored converted (`depot.tscn` becomes `depot.tscn.remap`): list resources with `ResourceLoader.list_directory()`, not `DirAccess`, and load them by their `.tscn` path as usual.
 - Autoloads don't exist in `--script` runs (tools, checks), so code that tools load must not use autoload names. Use a class with a static shared instance instead (see `systems/noises.gd`).
 - GDScript lambdas copy captured locals: assigning to a captured `int`/`Vector2` inside a lambda doesn't change the outer variable. Capture an `Array`/`Dictionary` instead.
 - `Teams` and `Character` refer to each other. In such a cycle GDScript can reject an enum from one of them passed in from a third script ("should be Side but is Teams.Side"). Take such parameters as `int`.

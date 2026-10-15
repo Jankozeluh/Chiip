@@ -65,6 +65,20 @@ To play a different map from the start, add `-- --map` and the map scene, e.g. `
 
 **Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map depot` or `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
 
+## Exporting the game
+
+The first macOS build (D-086). One-time setup: the Godot 4.7.2 export templates are installed in `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (in the editor: *Editor → Manage Export Templates*). Then, from the project folder:
+
+```bash
+mkdir -p builds/macos && touch builds/.gdignore
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --export-release "macOS" builds/macos/Chiip.app
+```
+
+Open `builds/macos/Chiip.app` with a double-click (it's signed ad-hoc, so on another Mac it needs right-click → *Open*). Command-line options work as for the editor build, after the app's binary: `builds/macos/Chiip.app/Contents/MacOS/Chiip -- --map res://maps/depot.tscn --respawn`. In the editor: *Project → Export…*, preset **macOS**, *Export Project*.
+
 ## Making maps with TrenchBroom
 
 Real maps are built in **TrenchBroom**, a free brush-based map editor similar to Hammer, and imported into Godot by the func_godot addon (D-032).
