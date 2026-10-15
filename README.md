@@ -110,6 +110,22 @@ Render the crew's concept sheets (line-up and 8-direction turnarounds in blue an
 
 Leave out `--sheet` to render every animation frame and `preview.html`, a page where you can spin each class.
 
+The crew's 3D models are generated too (D-054). After changing `tools/modelgen/`, regenerate them and let Godot import them:
+
+```bash
+~/miniconda3/envs/chiip/bin/python /Users/kozeluhj/Documents/Games/Chiip/tools/modelgen/modelgen.py all
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --import
+```
+
+To look at them on a turntable (Space pauses, arrow keys turn):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip res://characters/crew/crew_preview.tscn
+```
+
 ## Tests
 
 Automated checks run without a window in about a second each:

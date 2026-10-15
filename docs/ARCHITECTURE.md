@@ -39,10 +39,12 @@ Chiip/
 │   ├── materials/     One material per texture, world triplanar (for CSG geometry)
 │   ├── environments/  Shared sky / fog / ambient settings
 │   ├── models/
+│   │   └── crew/      Generated class models: .glb + albedo + team mask (tools/modelgen, D-072)
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   ├── fonts/         Silkscreen pixel font (+ its OFL license text)
 │   └── ui/            Pixel-art icons of the UI theme (generated, D-057)
 ├── characters/        Shared Character (movement + CS rules), input commands, controller base
+│   └── crew/          The crew (M6): model preview, later the body, team-colour shader and class data
 ├── player/            The player: a Character variant with keyboard/mouse controller and camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene (a Character variant) and its AI controller
@@ -116,6 +118,9 @@ Chiip/
 | `tools/ui_palette.gd` | The UI colors as constants (D-057), shared by the two tools below |
 | `tools/generate_ui_icons.gd` | Draws the UI theme's icons (check boxes, radio buttons, switches, slider knob, arrows, the list marker) from letter grids with 2 × 2 px cells and saves them as PNG files into `assets/ui/`. Run it, then the import, then `make_ui_theme.gd` |
 | `tools/make_ui_theme.gd` | Builds the UI theme from the palette and the icons and saves `ui/chiip_theme.tres`. All sizes and styles are in this one script |
+| `tools/modelgen/` | The model generator in Python (D-054, D-072), with a `.gdignore`: `modelgen.py <class>|all` writes `assets/models/crew/<class>.glb`, `<class>_albedo.png` and `<class>_mask.png`. `crew.py` holds the part lists (looks and kits come from the concept tool's class table), `rig.py` the 17-bone skeleton, `geometry.py` the low-poly pieces and the atlas, `paint.py` the palette texture and team mask, `gltf.py` the `.glb` writer. Runs in the `chiip` conda environment |
+| `assets/models/crew/` | Generated class models (don't edit by hand; change `tools/modelgen/` and run it again). Each `.glb` imports as a `Skeleton3D` with one skinned `MeshInstance3D` (`body`); models face −Z, stand on y = 0 and are exactly their class's height. Textures are imported lossless with mipmaps, never VRAM-compressed |
+| `characters/crew/crew_preview.tscn` + `.gd` | Developer turntable: every generated class model in a row in the game's daylight (Space pauses, arrow keys turn) |
 | `tools/concept/` | Concept-art tool in Python (not Godot): renders 8-direction sprite turnarounds of character designs from 3D shapes (D-051). Has a `.gdignore`, so Godot skips the folder. Runs in the `chiip` conda environment (Python 3 with numpy and Pillow, D-071); writes its output outside the project. `--sheet` renders the crew's approval sheets (D-070) |
 | `assets/materials/*.tres` | One `StandardMaterial3D` per texture: world triplanar mapping at Quake's density (64 px = 64 units = 1.63 m, `uv1_scale` 0.6152), nearest filtering with mipmaps and anisotropic filtering (sharp at grazing angles), matte (roughness 1, specular 0.2) |
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |

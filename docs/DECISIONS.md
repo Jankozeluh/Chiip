@@ -579,6 +579,21 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** A venv on the system's `python3` (the old plan); a glTF library such as pygltflib or trimesh.
 
+## D-072 — How the model generator builds a character (2026-10-15) — *provisional*
+
+**Decision:**
+- **Pieces on bones.** A class is a list of low-poly pieces (bevelled boxes, tapered cylinders, low-res ellipsoids and domes clipped by a plane), each fully bound to one bone (weight 1), so limbs stay rigid like late-90s models. Each piece also names its hit zone (task 4).
+- **One skeleton for every class**, 17 bones: `hips`, `spine`, `chest`, `head`, `upper_arm`/`forearm`/`hand` and `thigh`/`shin`/`foot` per side, and `weapon`, a child of the right hand at the grip. Lengths and widths scale per class (body scale, leg length, bulk), so animations are written once and solved per class. The tool finds the body scale at which the model is exactly its concept height.
+- **The rest pose is a T-pose with every bone's rotation the identity** (except `weapon`, which holds the grip's rotation). Piece sizes and positions are then plain model axes relative to the bone, which keeps the part lists readable.
+- **Models face −Z with +X to their right**, Godot's own forward, so a model needs no turning in Godot. (glTF assets normally face +Z.)
+- **Texture:** each piece gets six rectangles in a 256-texel-wide atlas, one per side of its bounding box, and each triangle is projected onto the side it faces (box projection). 96 texels per metre gives chunky pixels at Chiip's 480 lines. Every texel comes from the concept palette's 16-shade ramps through the class's kit, with a little baked light, edge darkening, grain and patterns.
+- **Team colour is a mask texture next to the albedo** (`<class>_mask.png`: red = team colour, green = glow). Team texels in the albedo are a neutral grey whose brightness is the shading; the shader (task 3) multiplies it by the viewer's team colour.
+- **Textures are separate PNG files** next to the `.glb`, imported lossless, with mipmaps and without Godot's automatic switch to VRAM compression; the `.glb` references the albedo and samples it nearest-neighbour.
+
+**Why:** Rigid pieces are the look we're after and make skinning trivial (no weight painting). One skeleton keeps the animation set shared and the AnimationTree identical for every class (task 6), and M9's network players animate the same way. Identity rest rotations and model-space numbers make the part lists match the concept's measurements one to one. Box projection needs no hand-made UV layout and lets the painter place patterns and decals in metres. A separate mask keeps the albedo free of alpha tricks, which Godot's import can alter (alpha border fixing), and its green channel gives the Scout's goggles their glow. External PNGs keep their own import settings, so the palette survives import untouched.
+
+**Alternatives:** Smooth skinning with blended weights (softer joints, but weight painting and a less retro look); per-class skeletons (more freedom, but four animation sets); an A-pose rest; UV unwrapping per shape type (less texture waste, more code); the team mask in the albedo's alpha; textures embedded in the `.glb` (Godot would compress them).
+
 ## Open questions
 
 | Question | Decide in |

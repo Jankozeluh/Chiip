@@ -10,7 +10,11 @@
 - The first version gave the Marksman only 6% team colour (8% from behind). Team sleeves on every class, plus a back panel for the Marksman and a helmet stripe for the Bulwark, brought every class to 11–23% from every side.
 - You approved the looks as shown and kept the names Rifleman, Bulwark, Marksman and Scout (the open question is closed).
 
-**Next:** Task 2, the model generator: the Rifleman as a low-poly, rigged `.glb`.
+- **Task 2, the model generator** (D-072). New `tools/modelgen/` (Python, runs in the conda environment): `gltf.py` writes `.glb` files by hand (JSON plus a binary buffer), `geometry.py` makes the low-poly pieces (bevelled boxes, tapered cylinders, low-res ellipsoids, clipped domes for helmets) with box-projected UVs packed into an atlas, `rig.py` the 17-bone skeleton in a T-pose (with a `weapon` bone in the right hand for guns), `paint.py` the palette-limited texture and the team mask, `crew.py` the part lists (Rifleman so far, the same shapes as the approved concept), `modelgen.py` the command line.
+- `modelgen.py rifleman` writes `assets/models/crew/rifleman.glb` (50 pieces, 2,106 triangles, 17 bones), `rifleman_albedo.png` (256 × 352, every texel from the concept palette, team parts in neutral grey) and `rifleman_mask.png`. The body is scaled so the model is exactly 1.82 m tall (Godot measures the mesh at 1.820 m).
+- Godot imports it as `Skeleton3D` + skinned `MeshInstance3D`, with the external texture and nearest filtering read from the glTF sampler. New turntable `characters/crew/crew_preview.tscn` shows the generated models in the game's daylight. Fixed on the way: the shelf packer now places the tallest rectangles first (the atlas shrank from 256 × 1024), and the helmet's cut now covers the forehead and leaves the ears free.
+
+**Next:** Task 3, the team-colour shader.
 
 ## 2026-10-15 — Session 11: crew, classes and arsenal planned
 

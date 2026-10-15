@@ -391,3 +391,17 @@
 
 **A popup closes when its window loses focus** (`ui/theme_preview.gd`)
 - A `PopupMenu` hides itself as soon as the window gets or loses keyboard focus, and a window launched from a terminal gains it a few frames late. The preview therefore waits until `get_window().has_focus()` has been true for a while before it calls `OptionButton.show_popup()`, which is why its drop-down stays open for a screenshot.
+
+### M6 — Crew & animation
+
+**Importing a glTF model** (`assets/models/crew/rifleman.glb`)
+- Drop a `.glb` (binary glTF) into the project and Godot imports it into a scene, the way Unity imports an FBX into a model prefab. The import settings live in a `.import` file next to it (Unity keeps them in a `.meta` file). You can instance the result like any scene, but not edit its nodes in place: you either make an *inherited scene* from it or, as Chiip does, put it into your own scene and change things from code.
+- glTF is the format Godot prefers (FBX needs a converter). It can reference textures as separate files: Godot then uses the project's own imported PNG, with that PNG's import settings. Chiip's generated textures are imported lossless with `detect_3d/compress_to=0`; otherwise Godot switches a texture to lossy VRAM compression the first time it sees it on a 3D model, and the palette would smear.
+- glTF faces +Z by convention, Godot's forward is −Z. Chiip's generator writes its models facing −Z, so they need no turning.
+
+**`Skeleton3D`: bones are not nodes**
+- In Unity a rig is a hierarchy of Transforms and a `SkinnedMeshRenderer` points at them. In Godot the whole rig is *one* `Skeleton3D` node holding a list of bones (name, parent, rest pose, current pose), and the skinned `MeshInstance3D` is its child. You find a bone with `find_bone("hand_r")` and read its pose with `get_bone_global_pose()`. Godot may order the bones differently from the file, so always look them up by name.
+- Each bone's *rest* is its pose in the file (Chiip's T-pose); animations set the *pose* on top of it.
+
+**A `--script` can load and inspect any scene**
+- A script that `extends SceneTree` (run with `--script`) can `load()` an imported model, `instantiate()` it and walk its nodes, which is a quick way to check what an importer built without opening the editor.
