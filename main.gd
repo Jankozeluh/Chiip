@@ -94,7 +94,7 @@ func _load_map() -> void:
 
 
 ## Puts the map into the world viewport, adds the game rules, and connects
-## its player to the HUD and overlay.
+## its player and its round manager (in a match) to the HUD and overlay.
 func _spawn_map(scene: PackedScene) -> void:
 	_map = scene.instantiate()
 	_viewport.add_child(_map)
@@ -103,6 +103,8 @@ func _spawn_map(scene: PackedScene) -> void:
 	var rules := _add_game_rules()
 	# Hides the match-end screen of the previous map; it opens when this match ends.
 	_match_end_screen.set_round_manager(rules as RoundManager)
+	# The round HUD (top bar, kill feed, banners) shows only in a match; null hides it.
+	_hud.set_round_manager(rules as RoundManager)
 	_hud.set_player(player)
 	_hud.respawn_hint = rules is ArenaRules
 	_set_up_spectating(player, rules is RoundManager)

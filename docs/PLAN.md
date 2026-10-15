@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow (in progress: tasks 1–5 of 13 done)
+> **Current milestone:** M5 — Rounds & game flow (in progress: tasks 1–6 of 13 done)
 
 ## Your open checks
 
@@ -186,7 +186,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 3. [x] **Match flow.** Score and first to 5, 10 or 15 rounds. Sides swap at half time (after 4, 9 or 14 rounds, so a draw is impossible). A match-end screen shows the winner and the scoreboard. *(Sonnet)* Built as score, half time and match end in `RoundManager`, plus `ui/match_end_screen.tscn` with Play again and Quit until the main menu exists (D-044).
 4. [x] **Bots play rounds.** Today's bots wander between patrol points, so a round could stall. The attacking side pushes toward the defending end in loose groups. Defenders hold angles near their end, then rotate toward fights they hear. Bots hold fire while a teammate is in the line of fire. *(Opus: AI)* Built as `bots/bot_tactics.gd` with attack routes and hold spots on the test map (D-045).
 5. [x] **Spectating.** After you die, watch a living teammate through their eyes, like CS. Click to switch to the next teammate. If no teammate is alive, you see the end of the round from where you died. *(Sonnet)* Built in `PlayerController` (D-046): about 2 s after you die in a match the camera moves to a living teammate's head and aim, a click switches, the HUD shows their health and ammo; practice mode has none.
-6. [ ] **Round HUD.** Top bar: round timer, score (yours vs. theirs), and players alive per team. Also a kill feed (killer → victim, with a headshot mark, in team colors), round-end banners ("Round won" / "Round lost"), and the freeze-time countdown. *(Sonnet)*
+6. [x] **Round HUD.** Top bar: round timer, score (yours vs. theirs), and players alive per team. Also a kill feed (killer → victim, with a headshot mark, in team colors), round-end banners ("Round won" / "Round lost"), and the freeze-time countdown. *(Sonnet)* Built as `ui/round_hud.tscn` + `kill_feed.gd` inside the HUD (D-047): a top bar (your score in blue, the timer, their score in red, a square per player alive), the freeze countdown with your side, "Switching sides" and match point, round-end banners, and a kill feed ("Killer > Victim", team colors, "HS", your own lines outlined, 5 lines, fading after 5 s); practice mode shows none of it.
 7. [ ] **Scoreboard** (hold Tab): both teams with kills, deaths, assists and damage, and who's alive. *(Sonnet)*
 8. [ ] **UI theme.** One Godot `Theme` for every menu: pixel font, colors, buttons, sliders, tabs. It keeps menus consistent and changeable in one place. *(Sonnet, with screenshots for you to judge)*
 9. [ ] **Settings, saved to disk.** A `Settings` class, saved as `user://settings.cfg` and applied the moment something changes. Settings: sensitivity (CS-compatible numbers), field of view, volumes through audio buses (master, effects, interface), crosshair, key bindings, and video (fullscreen, V-Sync, FPS cap, pixel resolution, palette effect, pixelated HUD). *(Sonnet)*

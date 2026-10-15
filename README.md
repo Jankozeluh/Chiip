@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, and spectating a teammate after you die are in (tasks 1–5 of 13), so F5 starts a 3v3 match to 5 rounds won; menus, round HUD and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, and the round HUD (timer, score, players alive, kill feed, round banners) are in (tasks 1–6 of 13), so F5 starts a 3v3 match to 5 rounds won; the scoreboard, menus and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -14,6 +14,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 **From the Godot editor** (recommended):
 1. Open Godot. In the Project Manager, click **Import**, select this folder's `project.godot`, and open it.
 2. Press **F5** (or the ▶ button at the top right) to play. A 3v3 match starts on the test map: you and two bot teammates (blue) against three bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
+   The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Quit** buttons.
 3. For the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), run with `-- --practice` (see below).

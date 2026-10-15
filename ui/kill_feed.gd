@@ -1,0 +1,114 @@
+class_name KillFeed
+extends VBoxContainer
+## The kill feed (top right): one line per death, newest at the bottom, at most
+## [constant MAX_LINES] lines, each fading out after [constant LINE_LIFETIME] seconds.
+## A line reads "Killer > Victim" with each name in its team's color (yours blue,
+## the enemy's red), and a gold "HS" after a headshot kill. A death without a
+## killer shows just the victim. Lines that involve the local player get a
+## darker background and a light outline, as CS highlights your own kills.
+##
+## It only shows what [method add_kill] is told; [RoundHud] feeds it from
+## [signal RoundManager.character_killed]. The ">" is plain ASCII on purpose:
+## the pixel font (Silkscreen) has no arrow glyph.
+
+## The most lines shown at once; a new kill pushes the oldest one out.
+const MAX_LINES := 5
+## Seconds a line stays fully visible.
+const LINE_LIFETIME := 5.0
+## Seconds a line then takes to fade out.
+const FADE_TIME := 0.5
+## Between killer and victim.
+const KILL_SEPARATOR := ">"
+## After the victim when the killing bullet hit the head.
+const HEADSHOT_TEXT := "HS"
+## Font size (at the 720-pixel design height) of every line.
+const FONT_SIZE := 16
+const SEPARATOR_COLOR := Color(0.8, 0.8, 0.8)
+const HEADSHOT_COLOR := Color(1.0, 0.82, 0.3)
+const LINE_BACKGROUND := Color(0.0, 0.0, 0.0, 0.6)
+## Background of the lines that involve the local player.
+const OWN_LINE_BACKGROUND := Color(0.0, 0.0, 0.0, 0.85)
+const OWN_LINE_BORDER := Color(1.0, 1.0, 1.0, 0.9)
+
+var _ui_scale: float = 1.0
+var _line_style: StyleBoxFlat
+var _own_line_style: StyleBoxFlat
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_line_style = StyleBoxFlat.new()
+	_line_style.bg_color = LINE_BACKGROUND
+	_own_line_style = StyleBoxFlat.new()
+	_own_line_style.bg_color = OWN_LINE_BACKGROUND
+	_own_line_style.set_border_width_all(2)
+	_own_line_style.border_color = OWN_LINE_BORDER
+
+
+## Adds a line for a death. [param killer] may be null (and a character that
+## killed itself counts as no killer): then only the victim is shown.
+func add_kill(victim: Character, killer: Character, headshot: bool) -> void:
+	var has_killer := killer != null and killer != victim
+	var involves_you := victim.is_local_player() or (has_killer and killer.is_local_player())
+	var line := PanelContainer.new()
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.size_flags_horizontal = Control.SIZE_SHRINK_END
+	line.add_theme_stylebox_override("panel", _own_line_style if involves_you else _line_style)
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for side in ["left", "right"]:
+		margin.add_theme_constant_override("margin_" + side, 8)
+	for side in ["top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 3)
+	line.add_child(margin)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	margin.add_child(row)
+	if has_killer:
+		row.add_child(_make_label("Killer", String(killer.name), Teams.text_color_for(killer.team)))
+		row.add_child(_make_label("Separator", KILL_SEPARATOR, SEPARATOR_COLOR))
+	row.add_child(_make_label("Victim", String(victim.name), Teams.text_color_for(victim.team)))
+	if headshot:
+		row.add_child(_make_label("Headshot", HEADSHOT_TEXT, HEADSHOT_COLOR))
+	add_child(line)
+	UiScale.apply_tree(line, _ui_scale)
+	while get_child_count() > MAX_LINES:
+		_remove_line(get_child(0))
+	# The tween belongs to the line, so it ends with it when the line is pushed out.
+	var tween := line.create_tween()
+	tween.tween_interval(LINE_LIFETIME)
+	tween.tween_property(line, "modulate:a", 0.0, FADE_TIME)
+	tween.tween_callback(_remove_line.bind(line))
+
+
+## Removes every line at once.
+func clear() -> void:
+	for line in get_children():
+		_remove_line(line)
+
+
+## How many lines are showing right now.
+func get_line_count() -> int:
+	return get_child_count()
+
+
+## Scales the lines already there and the ones added later (1.0 = the 720-pixel design).
+func set_ui_scale(factor: float) -> void:
+	_ui_scale = factor
+	UiScale.apply_tree(self, factor)
+
+
+func _make_label(label_name: String, text: String, color: Color) -> Label:
+	var label := Label.new()
+	label.name = label_name
+	label.text = text
+	label.add_theme_font_size_override("font_size", FONT_SIZE)
+	label.add_theme_color_override("font_color", color)
+	return label
+
+
+func _remove_line(line: Node) -> void:
+	if line.get_parent() == self:
+		remove_child(line)
+	line.queue_free()

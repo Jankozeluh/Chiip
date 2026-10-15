@@ -15,16 +15,30 @@ extends Node
 ## dies in a match sees through a living teammate's eyes, switches teammates, is
 ## moved on when that teammate dies, keeps the last view when nobody is left,
 ## and is back in their own view in the next round; with spectating off
-## (practice mode) nothing changes. Quits with the number of failed checks as the
-## exit code (0 means everything passed).
+## (practice mode) nothing changes. The last part is the round HUD (task 6): the
+## real ui/hud.tscn listens to the round manager, and the test reads what it
+## shows: the timer (freeze countdown, then the round time, frozen at the round
+## end), the score and players alive, the countdown with your side, the kill
+## feed (names, team colors, headshot mark, your own lines highlighted, at most 5
+## lines, fading out), the round-end banners for a win and a loss by elimination
+## and on time-out, "Switching sides" and match point, and that the HUD can be
+## handed another round manager (or none, as in practice mode) without
+## duplicates and never blocks the mouse. Quits with the number of failed checks
+## as the exit code (0 means everything passed).
 
 const MAP_SCENE := preload("res://maps/test_map.tscn")
+const HUD_SCENE := preload("res://ui/hud.tscn")
 const FREEZE_TIME := 0.5
 const ROUND_TIME := 2.0
 const ROUND_END_TIME := 0.5
 ## The spectating checks need one long round and a long pause after it.
 const SPECTATE_ROUND_TIME := 30.0
 const SPECTATE_ROUND_END_TIME := 8.0
+## The HUD checks that read the round timer need a round of the real length.
+const HUD_ROUND_TIME := 115.0
+const HUD_HEADLINES: Array[String] = ["Title", "Line1", "Line2", "Line3"]
+const HUD_ATTACK_TEXT := "You attack: push to the far end"
+const HUD_DEFEND_TEXT := "You defend: hold your end"
 
 var _map: Node3D
 var _rounds: RoundManager
@@ -99,6 +113,7 @@ func _run_all() -> void:
 	await _test_match_end()
 	await _test_short_matches()
 	await _test_spectating()
+	await _test_round_hud()
 
 
 func _test_round_start() -> void:
@@ -393,7 +408,360 @@ func _test_spectating() -> void:
 					_player.is_alive(), controller.get_view_target() == _player, all_shown, camera.global_position.distance_to(own_head), views.back().name])
 
 
+## The round HUD (task 6). The real ui/hud.tscn is handed the round manager the
+## way main.gd does it, and the checks read what its labels, squares and kill
+## feed show. One short match for each part; the bots hold their spawn, and the
+## test decides the fights with direct damage.
+func _test_round_hud() -> void:
+	await _test_hud_timer_and_feed()
+	await _test_hud_banners()
+	await _test_hud_match_point()
+	await _test_hud_wiring()
+
+
+## Timer, countdown, side line, score, players alive and the kill feed's lines,
+## in a match with a round of the real length (1:55).
+func _test_hud_timer_and_feed() -> void:
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	_hold_bots()
+	var hud := _new_hud()
+	var formats := [RoundHud.format_time(115.0), RoundHud.format_time(114.2), RoundHud.format_time(59.5),
+			RoundHud.format_time(5.0), RoundHud.format_time(0.3), RoundHud.format_time(0.0), RoundHud.format_time(-1.0)]
+	_check("The timer shows m:ss and counts a started second as a whole one",
+			formats == ["1:55", "1:55", "1:00", "0:05", "0:01", "0:00", "0:00"], str(formats))
+	await _wait_ticks(2)
+	var side_text := HUD_ATTACK_TEXT if _rounds.get_side(Teams.viewer_team) == Teams.Side.ATTACKING else HUD_DEFEND_TEXT
+	var bar := _bar(hud)
+	_check("Freeze time: the timer shows the freeze countdown, the center says when round 1 starts and which side you play",
+			bar[1] == "0:01" and bar[3] == "Round 1" and _center(hud) == ["", "Round 1  ·  starts in 1", side_text, ""],
+			"timer %s, round label %s, center %s (your side line should be '%s')" % [bar[1], bar[3], _center(hud), side_text])
+	_check("The top bar starts at 0 - 0 with all 3 players alive on each side",
+			bar[0] == "0" and bar[2] == "0" and bar[4] == 3 and bar[5] == 3,
+			"score %s - %s, alive %s and %s" % [bar[0], bar[2], bar[4], bar[5]])
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	await _wait_ticks(2)
+	bar = _bar(hud)
+	_check("Live: the timer shows the round time (1:55) and the countdown is gone",
+			bar[1] == "1:55" and _center(hud) == ["", "", "", ""], "timer %s, center %s" % [bar[1], _center(hud)])
+
+	# Deaths: your headshot on an enemy, an enemy's kill of a teammate, a death with no killer.
+	var feed := _feed(hud)
+	var enemies := _rounds.get_members(1)
+	var mates := _rounds.get_members(0).filter(func(member: Character) -> bool: return member != _player)
+	var blue := Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	var red := Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	enemies[0].take_damage(500.0, Hitbox.Zone.HEAD, _player)
+	await _wait_ticks(2)
+	var yours := _read_line(feed.get_child(0))
+	_check("Your headshot kill is one line: you (blue) > the victim (red), 'HS', highlighted as your own",
+			feed.get_line_count() == 1 and yours == {"killer": String(_player.name), "killer_color": blue, "separator": ">",
+					"victim": String(enemies[0].name), "victim_color": red, "headshot": true, "highlighted": true},
+			"%d line(s): %s" % [feed.get_line_count(), yours])
+	mates[0].take_damage(500.0, Hitbox.Zone.CHEST, enemies[1])
+	mates[1].take_damage(500.0, Hitbox.Zone.CHEST, null)
+	await _wait_ticks(2)
+	var theirs := _read_line(feed.get_child(1))
+	var nobody := _read_line(feed.get_child(2))
+	_check("An enemy's kill is 'enemy (red) > teammate (blue)' with no headshot mark and no highlight; a death without a killer shows only the victim; newest at the bottom",
+			feed.get_line_count() == 3
+			and theirs == {"killer": String(enemies[1].name), "killer_color": red, "separator": ">", "victim": String(mates[0].name),
+					"victim_color": blue, "headshot": false, "highlighted": false}
+			and nobody == {"killer": "", "killer_color": Color(0, 0, 0, 0), "separator": "", "victim": String(mates[1].name),
+					"victim_color": blue, "headshot": false, "highlighted": false},
+			"%d line(s): %s / %s" % [feed.get_line_count(), theirs, nobody])
+	bar = _bar(hud)
+	_check("Players alive follows the deaths: yourself alone on your side, 2 enemies left, score still 0 - 0",
+			bar[4] == 1 and bar[5] == 2 and bar[0] == "0" and bar[2] == "0",
+			"alive %s and %s, score %s - %s" % [bar[4], bar[5], bar[0], bar[2]])
+
+	# Winning the round: banner, score, and the timer stays where the round ended.
+	enemies[1].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	enemies[2].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_for_phase(RoundManager.Phase.ROUND_END)
+	await _wait_ticks(2)
+	bar = _bar(hud)
+	_check("Winning by elimination: 'Round won' in blue, 'Enemy team eliminated', score 1 - 0, nobody alive on their side, and the timer stays at the round's time",
+			_center(hud) == ["Round won", "Enemy team eliminated", "", ""] and _center_color(hud, "Title") == blue
+					and bar[0] == "1" and bar[2] == "0" and bar[4] == 1 and bar[5] == 0 and bar[1] == "1:55",
+			"center %s, score %s - %s, alive %s and %s, timer %s" % [_center(hud), bar[0], bar[2], bar[4], bar[5], bar[1]])
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	bar = _bar(hud)
+	_check("The next round starts clean: empty kill feed, everyone alive again, the score kept (1 - 0), the round 2 countdown",
+			feed.get_line_count() == 0 and bar[4] == 3 and bar[5] == 3 and bar[0] == "1" and bar[2] == "0" and bar[3] == "Round 2"
+					and _center(hud)[1] == "Round 2  ·  starts in 1",
+			"%d feed line(s), alive %s and %s, score %s - %s, %s, center %s" % [feed.get_line_count(), bar[4], bar[5], bar[0], bar[2], bar[3], _center(hud)])
+	_free_hud(hud)
+
+
+## The round-end banners for all four outcomes (won and lost, by elimination and
+## on time-out) and the half-time notice, in a match first to 3 with short rounds:
+## round 1 your team is wiped out, rounds 2 and 3 run out of time (the sides swap
+## in between, so the defenders are one of your team and one of theirs), round 4
+## you win by elimination.
+func _test_hud_banners() -> void:
+	await _new_match(3)
+	_hold_bots()
+	var hud := _new_hud()
+	var outcomes := {}
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var first_side := _rounds.get_side(Teams.viewer_team)
+	var killer := _rounds.get_members(1)[0]
+	for victim in _rounds.get_members(0):
+		victim.take_damage(500.0, Hitbox.Zone.CHEST, killer)
+	await _wait_for_phase(RoundManager.Phase.ROUND_END)
+	await _wait_ticks(2)
+	_check_banner(hud, "round 1, your team wiped out", outcomes)
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	await _wait_for_phase(RoundManager.Phase.ROUND_END)
+	await _wait_ticks(2)
+	_check_banner(hud, "round 2, time ran out", outcomes)
+	# Half time came after round 2 (first to 3): round 3's freeze time says so.
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	var new_side_text := HUD_DEFEND_TEXT if first_side == Teams.Side.ATTACKING else HUD_ATTACK_TEXT
+	var center := _center(hud)
+	var point_text := "Enemy match point" if _rounds.score == [0, 2] else ""
+	_check("Half time: round 3's freeze time says 'Switching sides' and shows your new side (match point only if the enemy has 2 rounds)",
+			_rounds.get_side(Teams.viewer_team) != first_side and center == ["Switching sides", "Round 3  ·  starts in 1", new_side_text, point_text],
+			"center %s, expected side line '%s', score %s" % [center, new_side_text, _rounds.score])
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	await _wait_for_phase(RoundManager.Phase.ROUND_END)
+	await _wait_ticks(2)
+	_check_banner(hud, "round 3, time ran out after the swap", outcomes)
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	center = _center(hud)
+	_check("Round 4 (score %s): the half-time notice is gone and the enemy, one round from winning, is on match point" % [_rounds.score],
+			_rounds.score == [1, 2] and center == ["", "Round 4  ·  starts in 1", new_side_text, "Enemy match point"]
+					and _center_color(hud, "Line3") == Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN),
+			"center %s, score %s" % [center, _rounds.score])
+	await _win_round(0)
+	await _wait_ticks(2)
+	_check_banner(hud, "round 4, enemy team wiped out", outcomes)
+	_check("Those rounds showed all four banners: won and lost, by elimination and on time-out",
+			outcomes.size() == 4, "seen: %s" % [outcomes.keys()])
+	_free_hud(hud)
+
+
+## Match point in a match first to 2: you win round 1 (so the sides swap and you
+## are on match point), then the enemy wins round 2 (both teams on match point).
+func _test_hud_match_point() -> void:
+	await _new_match(2)
+	_hold_bots()
+	var hud := _new_hud()
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var first_side := _rounds.get_side(Teams.viewer_team)
+	await _win_round(0)
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	var new_side_text := HUD_DEFEND_TEXT if first_side == Teams.Side.ATTACKING else HUD_ATTACK_TEXT
+	_check("You lead 1 - 0 in a match to 2: the freeze time says 'Switching sides' and 'Match point' (in your color)",
+			_center(hud) == ["Switching sides", "Round 2  ·  starts in 1", new_side_text, "Match point"]
+					and _center_color(hud, "Line3") == Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN),
+			"center %s, score %s" % [_center(hud), _rounds.score])
+	await _win_round(1)
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	_check("At 1 - 1 both teams are on match point, and round 3 has no half-time notice",
+			_rounds.score == [1, 1] and _center(hud) == ["", "Round 3  ·  starts in 1", new_side_text, "Match point for both teams"],
+			"center %s, score %s" % [_center(hud), _rounds.score])
+	_free_hud(hud)
+
+
+## How the HUD is handed a round manager (or none), and the kill feed's own
+## rules (at most 5 lines, fading out, highlights, colors relative to the viewer).
+func _test_hud_wiring() -> void:
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	_hold_bots()
+	var hud := _new_hud()
+	var round_hud := _round_hud(hud)
+	var feed := _feed(hud)
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var enemies := _rounds.get_members(1)
+	var mate := _rounds.get_members(0)[1]
+	var blue := Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	var red := Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+
+	# No round manager (practice mode): nothing shows, and the old manager's signals no longer reach the HUD.
+	hud.set_round_manager(null)
+	enemies[0].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(2)
+	var listening := _listeners(_rounds, round_hud)
+	_check("Without a round manager (practice mode) the round HUD is hidden and no longer listens to the old one",
+			not round_hud.visible and feed.get_line_count() == 0 and listening == 0,
+			"visible %s, %d feed line(s), %d connection(s) to the old manager" % [round_hud.visible, feed.get_line_count(), listening])
+	# Handing a manager over twice (a reload, a second map) must not double anything.
+	hud.set_round_manager(_rounds)
+	hud.set_round_manager(_rounds)
+	enemies[1].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(2)
+	listening = _listeners(_rounds, round_hud)
+	_check("Handing over the same round manager again shows the HUD, with one connection per signal and one line per kill",
+			round_hud.visible and feed.get_line_count() == 1 and listening == 5,
+			"visible %s, %d feed line(s), %d connection(s) (expected 5)" % [round_hud.visible, feed.get_line_count(), listening])
+
+	# Scaling: existing and new lines, the top bar and the center follow the UI scale.
+	hud.set_ui_scale(1.5)
+	feed.add_kill(enemies[2], _player, false)
+	var line_sizes := feed.get_children().map(func(line: Node) -> int: return (line.find_child("Victim", true, false) as Label).get_theme_font_size("font_size"))
+	var score_size := (round_hud.get_node("TopBar/YourBox/Margin/Content/Score") as Label).get_theme_font_size("font_size")
+	var title_size := (round_hud.get_node("Center/Title") as Label).get_theme_font_size("font_size")
+	_check("UI scale 1.5 scales the kill-feed lines (old and new), the scores and the center messages",
+			line_sizes == [24, 24] and score_size == 48 and title_size == 72,
+			"line font sizes %s (expected 24), score %d (48), title %d (72)" % [line_sizes, score_size, title_size])
+	hud.set_ui_scale(1.0)
+
+	# The cap: 7 deaths leave the newest 5, newest at the bottom.
+	feed.clear()
+	var everyone := _rounds.get_participants()
+	var victims: Array[String] = []
+	for i in 7:
+		victims.append(String(everyone[i % everyone.size()].name))
+		feed.add_kill(everyone[i % everyone.size()], enemies[0], false)
+	var shown := feed.get_children().map(func(line: Node) -> String: return (line.find_child("Victim", true, false) as Label).text)
+	_check("The kill feed shows at most 5 lines: after 7 deaths the oldest two are gone and the newest is at the bottom",
+			feed.get_line_count() == KillFeed.MAX_LINES and shown == victims.slice(2),
+			"%d line(s): %s (expected %s)" % [feed.get_line_count(), shown, victims.slice(2)])
+
+	# Highlights and colors relative to the viewer.
+	feed.clear()
+	feed.add_kill(_player, enemies[0], false)
+	feed.add_kill(enemies[1], mate, false)
+	var you_died := _read_line(feed.get_child(0))
+	var others := _read_line(feed.get_child(1))
+	_check("Lines that involve you, also your own death, are highlighted; lines between others are not",
+			you_died["highlighted"] == true and you_died["victim_color"] == blue and others["highlighted"] == false,
+			"your death: %s, others: %s" % [you_died, others])
+	Teams.set_viewer_team(1)
+	feed.clear()
+	feed.add_kill(mate, enemies[0], false)
+	var flipped := _read_line(feed.get_child(0))
+	Teams.set_viewer_team(0)
+	_check("Name colors are relative to the viewer: seen from team 1, team 1 is blue and team 0 red",
+			flipped["killer_color"] == blue and flipped["victim_color"] == red, str(flipped))
+	var blocking: Array[String] = []
+	for control: Control in hud.find_children("*", "Control", true, false):
+		if control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			blocking.append(String(control.name))
+	_check("No part of the HUD takes mouse clicks, so they still reach the player controls",
+			blocking.is_empty(), "controls that would take clicks: %s" % [blocking])
+
+	# Fading: fully visible at half the lifetime, fading around its end, gone soon after.
+	feed.clear()
+	feed.add_kill(enemies[0], _player, false)
+	await _wait_seconds(KillFeed.LINE_LIFETIME * 0.5)
+	var early := feed.get_line_count() == 1 and is_equal_approx((feed.get_child(0) as Control).modulate.a, 1.0)
+	await _wait_seconds(KillFeed.LINE_LIFETIME * 0.5 + KillFeed.FADE_TIME * 0.5)
+	var fading := feed.get_line_count() == 1 and (feed.get_child(0) as Control).modulate.a < 0.9
+	await _wait_seconds(KillFeed.FADE_TIME * 0.5 + 0.2)
+	_check("A kill-feed line stays fully visible for %.0f s, then fades out and is removed" % KillFeed.LINE_LIFETIME,
+			early and fading and feed.get_line_count() == 0,
+			"fully visible at %.1f s: %s, fading at %.2f s: %s, lines left at %.1f s: %d" % [
+					KillFeed.LINE_LIFETIME * 0.5, early, KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME * 0.5, fading,
+					KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME + 0.2, feed.get_line_count()])
+	_free_hud(hud)
+
+
 # --- Helpers ---
+
+
+## A HUD (the real ui/hud.tscn) for the current player and round manager, set up as main.gd does.
+func _new_hud() -> Node:
+	var hud := HUD_SCENE.instantiate()
+	add_child(hud)
+	hud.call("set_player", _player)
+	hud.call("set_round_manager", _rounds)
+	return hud
+
+
+func _free_hud(hud: Node) -> void:
+	remove_child(hud)
+	hud.queue_free()
+
+
+func _round_hud(hud: Node) -> RoundHud:
+	return hud.get_node("RoundHud") as RoundHud
+
+
+func _feed(hud: Node) -> KillFeed:
+	return hud.get_node("RoundHud/KillFeed") as KillFeed
+
+
+## The top bar as [your score, timer, their score, round label, your players alive, their players alive].
+func _bar(hud: Node) -> Array:
+	var round_hud := _round_hud(hud)
+	return [
+		(hud.get_node("RoundHud/TopBar/YourBox/Margin/Content/Score") as Label).text,
+		(hud.get_node("RoundHud/TopBar/TimerBox/Margin/Content/Timer") as Label).text,
+		(hud.get_node("RoundHud/TopBar/EnemyBox/Margin/Content/Score") as Label).text,
+		(hud.get_node("RoundHud/TopBar/TimerBox/Margin/Content/RoundLabel") as Label).text,
+		round_hud.get_alive_shown(Teams.viewer_team),
+		round_hud.get_alive_shown(Teams.other(Teams.viewer_team)),
+	]
+
+
+## The center messages as [title, line 1, line 2, line 3]; a hidden line counts as empty.
+func _center(hud: Node) -> Array:
+	var lines := []
+	for label_name in HUD_HEADLINES:
+		var label := hud.get_node("RoundHud/Center/" + label_name) as Label
+		lines.append(label.text if label.visible else "")
+	return lines
+
+
+func _center_color(hud: Node, label_name: String) -> Color:
+	return (hud.get_node("RoundHud/Center/" + label_name) as Label).get_theme_color("font_color")
+
+
+## What a kill-feed line shows: names and colors (empty when there is no killer), the headshot mark and whether it is highlighted.
+func _read_line(line: Node) -> Dictionary:
+	var killer := line.find_child("Killer", true, false) as Label
+	var separator := line.find_child("Separator", true, false) as Label
+	var victim := line.find_child("Victim", true, false) as Label
+	var panel := (line as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	return {
+		"killer": killer.text if killer != null else "",
+		"killer_color": killer.get_theme_color("font_color") if killer != null else Color(0, 0, 0, 0),
+		"separator": separator.text if separator != null else "",
+		"victim": victim.text,
+		"victim_color": victim.get_theme_color("font_color"),
+		"headshot": line.find_child("Headshot", true, false) != null,
+		"highlighted": panel.border_width_left > 0,
+	}
+
+
+## How many of the round manager's signals are connected to [param node].
+func _listeners(manager: RoundManager, node: Node) -> int:
+	var count := 0
+	for connected_signal: Signal in [manager.phase_changed, manager.round_started, manager.round_ended,
+			manager.sides_swapped, manager.character_killed]:
+		for connection in connected_signal.get_connections():
+			if (connection["callable"] as Callable).get_object() == node:
+				count += 1
+	return count
+
+
+## Checks the banner against what the last round_ended announced (the last
+## entry of _results), phrased for your side and colored blue (won) or red (lost);
+## after a time-out the timer reads 0:00. Notes the outcome in [param outcomes].
+func _check_banner(hud: Node, label: String, outcomes: Dictionary) -> void:
+	var result: Array = _results.back()
+	var won: bool = result[0] == Teams.viewer_team
+	var by_time: bool = result[1] == RoundManager.EndReason.TIME
+	var reason_text: String
+	if by_time:
+		reason_text = "Time ran out: you held your end" if won else "Time ran out: the defenders held their end"
+	else:
+		reason_text = "Enemy team eliminated" if won else "Your team was eliminated"
+	var color := (Teams.FRIENDLY_COLOR if won else Teams.ENEMY_COLOR).lightened(Teams.TEXT_LIGHTEN)
+	var center := _center(hud)
+	var timer := (_bar(hud))[1] as String
+	outcomes["%s by %s" % ["won" if won else "lost", "time-out" if by_time else "elimination"]] = true
+	_check("Round-end banner (%s): %s by %s" % [label, "won" if won else "lost", "time-out" if by_time else "elimination"],
+			center == ["Round won" if won else "Round lost", reason_text, "", ""] and _center_color(hud, "Title") == color
+					and (not by_time or timer == "0:00"),
+			"center %s, title color %s (expected %s), timer %s" % [center, _center_color(hud, "Title"), color, timer])
 
 
 func _distance_to_own_spawn(member: Character) -> float:

@@ -325,3 +325,29 @@
 
 **Simulating input in a test** (`tests/round_test.gd`)
 - `Input.parse_input_event(event)` pushes an event (e.g. an `InputEventMouseButton`) through the same path real input takes, so `_unhandled_input()` sees it. Unity's Input System has `InputTestFixture` for this. In a headless run there is no display server, so `Input.mouse_mode` always reads *visible*: the test treats every click as the click that recaptures the mouse, and the real click is checked in a windowed run.
+
+**A tween that waits, fades and cleans up** (`KillFeed.add_kill`)
+- Tween steps run one after another by default: `tween_interval(5.0)` waits, `tween_property(line, "modulate:a", 0.0, 0.5)` fades, `tween_callback(func)` calls a function at the end (here: remove the line). It is DOTween's `AppendInterval().Append(DOFade(...)).AppendCallback(...)`. A tween made with `line.create_tween()` belongs to that node and ends when the node is freed, so a line pushed out early needs no cleanup of its tween.
+- `modulate` multiplies the colors of a node *and all its children*, so one `modulate:a` on the line's panel fades the panel and all its labels together. In Unity you would need a `CanvasGroup` for that.
+
+**`StyleBoxFlat`: backgrounds without a texture** (`KillFeed`, `RoundHud`)
+- A `PanelContainer` draws a `StyleBox` behind its child. `StyleBoxFlat` is a plain color with an optional border (`set_border_width_all(2)`, `border_color`) and corner radius; `panel.add_theme_stylebox_override("panel", style)` sets it. It replaces a Unity `Image` with a color or a 9-sliced sprite, plus an `Outline` component. The kill feed uses two shared styles: dark, and dark with a white border for your own lines.
+
+**Aligning inside containers** (kill feed lines, the top bar)
+- Children of a `VBoxContainer` stretch to its width by default. `size_flags_horizontal = Control.SIZE_SHRINK_END` makes a child only as wide as it needs and pushes it to the right: that is how lines of different lengths stay right-aligned. In Unity this is the Layout Group's *Child Alignment* plus *Control Child Size*.
+- A control anchored to an edge with zero width and `grow_horizontal = GROW_DIRECTION_BEGIN` (left) or `BOTH` (centered) grows from its anchor as far as its children need. The top bar is centered that way, the kill feed grows leftwards from the right edge, so neither needs a fixed width.
+- `visible = false` on a child of a container takes it out of the layout (the others close the gap), like `SetActive(false)` under a Layout Group. The center messages use this for lines that have no text. A hidden control still runs `_process`, though: only `set_process(false)` stops it (in Unity, disabling the GameObject stops `Update`).
+
+**Signals as values, and disconnecting** (`RoundHud.set_round_manager`)
+- A `Signal` can be kept in a variable or array: `[[manager.phase_changed, _on_phase_changed], …]`, then `sig.connect(callable)`, `sig.is_connected(callable)` and `sig.disconnect(callable)` work on each pair. It is `event += handler` and `event -= handler` from C#. Connecting the same callable twice is an error in Godot (a C# event would just call it twice), so check `is_connected()` or disconnect first.
+- Connections end by themselves when either side is freed. A map that is replaced is only `queue_free()`d, so its round manager still lives to the end of the frame: the HUD, which outlives maps, disconnects from it explicitly when it is handed the next one.
+- `sig.get_connections()` lists the connections as dictionaries (`signal`, `callable`, `flags`), and `Callable.get_object()` says whose method it is. The test uses them to count how many signals the HUD listens to (5, never 10).
+
+**`find_child` and `owned`** (`tests/round_test.gd`)
+- `node.find_child("Killer", true, false)` searches the whole subtree for a node by name; `find_children("*", "Control", true, false)` finds all nodes of a type. The last argument, `owned`, must be `false` for nodes created from code: by default only nodes that belong to a saved scene (they have an owner) are found. Unity's closest are `Transform.Find` and `GetComponentsInChildren`.
+
+**Does the font have this character?** (`Font.has_char()`)
+- `font.has_char(0x2192)` says whether a font can draw a character. Silkscreen has no arrow "→", so the kill feed uses ">" (it does have "·", "×" and "»"); a missing glyph is drawn as a box or skipped. Check a font before putting a symbol in a label. Unity's TextMeshPro shows the same problem as missing-glyph warnings and solves it with fallback fonts.
+
+**`@warning_ignore`** (`RoundHud.format_time`)
+- `total / 60` with two ints truncates, and GDScript warns about it (`INTEGER_DIVISION`). `@warning_ignore("integer_division")` on the line above says "I meant that". C# divides ints silently.

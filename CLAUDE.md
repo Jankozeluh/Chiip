@@ -79,4 +79,5 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Run the game in practice mode (old bot arena) with `-- --practice`; the default is a 3v3 match.
 - Jolt moves a teleported body (`global_position = …`) only at the next physics step; other bodies moving in the same tick still collide with its old position. `Character.respawn()` handles this by skipping movement for that tick.
 - Headless runs can't capture the mouse: `Input.mouse_mode` always reads visible, so `PlayerController` treats every click as the click that recaptures the mouse. Test click handling in a windowed run, or call the public method behind it (e.g. `spectate_next()`).
+- HUD and overlay `Control`s must have `mouse_filter = IGNORE` (Label's default; containers and panels default to STOP), or they swallow the clicks `PlayerController` needs. Menus that should block clicks use a full-screen STOP background.
 - A script error inside a headless run can leave Godot running forever. Always pass `--quit-after <frames>` as a safety net (macOS has no `timeout` command).

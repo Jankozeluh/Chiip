@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://ui/hud.gd" id="hud_script"]
 [ext_resource type="Script" path="res://ui/crosshair.gd" id="crosshair_script"]
+[ext_resource type="PackedScene" path="res://ui/round_hud.tscn" id="round_hud_scene"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
@@ -14,6 +15,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("crosshair_script")
+
+[node name="RoundHud" parent="." instance=ExtResource("round_hud_scene")]
 
 [node name="WeaponLabel" type="Label" parent="."]
 anchors_preset = 3
