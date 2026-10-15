@@ -49,3 +49,9 @@ spread = 50.0
 gravity = Vector3(0, -20, 0)
 initial_velocity_min = 2.0
 initial_velocity_max = 5.0
+
+[node name="Audio" type="AudioStreamPlayer3D" parent="."]
+volume_db = -4.0
+unit_size = 4.0
+max_distance = 35.0
+bus = &"Effects"

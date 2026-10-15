@@ -25,3 +25,5 @@ var walk: bool = false
 var shoot: bool = false
 ## Reload was pressed this tick.
 var reload: bool = false
+## Use is held: plants the bomb in a bomb site, or defuses a planted bomb (D-080).
+var use: bool = false

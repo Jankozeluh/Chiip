@@ -33,13 +33,21 @@ To skip the menu and start a default 3v3 match on the test map at once (handy fo
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --match
 ```
 
+For the **team respawn** mode (like Call of Duty's Team Deathmatch: respawn after 3 s, first team to 50 kills wins; bots hunt in pairs), add `-- --respawn`, e.g. on Depot:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/depot.tscn --respawn
+```
+
 For practice mode (also straight into the game), add `-- --practice`:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. the TrenchBroom comparison room:
+**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 blockouts, see [docs/MAPS.md](docs/MAPS.md)), and the test map (the default). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
+
+To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/comparison/trenchbroom_room.tscn
@@ -59,6 +67,7 @@ To play a different map (also straight into the game, as a match where the map a
 | Shoot | Left mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
@@ -94,6 +103,20 @@ Open the **settings menu** with **Settings** in the main menu, or by typing `set
 
 The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (team sizes, difficulty, match length, friendly fire and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
 
+## Exporting the game
+
+The first macOS build (D-086). One-time setup: the Godot 4.7.2 export templates are installed in `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (in the editor: *Editor → Manage Export Templates*). Then, from the project folder:
+
+```bash
+mkdir -p builds/macos && touch builds/.gdignore
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --export-release "macOS" builds/macos/Chiip.app
+```
+
+Open `builds/macos/Chiip.app` with a double-click (it's signed ad-hoc, so on another Mac it needs right-click → *Open*). Command-line options work as for the editor build, after the app's binary: `builds/macos/Chiip.app/Contents/MacOS/Chiip -- --map res://maps/depot.tscn --respawn`. In the editor: *Project → Export…*, preset **macOS**, *Export Project*.
+
 ## Making maps with TrenchBroom
 
 Real maps are built in **TrenchBroom**, a free brush-based map editor similar to Hammer, and imported into Godot by the func_godot addon (D-032).
@@ -120,7 +143,7 @@ Real maps are built in **TrenchBroom**, a free brush-based map editor similar to
 
 **Scale (same as CS):** 1 TrenchBroom unit = 1 inch = 2.54 cm. The player is 72 units tall (54 crouched). A jump clears 57 units, a crouch-jump 75. The standard crate is 64 units. Doors are 128 units tall and 96 wide in the comparison room. A 64-pixel texture covers 64 units.
 
-**Baked lighting (M8):** select the scene's `LightmapGI` node, click **Bake Lightmaps** in the 3D toolbar, and save. Godot can only bake from the editor.
+**Lighting** is real-time; the maps aren't baked (D-085). To try a bake anyway (e.g. on the comparison room): select the scene's `LightmapGI` node, click **Bake Lightmaps** in the 3D toolbar, and save. Godot can only bake from the editor.
 
 ## The UI theme
 
@@ -178,6 +201,30 @@ To run a single suite on its own (about a second each, the match test about twen
 
 The match test plays a whole 3v3 match, bots and all, through the real game scene and prints one line per round before its checks; it plays the same match every time. The tests never touch your real `settings.cfg`. The settings test prints one Godot "ConfigFile parse error" on purpose: it loads a broken file to check that the game falls back to the defaults.
 
+The bomb test plays short bomb rounds on Depot (plant, explosion, drop and pickup, defuse):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
+```
+
+The sound test checks footsteps per floor, bullet impact and headshot sounds, and menu sounds on Depot:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 20000 res://tests/sound_test.tscn
+```
+
+The respawn test plays short team respawn matches on Depot (kills, respawns, spawn choice, kill limit, time limit, overtime):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/respawn_test.tscn
+```
+
+The maps test plays bot rounds on all three quick maps and takes a minute or two:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 400000 res://tests/maps_test.tscn
+```
+
 ## Documentation
 
 All design, planning and technical notes live in [`docs/`](docs/):
@@ -188,6 +235,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | [GAME_DESIGN.md](docs/GAME_DESIGN.md) | What the game is: pillars, mechanics, controls, look |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
+| [MAPS.md](docs/MAPS.md) | The quick maps: plans, layouts, map rules, measurements |
 | [DEVLOG.md](docs/DEVLOG.md) | Diary of each work session: what changed and what's next |
 | [LEARNING.md](docs/LEARNING.md) | Godot concepts learned along the way, compared to Unity |
 | [CREDITS.md](docs/CREDITS.md) | Third-party assets and tools, with sources and licenses |

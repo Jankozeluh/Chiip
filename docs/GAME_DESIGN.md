@@ -138,7 +138,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 ### 4.4 Bots
 
 - Find their way around the map using a navigation mesh.
-- Behaviour states: follow the round's orders (attack, defend, or patrol in practice) → engage an enemy → search the last known position. Planting and defusing come later.
+- Behaviour states: follow the round's orders (attack, defend, or patrol in practice) → engage an enemy → search the last known position. In bomb rounds the orders include planting and defusing (see below).
 - **Vision:** a field-of-view cone plus a line-of-sight check, so no wallhacks.
 - **Hearing:** running footsteps and gunshots reveal your position. Walking is silent.
 - **Difficulty** comes from reaction time, aim accuracy, spray control and decision speed. Presets *(tune)*:
@@ -162,6 +162,9 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
   - **Defenders** each take a different hold spot near their end (the test map has six: the platform, the west flank, both ends of the peek walls, the gap between them, beside the tunnel) and watch its angle, letting the view drift ±10°. They leave the spot only for enemies seen or heard within **35 m**, so a fight far up the map doesn't pull everyone out. After a fight or a search they hold the nearest spot.
   - After a detour (a fight or a search), attackers carry on from the part of their route they're nearest to, instead of walking back.
 - **No long-range stalemates** (D-067): an attacker that has traded shots with an enemy beyond 35 m for 6 s stops shooting for 4 s and closes in. Defenders keep holding at any range.
+- **In bomb rounds** (D-081): the attackers pick one site at random. The carrier's group takes the route that ends nearest to it, and after their routes all attackers clear around that site. The carrier plants near the site's middle, or goes straight there when less than 30 s of round time would be left for it. The attacker bot nearest a dropped bomb fetches it. After the plant the attackers watch the bomb from 5–10 m away; every defender retakes: the first at the bomb defuses and the others cover within 7 m, looking away from it. A bot planting or defusing stops to fight an enemy who shows up unless it's at least 70% done (or the fuse wouldn't allow a restart). The carrier and the fetcher don't go and check noises, and after the plant bots only check enemies within 15 m of the bomb.
+- **In the team respawn mode** (D-083) bots hunt in pairs: each team's bots form groups of about two. The member alive the longest leads: it runs to a teammate's sighting (anything a teammate saw or heard in the last 6 s) if it's within 25 m, otherwise it roams from patrol point to patrol point, looking left and right at each. Its partner follows about 6 m behind and to one side, watching that flank; the leader walks while the partner catches up. A bot only goes to check what it saw or heard within 25 m, so the fights spread over the map instead of everyone running to every gunshot.
+- **Getting unstuck:** a bot that tries to walk but gets nowhere for 0.5 s jumps (like a CS bot); after 1.2 s it backs off to the side and finds a new path.
 - **Holding fire:** a bot doesn't shoot while a living teammate (you included) is within 0.6 m of its line of fire, whether or not friendly fire is on.
 - Measured in a bots-only 3v3 on the test map: defenders are on their spots after about 7 s, attackers are 36 m out of spawn after 10 s, the first fight starts after about 12 s, and rounds end by elimination after 27–47 s.
 - **Turning** eases in and out like a hand on a mouse (no constant-speed snapping), so tracking a moving target lags a little.
@@ -175,7 +178,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - **Pause menu** (D-065). In the game **Esc** pauses everything: the round timer, the bots, bullets and sounds all stand still, and a panel offers **Resume**, **Settings** (the same settings menu; Esc or Back returns to the pause menu) and **Leave match** (**Leave practice** in the bot arena), which goes back to the main menu. Esc again resumes. Esc does nothing new while the console is open (it closes the console) or after the match is over (the end screen has the screen). While you are paused the Tab scoreboard stays hidden and the HUD stays as it was. This is for playing alone: in multiplayer (M9) nobody can stop the other players, so there the menu will be an overlay that doesn't pause (D-065).
 - Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (1:55) → round end (5 s). During freeze time you can look around, crouch and reload, but not move, jump or shoot.
 - At each round start everyone is back at their side's spawn with full health and a full rifle.
-- A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too.
+- A round is won by eliminating the other team, or through the bomb (section 4.7: on maps with bomb sites the explosion wins it for the attackers and a defuse for the defenders). If time runs out before a plant, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too (after a plant: the attackers).
 - Whoever dies stays dead until the next round. During the round-end pause the survivors can still move and shoot, but the result stands.
 - **After you die in a match you spectate** (D-046), like CS, in first person only:
   - For about **2 s** you still see your own view from where you fell, with "Killed by …", so you see who got you.
@@ -196,7 +199,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive. With it off, bullets pass through teammates (as in CS), so a teammate walking through your spray doesn't block it.
 - **Modes** (D-049):
   - **Rounds** (today's mode): one life per round, the bomb objective from M8. Like CS, or CoD's Search & Destroy.
-  - **Team respawn** (M8): like CoD's Team Deathmatch. You respawn about 3 s after dying, at a spawn point away from enemies. The first team to the kill limit wins (*tune*: 30 kills at 3v3), or the team with more kills after 10 minutes.
+  - **Team respawn** (M8, D-082): like CoD's Team Deathmatch. Both teams start at their ends after 5 s of freeze time. You respawn **3 s** after dying, with full health and ammo, at the map's safest respawn point: as far from the living enemies as possible (40 m and more count the same, so far spots take turns), out of their line of sight, preferably near a teammate. Each enemy killed is a point for the killer's team (teamkills and suicides score nothing). The first team to **50 kills** wins (*tune*; D-083: bots-only 3v3 matches score about 20 kills a minute, so this takes about 4 minutes), or the team with more kills after **10 minutes**; a tie goes to **overtime**, where the next kill wins. The top bar shows the kills, "First to 50" under the timer ("OT" and "Next kill wins" in overtime); no bomb and no spectating. Start it with `-- --respawn` until match setup offers it.
 - **Maps** (D-049): three small, fast maps in rotation (M8), built for action like CoD's maps rather than CS's long ones. About 40–60 m across, with three lanes and connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map has two bomb sites and spawn zones, so it works in both modes.
 
 ### 4.6 Economy
@@ -207,9 +210,15 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 
 ### 4.7 Bomb mode
 
-- Attackers carry the bomb to one of two bombsites and plant it, which takes a few seconds.
-- Defenders defuse it, faster with a defuse kit.
-- A planted bomb explodes after ~40 s *(tune)*.
+Bomb rounds are the round mode on every map with bomb sites (the three quick maps; the test map has none and keeps plain elimination rounds). CS's rules (D-080, *tune*):
+
+- **Carrying:** at each round start a random attacker has the bomb, strapped to their back where everyone can see it. If the carrier dies, it drops where they fell; the first attacker to walk over it picks it up. Defenders can't. Attackers see a dropped bomb's marker through walls (CS shows it on their radar), and get the message "The bomb was dropped".
+- **Planting:** hold **Use (E)** inside a bomb site, standing on the floor, for **3.2 s**. You can look around and crouch, but not move or shoot. Letting go starts it over. Defenders within 20 m hear the key presses.
+- **After the plant:** the round clock stops and the timer shows "BOMB"; everyone is told the site ("Bomb planted at A") and sees the bomb's marker. The bomb beeps faster and faster (once a second at first, about 8 times a second at the end) and explodes after **40 s**.
+- **Defusing:** a defender holds **Use** within **1.5 m** of the bomb for **10 s** (**5 s** with a defuse kit, sold from M7). The same lock and restart rule as planting; only one defender defuses at a time.
+- **Winning:** the explosion wins the round for the attackers, a defuse for the defenders. After the plant, killing every attacker doesn't end the round (the defenders still have to defuse), and killing every defender wins it for the attackers at once. Before the plant, the usual rules: elimination, or the defenders on time-out.
+- **The blast:** 500 damage at the bomb, falling off like a bell curve: lethal out to about 13.5 m, 50 damage at about 18 m, nothing beyond about 22 m. Walls don't shield. Nobody gets a kill for it.
+- **HUD:** a gold "BOMB" tag above your weapon while you carry it; "Hold E to plant" / "Hold E to defuse" under the crosshair where you can; "Planting" / "Defusing" with a progress bar while you do. Freeze time says "You attack: plant the bomb at A or B" or "You defend: guard A and B"; the round-end banner says "The bomb exploded" or "The bomb was defused".
 
 ### 4.8 Audio
 
@@ -220,7 +229,12 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 - **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
 - Walking (Shift) and crouch-walking are silent for everyone.
 - While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.
-- Three volumes (D-058): **master**, **effects** (footsteps, shots, reloads) and **interface** (menus), so the menu or the effects can be turned down on their own. Menu sounds don't exist yet.
+- Three volumes (D-058): **master**, **effects** (footsteps, shots, reloads) and **interface** (menus), so the menu or the effects can be turned down on their own.
+- **Footsteps sound like the floor** (D-084): hard (concrete, stone, plaster), gravel (a crunch), metal (a ring) and wood (a hollow knock). Same range and loudness on every floor.
+- **Bullets** make a sound where they land, heard within 35 m: a crack on hard surfaces, a thud in gravel, a ping on metal, a thock in wood, a thwack on a body, and a bright "dink" on a head, louder and heard farther, like CS's headshot sound.
+- **The bomb** beeps faster and faster once planted, and planting (key presses) and defusing (wire clicks) can be heard 20 m away. Everyone hears a two-tone alert when it's planted, and the explosion.
+- **Interface:** menu buttons tick on hover and click when pressed; a two-beep "go" starts each round, and short stingers mark a round won (rising) or lost (falling). Game sounds play on the *Effects* bus, interface sounds on *Interface*.
+- All sounds are generated by code (D-020), retro and short.
 
 ### 4.9 Classes
 
@@ -246,7 +260,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 - Simple geometry: blocky architecture and low-poly models.
 - Characters and weapons: minimalistic and pixelated, in a CS/Quake/CoD-like style. Low-poly models built from rigid pieces, like late-90s shooters, with palette-limited pixel textures, made by a generator (D-054). First person shows 3D arms and gun (D-051).
 - World image limited to 16 shades per color channel with light ordered dithering (D-030, D-048).
-- Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Baked lightmaps are being evaluated in M3.
+- Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Lighting is real-time, with no baked lightmaps (D-085): flat, readable light that keeps the maps editable.
 - **Menus and UI** (D-057): one pixel-art look for every menu, the Silkscreen font with square panels and buttons, crisp 2 px borders and no rounded corners or smoothing. Cool dark blue-grey panels, light text and a single icy cyan accent for focus, selection and sliders; team blue and red only mark teams. Deliberately not Counter-Strike's orange and yellow on black. Everything is drawn for a 720-pixel-tall window and scales by the window height (exactly 1.5× at 1080, 2× at 1440), and text sizes sit on the font's pixel grid (16 / 32 / 48 px) so pixels stay whole. The in-game HUD keeps its own simple look.
 - **Clarity rule:** enemies must always stand out from the background.
 
@@ -263,7 +277,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Walk (silent) | Shift |
 | Reload | R |
 | Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades, 5 bomb |
-| Use / defuse | E |
+| Use: plant / defuse the bomb (hold) | E |
 | Buy menu | B |
 | Scoreboard (hold, in a match) | Tab |
 | Developer console | ` (backtick / tilde key) |

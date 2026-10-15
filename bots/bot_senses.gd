@@ -66,6 +66,11 @@ func has_lead() -> bool:
 	return _time_since_lead <= memory_seconds
 
 
+## Seconds since the bot last saw or heard an enemy (INF if it knows of none).
+func get_lead_age() -> float:
+	return _time_since_lead
+
+
 ## Forgets what the bot knew, e.g. after it searched the last known position.
 func forget() -> void:
 	_time_since_lead = INF

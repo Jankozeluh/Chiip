@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDSolidClass" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="solid_class"]
+[ext_resource type="Resource" path="res://addons/func_godot/fgd/vertex_merge_distance_base.tres" id="vertex_merge"]
+[ext_resource type="Resource" path="res://addons/func_godot/fgd/cull_interior_faces.tres" id="cull_interior"]
+
+[resource]
+script = ExtResource("solid_class")
+spawn_type = 0
+origin_type = 1
+collision_mask = 0
+add_textures_metadata = true
+add_face_normal_metadata = true
+add_collision_shape_to_face_indices_metadata = true
+classname = "worldspawn"
+description = "Default static world geometry. Builds a StaticBody3D with a single MeshInstance3D and a convex CollisionShape3D per brush. Chiip's copy also stores each face's texture and normal and which faces belong to which brush, so footsteps and bullet impacts can tell the surface (D-084)."
+base_classes = Array[Resource]([ExtResource("vertex_merge"), ExtResource("cull_interior")])
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.8, 0.8, 0.8, 1)
+})
+node_class = "StaticBody3D"

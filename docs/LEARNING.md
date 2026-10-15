@@ -484,3 +484,68 @@
 
 **Window content scale with integer stretch** (`ui/pixel_view.gd`)
 - `Window.content_scale_mode = VIEWPORT` renders the whole window (UI included) at `content_scale_size` and scales it up; `content_scale_stretch = INTEGER` only allows whole factors and rounds *down*. Asking for 853 × 480 in a 1280 × 720 window gives factor 1 (1.5 rounded down): a small, unscaled image. Pick the whole number first (720 / 480 → 2) and ask for the window size divided by it (640 × 360). Unity has no direct equivalent; it's like rendering to a low-res RenderTexture and blitting it with point filtering at an integer scale.
+### M8 — Quick maps (started early)
+
+**Level design words used in docs/MAPS.md**
+- A **lane** is one of the main routes from one spawn to the other (west, mid, east); **connectors** link lanes. A **sightline** is a straight, open view; short ones mean fights happen at close range. **Timing** is how long it takes each side to reach a spot, which decides where the first fight happens.
+- Obstacles have to **overlap** to block views: two boxes side by side with a gap still let a diagonal through. Offset doors and "gates" with something right behind them do the same job.
+
+**TrenchBroom axes vs Godot** (`maps/*.map`)
+- func_godot turns TrenchBroom's (X, Y, Z) into Godot's (Y, Z, X): TrenchBroom's Z is up, like Unity's Y. In TrenchBroom's top view the map is turned 90°: Godot's north (−z) is on the left. 39.37 units are one metre (1 unit = 1 inch, like CS).
+
+**The navigation map needs a moment** (`tests/maps_test.gd`)
+- After a map with a `NavigationRegion3D` is added, `NavigationServer3D` picks up its mesh a few physics frames later; queries before that answer for the old map or the origin. Wait until `map_get_regions()` holds only the new region and `map_get_iteration_id()` has gone up. Unity's NavMesh is ready as soon as the scene loads.
+
+**`.gdignore`** (`docs/maps/`)
+- An empty `.gdignore` file makes Godot skip a folder: the plan drawings there are for reading, not textures to import.
+
+
+### M8 — Modes
+
+**Area3D as a trigger zone** (`bomb/bomb.gd`, the maps' `bomb_sites`)
+- With `monitoring` on, an `Area3D` keeps track of which bodies are inside it; `overlaps_body(body)` asks about one, `get_overlapping_bodies()` lists them all. That's Unity's trigger collider with `OnTriggerStay`, or `Physics.OverlapBox`. The area's `collision_mask` decides which bodies count (here 6: the player and the bots).
+- The list is updated once per physics step, so a body you just teleported is only "inside" one step later.
+- `monitoring` was off in the maps until the bomb needed it: a monitoring area costs a little every physics step even when nobody asks.
+
+**A `Callable` in a variable as a hook** (`Bomb.kit_check`)
+- `var kit_check: Callable = func(defuser: Character) -> bool: return false` holds a function, like a C# `Func<Character, bool>` field. M7's economy will put its own check in it, and the bomb doesn't need to know where kits come from. `kit_check.call(defuser)` runs it.
+
+**Teleporting a smoothed node** (`Bomb._place()`)
+- With physics interpolation on (D-010), a node moved in `_physics_process` is drawn sliding between its old and new place. After a jump, such as the bomb dropping to the floor or appearing on the next carrier, `reset_physics_interpolation()` tells Godot not to smooth that one move. Unity's `Rigidbody.interpolation` has the same problem; there you'd set the position on the Rigidbody and the transform.
+
+**Overriding methods: a subclass of a script** (`systems/respawn_match.gd`)
+- `class_name RespawnMatch extends RoundManager` inherits every variable, signal and method of the round manager, like a C# subclass. Any method can be replaced by defining one with the same name: GDScript methods are all "virtual", there is no `override` keyword. `super(killer, victim)` (or `super.method()`) calls the parent's version.
+- Signals connected with `_on_died.bind(character)` inside the parent call the subclass's `_on_died`, because the method is looked up by name on the object.
+- `rounds is RoundManager` is true for a `RespawnMatch` too, so code that takes a `RoundManager` (the HUD, the scoreboard) accepts it, and `rules is RespawnMatch` tells them apart.
+
+**Asking a NavigationAgent3D for a new path** (`BotController._check_stuck()`)
+- Setting `target_position` again, even to the same point, makes the agent compute a fresh path from where the bot is now. That's how a stuck bot gets a new route after backing off; Unity's `NavMeshAgent.SetDestination()` works the same way.
+
+**Metadata from func_godot, and which shape a ray hit** (`systems/surfaces.gd`)
+- Any node can carry extra data with `set_meta()` / `get_meta()`, like a Dictionary attached to the node and saved with the scene. func_godot can store per-face data (texture, normal, which brush) there when the entity class asks for it; Chiip's worldspawn class does.
+- `intersect_ray()` also returns `shape`, the index of the hit shape inside the body. `body.shape_find_owner(shape)` and `shape_owner_get_owner()` turn it into the `CollisionShape3D` node, whose name links it to the brush's faces. Unity's `RaycastHit.collider` gives the collider directly; with one body made of many shapes Godot needs the extra step.
+
+**Static classes that own a node** (`ui/ui_sounds.gd`)
+- A class with only static members can still play sounds: it creates one `AudioStreamPlayer`, adds it to `get_tree().root` (deferred, since the tree may be busy) and keeps it in a static variable. That's the job a Unity singleton `MonoBehaviour` with `DontDestroyOnLoad` would do, without an autoload.
+
+**Lighting options in Godot** (D-085, `tools/map_screenshots.gd --lighting`)
+- Real-time lights (`DirectionalLight3D`, `OmniLight3D`) plus the `Environment`'s ambient light is what the maps use, like Unity's realtime lights with a flat ambient color.
+- **SSAO** (screen-space ambient occlusion) and **SSIL** darken corners and contact points from the depth buffer, per frame, like Unity's post-processing AO.
+- **SDFGI** computes bounce light in real time from a signed-distance version of the level; no baking, like Unity's Enlighten realtime GI. It also bounces the sky's color, which tinted our shadows blue.
+- **LightmapGI** bakes light into textures, like Unity's Progressive Lightmapper, but only from the editor's *Bake Lightmaps* button; there is no script call for it.
+- On macOS V-Sync is enforced by the system, so even `--disable-vsync` stays at the display's rate, and `RenderingServer.viewport_get_measured_render_time_gpu()` returns 0 with Metal.
+
+**Exporting a game** (D-086)
+- An **export preset** (`export_presets.cfg`, *Project → Export…*) is like a Unity build profile: platform, file name, what to include, signing. `--export-release "<preset>" <path>` builds from the command line.
+- **Export templates** are Godot's prebuilt game executables for each platform (Unity installs these as "build support" modules). They must match the engine version exactly and live outside the project.
+- The game's content goes into one **`.pck`** file next to the executable, like Unity's data folder or asset bundles. Text scenes are converted to binary on the way, which is why `DirAccess` sees `.remap` files in an exported game and `ResourceLoader.list_directory()` is the safe way to list them.
+- Apple Silicon only runs signed code; an **ad-hoc signature** (no Apple account) is enough on the Mac that built it. Sharing builds needs a Developer ID and notarization.
+
+**Text you can see through walls** (the bomb's marker)
+- `Label3D.no_depth_test = true` draws the text on top of everything, like a waypoint marker; `fixed_size` keeps it the same size on screen at any distance. Unity would use a world-space canvas with a shader that ignores depth.
+
+**Holding a key in a test** (`tests/bomb_test.gd`)
+- `Input.action_press("use")` and `Input.action_release("use")` hold and release an action as if the key were down, so the test goes through the real `PlayerController` → `CharacterInput` path. Unity's Input System has `InputTestFixture.Press()` for the same thing.
+
+**Audio buses that don't exist yet**
+- `AudioStreamPlayer3D.bus = &"Effects"` names a bus of the audio bus layout (Unity's Audio Mixer groups). If the layout has no such bus, the sound plays on *Master* instead, without an error, so a sound can be put on a bus before the settings task creates it.

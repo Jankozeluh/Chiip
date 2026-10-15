@@ -13,6 +13,12 @@ extends Node
 ## 3. [b]Round end[/b]: a short pause with the winner known and the score
 ##    updated. Survivors can still move and shoot. Then the next round starts.
 ##
+## On maps with bomb sites a round is also a bomb round (D-080): an attacker
+## carries the [Bomb]. Once it is planted the round clock stops: the bomb
+## exploding wins it for the attackers, a defuse for the defenders. Killing
+## every defender after the plant wins it for the attackers; killing every
+## attacker doesn't end it, the defenders still have to defuse.
+##
 ## A match is first to [member MatchSettings.rounds_to_win] rounds (D-041).
 ## After [code]rounds_to_win - 1[/code] rounds the sides swap ([signal
 ## sides_swapped]): the teams keep their numbers, only [member attacking_team]
@@ -34,8 +40,8 @@ extends Node
 ## The parts of a match. [constant MATCH_END] comes once a team has won the
 ## match and never ends: everyone stays frozen.
 enum Phase { FREEZE, LIVE, ROUND_END, MATCH_END }
-## Why a round was won.
-enum EndReason { ELIMINATION, TIME }
+## Why a round was won. The last two end a team respawn match ([RespawnMatch]).
+enum EndReason { ELIMINATION, TIME, BOMB_EXPLODED, BOMB_DEFUSED, KILL_LIMIT, TIME_LIMIT }
 
 ## Emitted whenever the phase changes; [member time_left] is already set for it.
 signal phase_changed(phase: Phase)
@@ -58,6 +64,7 @@ signal match_ended(winner: int)
 signal character_killed(victim: Character, killer: Character, headshot: bool)
 
 const BOT_SCENE := preload("res://bots/bot.tscn")
+const BOMB_SCENE := preload("res://bomb/bomb.tscn")
 ## Damage a player must deal to an enemy killed by someone else to get an
 ## assist. CS: more than 40.
 const ASSIST_DAMAGE := 41.0
@@ -92,6 +99,10 @@ var score: Array[int] = []
 var winner: int = -1
 ## Randomness for spawn spots and the starting sides. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
+## The bomb of a bomb round, or null on maps without bomb sites (and with
+## [member MatchSettings.bomb_rounds] off): rounds are then won by elimination
+## and time only.
+var bomb: Bomb
 
 ## The map's Player node (you), or null on a map without one (then team 0 is all bots).
 var _player: Character
@@ -119,6 +130,10 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if round_number == 0 or phase == Phase.MATCH_END:
 		return
+	if phase == Phase.LIVE:
+		_live_tick(delta)
+		if _clock_stopped():
+			return
 	time_left -= delta
 	if time_left > 0.0:
 		return
@@ -126,7 +141,7 @@ func _physics_process(delta: float) -> void:
 		Phase.FREEZE:
 			_go_live()
 		Phase.LIVE:
-			_end_round(get_defending_team(), EndReason.TIME)
+			_on_time_up()
 		Phase.ROUND_END:
 			_after_round_end()
 
@@ -165,6 +180,17 @@ func get_stats(character: Character) -> Stats:
 	return _stats.get(character)
 
 
+## True while this round's bomb is planted and ticking.
+func is_bomb_planted() -> bool:
+	return bomb != null and bomb.is_planted()
+
+
+## True for a team respawn match ([RespawnMatch]): one long round in which the
+## dead come back, scored in kills.
+func is_team_respawn() -> bool:
+	return false
+
+
 # --- Match and round flow ---
 
 
@@ -183,6 +209,7 @@ func _start_match() -> void:
 	for team in Teams.COUNT:
 		score.append(0)
 	winner = -1
+	_add_bomb()
 	_start_round()
 
 
@@ -192,7 +219,9 @@ func _start_round() -> void:
 	_damage_this_life.clear()
 	for team in Teams.COUNT:
 		_spawn_team(team)
-	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng)
+	if bomb != null:
+		bomb.start_round(_pick_bomb_carrier(), attacking_team)
+	_plan_bots()
 	_set_frozen(true)
 	_set_phase(Phase.FREEZE, settings.freeze_time)
 	round_started.emit(round_number)
@@ -200,12 +229,17 @@ func _start_round() -> void:
 
 func _go_live() -> void:
 	_set_frozen(false)
-	_set_phase(Phase.LIVE, settings.round_time)
+	if bomb != null:
+		bomb.active = true
+	_set_phase(Phase.LIVE, _round_duration())
 
 
 func _end_round(round_winner: int, reason: EndReason) -> void:
+	if bomb != null:
+		# No more planting or defusing; a planted bomb still ticks and can explode.
+		bomb.active = false
 	# Count the round first, so everyone listening to the signals sees the new score.
-	score[round_winner] += 1
+	_score_round(round_winner)
 	_set_phase(Phase.ROUND_END, settings.round_end_time)
 	round_ended.emit(round_winner, reason)
 
@@ -225,6 +259,45 @@ func _after_round_end() -> void:
 	_start_round()
 
 
+# Steps a variant of the match ([RespawnMatch]) replaces.
+
+
+## Gives the bots their orders for the round that is starting.
+func _plan_bots() -> void:
+	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng, settings.round_time)
+
+
+## Seconds the live part of a round lasts.
+func _round_duration() -> float:
+	return settings.round_time
+
+
+## Runs every tick of the live round, before the clock.
+func _live_tick(_delta: float) -> void:
+	pass
+
+
+## True while the round clock doesn't count down: after the plant, the bomb's fuse decides.
+func _clock_stopped() -> bool:
+	return is_bomb_planted()
+
+
+## The live round's clock ran out: the defenders held their end.
+func _on_time_up() -> void:
+	_end_round(get_defending_team(), EndReason.TIME)
+
+
+## Counts a won round in the team score.
+func _score_round(round_winner: int) -> void:
+	score[round_winner] += 1
+
+
+## Counts a kill in the team score; rounds don't (they count rounds won).
+## Runs before [signal character_killed] is emitted.
+func _score_kill(_victim: Character, _killer: Character) -> void:
+	pass
+
+
 func _end_match(match_winner: int) -> void:
 	winner = match_winner
 	_set_frozen(true)
@@ -234,14 +307,17 @@ func _end_match(match_winner: int) -> void:
 
 ## Ends the round when a team has nobody left. Runs at the end of the frame,
 ## so two last players who kill each other in the same tick are both counted.
+## After a plant the defenders must defuse: the attackers dying doesn't end the
+## round, and the defenders dying ends it for the attackers.
 func _check_elimination() -> void:
 	if phase != Phase.LIVE:
 		return
 	var attackers_alive := get_alive_count(attacking_team)
 	var defenders_alive := get_alive_count(get_defending_team())
-	if defenders_alive == 0 and attackers_alive > 0:
+	var planted := is_bomb_planted()
+	if defenders_alive == 0 and (attackers_alive > 0 or planted):
 		_end_round(attacking_team, EndReason.ELIMINATION)
-	elif attackers_alive == 0:
+	elif attackers_alive == 0 and not planted:
 		# Also when both teams are wiped out at once: like a time-out, the defenders hold.
 		_end_round(get_defending_team(), EndReason.ELIMINATION)
 
@@ -250,6 +326,46 @@ func _set_phase(new_phase: Phase, duration: float) -> void:
 	phase = new_phase
 	time_left = duration
 	phase_changed.emit(phase)
+
+
+# --- The bomb ---
+
+
+## Adds the bomb if this is a bomb match on a map with bomb sites.
+func _add_bomb() -> void:
+	var map := get_parent()
+	var has_sites := get_tree().get_nodes_in_group(Bomb.SITE_GROUP).any(func(node: Node) -> bool: return map.is_ancestor_of(node))
+	if not settings.bomb_rounds or not has_sites:
+		return
+	bomb = BOMB_SCENE.instantiate()
+	bomb.settings = settings
+	map.add_child(bomb)
+	bomb.planted.connect(_on_bomb_planted)
+	bomb.exploded.connect(_on_bomb_exploded)
+	bomb.defused.connect(_on_bomb_defused)
+
+
+## A random attacker, as in CS (seeded, so tests can repeat it).
+func _pick_bomb_carrier() -> Character:
+	var attackers := get_members(attacking_team)
+	if attackers.is_empty():
+		return null
+	return attackers[rng.randi_range(0, attackers.size() - 1)]
+
+
+func _on_bomb_planted(_site: Area3D, _planter: Character) -> void:
+	# If the attackers were already all dead, nothing changes: the defenders must defuse.
+	_check_elimination.call_deferred()
+
+
+func _on_bomb_exploded() -> void:
+	if phase == Phase.LIVE:
+		_end_round(attacking_team, EndReason.BOMB_EXPLODED)
+
+
+func _on_bomb_defused(_defuser: Character) -> void:
+	if phase == Phase.LIVE:
+		_end_round(get_defending_team(), EndReason.BOMB_DEFUSED)
 
 
 # --- Players ---
@@ -321,5 +437,6 @@ func _on_died(killer: Character, victim: Character) -> void:
 		if attacker != killer and dealt[attacker] >= ASSIST_DAMAGE and _stats.has(attacker):
 			(_stats[attacker] as Stats).assists += 1
 	_damage_this_life.erase(victim)
+	_score_kill(victim, killer)
 	character_killed.emit(victim, killer, _last_hit_zone.get(victim, -1) == Hitbox.Zone.HEAD)
 	_check_elimination.call_deferred()

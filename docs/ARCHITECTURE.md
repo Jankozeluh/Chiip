@@ -49,11 +49,13 @@ Chiip/
 ├── player/            The player: a Character variant with keyboard/mouse controller and camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene (a Character variant) and its AI controller
+├── bomb/              The bomb of bomb rounds: scene and rules (M8, D-080)
 ├── maps/              Test maps and playable maps
 │   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
-│   └── props/         Reusable map objects (target dummy)
+│   ├── props/         Reusable map objects (target dummy)
+│   └── fgd/           Chiip's func_godot entity definitions: a worldspawn that stores texture metadata (D-084)
 ├── ui/                HUD, scoreboard, menus, developer console, the UI theme (chiip_theme.tres) and its preview
-├── systems/           Shared systems: teams, round manager and match settings, noise bus, arena rules (practice), physics layers, the player's settings
+├── systems/           Shared systems: teams, round manager, team respawn match and match settings, noise bus, surfaces, arena rules (practice), physics layers, the player's settings
 ├── shaders/           Shaders: palette effect, grid placeholder for blockouts
 ├── tests/             Automated test scenes, run headless (D-018)
 └── tools/             One-off tool scripts run from the command line (not part of the game)
@@ -78,6 +80,7 @@ Chiip/
 | `ui/ui_theme.gd` | `UiTheme`: scales the theme for the window. `UiTheme.apply(root, factor)` gives a menu a copy of the theme with every font size, constant, stylebox and icon multiplied by `factor` (nearest-neighbor for icons, whole pixels), and scales the nodes' own `custom_minimum_size` and font-size / spacing overrides (originals remembered); `scaled(factor)` is the copy (kept for the last four factors, 1.0 = the theme itself), `scale_theme()` makes one, `apply_sizes()` is the second half of `apply()` for rows added later. A `CanvasLayer` root hands the theme to the controls beneath it |
 | `ui/theme_preview.tscn` + `.gd` | Developer tool, not part of the game: every styled control in one window (all button states including disabled, toggles, radio buttons, switches, sliders, progress bar, line edits, option button with its list open, tabs, a scroll area, panels, team headers, the label variations), scaled with the window. `Godot --path . res://ui/theme_preview.tscn`, add `--resolution 1920x1080` to see the 1.5× theme. Hover and pressed are shown by giving normal buttons those looks |
 | `assets/environments/cool_daylight.tres` | The shared `Environment`: blue sky with a grey-blue horizon, ambient light, cool haze, tonemapping and color adjustments (D-031) |
+| `assets/environments/clear_noon.tres`, `clear_morning.tres`, `overcast.tres` | The quick maps' environments (D-062, D-063): Depot's cool-daylight sky, Square's paler morning sky, Spillway's grey overcast sky with more fog. All three light shadows with a neutral grey ambient colour instead of the sky, so blue players don't blend into blue shadows |
 | `assets/materials/map_default.tres` | Base material for TrenchBroom maps: func_godot copies it and sets each face's texture. Uses the map's own UVs (no triplanar), nearest-with-mipmaps, matte |
 | `maps/chiip_map_settings.tres` | func_godot settings for Chiip: 39.37 units per metre (1 unit = 1 inch, as in CS), textures from `assets/textures`, lightmap UV texel size 8 units (≈ 0.2 m), generated materials not saved |
 | `maps/comparison/comparison_room.map` | The M3 comparison room as a TrenchBroom map (Valve 220 format, 13 brushes) |
@@ -112,6 +115,7 @@ Chiip/
 | `weapons/bullet_impact.tscn` | Bullet hole (16 × 16 pixel radial gradient quad) and a burst of sparks |
 | `weapons/hitbox.gd` | `Hitbox` (`Area3D`): one damage zone with its multiplier; emits `hit` with the damage, zone, position and attacker |
 | `maps/test_map_navmesh.tres` | The test map's navigation mesh: settings (agent 2.0 m tall, 0.5 m radius, 0.25 m step, 46° slope, 0.25 m cells; parses static colliders on world + bots layers from the `navigation_source` group) and the baked result (153 polygons). Baked with `tools/bake_navmesh.gd` |
+| `maps/depot`, `maps/square`, `maps/spillway` (`.map`, `.tscn`, `_navmesh.tres`) | The three quick maps (M8 blockouts, D-060): TrenchBroom source, the built scene with spawns, routes, hold spots, bomb sites (`bomb_sites`), respawn points (`respawn_points`) and patrol points, and the baked navmesh. Details in [MAPS.md](MAPS.md) |
 | `maps/props/target_dummy.tscn` + `.gd` | `TargetDummy`: CS-sized, color-coded hitboxes (head red, chest blue, stomach teal, arms light blue, legs dark), floating damage numbers, running total, optional side-to-side movement |
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players (all on the Effects bus) + a blocky first-person model (`Viewmodel`) with a muzzle flash (gradient quad + orange light). Instanced in the player under `Head/Camera3D` |
 | `ui/hud.tscn` + `.gd` | HUD: health (bottom left, red at ≤ 25), "Killed by …" message while dead (plus "Respawning..." when `respawn_hint` is on, i.e. in practice mode), crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the signals of the *shown* character (`shown`): the player, or while spectating the teammate being watched, set with `set_view_target()` (`main.gd` connects it to `PlayerController.view_target_changed`). While spectating it also shows "Spectating Bot2  ·  click for next" ("· dead" once they're down) at the bottom centre, and hides the "Killed by …" message. In a match its `RoundHud` child (below) adds the top bar, countdown, banners and kill feed: `set_round_manager(manager)` hands it the match (null in practice mode hides it) and `set_ui_scale()` scales it too |
@@ -124,6 +128,8 @@ Chiip/
 | `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, optional contrast, brightness and saturation, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
 | `tools/bake_navmesh.gd` | Bakes every `NavigationRegion3D` in the given scenes and saves each navigation mesh to its own resource file (the editor's *Bake NavigationMesh*, headless) |
 | `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
+| `tools/map_report.gd` | Measures maps: walkable size, walking distances (spawns, sites, attack routes) and sightlines (eye-height rays between reachable spots), D-061 |
+| `tools/map_screenshots.gd` | Screenshots of a map through `main.tscn` (overview, both spawns, both sites, mid), read from the World SubViewport at 854 × 480; keeps `DevConsole.is_open` set every frame so the game ignores the mouse |
 | `tools/export_trenchbroom_config.gd` | Writes Chiip's TrenchBroom game configuration (GameConfig.cfg, icon, FGD) into TrenchBroom's games folder |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
 | `tools/ui_palette.gd` | The UI colors as constants (D-057), shared by the two tools below |
@@ -139,6 +145,7 @@ Chiip/
 | `assets/sounds/*.wav` | Generated 22 kHz mono sounds: rifle shot, empty click, reload clack (referenced by `weapons/rifle.tres`) and three footsteps |
 | `assets/sounds/footsteps.tres` | `AudioStreamRandomizer`: picks one of the three footsteps each step, with ±12% pitch and ±2 dB volume |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (13, D-018) |
+| `tests/maps_test.tscn` + `.gd` | Automated checks of the quick maps (5 per map): markers, markers on the navmesh, paths from both spawns to both sites, and a seeded bots-only 3v3 (4 rounds) with first contact 5–10 s after going live and rounds decided by fighting (D-061). `-- --map <scene>` checks one map |
 | `tests/tactics_test.tscn` + `.gd` | Automated checks that bots play rounds (4), on the real test map in a seeded bots-only 3v3: orders, defenders on different spots watching their angles, attackers pushing in loose groups, rounds decided by elimination |
 | `tests/round_test.tscn` + `.gd` | Automated round checks (74) on the real test map with short timings: 3v3 setup, spawns with full health and ammo, freeze time, going live, elimination (not before the last kill), kill credit and headshots, the dead stay dead until the next round, assists and damage, time-out → defenders; then the same match to its end (first to 5): the score at each `round_ended`, the half-time swap after round 4 and the spawns at the other end, the last round's pause, the match end (`MATCH_END`, one `match_ended`, everyone frozen), nothing happening afterwards; two tiny matches (first to 1: no half time; first to 2: swap after round 1, decided in round 3); and spectating (9 checks, long rounds, spectating switched on by the test): off by default, your own view for 2 s and then a teammate's eyes (camera on their head, along their aim), their body and your rifle hidden, `spectate_next()`, the recapture click doesn't count, the view moving on when the watched teammate dies, staying put when nobody is left, and your own view back in the next round; and the round HUD (26 checks, the real `hud.tscn` fed by seeded matches): `format_time`, the freeze countdown and both side lines, score and squares after kills, kill-feed lines (names, colors, headshot mark, victim only, your own lines highlighted, colors relative to the viewer), the five-line cap and the 5 s fade, round-end banners for a win and a loss by elimination and on time-out, "Switching sides" and the three match-point texts, handing the HUD another round manager or none (no doubled connections), UI scaling, and that no part of the HUD takes mouse clicks; and the scoreboard (22 checks): the Tab action and a real Tab press, the table (both teams, yours first under the right header, also from team 1; every cell against `get_stats()` after a scripted fight; sorting by kills, then damage, then join order; dead rows dimmed, only your row highlighted; rows kept when nothing changed; nothing dimmed in the next round), the hold-Tab overlay (hidden, shown while held, header with round and score, follows damage and kills, movement still works, ignored while the console is open, no control takes clicks, UI scaling, a replaced or missing round manager, hidden at the match end but not in the last round's pause) and the match-end screen's table (not dimmed, scaled, emptied) |
 | `tests/ui_test.tscn` + `.gd` | Automated UI checks (132): the project theme and its pixel font; the look plain controls get in the tree (button states, label, slider, check box, line edit, option button with its list, tabs, tooltip, scroll bars); all 25 variations exist on the right base type and the colors the theme copies from `Teams` and `ScoreboardTable` haven't drifted; the 1.5× theme (every font size, stylebox, spacing, icons crisp with no blended colors, yes/no constants left alone, other factors starting from the original icon); a sample menu at 1.0 / 1.5 / 2.0 and back (fonts, padding, minimum sizes, one-off overrides, the drop-down, the laid-out width, a part scaled on its own, a `CanvasLayer` root); the theme preview; the console; the Tab scoreboard (also hidden while any menu is open) and the match-end screen (rows still built, looks from variations, no style overrides left, exactly 1.5×, rows built after scaling). **The settings menu (D-059):** `MenuState`; the five tabs and a control for every setting and key; slider, number field, check box and option buttons writing to `Settings` and following it (also a console command); the crosshair preview following color, opacity, hex code, sizes and styles; rebinding through the real input path (listening, key bound in the `InputMap`, Esc, the click that started it, the clash rule, Backspace, the console key, reset); closing, a menu freed while open, Esc with the console on top; the player ignoring input while a menu is open; scaling by 1.5 and no style overrides; the console's `settings` command, `help` fitting, scrollback; the real `settings.cfg` untouched. **The main menu and match setup (D-064):** the four buttons and title, the background (test map without `Player`, character, controller or rules; the flight's camera is the only one), the camera flight (80 s, never above 5 m/s or 30°/s, 4 to 6 m up, inside the walls, closed loop, keeps running), the background following the video settings and everything scaling by 1.5 at 1080, no overrides, Esc on the page / in match setup / in the settings menu, `wants_game()`; match setup with its own `Settings.new()` (defaults 3v3 / Normal / first to 5 / off / test map equal `MatchSettings`' own, the controls giving the matching `MatchSettings`, the choices stored, following outside changes, surviving a save and load, the map list = `res://maps/*.tscn`, a missing stored map, open / Esc / Back / Start, scaling); `GameLaunch` and main.gd (a match description builds a `RoundManager` with exactly those settings, practice gives `ArenaRules` with the difficulty, another map, used once, the defaults without one); the match-end screen's Main menu button; and the real flow through the scenes in a scene of its own (Play, Start, game, Main menu, Practice, `disconnect`), with the settings loaded from `user://test_ui_settings.cfg` so the real file is never touched. **The pause menu (D-065):** the `pause` action (on Esc alone, not bindable, `toggle_mouse` gone); in a real game scene Esc opening it (visible, on top of `MenuState`, tree paused), Resume and Esc closing it, Settings over it and Esc back (still paused), the console closing alone on Esc (also over it), nothing opening behind the match-end screen; the round timer and every character exactly unchanged over 30 physics ticks while paused (and moving before), the scoreboard hidden although Tab is held, which nodes can process while paused, a world sound paused and an Always sound playing on, Resume with a held fire button and a queued jump; its look (modal panel, 48 px title, three 32 px buttons, no overrides, a click-blocking background, exactly 1.5×); and Leave match / `disconnect` over it landing in an unpaused main menu in the real scene flow (the test count above is 132) |
@@ -158,11 +165,12 @@ Chiip/
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M7) |
 | HUD | Crosshair, ammo, health, timer, score, kill feed, banners | M2 → M5 | Built: crosshair, ammo, weapon name, health, spectate line; round HUD (top bar, countdown and side, banners, kill feed, D-047) |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Built: low-res world, palette with dithering, two HUD styles |
-| Bot AI | Navigation, perception, state machine, aim, round tactics | M4, M5 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels; attack routes, hold spots, holding fire for teammates (M5) |
+| Bot AI | Navigation, perception, state machine, aim, round tactics | M4, M5, M8 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels; attack routes, hold spots, holding fire for teammates (M5); the bomb: target site, plant, fetch, guard, retake, defuse, getting unstuck (M8, D-081); hunting in pairs in the respawn mode (`HuntPlan`, D-083) |
 | Developer console | `bot_add`, `noclip` and similar commands | M4 | Built: help, clear, bot_add, bot_kick, bot_difficulty, god, noclip, mp_friendlyfire, map, sensitivity, fov, volume, fps_max, settings, settings_reset, disconnect |
 | Character animation | Walk cycle now; rigged models, animation blending, first-person arms later | M4 → M6 | Built: procedural walk placeholder (`SoldierBody`) |
 | Teams | Two teams, viewer-relative colors, attack/defend spawn ends, friendly fire | M5 | Built: `Teams`, 10 spawns on the test map (D-042) |
 | Round manager | Phases, timer, win conditions, match score | M5 | Built: rounds, freeze time, elimination and time-out, stats, match score, half-time swap, match end (D-044) |
+| Team respawn mode | CoD-style Team Deathmatch: respawns, kill limit, time limit | M8 | Built: `RespawnMatch extends RoundManager` (D-082), picked by `MatchSettings.game_mode` |
 | Spectating | Watch a living teammate through their eyes after you die | M5 | Built in `PlayerController`, local presentation only (D-046) |
 | Settings | Sensitivity, FOV, crosshair, audio, keys, video; saved to disk | M5 | Built: `Settings` (D-058), the bus layout, the console commands and the settings menu (`SettingsMenu`, D-059) |
 | Match-end screen | Victory / Defeat, final score, scoreboard, Play again / Main menu | M5 | Built: `MatchEndScreen` (Main menu replaced Quit in task 11) |
@@ -170,7 +178,7 @@ Chiip/
 | Scoreboard | Hold Tab: both teams' kills, deaths, assists, damage and who is alive | M5 | Built: `Scoreboard` + `ScoreboardTable` (D-050), also used by the match-end screen |
 | UI theme | One `Theme` for every menu, scaled for the window | M5 | Built: `chiip_theme.tres`, `UiTheme`, preview (D-057); the settings, main and pause menus (tasks 10 to 12) use it |
 | Economy | Money, rewards, buy menu | M7 | Planned |
-| Bomb | Plant, defuse, explosion | M8 | Planned |
+| Bomb | Carry, drop, plant, fuse, defuse, explosion | M8 | Built: `Bomb` (`bomb/`), added by the round manager on maps with bomb sites; `BombHud` shows it (D-080) |
 
 ## Input actions
 
@@ -188,6 +196,7 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `toggle_debug` | F3 | Debug overlay |
 | `toggle_console` | key left of 1 (`` ` `` / `~`; on Czech keyboards the key under Esc) | Developer console |
 | `scoreboard` | Tab (hold) | Scoreboard overlay (polls `Input.is_action_pressed`; ignored while the console is open) |
+| `use` | E (hold) | PlayerController → `CharacterInput.use` → the bomb (plant, defuse) |
 
 ## How the player camera works
 
@@ -294,6 +303,29 @@ Map (test_map.tscn)
 7. The match: first to `rounds_to_win` rounds (5, 10 or 15). `_end_round()` adds the round to `score[winner]` *before* emitting `round_ended`. When the `ROUND_END` pause is over, `_after_round_end()` decides what comes next: if a team has `rounds_to_win`, it freezes everyone, sets `winner`, enters `MATCH_END` and emits `match_ended(winner)`, and nothing happens after that; otherwise, if the round just played was number `rounds_to_win − 1`, it flips `attacking_team` and emits `sides_swapped`, and then the next round starts. After the flip each team spawns at the other end; team numbers, colors and stats don't change. The longest match is `2 × rounds_to_win − 1` rounds, so there is no draw.
 8. `MatchEndScreen` (in `main.tscn`, above the HUD) listens to `match_ended`, reads `score` and, through its `ScoreboardTable`, `get_members()` and `get_stats()`, and shows the result. Its buttons only emit signals; `main.gd` restarts the map or quits.
 9. Spectating doesn't touch the round manager: `PlayerController` notices your own death (`died`) and your respawn at the next round start (`on_respawned()`), and the HUD follows its `view_target_changed` signal (D-046).
+10. **Bomb rounds** (D-080): on a map with `bomb_sites` areas (and `MatchSettings.bomb_rounds` on) the round manager adds a `Bomb` (`bomb/bomb.tscn`) to the map at the match start. At every round start, after the respawns, `Bomb.start_round()` gives it to a random attacker; `Bomb.active` is on only in the live round. The bomb reads each character's `is_holding_use()` (from `CharacterInput.use`): a carrier inside a site plants, a defender within 1.5 m defuses, and meanwhile `Character.busy` blocks moving and shooting the way `frozen` does. Its `planted`, `exploded` and `defused` signals reach the round manager, which stops counting `time_left` after the plant, ends the round with `EndReason.BOMB_EXPLODED` / `BOMB_DEFUSED`, and after a plant ends it by elimination only when the defenders are all dead. `BombHud` (in `hud.tscn`) reads `RoundManager.bomb` every frame and listens to its `picked_up`, `dropped` and `planted` signals. Bots find the bomb through its group `bomb`.
+
+## Team respawn mode (M8, D-082)
+
+`RespawnMatch` (`systems/respawn_match.gd`) **is a** `RoundManager` with one long round, so everything that shows a match (round HUD, kill feed, Tab scoreboard, match-end screen) works unchanged; `score` holds kills. `main.gd` adds it instead of a `RoundManager` when `MatchSettings.game_mode` is `TEAM_RESPAWN` (`-- --respawn`), with spectating off.
+
+The round manager runs a fixed sequence and asks a few overridable methods for the decisions a mode makes (the *template method* pattern):
+
+| Hook | Rounds (`RoundManager`) | Team respawn (`RespawnMatch`) |
+|---|---|---|
+| `_add_bomb()` | adds the bomb on maps with sites | nothing |
+| `_plan_bots()` | `BotTactics.plan_round()` | the bots' respawn-mode orders |
+| `_round_duration()` | `round_time` (1:55) | `time_limit` (10:00) |
+| `_live_tick(delta)` | nothing | counts down respawns and brings the dead back at `pick_spawn()` |
+| `_clock_stopped()` | after the plant | in overtime |
+| `_on_time_up()` | the defenders win the round | the leader wins, or overtime on a tie |
+| `_score_kill()` / `_score_round()` | nothing / +1 round for the winner | +1 for the killer's team (enemy kills, live phase) / nothing |
+| `_check_elimination()` | a wiped team loses the round | nothing (nobody stays dead) |
+| `_after_round_end()` | next round, half time or match end | match end |
+
+`is_team_respawn()` tells views which texts to use. `RespawnMatch.overtime` and `overtime_started` mark overtime.
+
+**Bots** (D-083): `_plan_bots()` calls `BotTactics.plan_hunt()` once per team, which groups the bots and returns the team's `HuntPlan` (groups, roam points, the latest sighting, each group's goal). The `RespawnMatch` keeps the plans, advances their clock in `_live_tick()`, and after every respawn gives the bot its hunt order again (`BotController.hunt(plan)`; respawning resets a bot's orders to patrol) and notes the respawn (`HuntPlan.note_respawn()`, which decides who leads). Bots read the plan and report their sightings to it every tick they see or hear an enemy.
 
 ## Sound
 
@@ -301,7 +333,10 @@ Map (test_map.tscn)
 - The 3D listener is the player's camera inside the world `SubViewport` (`audio_listener_enable_3d` is on). While you spectate a teammate that camera sits at their head, so you hear from where they are, as in CS; no sound routing changes.
 - Footsteps play only for loud steps (running). Walking and crouch-walking are silent, matching what bots can hear (D-035).
 - **Buses (D-058).** `default_bus_layout.tres` has Master, Effects and Interface. All six sound players of the game (the character's `FootstepAudio` / `FootstepAudio3D` and the rifle's `ShotAudio`, `HandlingAudio`, `ShotAudio3D`, `HandlingAudio3D`) play on **Effects**; **Interface** is for menu sounds and nothing uses it yet. `Settings` sets the bus volumes from the 0 to 1 sliders (`linear_to_db`; 0 mutes the bus). A new sound goes on a bus by its `bus` property: Effects for the game, Interface for menus.
-- Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device.
+- **Surfaces** (D-084): `Surfaces.floor_kind(world, feet)` casts a short ray down and reads the hit brush's texture from func_godot's `func_godot_mesh_data` metadata (`texture_names`, `textures`, `normals`, `collision_shape_to_face_indices_map`), which Chiip's worldspawn class (`maps/fgd/chiip_worldspawn.tres`) stores on every built map body. `Character._play_footstep()` plays `Surfaces.footstep_sound(kind, footstep_sound)`; `Weapon._play_impact_sound()` sets the stream of the impact scene's `Audio` player (`impact_*`, `hit_body`, `hit_head`). Without the metadata (CSG maps, props) everything is hard.
+- **Interface sounds** (`UiSounds`, a static class): `attach(menu)` gives every button a hover tick and a click; `play(stream)` plays through one `AudioStreamPlayer` on the *Interface* bus that it adds to the tree root. The round HUD plays the round start and won/lost stingers, the bomb HUD the planted alert. Off in headless runs.
+- **The bomb** (D-080) plays its beep, the plant key presses, the defuse clicks and the explosion through `AudioStreamPlayer3D`s on the bomb (bus `Effects`; a bus that doesn't exist yet falls back to Master). The sounds are generated by `tools/generate_sounds.gd`.
+- Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device. The bomb test sets the bomb's four sound exports to null.
 
 ## How a character and its weapon work together
 
@@ -326,7 +361,7 @@ Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit va
 | 2 | player | 2 | The player's body (collides with world and bots: mask 5) |
 | 3 | bots | 4 | Bot bodies (and any `Character` by default; mask 7), target dummies |
 | 4 | hitboxes | 8 | Head / chest / stomach / arm / leg zones (`Area3D`) that bullets hit |
-| 5 | triggers | 16 | Buy zones, bombsites |
+| 5 | triggers | 16 | Buy zones (M7), bomb sites (`bomb_sites` areas, mask 6: player and bots; `Bomb` switches their `monitoring` on and asks `overlaps_body()`) |
 
 Bullets test **world + hitboxes** (mask 9) only.
 
@@ -362,9 +397,20 @@ That is 340 checks in about 30 s on the development Mac. A change to one system 
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/ui_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/settings_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 200000 res://tests/match_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/respawn_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 20000 res://tests/sound_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 400000 res://tests/maps_test.tscn
 ```
 
 `--headless` means no window, and `--fixed-fps 128` runs exactly one physics tick per frame as fast as possible. `--quit-after` is a safety net in case a script error stops a test from finishing. Each check prints PASS or FAIL, and the exit code is the number of failures. The weapon test seeds the spread so every run fires the same shots, and uses a silent copy of the rifle data because headless runs have no audio device. When a test file uses a `class_name` for the first time, run `Godot --headless --path . --import` first so Godot knows the class. **No test may read or write the real `user://settings.cfg`** (the player's own file): the shared `Settings` instance only saves after something calls `load_from_disk()`, so tests leave it alone, try saving on a separate `Settings.new()` with a temp path (and delete it afterwards), and load `main.tscn` with `load_settings` off. The match test and the tactics test seed every random number (the round manager's generator, each bot's brain and weapon), so they play the same match every run; the match test prints one line per round so a reader can see how it went (those lines are information, not checks). Anything that makes a suite print nothing (a parse error) is caught by the runner but not by the exit code of a single run: when running one suite by hand, check its PASS count and grep for `SCRIPT ERROR`.
+
+## Exporting (D-086)
+
+- `export_presets.cfg` holds one preset, **macOS**: a universal `.app`, ad-hoc signed, exported to `builds/macos/Chiip.app`. `builds/` is gitignored and has a `.gdignore`, so Godot never imports a build. `tests/*` and `tools/*` are excluded from the export.
+- Exports need the export templates of the exact engine version (`~/Library/Application Support/Godot/export_templates/4.7.2.stable/`) and, for Apple Silicon, `rendering/textures/vram_compression/import_etc2_astc`.
+- In an exported game text scenes and resources are converted to binary and reached through `.remap` files: code that lists `res://` folders must use `ResourceLoader.list_directory()` (the console's `map` list does).
+- `tools/frame_timing.gd` measures frame times of a real match (in the editor build, with a window).
 
 ## Naming conventions
 

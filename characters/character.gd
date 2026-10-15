@@ -109,6 +109,9 @@ var noclip: bool = false
 ## crouch and reload, but not move, jump or shoot. The rule is applied here,
 ## to whatever the controller sends, so it holds for every kind of controller.
 var frozen: bool = false
+## Set by the bomb while this character plants or defuses it (D-080): like
+## [member frozen], it can look around and crouch but not move, jump or shoot.
+var busy: bool = false
 
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
@@ -181,7 +184,7 @@ func _physics_process(delta: float) -> void:
 		still.yaw = _input.yaw
 		still.pitch = _input.pitch
 		_input = still
-	if frozen:
+	if frozen or busy:
 		_input.move = Vector2.ZERO
 		_input.jump = false
 		_input.shoot = false
@@ -246,6 +249,12 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## True while this tick's command holds Use (plant or defuse the bomb) and the
+## character is alive.
+func is_holding_use() -> bool:
+	return is_alive() and _input.use
 
 
 ## True for the player at this computer (see [method CharacterController.is_local]).
@@ -332,14 +341,17 @@ func _update_footsteps(on_ground: bool, delta: float) -> void:
 
 
 ## Your own steps play in both ears; everyone else's come from where they are.
+## They sound like the floor: gravel, metal, wood, or [member footstep_sound]
+## on hard floors (D-084). No [member footstep_sound] means silent (tests).
 func _play_footstep() -> void:
 	if footstep_sound == null:
 		return
+	var sound := Surfaces.footstep_sound(Surfaces.floor_kind(get_world_3d(), global_position), footstep_sound)
 	if is_local_player():
-		_footstep_audio.stream = footstep_sound
+		_footstep_audio.stream = sound
 		_footstep_audio.play()
 	else:
-		_footstep_audio_3d.stream = footstep_sound
+		_footstep_audio_3d.stream = sound
 		_footstep_audio_3d.play()
 
 
@@ -353,6 +365,7 @@ func respawn(at: Vector3, yaw: float) -> void:
 	_respawned_this_tick = true
 	velocity = Vector3.ZERO
 	health = max_health
+	busy = false
 	is_crouching = false
 	_set_crouch_hull(false)
 	_eye_height = stand_eye_height

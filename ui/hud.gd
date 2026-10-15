@@ -3,7 +3,8 @@ extends CanvasLayer
 ## Listens to the player's weapon through its signals. While you spectate a
 ## teammate (see [PlayerController]), health, ammo and weapon are theirs and a
 ## "Spectating" line shows whose view you are in. In a match the [RoundHud]
-## child adds the top bar, countdown, round-end banners and kill feed.
+## child adds the top bar, countdown, round-end banners and kill feed, and in
+## bomb rounds the [BombHud] child the bomb tag, prompts and messages.
 
 ## Magazine counts at or below this fraction of a full magazine are shown in red.
 const LOW_AMMO_FRACTION := 0.25
@@ -27,6 +28,7 @@ var respawn_hint: bool = true
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
 @onready var _round_hud: RoundHud = $RoundHud
+@onready var _bomb_hud: BombHud = $BombHud
 
 
 ## Shows this player's weapon on the HUD.
@@ -43,6 +45,7 @@ func set_player(new_player: Character) -> void:
 ## every map load; the previous manager is dropped.
 func set_round_manager(manager: RoundManager) -> void:
 	_round_hud.set_round_manager(manager)
+	_bomb_hud.set_round_manager(manager)
 
 
 ## Shows the health, ammo and weapon of [param target] instead of the player's
@@ -55,6 +58,7 @@ func set_view_target(target: Character) -> void:
 		shown.weapon.reload_finished.disconnect(_update_weapon_label)
 		shown.damaged.disconnect(_on_shown_damaged)
 	shown = target
+	_bomb_hud.set_view_target(target)
 	shown.weapon.ammo_changed.connect(_on_ammo_changed)
 	shown.weapon.reload_started.connect(_update_weapon_label)
 	shown.weapon.reload_finished.connect(_update_weapon_label)
@@ -78,6 +82,7 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_spectate_label, factor)
 	_crosshair.set_ui_scale(factor)
 	_round_hud.set_ui_scale(factor)
+	_bomb_hud.set_ui_scale(factor)
 
 
 func _process(_delta: float) -> void:

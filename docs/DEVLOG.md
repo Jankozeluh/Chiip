@@ -2,6 +2,42 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — M8 modes
+
+Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6 (its own worktree).
+
+**Done**
+- **The bomb** (D-080, provisional): CS's rules on the three quick maps. A random attacker carries it on their back; hold **E** inside site A or B for 3.2 s to plant (you can't move meanwhile, and letting go starts over); the round clock stops and the timer shows "BOMB"; it beeps faster and faster and explodes after 40 s (lethal out to about 13 m); a defender holds E next to it for 10 s to defuse (a kit will halve that in M7: `Bomb.kit_check` is the hook). If the carrier dies, the bomb drops and the next attacker who walks over it picks it up. After a plant, the defenders must defuse even if every attacker is dead. New `use` input action (E) and `CharacterInput.use`, so bots will plant and defuse by the same rule. HUD: a BOMB tag, plant/defuse prompts with a progress bar, and messages. Generated beep, key-press, wire-click and explosion sounds. New `tests/bomb_test.tscn` (26 checks); all other suites still pass (movement 13, weapon 20, bot 16, round 74, tactics 4, ui 35, maps 15).
+
+- **Bots play the objective** (D-081, provisional): the attackers pick a target site; the carrier's group takes the route that ends nearest to it and the carrier plants there; the nearest bot fetches a dropped bomb; after the plant the attackers watch the bomb from 5–10 m. Every defender retakes; one defuses while the others cover, and a bot keeps defusing under fire only when it's 70% done. Testing found a bot stuck against the side of Depot's dock ramp for 100 s, so stuck bots now jump and then back off and find a new path. 6 new bot checks (bomb test: 32); in the maps test the bots planted in 11 of 12 rounds and no round ran out of time.
+
+- **Team respawn mode** (D-082, provisional), like CoD's Team Deathmatch: `-- --respawn`. Respawn 3 s after dying at the safest respawn point (far from enemies, out of their sight), first team to 30 kills or most kills after 10 minutes, overtime on a tie. Built as `RespawnMatch`, a subclass of the round manager with one long round, so the HUD, kill feed, scoreboard and end screen work as they are. New `tests/respawn_test.tscn` (15 checks; it caught the round's own point being added to the kills).
+
+- **Bots hunt in pairs** in the respawn mode (D-083, provisional): each team's bots form groups of about two with a shared `HuntPlan`; the member alive the longest leads, to a teammate's sighting within 25 m or roaming the patrol points, and the other follows about 6 m behind watching a flank. Measuring where kills happened showed everyone piling into mid (80–90%) when every bot answered every sighting and gunshot, hence the 25 m reach. The kill limit went from 30 to 50: bots-only matches score about 20 kills a minute. 4 new respawn checks (19 in all), and the maps test now plays a respawn match on every map (to 20 kills in 84–124 s).
+
+- **Sound pass** (D-084, provisional): footsteps sound like the floor (hard, gravel, metal, wood), read from the texture of the brush under your feet, which the maps now store when built (Chiip's own worldspawn class; the three maps were rebuilt). Bullets make impact sounds per surface, a thwack on bodies and a louder CS-like "dink" on heads. A planted-bomb alert, menu hover and click sounds, a "go" beep at round start and won/lost stingers. 24 new generated sounds, made by a Sonnet subagent from a brief and measured by spectrum; the old sounds are unchanged. New `tests/sound_test.tscn` (8 checks).
+
+- **Lighting decided: real-time** (D-085, provisional). Screenshots of today's lighting, SSAO, and SSAO with SDFGI on Depot ([maps/lighting_depot.jpg](maps/lighting_depot.jpg)): SSAO barely shows at 480 lines, SDFGI brings the blue sky back into the shadows and darkens the warehouse, and lightmaps would need a re-bake by hand after every map edit. New `tools/frame_timing.gd` and a `--lighting` option for the screenshot tool.
+
+- **First macOS build** (D-086): downloaded the official Godot 4.7.2 export templates (1.28 GB, checksum verified, your OK), added an export preset (universal, ad-hoc signed, tests and tools left out) and turned on ETC2/ASTC compression, which Apple Silicon exports require. `builds/macos/Chiip.app` (165 MB) runs: headless matches on Depot and Square, and a window on Metal. The export found two old bugs: the TrenchBroom comparison room's player pointed at a script renamed in M4, and the console's map list didn't work in exported games; both fixed.
+- **Performance:** 5v5 on all three maps holds the display rate (slowest 1% of frames 19–22 ms, about 2 ms of physics per frame for 10 bots). macOS keeps V-Sync on and Metal reports no GPU times, so `tools/frame_timing.gd` reports frame and CPU times.
+
+**Next:** map rotation, once the coordinating session has merged M5's match setup and menus into this branch.
+
+## 2026-10-15 — Three quick maps (M8, started early)
+
+Built alongside M5 in its own branch (`m8-maps`), so the game has a map rotation.
+
+**Done**
+- You approved three layouts from top-down plans and kept the placeholder names: **Depot** (freight yard: indoor warehouse mid, container yard, loading dock), **Square** (old town: open plaza mid, zig-zag alley, covered market hall) and **Spillway** (dry water works: sunken channel mid, pump house, tank yard with a terrace). Each is 46–48 × 56 m with three lanes, two bomb sites, 5 spawns per side, bot routes and hold spots, 12 respawn points and patrol points (D-060). Plans, rules and numbers: [MAPS.md](MAPS.md).
+- Each map has its own lighting mood within cool daylight: today's daylight, a low morning sun, and an overcast sky (D-062).
+- New `tests/maps_test.tscn` checks every map's markers, navmesh and paths, and plays seeded bot rounds. First contact (median of 4 rounds): Depot 5.7 s, Square 6.6 s, Spillway 5.8 s; every round ended by elimination after 9–23 s (D-061).
+- New `tools/map_report.gd` (sizes, walking distances, sightlines) and `tools/map_screenshots.gd` (screenshots through the real game without touching the mouse).
+- Tuning: deeper spawn yards on Depot and Spillway (contact was 3.4–5.1 s), overlapping obstacles, offset doors and gates against long diagonals (they were 45–60 m; now at most 44 m on Depot, 35 m on Square, 38 m on Spillway), a dock ramp on Depot that couldn't be walked onto, and channel fences on Spillway the terrace could see over.
+- All existing test suites still pass (movement 13, weapon 20, bot 16, round 26, tactics 4), and the maps test passes 15 of 15.
+- Your style direction (minimal, pixelated, characters must stand out) became the maps' look rules (D-063, MAPS.md): at most 5 materials per map, no red brick on large walls, and neutral grey ambient light. Shadows had rendered the same blue as the blue team; now they measure 3 % saturation. Same bot results after the change.
+
+**Next:** Your playtest with `map depot`, `map square` and `map spillway`, and the final names. Then the detail pass and the bomb and respawn logic in M8.
 ## 2026-10-15 — Session 11: crew, classes and arsenal planned
 
 **Done**
