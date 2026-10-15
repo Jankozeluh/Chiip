@@ -7,7 +7,7 @@ extends CharacterBody3D
 ## [CharacterController] (a child node) for a [CharacterInput] command and
 ## simulates it, the way a CS server simulates each client's "usercmd". So
 ## bots follow exactly the same movement and shooting rules as the player, and
-## network players in M8 will too.
+## network players in M9 will too.
 ##
 ## Movement follows the Quake/Source engine model that CS is built on:
 ## friction slows you down on the ground, acceleration pushes you toward the

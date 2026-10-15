@@ -1,7 +1,7 @@
 class_name CharacterController
 extends Node
 ## Base class for whatever drives a [Character]: the local player, a bot, or
-## (in M8) a network player. Add it as a child of the character.
+## (in M9) a network player. Add it as a child of the character.
 ##
 ## Every physics tick the character calls [method get_input] and simulates the
 ## command it returns. Subclasses override the methods below.

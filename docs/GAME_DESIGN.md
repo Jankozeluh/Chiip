@@ -224,4 +224,4 @@ Keys are bound by physical position, so they stay in the same place on any keybo
 
 Matchmaking, ranked mode, skins and cosmetics, mobile.
 
-Multiplayer *is* planned, as M8 after the single-player game: one player hosts, friends join and bots fill empty slots (D-033).
+Multiplayer *is* planned, as M9 after the single-player game: one player hosts, friends join and bots fill empty slots (D-033).

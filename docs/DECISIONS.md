@@ -252,7 +252,7 @@
 
 **Alternatives:** CSG for everything (no extra tools, but no per-face alignment or easy baking), or deciding later.
 
-## D-033 — Multiplayer comes after the single-player game, as M8 (2026-10-15)
+## D-033 — Multiplayer comes after the single-player game, as M8 (2026-10-15) — *now M9, see D-040*
 
 **Decision:** Chiip gets multiplayer, in a new milestone **M8** after M7: one player hosts and friends join (LAN first, then Steam lobbies), with bots filling empty slots. There's no matchmaking or ranked play. M4–M7 stay single-player but follow network-friendly rules (see ARCHITECTURE.md, "Keeping multiplayer possible"), which keeps the retrofit manageable.
 
@@ -324,7 +324,15 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Decision:** The blocky soldier gets hip and shoulder joints, and `SoldierBody` swings legs and arms and bobs the body in time with the footsteps, all computed in code. Hit zones move with the limbs.
 
-**Why:** The bots "glided". Real animated character models need their own milestone (see the plan). This placeholder costs little and removes the worst problem now.
+**Why:** The bots "glided". Real animated character models need their own milestone (M6, D-040). This placeholder costs little and removes the worst problem now.
+
+## D-040 — A characters & animation milestone after M5 (2026-10-15)
+
+**Decision:** A new **M6 — Characters & animation**: rigged soldier models, third-person animations, hit zones on bones, and first-person arms with the rifle. The later milestones move back one: economy & arsenal is now M7, bomb mode & the first real map M8, multiplayer M9. Entries above this one and older DEVLOG entries keep the old numbers.
+
+**Why:** You asked when the game gets properly animated. Rounds, menus and settings (M5) come first, so the game is playable from start to finish; the procedural walk (D-039) covers the gap.
+
+**Alternatives:** Right after M4 (looks better sooner, but the game would stay a sandbox longer), or after the last gameplay milestone (cheapest, but blocky placeholders for a long time).
 
 ## Open questions
 
@@ -332,6 +340,6 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
 | Team sizes: 1 vs N, or 5v5 with bot teammates? | M5 |
-| Weapon names | M6 |
+| Weapon names | M7 |
 | Team names and the game's setting/theme | Any time |
 | Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |

@@ -117,16 +117,17 @@ Chiip/
 |---|---|---|---|
 | Character + controllers | CS-style movement for everyone, driven by per-tick commands | M1, M4 | Built: `Character`, `PlayerController` (bots in M4) |
 | Debug overlay | Speed and position readout | M1 | Built |
-| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
+| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | Built: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M5) |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Built: crosshair, ammo, weapon name |
-| Retro rendering | Low-res output, pixel filtering, palette | M3 | In progress: low-res world, two HUD styles |
-| Bot AI | Navigation, perception, state machine, aim | M4 | Planned |
-| Developer console | `bot_add`, `noclip` and similar commands | M4 | Planned |
+| Retro rendering | Low-res output, pixel filtering, palette | M3 | Built: low-res world, palette with dithering, two HUD styles |
+| Bot AI | Navigation, perception, state machine, aim | M4 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels |
+| Developer console | `bot_add`, `noclip` and similar commands | M4 | Built: help, clear, bot_add, bot_kick, bot_difficulty, god, noclip, map |
+| Character animation | Walk cycle now; rigged models, animation blending, first-person arms later | M4 → M6 | Built: procedural walk placeholder (`SoldierBody`) |
 | Round manager | Phases, timer, win conditions, match score | M5 | Planned |
 | Settings | Sensitivity, FOV, crosshair, audio, keys; saved to disk | M5 | Planned |
-| Economy | Money, rewards, buy menu | M6 | Planned |
-| Bomb | Plant, defuse, explosion | M7 | Planned |
+| Economy | Money, rewards, buy menu | M7 | Planned |
+| Bomb | Plant, defuse, explosion | M8 | Planned |
 
 ## Input actions
 
@@ -191,7 +192,7 @@ Character (CharacterBody3D, character.gd)        ← simulates commands by CS ru
 1. Each physics tick, `Character._physics_process` asks its controller for a `CharacterInput` (`get_input()`): the *pull* model guarantees the command is fresh for this tick.
 2. The character applies it: it faces `yaw`, tilts the head to `pitch`, sets `weapon.trigger_held` and reloads, then moves, jumps and crouches by the CS rules.
 3. The player's controller reads keys in `get_input()` and the mouse in `_unhandled_input()`; its camera follows the head every rendered frame, so mouse look stays instant.
-4. A bot's controller fills the same command from its AI (walking: movement keys toward the next path point); in M8 a network controller will fill it from packets. The character can't tell the difference.
+4. A bot's controller fills the same command from its AI (walking: movement keys toward the next path point); in M9 a network controller will fill it from packets. The character can't tell the difference.
 
 ## Sound
 
@@ -258,14 +259,14 @@ These follow the official Godot style guide.
 - **Documented code.** Every script starts with a `##` doc comment that explains its purpose. Exported variables and public functions get `##` comments too. Godot shows these in its built-in help (F1), so the documentation is visible inside the editor.
 - **No magic numbers.** Gameplay values are `@export` variables or stored in Resource data files, so they can be tuned in the editor.
 - **Signals for "something happened"** (e.g. `died`, `round_ended`), and direct function calls for "do this".
-- **Keep multiplayer possible** (it comes in M8, D-033). See the next section.
+- **Keep multiplayer possible** (it comes in M9, D-033). See the next section.
 
 ## Keeping multiplayer possible
 
-Multiplayer is added in M8, after the single-player game. These rules for M4–M7 keep that retrofit manageable:
+Multiplayer is added in M9, after the single-player game. These rules for M4–M8 keep that retrofit manageable:
 
 1. **Characters only move and shoot through input commands.** A `Character` never reads the keyboard; a controller (player, bot, later network) gives it a `CharacterInput` each tick.
-2. **Game rules live in "authority" code, separate from what's shown.** Damage, deaths, round state, money and the bomb are decided by gameplay nodes and announced with signals. HUD, sounds and effects only react to those signals. In M8 the host runs the rules, and clients just show the results.
+2. **Game rules live in "authority" code, separate from what's shown.** Damage, deaths, round state, money and the bomb are decided by gameplay nodes and announced with signals. HUD, sounds and effects only react to those signals. In M9 the host runs the rules, and clients just show the results.
 3. **Gameplay runs in `_physics_process`**, at a fixed tick (128 Hz). `_process` is only for visuals (camera, effects, UI).
 4. **Randomness that affects gameplay uses seeded generators** (like `Weapon.rng`), never the global `randf()`. Visual-only randomness (spark directions, hole rotation) can stay global.
 5. **Characters and other gameplay objects get stable IDs**, so the host and clients can refer to the same thing.

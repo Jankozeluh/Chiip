@@ -38,7 +38,7 @@ The user wants cheaper models used wherever they do the job just as well:
 |---|---|---|
 | Haiku | Mechanical work with a clear spec | Running the test suites and reporting pass/fail, searching code, running the texture/sound/navmesh/map tools, filling docs and devlog from a list of changes, renames, repetitive scene edits |
 | Sonnet | Well-defined features | Menus and settings UI, console commands, HUD layouts, tool scripts, new weapons from a stats table |
-| Opus | Design, tricky debugging, tuning by feel | Architecture, movement and physics feel, bot AI, netcode (M8), decisions with trade-offs |
+| Opus | Design, tricky debugging, tuning by feel | Architecture, movement and physics feel, bot AI, netcode (M9), decisions with trade-offs |
 
 - Delegate mechanical subtasks to a subagent with `model: "haiku"` (or Sonnet), giving it a complete brief, and keep design work in the main session.
 - Start a fresh session for each milestone: long conversations re-read their whole history every step. This file and the docs exist so a new session can pick up the project without the old conversation.
@@ -70,7 +70,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Input bindings created from code need `device = -1` (all devices), like bindings made in the editor.
 - In a `--script` that extends `SceneTree`, nodes added in `_init()` aren't ready yet, so `@onready` variables are null. Await a few `physics_frame`s first.
 - A built TrenchBroom map scene stores references to its textures. Rebuild the map (tools/build_maps.gd) *before* deleting or renaming a texture it uses, or the scene can't be loaded anymore.
-- Multiplayer comes in M8 (D-033). Follow "Keeping multiplayer possible" in docs/ARCHITECTURE.md in all gameplay code.
+- Multiplayer comes in M9 (D-033). Follow "Keeping multiplayer possible" in docs/ARCHITECTURE.md in all gameplay code.
 - Keep Chiip visually distinct from Counter-Strike: no desert/dust palettes, no CS-like map layouts or names (D-031).
 - Headless runs use a dummy audio driver where sounds never finish; anything still "playing" at exit is reported as leaked. Tests use silent weapon data.
 - Autoloads don't exist in `--script` runs (tools, checks), so code that tools load must not use autoload names. Use a class with a static shared instance instead (see `systems/noises.gd`).
