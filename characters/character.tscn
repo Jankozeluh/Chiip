@@ -31,7 +31,7 @@ position = Vector3(0, 1.6256, 0)
 [node name="Body" parent="." instance=ExtResource("body_scene")]
 
 [node name="FootstepAudio" type="AudioStreamPlayer" parent="."]
-volume_db = -7.0
+volume_db = -12.0
 
 [node name="FootstepAudio3D" type="AudioStreamPlayer3D" parent="."]
 volume_db = 2.0

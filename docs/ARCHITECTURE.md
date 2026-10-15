@@ -196,7 +196,7 @@ Character (CharacterBody3D, character.gd)        ← simulates commands by CS ru
 
 ## Sound
 
-- **Your own** footsteps (−7 dB) and gunshots play through `AudioStreamPlayer` (no position, both ears). **Everyone else's** play through `AudioStreamPlayer3D`, from where they are: footsteps +2 dB, unit size 10 m, fading out at 30 m; gunshots unit size 20 m, out to 120 m (D-038). `Character.is_local_player()` decides which, through `CharacterController.is_local()`.
+- **Your own** footsteps (−12 dB) and gunshots play through `AudioStreamPlayer` (no position, both ears). **Everyone else's** play through `AudioStreamPlayer3D`, from where they are: footsteps +2 dB, unit size 10 m, fading out at 30 m; gunshots unit size 20 m, out to 120 m (D-038). `Character.is_local_player()` decides which, through `CharacterController.is_local()`.
 - The 3D listener is the player's camera inside the world `SubViewport` (`audio_listener_enable_3d` is on).
 - Footsteps play only for loud steps (running). Walking and crouch-walking are silent, matching what bots can hear (D-035).
 - Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device.

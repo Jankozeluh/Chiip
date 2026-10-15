@@ -165,6 +165,8 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Playtest 1 (2026-10-15):** too deadly ("no chance", aimed instantly), gliding, unnatural turning, sounds not clear. Fixed in D-037 to D-039: gradual noticing and slower aim, eased turning and search sweeps, a procedural walk cycle, and a sound clarity pass.
 
+**Playtest 2 (2026-10-15):** the bots feel OK now; your own footsteps were too loud, so they went from −7 to −12 dB.
+
 **Done when:** you can fight 1–5 bots on the test map and they feel fair: they react with a delay, miss sometimes, stop to shoot, can be outplayed, never see through walls, and don't hear you walking.
 
 **You learn:** composition (one `Character`, different controllers), `NavigationRegion3D` / `NavigationAgent3D`, state machines, raycasts for vision, `AudioStreamPlayer3D`, groups, timers, autoloads (Godot's singletons, for the console).

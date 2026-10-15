@@ -176,7 +176,7 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 
 In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots must be directional and easy to read. They are retro-styled but clear.
 
-- **Your own footsteps** are clearly audible (−7 dB), so you always know when you're making noise.
+- **Your own footsteps** are clearly audible (−12 dB), so you always know when you're making noise, but quieter than enemy steps.
 - **Enemy footsteps** are loud and directional and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
 - **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
 - Walking (Shift) and crouch-walking are silent for everyone.

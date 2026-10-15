@@ -38,6 +38,7 @@
 - You asked when it gets properly animated (not in the roadmap yet; asked where to put it) and asked to use cheaper models where possible (routing guide added to CLAUDE.md).
 
 - Roadmap: added **M6 — Characters & animation** after M5 (your choice). Economy, bomb mode and multiplayer are now M7–M9 (D-040).
+- Playtest 2: the bots feel OK now. Your own footsteps were too loud, so they went from −7 to −12 dB (enemy steps unchanged).
 
 **Next:** You playtest M4: fight the 2 bots on the test map (console: `bot_add hard`, `bot_difficulty easy`, `god`, …) and tell me how fair and fun they feel. Then we tune, close M4 and plan M5 (rounds, menus, settings).
 

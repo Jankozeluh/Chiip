@@ -314,7 +314,7 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Decision:**
 - New, brighter footstep sound (36% of its energy in the high range, was 1%).
-- Your own footsteps at −7 dB (was −16).
+- Your own footsteps at −12 dB (was −16; −7 dB was too loud in playtest 2).
 - Enemy footsteps at +2 dB, loud out to 10 m, fading out at 30 m.
 - Enemy gunshots carry to 120 m.
 
