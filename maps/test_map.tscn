@@ -2,6 +2,7 @@
 
 [ext_resource type="Environment" path="res://assets/environments/cool_daylight.tres" id="environment"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
+[ext_resource type="NavigationMesh" path="res://maps/test_map_navmesh.tres" id="navmesh"]
 [ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="dummy_scene"]
 [ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="pixel_font"]
 [ext_resource type="Material" path="res://assets/materials/concrete_floor.tres" id="concrete_floor"]
@@ -32,6 +33,9 @@ light_color = Color(0.96, 0.97, 1, 1)
 light_energy = 1.2
 shadow_enabled = true
 
+[node name="Navigation" type="NavigationRegion3D" parent="."]
+navigation_mesh = ExtResource("navmesh")
+
 [node name="Lamps" type="Node3D" parent="."]
 
 [node name="TunnelLamp" type="OmniLight3D" parent="Lamps"]
@@ -52,7 +56,7 @@ light_color = Color(1, 0.8, 0.5, 1)
 light_energy = 1.0
 omni_range = 8.0
 
-[node name="Geometry" type="Node3D" parent="."]
+[node name="Geometry" type="Node3D" parent="." groups=["navigation_source"]]
 
 [node name="Floor" type="CSGBox3D" parent="Geometry"]
 position = Vector3(0, -0.5, -10)
@@ -199,7 +203,7 @@ material = ExtResource("stone_grey")
 position = Vector3(0, 0, 14)
 rotation = Vector3(0, 3.14159, 0)
 
-[node name="Range" type="Node3D" parent="."]
+[node name="Range" type="Node3D" parent="." groups=["navigation_source"]]
 
 [node name="FiringLine" type="CSGBox3D" parent="Range"]
 position = Vector3(0, 0.005, 16)

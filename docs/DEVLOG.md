@@ -15,6 +15,7 @@
 **Done**
 - Split `Player` into a shared, command-driven `Character` (`characters/`) plus a `PlayerController`; `player.tscn` is now an inherited variant of `characters/character.tscn` (D-034). All 33 checks pass with identical numbers, and mouse sensitivity is unchanged.
 - Characters got 100 HP and a shared soldier body (`characters/soldier_body.tscn`) with CS hit zones; the upper body sinks when crouching, the clothes take a team color, and your own body is hidden from you. HUD shows health. Check: chest 35.6, headshot 142.4 and death credited to the shooter; your own shots never hit you. Found and fixed: the base character was on the world layer, so bullets stopped at its capsule; characters now default to the bots layer.
+- Navigation mesh for the test map (153 polygons, bake tool `tools/bake_navmesh.gd`). Checked paths: spawn → platform top (via ramp/stairs), long routes around walls and dummies; the 1.5 m tunnel is correctly excluded.
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 
