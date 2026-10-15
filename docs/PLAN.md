@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M2 — Shooting (in progress)
+> **Current milestone:** M2 — Shooting (built, waiting for your playtest)
 
 ## How this plan works
 

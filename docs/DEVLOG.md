@@ -22,6 +22,10 @@
 - Weapon tests (`tests/weapon_test.tscn`): 20 checks, all passing in about a second. Fixed leak warnings at test exit: the weapon now always plays the sound named in its data, and the test uses a silent copy.
 - Visual check (Movie Maker frames of spraying and tapping on the range): viewmodel, muzzle flash, crosshair, ammo counter, dummies and overlay all render correctly. Moved the firing-line label out of your face at spawn.
 
+**Decisions:** D-019 to D-023 in [DECISIONS.md](DECISIONS.md).
+
+**Next:** You playtest M2 on the range: first-shot accuracy, counter-strafe then shoot, the spray on the spray wall, headshots, and the moving target. Also the two checks carried over from M1 (Ctrl + click, sensitivity). Then we tune and close M2.
+
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 
 **Done**
