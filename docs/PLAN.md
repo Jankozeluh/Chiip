@@ -47,10 +47,10 @@
 - [x] Player scene: `CharacterBody3D` with a collision capsule and a camera
 - [x] Mouse look with a captured cursor, using CS's sensitivity formula so your CS sensitivity carries over
 - [x] CS-style ground movement: acceleration, friction, top speed
-- [ ] Walking (Shift) and crouching (Ctrl) with a smooth camera height change
-- [ ] Jumping and air movement (air acceleration, air strafing)
+- [x] Walking (Shift) and crouching (Ctrl) with a smooth camera height change
+- [x] Jumping and air movement (air acceleration, air strafing)
 - [ ] Debug overlay showing speed and position, like CS's `cl_showpos`
-- [ ] All movement values editable in the Godot editor for tuning
+- [x] All movement values editable in the Godot editor for tuning
 - [ ] Check whether Ctrl + click works as crouch + shoot on macOS
 
 **Done when:** you can run, walk, crouch and jump around the test map, counter-strafing stops you quickly, and it feels right to you as a CS player.

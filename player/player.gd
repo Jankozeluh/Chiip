@@ -4,7 +4,8 @@ extends CharacterBody3D
 ##
 ## Movement follows the Quake/Source engine model that CS is built on:
 ## friction slows you down on the ground, acceleration pushes you toward the
-## direction you hold, and top speed depends on what you're doing.
+## direction you hold, and in the air you only get a little control, which is
+## what makes air strafing possible.
 ##
 ## Distances are in metres and speeds in metres per second. CS values are
 ## converted with [constant UNITS_TO_METRES]. See docs/GAME_DESIGN.md, section 4.1.
@@ -25,6 +26,10 @@ const MAX_PITCH_DEGREES := 89.0
 @export_group("Speed")
 ## Top running speed. CS: 250 units/s with the knife out.
 @export var max_speed: float = 250.0 * UNITS_TO_METRES
+## Walking (Shift) speed as a fraction of max_speed. CS: 0.52.
+@export var walk_speed_factor: float = 0.52
+## Crouching speed as a fraction of max_speed. CS: 0.34.
+@export var crouch_speed_factor: float = 0.34
 
 @export_group("Ground")
 ## How quickly you speed up on the ground. CS:GO: sv_accelerate 5.5.
@@ -35,22 +40,56 @@ const MAX_PITCH_DEGREES := 89.0
 ## to a full stop quickly. CS: sv_stopspeed 80 units/s.
 @export var stop_speed: float = 80.0 * UNITS_TO_METRES
 
-@export_group("Camera")
+@export_group("Air")
+## How much control you have in the air. CS:GO: sv_airaccelerate 12.
+@export var air_acceleration: float = 12.0
+## The most speed you can add in any one direction while in the air. It's low,
+## which is why you can't run in the air but can air strafe. Source: 30 units/s.
+@export var air_speed_cap: float = 30.0 * UNITS_TO_METRES
+
+@export_group("Jump")
+## How high your feet rise in a standing jump. CS: about 57 units.
+@export var jump_height: float = 57.0 * UNITS_TO_METRES
+## Jumping caps your horizontal speed at this multiple of max_speed, so bunny
+## hopping can't build up speed. Source engine: 1.2.
+@export var bunny_hop_cap: float = 1.2
+
+@export_group("Crouch")
 ## Standing eye height above the feet. CS: 64 units.
 @export var stand_eye_height: float = 64.0 * UNITS_TO_METRES
+## Crouched eye height above the feet. CS: 46 units.
+@export var crouch_eye_height: float = 46.0 * UNITS_TO_METRES
+## Seconds for the view to move between standing and crouched height.
+@export var crouch_transition_time: float = 0.15
+
+## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
+var is_crouching: bool = false
 
 ## Horizontal look angle (left/right) in radians.
 var _yaw: float = 0.0
 ## Vertical look angle (up/down) in radians.
 var _pitch: float = 0.0
+## Set when jump is pressed and used up by the next physics tick.
+var _jump_queued: bool = false
+## Current eye height above the feet. Moves smoothly toward the standing or crouched height.
+var _eye_height: float = 0.0
+## How much taller the standing capsule is than the crouching one (CS: 18 units).
+var _hull_height_difference: float = 0.0
 
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera3D
+@onready var _standing_collision: CollisionShape3D = $StandingCollision
+@onready var _crouching_collision: CollisionShape3D = $CrouchingCollision
 
 
 func _ready() -> void:
 	_yaw = rotation.y
-	_head.position.y = stand_eye_height
+	_eye_height = stand_eye_height
+	_head.position.y = _eye_height
+	var standing_shape := _standing_collision.shape as CapsuleShape3D
+	var crouching_shape := _crouching_collision.shape as CapsuleShape3D
+	_hull_height_difference = standing_shape.height - crouching_shape.height
+	_set_crouch_hull(false)
 	# The camera is placed by code every rendered frame (see _process) instead
 	# of following its parent, so mouse look has no physics-tick delay.
 	_camera.top_level = true
@@ -61,6 +100,10 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_look((event as InputEventMouseMotion).screen_relative)
+	elif event.is_action_pressed("jump"):
+		# Remember the press; the next physics tick decides whether you jump.
+		# This also catches mouse-wheel jumps, which press and release instantly.
+		_jump_queued = true
 	elif event.is_action_pressed("toggle_mouse"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -74,14 +117,32 @@ func _physics_process(delta: float) -> void:
 	# Face where the mouse points, so "forward" is where you look.
 	rotation.y = _yaw
 
+	var on_ground := is_on_floor()
+	var wants_jump := _jump_queued
+	_jump_queued = false
+	# As in CS, you jump only on the tick you press jump while on the ground.
+	# Holding jump doesn't jump again when you land.
+	if on_ground and wants_jump:
+		_jump()
+		on_ground = false
+
+	_update_crouch(on_ground, delta)
+
 	var wish_direction := _get_wish_direction()
-	if is_on_floor():
+	var wish_speed := _get_wish_speed()
+	if on_ground:
 		velocity.y = 0.0
 		_apply_friction(delta)
-		_accelerate(wish_direction, max_speed, ground_acceleration, delta)
+		_accelerate(wish_direction, wish_speed, ground_acceleration, delta)
+		move_and_slide()
 	else:
-		velocity += get_gravity() * delta
-	move_and_slide()
+		_air_accelerate(wish_direction, wish_speed, delta)
+		# Half the gravity before moving and half after (as the Source engine
+		# does) makes the jump height exact at any tick rate.
+		var half_gravity := get_gravity() * delta * 0.5
+		velocity += half_gravity
+		move_and_slide()
+		velocity += half_gravity
 
 
 func _process(_delta: float) -> void:
@@ -104,6 +165,15 @@ func _look(mouse_motion: Vector2) -> void:
 func _get_wish_direction() -> Vector3:
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	return (transform.basis * Vector3(input.x, 0.0, input.y)).normalized()
+
+
+## Returns the top speed for the current stance: crouching, walking or running.
+func _get_wish_speed() -> float:
+	if is_crouching:
+		return max_speed * crouch_speed_factor
+	if Input.is_action_pressed("walk"):
+		return max_speed * walk_speed_factor
+	return max_speed
 
 
 ## Slows you down on the ground (Quake/Source friction).
@@ -130,3 +200,72 @@ func _accelerate(wish_direction: Vector3, wish_speed: float, acceleration: float
 		return
 	var accel_speed := minf(acceleration * wish_speed * delta, add_speed)
 	velocity += wish_direction * accel_speed
+
+
+## Air control (Source's AirAccelerate). Like _accelerate, but you can only
+## build up air_speed_cap in the direction you hold. Turning your view while
+## holding a strafe key keeps that small push pointing sideways, so you can
+## curve and even gain speed: air strafing.
+func _air_accelerate(wish_direction: Vector3, wish_speed: float, delta: float) -> void:
+	var capped_wish_speed := minf(wish_speed, air_speed_cap)
+	var current_speed := velocity.dot(wish_direction)
+	var add_speed := capped_wish_speed - current_speed
+	if add_speed <= 0.0:
+		return
+	var accel_speed := minf(air_acceleration * wish_speed * delta, add_speed)
+	velocity += wish_direction * accel_speed
+
+
+## Launches you upward and caps horizontal speed (CS's bunny hop limit).
+func _jump() -> void:
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	var speed_cap := max_speed * bunny_hop_cap
+	if horizontal.length() > speed_cap:
+		horizontal = horizontal.normalized() * speed_cap
+	# The upward speed needed to rise exactly jump_height: v = √(2 · g · h).
+	velocity = horizontal + Vector3.UP * sqrt(2.0 * get_gravity().length() * jump_height)
+
+
+## Crouches or stands up to match the crouch key, and moves the view smoothly.
+func _update_crouch(on_ground: bool, delta: float) -> void:
+	var wants_crouch := Input.is_action_pressed("crouch")
+	if wants_crouch and not is_crouching:
+		_crouch(on_ground)
+	elif not wants_crouch and is_crouching:
+		_try_stand_up(on_ground)
+
+	var target_eye_height := crouch_eye_height if is_crouching else stand_eye_height
+	var eye_speed := (stand_eye_height - crouch_eye_height) / crouch_transition_time
+	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
+	_head.position.y = _eye_height
+
+
+func _crouch(on_ground: bool) -> void:
+	is_crouching = true
+	_set_crouch_hull(true)
+	if not on_ground:
+		# In the air, crouching pulls your legs up instead of lowering your
+		# head (CS's crouch-jump): lift the body so the head stays in place.
+		global_position.y += _hull_height_difference
+		_eye_height -= _hull_height_difference
+
+
+func _try_stand_up(on_ground: bool) -> void:
+	if on_ground:
+		# Standing up raises your head, so there must be room above.
+		if test_move(global_transform, Vector3.UP * _hull_height_difference):
+			return
+	else:
+		# In the air your legs come back down, so there must be room below.
+		if test_move(global_transform, Vector3.DOWN * _hull_height_difference):
+			return
+		global_position.y -= _hull_height_difference
+		_eye_height += _hull_height_difference
+	is_crouching = false
+	_set_crouch_hull(false)
+
+
+## Switches between the standing and the crouching collision capsule.
+func _set_crouch_hull(crouched: bool) -> void:
+	_standing_collision.disabled = crouched
+	_crouching_collision.disabled = not crouched

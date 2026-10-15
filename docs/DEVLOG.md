@@ -11,6 +11,8 @@
 - Input actions for movement, jump, crouch, walk, shoot/aim, freeing the mouse and the debug overlay, bound by physical key position (D-012).
 - Test map (`maps/test_map.tscn`): CS crate heights (32/48/64/80 units), a platform with a 25° ramp and stairs (invisible clip ramp, D-013), a 1.5 m crouch tunnel and peek walls, all in a world-space grid "developer texture" (D-014). Verified every surface height with headless raycasts.
 - Player (`player/player.tscn` + `player.gd`): capsule with CS dimensions, CS-style mouse look and Quake/Source ground movement (friction, acceleration, stop speed). Headless check: top speed 6.350 m/s (exactly 250 u/s), full stop 0.41 s after releasing the key (D-015, D-016).
+- Walking, crouching (two capsules, in-air crouch lifts the legs), jumping (press-only, bunny-hop cap, exact height) and air strafing (D-017).
+- Automated movement tests (`tests/movement_test.tscn`), 13 checks, all passing in under a second (D-018). Counter-strafe reaches accurate speed in 78 ms vs. 211 ms when just releasing the key.
 
 ## 2026-10-15 — Session 1: Choosing the game
 

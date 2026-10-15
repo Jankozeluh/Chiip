@@ -28,7 +28,7 @@ The project is organized **by feature**: a scene and its script sit in the same 
 
 ```
 Chiip/
-├── project.godot      Godot project file (created in M1)
+├── project.godot      Godot project file
 ├── README.md          Start here
 ├── CLAUDE.md          Working rules for Claude, including documentation rules
 ├── docs/              All documentation
@@ -44,7 +44,8 @@ Chiip/
 ├── maps/              Test maps and playable maps
 ├── ui/                HUD, menus, developer console
 ├── systems/           Global systems (autoloads): game state, rounds, settings, console commands
-└── shaders/           Shaders for the retro look
+├── shaders/           Shaders (grid placeholder now, retro look in M3)
+└── tests/             Automated test scenes, run headless (D-018)
 ```
 
 ## Scenes and files
@@ -54,13 +55,14 @@ Chiip/
 | `maps/test_map.tscn` | M1 movement test map and the current main scene: jump boxes (32/48/64/80 u), platform with a 25° ramp and stairs, crouch tunnel, peek walls |
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
 | `player/player.gd` | `Player` class: mouse look and CS-style movement |
+| `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
 ## Systems
 
 | System | Purpose | Milestone | Status |
 |---|---|---|---|
-| Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, ground movement |
+| Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
 | Debug overlay | Speed and position readout | M1 | Planned |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | Planned |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
@@ -104,6 +106,16 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 | 3 | bots | Bot bodies |
 | 4 | hitboxes | Head / chest / stomach / leg zones that bullets hit |
 | 5 | triggers | Buy zones, bombsites |
+
+## Testing
+
+Run all movement checks from the project folder:
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 res://tests/movement_test.tscn
+```
+
+`--headless` means no window, and `--fixed-fps 128` runs exactly one physics tick per frame as fast as possible. Each check prints PASS or FAIL, and the exit code is the number of failures. When a test file uses a `class_name` for the first time, run `Godot --headless --path . --import` first so Godot knows the class.
 
 ## Naming conventions
 

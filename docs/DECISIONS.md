@@ -126,6 +126,28 @@
 
 **To verify:** macOS may apply mouse acceleration or count Retina pixels differently from CS on Windows. Compare a 360° turn distance with CS and adjust if needed.
 
+## D-017 — How crouching and jumping work (2026-10-15)
+
+**Decision:**
+- The player has two collision capsules, standing (72 u) and crouching (54 u), and switches between them instantly. Only the view moves smoothly, over 0.15 s.
+- On the ground, crouching lowers your head. In the air, it pulls your legs up instead, so your head stays put, which is CS's crouch-jump. Pressing jump and crouch together works, like a crouch-jump bind.
+- You can only stand up if there's room: above your head on the ground, or below your feet in the air.
+- A jump happens only on the tick you *press* jump while on the ground. Holding jump never auto-hops, as in CS. Presses are remembered until the next tick, so mouse-wheel jumps aren't lost.
+- Jumping caps horizontal speed at 1.2× running speed (Source's bunny-hop limit).
+- In the air, gravity is applied half before and half after moving (as Source does), so the jump height is exactly 57 units at any tick rate.
+
+**Why:** These are the CS rules a CS player expects. Each one is covered by an automated test (`tests/movement_test.gd`).
+
+**Alternatives:** A gradual hull change while crouching (closer to CS:GO's duck timing), which can be added if crouch-peeking feels off.
+
+## D-018 — Automated tests as headless scenes (2026-10-15)
+
+**Decision:** Gameplay rules are checked by test scenes in `tests/` that simulate input and measure the results. They run without a window and finish in under a second. A test quits with the number of failures as its exit code.
+
+**Why:** Feel still needs a human, but numbers like top speed, jump height and counter-strafe time can be checked automatically after every change, so tuning one thing doesn't silently break another.
+
+**Alternatives:** A test framework addon such as GUT or gdUnit4. They're more features than Chiip needs right now, and can be added later.
+
 ## Open questions
 
 | Question | Decide in |

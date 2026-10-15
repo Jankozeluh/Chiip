@@ -55,6 +55,18 @@ Starting physics values, CS:GO-like *(tune)*:
 
 **Skills the movement must support:** counter-strafing (tapping the opposite key to stop instantly), jiggle peeking and crouch-jumping onto boxes.
 
+**Crouch-jump:** crouching in the air pulls your legs up, so press crouch while airborne, or together with jump. This raises your feet from 57 to 75 units, enough to land on a 64-unit crate.
+
+**Measured in M1** (by `tests/movement_test.gd`):
+
+| Check | Result |
+|---|---|
+| Run / walk / crouch top speed | 250 / 130 / 85 u/s |
+| Time to drop below 34% speed (accurate shooting) | 78 ms counter-strafing, 211 ms releasing the key |
+| Standing jump / crouch-jump, feet height | 57 u / 75 u |
+| Speed you can add sideways in the air | 0.76 m/s (30 u/s) |
+| Bunny-hop cap | 1.2 × run speed |
+
 ### 4.2 Shooting
 
 - **Hitscan:** bullets hit instantly along a straight line, with no travel time, like in CS.
