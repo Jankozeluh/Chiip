@@ -157,7 +157,7 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 - Two teams: attackers and defenders. Names are still to be decided.
 - It starts as the player against bots (1 vs N). Later it can be 5v5 with bot teammates.
 - Round phases *(tune)*: freeze time and buying (~15 s) → live round (~1:55) → round end (~5 s).
-- A round is won by eliminating the other team, or through the bomb objective (Milestone 7).
+- A round is won by eliminating the other team, or through the bomb objective (M8).
 - Match: first to 13 rounds wins, like CS2, with a side swap at half time. Shorter formats are available for quick games.
 
 ### 4.6 Economy

@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 9: M4 closed, M5 planned
+
+**Done**
+- Playtest 2: the bots feel right now. Your own footsteps were too loud and went from −7 to −12 dB. **M4 is closed.**
+- Wrote the detailed M5 plan (rounds & game flow, 14 tasks): armor, teams with bot teammates, a round manager that owns the game state, match flow, bots that push and hold, spectating, round HUD, scoreboard, a UI theme, saved settings with a settings menu, main and pause menus, and tests. Each task names the model that builds it.
+- Renamed M5 from "Health, rounds & game flow" to "Rounds & game flow", because health came early in M4.
+
+**Next:** Your go-ahead for M5 and answers to the six decisions in PLAN.md (or "defaults").
+
 ## 2026-10-15 — Session 7: M3 closed, M4 planned
 
 **Done**
@@ -36,11 +45,10 @@
 - A brighter footstep sound, your own steps much louder, and enemy steps and shots clearer and symmetric with bot hearing (D-038).
 - Bot tests updated: holding an angle, a new noticing check, and "Normal wins within 5 s". All 45 checks pass. Visual check: bots now stride.
 - You asked when it gets properly animated (not in the roadmap yet; asked where to put it) and asked to use cheaper models where possible (routing guide added to CLAUDE.md).
-
 - Roadmap: added **M6 — Characters & animation** after M5 (your choice). Economy, bomb mode and multiplayer are now M7–M9 (D-040).
 - Playtest 2: the bots feel OK now. Your own footsteps were too loud, so they went from −7 to −12 dB (enemy steps unchanged).
 
-**Next:** You playtest M4: fight the 2 bots on the test map (console: `bot_add hard`, `bot_difficulty easy`, `god`, …) and tell me how fair and fun they feel. Then we tune, close M4 and plan M5 (rounds, menus, settings).
+**Result:** after playtest 2 you confirmed the bots feel right. M4 closed in Session 9.
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 
