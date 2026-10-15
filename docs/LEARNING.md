@@ -184,3 +184,8 @@
 - *Project Settings → GUI → Theme → Custom Font* sets the default font for all UI, like a default TMP font asset in Unity.
 - `Label3D` with *Fixed Size* keeps the same size on screen at any distance, like a world-space name tag.
 - An addon is a folder in `addons/` with a `plugin.cfg`. Enabling it in *Project Settings → Plugins* adds its node types (e.g. `FuncGodotMap`) and editor tools, like a Unity package.
+
+**Triplanar materials** (`assets/materials/*.tres`)
+- *Triplanar* mapping projects a texture from the three axes instead of using the mesh's UVs, and picks the projection that best faces each surface. With *World Triplanar* the projection uses world position, so textures line up across neighbouring boxes and never stretch when a box is resized. Very handy for CSG blockouts.
+- *UV1 Scale* sets how many times the texture repeats per metre (0.6152 = once every 1.63 m).
+- *Texture Filter → Nearest Mipmap* gives sharp pixels up close and smaller pre-shrunk copies far away, so distant surfaces don't shimmer. Quake looked like this.

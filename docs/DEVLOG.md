@@ -22,6 +22,7 @@
 - Downloaded the 8 ambientCG textures (sizes matched ambientCG's listing to the byte) and turned them into 64 × 64, 16-color textures. Smooth surfaces came out almost flat, so the tool got a contrast option (2–3 for concrete, plaster, sand, metal). Started `docs/CREDITS.md`.
 - You installed TrenchBroom (it's at `~/Downloads/TrenchBroom.app`).
 - Installed the func_godot addon (pure GDScript, MIT) and the Silkscreen font (OFL). Silkscreen is now the default UI font and the font of all 3D labels (fixed on-screen size, crisp pixels), which should make dummy titles and damage numbers readable again at 360 lines.
+- Retro materials (`assets/materials/`): one per texture, world triplanar at Quake's texel density, nearest-with-mipmaps filtering, matte.
 
 ## 2026-10-15 — Session 4: M2 shooting
 

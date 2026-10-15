@@ -36,6 +36,7 @@ Chiip/
 ├── addons/            Third-party Godot plugins only (func_godot)
 ├── assets/            Shared raw assets
 │   ├── textures/      Retro 64 × 64 textures (sources in docs/CREDITS.md)
+│   ├── materials/     One material per texture, world triplanar (for CSG geometry)
 │   ├── models/
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   └── fonts/         Silkscreen pixel font (+ its OFL license text)
@@ -73,6 +74,7 @@ Chiip/
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
 | `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
+| `assets/materials/*.tres` | One `StandardMaterial3D` per texture: world triplanar mapping at Quake's density (64 px = 64 units = 1.63 m, `uv1_scale` 0.6152), nearest-with-mipmaps filtering, matte (roughness 1, specular 0.2) |
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
 | `assets/fonts/Silkscreen-*.ttf` | Pixel font: the project's default UI font (*Project Settings → GUI → Theme → Custom Font*) and the font of all 3D labels. Imported without antialiasing, hinting or subpixel positioning so pixels stay sharp |
 | `addons/func_godot/` | FuncGodot addon (enabled in *Project Settings → Plugins*): builds Godot scenes from TrenchBroom `.map` files |
