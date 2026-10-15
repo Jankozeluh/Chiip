@@ -166,8 +166,13 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 - At each round start everyone is back at their side's spawn with full health and a full rifle.
 - A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too.
 - Whoever dies stays dead until the next round. During the round-end pause the survivors can still move and shoot, but the result stands.
+- **After you die in a match you spectate** (D-046), like CS, in first person only:
+  - For about **2 s** you still see your own view from where you fell, with "Killed by …", so you see who got you.
+  - Then the view moves to a living **teammate**: you see exactly what they see (their eyes, their aim, their recoil kick, their muzzle flash), and hear from where they are. Their health, ammo and weapon replace yours on the HUD, and a line at the bottom says "Spectating Bot2 · click for next". No free look.
+  - **Left click** switches to the next living teammate. When the one you watch dies, the view moves on to the next one after **1.5 s**. If no teammate is alive, you stay on the last view, where they fell, and watch the end of the round from there.
+  - When the next round starts you are back in your own eyes. You can't watch the other team.
 - **Stats** for the scoreboard: kills (a teamkill counts −1), deaths, assists (more than 40 damage to an enemy someone else kills, as in CS) and damage (health actually removed, so a 142-damage headshot on a 30 HP enemy counts 30).
-- **Practice** (`-- --practice` for now, a main-menu entry later): today's bot arena without rounds; bots and you respawn after 3 s.
+- **Practice** (`-- --practice` for now, a main-menu entry later): today's bot arena without rounds; bots and you respawn after 3 s, so there is no spectating.
 - Match: first to **5** (default), **10** or **15** rounds. Sides swap at half time, after 4, 9 or 14 rounds, so a draw is impossible. The teams keep their numbers and colors; only who attacks and who defends flips, so each team starts the next round at the other end of the map. The longest match is 9, 19 or 29 rounds.
 - **How a match ends:** when a team wins its 5th (10th, 15th) round, the usual round-end pause still plays so you see how that round was won. Then everyone is frozen and the **end screen** opens over the scene with the mouse free: "Victory" or "Defeat" for your team, the final score ("yours - theirs", your number blue, theirs red), and a scoreboard with your team first (blue) and the enemy team below (red): one row per player with kills, deaths, assists and damage, best first (kills, then damage), your own row highlighted. Buttons: **Play again** (a fresh match on the same map) and **Quit**; the main menu (M5 task 11) replaces Quit.
 - **Spawns:** each side has five spawn points at its own end of the map. On the test map the defenders start at the north end behind the peek walls and the attackers at the south end of the range, 112 m apart.
@@ -193,6 +198,7 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 - **Enemy footsteps** are loud and directional and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
 - **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
 - Walking (Shift) and crouch-walking are silent for everyone.
+- While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.
 
 ## 5. Look and feel
 
@@ -212,6 +218,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Move | W A S D |
 | Look | Mouse |
 | Shoot / scope | Left mouse / right mouse |
+| Next teammate (while dead in a match) | Left mouse |
 | Jump | Space or mouse wheel down |
 | Crouch | Ctrl |
 | Walk (silent) | Shift |

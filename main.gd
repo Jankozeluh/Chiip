@@ -103,8 +103,21 @@ func _spawn_map(scene: PackedScene) -> void:
 	_match_end_screen.set_round_manager(rules as RoundManager)
 	_hud.set_player(player)
 	_hud.respawn_hint = rules is ArenaRules
+	_set_up_spectating(player, rules is RoundManager)
 	_debug_overlay.player = player
 	Teams.set_viewer_team(player.team)
+
+
+## In a match, the dead player watches a living teammate (and the HUD shows
+## that teammate's health and ammo). Practice mode brings the player back after
+## 3 s instead, so there is nothing to watch. Purely presentation: the rules
+## don't know about it.
+func _set_up_spectating(player: Character, in_match: bool) -> void:
+	var controller := player.get_node_or_null("PlayerController") as PlayerController
+	if controller == null:
+		return
+	controller.spectating_enabled = in_match
+	controller.view_target_changed.connect(_hud.set_view_target)
 
 
 ## Adds the node that runs the game on the current map (see [enum Mode]) and returns it, or null.

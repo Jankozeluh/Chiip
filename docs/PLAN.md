@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow (in progress: tasks 1–4 of 13 done)
+> **Current milestone:** M5 — Rounds & game flow (in progress: tasks 1–5 of 13 done)
 
 ## Your open checks
 
@@ -185,7 +185,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 2. [x] **Round manager.** Freeze time of 5 s (you can look around but not move or shoot) → live round with a timer → round end. A round is won by eliminating the other team; when time runs out, the defending side wins, as in CS. At each round start, everyone gets full health, ammo and a spawn point. Whoever dies stays dead until the next round. Replaces today's respawning `ArenaRules` in matches. *(Opus: game state design)* Built as `systems/round_manager.gd` with `MatchSettings` (D-043); F5 now starts a 3v3 match, `-- --practice` the old arena.
 3. [x] **Match flow.** Score and first to 5, 10 or 15 rounds. Sides swap at half time (after 4, 9 or 14 rounds, so a draw is impossible). A match-end screen shows the winner and the scoreboard. *(Sonnet)* Built as score, half time and match end in `RoundManager`, plus `ui/match_end_screen.tscn` with Play again and Quit until the main menu exists (D-044).
 4. [x] **Bots play rounds.** Today's bots wander between patrol points, so a round could stall. The attacking side pushes toward the defending end in loose groups. Defenders hold angles near their end, then rotate toward fights they hear. Bots hold fire while a teammate is in the line of fire. *(Opus: AI)* Built as `bots/bot_tactics.gd` with attack routes and hold spots on the test map (D-045).
-5. [ ] **Spectating.** After you die, watch a living teammate through their eyes, like CS. Click to switch to the next teammate. If no teammate is alive, you see the end of the round from where you died. *(Sonnet)*
+5. [x] **Spectating.** After you die, watch a living teammate through their eyes, like CS. Click to switch to the next teammate. If no teammate is alive, you see the end of the round from where you died. *(Sonnet)* Built in `PlayerController` (D-046): about 2 s after you die in a match the camera moves to a living teammate's head and aim, a click switches, the HUD shows their health and ammo; practice mode has none.
 6. [ ] **Round HUD.** Top bar: round timer, score (yours vs. theirs), and players alive per team. Also a kill feed (killer → victim, with a headshot mark, in team colors), round-end banners ("Round won" / "Round lost"), and the freeze-time countdown. *(Sonnet)*
 7. [ ] **Scoreboard** (hold Tab): both teams with kills, deaths, assists and damage, and who's alive. *(Sonnet)*
 8. [ ] **UI theme.** One Godot `Theme` for every menu: pixel font, colors, buttons, sliders, tabs. It keeps menus consistent and changeable in one place. *(Sonnet, with screenshots for you to judge)*

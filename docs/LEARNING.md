@@ -309,3 +309,19 @@
 
 **`scene_file_path`** (`main.restart_match()`)
 - Any node that is the root of an instanced scene knows which file it came from: `node.scene_file_path` (e.g. `res://maps/test_map.tscn`). `restart_match()` loads the current map again from that path. Unity has no direct equivalent; you'd keep the scene name or prefab reference yourself.
+
+**Following a node's drawn position and rotation** (`PlayerController._process`, spectating)
+- With physics interpolation on, a node's `global_position` is where the last physics tick left it, while what you *see* is smoothed between ticks. `node.get_global_transform_interpolated()` returns the drawn transform, so a camera that follows something (your own head, or a teammate's while you spectate) reads that instead of the tick position. In Unity, with Rigidbody *Interpolate* the Transform you read already holds the smoothed value; Godot keeps the two apart.
+- `transform.basis.get_euler()` turns a rotation back into angles (x = pitch, y = yaw, z = roll, applied in the order Y, X, Z, like Unity's Euler order). The camera takes the teammate's head rotation this way and adds the recoil kick to the angles.
+
+**Hiding a parent hides its children** (`Weapon.visible`)
+- `visible = false` on a `Node3D` hides it and everything below it (meshes, the muzzle-flash light), like `SetActive(false)` on a GameObject, except physics, areas and sounds keep working. That is why one line hides your whole first-person rifle: the `Weapon` node is the parent of its model. A node under a hidden parent reports `is_visible_in_tree() == false` even when its own `visible` is true.
+
+**`is_instance_valid()`** (`PlayerController._physics_process`)
+- A variable that holds a node keeps pointing at it after `queue_free()`, and using it then is an error. `is_instance_valid(node)` says whether it still exists. Unity's `if (obj != null)` does this implicitly, because Unity overloads `==` for destroyed objects; in GDScript ask explicitly with `is_instance_valid()` before touching a node that may have been freed.
+
+**`get_nodes_in_group()` returns scene-tree order**
+- The nodes of a group come back in the order they stand in the scene tree, the same every time. Spectating relies on it for a stable "next teammate", with no list to keep.
+
+**Simulating input in a test** (`tests/round_test.gd`)
+- `Input.parse_input_event(event)` pushes an event (e.g. an `InputEventMouseButton`) through the same path real input takes, so `_unhandled_input()` sees it. Unity's Input System has `InputTestFixture` for this. In a headless run there is no display server, so `Input.mouse_mode` always reads *visible*: the test treats every click as the click that recaptures the mouse, and the real click is checked in a windowed run.

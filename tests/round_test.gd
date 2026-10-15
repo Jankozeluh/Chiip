@@ -11,13 +11,20 @@ extends Node
 ## next round, and the kill, assist and damage stats. Then the same match goes
 ## on to its end (first to 5 by default): the score, the half-time side swap
 ## and the match end. Finally two tiny matches (first to 1 and first to 2) check
-## the edges of those rules. Quits with the number of failed checks as the exit
-## code (0 means everything passed).
+## the edges of those rules. The last part is spectating (D-046): a player who
+## dies in a match sees through a living teammate's eyes, switches teammates, is
+## moved on when that teammate dies, keeps the last view when nobody is left,
+## and is back in their own view in the next round; with spectating off
+## (practice mode) nothing changes. Quits with the number of failed checks as the
+## exit code (0 means everything passed).
 
 const MAP_SCENE := preload("res://maps/test_map.tscn")
 const FREEZE_TIME := 0.5
 const ROUND_TIME := 2.0
 const ROUND_END_TIME := 0.5
+## The spectating checks need one long round and a long pause after it.
+const SPECTATE_ROUND_TIME := 30.0
+const SPECTATE_ROUND_END_TIME := 8.0
 
 var _map: Node3D
 var _rounds: RoundManager
@@ -46,9 +53,9 @@ func _ready() -> void:
 
 
 ## Starts a match first to [param rounds_to_win] on a fresh copy of the test
-## map (an earlier map is removed), with the short test timings, and waits until
-## everyone has joined.
-func _new_match(rounds_to_win: int) -> void:
+## map (an earlier map is removed), with the short test timings (or the given
+## round and round-end lengths), and waits until everyone has joined.
+func _new_match(rounds_to_win: int, round_time: float = ROUND_TIME, round_end_time: float = ROUND_END_TIME) -> void:
 	if _map != null:
 		remove_child(_map)
 		_map.queue_free()
@@ -63,8 +70,8 @@ func _new_match(rounds_to_win: int) -> void:
 	_silence(_player)
 	var settings := MatchSettings.new()
 	settings.freeze_time = FREEZE_TIME
-	settings.round_time = ROUND_TIME
-	settings.round_end_time = ROUND_END_TIME
+	settings.round_time = round_time
+	settings.round_end_time = round_end_time
 	settings.rounds_to_win = rounds_to_win
 	_rounds = RoundManager.new()
 	_rounds.settings = settings
@@ -91,6 +98,7 @@ func _run_all() -> void:
 	await _test_half_time()
 	await _test_match_end()
 	await _test_short_matches()
+	await _test_spectating()
 
 
 func _test_round_start() -> void:
@@ -275,6 +283,116 @@ func _test_short_matches() -> void:
 					tied_and_going, _swaps, _match_ends, _rounds.round_number, _rounds.score])
 
 
+## Spectating: you are on team 0 with the bots Bot1 and Bot2; the enemies hold
+## their spawn. Nobody can hurt you here, so the test kills you (and then your
+## teammates) with direct damage from an enemy.
+func _test_spectating() -> void:
+	# Spectating is off unless main.gd switches it on (practice mode): nothing happens.
+	await _new_match(MatchSettings.new().rounds_to_win, SPECTATE_ROUND_TIME, SPECTATE_ROUND_END_TIME)
+	_hold_bots()
+	var controller := _player.get_node("PlayerController") as PlayerController
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var enemies := _rounds.get_members(1)
+	_player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[0])
+	await _wait_seconds(controller.spectate_delay + 0.5)
+	_check("With spectating off (practice mode) a dead player never leaves their own view",
+			not controller.spectating_enabled and controller.get_view_target() == _player and not controller.is_spectating(),
+			"spectating enabled: %s, view target is you: %s" % [controller.spectating_enabled, controller.get_view_target() == _player])
+
+	# The same again with spectating on, as in a match.
+	await _new_match(MatchSettings.new().rounds_to_win, SPECTATE_ROUND_TIME, SPECTATE_ROUND_END_TIME)
+	_hold_bots()
+	controller = _player.get_node("PlayerController") as PlayerController
+	controller.spectating_enabled = true
+	var camera := _player.get_camera()
+	var views: Array[Character] = []
+	controller.view_target_changed.connect(func(target: Character) -> void: views.append(target))
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	enemies = _rounds.get_members(1)
+	var mates := _rounds.get_members(0).filter(func(member: Character) -> bool: return member != _player)
+	var mate_a: Character = mates[0]
+	var mate_b: Character = mates[1]
+	_player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[0])
+	await _wait_seconds(controller.spectate_delay - 0.3)
+	var killcam := controller.get_view_target() == _player and views.is_empty()
+	await _wait_seconds(0.6)
+	var watched := controller.get_view_target()
+	var teammate_alive := watched != _player and watched.team == _player.team and watched.is_alive()
+	await _wait_ticks(2)
+	_check("After dying you first see your own view, after about %.0f s a living teammate's eyes" % controller.spectate_delay,
+			killcam and teammate_alive and views == [watched] and controller.is_spectating(),
+			"own view at %.1f s: %s; then %s (teammate alive: %s), view changes %s" % [
+					controller.spectate_delay - 0.3, killcam, watched.name, teammate_alive, views.map(func(view: Character) -> String: return view.name)])
+	_check("The view is exactly their eyes: the camera sits at their head and looks along their aim",
+			_view_matches(camera, watched),
+			_view_detail(camera, watched))
+	_check("The teammate's body and your own rifle are hidden while you watch (their rifle stays: it is their viewmodel)",
+			not watched.body.visible and watched.weapon.visible and not _player.weapon.visible,
+			"their body visible: %s, their rifle visible: %s, your rifle visible: %s" % [watched.body.visible, watched.weapon.visible, _player.weapon.visible])
+
+	# Switching: spectate_next() moves to the other living teammate and restores the first one.
+	var first := watched
+	controller.spectate_next()
+	await _wait_ticks(2)
+	var second := controller.get_view_target()
+	_check("spectate_next() switches to the other living teammate, whose view replaces the first (shown again)",
+			second != first and second != _player and second.team == _player.team and second.is_alive()
+					and first.body.visible and not second.body.visible and _view_matches(camera, second),
+			"%s -> %s; %s's body visible again: %s; camera at %s's head: %s" % [
+					first.name, second.name, first.name, first.body.visible, second.name, _view_matches(camera, second)])
+
+	# A click switches (the real input path). With the mouse not captured, which is
+	# always the case in a headless run, a click only recaptures the mouse and must not count.
+	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	await _click()
+	var after_click := controller.get_view_target()
+	_check("A click switches teammates only if it isn't the click that recaptures the mouse (mouse %s)" % ("captured" if captured else "free, as in headless runs"),
+			(after_click != second) == captured,
+			"mouse captured: %s, view %s -> %s" % [captured, second.name, after_click.name])
+	var dying := after_click
+	var last_alive := mate_a if dying == mate_b else mate_b
+
+	# The teammate you watch dies: after about 1.5 s the view moves on to the last living one.
+	dying.take_damage(500.0, Hitbox.Zone.CHEST, enemies[1])
+	await _wait_seconds(controller.spectate_switch_delay - 0.4)
+	var stays := controller.get_view_target() == dying
+	await _wait_seconds(0.8)
+	await _wait_ticks(2)
+	_check("When the watched teammate dies the view moves on to the last living one after about %.1f s" % controller.spectate_switch_delay,
+			stays and controller.get_view_target() == last_alive and not _player.weapon.visible
+					and dying.body.visible and not last_alive.body.visible and _view_matches(camera, last_alive),
+			"still on %s at %.1f s: %s; later on %s (expected %s); %s's body visible again: %s; camera at the new view: %s" % [
+					dying.name, controller.spectate_switch_delay - 0.4, stays, controller.get_view_target().name, last_alive.name,
+					dying.name, dying.body.visible, _view_matches(camera, last_alive)])
+
+	# The last teammate dies too: nobody is left, so the view stays where it is.
+	var before := camera.global_position
+	last_alive.take_damage(500.0, Hitbox.Zone.CHEST, enemies[2])
+	await _wait_seconds(1.0)
+	var one_second := camera.global_position
+	await _wait_seconds(controller.spectate_switch_delay + 1.5)
+	var much_later := camera.global_position
+	var sideways := Vector2(much_later.x - before.x, much_later.z - before.z).length()
+	_check("With no teammate left the view stays on the last one, where they fell (the camera doesn't jump)",
+			controller.get_view_target() == last_alive and sideways < 0.05 and one_second.distance_to(much_later) < 0.001
+					and _rounds.phase == RoundManager.Phase.ROUND_END and _view_matches(camera, last_alive),
+			"view on %s, moved sideways %.3f m, moved %.4f m in the last %.1f s, phase %s" % [
+					controller.get_view_target().name, sideways, one_second.distance_to(much_later),
+					controller.spectate_switch_delay + 1.5, RoundManager.Phase.keys()[_rounds.phase]])
+
+	# The next round: you are alive again, in your own view, and nothing stays hidden.
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	var own_head := _player.head.global_position
+	var all_shown := _rounds.get_participants().all(func(member: Character) -> bool:
+		return member.weapon.visible and (member == _player or member.body.visible))
+	_check("In the next round you are back in your own view, and everything hidden is visible again",
+			_player.is_alive() and controller.get_view_target() == _player and not controller.is_spectating() and all_shown
+					and camera.global_position.distance_to(own_head) < 0.05 and views.back() == _player,
+			"alive: %s, view on you: %s, everything visible: %s, camera %.3f m from your head, last view change %s" % [
+					_player.is_alive(), controller.get_view_target() == _player, all_shown, camera.global_position.distance_to(own_head), views.back().name])
+
+
 # --- Helpers ---
 
 
@@ -307,6 +425,33 @@ func _win_round(team: int) -> void:
 	for victim in _rounds.get_members(Teams.other(team)):
 		victim.take_damage(500.0, Hitbox.Zone.CHEST, killer)
 	await _wait_for_phase(RoundManager.Phase.ROUND_END)
+
+
+## True if the camera sits at the head of [param character] and looks along their aim.
+func _view_matches(camera: Camera3D, character: Character) -> bool:
+	var aim := character.get_aim_angles()
+	var aim_direction := -Basis.from_euler(Vector3(aim.y, aim.x, 0.0)).z
+	var looking := -camera.global_transform.basis.z
+	return camera.global_position.distance_to(character.head.global_position) < 0.05 \
+			and looking.angle_to(aim_direction) < deg_to_rad(1.0)
+
+
+func _view_detail(camera: Camera3D, character: Character) -> String:
+	var aim := character.get_aim_angles()
+	var aim_direction := -Basis.from_euler(Vector3(aim.y, aim.x, 0.0)).z
+	return "camera %.3f m from %s's head, %.2f° off their aim" % [
+			camera.global_position.distance_to(character.head.global_position), character.name,
+			rad_to_deg((-camera.global_transform.basis.z).angle_to(aim_direction))]
+
+
+## Clicks the left mouse button (press, then release) through the real input path.
+func _click() -> void:
+	for pressed in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		await _wait_ticks(1)
 
 
 ## Waits until the round manager reaches [param phase] (at most 10 s).
