@@ -1,9 +1,11 @@
 class_name MatchSetup
 extends CanvasLayer
 ## Match setup (M5 task 11, D-064): the panel the main menu's Play opens. You
-## choose the size of your team (you included, 1 to 5) and of the enemy team (1
-## to 5), the bots' difficulty, the match length (first to 5, 10 or 15 rounds),
-## friendly fire and the map, then press Start, or Back to return to the menu.
+## choose the mode (rounds or team respawn, D-087), the size of your team (you
+## included, 1 to 5) and of the enemy team (1 to 5), the bots' difficulty, the
+## match length (first to 5, 10 or 15 rounds; for team respawn first to 30, 50
+## or 75 kills), friendly fire, one map or the rotation of the quick maps, and
+## the map, then press Start, or Back to return to the menu.
 ##
 ## It only collects the choices and reports [signal started] and
 ## [signal closed]; the main menu starts the game ([GameLaunch]). Every choice is
@@ -33,6 +35,8 @@ const WORD_BUTTON_WIDTH := 112.0
 const LENGTH_BUTTON_WIDTH := 152.0
 ## The width of the map's option button.
 const MAP_WIDTH := 360.0
+## The width of the mode and maps buttons ("Team respawn", "Rotation").
+const MODE_BUTTON_WIDTH := 200.0
 
 ## Where the choices are stored. The shared [Settings] when null (set before the panel is in the tree).
 var settings: Settings
@@ -41,6 +45,8 @@ var settings: Settings
 var _segments: Dictionary = {}
 ## Setting key → the value each button of its row stands for.
 var _segment_values: Dictionary = {}
+## Setting key → its whole row (the length rows are shown for their mode only).
+var _segment_rows: Dictionary = {}
 ## The maps the option button lists, as scene paths.
 var _map_paths: Array[String] = []
 var _map_option: OptionButton
@@ -115,6 +121,14 @@ func get_map_path() -> String:
 	return _map_paths[maxi(0, _map_option.selected)]
 
 
+## The maps Start plays one after the other: the rotation, starting at the
+## chosen map when it is one of the quick maps; empty for a single map.
+func get_rotation_maps() -> Array[String]:
+	if not settings.match_rotation:
+		return []
+	return GameLaunch.rotation_maps(get_map_path())
+
+
 ## The maps on offer, as scene paths, in the order the option button lists them.
 func get_map_paths() -> Array[String]:
 	return _map_paths
@@ -129,6 +143,8 @@ func get_summary() -> String:
 
 
 func _build_rows() -> void:
+	_add_segmented_row(&"match_mode", "Mode", ["Rounds", "Team respawn"], Settings.MATCH_MODES, MODE_BUTTON_WIDTH,
+			"Rounds: one life each; on maps with bomb sites the attackers plant the bomb. Team respawn: back after 3 s, first team to the kill limit wins.")
 	_add_segmented_row(&"match_team_size", "Your team", ["1", "2", "3", "4", "5"], [1, 2, 3, 4, 5],
 			NUMBER_BUTTON_WIDTH, "Players on your side, you included: 3 means you and two bot teammates.")
 	_add_segmented_row(&"match_enemy_team_size", "Enemy team", ["1", "2", "3", "4", "5"], [1, 2, 3, 4, 5],
@@ -140,8 +156,15 @@ func _build_rows() -> void:
 		lengths.append("First to %d" % rounds)
 	_add_segmented_row(&"match_rounds_to_win", "Match length", lengths, Settings.MATCH_LENGTHS,
 			LENGTH_BUTTON_WIDTH, "Rounds a team must win. The sides swap at half time.")
+	var kills: Array = []
+	for limit in Settings.KILL_LIMITS:
+		kills.append("%d kills" % limit)
+	_add_segmented_row(&"match_kill_limit", "Match length", kills, Settings.KILL_LIMITS,
+			LENGTH_BUTTON_WIDTH, "Kills a team needs to win. After 10 minutes the team with more kills wins.")
 	_add_segmented_row(&"match_friendly_fire", "Friendly fire", ["Off", "On"], [false, true],
 			WORD_BUTTON_WIDTH, "On: teammates take a third of the damage. Off: bullets pass through them.")
+	_add_segmented_row(&"match_rotation", "Maps", ["One map", "Rotation"], [false, true], MODE_BUTTON_WIDTH,
+			"Rotation: Depot, Square and Spillway one after the other, starting with the map below if it is one of them. \"Next map\" moves on after a match.")
 	_add_map_row()
 
 
@@ -186,6 +209,7 @@ func _add_segmented_row(key: StringName, label_text: String, texts: Array, value
 		buttons.append(button)
 	_segments[key] = buttons
 	_segment_values[key] = values
+	_segment_rows[key] = row
 
 
 func _add_map_row() -> void:
@@ -196,7 +220,7 @@ func _add_map_row() -> void:
 	row.add_child(_map_option)
 	_map_paths = GameLaunch.list_maps()
 	for path in _map_paths:
-		_map_option.add_item(path.get_file().get_basename().capitalize())
+		_map_option.add_item(GameLaunch.map_title(path))
 	_map_option.item_selected.connect(func(index: int) -> void: settings.match_map = _map_paths[index])
 
 
@@ -217,10 +241,17 @@ func _refresh() -> void:
 	if shown < 0:
 		shown = maxi(0, _map_paths.find(Settings.DEFAULT_MAP))
 	_map_option.select(shown)
-	_summary.text = "You and %s against %s. %s bots, first to %d rounds, friendly fire %s." % [
-			_bots_text(settings.match_team_size - 1), _bots_text(settings.match_enemy_team_size),
-			settings.match_difficulty.capitalize(), settings.match_rounds_to_win,
-			"on" if settings.match_friendly_fire else "off"]
+	# The match length counts rounds, or kills in team respawn.
+	var respawn := settings.match_mode == "respawn"
+	(_segment_rows[&"match_rounds_to_win"] as Control).visible = not respawn
+	(_segment_rows[&"match_kill_limit"] as Control).visible = respawn
+	var goal := "first to %d kills" % settings.match_kill_limit if respawn else "first to %d rounds" % settings.match_rounds_to_win
+	_summary.text = "%sYou and %s against %s. %s bots, %s, friendly fire %s." % [
+			"Team respawn: " if respawn else "", _bots_text(settings.match_team_size - 1), _bots_text(settings.match_enemy_team_size),
+			settings.match_difficulty.capitalize(), goal, "on" if settings.match_friendly_fire else "off"]
+	var rotation := get_rotation_maps()
+	if not rotation.is_empty():
+		_summary.text += " Maps in rotation: %s." % ", ".join(rotation.map(func(path: String) -> String: return GameLaunch.map_title(path)))
 
 
 ## "no bots", "1 bot", "3 bots".

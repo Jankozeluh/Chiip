@@ -612,7 +612,10 @@ func _follow(leader: Character, input: CharacterInput, delta: float) -> void:
 	var side := 1.0 if group.find(self) % 2 == 1 else -1.0
 	var view := Basis(Vector3.UP, leader.get_aim_angles().x)
 	var spot := leader.global_position + view * Vector3(FOLLOW_SIDE * side, 0.0, FOLLOW_DISTANCE)
-	spot = NavigationServer3D.map_get_closest_point(character.get_world_3d().navigation_map, spot)
+	var navigation_map := character.get_world_3d().navigation_map
+	# Right after a map loads the navigation map isn't ready to answer yet.
+	if NavigationServer3D.map_get_iteration_id(navigation_map) > 0:
+		spot = NavigationServer3D.map_get_closest_point(navigation_map, spot)
 	if _flat_distance(character.global_position, spot) > 1.0:
 		_go_near(spot, 1.0)
 		_walk(input, delta, false)

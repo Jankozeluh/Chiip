@@ -59,6 +59,11 @@ const FPS_CAPS: Array[int] = [0, 60, 120, 144, 240]
 const MATCH_LENGTHS: Array[int] = [5, 10, 15]
 ## The bot difficulties match setup offers: the names of bots/difficulty_*.tres, easiest first.
 const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
+## The modes match setup offers (D-087): "rounds" (bomb rounds on maps with bomb
+## sites) and "respawn" (team respawn, D-082).
+const MATCH_MODES: Array[String] = ["rounds", "respawn"]
+## The kill limits match setup offers for team respawn (D-083: 50 is about 4 minutes with bots).
+const KILL_LIMITS: Array[int] = [30, 50, 75]
 ## The map match setup starts with, and the one the main menu flies over.
 const DEFAULT_MAP := "res://maps/test_map.tscn"
 ## How many keys or buttons one action can have (primary and secondary).
@@ -106,6 +111,10 @@ const SCHEMA := {
 	&"match_rounds_to_win": {"section": "match", "default": 5, "choices": MATCH_LENGTHS},
 	&"match_friendly_fire": {"section": "match", "default": false},
 	&"match_map": {"section": "match", "default": DEFAULT_MAP},
+	# M8 (D-087): the mode, team respawn's kill limit, and playing the quick maps in rotation.
+	&"match_mode": {"section": "match", "default": "rounds", "choices": MATCH_MODES},
+	&"match_kill_limit": {"section": "match", "default": 50, "choices": KILL_LIMITS},
+	&"match_rotation": {"section": "match", "default": false},
 }
 
 ## The names of the mouse buttons a binding can use, by button index (for menus).
@@ -256,6 +265,19 @@ var match_friendly_fire: bool:
 var match_map: String:
 	get: return _values[&"match_map"]
 	set(value): set_value(&"match_map", value)
+## How the match is played: one of [constant MATCH_MODES] ("rounds" or "respawn").
+var match_mode: String:
+	get: return _values[&"match_mode"]
+	set(value): set_value(&"match_mode", value)
+## Kills a team needs to win a team respawn match: one of [constant KILL_LIMITS].
+var match_kill_limit: int:
+	get: return _values[&"match_kill_limit"]
+	set(value): set_value(&"match_kill_limit", value)
+## Play the quick maps one after the other ([method GameLaunch.rotation_maps])
+## instead of [member match_map] only.
+var match_rotation: bool:
+	get: return _values[&"match_rotation"]
+	set(value): set_value(&"match_rotation", value)
 
 
 func _init() -> void:

@@ -11,6 +11,10 @@ extends Node
 ## screen's "Main menu" button and the console's [code]disconnect[/code] come back
 ## to the menu with [method return_to_menu].
 ##
+## With a map rotation (D-087: match setup's "Rotation", or [code]-- --rotation[/code])
+## the match-end screen also offers "Next map": [method next_map] plays the
+## rotation's next map, a fresh match by the same rules.
+##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
 ## are added here, depending on [member mode]: a match on maps with attack and
@@ -62,6 +66,9 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 
 ## The map currently loaded.
 var _map: Node
+## The maps of the rotation (empty without one), and which of them is playing.
+var _rotation: Array[String] = []
+var _rotation_index: int = 0
 
 
 func _ready() -> void:
@@ -75,6 +82,7 @@ func _ready() -> void:
 	# Menu buttons tick and click (D-084).
 	UiSounds.attach(_match_end_screen)
 	_match_end_screen.play_again_pressed.connect(restart_match)
+	_match_end_screen.next_map_pressed.connect(next_map)
 	_match_end_screen.main_menu_pressed.connect(return_to_menu)
 	# The pause menu (D-065): Settings opens the settings menu over it, Leave goes
 	# back to the main menu, and the menu comes back when the settings close.
@@ -122,6 +130,21 @@ func restart_match() -> void:
 	change_map(_map.scene_file_path)
 
 
+## Plays the next map of the rotation, a fresh match by the same rules (the
+## match-end screen's "Next map"); after the last map comes the first again.
+## Does nothing without a rotation.
+func next_map() -> void:
+	if _rotation.is_empty():
+		return
+	_rotation_index = (_rotation_index + 1) % _rotation.size()
+	change_map(_rotation[_rotation_index])
+
+
+## The scene path of the map [method next_map] would play, or "" without a rotation.
+func get_next_map() -> String:
+	return _rotation[(_rotation_index + 1) % _rotation.size()] if not _rotation.is_empty() else ""
+
+
 ## Leaves the game for the main menu (the pause menu's Leave button, the
 ## match-end screen's "Main menu" button, console: disconnect). The game scene is
 ## freed and the menu scene starts; the menus and the console in the game close
@@ -151,6 +174,10 @@ func _load_map() -> void:
 		mode = Mode.PRACTICE
 	if args.has("--respawn"):
 		match_settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	if args.has("--rotation"):
+		_rotation = GameLaunch.rotation_maps()
+		_rotation_index = 0
+		scene = load(_rotation[0])
 	_spawn_map(scene)
 
 
@@ -159,6 +186,8 @@ func _load_map() -> void:
 func _take_launch() -> PackedScene:
 	mode = Mode.PRACTICE if GameLaunch.practice else Mode.MATCH
 	match_settings = GameLaunch.match_settings
+	_rotation = GameLaunch.rotation.duplicate()
+	_rotation_index = 0
 	var scene := load(GameLaunch.map_path) as PackedScene
 	GameLaunch.clear()
 	return scene
@@ -172,8 +201,10 @@ func _spawn_map(scene: PackedScene) -> void:
 	var player := _map.get_node("Player") as Character
 	Teams.friendly_fire = false
 	var rules := _add_game_rules()
-	# Hides the match-end screen of the previous map; it opens when this match ends.
+	# Hides the match-end screen of the previous map; it opens when this match ends,
+	# with "Next map" when there is a rotation.
 	_match_end_screen.set_round_manager(rules as RoundManager)
+	_match_end_screen.set_next_map(GameLaunch.map_title(get_next_map()) if not _rotation.is_empty() else "")
 	# The round HUD (top bar, kill feed, banners) shows only in a match; null hides it.
 	_hud.set_round_manager(rules as RoundManager)
 	# The hold-Tab scoreboard also exists only in a match.

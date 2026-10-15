@@ -76,6 +76,12 @@ layout_mode = 2
 theme_type_variation = &"ButtonRow"
 alignment = 1
 
+[node name="NextMap" type="Button" parent="Panel/Margin/Content/Buttons"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(280, 40)
+text = "Next map"
+
 [node name="PlayAgain" type="Button" parent="Panel/Margin/Content/Buttons"]
 layout_mode = 2
 custom_minimum_size = Vector2(200, 40)

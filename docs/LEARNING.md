@@ -535,6 +535,9 @@
 - **LightmapGI** bakes light into textures, like Unity's Progressive Lightmapper, but only from the editor's *Bake Lightmaps* button; there is no script call for it.
 - On macOS V-Sync is enforced by the system, so even `--disable-vsync` stays at the display's rate, and `RenderingServer.viewport_get_measured_render_time_gpu()` returns 0 with Metal.
 
+**A script can't reuse a built-in method's name** (`ui/match_setup.gd`)
+- A menu that `extends CanvasLayer` can't have its own `get_rotation()`: `CanvasLayer` already has one (the layer's rotation), and Godot treats the clash as an error ("overrides a method from native class"). Unity lets you hide an inherited member with `new`; in GDScript pick another name (`get_rotation_maps()`).
+
 **Exporting a game** (D-086)
 - An **export preset** (`export_presets.cfg`, *Project → Export…*) is like a Unity build profile: platform, file name, what to include, signing. `--export-release "<preset>" <path>` builds from the command line.
 - **Export templates** are Godot's prebuilt game executables for each platform (Unity installs these as "build support" modules). They must match the engine version exactly and live outside the project.

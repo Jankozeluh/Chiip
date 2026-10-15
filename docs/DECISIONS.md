@@ -942,6 +942,21 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** One arms model for everyone (cheaper, but your class wouldn't show in first person); rendering the third-person body's arms from the eye (they are posed for third person and would clip into the camera); a second camera for the viewmodel with its own field of view, so the gun never pokes into walls (a known limitation since M2; later).
 
+## D-087 — Mode and map rotation in match setup; "Next map" on the end screen (2026-10-15) — *provisional*
+
+**Decision:**
+- **Match setup** gets a **Mode** row (**Rounds** or **Team respawn**) at the top and a **Maps** row (**One map** or **Rotation**) above the map list. The Match length row counts rounds (first to 5, 10 or 15) for rounds, and is replaced by kills (**30, 50 or 75**, 50 by default, D-083) for team respawn. The summary line says the mode ("Team respawn: You and 2 bots…, first to 50 kills…") and lists the rotation ("Maps in rotation: Square, Spillway, Depot."). All three are remembered with the other match choices (`Settings`: `match_mode`, `match_kill_limit`, `match_rotation`).
+- **The rotation** is the three quick maps in a fixed order, **Depot → Square → Spillway → Depot…** (`GameLaunch.ROTATION_MAPS`), each a fresh match by the same rules. It starts on the map chosen in the Map row when that is one of them (otherwise on Depot), so the map list keeps its meaning and stays exactly the maps on disk. "Rounds" on the quick maps are bomb rounds (D-080); on the test map they are elimination rounds, which is why the test map isn't in the rotation.
+- **The end screen** shows **"Next map: Square"** next to Play again and Main menu when a rotation is on, with the keyboard focus on it. Play again replays the same map; Next map moves on (and wraps around). Without a rotation the button is hidden.
+- **How it travels:** Start leaves the rotation for the game with the rest of the match (`GameLaunch.start_match(map, rules, maps)`, `GameLaunch.rotation`); `main.gd` keeps the list and its place, `next_map()` loads the next one with `change_map()` (like Play again), and `get_next_map()` names it for the end screen. From the terminal: `-- --match --rotation` (add `--respawn` for team respawn).
+- **Small fixes on the way:** a hunting bot asked the navigation map for a point before it was ready right after a map loaded (an error line, no harm done), now skipped until the map has synced; and `get_rotation()` couldn't be used as a method name on a menu, because `CanvasLayer` already has one (it's `get_rotation_maps()`).
+
+**Why:** The mode is the biggest choice of a match, so it comes first and decides what "Match length" means. A separate Maps row keeps the map list honest (every scene on disk, as M5 built and tested it) and gives the rotation a clear on/off. A fixed order is what CoD playlists feel like when you stay in a lobby, and starting on the chosen map lets you pick where to begin. "Next map" on the end screen is the moment you'd move on, and it keeps the game in one scene, so the HUD, settings and console stay as they are.
+
+**Checked:** a new `tests/rotation_test.tscn` (13 checks): the rows and their defaults; team respawn switching the length to kills (50, then 75), the summary and the rules Start builds; the rotation's order from the test map and from Square, and its summary; what Start leaves for the game; and in the real game scene: a rotation starting on Depot with "Next map: Square" ready, the button shown and focused after the match, Next map giving a fresh match on Square, Play again staying, the wrap from Spillway to Depot, team respawn kept across maps, and no button without a rotation. M5's settings test lists the three new settings. All seventeen suites pass.
+
+**Alternatives:** "Rotation" as an entry in the map list (one control, but the list would no longer be the maps on disk); a random order or a shuffled playlist (less predictable when you want to learn the maps); a map vote at the end of a match (the backlog's "map voting"); putting the test map in the rotation (it has no bomb sites or respawn zones of its own); moving on automatically after a few seconds, like CoD's lobby countdown (you'd lose the end screen while reading it).
+
 ## Open questions
 
 | Question | Decide in |

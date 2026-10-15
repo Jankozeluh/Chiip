@@ -39,7 +39,9 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 - **First macOS build** (D-086): downloaded the official Godot 4.7.2 export templates (1.28 GB, checksum verified, your OK), added an export preset (universal, ad-hoc signed, tests and tools left out) and turned on ETC2/ASTC compression, which Apple Silicon exports require. `builds/macos/Chiip.app` (165 MB) runs: headless matches on Depot and Square, and a window on Metal. The export found two old bugs: the TrenchBroom comparison room's player pointed at a script renamed in M4, and the console's map list didn't work in exported games; both fixed.
 - **Performance:** 5v5 on all three maps holds the display rate (slowest 1% of frames 19–22 ms, about 2 ms of physics per frame for 10 bots). macOS keeps V-Sync on and Metal reports no GPU times, so `tools/frame_timing.gd` reports frame and CPU times.
 
-**Next:** map rotation, once the coordinating session has merged M5's match setup and menus into this branch.
+- **Mode choice and map rotation** (D-087, provisional), after M5 and M6 were merged into this branch: match setup has a **Mode** row (Rounds or Team respawn; the length becomes 30 / 50 / 75 kills) and a **Maps** row (One map or Rotation: Depot → Square → Spillway, starting on the chosen map). The end screen offers **Next map: Square**; Play again stays on the map. `-- --match --rotation` from the terminal. New `tests/rotation_test.tscn` (13 checks); M5's settings test knows the three new settings. Also fixed a hunting bot asking the navigation map for a point before it was ready. All seventeen suites pass. **M8 is built**; it waits for your playtest.
+
+**Next:** your M8 playtest (checklist in "Your open checks"), then the maps' detail pass and their final names.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

@@ -2,7 +2,8 @@ class_name MatchEndScreen
 extends CanvasLayer
 ## The screen shown when a match is over: "Victory" or "Defeat" for your team,
 ## the final score and a scoreboard of both teams (a [ScoreboardTable]), with
-## "Play again" and "Main menu" buttons. Hidden until the [RoundManager] emits
+## "Play again" and "Main menu" buttons, and "Next map: Square" when the maps
+## are played in rotation (D-087). Hidden until the [RoundManager] emits
 ## [signal RoundManager.match_ended].
 ##
 ## It only shows state and reports button clicks; [code]main.gd[/code] reacts to
@@ -15,6 +16,8 @@ extends CanvasLayer
 signal play_again_pressed
 ## Emitted when the player clicks "Main menu".
 signal main_menu_pressed
+## Emitted when the player clicks "Next map" (only shown in a map rotation).
+signal next_map_pressed
 
 var _manager: RoundManager
 
@@ -25,12 +28,27 @@ var _manager: RoundManager
 @onready var _table: ScoreboardTable = $Panel/Margin/Content/Table
 @onready var _play_again: Button = $Panel/Margin/Content/Buttons/PlayAgain
 @onready var _main_menu: Button = $Panel/Margin/Content/Buttons/MainMenu
+@onready var _next_map: Button = $Panel/Margin/Content/Buttons/NextMap
 
 
 func _ready() -> void:
 	visible = false
+	_next_map.visible = false
 	_play_again.pressed.connect(play_again_pressed.emit)
 	_main_menu.pressed.connect(main_menu_pressed.emit)
+	_next_map.pressed.connect(next_map_pressed.emit)
+
+
+## Offers "Next map: <title>" after the match, or no such button with an empty
+## [param title] (no rotation). main.gd calls it whenever a map is loaded.
+func set_next_map(title: String) -> void:
+	_next_map.text = "Next map: %s" % title
+	_next_map.visible = not title.is_empty()
+
+
+## The "Next map" button (hidden without a rotation). For tests.
+func get_next_map_button() -> Button:
+	return _next_map
 
 
 func _input(event: InputEvent) -> void:
@@ -83,7 +101,8 @@ func _on_match_ended(winner: int) -> void:
 	_table.show_match(_manager)
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_play_again.grab_focus()
+	# In a rotation the next map is what you'd usually want.
+	(_next_map if _next_map.visible else _play_again).grab_focus()
 
 
 ## Text in a team's color, lightened so it stays readable on the dark panel.

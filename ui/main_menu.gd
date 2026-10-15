@@ -101,7 +101,7 @@ func open_settings() -> void:
 ## Leaves the description of the chosen match for main.gd ([GameLaunch]), without
 ## changing scenes. [method start_match] does this and then changes to the game.
 func prepare_match() -> void:
-	GameLaunch.start_match(_setup.get_map_path(), _setup.build_match_settings())
+	GameLaunch.start_match(_setup.get_map_path(), _setup.build_match_settings(), _setup.get_rotation_maps())
 
 
 ## Leaves the description of practice for main.gd: the test map, with the bot

@@ -14,7 +14,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 **From the Godot editor** (recommended):
 1. Open Godot. In the Project Manager, click **Import**, select this folder's `project.godot`, and open it.
 2. Press **F5** (or the ▶ button at the top right) to play. The **main menu** opens over a slow camera flight across the test map: **Play**, **Practice**, **Settings** and **Quit** (Esc closes match setup and the settings menu; on the main page it does nothing).
-   **Play** opens match setup: the size of your team and of the enemy team (1–5 each, you included in yours), the bots' difficulty (Easy, Normal, Hard), the match length (first to 5, 10 or 15 rounds), friendly fire and the map. The defaults are a 3v3 match, Normal bots, first to 5, friendly fire off, on the test map, and the game remembers your last choices. **Start** begins the match: you and your bot teammates (blue) against the bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
+   **Play** opens match setup: the mode (**Rounds**, which are bomb rounds on the quick maps, or **Team respawn**), the size of your team and of the enemy team (1–5 each, you included in yours), the bots' difficulty (Easy, Normal, Hard), the match length (first to 5, 10 or 15 rounds; for team respawn 30, 50 or 75 kills), friendly fire, one map or the **rotation** of the three quick maps, and the map. In a rotation the end screen offers **Next map**. The defaults are a 3v3 match, Normal bots, first to 5, friendly fire off, on the test map, and the game remembers your last choices. **Start** begins the match: you and your bot teammates (blue) against the bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
    At the start of the match a class menu opens: pick Rifleman, Bulwark, Marksman or Scout (click a card, or press 1 to 4; Esc closes it). **M** opens it again during freeze time. For now the classes differ in looks and hit zones; the perks switch on in M7. Bots get a mix of classes.
@@ -32,6 +32,12 @@ To skip the menu and start a default 3v3 match on the test map at once (handy fo
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --match
+```
+
+To play the three quick maps in rotation from the terminal (the end screen then offers **Next map**), add `-- --match --rotation` (and `--respawn` for team respawn):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --match --rotation
 ```
 
 For the **team respawn** mode (like Call of Duty's Team Deathmatch: respawn after 3 s, first team to 50 kills wins; bots hunt in pairs), add `-- --respawn`, e.g. on Depot:
@@ -103,7 +109,7 @@ Open the **settings menu** with **Settings** in the main menu, or by typing `set
 | `fps_max [0\|30-1000]` | Frame rate limit, 0 = unlimited | 0 |
 | `settings_reset` | Everything back to its default, key bindings and the remembered match setup included | |
 
-The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (team sizes, difficulty, match length, friendly fire and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
+The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (mode, team sizes, difficulty, match length or kill limit, friendly fire, rotation and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
 
 ## Exporting the game
 

@@ -15,7 +15,9 @@ extends RefCounted
 ## shortcuts do), main.gd falls back to its own exported values and the command
 ## line.
 ##
-## It also knows the two scenes the game moves between and which maps exist.
+## It also knows the two scenes the game moves between, which maps exist, and
+## the map rotation (D-087): the three quick maps played one after the other,
+## each a fresh match by the same rules; the match-end screen's "Next map" moves on.
 
 ## The game: the map, the rules, the HUD and the in-game menus.
 const GAME_SCENE := "res://main.tscn"
@@ -27,6 +29,8 @@ const MENU_SCENE := "res://ui/main_menu.tscn"
 const MAPS_FOLDER := "res://maps/"
 ## Where the bot difficulties are; [code]%s[/code] is easy, normal or hard.
 const DIFFICULTY_PATH := "res://bots/difficulty_%s.tres"
+## The maps of the rotation, in order (D-049, D-087): the three quick maps.
+const ROTATION_MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"]
 
 ## The map scene to play, e.g. [code]res://maps/test_map.tscn[/code].
 static var map_path: String = Settings.DEFAULT_MAP
@@ -34,16 +38,22 @@ static var map_path: String = Settings.DEFAULT_MAP
 static var practice: bool = false
 ## The rules of the match (practice only reads its bot difficulty).
 static var match_settings: MatchSettings = null
+## The maps to play one after the other, starting with [member map_path]; empty
+## for a single map.
+static var rotation: Array[String] = []
 
 ## True between [method start_match] / [method start_practice] and [method clear].
 static var _pending: bool = false
 
 
-## Describes a match on [param map] played by [param rules].
-static func start_match(map: String, rules: MatchSettings) -> void:
-	map_path = map
+## Describes a match on [param map] played by [param rules]. With [param maps]
+## (a rotation, see [method rotation_maps]) the game moves through them, from the
+## first; [param map] is then ignored.
+static func start_match(map: String, rules: MatchSettings, maps: Array[String] = []) -> void:
+	map_path = maps[0] if not maps.is_empty() else map
 	practice = false
 	match_settings = rules
+	rotation = maps.duplicate()
 	_pending = true
 
 
@@ -55,6 +65,7 @@ static func start_practice(map: String, difficulty: BotDifficulty) -> void:
 	map_path = map
 	practice = true
 	match_settings = rules
+	rotation = []
 	_pending = true
 
 
@@ -69,12 +80,13 @@ static func clear() -> void:
 	map_path = Settings.DEFAULT_MAP
 	practice = false
 	match_settings = null
+	rotation = []
 	_pending = false
 
 
 ## The [MatchSettings] for the choices stored in [param settings]: team sizes,
-## bot difficulty, match length and friendly fire. The round timings stay at
-## their defaults. Used by match setup's Start.
+## bot difficulty, match length and friendly fire, the mode and team respawn's
+## kill limit. The timings stay at their defaults. Used by match setup's Start.
 static func match_settings_from(settings: Settings) -> MatchSettings:
 	var rules := MatchSettings.new()
 	rules.team_size = settings.match_team_size
@@ -82,7 +94,29 @@ static func match_settings_from(settings: Settings) -> MatchSettings:
 	rules.bot_difficulty = difficulty_named(settings.match_difficulty)
 	rules.rounds_to_win = settings.match_rounds_to_win
 	rules.friendly_fire = settings.match_friendly_fire
+	rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN if settings.match_mode == "respawn" else MatchSettings.GameMode.ROUNDS
+	rules.kill_limit = settings.match_kill_limit
 	return rules
+
+
+## The rotation's maps that exist, in order, starting at [param first] when it
+## is one of them (otherwise at the first, Depot).
+static func rotation_maps(first: String = "") -> Array[String]:
+	var maps: Array[String] = []
+	for path in ROTATION_MAPS:
+		if ResourceLoader.exists(path):
+			maps.append(path)
+	var start := maps.find(first)
+	if start > 0:
+		var turned: Array[String] = maps.slice(start)
+		turned.append_array(maps.slice(0, start))
+		return turned
+	return maps
+
+
+## A map's name for menus: "Depot", "Test Map".
+static func map_title(path: String) -> String:
+	return path.get_file().get_basename().capitalize()
 
 
 ## The [BotDifficulty] called [param level] ("easy", "normal" or "hard"); normal

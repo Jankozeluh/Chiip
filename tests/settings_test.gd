@@ -41,6 +41,8 @@ const DEFAULTS := {
 	# The last match setup (D-064): D-041's match, on the test map.
 	&"match_team_size": 3, &"match_enemy_team_size": 3, &"match_difficulty": "normal", &"match_rounds_to_win": 5,
 	&"match_friendly_fire": false, &"match_map": "res://maps/test_map.tscn",
+	# M8 (D-087): rounds on one map; team respawn's kill limit is D-083's 50.
+	&"match_mode": "rounds", &"match_kill_limit": 50, &"match_rotation": false,
 }
 
 var _failures: int = 0
@@ -413,6 +415,9 @@ func _test_saving() -> void:
 	writer.match_rounds_to_win = 10
 	writer.match_friendly_fire = true
 	writer.match_map = "res://maps/comparison/csg_room.tscn"
+	writer.match_mode = "respawn"
+	writer.match_kill_limit = 75
+	writer.match_rotation = true
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
@@ -424,12 +429,14 @@ func _test_saving() -> void:
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
-	_check("The last match setup is the [match] section: team_size, enemy_team_size, difficulty, rounds_to_win, friendly_fire and map, without the prefix",
+	_check("The last match setup is the [match] section: team_size, enemy_team_size, difficulty, rounds_to_win, friendly_fire, map, mode, kill_limit and rotation, without the prefix",
 			saved.get_value("match", "team_size", 0) == 5 and saved.get_value("match", "enemy_team_size", 0) == 2
 					and saved.get_value("match", "difficulty", "") == "hard" and saved.get_value("match", "rounds_to_win", 0) == 10
 					and saved.get_value("match", "friendly_fire", false) == true
 					and saved.get_value("match", "map", "") == "res://maps/comparison/csg_room.tscn"
-					and saved.get_section_keys("match").size() == 6,
+					and saved.get_value("match", "mode", "") == "respawn" and saved.get_value("match", "kill_limit", 0) == 75
+					and saved.get_value("match", "rotation", false) == true
+					and saved.get_section_keys("match").size() == 9,
 			"keys %s" % [saved.get_section_keys("match")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)
