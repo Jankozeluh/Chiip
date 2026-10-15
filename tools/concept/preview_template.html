@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retro Ops Operators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #12100e;
+  --panel: #1c1916;
+  --panel-2: #26221d;
+  --line: #3a332b;
+  --text: #ebe2d2;
+  --muted: #9d9383;
+  --faint: #6b6357;
+  --team: #d4492a;
+  --team-soft: rgba(212, 73, 42, .16);
+  --gold: #d1a538;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --pixel: "Silkscreen", "IBM Plex Mono", monospace;
+}
+body[data-team="wardens"] { --team: #4b88e6; --team-soft: rgba(75, 136, 230, .16); }
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--mono); }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin-bottom: 20px; }
+h1 { font: 400 26px/1.1 var(--pixel); letter-spacing: .02em; margin: 0; }
+h1 span { color: var(--team); transition: color .2s; }
+.sub { color: var(--muted); font-size: 13px; }
+h2 { font: 400 13px/1 var(--pixel); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 12px; }
+.top { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .top { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
+.stage-wrap { display: flex; justify-content: center; background: #0b0a09; border-radius: 4px; overflow: hidden; cursor: grab; touch-action: none; }
+.stage-wrap:active { cursor: grabbing; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.btn:hover { border-color: var(--muted); }
+.btn[aria-pressed="true"] { background: var(--team-soft); border-color: var(--team); color: var(--text); }
+.dirlabel { min-width: 120px; text-align: center; color: var(--muted); font-size: 12px; }
+.dirlabel b { color: var(--text); font-weight: 600; }
+.spacer { flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { background: var(--panel-2); border: 0; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--team); color: #fff; }
+.classes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.cls { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 6px 4px 8px; cursor: pointer; text-align: center; }
+.cls canvas { width: 72px; height: 72px; margin: 0 auto; }
+.cls span { display: block; font: 400 10px/1.2 var(--pixel); margin-top: 4px; letter-spacing: .04em; }
+.cls[aria-pressed="true"] { border-color: var(--team); background: var(--team-soft); }
+.anims { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; }
+.role { color: var(--muted); font-size: 12px; margin: 2px 0 12px; }
+.ctitle { font: 400 20px/1.1 var(--pixel); }
+.stats { display: grid; grid-template-columns: 64px 1fr 40px; gap: 6px 10px; align-items: center; font-size: 12px; margin-bottom: 14px; }
+.stats .k { color: var(--muted); }
+.bar { height: 8px; background: #0e0c0b; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--team); transition: width .25s, background .2s; }
+.stats .v { text-align: right; font-variant-numeric: tabular-nums; }
+.weapon { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+.weapon b { color: var(--text); font-weight: 600; }
+.feature { border-left: 3px solid var(--gold); background: rgba(209, 165, 56, .07); padding: 10px 12px; border-radius: 0 4px 4px 0; margin-bottom: 12px; }
+.feature .fname { font: 400 13px/1.2 var(--pixel); color: var(--gold); margin-bottom: 4px; }
+.feature p, .look { margin: 0; font-size: 12.5px; }
+.look { color: var(--muted); }
+section { margin-top: 20px; }
+.dirs { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 760px) { .dirs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.dirs figure { margin: 0; background: #0b0a09; border: 1px solid var(--line); border-radius: 4px; padding: 4px 0 6px; cursor: pointer; }
+.dirs figure.on { border-color: var(--team); }
+.dirs canvas { width: 100%; height: auto; aspect-ratio: 1; }
+.dirs figcaption { text-align: center; font-size: 11px; color: var(--muted); }
+.lineup-wrap { overflow-x: auto; background: #0b0a09; border-radius: 4px; }
+.lineup-wrap canvas { margin: 0 auto; }
+.spec { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 760px) { .spec { grid-template-columns: 1fr; } }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+td, th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 400; }
+td code, p code { color: var(--gold); }
+.pal { width: 100%; max-width: 384px; height: auto; aspect-ratio: 1; }
+.note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; font-size: 11px; }
+</style>
+</head>
+<body data-team="raiders">
+<div class="wrap">
+  <header>
+    <h1>RETRO OPS <span>//</span> OPERATORS</h1>
+    <div class="sub">4 classes · 2 teams · 8 directions · 15 frames · 96×96 cells</div>
+  </header>
+
+  <div class="top">
+    <div class="card">
+      <div class="stage-wrap" id="stageWrap"><canvas id="stage" width="200" height="120"></canvas></div>
+      <div class="controls">
+        <button class="btn" id="turnL" title="Turn (←)">↺ Turn</button>
+        <div class="dirlabel" id="dirLabel"></div>
+        <button class="btn" id="turnR" title="Turn (→)">Turn ↻</button>
+        <button class="btn" id="spin" aria-pressed="false">Auto-spin</button>
+        <span class="spacer"></span>
+        <div class="seg" id="bgSeg">
+          <button data-bg="level" aria-pressed="true">Level</button>
+          <button data-bg="check" aria-pressed="false">Alpha</button>
+        </div>
+      </div>
+      <p class="note">Drag the stage or use <kbd>←</kbd> <kbd>→</kbd> to turn · <kbd>1</kbd>–<kbd>4</kbd> class · <kbd>T</kbd> team</p>
+    </div>
+
+    <div class="card">
+      <h2>Class</h2>
+      <div class="classes" id="classes"></div>
+      <div class="seg" id="teamSeg"></div>
+      <div class="anims" id="anims"></div>
+      <div class="ctitle" id="cTitle"></div>
+      <div class="role" id="cRole"></div>
+      <div class="stats" id="cStats"></div>
+      <div class="weapon" id="cWeapon"></div>
+      <div class="feature"><div class="fname" id="fName"></div><p id="fText"></p></div>
+      <p class="look" id="cLook"></p>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>All 8 directions</h2>
+    <div class="dirs" id="dirs"></div>
+  </section>
+
+  <section class="card">
+    <h2>Line-up</h2>
+    <div class="lineup-wrap"><canvas id="lineup"></canvas></div>
+  </section>
+
+  <section class="card spec">
+    <div>
+      <h2>Sheet layout</h2>
+      <table id="rows"></table>
+      <p class="note">Columns = direction 0–7. Each cell is 96×96 with the feet pivot at (48, 88). Direction is picked with <code>round((actorYaw − angleToCamera) / 45°) mod 8</code>.</p>
+    </div>
+    <div>
+      <h2>Palette</h2>
+      <canvas class="pal" id="pal" width="16" height="16"></canvas>
+      <p class="note">16 ramps × 16 shades. Indices 224–254 are fullbright (muzzle flash, NVG glow): draw them unlit. Index 255 is transparent in the <code>_indexed.png</code> sheets.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const DATA = __DATA__;
+const M = DATA.meta;
+const CELL = M.cell[0], PIV = M.pivot;
+const CLASSES = Object.keys(M.classes);
+const TEAMS = Object.keys(M.teams);
+const DIRNAMES = ['Front', 'Front-right', 'Right', 'Back-right', 'Back', 'Back-left', 'Left', 'Front-left'];
+const A = M.animations;
+const row = (a, i = 0) => A[a].row + i;
+const SEQ = {
+  idle:   { label: 'Idle',   s: [[row('idle'), 1000]] },
+  run:    { label: 'Run',    s: [0, 1, 2, 3].map(i => [row('run', i), 125]) },
+  shoot:  { label: 'Shoot',  s: [[row('aim'), 450], [row('fire'), 70], [row('aim'), 70], [row('fire'), 70], [row('aim'), 70], [row('fire'), 70], [row('aim'), 600]] },
+  crouch: { label: 'Crouch', s: [[row('crouch'), 450], [row('crouch_fire'), 70], [row('crouch'), 70], [row('crouch_fire'), 70], [row('crouch'), 700]] },
+  pain:   { label: 'Pain',   s: [[row('idle'), 600], [row('pain'), 260], [row('idle'), 500]] },
+  death:  { label: 'Death',  s: [0, 1, 2, 3].map(i => [row('death', i), 120]).concat([[row('death', 4), 1500]]) },
+};
+const st = { cls: CLASSES[0], team: TEAMS[0], anim: 'run', dir: 1, spin: false, bg: 'level' };
+
+const sheets = {};
+let pending = 0;
+for (const c of CLASSES) for (const t of TEAMS) {
+  pending++;
+  const im = new Image();
+  im.onload = () => { if (--pending === 0) boot(); };
+  im.src = DATA.sheets[c][t];
+  (sheets[c] = sheets[c] || {})[t] = im;
+}
+
+function frameAt(seq, ms) {
+  const total = seq.reduce((a, f) => a + f[1], 0);
+  let t = ms % total;
+  for (const f of seq) { if (t < f[1]) return f[0]; t -= f[1]; }
+  return seq[seq.length - 1][0];
+}
+function drawSprite(ctx, cls, team, r, dir, x, y) {
+  ctx.drawImage(sheets[cls][team], dir * CELL, r * CELL, CELL, CELL, x - PIV[0], y - PIV[1], CELL, CELL);
+}
+
+// ---------- seeded pixel textures for the stage (drawn at native res)
+function rng(seed) { return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function makeLevel(w, h, horizon) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); const img = g.createImageData(w, h); const R = rng(7);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let r, gr, b, n = R() * 14 - 7;
+    if (y < horizon) {
+      const by = Math.floor(y / 8), bx = Math.floor((x + (by % 2) * 8) / 16);
+      const mortar = y % 8 === 7 || (x + (by % 2) * 8) % 16 === 15;
+      const tone = ((bx * 7 + by * 13) % 5) * 3;
+      [r, gr, b] = mortar ? [30, 26, 22] : [66 + tone, 56 + tone, 45 + tone];
+      const lit = 1 - Math.abs(x - w / 2) / w * 0.9 - (horizon - y) / horizon * 0.25;
+      r *= lit; gr *= lit; b *= lit;
+    } else {
+      const d = (y - horizon) / (h - horizon);
+      const ty = Math.floor(Math.pow(d, 0.7) * 9), tx = Math.floor((x - w / 2) / (14 + d * 26) + 100);
+      const edge = (Math.pow(d, 0.7) * 9) % 1 < 0.09;
+      const tone = ((tx * 5 + ty * 11) % 4) * 3;
+      [r, gr, b] = edge ? [28, 25, 21] : [52 + tone, 46 + tone, 39 + tone];
+      const lit = 0.65 + d * 0.45 - Math.abs(x - w / 2) / w * 0.5;
+      r *= lit; gr *= lit; b *= lit;
+    }
+    const i = (y * w + x) * 4;
+    img.data[i] = r + n; img.data[i + 1] = gr + n; img.data[i + 2] = b + n; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+function makeChecker(w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  for (let y = 0; y < h; y += 4) for (let x = 0; x < w; x += 4) {
+    g.fillStyle = ((x + y) / 4) % 2 ? '#3a3a3a' : '#2b2b2b'; g.fillRect(x, y, 4, 4);
+  }
+  return c;
+}
+function shadow(ctx, x, y, rx, ry) {
+  ctx.fillStyle = 'rgba(0,0,0,.42)';
+  for (let dy = -ry; dy <= ry; dy++) {
+    const hw = Math.round(rx * Math.sqrt(1 - (dy / (ry + 0.5)) ** 2));
+    ctx.fillRect(x - hw, y + dy, hw * 2, 1);
+  }
+}
+
+// ---------- UI
+const $ = id => document.getElementById(id);
+const stage = $('stage'), sctx = stage.getContext('2d');
+const SW = stage.width, SH = stage.height, HORIZON = 64, FEET = [100, 106];
+let levelBg, checkBg;
+
+function fitStage() {
+  const avail = $('stageWrap').clientWidth;
+  const s = Math.max(1, Math.min(4, Math.floor(avail / SW)));
+  stage.style.width = SW * s + 'px'; stage.style.height = SH * s + 'px';
+}
+
+function buildUI() {
+  const cl = $('classes');
+  CLASSES.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'cls'; b.dataset.cls = c;
+    const cv = document.createElement('canvas'); cv.width = 36; cv.height = 36;
+    const sp = document.createElement('span'); sp.textContent = M.classes[c].title;
+    b.append(cv, sp); b.onclick = () => { st.cls = c; refresh(); };
+    cl.append(b);
+  });
+  const ts = $('teamSeg');
+  TEAMS.forEach(t => {
+    const b = document.createElement('button'); b.dataset.team = t; b.textContent = M.teams[t].title;
+    b.onclick = () => { st.team = t; refresh(); };
+    ts.append(b);
+  });
+  const an = $('anims');
+  Object.keys(SEQ).forEach(k => {
+    const b = document.createElement('button'); b.className = 'btn'; b.dataset.anim = k; b.textContent = SEQ[k].label;
+    b.onclick = () => { st.anim = k; t0 = performance.now(); refresh(); };
+    an.append(b);
+  });
+  const dw = $('dirs');
+  for (let d = 0; d < 8; d++) {
+    const f = document.createElement('figure');
+    const cv = document.createElement('canvas'); cv.width = CELL; cv.height = CELL;
+    const cap = document.createElement('figcaption'); cap.textContent = d + ' · ' + DIRNAMES[d];
+    f.append(cv, cap); f.onclick = () => { st.dir = d; st.spin = false; refresh(); };
+    dw.append(f);
+  }
+  const tb = $('rows');
+  const head = tb.insertRow(); ['Row', 'Animation', 'Frames', 'FPS', 'Loop'].forEach(h => { const th = document.createElement('th'); th.textContent = h; head.append(th); });
+  for (const [k, a] of Object.entries(A)) {
+    const r = tb.insertRow();
+    [a.frames > 1 ? `${a.row}–${a.row + a.frames - 1}` : `${a.row}`, k, a.frames, a.fps, a.loop ? 'yes' : 'no'].forEach(v => { r.insertCell().textContent = v; });
+  }
+  const pc = $('pal').getContext('2d');
+  DATA.palette.forEach((c, i) => { pc.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; pc.fillRect(i % 16, Math.floor(i / 16), 1, 1); });
+  pc.fillStyle = '#000'; pc.fillRect(15, 15, 1, 1);
+
+  $('turnL').onclick = () => { st.dir = (st.dir + 7) % 8; st.spin = false; refresh(); };
+  $('turnR').onclick = () => { st.dir = (st.dir + 1) % 8; st.spin = false; refresh(); };
+  $('spin').onclick = () => { st.spin = !st.spin; refresh(); };
+  $('bgSeg').querySelectorAll('button').forEach(b => b.onclick = () => { st.bg = b.dataset.bg; refresh(); });
+
+  let dragX = null;
+  const sw = $('stageWrap');
+  sw.addEventListener('pointerdown', e => { dragX = e.clientX; sw.setPointerCapture(e.pointerId); });
+  sw.addEventListener('pointermove', e => {
+    if (dragX === null) return;
+    const dx = e.clientX - dragX;
+    if (Math.abs(dx) > 28) { st.dir = (st.dir + (dx > 0 ? 7 : 1)) % 8; st.spin = false; dragX = e.clientX; refresh(); }
+  });
+  sw.addEventListener('pointerup', () => { dragX = null; });
+  sw.addEventListener('pointercancel', () => { dragX = null; });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') $('turnL').click();
+    else if (e.key === 'ArrowRight') $('turnR').click();
+    else if (e.key >= '1' && e.key <= String(CLASSES.length)) { st.cls = CLASSES[+e.key - 1]; refresh(); }
+    else if (e.key.toLowerCase() === 't') { st.team = TEAMS[(TEAMS.indexOf(st.team) + 1) % TEAMS.length]; refresh(); }
+  });
+  window.addEventListener('resize', fitStage);
+}
+
+function refresh() {
+  document.body.dataset.team = st.team;
+  document.querySelectorAll('.cls').forEach(b => b.setAttribute('aria-pressed', b.dataset.cls === st.cls));
+  document.querySelectorAll('#teamSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.team === st.team));
+  document.querySelectorAll('#anims button').forEach(b => b.setAttribute('aria-pressed', b.dataset.anim === st.anim));
+  document.querySelectorAll('#bgSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.bg === st.bg));
+  $('spin').setAttribute('aria-pressed', st.spin);
+  document.querySelectorAll('#dirs figure').forEach((f, d) => f.classList.toggle('on', d === st.dir));
+  $('dirLabel').innerHTML = '';
+  const b = document.createElement('b'); b.textContent = 'dir ' + st.dir;
+  $('dirLabel').append(b, document.createTextNode(' · ' + DIRNAMES[st.dir]));
+
+  const c = M.classes[st.cls];
+  $('cTitle').textContent = c.title;
+  $('cRole').textContent = c.role;
+  const st_ = $('cStats'); st_.innerHTML = '';
+  [['Health', c.stats.health, 200], ['Armor', c.stats.armor, 200], ['Speed', c.stats.speed, 280]].forEach(([k, v, max]) => {
+    const kk = document.createElement('div'); kk.className = 'k'; kk.textContent = k;
+    const bar = document.createElement('div'); bar.className = 'bar';
+    const i = document.createElement('i'); i.style.width = (v / max * 100) + '%'; bar.append(i);
+    const vv = document.createElement('div'); vv.className = 'v'; vv.textContent = v;
+    st_.append(kk, bar, vv);
+  });
+  $('cWeapon').innerHTML = '';
+  const wb = document.createElement('b'); wb.textContent = 'Weapon  ';
+  $('cWeapon').append(wb, document.createTextNode(c.stats.weapon));
+  $('fName').textContent = c.feature.name;
+  $('fText').textContent = c.feature.text;
+  $('cLook').textContent = c.look;
+
+  document.querySelectorAll('.cls').forEach(btn => {
+    const cv = btn.querySelector('canvas'), g = cv.getContext('2d');
+    g.clearRect(0, 0, 36, 36);
+    g.drawImage(sheets[btn.dataset.cls][st.team], 1 * CELL + 30, row('idle') * CELL + 18, 36, 36, 0, 0, 36, 36);
+  });
+}
+
+let t0 = performance.now(), lastSpin = 0;
+function tick(now) {
+  const ms = now - t0;
+  if (st.spin && now - lastSpin > 650) { st.dir = (st.dir + 1) % 8; lastSpin = now; refresh(); }
+  const r = frameAt(SEQ[st.anim].s, ms);
+
+  sctx.clearRect(0, 0, SW, SH);
+  sctx.drawImage(st.bg === 'level' ? levelBg : checkBg, 0, 0);
+  if (st.bg === 'level') shadow(sctx, FEET[0], FEET[1], 13, 2);
+  drawSprite(sctx, st.cls, st.team, r, st.dir, FEET[0], FEET[1]);
+
+  document.querySelectorAll('#dirs canvas').forEach((cv, d) => {
+    const g = cv.getContext('2d'); g.clearRect(0, 0, CELL, CELL);
+    drawSprite(g, st.cls, st.team, r, d, PIV[0], PIV[1]);
+  });
+
+  const lu = $('lineup'), lg = lu.getContext('2d');
+  lg.clearRect(0, 0, lu.width, lu.height);
+  TEAMS.forEach((t, ti) => CLASSES.forEach((c, ci) => {
+    const x = 44 + (ti * CLASSES.length + ci) * 78 + ti * 20;
+    drawSprite(lg, c, t, r, st.dir, x, 90);
+  }));
+  requestAnimationFrame(tick);
+}
+
+function boot() {
+  levelBg = makeLevel(SW, SH, HORIZON);
+  checkBg = makeChecker(SW, SH);
+  const lu = $('lineup');
+  lu.width = 44 * 2 + (TEAMS.length * CLASSES.length - 1) * 78 + 20; lu.height = 100;
+  lu.style.width = lu.width * 2 + 'px'; lu.style.height = lu.height * 2 + 'px';
+  buildUI(); fitStage(); refresh(); requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>

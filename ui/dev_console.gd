@@ -24,9 +24,8 @@ var _history: Array[String] = []
 var _history_index: int = 0
 var _lines: Array[String] = []
 
-@onready var _panel: Control = $Panel
-@onready var _output: Label = $Panel/Output
-@onready var _input_line: LineEdit = $Panel/Input
+@onready var _output: Label = $Panel/Margin/Box/Output
+@onready var _input_line: LineEdit = $Panel/Margin/Box/Input
 
 
 func _ready() -> void:
@@ -61,11 +60,10 @@ func set_open(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-## Scales the console; 1.0 is the size it's designed for (a 720-pixel-tall window).
+## Scales the console; 1.0 is the size it's designed for (a 720-pixel-tall
+## window). Its look comes from the UI theme (D-057), scaled by [UiTheme].
 func set_ui_scale(factor: float) -> void:
-	UiScale.apply(_panel, factor)
-	UiScale.apply(_output, factor)
-	UiScale.apply(_input_line, factor)
+	UiTheme.apply(self, factor)
 
 
 ## Adds a line to the console output.

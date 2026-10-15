@@ -1,7 +1,7 @@
 extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
-## the HUD and debug overlay on top.
+## the HUD, debug overlay, hold-Tab scoreboard and match-end screen on top.
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
@@ -47,6 +47,7 @@ const UI_DESIGN_HEIGHT := 720.0
 @onready var _debug_overlay: Node = $DebugOverlay
 @onready var _palette_effect: CanvasLayer = $World/SubViewport/PaletteEffect
 @onready var _console: DevConsole = $DevConsole
+@onready var _scoreboard: Scoreboard = $Scoreboard
 @onready var _match_end_screen: MatchEndScreen = $MatchEndScreen
 
 ## The map currently loaded.
@@ -94,7 +95,7 @@ func _load_map() -> void:
 
 
 ## Puts the map into the world viewport, adds the game rules, and connects
-## its player to the HUD and overlay.
+## its player and its round manager (in a match) to the HUD and overlay.
 func _spawn_map(scene: PackedScene) -> void:
 	_map = scene.instantiate()
 	_viewport.add_child(_map)
@@ -103,6 +104,10 @@ func _spawn_map(scene: PackedScene) -> void:
 	var rules := _add_game_rules()
 	# Hides the match-end screen of the previous map; it opens when this match ends.
 	_match_end_screen.set_round_manager(rules as RoundManager)
+	# The round HUD (top bar, kill feed, banners) shows only in a match; null hides it.
+	_hud.set_round_manager(rules as RoundManager)
+	# The hold-Tab scoreboard also exists only in a match.
+	_scoreboard.set_round_manager(rules as RoundManager)
 	_hud.set_player(player)
 	_hud.respawn_hint = rules is ArenaRules
 	_set_up_spectating(player, rules is RoundManager)
@@ -165,4 +170,5 @@ func apply_pixel_settings() -> void:
 	_hud.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_debug_overlay.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)

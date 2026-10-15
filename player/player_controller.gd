@@ -139,8 +139,10 @@ func is_local() -> bool:
 func on_respawned() -> void:
 	_jump_queued = false
 	_reload_queued = false
-	# A new round: back to your own eyes.
+	# A new round: back to your own eyes, with your rifle in hand again.
 	_set_view_target(null)
+	if character.weapon != null:
+		character.weapon.visible = true
 
 
 ## The character whose eyes the camera shows: a teammate while you spectate,
@@ -213,6 +215,9 @@ func _look(mouse_motion: Vector2) -> void:
 func _on_character_died(_killer: Character) -> void:
 	# Show your killer's view for a moment before moving to a teammate.
 	_switch_wait = spectate_delay
+	# The dead don't hold a gun: hide your first-person rifle, as CS does.
+	if character.weapon != null:
+		character.weapon.visible = false
 
 
 ## The living teammate after the current view target in the order they stand in

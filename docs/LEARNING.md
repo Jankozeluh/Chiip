@@ -318,7 +318,7 @@
 - `visible = false` on a `Node3D` hides it and everything below it (meshes, the muzzle-flash light), like `SetActive(false)` on a GameObject, except physics, areas and sounds keep working. That is why one line hides your whole first-person rifle: the `Weapon` node is the parent of its model. A node under a hidden parent reports `is_visible_in_tree() == false` even when its own `visible` is true.
 
 **`is_instance_valid()`** (`PlayerController._physics_process`)
-- A variable that holds a node keeps pointing at it after `queue_free()`, and using it then is an error. `is_instance_valid(node)` says whether it still exists. Unity's `if (obj != null)` does this implicitly, because Unity overloads `==` for destroyed objects; in GDScript ask explicitly with `is_instance_valid()` before touching a node that may have been freed.
+- A variable that holds a node keeps pointing at it after it's freed, and calling anything on it then is an error. `is_instance_valid(node)` says whether it still exists. In Godot 4.7 a freed node also compares `== null` as true (measured in M5 task 7), much like Unity's overloaded `==` for destroyed objects, but `is_instance_valid()` says what you mean and is the safe habit before touching a node that may have been freed.
 
 **`get_nodes_in_group()` returns scene-tree order**
 - The nodes of a group come back in the order they stand in the scene tree, the same every time. Spectating relies on it for a stable "next teammate", with no list to keep.
@@ -326,6 +326,71 @@
 **Simulating input in a test** (`tests/round_test.gd`)
 - `Input.parse_input_event(event)` pushes an event (e.g. an `InputEventMouseButton`) through the same path real input takes, so `_unhandled_input()` sees it. Unity's Input System has `InputTestFixture` for this. In a headless run there is no display server, so `Input.mouse_mode` always reads *visible*: the test treats every click as the click that recaptures the mouse, and the real click is checked in a windowed run.
 
+**A tween that waits, fades and cleans up** (`KillFeed.add_kill`)
+- Tween steps run one after another by default: `tween_interval(5.0)` waits, `tween_property(line, "modulate:a", 0.0, 0.5)` fades, `tween_callback(func)` calls a function at the end (here: remove the line). It is DOTween's `AppendInterval().Append(DOFade(...)).AppendCallback(...)`. A tween made with `line.create_tween()` belongs to that node and ends when the node is freed, so a line pushed out early needs no cleanup of its tween.
+- `modulate` multiplies the colors of a node *and all its children*, so one `modulate:a` on the line's panel fades the panel and all its labels together. In Unity you would need a `CanvasGroup` for that.
+
+**`StyleBoxFlat`: backgrounds without a texture** (`KillFeed`, `RoundHud`)
+- A `PanelContainer` draws a `StyleBox` behind its child. `StyleBoxFlat` is a plain color with an optional border (`set_border_width_all(2)`, `border_color`) and corner radius; `panel.add_theme_stylebox_override("panel", style)` sets it. It replaces a Unity `Image` with a color or a 9-sliced sprite, plus an `Outline` component. The kill feed uses two shared styles: dark, and dark with a white border for your own lines.
+
+**Aligning inside containers** (kill feed lines, the top bar)
+- Children of a `VBoxContainer` stretch to its width by default. `size_flags_horizontal = Control.SIZE_SHRINK_END` makes a child only as wide as it needs and pushes it to the right: that is how lines of different lengths stay right-aligned. In Unity this is the Layout Group's *Child Alignment* plus *Control Child Size*.
+- A control anchored to an edge with zero width and `grow_horizontal = GROW_DIRECTION_BEGIN` (left) or `BOTH` (centered) grows from its anchor as far as its children need. The top bar is centered that way, the kill feed grows leftwards from the right edge, so neither needs a fixed width.
+- `visible = false` on a child of a container takes it out of the layout (the others close the gap), like `SetActive(false)` under a Layout Group. The center messages use this for lines that have no text. A hidden control still runs `_process`, though: only `set_process(false)` stops it (in Unity, disabling the GameObject stops `Update`).
+
+**Signals as values, and disconnecting** (`RoundHud.set_round_manager`)
+- A `Signal` can be kept in a variable or array: `[[manager.phase_changed, _on_phase_changed], …]`, then `sig.connect(callable)`, `sig.is_connected(callable)` and `sig.disconnect(callable)` work on each pair. It is `event += handler` and `event -= handler` from C#. Connecting the same callable twice is an error in Godot (a C# event would just call it twice), so check `is_connected()` or disconnect first.
+- Connections end by themselves when either side is freed. A map that is replaced is only `queue_free()`d, so its round manager still lives to the end of the frame: the HUD, which outlives maps, disconnects from it explicitly when it is handed the next one.
+- `sig.get_connections()` lists the connections as dictionaries (`signal`, `callable`, `flags`), and `Callable.get_object()` says whose method it is. The test uses them to count how many signals the HUD listens to (5, never 10).
+
+**`find_child` and `owned`** (`tests/round_test.gd`)
+- `node.find_child("Killer", true, false)` searches the whole subtree for a node by name; `find_children("*", "Control", true, false)` finds all nodes of a type. The last argument, `owned`, must be `false` for nodes created from code: by default only nodes that belong to a saved scene (they have an owner) are found. Unity's closest are `Transform.Find` and `GetComponentsInChildren`.
+
+**Does the font have this character?** (`Font.has_char()`)
+- `font.has_char(0x2192)` says whether a font can draw a character. Silkscreen has no arrow "→", so the kill feed uses ">" (it does have "·", "×" and "»"); a missing glyph is drawn as a box or skipped. Check a font before putting a symbol in a label. Unity's TextMeshPro shows the same problem as missing-glyph warnings and solves it with fallback fonts.
+
+**`@warning_ignore`** (`RoundHud.format_time`)
+- `total / 60` with two ints truncates, and GDScript warns about it (`INTEGER_DIVISION`). `@warning_ignore("integer_division")` on the line above says "I meant that". C# divides ints silently.
+
+**One scene used in two places, with a property changed on the instance** (`ui/scoreboard_table.tscn`)
+- The scoreboard table is its own scene, instanced inside the hold-Tab overlay and inside the match-end screen. In a `.tscn` an instance is `[node name="Table" parent="..." instance=ExtResource("table_scene")]`, and any `@export` of its root can be set right under it: the match-end screen says `dim_dead = false`, the overlay leaves the default. That is a Unity nested prefab with an *override* on one instance: the scene stays the single place to change the look, and each user only states how it differs. In the editor you change it in the Inspector of the instanced node (a changed value gets a revert arrow).
+
+**`CenterContainer`** (`ui/scoreboard.tscn`)
+- A `CenterContainer` centers its child at the child's minimum size, however big the window is or how many rows the child grows to. Anchored to the full screen, it is the simple way to put a panel in the middle without anchor and offset arithmetic (Unity: anchors at the center with a pivot of 0.5, or a Layout Group with *Child Alignment* middle). It also keeps the panel's parent a container, which matters for `UiScale.apply_tree()`: that scales the offsets of controls that are *not* in a container, and a centered panel's offsets are worked out by the layout, so they must not be remembered and scaled.
+
+**`CanvasLayer.layer` is the draw order** (`Scoreboard`)
+- A `CanvasLayer`'s `layer` number decides what draws on top: higher is in front, like a Unity Canvas's *Sort Order*. The HUD sits on the default layer 1, the scoreboard on 3, the match-end screen on 5 and the console on 10, so Tab never covers the end screen or the console, whatever the order of the nodes in the scene tree.
+
+**Arrays compare by value** (`ScoreboardTable.refresh`)
+- `[1, "a"] == [1, "a"]` is `true`: `==` on arrays and dictionaries compares them element by element (and the elements that are nodes by identity). A C# `List` would compare references. The table builds a small "signature" array of everything it shows (names, kills, deaths, alive, …) each time `refresh()` runs and rebuilds its rows only when it differs from the last one, so asking for a refresh every frame costs almost nothing.
+
+**Holding an action in a test** (`tests/round_test.gd`)
+- `Input.action_press("scoreboard")` makes the game see the action as held, as if the key were down, until `Input.action_release("scoreboard")`; `Input.is_action_pressed()` and every script that polls it react. Unity's Input System test fixture has `Press()` and `Release()` for the same. The Tab binding itself is tested the other way round, by sending a real key press through `Input.parse_input_event()` and reading the action.
+
+**`:=` can't infer a type from a Variant**
+- `var x := dictionary[key]`, `var x := array.map(...)[0]` or `var x := array_of_untyped[3]` are parse errors ("Cannot infer the type"), because the value is a `Variant`. Write the type: `var x: String = …`. C# always knows what a `List<string>` indexer returns; GDScript only knows it for typed arrays (`Array[Character]`) and typed functions, so there `:=` works and for the rest you name the type.
+
+**A `Theme` resource: styling every control from one place** (`ui/chiip_theme.tres`)
+- A `Theme` is a resource that holds named *items* for *theme types*: colors, constants (spacing and other whole numbers), fonts, font sizes, icons (textures) and styleboxes. A control looks each one up by name in the type of its class: a `Button` asks the theme for `font_color`, `normal`, `hover`, `focus`... in the type "Button". It is the closest thing to a Unity UI Toolkit style sheet (USS): one file decides how every button looks, instead of copying the styling onto every button prefab as in uGUI. The lookup also walks up the class chain (a `CheckBox` is a `Button`), which is why a theme that styles "Button" will make check boxes look like buttons unless they get styles of their own, as ours do.
+- Where a control finds an item, in order: an override on the node itself (`add_theme_color_override()`, or "Theme Overrides" in the Inspector), the `theme` property of the node or its closest ancestor that has one, the *project theme* (*Project Settings → GUI → Theme → Custom*, our `chiip_theme.tres`) and finally Godot's built-in default theme. `control.get_theme_color("font_color")` (and `get_theme_font_size`, `get_theme_stylebox`...) returns what a control would use, so a test can read a look back without taking a screenshot.
+- `Control.theme` is passed down to all the controls below it, but not through a node that isn't a `Control`: a `CanvasLayer` (our HUD, scoreboard and match-end screen) stops it, so the theme is handed to the controls just under the layer. Popups are windows (`PopupMenu` in an `OptionButton`), and they take the theme of the control that owns them.
+
+**Type variations: named looks for roles** (`theme_type_variation`)
+- A *type variation* is a theme type that says "I am a `Label`, but with these items changed": `TitleLabel` is a label with a 48 px font. A node chooses one with its *Theme Type Variation* property (`theme_type_variation = &"TitleLabel"`), and anything the variation doesn't list comes from the base type. It is what Unity's USS classes (`.title`) or uGUI prefab variants do for a label: the scene says what the thing *is*, the theme says how it looks, and a restyle is one edit. Variations are also how a container's spacing is named (`ContentBox` is a `VBoxContainer` with a separation of 8), which leaves plain containers on Godot's defaults.
+
+**More `StyleBox` types** (`tools/make_ui_theme.gd`)
+- `StyleBoxFlat` (a color, borders, optional rounded corners) was introduced with the kill feed; the theme also uses `StyleBoxEmpty` (draws nothing, but still holds content margins), `StyleBoxLine` (a separator) and a focus ring: a `StyleBoxFlat` with `draw_center = false`, drawn on top of the control's normal look while it has the keyboard focus. *Content margins* are the space between a stylebox's edge and what it holds (a button's padding); *expand margins* let it draw outside its own rectangle (our selected tab covers the page's top border with one). In Unity the same split is padding on a layout group versus the border slice of a 9-sliced sprite.
+
+**Scaling a theme instead of a node** (`ui/ui_theme.gd`)
+- Everything in a theme is plain data, so a scaled copy can be built in code: a new `Theme`, then for each type `get_font_size_list()`, `get_stylebox_list()`, `get_icon_list()`... copied with every number multiplied (`set_font_size()`, `set_stylebox()` with a `duplicate()` whose `border_width_*` and `content_margin_*` are scaled). Assign that copy to the menu's root `Control` and every control below it picks it up, whatever it is: fonts, borders, margins and icons all change together. Unity's *Canvas Scaler* instead scales the whole canvas as pixels, which would blur pixel art at 1.5×; scaling the data keeps every pixel whole.
+- `Resource.duplicate()` copies a resource (a stylebox) so the original isn't changed. `texture.get_image()` is not safe in that way: it can return the texture's own image, so `Image.resize()` on it changes it for everyone who uses the texture; call `duplicate()` on the image first. (This bit us in the first version; a test now catches it.) `Image.resize(w, h, Image.INTERPOLATE_NEAREST)` resizes without blending colors, which keeps pixel art crisp.
+- Fonts have a pixel grid too: Silkscreen is drawn on 1/8 em, so at 16 px every font pixel is 2 × 2 screen pixels, and at 24 × 1.5 = 36 px it would be 4.5, which looks uneven. Text sizes that are multiples of 16 stay on whole pixels at 1.5× and 2×.
+
+**Building a resource from a tool script** (`tools/make_ui_theme.gd`, `tools/generate_ui_icons.gd`)
+- Like the sound tool, a script that `extends SceneTree` can make assets: `Image.create()`, `fill_rect()` and `save_png()` draw the icons; `Theme.new()` plus `set_color()`, `set_stylebox()`... then `ResourceSaver.save(theme, "res://ui/chiip_theme.tres")` writes a text resource that the editor opens like any other (its Theme editor shows it). Setting `resource_scene_unique_id` on a subresource gives it a readable name in the saved file (`button_normal`) instead of a random one, so a regenerated file doesn't change everywhere. The generated file is the output; the script is the source (a pattern like a Unity editor script that builds assets).
+
+**A popup closes when its window loses focus** (`ui/theme_preview.gd`)
+- A `PopupMenu` hides itself as soon as the window gets or loses keyboard focus, and a window launched from a terminal gains it a few frames late. The preview therefore waits until `get_window().has_focus()` has been true for a while before it calls `OptionButton.show_popup()`, which is why its drop-down stays open for a screenshot.
 ### M8 — Quick maps (started early)
 
 **Level design words used in docs/MAPS.md**

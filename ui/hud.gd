@@ -2,7 +2,8 @@ extends CanvasLayer
 ## The in-game HUD: crosshair, health, ammo counter and weapon name.
 ## Listens to the player's weapon through its signals. While you spectate a
 ## teammate (see [PlayerController]), health, ammo and weapon are theirs and a
-## "Spectating" line shows whose view you are in.
+## "Spectating" line shows whose view you are in. In a match the [RoundHud]
+## child adds the top bar, countdown, round-end banners and kill feed.
 
 ## Magazine counts at or below this fraction of a full magazine are shown in red.
 const LOW_AMMO_FRACTION := 0.25
@@ -25,6 +26,7 @@ var respawn_hint: bool = true
 @onready var _health_label: Label = $HealthLabel
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
+@onready var _round_hud: RoundHud = $RoundHud
 
 
 ## Shows this player's weapon on the HUD.
@@ -34,6 +36,13 @@ func set_player(new_player: Character) -> void:
 	player.respawned.connect(_on_player_respawned)
 	_crosshair.camera = player.get_camera()
 	set_view_target(player)
+
+
+## Shows the round HUD (top bar, countdown, banners, kill feed) for the match
+## run by [param manager], or hides it when null (practice mode). Called on
+## every map load; the previous manager is dropped.
+func set_round_manager(manager: RoundManager) -> void:
+	_round_hud.set_round_manager(manager)
 
 
 ## Shows the health, ammo and weapon of [param target] instead of the player's
@@ -68,6 +77,7 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_death_label, factor)
 	UiScale.apply(_spectate_label, factor)
 	_crosshair.set_ui_scale(factor)
+	_round_hud.set_ui_scale(factor)
 
 
 func _process(_delta: float) -> void:

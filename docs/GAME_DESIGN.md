@@ -119,13 +119,21 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 | Spray | 30-shot pattern: climbs ~6° over 10 shots, sways left to −2.3°, then right to +1.95° | Similar shape |
 | Aim punch | The view kicks 50% of the pattern; recoil wears off at 12 shots per second | ~50% |
 
-| Slot | Role | CS reference |
-|---|---|---|
-| Knife | Melee, fastest movement | Knife |
-| Pistol | Default sidearm | Glock / USP |
-| Rifle | Main automatic weapon, one-tap headshots | AK-47 / M4 |
-| Sniper | One-shot body kill, slow, scoped | AWP |
-| Grenades | High explosive, flash, smoke | HE / flashbang / smoke |
+The arsenal (D-056), working names until M7:
+
+| Slot | Weapon | Role | CS reference |
+|---|---|---|---|
+| Primary | Rifle (AK-style) | Main automatic weapon, one-tap headshots | AK-47 |
+| Primary | Carbine | More accurate than the rifle, less damage | M4 |
+| Primary | SMG | Cheap and fast to move with, for eco and anti-eco rounds | MP9 / MAC-10 |
+| Primary | Pump shotgun | Close range, holds tight corners | Nova |
+| Primary | Sniper rifle | One-shot body kill, slow, scoped | AWP |
+| Pistol | Service pistol | Free default sidearm | Glock / USP |
+| Pistol | Hand cannon | Expensive, one-tap headshots | Desert Eagle |
+| Knife | Knife | Melee, fastest movement | Knife |
+| Grenades | High explosive, flashbang, smoke | Utility | HE / flashbang / smoke |
+
+Every weapon is generated from one part list (D-054) and comes as a world model (drops and pickups), a third-person model in the character's hand, a first-person model with arms, and buy-menu and kill-feed icons.
 
 ### 4.4 Bots
 
@@ -171,6 +179,12 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
   - Then the view moves to a living **teammate**: you see exactly what they see (their eyes, their aim, their recoil kick, their muzzle flash), and hear from where they are. Their health, ammo and weapon replace yours on the HUD, and a line at the bottom says "Spectating Bot2 · click for next". No free look.
   - **Left click** switches to the next living teammate. When the one you watch dies, the view moves on to the next one after **1.5 s**. If no teammate is alive, you stay on the last view, where they fell, and watch the end of the round from there.
   - When the next round starts you are back in your own eyes. You can't watch the other team.
+- **Round HUD** (D-047, matches only; practice mode shows none of it). Colors are always relative to you: your team blue, the enemy red.
+  - **Top bar, top centre:** your score on the left (blue box), the round timer in the middle with "Round 3" under it, their score on the right (red box). Under each score one small square per player, lit while that player is alive. The timer counts the freeze time down (yellow) before the round and then runs from 1:55 (red in the last 10 s); after the round ends it stays where it stopped (0:00 after a time-out).
+  - **Freeze time, centre:** "Round 3 · starts in 4", and your side this half: "You attack: push to the far end" or "You defend: hold your end". After half time "Switching sides" is shown above it, and a team one round from winning gets "Match point" (yours, blue), "Enemy match point" (red) or "Match point for both teams" below it.
+  - **Round end, centre:** "Round won" (blue) or "Round lost" (red), and why, said for your side: "Enemy team eliminated" / "Your team was eliminated", "Time ran out: you held your end" / "Time ran out: the defenders held their end".
+  - **Kill feed, top right:** one line per death, "Killer > Victim" with each name in its team's color and a gold "HS" after a headshot kill; a death without a killer shows only the victim. Lines that involve you (a kill of yours or your own death) have a darker background and a white outline. The newest line is at the bottom, at most 5 lines show, each fades out after 5 s, and the feed starts empty in every round.
+- **Scoreboard** (D-050, hold **Tab**, matches only): while you hold the key a panel appears in the middle of the screen, and it is gone when you let go. It never pauses the game, blocks movement or takes mouse clicks, so you can peek at it while moving. At the top "Round 3" and the score, yours in blue and theirs in red; below it both teams as tables, yours first under a blue header, the enemy under a red one. One row per player: name, kills, deaths, assists and damage (rounded), best first (most kills, then most damage, then the order they joined). Your own row is highlighted and marked "(you)". **Players who are dead this round are dimmed**, so you see at a glance who is still alive. The numbers follow the match while you hold it. It stays closed while the developer console is open and once the match is over (the end screen shows the final table, where nobody is dimmed). Practice mode has no scoreboard.
 - **Stats** for the scoreboard: kills (a teamkill counts −1), deaths, assists (more than 40 damage to an enemy someone else kills, as in CS) and damage (health actually removed, so a 142-damage headshot on a 30 HP enemy counts 30).
 - **Practice** (`-- --practice` for now, a main-menu entry later): today's bot arena without rounds; bots and you respawn after 3 s, so there is no spectating.
 - Match: first to **5** (default), **10** or **15** rounds. Sides swap at half time, after 4, 9 or 14 rounds, so a draw is impossible. The teams keep their numbers and colors; only who attacks and who defends flips, so each team starts the next round at the other end of the map. The longest match is 9, 19 or 29 rounds.
@@ -204,6 +218,21 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 - Walking (Shift) and crouch-walking are silent for everyone.
 - While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.
 
+### 4.9 Classes
+
+Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy anything, so the economy stays CS-like. The signature gun is only what the class holds in the class menu. You pick a class at match start and can change it during freeze time; bots get a mix. Perks switch on in M7; until then the classes differ only in looks.
+
+| Class *(working name)* | Build and silhouette | Perk *(tune)* | Signature gun |
+|---|---|---|---|
+| **Rifleman** | 1.82 m, stocky, upright. High-cut helmet, goggles, plate carrier | **Quick Hands:** reloads and weapon switches 15% faster | AK-style rifle |
+| **Bulwark** | 1.92 m, broad, slight hunch. Closed helmet with a gas mask, shoulder plates | **Plated:** with armor on, takes 10% less damage than other classes and the armor wears down 30% slower. No effect without armor | Pump shotgun |
+| **Marksman** | 1.88 m, lanky. Long coat, hood, scarf | **Steady:** scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster | Sniper rifle |
+| **Scout** | 1.72 m, slim. Beanie, balaclava, glowing goggles, a radio with an antenna | **Light Step:** running footsteps carry 70% as far (a deliberate exception to D-038) | SMG |
+
+- **Silhouette first** (D-053): height, build, posture and headgear make each class recognisable at a glance, even as a dark shape.
+- **Team colour** is painted at runtime: every class wears a neutral kit (greys, olive-greys, charcoal; never desert tones, D-031) with team-colour parts such as jacket panels, armbands and a helmet stripe. They show blue on your team and red on the enemy team (D-041).
+- **Hit zones follow each body** (D-055): the Bulwark is the biggest target and the Scout the smallest. Perks balance the difference.
+
 ## 5. Look and feel
 
 The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
@@ -211,8 +240,10 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 - Low internal render resolution (480 lines), upscaled crisply so pixels stay sharp (D-027, D-048).
 - Pixelated textures with nearest-neighbor filtering, so no smoothing. Anisotropic filtering keeps floors sharp into the distance.
 - Simple geometry: blocky architecture and low-poly models.
+- Characters and weapons: minimalistic and pixelated, in a CS/Quake/CoD-like style. Low-poly models built from rigid pieces, like late-90s shooters, with palette-limited pixel textures, made by a generator (D-054). First person shows 3D arms and gun (D-051).
 - World image limited to 16 shades per color channel with light ordered dithering (D-030, D-048).
 - Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Baked lightmaps are being evaluated in M3.
+- **Menus and UI** (D-057): one pixel-art look for every menu, the Silkscreen font with square panels and buttons, crisp 2 px borders and no rounded corners or smoothing. Cool dark blue-grey panels, light text and a single icy cyan accent for focus, selection and sliders; team blue and red only mark teams. Deliberately not Counter-Strike's orange and yellow on black. Everything is drawn for a 720-pixel-tall window and scales by the window height (exactly 1.5× at 1080, 2× at 1440), and text sizes sit on the font's pixel grid (16 / 32 / 48 px) so pixels stay whole. The in-game HUD keeps its own simple look.
 - **Clarity rule:** enemies must always stand out from the background.
 
 ## 6. Controls (default)
@@ -230,7 +261,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades, 5 bomb |
 | Use / defuse | E |
 | Buy menu | B |
-| Scoreboard | Tab |
+| Scoreboard (hold, in a match) | Tab |
 | Developer console | ` (backtick / tilde key) |
 | Free / capture the mouse | Esc / click |
 | Debug overlay | F3 |
