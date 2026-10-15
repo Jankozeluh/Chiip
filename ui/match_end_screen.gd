@@ -8,22 +8,15 @@ extends CanvasLayer
 ## It only shows state and reports button clicks; [code]main.gd[/code] reacts to
 ## [signal play_again_pressed] and [signal quit_pressed]. Teams have no names:
 ## your team (from [member Teams.viewer_team]) is blue and listed first, the
-## enemy team red.
+## enemy team red. Its look comes from the UI theme (D-057): the panel, title,
+## scores and buttons use theme type variations.
 
 ## Emitted when the player clicks "Play again".
 signal play_again_pressed
 ## Emitted when the player clicks "Quit".
 signal quit_pressed
 
-## Meta key under which a control's unscaled values are remembered.
-const BASE_META := "match_end_base"
-## Theme constants that make up a container's spacing, scaled with the UI.
-const SPACING_CONSTANTS: Array[String] = [
-	"separation", "margin_left", "margin_top", "margin_right", "margin_bottom",
-]
-
 var _manager: RoundManager
-var _ui_scale: float = 1.0
 
 @onready var _title: Label = $Panel/Margin/Content/Title
 @onready var _your_score: Label = $Panel/Margin/Content/Score/YourScore
@@ -66,9 +59,11 @@ func set_round_manager(manager: RoundManager) -> void:
 
 
 ## Scales the layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
+## Gives the screen the theme scaled for the window ([UiTheme]); the table is
+## handed the factor too, because its rows come and go and it scales those itself.
 func set_ui_scale(factor: float) -> void:
-	_ui_scale = factor
-	_scale_tree(self)
+	UiTheme.apply(self, factor)
+	_table.set_ui_scale(factor)
 
 
 func _on_match_ended(winner: int) -> void:
@@ -92,38 +87,3 @@ func _on_match_ended(winner: int) -> void:
 ## Text in a team's color, lightened so it stays readable on the dark panel.
 func _text_color(team: int) -> Color:
 	return Teams.color_for(team).lightened(0.35)
-
-
-## Scales [param node] and everything below it: font sizes, minimum sizes and
-## container spacing. Containers place their children themselves, so unlike the
-## HUD there are no offsets to scale. A control's original values are
-## remembered on first use, so this can run again with another factor. The
-## scoreboard table scales itself (its rows come and go), so it is handed the
-## factor instead of being walked.
-func _scale_tree(node: Node) -> void:
-	if node is ScoreboardTable:
-		(node as ScoreboardTable).set_ui_scale(_ui_scale)
-		return
-	if node is Control:
-		_scale_control(node as Control)
-	for child in node.get_children():
-		_scale_tree(child)
-
-
-func _scale_control(control: Control) -> void:
-	if not control.has_meta(BASE_META):
-		var original := {"minimum_size": control.custom_minimum_size, "constants": {}}
-		if control is Label or control is Button:
-			original["font_size"] = control.get_theme_font_size("font_size")
-		for constant_name in SPACING_CONSTANTS:
-			if control.has_theme_constant(constant_name):
-				original["constants"][constant_name] = control.get_theme_constant(constant_name)
-		control.set_meta(BASE_META, original)
-	var base: Dictionary = control.get_meta(BASE_META)
-	var minimum_size: Vector2 = base["minimum_size"]
-	control.custom_minimum_size = (minimum_size * _ui_scale).round()
-	if base.has("font_size"):
-		control.add_theme_font_size_override("font_size", maxi(1, roundi(int(base["font_size"]) * _ui_scale)))
-	var constants: Dictionary = base["constants"]
-	for constant_name: String in constants:
-		control.add_theme_constant_override(constant_name, roundi(int(constants[constant_name]) * _ui_scale))

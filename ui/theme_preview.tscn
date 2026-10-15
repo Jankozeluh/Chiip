@@ -1,0 +1,402 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/theme_preview.gd" id="preview_script"]
+
+[sub_resource type="ButtonGroup" id="radio_group"]
+
+[node name="ThemePreview" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("preview_script")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.43, 0.52, 0.62, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
+layout_mode = 2
+theme_type_variation = &"PanelMargin"
+
+[node name="Columns" type="HBoxContainer" parent="Center/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Buttons" type="VBoxContainer" parent="Center/Panel/Margin/Columns"]
+layout_mode = 2
+theme_type_variation = &"ContentBox"
+
+[node name="ButtonsHeader" type="Label" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Buttons"
+
+[node name="Row1" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+
+[node name="Normal" type="Button" parent="Center/Panel/Margin/Columns/Buttons/Row1"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "A tooltip"
+text = "Normal"
+
+[node name="Hover" type="Button" parent="Center/Panel/Margin/Columns/Buttons/Row1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Hover"
+
+[node name="Row2" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+
+[node name="Pressed" type="Button" parent="Center/Panel/Margin/Columns/Buttons/Row2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Pressed"
+
+[node name="Focus" type="Button" parent="Center/Panel/Margin/Columns/Buttons/Row2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Focus"
+
+[node name="Row3" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+
+[node name="Disabled" type="Button" parent="Center/Panel/Margin/Columns/Buttons/Row3"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Disabled"
+
+[node name="Toggled" type="Button" parent="Center/Panel/Margin/Columns/Buttons/Row3"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+text = "Toggled"
+
+[node name="Big" type="Button" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Big button"
+
+[node name="TogglesHeader" type="Label" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Toggles"
+
+[node name="CheckRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+
+[node name="CheckOff" type="CheckBox" parent="Center/Panel/Margin/Columns/Buttons/CheckRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Off"
+
+[node name="CheckOn" type="CheckBox" parent="Center/Panel/Margin/Columns/Buttons/CheckRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+button_pressed = true
+text = "On"
+
+[node name="CheckDisabled" type="CheckBox" parent="Center/Panel/Margin/Columns/Buttons/CheckRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+button_pressed = true
+text = "Locked"
+
+[node name="RadioRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+
+[node name="RadioA" type="CheckBox" parent="Center/Panel/Margin/Columns/Buttons/RadioRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+button_pressed = true
+button_group = SubResource("radio_group")
+text = "Radio A"
+
+[node name="RadioB" type="CheckBox" parent="Center/Panel/Margin/Columns/Buttons/RadioRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+button_group = SubResource("radio_group")
+text = "Radio B"
+
+[node name="SwitchRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+
+[node name="SwitchOff" type="CheckButton" parent="Center/Panel/Margin/Columns/Buttons/SwitchRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Off"
+
+[node name="SwitchOn" type="CheckButton" parent="Center/Panel/Margin/Columns/Buttons/SwitchRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+button_pressed = true
+text = "On"
+
+[node name="SwitchDisabled" type="CheckButton" parent="Center/Panel/Margin/Columns/Buttons"]
+layout_mode = 2
+disabled = true
+button_pressed = true
+text = "Locked"
+
+[node name="Values" type="VBoxContainer" parent="Center/Panel/Margin/Columns"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_type_variation = &"ContentBox"
+
+[node name="LabelsHeader" type="Label" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Labels"
+
+[node name="Title" type="Label" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Title"
+
+[node name="ScoreRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"ScoreRow"
+
+[node name="Score" type="Label" parent="Center/Panel/Margin/Columns/Values/ScoreRow"]
+layout_mode = 2
+theme_type_variation = &"ScoreLabel"
+text = "3 - 1"
+
+[node name="Body" type="Label" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+text = "Normal text"
+
+[node name="Dim" type="Label" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Dim: secondary text"
+
+[node name="Bright" type="Label" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Bright text"
+
+[node name="InputsHeader" type="Label" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Inputs"
+
+[node name="Name" type="LineEdit" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+text = "Player"
+
+[node name="Empty" type="LineEdit" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+placeholder_text = "Placeholder"
+
+[node name="ReadOnly" type="LineEdit" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+text = "Read only"
+editable = false
+
+[node name="SliderRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+theme_type_variation = &"FormRow"
+
+[node name="SliderLabel" type="Label" parent="Center/Panel/Margin/Columns/Values/SliderRow"]
+layout_mode = 2
+text = "Volume"
+
+[node name="Slider" type="HSlider" parent="Center/Panel/Margin/Columns/Values/SliderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 60.0
+
+[node name="DisabledSlider" type="HSlider" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+value = 30.0
+editable = false
+
+[node name="Progress" type="ProgressBar" parent="Center/Panel/Margin/Columns/Values"]
+layout_mode = 2
+value = 65.0
+
+[node name="Tabs" type="VBoxContainer" parent="Center/Panel/Margin/Columns"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_type_variation = &"ContentBox"
+
+[node name="TabsHeader" type="Label" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Tabs"
+
+[node name="TabContainer" type="TabContainer" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+current_tab = 0
+
+[node name="Game" type="VBoxContainer" parent="Center/Panel/Margin/Columns/Tabs/TabContainer"]
+layout_mode = 2
+theme_type_variation = &"ContentBox"
+metadata/_tab_index = 0
+
+[node name="GameLabel" type="Label" parent="Center/Panel/Margin/Columns/Tabs/TabContainer/Game"]
+layout_mode = 2
+text = "The page of a tab"
+
+[node name="GameCheck" type="CheckBox" parent="Center/Panel/Margin/Columns/Tabs/TabContainer/Game"]
+layout_mode = 2
+button_pressed = true
+text = "Show the HUD"
+
+[node name="Video" type="VBoxContainer" parent="Center/Panel/Margin/Columns/Tabs/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Audio" type="VBoxContainer" parent="Center/Panel/Margin/Columns/Tabs/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="ScrollHeader" type="Label" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Scroll bar"
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Panel/Margin/Columns/Tabs"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Lines" type="VBoxContainer" parent="Center/Panel/Margin/Columns/Tabs/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"ContentBox"
+
+[node name="Line1" type="Label" parent="Center/Panel/Margin/Columns/Tabs/Scroll/Lines"]
+layout_mode = 2
+text = "First line"
+
+[node name="Line2" type="Label" parent="Center/Panel/Margin/Columns/Tabs/Scroll/Lines"]
+layout_mode = 2
+text = "Second line"
+
+[node name="Line3" type="Label" parent="Center/Panel/Margin/Columns/Tabs/Scroll/Lines"]
+layout_mode = 2
+text = "Third line"
+
+[node name="Line4" type="Label" parent="Center/Panel/Margin/Columns/Tabs/Scroll/Lines"]
+layout_mode = 2
+text = "Fourth line"
+
+[node name="Line5" type="Label" parent="Center/Panel/Margin/Columns/Tabs/Scroll/Lines"]
+layout_mode = 2
+text = "Fifth line"
+
+[node name="Line6" type="Label" parent="Center/Panel/Margin/Columns/Tabs/Scroll/Lines"]
+layout_mode = 2
+text = "Sixth line"
+
+[node name="Separator" type="HSeparator" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+
+[node name="PanelsHeader" type="Label" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Panels"
+
+[node name="PanelRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+
+[node name="Inset" type="PanelContainer" parent="Center/Panel/Margin/Columns/Tabs/PanelRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"InsetPanel"
+
+[node name="InsetMargin" type="MarginContainer" parent="Center/Panel/Margin/Columns/Tabs/PanelRow/Inset"]
+layout_mode = 2
+theme_type_variation = &"RowMargin"
+
+[node name="InsetLabel" type="Label" parent="Center/Panel/Margin/Columns/Tabs/PanelRow/Inset/InsetMargin"]
+layout_mode = 2
+text = "Inset"
+
+[node name="Tooltip" type="PanelContainer" parent="Center/Panel/Margin/Columns/Tabs/PanelRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TooltipPanel"
+
+[node name="TooltipMargin" type="MarginContainer" parent="Center/Panel/Margin/Columns/Tabs/PanelRow/Tooltip"]
+layout_mode = 2
+theme_type_variation = &"RowMargin"
+
+[node name="TooltipLabel" type="Label" parent="Center/Panel/Margin/Columns/Tabs/PanelRow/Tooltip/TooltipMargin"]
+layout_mode = 2
+theme_type_variation = &"TooltipLabel"
+text = "Tooltip"
+
+[node name="TeamRow" type="HBoxContainer" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+
+[node name="Friendly" type="PanelContainer" parent="Center/Panel/Margin/Columns/Tabs/TeamRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TeamHeaderFriendly"
+
+[node name="FriendlyMargin" type="MarginContainer" parent="Center/Panel/Margin/Columns/Tabs/TeamRow/Friendly"]
+layout_mode = 2
+theme_type_variation = &"RowMargin"
+
+[node name="FriendlyLabel" type="Label" parent="Center/Panel/Margin/Columns/Tabs/TeamRow/Friendly/FriendlyMargin"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Your team"
+
+[node name="Enemy" type="PanelContainer" parent="Center/Panel/Margin/Columns/Tabs/TeamRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TeamHeaderEnemy"
+
+[node name="EnemyMargin" type="MarginContainer" parent="Center/Panel/Margin/Columns/Tabs/TeamRow/Enemy"]
+layout_mode = 2
+theme_type_variation = &"RowMargin"
+
+[node name="EnemyLabel" type="Label" parent="Center/Panel/Margin/Columns/Tabs/TeamRow/Enemy/EnemyMargin"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Enemy team"
+
+[node name="OptionHeader" type="Label" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Option button"
+
+[node name="Option" type="OptionButton" parent="Center/Panel/Margin/Columns/Tabs"]
+layout_mode = 2
+selected = 1
+item_count = 3
+popup/item_0/text = "1280 x 720"
+popup/item_0/id = 0
+popup/item_1/text = "1920 x 1080"
+popup/item_1/id = 1
+popup/item_2/text = "2560 x 1440"
+popup/item_2/id = 2

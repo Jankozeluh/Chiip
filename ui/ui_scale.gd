@@ -5,7 +5,8 @@ class_name UiScale
 ##
 ## [method apply] is for one control placed by offsets (the old HUD labels);
 ## [method apply_tree] is for a whole layout built from containers (the round
-## HUD).
+## HUD). Menus don't use it: they take their look from the UI theme and are
+## scaled by [UiTheme] (D-057), which also reaches styleboxes and icons.
 
 ## Meta key under which [method apply_tree] remembers a control's unscaled values.
 const TREE_META := "ui_tree_base"

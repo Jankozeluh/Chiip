@@ -13,9 +13,12 @@ extends CanvasLayer
 ## gets the manager from [code]main.gd[/code], or null in practice mode, where
 ## it never appears. It stays hidden while the developer console is open and
 ## once the match is over (the [MatchEndScreen] shows the final table then).
+##
+## Its look comes from the UI theme (D-057): the panel, the header and the
+## scores use theme type variations, and [method set_ui_scale] hands the
+## menu a theme scaled for the window ([UiTheme]).
 
 var _manager: RoundManager
-var _ui_scale: float = 1.0
 
 @onready var _round_label: Label = $Center/Panel/Margin/Content/RoundLabel
 @onready var _your_score: Label = $Center/Panel/Margin/Content/Score/YourScore
@@ -48,8 +51,7 @@ func set_round_manager(manager: RoundManager) -> void:
 
 ## Scales the layout; 1.0 is the size it is designed for (a 720-pixel-tall window).
 func set_ui_scale(factor: float) -> void:
-	_ui_scale = factor
-	UiScale.apply_tree(self, factor)
+	UiTheme.apply(self, factor)
 	_table.set_ui_scale(factor)
 
 

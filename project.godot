@@ -27,6 +27,7 @@ enabled=PackedStringArray("res://addons/func_godot/plugin.cfg")
 
 [gui]
 
+theme/custom="res://ui/chiip_theme.tres"
 theme/custom_font="res://assets/fonts/Silkscreen-Regular.ttf"
 
 [input]

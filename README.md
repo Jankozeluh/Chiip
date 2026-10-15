@@ -84,6 +84,16 @@ Real maps are built in **TrenchBroom**, a free brush-based map editor similar to
 
 **Baked lighting (M8):** select the scene's `LightmapGI` node, click **Bake Lightmaps** in the 3D toolbar, and save. Godot can only bake from the editor.
 
+## The UI theme
+
+Every menu is styled by one Godot theme, `ui/chiip_theme.tres` (D-057). To see all its controls in one window (add `--resolution 1920x1080` to see it scaled for a bigger window):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip res://ui/theme_preview.tscn
+```
+
+The theme is generated from `tools/ui_palette.gd` (colors), `tools/generate_ui_icons.gd` (pixel-art icons in `assets/ui/`) and `tools/make_ui_theme.gd`. After changing one of them, run the three steps (the commands are in [CLAUDE.md](CLAUDE.md)): the icon tool, the asset import, then the theme tool.
+
 ## Tests
 
 Automated checks run without a window in about a second each:
@@ -106,6 +116,10 @@ Automated checks run without a window in about a second each:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/tactics_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/ui_test.tscn
 ```
 
 ## Documentation

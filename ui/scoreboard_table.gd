@@ -12,17 +12,18 @@ extends VBoxContainer
 ## nothing in the game. Teams have no names, so "your team" is [member
 ## Teams.viewer_team] and the colors come from [method Teams.color_for].
 ##
+## Its look comes from the UI theme (D-057): the rows, headers and labels pick
+## theme type variations ("TeamHeaderFriendly", "YouRowPanel", "BrightLabel"...)
+## instead of carrying styles of their own, so they scale with the theme.
+##
 ## Nothing in the table takes mouse clicks (every control uses [constant
 ## Control.MOUSE_FILTER_IGNORE]), so it can sit on top of the game.
 
-## Font size (at the 720-pixel design height) of the rows.
-const ROW_FONT_SIZE := 16
 ## Width (design pixels) of each number column.
 const STAT_COLUMN_WIDTH := 96.0
-## Background of your own row.
+## Background of your own row. The theme's "YouRowPanel" variation (made by
+## tools/make_ui_theme.gd) takes this value, so there is one definition.
 const YOU_ROW_COLOR := Color(1, 1, 1, 0.16)
-## Text color of the other players' rows (yours is white).
-const ROW_TEXT_COLOR := Color(0.8, 0.8, 0.8)
 ## How visible a dead player's row is when [member dim_dead] is on (1 = not dimmed).
 const DEAD_ROW_ALPHA := 0.4
 ## Titles of the number columns.
@@ -79,14 +80,15 @@ func refresh() -> void:
 	_clear()
 	for team in order:
 		_add_team(team, sorted_members[team])
-	UiScale.apply_tree(self, _ui_scale)
+	# The new rows' own sizes (column widths); the theme they inherit is already scaled.
+	UiTheme.apply_sizes(self, _ui_scale)
 
 
 ## Scales the table; 1.0 is the size it is designed for (a 720-pixel-tall
 ## window). Rows built later are scaled too.
 func set_ui_scale(factor: float) -> void:
 	_ui_scale = factor
-	UiScale.apply_tree(self, factor)
+	UiTheme.apply(self, factor)
 
 
 ## The row of [param character], or null when the table doesn't show them.
@@ -130,29 +132,24 @@ func _add_team(team: int, members: Array[Character]) -> void:
 	var box := VBoxContainer.new()
 	box.name = "Team%d" % team
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_constant_override("separation", 2)
+	box.theme_type_variation = &"TeamBox"
 	add_child(box)
 	var title := "Your team" if team == Teams.viewer_team else "Enemy team"
-	var header_background := StyleBoxFlat.new()
-	header_background.bg_color = Teams.color_for(team)
 	var header_cells: Array[String] = [title]
 	header_cells.append_array(STAT_TITLES)
-	var header := _make_row(header_cells, Color.WHITE, header_background)
+	# Blue for your team, red for the enemy, as Teams.color_for() says (the theme copies those colors).
+	var header := _make_row(header_cells,
+			&"TeamHeaderFriendly" if team == Teams.viewer_team else &"TeamHeaderEnemy", &"BrightLabel")
 	header.name = "Header"
 	box.add_child(header)
 	_displayed[team] = members
 	for member in members:
 		var stats := _manager.get_stats(member)
 		var is_you := member.is_local_player()
-		var row_background: StyleBox = StyleBoxEmpty.new()
-		if is_you:
-			var highlight := StyleBoxFlat.new()
-			highlight.bg_color = YOU_ROW_COLOR
-			row_background = highlight
 		var row := _make_row([
 				"%s (you)" % member.name if is_you else String(member.name),
 				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))],
-				Color.WHITE if is_you else ROW_TEXT_COLOR, row_background)
+				&"YouRowPanel" if is_you else &"RowPanel", &"BrightLabel" if is_you else &"")
 		row.name = String(member.name)
 		if dim_dead and not member.is_alive():
 			row.modulate = Color(1, 1, 1, DEAD_ROW_ALPHA)
@@ -161,17 +158,16 @@ func _add_team(team: int, members: Array[Character]) -> void:
 
 
 ## One line: a background, then the [param cells] side by side. The first cell
-## (the name) takes the free width, the others are fixed-width numbers.
-func _make_row(cells: Array[String], font_color: Color, background: StyleBox) -> PanelContainer:
+## (the name) takes the free width, the others are fixed-width numbers. The
+## look is named, not built: [param panel_variation] for the background and
+## [param label_variation] for the text (empty = the plain label).
+func _make_row(cells: Array[String], panel_variation: StringName, label_variation: StringName) -> PanelContainer:
 	var row := PanelContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_stylebox_override("panel", background)
+	row.theme_type_variation = panel_variation
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 2)
-	margin.add_theme_constant_override("margin_bottom", 2)
+	margin.theme_type_variation = &"RowMargin"
 	row.add_child(margin)
 	var line := HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -179,9 +175,8 @@ func _make_row(cells: Array[String], font_color: Color, background: StyleBox) ->
 	for i in cells.size():
 		var label := Label.new()
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.theme_type_variation = label_variation
 		label.text = cells[i]
-		label.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
-		label.add_theme_color_override("font_color", font_color)
 		if i == 0:
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		else:
