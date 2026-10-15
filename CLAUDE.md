@@ -44,6 +44,9 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Run the tests (exit code = number of failures): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn`, and the same with `res://tests/weapon_test.tscn`
 - Regenerate the placeholder sounds, then import them: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/generate_sounds.gd` and then the import command above
 - Make a retro texture: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast]`, then the import command. Record the source and settings in docs/CREDITS.md
+- Build TrenchBroom maps into their scenes: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 500 --script res://tools/build_maps.gd -- res://maps/comparison/trenchbroom_room.tscn`
+- Install Chiip's TrenchBroom config: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/export_trenchbroom_config.gd -- "$HOME/Library/Application Support/TrenchBroom/games/Chiip"`
+- Play a specific map: add `-- --map res://maps/comparison/csg_room.tscn` to the run command
 - Smoke-run the game headless: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 300`
 - Visual check: `/Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1280x720 --write-movie <scratchpad>/frame.png --quit-after 45` writes PNG frames. This opens a window briefly and can capture the user's mouse.
 

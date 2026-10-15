@@ -1,7 +1,9 @@
 extends Node
-## The game's root scene: the 3D world rendered at a low resolution inside a
-## SubViewport and scaled up with sharp pixels, with the HUD and debug overlay
-## on top.
+## The game's root scene: loads a map, renders the 3D world at a low
+## resolution inside a SubViewport and scales it up with sharp pixels, with
+## the HUD and debug overlay on top.
+##
+## Every map scene must contain a [Player] node named "Player".
 ##
 ## Two pixel styles (see docs/DECISIONS.md):
 ## - Pixelated HUD: the whole window renders at the low resolution, HUD included.
@@ -10,6 +12,9 @@ extends Node
 ## The HUD and overlay are laid out for a window this many pixels tall.
 const UI_DESIGN_HEIGHT := 720.0
 
+## The map to play. Can be overridden from the command line:
+## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]
+@export var map_scene: PackedScene = preload("res://maps/test_map.tscn")
 ## Height of the world image in pixels; the width follows the window's shape.
 ## 360 gives 640 × 360 in a 16:9 window.
 @export var pixel_height: int = 360
@@ -19,14 +24,30 @@ const UI_DESIGN_HEIGHT := 720.0
 @export var palette_effect: bool = false
 
 @onready var _world: SubViewportContainer = $World
+@onready var _viewport: SubViewport = $World/SubViewport
 @onready var _hud: Node = $HUD
 @onready var _debug_overlay: Node = $DebugOverlay
 @onready var _palette_effect: CanvasLayer = $World/SubViewport/PaletteEffect
 
 
 func _ready() -> void:
+	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
+
+
+## Puts the map into the world viewport and connects its player to the HUD and overlay.
+func _load_map() -> void:
+	var scene := map_scene
+	var args := OS.get_cmdline_user_args()
+	var map_arg := args.find("--map")
+	if map_arg >= 0 and map_arg + 1 < args.size():
+		scene = load(args[map_arg + 1])
+	var map := scene.instantiate()
+	_viewport.add_child(map)
+	var player := map.get_node("Player") as Player
+	_hud.set_player(player)
+	_debug_overlay.player = player
 
 
 ## Applies [member pixel_height], [member pixelate_hud] and [member palette_effect].

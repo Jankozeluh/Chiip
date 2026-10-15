@@ -37,6 +37,7 @@ Chiip/
 ├── assets/            Shared raw assets
 │   ├── textures/      Retro 64 × 64 textures (sources in docs/CREDITS.md)
 │   ├── materials/     One material per texture, world triplanar (for CSG geometry)
+│   ├── environments/  Shared sky / fog / ambient settings
 │   ├── models/
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   └── fonts/         Silkscreen pixel font (+ its OFL license text)
@@ -44,6 +45,7 @@ Chiip/
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene, AI, state machine
 ├── maps/              Test maps and playable maps
+│   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
 │   └── props/         Reusable map objects (target dummy)
 ├── ui/                HUD, menus, developer console
 ├── systems/           Global systems (autoloads): game state, rounds, settings, console commands
@@ -56,9 +58,15 @@ Chiip/
 
 | File | What it is |
 |---|---|
-| `main.tscn` + `main.gd` | Root (main) scene. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
+| `main.tscn` + `main.gd` | Root (main) scene. Loads the map from `map_scene` (default `maps/test_map.tscn`, or `-- --map <scene>` on the command line), puts it in the world viewport and hands its `Player` to the HUD and overlay. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
 | `shaders/palette_limit.gdshader` | Optional retro color limit for the world image: 12 shades per channel with 4 × 4 ordered (Bayer) dithering. Drawn by a full-screen `ColorRect` in `World/SubViewport/PaletteEffect`, switched by `Main.palette_effect` |
 | `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
+| `assets/environments/dusty_afternoon.tres` | The shared `Environment`: dusty sky, ambient light, fog, tonemapping and color adjustments (D-029) |
+| `assets/materials/map_default.tres` | Base material for TrenchBroom maps: func_godot copies it and sets each face's texture. Uses the map's own UVs (no triplanar), nearest-with-mipmaps, matte |
+| `maps/chiip_map_settings.tres` | func_godot settings for Chiip: 39.37 units per metre (1 unit = 1 inch, as in CS), textures from `assets/textures`, lightmap UV texel size 8 units (≈ 0.2 m), generated materials not saved |
+| `maps/comparison/comparison_room.map` | The M3 comparison room as a TrenchBroom map (Valve 220 format, 13 brushes) |
+| `maps/comparison/trenchbroom_room.tscn` | That map built by func_godot (`Map` node, built geometry stored in the scene), lights set to *Static* for baking, a `LightmapGI` node, and a Player |
+| `maps/comparison/csg_room.tscn` | The same room made of CSG boxes with triplanar materials, same lights, and a Player |
 | `maps/test_map.tscn` | Test map (shown inside `main.tscn`). Lighting: warm sun (35° high, shadows), dusty sky, ambient 0.55 from the sky, fog density 0.0035, three colored `OmniLight3D` lamps. Retextured in M3: concrete floor (course), sand (range), red brick outer walls, beige stone platform/stairs/peek walls, wooden crates, metal tunnel, painted spray wall. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
 | `player/player.gd` | `Player` class: mouse look and CS-style movement |
@@ -74,6 +82,8 @@ Chiip/
 | `ui/hud.tscn` + `.gd` | HUD: crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
 | `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
+| `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
+| `tools/export_trenchbroom_config.gd` | Writes Chiip's TrenchBroom game configuration (GameConfig.cfg, icon, FGD) into TrenchBroom's games folder |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
 | `assets/materials/*.tres` | One `StandardMaterial3D` per texture: world triplanar mapping at Quake's density (64 px = 64 units = 1.63 m, `uv1_scale` 0.6152), nearest-with-mipmaps filtering, matte (roughness 1, specular 0.2) |
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
@@ -123,6 +133,14 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 1. Mouse movement updates two angles (`_yaw`, `_pitch`) immediately in `_unhandled_input`.
 2. Each physics tick, the body turns to `_yaw`, so movement keys follow your view.
 3. Each rendered frame, `_process` places the camera at the head's *interpolated* position and applies the angles directly. The camera is `top_level` (ignores its parent's transform) and has interpolation off.
+
+## TrenchBroom maps (being evaluated in M3)
+
+1. Open the `.map` in TrenchBroom (game "Chiip"), edit and save.
+2. Rebuild: select the `Map` node in Godot and click *Build Map*, or run `tools/build_maps.gd`.
+3. Bake lighting: select `LightmapGI` and click *Bake Lightmaps* (editor only, it needs the GPU).
+
+TrenchBroom axes become Godot axes as (x, y, z) → (y, z, x), divided by 39.37. A 64-pixel texture covers 64 units = 1.63 m, the same density as the CSG materials.
 
 ## How the screen is put together
 

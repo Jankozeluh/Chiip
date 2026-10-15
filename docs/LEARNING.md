@@ -199,3 +199,12 @@
 **Full-screen effects** (`shaders/palette_limit.gdshader`)
 - A `canvas_item` shader on a full-screen `ColorRect` can read what's already drawn with `hint_screen_texture` and change it, like a Unity post-processing effect or a full-screen render pass.
 - Put inside the world's `SubViewport`, it only changes the 3D image; the HUD outside stays untouched.
+
+**TrenchBroom maps and func_godot** (`maps/comparison/`)
+- A `.map` file is plain text. Each *brush* is a convex block defined by planes (three points each) plus a texture name and alignment. That's how Quake and CS (via Hammer) maps are made.
+- func_godot's `FuncGodotMap` node reads a `.map` and builds normal Godot nodes from it: a `StaticBody3D` with collision, and a `MeshInstance3D` with one surface per texture. It can also unwrap *lightmap UVs* (a second UV set, `UV2`) so lighting can be baked.
+- Tool buttons such as *Build Map* are `@export_tool_button` properties: buttons in the Inspector that run code in the editor.
+
+**Instancing a scene from code** (`main.gd`)
+- `load("res://maps/x.tscn").instantiate()` + `add_child()` puts a whole map into the running game, like `Instantiate()` with a prefab, or additive scene loading in Unity.
+- `OS.get_cmdline_user_args()` returns the arguments after `--` on the command line.

@@ -6,15 +6,17 @@ extends CanvasLayer
 const LOW_AMMO_FRACTION := 0.25
 const LOW_AMMO_COLOR := Color(1.0, 0.4, 0.3)
 
-## The player whose weapon the HUD shows.
-@export var player: Player
+## The player whose weapon the HUD shows. Set with [method set_player].
+var player: Player
 
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _ammo_label: Label = $AmmoLabel
 @onready var _weapon_label: Label = $WeaponLabel
 
 
-func _ready() -> void:
+## Shows this player's weapon on the HUD.
+func set_player(new_player: Player) -> void:
+	player = new_player
 	var weapon := player.weapon
 	weapon.ammo_changed.connect(_on_ammo_changed)
 	weapon.reload_started.connect(_update_weapon_label)
@@ -32,7 +34,7 @@ func set_ui_scale(factor: float) -> void:
 
 
 func _process(_delta: float) -> void:
-	if _crosshair.dynamic:
+	if player != null and _crosshair.dynamic:
 		_crosshair.spread_degrees = player.weapon.get_inaccuracy()
 		_crosshair.queue_redraw()
 

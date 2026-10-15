@@ -21,6 +21,12 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip
 ```
 
+To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom comparison room:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/comparison/trenchbroom_room.tscn
+```
+
 ## Controls (so far)
 
 | Action | Key |

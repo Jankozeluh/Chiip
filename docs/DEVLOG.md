@@ -26,6 +26,8 @@
 - Retextured the test map and the rifle. Visual check: the textures read well and the dummies stand out, but the concrete looked like snow (darkened it), and fixed-size labels piled on top of each other (map signs now shrink with distance; only dummy titles and damage numbers stay fixed size, at 1 font pixel per world-image pixel).
 - Lighting and atmosphere: warm low sun, dusty sky, darker ambient light, haze, three colored lamps (D-029). The first fog setting hid the 40 m dummy, so I halved it.
 - Optional palette effect: 12 shades per channel with ordered dithering, world image only, off by default until you decide from the side-by-side screenshots.
+- `main.tscn` can load any map (`map_scene`, or `-- --map <scene>`); the HUD and overlay get the player from the loaded map. Moved the sky/fog settings into `assets/environments/dusty_afternoon.tres` so every map shares them.
+- Map comparison setup: one layout (a CS-sized room with a doorway, crates, platform and ramp) generated as a TrenchBroom `.map` and as a CSG scene. func_godot builds the `.map` headlessly (`tools/build_maps.gd`) with lightmap UVs and our textures. Raycasts at 9 spots: both versions match within 0.1 mm (after fixing a ramp bug in my generator that affected both). Installed a "Chiip" game config in TrenchBroom (`tools/export_trenchbroom_config.gd`).
 
 ## 2026-10-15 — Session 4: M2 shooting
 

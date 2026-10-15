@@ -2,8 +2,8 @@ extends CanvasLayer
 ## On-screen readout of the player's movement and weapon, like CS's cl_showpos.
 ## Toggle it with F3 (the toggle_debug action).
 
-## The player to show information about.
-@export var player: Player
+## The player to show information about. Set by the main scene.
+var player: Player
 
 ## Feet height the last time the player stood on the ground.
 var _ground_height: float = 0.0

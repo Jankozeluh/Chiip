@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://w5j3rx16ar5y"
+path="res://.godot/imported/comparison_room.map-bc734c43552bfa97c6ef23de8784b80c.tres"
+
+[deps]
+
+source_file="res://maps/comparison/comparison_room.map"
+dest_files=["res://.godot/imported/comparison_room.map-bc734c43552bfa97c6ef23de8784b80c.tres"]
+
+[params]
+

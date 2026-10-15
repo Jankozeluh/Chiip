@@ -1,0 +1,113 @@
+[gd_scene format=3]
+
+[ext_resource type="Environment" path="res://assets/environments/dusty_afternoon.tres" id="environment"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
+[ext_resource type="Material" path="res://assets/materials/bricks_red.tres" id="bricks_red"]
+[ext_resource type="Material" path="res://assets/materials/concrete_floor.tres" id="concrete_floor"]
+[ext_resource type="Material" path="res://assets/materials/metal_plates.tres" id="metal_plates"]
+[ext_resource type="Material" path="res://assets/materials/plaster_wall.tres" id="plaster_wall"]
+[ext_resource type="Material" path="res://assets/materials/sand.tres" id="sand"]
+[ext_resource type="Material" path="res://assets/materials/stone_beige.tres" id="stone_beige"]
+[ext_resource type="Material" path="res://assets/materials/wood_planks.tres" id="wood_planks"]
+
+[node name="CsgRoom" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.610865, 0.9, 0)
+light_color = Color(1, 0.86, 0.68, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="CornerLamp" type="OmniLight3D" parent="."]
+position = Vector3(5.08, 3.81, -5.08)
+light_color = Color(1, 0.6, 0.25, 1)
+light_energy = 2.0
+omni_range = 8.0
+
+[node name="Player" parent="." instance=ExtResource("player_scene")]
+position = Vector3(-4.8768, 0, 0)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="Geometry" type="Node3D" parent="."]
+
+[node name="Floor" type="CSGBox3D" parent="Geometry"]
+position = Vector3(0, -0.2032, 0)
+use_collision = true
+size = Vector3(13.0048, 0.4064, 13.0048)
+material = ExtResource("concrete_floor")
+
+[node name="Apron" type="CSGBox3D" parent="Geometry"]
+position = Vector3(-8.3312, -0.2032, 0)
+use_collision = true
+size = Vector3(3.6576, 0.4064, 4.8768)
+material = ExtResource("sand")
+
+[node name="WallNorth" type="CSGBox3D" parent="Geometry"]
+position = Vector3(6.7056, 2.4384, 0)
+use_collision = true
+size = Vector3(0.4064, 4.8768, 13.8176)
+material = ExtResource("stone_beige")
+
+[node name="WallEast" type="CSGBox3D" parent="Geometry"]
+position = Vector3(0, 2.4384, 6.7056)
+use_collision = true
+size = Vector3(13.0048, 4.8768, 0.4064)
+material = ExtResource("plaster_wall")
+
+[node name="WallWest" type="CSGBox3D" parent="Geometry"]
+position = Vector3(0, 2.4384, -6.7056)
+use_collision = true
+size = Vector3(13.0048, 4.8768, 0.4064)
+material = ExtResource("plaster_wall")
+
+[node name="WallSouthLeft" type="CSGBox3D" parent="Geometry"]
+position = Vector3(-6.7056, 2.4384, -4.064)
+use_collision = true
+size = Vector3(0.4064, 4.8768, 5.6896)
+material = ExtResource("bricks_red")
+
+[node name="WallSouthRight" type="CSGBox3D" parent="Geometry"]
+position = Vector3(-6.7056, 2.4384, 4.064)
+use_collision = true
+size = Vector3(0.4064, 4.8768, 5.6896)
+material = ExtResource("bricks_red")
+
+[node name="DoorLintel" type="CSGBox3D" parent="Geometry"]
+position = Vector3(-6.7056, 4.064, 0)
+use_collision = true
+size = Vector3(0.4064, 1.6256, 2.4384)
+material = ExtResource("metal_plates")
+
+[node name="CrateA" type="CSGBox3D" parent="Geometry"]
+position = Vector3(4.064, 0.8128, -4.064)
+use_collision = true
+size = Vector3(1.6256, 1.6256, 1.6256)
+material = ExtResource("wood_planks")
+
+[node name="CrateB" type="CSGBox3D" parent="Geometry"]
+position = Vector3(4.064, 2.2352, -4.064)
+use_collision = true
+size = Vector3(1.2192, 1.2192, 1.2192)
+material = ExtResource("wood_planks")
+
+[node name="CrateC" type="CSGBox3D" parent="Geometry"]
+position = Vector3(-4.064, 0.8128, 4.064)
+use_collision = true
+size = Vector3(1.6256, 1.6256, 1.6256)
+material = ExtResource("wood_planks")
+
+[node name="Platform" type="CSGBox3D" parent="Geometry"]
+position = Vector3(4.8768, 0.8128, 4.064)
+use_collision = true
+size = Vector3(3.2512, 1.6256, 4.8768)
+material = ExtResource("stone_beige")
+
+[node name="Ramp" type="CSGBox3D" parent="Geometry"]
+position = Vector3(4.8768, 0.7234, 0.0447)
+rotation = Vector3(-0.463648, 0, 0)
+use_collision = true
+size = Vector3(3.2512, 0.2, 3.635)
+material = ExtResource("stone_beige")
