@@ -17,6 +17,7 @@
 - Recorded the M3 decisions: ambientCG CC0 textures (each download with your OK), comparing TrenchBroom + func_godot now, an OFL pixel font (D-024 to D-026).
 - You asked whether Chiip could go on Steam. Answer: yes, technically and legally (own names and assets, CC0/OFL licenses). Multiplayer is the big piece, and the realistic scope is Steam lobbies with one player hosting, plus bots. If we want multiplayer, player control should become per-tick input commands *before* bots (M4). Added as an open question in DECISIONS.md.
 - New main scene `main.tscn`: the world renders at 640 × 360 in a `SubViewport` and is scaled up with sharp pixels; HUD and overlay on top. Two styles: sharp HUD (B) and pixelated HUD (A). Mouse sensitivity is identical in both (2.200° for 100 counts). Found: text placed in the 3D world (dummy labels, damage numbers) becomes unreadable at 360 lines; to be fixed with the pixel font.
+- Retro texture tool (`tools/make_retro_texture.gd`): square crop, shrink in halving steps, k-means palette, lossless + mipmapped import. Tested on a generated brick image: crisp 64 × 64, 12 colors, tiles cleanly.
 
 ## 2026-10-15 — Session 4: M2 shooting
 
