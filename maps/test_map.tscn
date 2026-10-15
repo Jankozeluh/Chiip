@@ -2,8 +2,6 @@
 
 [ext_resource type="Shader" path="res://shaders/prototype_grid.gdshader" id="grid_shader"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
-[ext_resource type="PackedScene" path="res://ui/debug_overlay.tscn" id="debug_overlay_scene"]
-[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="hud_scene"]
 [ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="dummy_scene"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_material"]
@@ -214,12 +212,6 @@ material = SubResource("wall_material")
 [node name="Player" parent="." instance=ExtResource("player_scene")]
 position = Vector3(0, 0, 14)
 rotation = Vector3(0, 3.14159, 0)
-
-[node name="DebugOverlay" parent="." node_paths=PackedStringArray("player") instance=ExtResource("debug_overlay_scene")]
-player = NodePath("../Player")
-
-[node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("hud_scene")]
-player = NodePath("../Player")
 
 [node name="Range" type="Node3D" parent="."]
 

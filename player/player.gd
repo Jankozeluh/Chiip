@@ -172,6 +172,11 @@ func _process(_delta: float) -> void:
 	_camera.global_rotation = Vector3(_pitch + deg_to_rad(punch.y), _yaw - deg_to_rad(punch.x), 0.0)
 
 
+## The first-person camera.
+func get_camera() -> Camera3D:
+	return _camera
+
+
 ## Where shots start from: the eyes, as of this physics tick.
 func get_eye_position() -> Vector3:
 	return _head.global_position

@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://main.gd" id="main_script"]
+[ext_resource type="PackedScene" path="res://maps/test_map.tscn" id="map_scene"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="hud_scene"]
+[ext_resource type="PackedScene" path="res://ui/debug_overlay.tscn" id="overlay_scene"]
+
+[node name="Main" type="Node"]
+script = ExtResource("main_script")
+
+[node name="World" type="SubViewportContainer" parent="."]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+stretch_shrink = 2
+
+[node name="SubViewport" type="SubViewport" parent="World"]
+audio_listener_enable_3d = true
+size = Vector2i(640, 360)
+render_target_update_mode = 4
+
+[node name="TestMap" parent="World/SubViewport" instance=ExtResource("map_scene")]
+
+[node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("hud_scene")]
+player = NodePath("../World/SubViewport/TestMap/Player")
+
+[node name="DebugOverlay" parent="." node_paths=PackedStringArray("player") instance=ExtResource("overlay_scene")]
+player = NodePath("../World/SubViewport/TestMap/Player")

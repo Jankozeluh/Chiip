@@ -184,13 +184,37 @@
 
 **Consequence:** Counter-strafing with the rifle reaches accurate speed in 70 ms.
 
+## D-024 — Textures: CC0 photo textures turned retro by our own tool (2026-10-15)
+
+**Decision:** Textures start as free CC0 (public domain) photo textures from ambientCG. A tool script shrinks them to 64 × 64 and reduces their colors. Each download happens only after the user approves it. Sources are listed in `docs/CREDITS.md`.
+
+**Why:** Real materials give much better retro textures than code-generated patterns, and CC0 means no license conditions.
+
+**Alternatives:** Generating textures by code (no downloads, more abstract look).
+
+## D-025 — Compare TrenchBroom + func_godot with CSG now (2026-10-15)
+
+**Decision:** In M3, the same small room is built with CSG and with TrenchBroom (via the `func_godot` addon) before choosing the workflow for real maps.
+
+**Why:** M3 is where the map pipeline gets decided, and TrenchBroom is the classic Quake/CS-style brush editor.
+
+**Alternatives:** Staying with CSG and deciding in M7.
+
+## D-026 — A free pixel font for the HUD (2026-10-15)
+
+**Decision:** The HUD uses a free pixel font under the SIL Open Font License, downloaded with the user's OK.
+
+**Why:** It matches the retro look. The OFL allows using and shipping the font in a game, including a commercial one.
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
-| On macOS, does Ctrl + click clash with crouch + shoot? | M1 |
+| On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
 | Low-res rendering approach: window stretch, SubViewport or 3D resolution scale? | M3 |
 | Map building: Godot CSG, or TrenchBroom with `func_godot`? | M3 |
 | Team sizes: 1 vs N, or 5v5 with bot teammates? | M5 |
 | Weapon names | M6 |
 | Team names and the game's setting/theme | Any time |
+| Multiplayer (e.g. Steam lobbies, one player hosting, with bots)? If yes, restructure player control into per-tick input commands with server authority *before* bots, since bots and network players should drive characters the same way | Before M4 |
+| Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |

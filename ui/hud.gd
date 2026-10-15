@@ -19,8 +19,16 @@ func _ready() -> void:
 	weapon.ammo_changed.connect(_on_ammo_changed)
 	weapon.reload_started.connect(_update_weapon_label)
 	weapon.reload_finished.connect(_update_weapon_label)
+	_crosshair.camera = player.get_camera()
 	_on_ammo_changed(weapon.magazine, weapon.reserve)
 	_update_weapon_label()
+
+
+## Scales the HUD layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
+func set_ui_scale(factor: float) -> void:
+	UiScale.apply(_ammo_label, factor)
+	UiScale.apply(_weapon_label, factor)
+	_crosshair.set_ui_scale(factor)
 
 
 func _process(_delta: float) -> void:

@@ -29,6 +29,7 @@ The project is organized **by feature**: a scene and its script sit in the same 
 ```
 Chiip/
 ├── project.godot      Godot project file
+├── main.tscn / .gd    The game's root scene: pixelated world + HUD
 ├── README.md          Start here
 ├── CLAUDE.md          Working rules for Claude, including documentation rules
 ├── docs/              All documentation
@@ -54,6 +55,8 @@ Chiip/
 
 | File | What it is |
 |---|---|
+| `main.tscn` + `main.gd` | Root (main) scene. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
+| `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
 | `maps/test_map.tscn` | Test map and current main scene. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
 | `player/player.gd` | `Player` class: mouse look and CS-style movement |
@@ -83,7 +86,7 @@ Chiip/
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M5) |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Built: crosshair, ammo, weapon name |
-| Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |
+| Retro rendering | Low-res output, pixel filtering, palette | M3 | In progress: low-res world, two HUD styles |
 | Bot AI | Navigation, perception, state machine, aim | M4 | Planned |
 | Developer console | `bot_add`, `noclip` and similar commands | M4 | Planned |
 | Round manager | Phases, timer, win conditions, match score | M5 | Planned |
@@ -113,6 +116,22 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 1. Mouse movement updates two angles (`_yaw`, `_pitch`) immediately in `_unhandled_input`.
 2. Each physics tick, the body turns to `_yaw`, so movement keys follow your view.
 3. Each rendered frame, `_process` places the camera at the head's *interpolated* position and applies the angles directly. The camera is `top_level` (ignores its parent's transform) and has interpolation off.
+
+## How the screen is put together
+
+```
+Main (Node, main.gd)
+├── World (SubViewportContainer: stretch on, shrink = window height / 360, nearest filter)
+│   └── SubViewport (640 × 360 in a 720p window)
+│       └── TestMap (map + Player)
+├── HUD (CanvasLayer)
+└── DebugOverlay (CanvasLayer)
+```
+
+- The SubViewport renders the 3D world at low resolution, and the container scales it up with sharp (nearest) pixels.
+- Sharp-HUD style: the window itself stays full resolution, so the HUD is crisp. Pixelated-HUD style: the window's *content scale* is set to the low resolution (`Window.content_scale_mode = viewport`), so everything is pixelated, HUD included.
+- The HUD and overlay are laid out for a 720-pixel-tall window and scaled with `UiScale` to the real UI height.
+- Mouse look uses `screen_relative`, so sensitivity is the same in both styles (checked: 2.200° for 100 counts).
 
 ## How the player and the weapon work together
 

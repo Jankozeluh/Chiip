@@ -14,6 +14,11 @@ var _was_on_floor: bool = true
 @onready var _label: Label = $Label
 
 
+## Scales the overlay text; 1.0 is the size it's designed for (a 720-pixel-tall window).
+func set_ui_scale(factor: float) -> void:
+	UiScale.apply(_label, factor)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_debug"):
 		visible = not visible

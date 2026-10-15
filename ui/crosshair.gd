@@ -23,6 +23,21 @@ extends Control
 
 ## Current inaccuracy in degrees. The HUD sets it every frame; only used in dynamic mode.
 var spread_degrees: float = 0.0
+## The camera whose field of view converts degrees to pixels (dynamic mode).
+var camera: Camera3D
+
+## Line sizes at scale 1, remembered by set_ui_scale.
+var _base_sizes: Vector3 = Vector3.ZERO
+
+
+## Scales line length, gap and thickness (at least 1 pixel each) for the current resolution.
+func set_ui_scale(factor: float) -> void:
+	if _base_sizes == Vector3.ZERO:
+		_base_sizes = Vector3(length, gap, thickness)
+	length = maxf(1.0, roundf(_base_sizes.x * factor))
+	gap = maxf(1.0, roundf(_base_sizes.y * factor))
+	thickness = maxf(1.0, roundf(_base_sizes.z * factor))
+	queue_redraw()
 
 
 func _draw() -> void:
@@ -46,7 +61,6 @@ func _draw() -> void:
 
 ## How many pixels the inaccuracy cone covers on screen, from the camera's field of view.
 func _spread_in_pixels() -> float:
-	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return 0.0
 	var half_screen_height := get_viewport_rect().size.y / 2.0
