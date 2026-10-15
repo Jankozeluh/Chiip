@@ -13,7 +13,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 
 **From the Godot editor** (recommended):
 1. Open Godot. In the Project Manager, click **Import**, select this folder's `project.godot`, and open it.
-2. Press **F5** (or the ▶ button at the top right) to play. The game starts on the test map.
+2. Press **F5** (or the ▶ button at the top right) to play. You start on the shooting range of the test map; turn around for the movement course.
 
 **From the terminal**, without opening the editor:
 

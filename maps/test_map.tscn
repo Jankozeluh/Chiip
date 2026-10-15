@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
 [ext_resource type="PackedScene" path="res://ui/debug_overlay.tscn" id="debug_overlay_scene"]
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="hud_scene"]
+[ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="dummy_scene"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_material"]
 sky_top_color = Color(0.32, 0.42, 0.58, 1)
@@ -49,6 +50,18 @@ shader = ExtResource("grid_shader")
 shader_parameter/base_color = Color(0.5, 0.4, 0.3, 1)
 shader_parameter/line_color = Color(0.36, 0.28, 0.2, 1)
 
+[sub_resource type="ShaderMaterial" id="spray_wall_material"]
+render_priority = 0
+shader = ExtResource("grid_shader")
+shader_parameter/base_color = Color(0.8, 0.78, 0.74, 1)
+shader_parameter/line_color = Color(0.64, 0.62, 0.58, 1)
+
+[sub_resource type="StandardMaterial3D" id="firing_line_material"]
+albedo_color = Color(0.92, 0.75, 0.15, 1)
+
+[sub_resource type="StandardMaterial3D" id="aim_mark_material"]
+albedo_color = Color(0.15, 0.12, 0.1, 1)
+
 [sub_resource type="BoxShape3D" id="stairs_clip_shape"]
 size = Vector3(3, 0.2, 3.44093)
 
@@ -64,9 +77,9 @@ shadow_enabled = true
 [node name="Geometry" type="Node3D" parent="."]
 
 [node name="Floor" type="CSGBox3D" parent="Geometry"]
-position = Vector3(0, -0.5, 0)
+position = Vector3(0, -0.5, 28)
 use_collision = true
-size = Vector3(64, 1, 64)
+size = Vector3(64, 1, 120)
 material = SubResource("floor_material")
 
 [node name="WallNorth" type="CSGBox3D" parent="Geometry"]
@@ -76,21 +89,21 @@ size = Vector3(66, 6, 1)
 material = SubResource("wall_material")
 
 [node name="WallSouth" type="CSGBox3D" parent="Geometry"]
-position = Vector3(0, 3, 32.5)
+position = Vector3(0, 3, 88.5)
 use_collision = true
 size = Vector3(66, 6, 1)
 material = SubResource("wall_material")
 
 [node name="WallWest" type="CSGBox3D" parent="Geometry"]
-position = Vector3(-32.5, 3, 0)
+position = Vector3(-32.5, 3, 28)
 use_collision = true
-size = Vector3(1, 6, 64)
+size = Vector3(1, 6, 120)
 material = SubResource("wall_material")
 
 [node name="WallEast" type="CSGBox3D" parent="Geometry"]
-position = Vector3(32.5, 3, 0)
+position = Vector3(32.5, 3, 28)
 use_collision = true
-size = Vector3(1, 6, 64)
+size = Vector3(1, 6, 120)
 material = SubResource("wall_material")
 
 [node name="Box32" type="CSGBox3D" parent="Geometry"]
@@ -199,13 +212,53 @@ size = Vector3(5, 3, 0.5)
 material = SubResource("wall_material")
 
 [node name="Player" parent="." instance=ExtResource("player_scene")]
-position = Vector3(0, 0, 8)
+position = Vector3(0, 0, 14)
+rotation = Vector3(0, 3.14159, 0)
 
 [node name="DebugOverlay" parent="." node_paths=PackedStringArray("player") instance=ExtResource("debug_overlay_scene")]
 player = NodePath("../Player")
 
 [node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("hud_scene")]
 player = NodePath("../Player")
+
+[node name="Range" type="Node3D" parent="."]
+
+[node name="FiringLine" type="CSGBox3D" parent="Range"]
+position = Vector3(0, 0.005, 16)
+size = Vector3(44, 0.01, 0.15)
+material = SubResource("firing_line_material")
+
+[node name="SprayWall" type="CSGBox3D" parent="Range"]
+position = Vector3(-20, 2, 26.25)
+use_collision = true
+size = Vector3(8, 4, 0.5)
+material = SubResource("spray_wall_material")
+
+[node name="AimMark" type="CSGBox3D" parent="Range"]
+position = Vector3(-20, 1.63, 25.995)
+size = Vector3(0.1, 0.1, 0.01)
+material = SubResource("aim_mark_material")
+
+[node name="Dummy5m" parent="Range" instance=ExtResource("dummy_scene")]
+position = Vector3(-9, 0, 21)
+title = "5 m"
+
+[node name="Dummy10m" parent="Range" instance=ExtResource("dummy_scene")]
+position = Vector3(-4, 0, 26)
+title = "10 m"
+
+[node name="Dummy20m" parent="Range" instance=ExtResource("dummy_scene")]
+position = Vector3(1, 0, 36)
+title = "20 m"
+
+[node name="Dummy40m" parent="Range" instance=ExtResource("dummy_scene")]
+position = Vector3(6, 0, 56)
+title = "40 m"
+
+[node name="MovingDummy15m" parent="Range" instance=ExtResource("dummy_scene")]
+position = Vector3(14, 0, 31)
+title = "15 m · moving"
+move_distance = 8.0
 
 [node name="Labels" type="Node3D" parent="."]
 
@@ -268,5 +321,20 @@ outline_size = 12
 position = Vector3(0, 3.6, -20)
 billboard = 1
 text = "Peek practice"
+font_size = 48
+outline_size = 12
+
+[node name="RangeLabel" type="Label3D" parent="Labels"]
+position = Vector3(0, 3.2, 16)
+billboard = 1
+text = "Shooting range · firing line"
+font_size = 48
+outline_size = 12
+
+[node name="SprayWallLabel" type="Label3D" parent="Labels"]
+position = Vector3(-20, 4.6, 26)
+billboard = 1
+text = "Spray wall · 10 m
+aim at the dark mark"
 font_size = 48
 outline_size = 12
