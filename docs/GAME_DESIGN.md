@@ -133,7 +133,18 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 - Behaviour states: patrol or move to the objective → engage an enemy → search the last known position. Planting and defusing come later.
 - **Vision:** a field-of-view cone plus a line-of-sight check, so no wallhacks.
 - **Hearing:** running footsteps and gunshots reveal your position. Walking is silent.
-- **Difficulty** comes from reaction time, aim accuracy, spray control and decision speed.
+- **Difficulty** comes from reaction time, aim accuracy, spray control and decision speed. Presets *(tune)*:
+
+  | | Easy | Normal | Hard |
+  |---|---|---|---|
+  | Reaction time | 0.45 s | 0.3 s | 0.18 s |
+  | Aim error (start → smallest wobble) | 6° → 1.2° | 5° → 0.9° | 2.5° → 0.4° |
+  | Headshot chance | 10% | 30% | 60% |
+  | Recoil control | 20% | 55% | 85% |
+  | Counter-strafes before shooting | no | yes | yes |
+
+  Measured against a player standing still at 10 m (3 runs each): first shot after ~0.45 / ~0.3 / ~0.17 s, kill after ~1.45 / 0.6–1.2 / ~0.35 s. Easy sometimes empties a magazine for one hit. A moving target is much harder for them.
+- **States:** patrol → engage (enemy visible) → search (walk to the last known position, look around) → patrol. Hearing you run makes a patrolling bot come and check.
 
 ### 4.5 Rounds and match
 

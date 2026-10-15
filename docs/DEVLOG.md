@@ -18,6 +18,7 @@
 - Navigation mesh for the test map (153 polygons, bake tool `tools/bake_navmesh.gd`). Checked paths: spawn → platform top (via ramp/stairs), long routes around walls and dummies; the 1.5 m tunnel is correctly excluded.
 - Bot scene (`bots/bot.tscn`, red team) and `BotController` that walks paths by pressing movement keys. Check: reaches the platform top (y = 2.00), goes around the peek wall and down the range, stopping within 0.8 m of each goal.
 - Bot perception (`BotSenses`) and a noise bus (`Noises`), plus teams and footsteps on characters (D-035). All seven perception cases behave as intended. Found: autoloads aren't available to `--script` runs, which would have broken our tools, so the noise bus is a class with a static instance instead.
+- Bot behaviour (patrol → engage → search) and human-like fighting with Easy/Normal/Hard data files (D-036). Duels at 10 m against a standing player: first shot ~0.45/0.3/0.17 s, kill ~1.45/0.6–1.2/0.35 s; never through walls. Fixed a fixed-direction aim error that made some bots miss an entire magazine. Behaviour check: a patrolling bot hears you run behind it, turns, sees you and fights.
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 

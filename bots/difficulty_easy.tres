@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BotDifficulty" format=3]
+
+[ext_resource type="Script" path="res://bots/bot_difficulty.gd" id="difficulty_script"]
+
+[resource]
+script = ExtResource("difficulty_script")
+display_name = "easy"
+reaction_time = 0.45
+aim_turn_speed = 180.0
+initial_aim_error = 6.0
+aim_settle_time = 0.9
+minimum_aim_error = 1.2
+headshot_chance = 0.1
+recoil_control = 0.2
+counter_strafes = false
+burst_distance = 15.0
+burst_length = 1
+spray_length = 6
+burst_pause = 0.45

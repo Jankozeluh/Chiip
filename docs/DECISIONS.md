@@ -278,6 +278,21 @@
 
 **Checked:** seen in the open; not seen behind a crate, behind the bot or behind a wall; heard when running behind it; not heard when walking or crouch-walking.
 
+## D-036 — How bots fight (2026-10-15)
+
+**Decision:** Bots fight through the same commands as the player, with human limits:
+- a reaction time before the first shot;
+- a limited turn speed;
+- aim error that starts large, settles over time, and keeps a small "shaky hands" wobble that wanders around the target;
+- stopping before shooting (counter-strafing on Normal and Hard);
+- short bursts beyond 15 m and sprays up close, with partial recoil compensation.
+
+All numbers live in difficulty data files (Easy / Normal / Hard).
+
+**Why:** Fair bots (design pillar 4) that reward CS skills: moving, peeking and spraying well beat them.
+
+**Found while tuning:** a fixed leftover aim error made some bots miss a standing target with all 30 rounds (the offset always pointed the same way, off the head). The wobble fixes it. Normal's minimum error was raised from 0.6° to 0.9° so it misses sometimes.
+
 ## Open questions
 
 | Question | Decide in |
