@@ -325,7 +325,7 @@ font_size = 48
 outline_size = 12
 
 [node name="RangeLabel" type="Label3D" parent="Labels"]
-position = Vector3(0, 3.2, 16)
+position = Vector3(12, 2.2, 16)
 billboard = 1
 text = "Shooting range · firing line"
 font_size = 48

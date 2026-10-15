@@ -20,6 +20,7 @@
 - Shooting range on the test map (extended 56 m south): firing line, dummies at 5/10/20/40 m, a moving dummy at 15 m, and a spray wall at 10 m with an aim mark. The player now spawns on the range.
 - Debug overlay shows weapon inaccuracy, built-up recoil and the last hit (zone, damage, distance).
 - Weapon tests (`tests/weapon_test.tscn`): 20 checks, all passing in about a second. Fixed leak warnings at test exit: the weapon now always plays the sound named in its data, and the test uses a silent copy.
+- Visual check (Movie Maker frames of spraying and tapping on the range): viewmodel, muzzle flash, crosshair, ammo counter, dummies and overlay all render correctly. Moved the firing-line label out of your face at spawn.
 
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 
