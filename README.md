@@ -94,6 +94,22 @@ Every menu is styled by one Godot theme, `ui/chiip_theme.tres` (D-057). To see a
 
 The theme is generated from `tools/ui_palette.gd` (colors), `tools/generate_ui_icons.gd` (pixel-art icons in `assets/ui/`) and `tools/make_ui_theme.gd`. After changing one of them, run the three steps (the commands are in [CLAUDE.md](CLAUDE.md)): the icon tool, the asset import, then the theme tool.
 
+## Python tools
+
+The character concept art (and, from M6 task 2, the model generator) are Python scripts that run outside Godot. They use Miniconda with one environment named `chiip` (D-071). One-time setup, already done on this Mac:
+
+1. Download the Miniconda installer for macOS (Apple silicon: `Miniconda3-latest-MacOSX-arm64.sh`) from https://repo.anaconda.com/miniconda/.
+2. Install it without touching your shell profile: `bash Miniconda3-latest-MacOSX-arm64.sh -b -p ~/miniconda3`
+3. Create the environment: `~/miniconda3/bin/conda create -n chiip python=3.12 numpy pillow`
+
+Render the crew's concept sheets (line-up and 8-direction turnarounds in blue and red) into a folder outside the project:
+
+```bash
+~/miniconda3/envs/chiip/bin/python /Users/kozeluhj/Documents/Games/Chiip/tools/concept/spritegen.py --sheet --out ~/Desktop/chiip_concept
+```
+
+Leave out `--sheet` to render every animation frame and `preview.html`, a page where you can spin each class.
+
 ## Tests
 
 Automated checks run without a window in about a second each:

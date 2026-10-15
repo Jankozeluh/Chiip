@@ -11,20 +11,26 @@ How it works: each class is built from signed-distance-field primitives hung on 
 small skeleton (FK legs, 2-bone IK arms that grip the weapon), posed per animation
 frame, ray-marched from 8 directions at 4x supersampling, then reduced to a
 256-colour palette. Colours work like Quake's shirt/pants ranges: the render stores
-material ids, and each team maps the TOP / BOTTOM / GEAR / ACCENT slots to ramps.
+material ids, each class maps its kit slots (TOP / BOTTOM / GEAR / COAT ...) to
+neutral ramps, and the TEAM slot is painted with the team ramp.
 
-Prototype state: the two team palettes ("raiders" tan, "wardens" slate) predate
-D-031 (no desert colours) and D-041 (your team blue, enemies red). M6 task 1
-replaces them with a neutral kit plus blue/red team parts, and reshapes the
-classes into the distinct crew (GAME_DESIGN.md, section 4.9).
+The crew (M6 task 1, GAME_DESIGN.md section 4.9): Rifleman, Bulwark, Marksman and
+Scout, told apart by silhouette (height, build, posture, headgear; D-053). Every
+class wears a neutral kit (greys, olive-greys, charcoal; no desert tones, D-031)
+with team-colour parts. Team colour depends on who is looking (D-041): the
+"blue" sheets show how your own team looks, the "red" sheets how enemies look.
 
-Setup (once):  python3 -m venv ~/.venvs/chiip-tools
-               ~/.venvs/chiip-tools/bin/pip install -r tools/concept/requirements.txt
-Usage:         ~/.venvs/chiip-tools/bin/python tools/concept/spritegen.py --out <folder outside the project>
-               ~/.venvs/chiip-tools/bin/python tools/concept/spritegen.py --test rifleman aim 0 --out <folder>
+Setup (once):  Miniconda in ~/miniconda3 with an environment named chiip (README.md):
+               ~/miniconda3/bin/conda create -n chiip python=3.12 numpy pillow
+Usage:         ~/miniconda3/envs/chiip/bin/python tools/concept/spritegen.py --out <folder outside the project>
+               ~/miniconda3/envs/chiip/bin/python tools/concept/spritegen.py --sheet --out <folder>
+               ~/miniconda3/envs/chiip/bin/python tools/concept/spritegen.py --test rifleman aim 0 --out <folder>
 Output:        <out>/<class>_<team>.png (RGBA) and _indexed.png sheets (rows = frames,
                columns = 8 directions, 96x96 cells, feet pivot at 48,88), sprites.json,
                palette files, and preview.html (open it in a browser to spin the turnarounds).
+               --sheet writes only the approval sheets: crew_lineup.png (all four classes in
+               blue, red and as black silhouettes, with height lines) and crew_turnaround.png
+               (8 directions per class in blue and red).
 """
 import argparse
 import base64
@@ -54,23 +60,27 @@ DIRS = 8
 MAX_STEPS = 110
 
 # ---------------------------------------------------------------- palette
+# The kit ramps are neutral (D-031: greys, olive-greys, charcoal; no tan, khaki or
+# coyote). Warm colours are only skin, wood and brass. The two team ramps are built
+# around Teams.FRIENDLY_COLOR (#4066b3) and Teams.ENEMY_COLOR (#b8382e) in
+# systems/teams.gd, so the sheets show the colours the game uses.
 RAMP_ANCHORS = [
-    ('grey',     ['#09090c', '#2a292d', '#5a5757', '#9a958c', '#e2dbcb']),
-    ('brown',    ['#100805', '#36200f', '#6a4224', '#a87447', '#e4bd8c']),
-    ('tan',      ['#14100a', '#43351e', '#7d6a45', '#b8a578', '#f0e4c2']),
-    ('olive',    ['#0a0c07', '#283016', '#4f5a2c', '#868f53', '#cbd199']),
-    ('coyote',   ['#110c08', '#3a2a1b', '#6c5335', '#a5895f', '#ddcb9f']),
-    ('skin_l',   ['#190b0a', '#562c22', '#9a6145', '#d49c78', '#f9dcc0']),
-    ('skin_d',   ['#0e0605', '#331a12', '#5c3422', '#8e5b3c', '#c9946e']),
-    ('red',      ['#150305', '#480b0d', '#8f1c17', '#d4492a', '#ffae7e']),
-    ('blue',     ['#03061a', '#0d1e56', '#2246aa', '#4b88e6', '#b2deff']),
-    ('slate',    ['#080a10', '#202838', '#435069', '#7b8aa0', '#c8d2de']),
-    ('ink',      ['#040407', '#13151c', '#292d38', '#4d5463', '#8b92a0']),
-    ('gunmetal', ['#06070a', '#1b1f26', '#39404a', '#6a7480', '#bac4ce']),
-    ('brass',    ['#130b02', '#462f09', '#8a6517', '#d1a538', '#fff1a8']),
-    ('foliage',  ['#050a04', '#192a10', '#385424', '#6c8c43', '#b9d68a']),
-    ('fb_warm',  ['#3c0c00', '#8e2b00', '#e26c00', '#ffc63f', '#fffce2']),   # fullbright
-    ('fb_cool',  ['#00200f', '#005a22', '#12b142', '#72ff92', '#e8fff0']),   # fullbright
+    ('grey',      ['#09090b', '#29292c', '#56565a', '#929296', '#d8d8da']),
+    ('charcoal',  ['#050506', '#15161a', '#2a2c32', '#4a4d56', '#82868f']),
+    ('olive',     ['#0a0b08', '#252a1f', '#4a5040', '#7f8670', '#c3c8b4']),   # olive-grey, not khaki
+    ('moss',      ['#080b07', '#1f2a1c', '#3d5038', '#6c8264', '#b0c2a6']),
+    ('stone',     ['#0a0a0a', '#282827', '#52514e', '#8b8a85', '#d0cfca']),
+    ('gunmetal',  ['#06070a', '#1b1f26', '#39404a', '#6a7480', '#bac4ce']),
+    ('wood',      ['#100805', '#36200f', '#6a4224', '#a87447', '#e4bd8c']),
+    ('skin_l',    ['#190b0a', '#562c22', '#9a6145', '#d49c78', '#f9dcc0']),
+    ('skin_m',    ['#140906', '#46261a', '#7e4f37', '#b47f5c', '#e8bc98']),
+    ('skin_d',    ['#0e0605', '#331a12', '#5c3422', '#8e5b3c', '#c9946e']),
+    ('team_blue', ['#03061a', '#14254f', '#4066b3', '#7fa3e0', '#cfe0ff']),
+    ('team_red',  ['#140304', '#4a0f0c', '#b8382e', '#e27a62', '#ffd2c2']),
+    ('brass',     ['#130b02', '#462f09', '#8a6517', '#d1a538', '#fff1a8']),
+    ('glass',     ['#030406', '#0d1016', '#1f2530', '#465060', '#9aa6b8']),
+    ('fb_warm',   ['#3c0c00', '#8e2b00', '#e26c00', '#ffc63f', '#fffce2']),   # fullbright
+    ('fb_cool',   ['#00200f', '#005a22', '#12b142', '#72ff92', '#e8fff0']),   # fullbright
 ]
 RAMPS = [n for n, _ in RAMP_ANCHORS]
 RAMP_ID = {n: i for i, n in enumerate(RAMPS)}
@@ -132,24 +142,28 @@ PAL_LAB = lin_to_oklab(PAL_LIN)
 
 # ---------------------------------------------------------------- materials & teams
 # slot: team/class remappable ramp; ramp: fixed ramp. lo/hi: ramp span used by shading.
+# slot: looked up in the class's kit (a ramp name, a (ramp, lo, hi) span, or 'TEAM');
+# ramp: fixed ramp. lo/hi: ramp span used by shading. 'team' is always the team colour:
+# in the game those are the texels in the team mask (D-053).
 MATERIALS = {
-    'top':        dict(slot='TOP',    lo=1, hi=14, tex=0.09, freq=22, camo=0.10),
-    'bottom':     dict(slot='BOTTOM', lo=1, hi=13, tex=0.09, freq=22, camo=0.10),
-    'gear':       dict(slot='GEAR',   lo=1, hi=13, tex=0.07, freq=30),
-    'gear_dk':    dict(slot='GEAR',   lo=0, hi=9,  tex=0.07, freq=30),
-    'accent':     dict(slot='ACCENT', lo=2, hi=15, tex=0.05, freq=25),
-    'ghillie':    dict(slot='GHILLIE', lo=0, hi=14, tex=0.34, freq=34),
+    'top':        dict(slot='TOP',    lo=1, hi=14, tex=0.07, freq=22),
+    'sleeve':     dict(slot='SLEEVE', lo=1, hi=14, tex=0.06, freq=22),
+    'bottom':     dict(slot='BOTTOM', lo=1, hi=13, tex=0.07, freq=22),
+    'coat':       dict(slot='COAT',   lo=1, hi=13, tex=0.09, freq=26),
+    'gear':       dict(slot='GEAR',   lo=1, hi=13, tex=0.06, freq=30),
+    'gear_dk':    dict(slot='GEAR',   lo=0, hi=9,  tex=0.06, freq=30),
+    'team':       dict(slot='TEAM',   lo=2, hi=14, tex=0.04, freq=25),
+    'knit':       dict(slot='KNIT',   lo=1, hi=12, tex=0.22, freq=60),
     'furn':       dict(slot='FURN',   lo=2, hi=13, tex=0.10, freq=30, spec=0.15),
     'boot':       dict(slot='BOOT',   lo=0, hi=9,  tex=0.05, freq=40, spec=0.10),
     'skin':       dict(slot='SKIN',   lo=2, hi=15, tex=0.03, freq=30, spec=0.08),
     'eye':        dict(ramp='grey',   lo=0, hi=2),
-    'hair':       dict(ramp='brown',  lo=0, hi=6, tex=0.2, freq=70),
-    'mask':       dict(ramp='ink',    lo=0, hi=12, tex=0.06, freq=40),
+    'mask':       dict(ramp='charcoal', lo=0, hi=12, tex=0.06, freq=40),
     'glove':      dict(ramp='grey',   lo=0, hi=8, tex=0.05, freq=40),
     'sole':       dict(ramp='grey',   lo=0, hi=4),
     'metal':      dict(ramp='gunmetal', lo=0, hi=12, tex=0.04, freq=50, spec=0.55),
     'polymer':    dict(ramp='grey',   lo=0, hi=8, tex=0.03, freq=50, spec=0.20),
-    'lens':       dict(ramp='ink',    lo=0, hi=12, spec=1.0),
+    'lens':       dict(ramp='glass',  lo=0, hi=12, spec=1.0),
     'brass':      dict(ramp='brass',  lo=3, hi=15, spec=0.6),
     'glow':       dict(ramp='fb_cool', lo=8, hi=14, emissive=True),
     'flash':      dict(ramp='fb_warm', lo=4, hi=14, emissive=True, tex=0.35, freq=55),
@@ -158,14 +172,12 @@ MATERIALS = {
 MAT_NAMES = list(MATERIALS)
 MAT_ID = {n: i for i, n in enumerate(MAT_NAMES)}
 
+# Team colour is relative to the viewer (D-041): your own team is blue, enemies red.
 TEAMS = {
-    'raiders': dict(title='Raiders', blurb='Irregulars. Desert fatigues, olive webbing, wooden furniture, red armbands.',
-                    TOP='tan', BOTTOM='coyote', GEAR='olive', ACCENT='red', GHILLIE='olive',
-                    FURN=('brown', 2, 13), BOOT=('brown', 0, 9)),
-    'wardens': dict(title='Wardens', blurb='Response unit. Slate and black kit, polymer furniture, blue armbands.',
-                    TOP='slate', BOTTOM=('ink', 2, 15), GEAR=('grey', 1, 12), ACCENT='blue', GHILLIE=('grey', 1, 12),
-                    FURN=('grey', 0, 8), BOOT=('ink', 0, 9)),
+    'blue': dict(title='Your team', blurb='How your own team looks to you.', TEAM='team_blue'),
+    'red':  dict(title='Enemies', blurb='How the enemy team looks to you.', TEAM='team_red'),
 }
+TEAM_RAMPS = {RAMP_ID[t['TEAM']] for t in TEAMS.values()}
 
 # ---------------------------------------------------------------- math
 D = math.radians
@@ -319,9 +331,9 @@ def S_cut(A, n, h):
 
 
 class Part:
-    __slots__ = ('fn', 'R', 't', 'c', 'rad', 'mat', 'k', 'ground', 'seed')
+    __slots__ = ('fn', 'R', 't', 'c', 'rad', 'mat', 'k', 'ground', 'tall', 'seed')
 
-    def __init__(self, shape, frame, mat, k=0.0, ground=True):
+    def __init__(self, shape, frame, mat, k=0.0, ground=True, tall=True):
         fn, bc, br = shape
         self.fn = fn
         self.R = frame.R.astype(f32)
@@ -331,6 +343,7 @@ class Part:
         self.mat = MAT_ID[mat]
         self.k = f32(k)
         self.ground = ground
+        self.tall = tall      # counts toward the class's height (not the gun, antenna or effects)
         self.seed = 0
 
     def local(self, P):
@@ -461,7 +474,7 @@ def vnoise(p, seed=0):
 
 
 # ---------------------------------------------------------------- weapons
-WEAPON_SCALE = dict(ar=1.1, sniper=1.1, lmg=1.24, smg=1.12)   # drawn oversize so they read at sprite scale
+WEAPON_SCALE = dict(ar=1.1, sniper=1.1, shotgun=1.12, smg=1.12)   # drawn oversize so they read at sprite scale
 
 
 def weapon_def(kind):
@@ -479,7 +492,8 @@ def weapon_def(kind):
         add(S_cyl(0.016, 0.07), T(0, 0.055, 0.43), 'metal')
         add(S_cyl(0.020, 0.025, 0.005), T(0, 0.055, 0.51), 'metal')
         add(S_box(0.010, 0.026, 0.012, 0.004), T(0, 0.085, 0.36), 'metal')
-        add(S_box(0.018, 0.075, 0.032, 0.008), T(0, -0.045, 0.11) @ Rt(rx(-0.32)), 'metal')
+        add(S_box(0.018, 0.045, 0.032, 0.008), T(0, -0.030, 0.105) @ Rt(rx(-0.25)), 'metal')
+        add(S_box(0.018, 0.045, 0.032, 0.008), T(0, -0.098, 0.135) @ Rt(rx(-0.62)), 'metal')
         add(S_box(0.016, 0.045, 0.021, 0.008), T(0, -0.025, -0.01) @ Rt(rx(0.35)), 'polymer')
         add(S_cyl(0.016, 0.06), T(0, 0.06, -0.12), 'metal')
         add(S_box(0.023, 0.045, 0.075, 0.014), T(0, 0.035, -0.20), 'furn')
@@ -506,24 +520,17 @@ def weapon_def(kind):
             add(S_cyl(0.008, 0.11), T(sx, 0.005, 0.45), 'metal')
         pts = dict(R=(0, -0.022, -0.065), L=(0, 0.002, 0.25), muzzle=(0, 0.065, 0.72),
                    eject=(-0.03, 0.08, 0.05), flash=1.25)
-    elif kind == 'lmg':       # belt-fed light machine gun with box mag
-        add(S_box(0.036, 0.052, 0.16, 0.012), T(0, 0.050, 0.06), 'metal')
-        add(S_box(0.034, 0.016, 0.09, 0.008), T(0, 0.108, 0.04), 'metal')
-        add(S_box(0.009, 0.010, 0.055, 0.006), T(0, 0.160, 0.16), 'polymer')
-        add(S_box(0.006, 0.022, 0.006, 0.004), T(0, 0.135, 0.12), 'metal')
-        add(S_box(0.006, 0.022, 0.006, 0.004), T(0, 0.135, 0.20), 'metal')
-        add(S_box(0.031, 0.036, 0.12, 0.012), T(0, 0.050, 0.30), 'furn')
-        add(S_cyl(0.019, 0.14), T(0, 0.050, 0.54), 'metal')
-        add(S_cyl(0.024, 0.03, 0.006), T(0, 0.050, 0.69), 'metal')
-        add(S_box(0.050, 0.065, 0.065, 0.014), T(0.012, -0.065, 0.11), 'gear')
-        add(S_box(0.017, 0.045, 0.022, 0.008), T(0, -0.028, -0.01) @ Rt(rx(0.35)), 'polymer')
-        add(S_box(0.030, 0.055, 0.10, 0.016), T(0, 0.030, -0.17), 'furn')
-        for sx in (-0.014, 0.014):
-            add(S_cyl(0.009, 0.12), T(sx, 0.012, 0.52), 'metal')
-        for i in range(4):
-            add(S_box(0.006, 0.010, 0.009, 0.003), T(0.045, 0.012 + 0.018 * i, 0.09 - 0.012 * i), 'brass')
-        pts = dict(R=(0, -0.025, -0.012), L=(0, 0.004, 0.23), muzzle=(0, 0.05, 0.72),
-                   eject=(-0.04, 0.06, 0.07), flash=1.35)
+    elif kind == 'shotgun':   # pump-action shotgun: barrel over a magazine tube, pump, full stock
+        add(S_box(0.026, 0.044, 0.12, 0.012), T(0, 0.045, 0.04), 'metal')
+        add(S_cyl(0.017, 0.25), T(0, 0.068, 0.40), 'metal')
+        add(S_cyl(0.015, 0.20), T(0, 0.030, 0.35), 'metal')
+        add(S_box(0.030, 0.032, 0.085, 0.014), T(0, 0.032, 0.30), 'furn')
+        add(S_box(0.006, 0.008, 0.008, 0.003), T(0, 0.090, 0.63), 'metal')
+        add(S_box(0.017, 0.045, 0.022, 0.008), T(0, -0.025, -0.01) @ Rt(rx(0.35)), 'furn')
+        add(S_box(0.024, 0.042, 0.13, 0.014), T(0, 0.022, -0.17) @ Rt(rx(0.10)), 'furn')
+        add(S_box(0.026, 0.050, 0.012, 0.006), T(0, 0.012, -0.30) @ Rt(rx(0.10)), 'polymer')
+        pts = dict(R=(0, -0.02, -0.005), L=(0, 0.012, 0.30), muzzle=(0, 0.068, 0.65),
+                   eject=(-0.03, 0.07, 0.06), flash=1.2)
     elif kind == 'smg':       # integrally suppressed SMG
         add(S_box(0.023, 0.040, 0.12, 0.012), T(0, 0.045, 0.04), 'metal')
         add(S_cyl(0.026, 0.13, 0.006), T(0, 0.050, 0.27), 'metal')
@@ -550,47 +557,57 @@ def weapon_def(kind):
 
 
 # ---------------------------------------------------------------- classes
+# height: top of the head or headgear in the idle pose (metres; the tool scales the body
+# to it). bulk: width of torso and limbs. legs: leg length relative to the body.
+# hunch: forward lean of the chest in degrees (the head stays level).
+# kit: the neutral ramps of each kit slot; 'TEAM' paints that slot in the team colour.
 CLASSES = {
     'rifleman': dict(
-        title='Rifleman', role='Entry fragger / all-rounder', height=1.0, bulk=1.0, skin='skin_l',
-        head='helmet', torso='carrier', back='hydration', weapon='ar',
-        stats=dict(health=100, armor=100, speed=250, weapon='Assault rifle - 30 rnd, full auto'),
-        feature=('Momentum', 'Every kill grants +10% move speed and instant recoil reset for 4 s. '
-                 'Built to take first contact and keep the push rolling.'),
-        look='High-cut helmet, ballistic glasses and headset, plate carrier with triple mag pouches, elbow/knee pads.'),
+        title='Rifleman', role='Stocky and upright: the all-rounder', height=1.82, bulk=1.10, legs=1.0, hunch=0,
+        skin='skin_l', head='helmet', torso='carrier', back='hydration', weapon='ar',
+        kit=dict(SLEEVE='TEAM', TOP='TEAM', BOTTOM='olive', GEAR=('olive', 0, 12), COAT='olive', KNIT='grey',
+                 FURN='wood', BOOT='charcoal'),
+        perk=('Quick Hands', 'Reloads and weapon switches 15% faster.'), gun='AK-style rifle',
+        look='High-cut helmet with a team stripe, goggles, plate carrier with three mag pouches, '
+             'sleeves in team colour, olive-grey trousers.'),
+    'bulwark': dict(
+        title='Bulwark', role='Tall, broad, slight hunch: the anchor', height=1.92, bulk=1.34, legs=0.97, hunch=13,
+        skin='skin_m', head='gasmask', torso='heavy', back='ammo', weapon='shotgun',
+        kit=dict(SLEEVE='TEAM', TOP='TEAM', BOTTOM='charcoal', GEAR=('stone', 1, 13), COAT='stone', KNIT='grey',
+                 FURN=('charcoal', 1, 12), BOOT='charcoal'),
+        perk=('Plated', 'With armor on, takes 10% less damage and the armor wears down 30% slower.'),
+        gun='Pump shotgun',
+        look='Closed helmet with a team stripe over a gas mask, big grey shoulder plates edged in team colour, '
+             'front plates, team-colour sleeves, ammo pack.'),
     'marksman': dict(
-        title='Marksman', role='Long-range pick / overwatch', height=1.0, bulk=0.96, skin='skin_d',
-        head='hood', torso='rig', back='mantle', weapon='sniper',
-        stats=dict(health=100, armor=50, speed=230, weapon='Bolt-action rifle - 5 rnd, 4x/10x scope'),
-        feature=('Deadeye', 'Hold breath while scoped for 3 s of zero sway. Any enemy you hit is marked '
-                 'on your team\'s radar for 4 s. Moves 30% slower while scoped.'),
-        look='Shaggy ghillie mantle and hood, team-colour shemagh over the face, lean chest rig, long scoped rifle.'),
-    'heavy': dict(
-        title='Heavy', role='Anchor / site holder', height=1.05, bulk=1.28, skin='skin_l',
-        head='gasmask', torso='heavy', back='ammo', weapon='lmg',
-        stats=dict(health=100, armor=200, speed=215, weapon='Belt-fed LMG - 100 rnd box'),
-        feature=('Bulwark', 'Crouching braces the LMG: no recoil climb and 25% blast resistance while braced. '
-                 'Footsteps are loud and he can\'t sprint.'),
-        look='Bulky frame, full gas mask with front filter, heavy helmet with ear armour, pauldrons, front plates, ammo pack.'),
-    'infiltrator': dict(
-        title='Infiltrator', role='Lurker / objective runner', height=0.98, bulk=0.92, skin='skin_d',
-        head='nvg', torso='slim', back='radio', weapon='smg',
-        stats=dict(health=100, armor=25, speed=265, weapon='Suppressed SMG - 30 rnd'),
-        feature=('Ghost Step', 'Silent footsteps at full speed, night-vision that sees through smoke, '
-                 'and 30% faster bomb plant / defuse.'),
-        look='Balaclava with glowing night-vision goggles, beanie, slim chest rig, radio pack with whip antenna, thigh holster.'),
+        title='Marksman', role='Lanky, long coat: the long-range pick', height=1.88, bulk=0.92, legs=1.06, hunch=4,
+        skin='skin_d', head='hood', torso='rig', back='none', weapon='sniper', coat=True,
+        kit=dict(SLEEVE='TEAM', TOP=('moss', 1, 13), BOTTOM='charcoal', GEAR=('charcoal', 1, 13), COAT=('moss', 1, 13),
+                 KNIT='grey', FURN=('olive', 1, 12), BOOT='charcoal'),
+        perk=('Steady', 'Scoped accuracy recovers 30% faster after moving; scoping in is 20% faster.'),
+        gun='Sniper rifle',
+        look='Knee-length moss-grey coat with team-colour sleeves, a team panel across the back and a hood, '
+             'a team-colour scarf over the face, lean chest rig, long scoped rifle.'),
+    'scout': dict(
+        title='Scout', role='Short and slim: the lurker', height=1.72, bulk=0.86, legs=1.0, hunch=5,
+        skin='skin_l', head='beanie', torso='slim', back='radio', weapon='smg',
+        kit=dict(SLEEVE='TEAM', TOP='TEAM', BOTTOM='charcoal', GEAR=('charcoal', 1, 13), COAT='charcoal', KNIT=('grey', 1, 10),
+                 FURN=('charcoal', 1, 12), BOOT='charcoal'),
+        perk=('Light Step', 'Running footsteps carry 70% as far.'), gun='SMG',
+        look='Beanie, balaclava and glowing goggles, fitted team-colour jacket, slim rig, '
+             'radio pack with a whip antenna.'),
 }
 
 # weapon holds, relative to the pelvis (x right = -x, y up, z forward), in metres + degrees
 HOLDS = {
-    'ar':     dict(idle=(-0.10, 0.30, 0.24, 40, 15, 0), run=(-0.08, 0.32, 0.24, 32, 20, 6),
-                   aim=(-0.10, 0.52, 0.24, 0, 0, 0)),
-    'sniper': dict(idle=(-0.12, 0.26, 0.22, 46, 20, 0), run=(-0.10, 0.30, 0.22, 40, 24, 6),
-                   aim=(-0.10, 0.51, 0.22, 0, 0, 0)),
-    'lmg':    dict(idle=(-0.07, 0.19, 0.23, 14, 12, 0), run=(-0.08, 0.18, 0.24, 18, 12, 0),
-                   aim=(-0.11, 0.20, 0.26, -3, 3, 0)),
-    'smg':    dict(idle=(-0.08, 0.30, 0.22, 45, 15, 0), run=(-0.07, 0.32, 0.22, 38, 18, 6),
-                   aim=(-0.09, 0.52, 0.22, 0, 0, 0)),
+    'ar':      dict(idle=(-0.10, 0.30, 0.24, 40, 15, 0), run=(-0.08, 0.32, 0.24, 32, 20, 6),
+                    aim=(-0.10, 0.52, 0.24, 0, 0, 0)),
+    'sniper':  dict(idle=(-0.12, 0.26, 0.22, 46, 20, 0), run=(-0.10, 0.30, 0.22, 40, 24, 6),
+                    aim=(-0.10, 0.51, 0.22, 0, 0, 0)),
+    'shotgun': dict(idle=(-0.10, 0.30, 0.26, 38, 15, 0), run=(-0.08, 0.32, 0.26, 30, 20, 6),
+                    aim=(-0.10, 0.52, 0.26, 0, 0, 0)),
+    'smg':     dict(idle=(-0.08, 0.30, 0.22, 45, 15, 0), run=(-0.07, 0.32, 0.22, 38, 18, 6),
+                    aim=(-0.09, 0.52, 0.22, 0, 0, 0)),
 }
 
 ANIMS = [  # name, frames, fps, loop
@@ -617,7 +634,7 @@ def base_pose():
 def make_pose(cdef, anim, i):
     p = base_pose()
     H = HOLDS[cdef['weapon']]
-    heavy = cdef['weapon'] == 'lmg'
+    heavy = False   # the old LMG's braced hold; no class uses it now
     if anim == 'idle':
         p.update(pelvis_yaw=-10, chest_yaw=-8, head=(2, 10, 0), weapon=('held', H['idle']),
                  legL=(8, 6, 8, 0), legR=(-6, 6, 6, 0))
@@ -701,56 +718,64 @@ def ik(S, Tg, a, b, pole):
     return E, W, over
 
 
-def build(cname, pose, yaw_deg, warn=None):
+def build(cname, pose, yaw_deg, s=1.0, warn=None):
+    """the class's parts in this pose, turned by yaw_deg, feet on the ground (y = 0).
+    s scales the body; class_scale() finds the s that makes the class its height."""
     cd = CLASSES[cname]
-    s, w = cd['height'], cd['bulk']
+    w = cd['bulk']
+    sl = s * cd['legs']
     p = pose
     parts = []
 
-    def add(shape, fr, mat, k=0.0, ground=True):
-        parts.append(Part(shape, fr, mat, k, ground))
+    def add(shape, fr, mat, k=0.0, ground=True, tall=True):
+        parts.append(Part(shape, fr, mat, k, ground, tall))
 
     F = Rt(ry(D(yaw_deg))) @ T(*p['root_off'])
-    base = F @ T(0, 1.02 * s, 0) @ Rt(rx(D(p['root_pitch'])) @ rz(D(p['root_roll'])))
+    base = F @ T(0, 1.02 * sl, 0) @ Rt(rx(D(p['root_pitch'])) @ rz(D(p['root_roll'])))
     pelvis = base @ Rt(ry(D(p['pelvis_yaw'])))
-    chest = pelvis @ T(0, 0.10 * s, 0) @ Rt(rot(p['chest_pitch'], p['chest_yaw'], p['chest_roll']))
+    # The hunch tilts the chest forward; the head is posed relative to the hips, so it stays level.
+    chest = pelvis @ T(0, 0.10 * s, 0) @ Rt(rot(p['chest_pitch'] + cd['hunch'], p['chest_yaw'], p['chest_roll']))
     hp, hy, hr = p['head']
     neck = chest.pt((0, 0.45 * s, 0.005))
     head = Frame(base.R @ rot(hp, hy, hr), neck)
-    fwd_ref = base.vec((0, 0, 1))
     side_ref = base.vec((1, 0, 0))
+    tor = cd['torso']
+    coat = cd.get('coat', False)
 
-    def limb(a, b, r1, r2, mat, k=0.025, ref=None):
+    def limb(a, b, r1, r2, mat, k=0.025, ref=None, tall=True):
         fr, L = seg_frame(np.asarray(a, float), np.asarray(b, float), side_ref if ref is None else ref)
-        add(S_cone(L, r1, r2), fr, mat, k)
+        add(S_cone(L, r1, r2), fr, mat, k, tall=tall)
         return fr, L
 
     # ------------------------------------------------ legs
     for side, key in ((1, 'legL'), (-1, 'legR')):
         hf, abd, kf, toe = p[key]
-        hip = pelvis.pt((side * 0.095 * w, -0.07 * s, 0))
+        hip = pelvis.pt((side * 0.095 * w, -0.07 * sl, 0))
         Rth = pelvis.R @ rz(D(side * abd)) @ rx(D(-hf))
-        knee = hip + Rth @ np.array([0, -0.44 * s, 0])
+        knee = hip + Rth @ np.array([0, -0.44 * sl, 0])
         Rsh = Rth @ rx(D(kf))
-        ankle = knee + Rsh @ np.array([0, -0.43 * s, 0])
+        ankle = knee + Rsh @ np.array([0, -0.43 * sl, 0])
         Rft = Rsh @ rx(D(hf - kf + toe))
         thigh = Frame(Rth, hip)
         shin = Frame(Rsh, knee)
         foot = Frame(Rft, ankle)
-        add(S_cone(0.44 * s, 0.092 * w, 0.068 * w), Frame(Rth @ rz(math.pi), hip), 'bottom', 0.03)
-        add(S_cone(0.43 * s, 0.065 * w, 0.050 * w), Frame(Rsh @ rz(math.pi), knee), 'bottom', 0.02)
-        add(S_box(0.030 * w, 0.06, 0.05, 0.02), thigh @ T(side * 0.068 * w, -0.22 * s, 0.0), 'bottom', 0.01)
-        kp = 1.25 if cd['torso'] == 'heavy' else 1.0
-        if cd['torso'] in ('carrier', 'heavy', 'slim'):
+        add(S_cone(0.44 * sl, 0.092 * w, 0.068 * w), Frame(Rth @ rz(math.pi), hip), 'bottom', 0.03)
+        add(S_cone(0.43 * sl, 0.065 * w, 0.050 * w), Frame(Rsh @ rz(math.pi), knee), 'bottom', 0.02)
+        add(S_box(0.030 * w, 0.06, 0.05, 0.02), thigh @ T(side * 0.068 * w, -0.22 * sl, 0.0), 'bottom', 0.01)
+        kp = 1.25 if tor == 'heavy' else 1.0
+        if tor in ('carrier', 'heavy', 'slim'):
             add(S_box(0.052 * w * kp, 0.058 * kp, 0.03, 0.022), shin @ T(0, -0.025, 0.052 * w), 'gear_dk', 0.006)
-        if cd['torso'] == 'heavy':
+        if tor == 'heavy':
             add(S_box(0.07 * w, 0.13, 0.03, 0.02), thigh @ T(0, -0.20, 0.075 * w), 'gear', 0.006)
             add(S_box(0.05 * w, 0.12, 0.028, 0.02), shin @ T(0, -0.20, 0.05 * w), 'gear', 0.006)
-        if cd['torso'] == 'slim' and side == -1:
+        if tor == 'slim' and side == -1:
             add(S_box(0.022, 0.085, 0.052, 0.012), thigh @ T(-0.085 * w, -0.17, 0.01), 'polymer', 0.004)
             add(S_box(0.015, 0.03, 0.022, 0.006), thigh @ T(-0.088 * w, -0.06, 0.015), 'polymer')
-        bw = 1.12 if cd['torso'] == 'heavy' else 1.0
-        add(S_box(0.056 * bw, 0.075, 0.062 * bw, 0.03), shin @ T(0, -0.40 * s, 0.0), 'boot', 0.015)
+        if coat:
+            # Knee-length coat: one flap per thigh, so it moves with the leg like a segmented model.
+            add(S_box(0.108 * w, 0.24 * sl, 0.116 * w, 0.03), thigh @ T(side * 0.012, -0.19 * sl, -0.006), 'coat', 0.02)
+        bw = 1.12 if tor == 'heavy' else 1.0
+        add(S_box(0.056 * bw, 0.075, 0.062 * bw, 0.03), shin @ T(0, -0.40 * sl, 0.0), 'boot', 0.015)
         add(S_box(0.052 * bw, 0.042, 0.118 * bw, 0.03), foot @ T(0, -0.042, 0.05), 'boot', 0.015)
         add(S_box(0.055 * bw, 0.012, 0.124 * bw, 0.008), foot @ T(0, -0.078, 0.05), 'sole')
 
@@ -760,17 +785,21 @@ def build(cname, pose, yaw_deg, warn=None):
     add(S_box(0.172 * w, 0.13 * s, 0.108 * w, 0.07), chest @ T(0, 0.27 * s, 0), 'top', 0.03)
     for side in (1, -1):
         add(S_sph(0.074 * w), chest @ T(side * 0.18 * w, 0.37 * s, 0), 'top', 0.04)
+    if coat:
+        add(S_box(0.168 * w, 0.11, 0.122 * w, 0.05), pelvis @ T(0, -0.035, 0), 'coat', 0.03)
+        add(S_ell(0.125 * w, 0.06, 0.11 * w), chest @ T(0, 0.42 * s, -0.01), 'coat', 0.02)
+        # A team-colour panel across the upper back, so the team also reads from behind.
+        add(S_box(0.150 * w, 0.075, 0.03, 0.02), chest @ T(0, 0.33 * s, -0.112 * w), 'team', 0.01)
     add(S_box(0.15 * w, 0.028, 0.11 * w, 0.02), pelvis @ T(0, 0.055, 0), 'gear_dk', 0.008)
 
-    tor = cd['torso']
     if tor == 'carrier':
-        add(S_box(0.168 * w, 0.15, 0.128, 0.04), chest @ T(0, 0.25, 0.004), 'gear', 0.01)
+        add(S_box(0.168 * w, 0.15, 0.128 * w, 0.04), chest @ T(0, 0.25, 0.004), 'gear', 0.01)
         for x in (-0.074, 0.0, 0.074):
-            add(S_box(0.033, 0.05, 0.025, 0.012), chest @ T(x, 0.165, 0.132), 'gear_dk', 0.006)
-        add(S_box(0.08, 0.03, 0.02, 0.01), chest @ T(0, 0.30, 0.13), 'gear', 0.006)
+            add(S_box(0.033, 0.05, 0.025, 0.012), chest @ T(x * w, 0.165, 0.132 * w), 'gear_dk', 0.006)
+        add(S_box(0.08, 0.03, 0.02, 0.01), chest @ T(0, 0.30, 0.13 * w), 'gear', 0.006)
         for side in (1, -1):
-            add(S_box(0.04, 0.03, 0.12, 0.015), chest @ T(side * 0.11, 0.40, 0), 'gear', 0.01)
-        add(S_box(0.03, 0.06, 0.035, 0.012), chest @ T(0.168, 0.24, -0.02), 'polymer', 0.004)
+            add(S_box(0.04, 0.03, 0.12, 0.015), chest @ T(side * 0.11 * w, 0.40, 0), 'gear', 0.01)
+        add(S_box(0.03, 0.06, 0.035, 0.012), chest @ T(0.168 * w, 0.24, -0.02), 'polymer', 0.004)
         add(S_box(0.03, 0.04, 0.035, 0.012), pelvis @ T(0.16 * w, 0.02, 0.03), 'gear', 0.006)
         add(S_box(0.03, 0.07, 0.045, 0.012), pelvis @ T(-0.17 * w, -0.06, 0.0), 'polymer', 0.004)
     elif tor == 'rig':
@@ -784,8 +813,9 @@ def build(cname, pose, yaw_deg, warn=None):
         for yy in (0.27, 0.15):
             add(S_box(0.13 * w, 0.055, 0.025, 0.015), chest @ T(0, yy, 0.165 * w), 'gear_dk', 0.006)
         for side in (1, -1):
+            # Shoulder plates, edged in team colour.
             add(S_ell(0.112 * w, 0.072, 0.118 * w), chest @ T(side * 0.235 * w, 0.40, 0) @ Rt(rz(-side * 0.45)), 'gear', 0.01)
-            add(S_ell(0.114 * w, 0.03, 0.12 * w), chest @ T(side * 0.235 * w, 0.37, 0) @ Rt(rz(-side * 0.45)), 'gear_dk', 0.004)
+            add(S_ell(0.118 * w, 0.03, 0.124 * w), chest @ T(side * 0.235 * w, 0.37, 0) @ Rt(rz(-side * 0.45)), 'team', 0.004)
         add(S_box(0.095 * w, 0.085, 0.025, 0.02), pelvis @ T(0, -0.10, 0.115 * w) @ Rt(rx(-0.1)), 'gear', 0.006)
         for side in (1, -1):
             add(S_box(0.035, 0.05, 0.04, 0.014), pelvis @ T(side * 0.165 * w, 0.0, 0.04), 'gear_dk', 0.006)
@@ -799,73 +829,82 @@ def build(cname, pose, yaw_deg, warn=None):
 
     back = cd['back']
     if back == 'hydration':
-        add(S_box(0.12, 0.15, 0.05, 0.04), chest @ T(0, 0.25, -0.155), 'gear', 0.01)
-    elif back == 'mantle':
-        add(S_shag(S_ell(0.25 * w, 0.115, 0.175), 0.026, 26, 1), chest @ T(0, 0.37, -0.02), 'ghillie', 0.03)
-        add(S_shag(S_box(0.20, 0.19, 0.055, 0.05), 0.026, 26, 2), chest @ T(0, 0.20, -0.125) @ Rt(rx(-0.08)), 'ghillie', 0.03)
-        add(S_shag(S_ell(0.12, 0.10, 0.06), 0.02, 26, 3), chest @ T(0, 0.30, 0.11), 'ghillie', 0.03)
+        add(S_box(0.12, 0.15, 0.05, 0.04), chest @ T(0, 0.25, -0.155 * w), 'gear', 0.01)
     elif back == 'ammo':
         add(S_box(0.16 * w, 0.17, 0.08, 0.03), chest @ T(0, 0.24, -0.20 * w), 'gear_dk', 0.01)
-        add(S_cyl(0.02, 0.09, 0.006), chest @ T(-0.17 * w, 0.06, -0.10) @ Rt(ry(0.4)), 'polymer')
     elif back == 'radio':
         add(S_box(0.11, 0.15, 0.055, 0.03), chest @ T(0, 0.24, -0.145), 'gear_dk', 0.01)
         a0 = chest.pt((0.075, 0.37, -0.16))
         a1 = chest.pt((0.10, 0.80, -0.25))
-        limb(a0, a1, 0.011, 0.009, 'polymer', 0.0)
+        limb(a0, a1, 0.011, 0.009, 'polymer', 0.0, tall=False)
 
     # ------------------------------------------------ head
-    add(S_box(0.05, 0.06, 0.05, 0.045), head @ T(0, 0.01, 0.0), 'skin', 0.03)
     hd = cd['head']
-    skin_face = 'mask' if hd == 'nvg' else 'skin'
+    skin_face = 'mask' if hd == 'beanie' else 'skin'   # the Scout wears a balaclava
+    add(S_box(0.05, 0.06, 0.05, 0.045), head @ T(0, 0.01, 0.0), skin_face, 0.03)
     add(S_ell(0.095, 0.115, 0.104), head @ T(0, 0.115, 0.005), skin_face, 0.02)
     add(S_box(0.066, 0.04, 0.066, 0.034), head @ T(0, 0.055, 0.03), skin_face, 0.02)
     add(S_ell(0.016, 0.024, 0.02), head @ T(0, 0.103, 0.104), skin_face, 0.01)
     for side in (1, -1):
         add(S_ell(0.014, 0.027, 0.02), head @ T(side * 0.09, 0.11, -0.005), skin_face, 0.01)
-    if hd == 'nvg':
-        add(S_box(0.062, 0.017, 0.02, 0.008), head @ T(0, 0.128, 0.088), 'skin', 0.004)
     for side in (1, -1):
         add(S_ell(0.017, 0.010, 0.012), head @ T(side * 0.034, 0.128, 0.091), 'eye')
 
     if hd == 'helmet':
+        # High-cut helmet with a team stripe from front to back, headset, goggles.
         add(S_cut(S_at(S_ell(0.126, 0.116, 0.132), T(0, 0.137, -0.006)), (0, 1, -0.25), 0.140),
             head, 'gear', 0.004)
+        stripe = S_at(S_ell(0.131, 0.121, 0.137), T(0, 0.137, -0.006))
+        stripe = S_cut(S_cut(S_cut(stripe, (1, 0, 0), -0.026), (-1, 0, 0), -0.026), (0, 1, -0.25), 0.152)
+        add(stripe, head, 'team')
         add(S_box(0.024, 0.018, 0.012, 0.006), head @ T(0, 0.205, 0.118), 'polymer')
         for side in (1, -1):
             add(S_at(S_cyl(0.042, 0.022, 0.008), Rt(ry(math.pi / 2))), head @ T(side * 0.105, 0.11, -0.005), 'polymer')
-        add(S_box(0.072, 0.016, 0.012, 0.008), head @ T(0, 0.128, 0.101), 'lens')
+        add(S_box(0.076, 0.022, 0.016, 0.008), head @ T(0, 0.128, 0.098), 'polymer', 0.004)
+        for side in (1, -1):
+            add(S_box(0.027, 0.015, 0.006, 0.004), head @ T(side * 0.034, 0.128, 0.113), 'lens')
         add(S_box(0.045, 0.012, 0.03, 0.006), head @ T(0, 0.135, -0.11) @ Rt(rx(-0.4)), 'polymer')
     elif hd == 'hood':
+        # Hood over the head, a team-colour scarf over the lower face and round the neck.
         hood = S_sub(S_at(S_ell(0.128, 0.138, 0.128), T(0, 0.125, -0.018)),
                      S_at(S_ell(0.082, 0.092, 0.09), T(0, 0.112, 0.112)))
-        add(S_shag(hood, 0.018, 30, 4), head, 'ghillie', 0.015)
-        add(S_ell(0.104, 0.062, 0.104), head @ T(0, 0.048, 0.018), 'accent', 0.015)
-        add(S_box(0.06, 0.09, 0.02, 0.02), head @ T(0.03, -0.04, 0.10) @ Rt(rz(0.2)), 'accent', 0.015)
+        add(hood, head, 'coat', 0.015)
+        add(S_ell(0.104, 0.062, 0.104), head @ T(0, 0.048, 0.018), 'team', 0.015)
+        add(S_ell(0.12 * w, 0.055, 0.112 * w), chest @ T(0, 0.43 * s, 0.01), 'team', 0.02)
+        add(S_box(0.048, 0.12, 0.018, 0.015), chest @ T(0.06 * w, 0.31 * s, 0.15 * w) @ Rt(rz(0.12)), 'team', 0.01)
     elif hd == 'gasmask':
+        # Gas mask under a closed helmet with ear armour.
         add(S_ell(0.084, 0.088, 0.072), head @ T(0, 0.088, 0.058), 'polymer', 0.01)
         for side in (1, -1):
             add(S_at(S_cyl(0.026, 0.008, 0.003), Rt(ry(side * 0.28))), head @ T(side * 0.036, 0.13, 0.095), 'lens')
         add(S_at(S_cyl(0.040, 0.032, 0.008), Rt(rx(0.6))), head @ T(0, 0.045, 0.14), 'polymer')
-        add(S_cut(S_at(S_ell(0.135, 0.125, 0.14), T(0, 0.13, -0.008)), (0, 1, -0.18), 0.135),
+        add(S_cut(S_at(S_ell(0.138, 0.128, 0.143), T(0, 0.13, -0.008)), (0, 1, -0.18), 0.128),
             head, 'gear', 0.004)
+        stripe = S_at(S_ell(0.143, 0.133, 0.148), T(0, 0.13, -0.008))
+        stripe = S_cut(S_cut(S_cut(stripe, (1, 0, 0), -0.030), (-1, 0, 0), -0.030), (0, 1, -0.18), 0.140)
+        add(stripe, head, 'team')
         for side in (1, -1):
-            add(S_at(S_cyl(0.048, 0.03, 0.01), Rt(ry(math.pi / 2))), head @ T(side * 0.115, 0.105, -0.01), 'gear_dk', 0.004)
-        add(S_box(0.11, 0.02, 0.02, 0.008), head @ T(0, 0.185, 0.12), 'gear_dk')
-    elif hd == 'nvg':
-        add(S_cut(S_at(S_ell(0.104, 0.116, 0.111), T(0, 0.128, 0.002)), (0, 1, 0.05), 0.145), head, 'gear', 0.01)
-        add(S_box(0.05, 0.022, 0.03, 0.01), head @ T(0, 0.172, 0.104), 'polymer', 0.004)
+            add(S_at(S_cyl(0.050, 0.032, 0.01), Rt(ry(math.pi / 2))), head @ T(side * 0.117, 0.105, -0.01), 'gear_dk', 0.004)
+        add(S_box(0.11, 0.02, 0.02, 0.008), head @ T(0, 0.185, 0.122), 'gear_dk')
+    elif hd == 'beanie':
+        # Knit beanie with a folded band, balaclava, goggles with glowing lenses.
+        cap = S_at(S_ell(0.104, 0.120, 0.111), T(0, 0.135, -0.004))
+        add(S_cut(cap, (0, 1, 0.08), 0.165), head, 'knit', 0.01)
+        band = S_at(S_ell(0.111, 0.12, 0.118), T(0, 0.135, -0.004))
+        add(S_cut(S_cut(band, (0, 1, 0.08), 0.160), (0, -1, -0.08), -0.195), head, 'knit', 0.004)
+        add(S_box(0.062, 0.017, 0.02, 0.008), head @ T(0, 0.128, 0.088), 'skin', 0.004)
+        add(S_box(0.068, 0.022, 0.02, 0.008), head @ T(0, 0.128, 0.094), 'polymer', 0.004)
         for side in (1, -1):
-            add(S_cyl(0.021, 0.036, 0.006), head @ T(side * 0.033, 0.13, 0.135), 'polymer', 0.004)
-            add(S_cyl(0.017, 0.006), head @ T(side * 0.033, 0.13, 0.173), 'glow')
+            add(S_cyl(0.021, 0.016, 0.005), head @ T(side * 0.033, 0.128, 0.110), 'polymer', 0.004)
+            add(S_cyl(0.017, 0.005), head @ T(side * 0.033, 0.128, 0.126), 'glow')
 
     # ------------------------------------------------ weapon
     wparts, wp = weapon_def(cd['weapon'])
     kind, hold = p['weapon']
+    x, y, z, pi, ya, ro = hold
     if kind == 'held':
-        x, y, z, pi, ya, ro = hold
         Wf = base @ T(x * s, y * s, z) @ Rt(rot(pi, ya, ro))
     else:
-        x, y, z, pi, ya, ro = hold
         Wf = F @ T(x, y, z) @ Rt(rot(pi, ya, ro))
 
     # ------------------------------------------------ arms (IK onto weapon or free targets)
@@ -882,10 +921,8 @@ def build(cname, pose, yaw_deg, warn=None):
             warn.append(f'{cname}: {hkey} out of reach by {np.linalg.norm(Tg - S) - (ua + fa):.3f} m')
         fdir = norm(Wr - E)
         wrist = E + fdir * (fa - 0.05)
-        limb(S, E, 0.063 * w, 0.053 * w, 'top', 0.03)
-        limb(E, wrist, 0.051 * w, 0.042 * w, 'top', 0.02)
-        u_fr, u_L = seg_frame(S, E, side_ref)
-        add(S_cone(0.045 * s, 0.067 * w, 0.063 * w), u_fr @ T(0, 0.05 * s, 0), 'accent', 0.004)
+        limb(S, E, 0.063 * w, 0.053 * w, 'sleeve', 0.03)
+        limb(E, wrist, 0.051 * w, 0.042 * w, 'sleeve', 0.02)
         if tor in ('carrier', 'heavy'):
             add(S_sph(0.051 * w), Frame(np.eye(3), E), 'gear_dk', 0.006)
         h_fr, _ = seg_frame(wrist, wrist + fdir, side_ref)
@@ -894,27 +931,26 @@ def build(cname, pose, yaw_deg, warn=None):
 
     nbody = len(parts)
     for shape, fr, mat in wparts:
-        add(shape, Wf @ fr, mat, 0.0, ground=(kind == 'drop'))
+        add(shape, Wf @ fr, mat, 0.0, ground=(kind == 'drop'), tall=False)
 
     if p['flash']:
         sz = wp['flash']
         M = Wf @ T(*wp['muzzle'])
-        add(S_ell(0.028 * sz, 0.028 * sz, 0.045 * sz), M @ T(0, 0, 0.035 * sz), 'flash_core', 0.0, False)
+        add(S_ell(0.028 * sz, 0.028 * sz, 0.045 * sz), M @ T(0, 0, 0.035 * sz), 'flash_core', 0.0, False, False)
         if sz > 0.6:
-            add(S_ell(0.034 * sz, 0.034 * sz, 0.11 * sz), M @ T(0, 0, 0.10 * sz), 'flash', 0.0, False)
+            add(S_ell(0.034 * sz, 0.034 * sz, 0.11 * sz), M @ T(0, 0, 0.10 * sz), 'flash', 0.0, False, False)
             for k in range(4):
                 add(S_ell(0.012 * sz, 0.085 * sz, 0.012 * sz), M @ T(0, 0, 0.03 * sz) @ Rt(rz(D(45 + 90 * k))),
-                    'flash', 0.0, False)
+                    'flash', 0.0, False, False)
         add(S_cyl(0.008, 0.016, 0.003), Wf @ T(*(wp['eject'] + np.array([-0.13, 0.08, -0.03]))) @ Rt(ry(1.1)),
-            'brass', 0.0, False)
+            'brass', 0.0, False, False)
 
     for i, pt in enumerate(parts):
         pt.seed = i
 
     # ---------------------------------------------- ground contact
     body = parts[:nbody] + ([] if kind == 'drop' else parts[nbody:])
-    body_g = [q for q in parts[:nbody]]
-    dy = -lowest_point(body_g)
+    dy = -lowest_point(parts[:nbody])
     for q in body:
         q.shift(dy)
     if kind == 'drop':
@@ -923,6 +959,33 @@ def build(cname, pose, yaw_deg, warn=None):
         for q in wpart:
             q.shift(dyw)
     return parts
+
+
+def highest_point(parts):
+    """top of the head or headgear: the class's height (the gun, antenna and effects don't count)."""
+    cand = [q for q in parts if q.tall]
+    tops = np.array([q.c[1] + q.rad for q in cand])
+    cand = [q for q, t in zip(cand, tops) if t > tops.max() - 0.35]
+    sc = Scene(cand)
+    cs = np.array([q.c for q in cand])
+    rs = np.array([q.rad for q in cand])
+    xs = np.arange((cs[:, 0] - rs).min(), (cs[:, 0] + rs).max(), 0.006)
+    zs = np.arange((cs[:, 2] - rs).min(), (cs[:, 2] + rs).max(), 0.006)
+    X, Z = np.meshgrid(xs, zs)
+    O = np.stack([X.ravel(), np.full(X.size, tops.max() + 0.5), Z.ravel()], 1).astype(f32)
+    t, hit = sc.march(O, np.array([0, -1, 0], f32))
+    return float((O[hit, 1] - t[hit]).max())
+
+
+def class_scale(cname):
+    """the body scale at which the class stands its 'height' tall in the idle pose. The head
+    keeps its size, so a few rounds of scaling by target / measured settle on it."""
+    cd = CLASSES[cname]
+    pose = make_pose(cd, 'idle', 0)
+    s = 1.0
+    for _ in range(4):
+        s *= cd['height'] / highest_point(build(cname, pose, 0.0, s))
+    return s
 
 
 def lowest_point(parts):
@@ -1008,7 +1071,7 @@ def render_gbuffer(parts):
 
 
 def team_lut(team, cname):
-    tm = TEAMS[team]
+    cd = CLASSES[cname]
     ramp = np.zeros(len(MAT_NAMES), np.int32)
     lo = np.zeros(len(MAT_NAMES), f32)
     hi = np.zeros(len(MAT_NAMES), f32)
@@ -1016,7 +1079,10 @@ def team_lut(team, cname):
         md = MATERIALS[name]
         r, a, b = md.get('ramp'), md['lo'], md['hi']
         if 'slot' in md:
-            sv = CLASSES[cname]['skin'] if md['slot'] == 'SKIN' else tm[md['slot']]
+            slot = md['slot']
+            sv = cd['skin'] if slot == 'SKIN' else 'TEAM' if slot == 'TEAM' else cd['kit'][slot]
+            if sv == 'TEAM':
+                sv = TEAMS[team]['TEAM']
             if isinstance(sv, tuple):
                 r, a2, b2 = sv
                 # remap the material's span proportionally into the override span
@@ -1064,10 +1130,10 @@ def compose(gm, gt, lut):
 
 
 def render_task(args):
-    cname, fi, d = args
+    cname, fi, d, scale = args
     anim, i = FRAME_LIST[fi]
     warn = []
-    parts = build(cname, make_pose(CLASSES[cname], anim, i), d * 45.0, warn)
+    parts = build(cname, make_pose(CLASSES[cname], anim, i), d * 45.0, scale, warn)
     gm, gt = render_gbuffer(parts)
     return cname, fi, d, gm, gt, warn
 
@@ -1093,7 +1159,7 @@ def write_palette(out):
     with open(os.path.join(out, 'palette.lmp'), 'wb') as fh:      # Quake-style raw 768-byte palette
         fh.write(PAL8.astype(np.uint8).tobytes())
     with open(os.path.join(out, 'palette.gpl'), 'w') as fh:       # GIMP / Aseprite
-        fh.write('GIMP Palette\nName: Retro Ops\nColumns: 16\n#\n')
+        fh.write('GIMP Palette\nName: Chiip crew\nColumns: 16\n#\n')
         for i, c in enumerate(PAL8):
             fh.write(f'{c[0]:3d} {c[1]:3d} {c[2]:3d}\t{RAMPS[i // 16]}_{i % 16}\n')
     with open(os.path.join(out, 'palette.pal'), 'w') as fh:       # JASC-PAL
@@ -1102,32 +1168,123 @@ def write_palette(out):
             fh.write(f'{c[0]} {c[1]} {c[2]}\n')
 
 
+def team_share(idx):
+    """fraction of a sprite's opaque pixels painted in a team ramp."""
+    solid = idx != TRANSPARENT
+    team = solid & np.isin(idx // 16, list(TEAM_RAMPS))
+    return team.sum() / max(solid.sum(), 1)
+
+
+def _font(size):
+    from PIL import ImageFont
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:          # Pillow without FreeType: fixed-size bitmap font
+        return ImageFont.load_default()
+
+
+def _cell_rgba(idx, zoom, top=10, bottom=94):
+    rgba = indexed_to_rgba(idx[top:bottom])
+    return Image.fromarray(rgba).resize((rgba.shape[1] * zoom, rgba.shape[0] * zoom), Image.NEAREST)
+
+
+def write_sheets(out, classes, scales, jobs):
+    """the approval sheets: crew_lineup.png and crew_turnaround.png."""
+    from PIL import ImageDraw
+    fi = FRAME_LIST.index(('idle', 0))
+    with Pool(jobs) as pool:
+        res = pool.map(render_task, [(c, fi, d, scales[c]) for c in classes for d in range(DIRS)])
+    cells = {}
+    for c, _, d, gm, gt, wn in res:
+        for wmsg in wn:
+            print('warn', wmsg)
+        for team in TEAMS:
+            cells[(c, team, d)] = compose(gm, gt, team_lut(team, c))
+    shares = {c: float(np.mean([team_share(cells[(c, 'blue', d)]) for d in range(DIRS)])) for c in classes}
+    top, bottom = 10, 94
+    bg_level = (58, 63, 72)
+
+    # ---- line-up: every class in 3/4 view, blue, red and as a black silhouette
+    zoom, label_w, head_h, lineup_dir = 4, 150, 120, 1
+    cw, ch = CELL * zoom, (bottom - top) * zoom
+    W, H = label_w + cw * len(classes), head_h + ch * 3
+    img = Image.new('RGB', (W, H), (24, 27, 33))
+    dr = ImageDraw.Draw(img)
+    rows = [('Your team', 'blue', bg_level), ('Enemies', 'red', bg_level), ('Silhouette', None, (196, 200, 208))]
+    for r, (label, team, bg) in enumerate(rows):
+        y0 = head_h + r * ch
+        dr.rectangle([label_w, y0, W, y0 + ch - 1], fill=bg)
+        dr.text((12, y0 + ch // 2 - 10), label, fill=(230, 236, 245), font=_font(20))
+        for h in (1.7, 1.9):          # height lines, in metres above the feet
+            yy = y0 + int((PIVOT[1] - h * PPM - top) * zoom)
+            dr.line([label_w, yy, W, yy], fill=(110, 118, 132) if team else (150, 156, 166), width=1)
+            dr.text((label_w - 52, yy - 9), f'{h:.1f} m', fill=(154, 168, 189), font=_font(16))
+        for k, c in enumerate(classes):
+            idx = cells[(c, team or 'blue', lineup_dir)]
+            sprite = _cell_rgba(idx, zoom, top, bottom)
+            if team is None:
+                black = Image.new('RGBA', sprite.size, (12, 12, 14, 255))
+                sprite = Image.composite(black, Image.new('RGBA', sprite.size, (0, 0, 0, 0)), sprite.getchannel('A'))
+            img.paste(sprite, (label_w + k * cw, y0), sprite)
+    for k, c in enumerate(classes):
+        cd = CLASSES[c]
+        x = label_w + k * cw + 16
+        dr.text((x, 14), cd['title'].upper(), fill=(255, 255, 255), font=_font(30))
+        dr.text((x, 52), f"{cd['height']:.2f} m · {cd['gun']}", fill=(230, 236, 245), font=_font(18))
+        dr.text((x, 78), f"team colour: {shares[c] * 100:.0f}% of the body", fill=(154, 168, 189), font=_font(16))
+    img.save(os.path.join(out, 'crew_lineup.png'))
+
+    # ---- turnarounds: 8 directions per class, blue and red
+    zoom, label_w = 3, 210
+    cw, ch = CELL * zoom, (bottom - top) * zoom
+    W, H = label_w + cw * DIRS, ch * 2 * len(classes)
+    img = Image.new('RGB', (W, H), (24, 27, 33))
+    dr = ImageDraw.Draw(img)
+    for k, c in enumerate(classes):
+        for t, team in enumerate(TEAMS):
+            y0 = (k * 2 + t) * ch
+            dr.rectangle([label_w, y0, W, y0 + ch - 2], fill=bg_level)
+            if t == 0:
+                dr.text((14, y0 + 20), CLASSES[c]['title'].upper(), fill=(255, 255, 255), font=_font(28))
+                dr.text((14, y0 + 58), f"{CLASSES[c]['height']:.2f} m", fill=(230, 236, 245), font=_font(18))
+            dr.text((14, y0 + ch - 40), TEAMS[team]['title'], fill=(154, 168, 189), font=_font(18))
+            for d in range(DIRS):
+                sprite = _cell_rgba(cells[(c, team, d)], zoom, top, bottom)
+                img.paste(sprite, (label_w + d * cw, y0), sprite)
+    img.save(os.path.join(out, 'crew_turnaround.png'))
+    for c in classes:
+        per_dir = ' '.join(f'{team_share(cells[(c, "blue", d)]) * 100:.0f}' for d in range(DIRS))
+        print(f'{c}: scale {scales[c]:.3f}, team colour {shares[c] * 100:.1f}% of the body (by direction: {per_dir})')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', required=True, help='output folder; keep it outside the Godot project')
     ap.add_argument('--classes', default=','.join(CLASSES))
     ap.add_argument('--jobs', type=int, default=max(1, (os.cpu_count() or 2) - 1))
     ap.add_argument('--test', nargs=3, metavar=('CLASS', 'ANIM', 'FRAME'))
+    ap.add_argument('--sheet', action='store_true', help='only the approval sheets (line-up, turnarounds)')
     a = ap.parse_args()
+    os.makedirs(a.out, exist_ok=True)
 
     if a.test:
         cname, anim, i = a.test[0], a.test[1], int(a.test[2])
         fi = FRAME_LIST.index((anim, i))
         t0 = time.time()
+        scale = class_scale(cname)
         with Pool(min(a.jobs, 8)) as pool:
-            res = pool.map(render_task, [(cname, fi, d) for d in range(DIRS)])
+            res = pool.map(render_task, [(cname, fi, d, scale) for d in range(DIRS)])
         row = []
         for team in TEAMS:
             lut = team_lut(team, cname)
             row.append(np.concatenate([compose(r[3], r[4], lut) for r in res], 1))
         img = indexed_to_rgba(np.concatenate(row, 0))
         bg = np.zeros_like(img)
-        bg[..., :3] = (58, 52, 46)
+        bg[..., :3] = (58, 63, 72)
         bg[..., 3] = 255
         al = img[..., 3:4] / 255.0
         comp = (img[..., :3] * al + bg[..., :3] * (1 - al)).astype(np.uint8)
         big = np.repeat(np.repeat(comp, 3, 0), 3, 1)
-        os.makedirs(a.out, exist_ok=True)
         Image.fromarray(big).save(os.path.join(a.out, 'test.png'))
         for r in res:
             for wmsg in r[5]:
@@ -1137,9 +1294,14 @@ def main():
 
     out = a.out
     classes = a.classes.split(',')
-    write_palette(out)
-    tasks = [(c, fi, d) for c in classes for fi in range(len(FRAME_LIST)) for d in range(DIRS)]
     t0 = time.time()
+    scales = {c: class_scale(c) for c in classes}
+    if a.sheet:
+        write_sheets(out, classes, scales, a.jobs)
+        print(f'done in {time.time() - t0:.0f}s -> {out}/')
+        return
+    write_palette(out)
+    tasks = [(c, fi, d, scales[c]) for c in classes for fi in range(len(FRAME_LIST)) for d in range(DIRS)]
     g = {}
     warns = set()
     with Pool(a.jobs) as pool:
@@ -1168,8 +1330,10 @@ def main():
         row += nfr
     for c in classes:
         cd = CLASSES[c]
-        meta['classes'][c] = dict(title=cd['title'], role=cd['role'], stats=cd['stats'],
-                                  feature=dict(name=cd['feature'][0], text=cd['feature'][1]),
+        meta['classes'][c] = dict(title=cd['title'], role=cd['role'], gun=cd['gun'],
+                                  stats=[['Height', round(cd['height'] * 100), 200, 'cm'],
+                                         ['Build', round(cd['bulk'] * 100), 140, '%']],
+                                  feature=dict(name=cd['perk'][0], text=cd['perk'][1]),
                                   look=cd['look'], sheets={})
         for team in TEAMS:
             lut = team_lut(team, c)

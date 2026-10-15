@@ -2,6 +2,16 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — M6 crew & animation
+
+**Done**
+- **Python setup** (D-071): Miniconda installed to `~/miniconda3` in batch mode (installer checksum checked against repo.anaconda.com; no `conda init`, no shell profile changes), with an environment `chiip` holding Python 3.12, numpy and Pillow. README has the setup, CREDITS the licences.
+- **Task 1, concept sheets** (D-070). `tools/concept/spritegen.py` now draws the crew: Rifleman, Bulwark, Marksman and Scout with their own height, build, posture and headgear, a neutral kit (olive-grey, charcoal, stone grey, moss) and the team colour on the masked parts, rendered in your team's blue and the enemies' red. The Bulwark carries a new pump shotgun, the Rifleman's rifle got an AK-style curved magazine. The tool scales each body to its height (measured to the top of the headgear) and measures how much of each body is team colour from all 8 directions. New `--sheet` mode writes `crew_lineup.png` (blue, red and black silhouettes, with height lines) and `crew_turnaround.png` (8 directions per class in both colours); the spin viewer `preview.html` uses the cool UI colours now.
+- The first version gave the Marksman only 6% team colour (8% from behind). Team sleeves on every class, plus a back panel for the Marksman and a helmet stripe for the Bulwark, brought every class to 11–23% from every side.
+- You approved the looks as shown and kept the names Rifleman, Bulwark, Marksman and Scout (the open question is closed).
+
+**Next:** Task 2, the model generator: the Rifleman as a low-poly, rigged `.glb`.
+
 ## 2026-10-15 — Session 11: crew, classes and arsenal planned
 
 **Done**

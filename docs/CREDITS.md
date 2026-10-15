@@ -44,6 +44,10 @@ To recreate one: download `<asset>_1K-JPG.zip` from ambientCG, extract `<asset>_
 | What | Source | License |
 |---|---|---|
 | TrenchBroom v2026.2 (map editor) | https://github.com/TrenchBroom/TrenchBroom | GPL-3.0. The license covers the editor, not maps made with it. |
+| Miniconda (Python distribution, installed in `~/miniconda3`, D-071) | https://repo.anaconda.com/miniconda/ (`Miniconda3-latest-MacOSX-arm64.sh`, SHA-256 checked) | Free under Anaconda's Miniconda end-user licence. Packages from Anaconda's default channels (`pkgs/main`, `pkgs/r`) fall under the Anaconda Terms of Service, which you accepted on 2026-10-15. Nothing from it ships with the game. |
+| Python 3.12 (in the `chiip` conda environment) | https://www.python.org | PSF License |
+| NumPy | https://numpy.org | BSD-3-Clause |
+| Pillow | https://python-pillow.org | MIT-CMU (HPND) |
 
 ## Made for Chiip
 
