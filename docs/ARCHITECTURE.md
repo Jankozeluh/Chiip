@@ -102,7 +102,8 @@ Chiip/
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
 | `assets/fonts/Silkscreen-*.ttf` | Pixel font: the project's default UI font (*Project Settings → GUI → Theme → Custom Font*) and the font of all 3D labels. Imported without antialiasing, hinting or subpixel positioning so pixels stay sharp |
 | `addons/func_godot/` | FuncGodot addon (enabled in *Project Settings → Plugins*): builds Godot scenes from TrenchBroom `.map` files |
-| `assets/sounds/*.wav` | Generated 22 kHz mono sounds, referenced by `weapons/rifle.tres` |
+| `assets/sounds/*.wav` | Generated 22 kHz mono sounds: rifle shot, empty click, reload clack (referenced by `weapons/rifle.tres`) and three footsteps |
+| `assets/sounds/footsteps.tres` | `AudioStreamRandomizer`: picks one of the three footsteps each step, with ±12% pitch and ±2 dB volume |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `tests/weapon_test.tscn` + `.gd` | Automated weapon checks: fire rate, ammo, reloads, inaccuracy, first-shot accuracy, zone damage, falloff, spray pattern, recovery |
 | `shaders/prototype_grid.gdshader` | World-space 1 m grid "developer texture", no longer used on the test map; kept for quick blockouts |
@@ -187,6 +188,13 @@ Character (CharacterBody3D, character.gd)        ← simulates commands by CS ru
 2. The character applies it: it faces `yaw`, tilts the head to `pitch`, sets `weapon.trigger_held` and reloads, then moves, jumps and crouches by the CS rules.
 3. The player's controller reads keys in `get_input()` and the mouse in `_unhandled_input()`; its camera follows the head every rendered frame, so mouse look stays instant.
 4. A bot's controller fills the same command from its AI (walking: movement keys toward the next path point); in M8 a network controller will fill it from packets. The character can't tell the difference.
+
+## Sound
+
+- **Your own** footsteps and gunshots play through `AudioStreamPlayer` (no position, both ears). **Everyone else's** play through `AudioStreamPlayer3D`, from where they are: footsteps carry 25 m, gunshots 80 m. `Character.is_local_player()` decides which, through `CharacterController.is_local()`.
+- The 3D listener is the player's camera inside the world `SubViewport` (`audio_listener_enable_3d` is on).
+- Footsteps play only for loud steps (running). Walking and crouch-walking are silent, matching what bots can hear (D-035).
+- Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device.
 
 ## How a character and its weapon work together
 

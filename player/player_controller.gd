@@ -94,6 +94,10 @@ func get_camera() -> Camera3D:
 	return camera
 
 
+func is_local() -> bool:
+	return true
+
+
 func _process(_delta: float) -> void:
 	# Position: where the head is drawn this frame (smoothed between physics ticks).
 	camera.global_position = character.head.get_global_transform_interpolated().origin

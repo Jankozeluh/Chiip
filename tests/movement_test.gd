@@ -24,6 +24,9 @@ var _failures: int = 0
 func _ready() -> void:
 	_build_level()
 	_player = PLAYER_SCENE.instantiate()
+	# Headless runs have no audio device; sounds that never finish "playing"
+	# would be reported as leaks when Godot exits.
+	_player.footstep_sound = null
 	add_child(_player)
 	await _run_all()
 	if _failures == 0:

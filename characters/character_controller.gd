@@ -25,6 +25,12 @@ func set_look_angles(_yaw: float, _pitch: float) -> void:
 	pass
 
 
+## True for the player sitting at this computer: their own sounds play
+## without position (in both ears) instead of from a point in the world.
+func is_local() -> bool:
+	return false
+
+
 ## The camera this controller shows the character through, if it has one.
 func get_camera() -> Camera3D:
 	return null

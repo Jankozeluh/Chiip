@@ -78,6 +78,10 @@ const STEP_DISTANCE := 1.8
 ## Characters only fight the other team.
 @export var team: int = 0
 
+@export_group("Sound")
+## Played for each loud footstep (walking and crouching are silent). Tests set it to null.
+@export var footstep_sound: AudioStream = preload("res://assets/sounds/footsteps.tres")
+
 @export_group("Look")
 ## Color of the clothes on chest and arms: the team color.
 @export var team_color: Color = Color(0.25, 0.4, 0.7)
@@ -111,6 +115,8 @@ var _hull_height_difference: float = 0.0
 @onready var body: Node3D = $Body
 ## Head, chest, stomach and arms: they sink when crouching, as in CS.
 @onready var _upper_body: Node3D = $Body/Upper
+@onready var _footstep_audio: AudioStreamPlayer = $FootstepAudio
+@onready var _footstep_audio_3d: AudioStreamPlayer3D = $FootstepAudio3D
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
 @onready var _crouching_collision: CollisionShape3D = $CrouchingCollision
 
@@ -198,6 +204,11 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 		_die(attacker)
 
 
+## True for the player at this computer (see [method CharacterController.is_local]).
+func is_local_player() -> bool:
+	return _controller != null and _controller.is_local()
+
+
 ## Points other characters check for line of sight: head and chest.
 func get_visibility_points() -> Array[Vector3]:
 	return [get_eye_position(), global_position + Vector3.UP * (_eye_height - 0.35)]
@@ -258,6 +269,19 @@ func _update_footsteps(on_ground: bool, delta: float) -> void:
 	footstep.emit(loud)
 	if loud:
 		Noises.make_noise(global_position, Noises.FOOTSTEP_RANGE, self)
+		_play_footstep()
+
+
+## Your own steps play in both ears; everyone else's come from where they are.
+func _play_footstep() -> void:
+	if footstep_sound == null:
+		return
+	if is_local_player():
+		_footstep_audio.stream = footstep_sound
+		_footstep_audio.play()
+	else:
+		_footstep_audio_3d.stream = footstep_sound
+		_footstep_audio_3d.play()
 
 
 func _die(killer: Character) -> void:

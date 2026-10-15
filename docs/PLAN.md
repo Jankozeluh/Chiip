@@ -156,7 +156,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 5. [x] **Perception.** Vision: a field of view plus line-of-sight rays to head and body, so no wallhacks. Hearing: running footsteps and gunshots within range; walking is silent. Bots remember where they last saw or heard you.
 6. [x] **Behaviour.** A state machine: patrol (between points on the map) → engage (fight) → search (go to the last known position) → back to patrol.
 7. [x] **Fighting like a human.** Reaction time before the first shot, aim that starts off and settles onto you, stopping (counter-strafing) before shooting, tapping at range and spraying up close with partial recoil control. Difficulty presets Easy / Normal / Hard change these numbers.
-8. [ ] **Footsteps.** Generated footstep sounds for you and bots; bots' steps and shots are positional 3D sound. Walking (Shift) is silent, like CS.
+8. [x] **Footsteps.** Generated footstep sounds for you and bots; bots' steps and shots are positional 3D sound. Walking (Shift) is silent, like CS.
 9. [ ] **Death and respawn.** Characters collapse when killed (a simple fall-over, no ragdoll yet); bots respawn after a few seconds, and you respawn on death until rounds exist in M5.
 10. [ ] **Developer console** (`` ` `` key): `bot_add [easy|normal|hard]`, `bot_kick`, `bot_difficulty`, `noclip`, `god`, `map <name>`, `help`.
 11. [ ] **Bot arena.** Patrol points and spawn points on the test map, so 1–5 bots have room to fight you.

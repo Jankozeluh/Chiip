@@ -91,6 +91,16 @@ max_polyphony = 4
 [node name="HandlingAudio" type="AudioStreamPlayer" parent="."]
 volume_db = -6.0
 
+[node name="ShotAudio3D" type="AudioStreamPlayer3D" parent="."]
+unit_size = 10.0
+max_distance = 80.0
+max_polyphony = 4
+
+[node name="HandlingAudio3D" type="AudioStreamPlayer3D" parent="."]
+volume_db = -6.0
+unit_size = 3.0
+max_distance = 15.0
+
 [node name="Viewmodel" type="Node3D" parent="."]
 position = Vector3(0.17, -0.19, -0.42)
 

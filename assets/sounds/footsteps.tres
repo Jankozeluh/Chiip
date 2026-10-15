@@ -1,0 +1,16 @@
+[gd_resource type="AudioStreamRandomizer" format=3]
+
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/footstep_1.wav" id="step_1"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/footstep_2.wav" id="step_2"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/footstep_3.wav" id="step_3"]
+
+[resource]
+random_pitch = 1.12
+random_volume_offset_db = 2.0
+streams_count = 3
+stream_0/stream = ExtResource("step_1")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("step_2")
+stream_1/weight = 1.0
+stream_2/stream = ExtResource("step_3")
+stream_2/weight = 1.0

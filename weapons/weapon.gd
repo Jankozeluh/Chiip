@@ -77,6 +77,8 @@ var _kick_tween: Tween
 
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
+@onready var _shot_audio_3d: AudioStreamPlayer3D = $ShotAudio3D
+@onready var _handling_audio_3d: AudioStreamPlayer3D = $HandlingAudio3D
 @onready var _viewmodel: Node3D = $Viewmodel
 @onready var _muzzle_flash: Node3D = $Viewmodel/MuzzleFlash
 
@@ -196,7 +198,7 @@ func _try_fire() -> void:
 		return
 	if magazine <= 0:
 		if _trigger_released:
-			_play(_handling_audio, data.dry_fire_sound)
+			_play(data.dry_fire_sound, true)
 			reload()
 		_trigger_released = false
 		return
@@ -208,7 +210,7 @@ func _try_fire() -> void:
 func _fire() -> void:
 	magazine -= 1
 	var spray_shot := get_spray_shot()
-	_play(_shot_audio, data.shot_sound)
+	_play(data.shot_sound, false)
 	_play_shot_effects()
 	Noises.make_noise(_wielder.get_eye_position(), Noises.GUNSHOT_RANGE, _wielder)
 	_shoot_bullet(_get_shot_direction())
@@ -301,7 +303,7 @@ func _update_reload(delta: float) -> void:
 	for step in RELOAD_SOUND_STEPS:
 		var step_time_left := data.reload_time * (1.0 - step)
 		if time_left_before > step_time_left and _reload_time_left <= step_time_left:
-			_play(_handling_audio, data.reload_sound)
+			_play(data.reload_sound, true)
 	if _reload_time_left <= 0.0:
 		_reload_time_left = 0.0
 		var loaded := mini(data.magazine_size - magazine, reserve)
@@ -312,11 +314,21 @@ func _update_reload(delta: float) -> void:
 		reload_finished.emit()
 
 
-func _play(audio: AudioStreamPlayer, stream: AudioStream) -> void:
+## Plays a weapon sound. The player hears their own gun without position;
+## other characters' guns sound from where they are. [param handling] is for
+## clicks and reloads, otherwise it's a shot.
+func _play(stream: AudioStream, handling: bool) -> void:
 	if stream == null:
 		return
 	# Changing the stream stops sounds that are still playing (e.g. the previous
 	# shot), so only change it when it's a different sound.
-	if audio.stream != stream:
-		audio.stream = stream
-	audio.play()
+	if _wielder == null or _wielder.is_local_player():
+		var audio := _handling_audio if handling else _shot_audio
+		if audio.stream != stream:
+			audio.stream = stream
+		audio.play()
+	else:
+		var audio_3d := _handling_audio_3d if handling else _shot_audio_3d
+		if audio_3d.stream != stream:
+			audio_3d.stream = stream
+		audio_3d.play()

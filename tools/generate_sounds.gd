@@ -1,5 +1,5 @@
 extends SceneTree
-## Tool: generates Chiip's placeholder weapon sounds as .wav files (D-020).
+## Tool: generates Chiip's placeholder sounds (weapon, footsteps) as .wav files (D-020).
 ##
 ## Run from the project folder, then let Godot import the new files:
 ##
@@ -21,6 +21,9 @@ func _init() -> void:
 	_save("rifle_shot.wav", _gunshot(rng))
 	_save("dry_fire.wav", _click(rng))
 	_save("rifle_reload.wav", _clack(rng))
+	# Added after the weapon sounds so those stay identical when regenerated.
+	for i in 3:
+		_save("footstep_%d.wav" % (i + 1), _footstep(rng))
 	quit()
 
 
@@ -38,6 +41,21 @@ func _gunshot(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		phase += TAU * lerpf(110.0, 45.0, minf(t * 6.0, 1.0)) / MIX_RATE
 		var thump := sin(phase) * exp(-t * 16.0)
 		samples[i] = crack * 0.5 + body * 0.8 + thump * 0.8
+	return _finish(samples)
+
+
+## A footstep on grit: a short low thud plus a crunchy burst of filtered noise.
+func _footstep(rng: RandomNumberGenerator) -> PackedFloat32Array:
+	var samples := _silence(0.14)
+	var low_pass := 0.0
+	var thud_pitch := rng.randf_range(70.0, 95.0)
+	for i in samples.size():
+		var t := float(i) / MIX_RATE
+		var noise := rng.randf_range(-1.0, 1.0)
+		low_pass += (noise - low_pass) * 0.35
+		var crunch := low_pass * exp(-t * 45.0) * (0.6 + 0.4 * rng.randf())
+		var thud := sin(TAU * thud_pitch * t) * exp(-t * 35.0)
+		samples[i] = crunch * 0.7 + thud * 0.9
 	return _finish(samples)
 
 
