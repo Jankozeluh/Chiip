@@ -8,7 +8,7 @@ extends RefCounted
 ## button below the menu its hover and click sounds (call it again after adding
 ## buttons; buttons already wired are skipped). A plain class with static
 ## members, like [Noises]: the sounds play through one [AudioStreamPlayer] it
-## adds to the scene tree's root.
+## adds to the scene tree's root, which keeps playing while the game is paused.
 
 const HOVER := preload("res://assets/sounds/ui_hover.wav")
 const CLICK := preload("res://assets/sounds/ui_click.wav")
@@ -46,6 +46,8 @@ static func play(stream: AudioStream, volume_db: float = 0.0) -> void:
 		_player = AudioStreamPlayer.new()
 		_player.name = "UiSounds"
 		_player.bus = BUS
+		# Menus work while the game is paused (M5's pause menu), so their sounds must too.
+		_player.process_mode = Node.PROCESS_MODE_ALWAYS
 		_player.max_polyphony = 4
 		tree.root.add_child.call_deferred(_player)
 		# The node joins the tree at the end of the frame; play once it's there.
