@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** Milestone 2 in progress. You can move around a test map with CS-style movement and shoot a rifle with CS-like recoil. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** Milestones 1 and 2 done: CS-style movement and a rifle with CS-like recoil on a test map with a shooting range. Next: M3, the retro look. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 

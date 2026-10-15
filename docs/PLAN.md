@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M2 — Shooting (built, waiting for your playtest)
+> **Current milestone:** M3 — Retro look & map tools (planned, waiting for your go-ahead)
 
 ## How this plan works
 
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | M0 | Plan & documentation | ✅ | Nothing yet. This plan and the docs exist |
 | M1 | Project setup & movement | ✅ | Run, walk, crouch and jump around a test map |
-| M2 | Shooting | 🟨 | Shoot targets with a rifle that has CS-like recoil |
+| M2 | Shooting | ✅ | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ⬜ | The test map looks like a 90s shooter |
 | M4 | Bots | ⬜ | Bots hunt you and shoot back |
 | M5 | Health, rounds & game flow | ⬜ | Full rounds against bots, with menus and settings |
@@ -59,13 +59,13 @@
 
 **You learn:** project structure, nodes and scenes, GDScript basics, `_physics_process`, `CharacterBody3D` and `move_and_slide()`, the Input Map, `@export` variables.
 
-## M2 — Shooting 🟨
+## M2 — Shooting ✅
 
 **Goal:** one rifle with CS-like accuracy and recoil, tested on targets in a shooting range.
 
-**Your checks, carried over from M1:**
-- [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click, and we change the crouch key or work around it before crouch-shooting matters.
-- [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
+**Playtest:** shooting confirmed good on 2026-10-15, no tuning needed.
+
+*Moved to M3:* the Ctrl + click and sensitivity checks (still not reported).
 
 **Tasks**, in order, one commit each:
 
@@ -97,20 +97,40 @@
 
 ## M3 — Retro look & map tools ⬜
 
-**Goal:** give Chiip its 90s shooter style early, and decide how maps will be made.
+**Goal:** give Chiip its 90s shooter look (pixelated, chunky textures, moody light) while keeping enemies easy to see, and decide how real maps will be built.
 
-- [ ] Low internal resolution with crisp pixel upscaling (compare the approaches and pick one)
-- [ ] Nearest-neighbor texture filtering across the project
-- [ ] Find or make a retro texture set with a license that allows use
-- [ ] Retro materials: chunky textures, minimal reflections
-- [ ] Baked lighting (lightmaps) on the test map
-- [ ] Optional: a post-process shader that limits the color palette
-- [ ] Compare map-building options, Godot's CSG shapes vs. TrenchBroom (the Quake map editor) with the `func_godot` plugin, then decide and document
-- [ ] Create `docs/CREDITS.md` listing every third-party asset with its source and license
+**Your checks, carried over from M1/M2:**
+- [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
+- [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
 
-**Done when:** the test map looks like a 90s shooter and we know how future maps will be built.
+**Tasks**, in order, one commit each:
 
-**You learn:** materials and shaders, viewports, rendering settings, lightmap baking, importing assets, addons.
+1. [ ] **Pixelated rendering, two variants.** A: the whole screen, HUD included, rendered at 640 × 360 and scaled up with sharp pixels. B: only the 3D world rendered low-res, with the HUD drawn sharp at full resolution. I make screenshots of both and you pick. The resolution stays adjustable (480 × 270 / 640 × 360 / 960 × 540).
+2. [ ] **Mouse and crosshair at low resolution.** Check that sensitivity doesn't change (it shouldn't, see D-016) and that the crosshair stays pixel-perfect.
+3. [ ] **Retro texture tool.** A tool script that turns any image into a retro texture: shrinks it to 64 × 64 (or 128 × 128), reduces its colors, and imports it with sharp pixels and mipmaps (no shimmering in the distance).
+4. [ ] **Texture set.** About 8 textures: concrete floor, plaster wall, brick, sandy ground, wooden crate, metal, dark trim, spray-wall paint (source: see decisions below).
+5. [ ] **Retro materials.** Textures are placed by world position (triplanar), so any box gets them without UV work, at Quake's texel density (a 64-pixel texture covers 64 units = 1.63 m). Matte surfaces, no shiny reflections. This replaces the grid placeholder.
+6. [ ] **Retexture the test map.** Crates look like wooden crates, walls get brick and plaster, the floor concrete and sand. The rifle and dummies get matching retro colors. Dummies stay bright enough to stand out (clarity rule).
+7. [ ] **Lighting and atmosphere.** A darker, moodier scene: lower ambient light, a warm sun, a few colored lamps, distance fog, a retro sky.
+8. [ ] **Baked lighting experiment.** Bake lightmaps (`LightmapGI`) for the test map and compare with real-time lighting, then decide which to use. Godot bakes on the GPU in the editor, so this step may need one click from you (I'll show where) if it can't be automated.
+9. [ ] **Optional color palette effect.** A full-screen shader that limits colors (fewer shades per channel, optional dithering), switchable. Screenshots on/off; you decide.
+10. [ ] **How maps get built.** The same small CS-style room (doorway, crates, a ramp) built twice: with CSG in Godot, and with TrenchBroom (the Quake map editor, very close to CS's Hammer) imported through the `func_godot` plugin. We compare effort, texture alignment, collision and baked lighting, then decide the workflow for the real map in M7.
+11. [ ] **Credits.** `docs/CREDITS.md` lists every third-party asset and tool with its source and license.
+12. [ ] **Checks.** Screenshots of every area of the test map, both test suites still passing, and a frame-rate check at the chosen resolution.
+
+**Done when:** the test map and range look like a 90s shooter, dummies remain easy to spot, the HUD is readable, and we know how the real map in M7 will be built.
+
+**You learn:** viewports and stretch modes, `SubViewport`, texture import settings (filtering, mipmaps), triplanar mapping, the `Environment` (fog, ambient light, tonemapping), `LightmapGI` and lightmap UVs, full-screen (post-process) shaders, installing and using an addon.
+
+**Decisions before starting:**
+
+| Question | Options | My recommendation |
+|---|---|---|
+| Where textures come from | **(a)** Download a few free CC0 textures from ambientCG (public domain photo textures) and turn them retro with our tool. Each download only with your OK. **(b)** Generate textures by code, with no downloads. | **(a):** much better looking, and CC0 means free to use with no strings attached |
+| Map tool comparison (task 10) | **(a)** Compare now: you install TrenchBroom (free), and I download the `func_godot` addon with your OK. **(b)** Skip for now, keep CSG, and decide in M7. | **(a):** M3 is where the pipeline gets decided, and TrenchBroom is the classic Quake/CS way to build maps |
+| HUD font | **(a)** Download a free pixel font (SIL Open Font License) with your OK. **(b)** Keep Godot's default font for now. | **(a)** if you pick variant A (pixelated HUD) in task 1, otherwise either works |
+
+The pixelation variant (task 1) and the palette effect (task 9) are decided during M3 from screenshots.
 
 ## M4 — Bots ⬜
 

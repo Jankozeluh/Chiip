@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 5: M2 closed, M3 planned
+
+**Done**
+- You playtested M2: shooting feels good, no tuning needed. **M2 is closed.**
+- The Ctrl + click and sensitivity checks still weren't reported, so they moved on to M3.
+- Wrote the detailed M3 plan: 12 tasks from pixelated rendering to the map-tool comparison, with three decisions to make first (texture source, map tool comparison, HUD font).
+
+**Next:** Your go-ahead for M3 and answers to the three decisions.
+
 ## 2026-10-15 — Session 4: M2 shooting
 
 **Done**
