@@ -71,6 +71,7 @@ Chiip/
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
 | `assets/sounds/*.wav` | Generated 22 kHz mono sounds, referenced by `weapons/rifle.tres` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
+| `tests/weapon_test.tscn` + `.gd` | Automated weapon checks: fire rate, ammo, reloads, inaccuracy, first-shot accuracy, zone damage, falloff, spray pattern, recovery |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
 ## Systems
@@ -141,13 +142,14 @@ Bullets test **world + hitboxes** (mask 9) only.
 
 ## Testing
 
-Run all movement checks from the project folder:
+Run the checks from the project folder:
 
 ```
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 res://tests/movement_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/weapon_test.tscn
 ```
 
-`--headless` means no window, and `--fixed-fps 128` runs exactly one physics tick per frame as fast as possible. Each check prints PASS or FAIL, and the exit code is the number of failures. When a test file uses a `class_name` for the first time, run `Godot --headless --path . --import` first so Godot knows the class.
+`--headless` means no window, and `--fixed-fps 128` runs exactly one physics tick per frame as fast as possible. `--quit-after` is a safety net in case a script error stops a test from finishing. Each check prints PASS or FAIL, and the exit code is the number of failures. The weapon test seeds the spread so every run fires the same shots, and uses a silent copy of the rifle data because headless runs have no audio device. When a test file uses a `class_name` for the first time, run `Godot --headless --path . --import` first so Godot knows the class.
 
 ## Naming conventions
 

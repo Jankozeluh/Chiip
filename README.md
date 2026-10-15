@@ -37,10 +37,14 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 
 ## Tests
 
-Automated movement checks run without a window in under a second:
+Automated checks run without a window in about a second each:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/movement_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/weapon_test.tscn
 ```
 
 ## Documentation

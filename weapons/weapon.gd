@@ -84,7 +84,6 @@ var _kick_tween: Tween
 func _ready() -> void:
 	magazine = data.magazine_size
 	reserve = data.reserve_ammo
-	_shot_audio.stream = data.shot_sound
 	_viewmodel_rest = _viewmodel.transform
 
 
@@ -209,7 +208,7 @@ func _try_fire() -> void:
 func _fire() -> void:
 	magazine -= 1
 	var spray_shot := get_spray_shot()
-	_shot_audio.play()
+	_play(_shot_audio, data.shot_sound)
 	_play_shot_effects()
 	_shoot_bullet(_get_shot_direction())
 	_spray_position += 1.0
@@ -313,5 +312,8 @@ func _update_reload(delta: float) -> void:
 func _play(audio: AudioStreamPlayer, stream: AudioStream) -> void:
 	if stream == null:
 		return
-	audio.stream = stream
+	# Changing the stream stops sounds that are still playing (e.g. the previous
+	# shot), so only change it when it's a different sound.
+	if audio.stream != stream:
+		audio.stream = stream
 	audio.play()
