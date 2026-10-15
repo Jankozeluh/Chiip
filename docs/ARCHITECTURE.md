@@ -64,7 +64,7 @@ Chiip/
 | `ui/dev_console.tscn` + `.gd` | `DevConsole` (key left of 1): commands `help`, `clear`, `bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick`, `bot_difficulty`, `god`, `noclip`, `mp_friendlyfire [0|1]`, `map`; history with ↑/↓. `DevConsole.is_open` (static) makes the player's controls ignore input. `run(text)` runs a command from code. Lives in `main.tscn` (not an autoload) |
 | `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
 | `assets/environments/cool_daylight.tres` | The shared `Environment`: blue sky with a grey-blue horizon, ambient light, cool haze, tonemapping and color adjustments (D-031) |
-| `assets/environments/clear_morning.tres`, `overcast.tres` | Variants for the Square and Spillway maps: a paler morning sky, and a grey overcast sky with stronger ambient light and more fog (D-062) |
+| `assets/environments/clear_noon.tres`, `clear_morning.tres`, `overcast.tres` | The quick maps' environments (D-062, D-063): Depot's cool-daylight sky, Square's paler morning sky, Spillway's grey overcast sky with more fog. All three light shadows with a neutral grey ambient colour instead of the sky, so blue players don't blend into blue shadows |
 | `assets/materials/map_default.tres` | Base material for TrenchBroom maps: func_godot copies it and sets each face's texture. Uses the map's own UVs (no triplanar), nearest-with-mipmaps, matte |
 | `maps/chiip_map_settings.tres` | func_godot settings for Chiip: 39.37 units per metre (1 unit = 1 inch, as in CS), textures from `assets/textures`, lightmap UV texel size 8 units (≈ 0.2 m), generated materials not saved |
 | `maps/comparison/comparison_room.map` | The M3 comparison room as a TrenchBroom map (Valve 220 format, 13 brushes) |

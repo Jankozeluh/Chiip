@@ -13,6 +13,7 @@ Built alongside M5 in its own branch (`m8-maps`), so the game has a map rotation
 - New `tools/map_report.gd` (sizes, walking distances, sightlines) and `tools/map_screenshots.gd` (screenshots through the real game without touching the mouse).
 - Tuning: deeper spawn yards on Depot and Spillway (contact was 3.4–5.1 s), overlapping obstacles, offset doors and gates against long diagonals (they were 45–60 m; now at most 44 m on Depot, 35 m on Square, 38 m on Spillway), a dock ramp on Depot that couldn't be walked onto, and channel fences on Spillway the terrace could see over.
 - All existing test suites still pass (movement 13, weapon 20, bot 16, round 26, tactics 4), and the maps test passes 15 of 15.
+- Your style direction (minimal, pixelated, characters must stand out) became the maps' look rules (D-063, MAPS.md): at most 5 materials per map, no red brick on large walls, and neutral grey ambient light. Shadows had rendered the same blue as the blue team; now they measure 3 % saturation. Same bot results after the change.
 
 **Next:** Your playtest with `map depot`, `map square` and `map spillway`, and the final names. Then the detail pass and the bomb and respawn logic in M8.
 

@@ -474,13 +474,25 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Timing by walking distance only (ignores defenders moving up and sound); requiring every single round in 5–10 s (one slow round would fail a good map); a stricter 30 m sightline limit (would need far more blockers on the open Depot).
 
-## D-062 — A lighting mood per map, all within cool daylight (2026-10-15)
+## D-062 — A lighting mood per map, all within cool daylight (2026-10-15) — *ambient light and Depot's environment changed in D-063*
 
 **Decision:** Depot uses today's `cool_daylight.tres`. Square gets `clear_morning.tres` (paler sky, a little more haze) with a low sun, 24° high, for long shadows. Spillway gets `overcast.tres` (grey sky, stronger ambient light, more fog) with a weak high sun. All neutral or cool, with warm light only from lamps (D-031).
 
 **Why:** Three distinct looks were asked for, and lighting changes the mood most with the textures we already have. Real-time lights keep it adjustable until baked lighting is decided in M8.
 
 **Alternatives:** One environment for all three (less distinct); night or dusk maps (darker than the clarity rule allows for now).
+
+## D-063 — Look rules for the maps: minimal, pixelated, players stand out (2026-10-15)
+
+**Decision:** Your direction: *"everything should be minimalistic and pixelated, cs/quake/cod like with the characters like I showed you"*. For the maps:
+- **Minimal and blocky:** box geometry, clean spaces, no clutter or realistic detail; **at most 5 materials per map** from the 64 × 64 retro textures (Depot 5, Square 4, Spillway 5).
+- **No saturated red or blue on large surfaces**, because the characters wear the team colours (blue yours, red enemies). `bricks_red` is no longer used on the maps (Depot's warehouse is now plaster, Square's brick houses stone); walls, floors and big props are neutral greys plus wood.
+- **Neutral shadows:** the maps' environments take their ambient light from a neutral grey colour instead of the blue sky. Depot gets its own `clear_noon.tres` (cool-daylight sky, grey ambient); `clear_morning.tres` and `overcast.tres` switch to grey ambient. The shared `cool_daylight.tres` (test map) is unchanged.
+- The rules and measurements are in [MAPS.md](MAPS.md), "Look rules".
+
+**Why:** The characters (another session's work) are told apart by silhouette and team colour, so the maps must not compete with those colours. Measured in screenshots, sky-lit shadows were rgb (43–50, 63–70, 92–100): the blue team's hue (215° vs 220°) at 50 % saturation. A blue player standing in shade would blend in. With grey ambient light shadows measure 3 % saturation at the same brightness, and every map surface measured stays at or below 5 %. The brick averaged a muted brown, but a fifth of its pixels are strong reds that would speckle around red players.
+
+**Alternatives:** Keeping the sky ambient and only dropping the brick (shadows stay blue); changing the shared `cool_daylight.tres` too, so the test map gets neutral shadows (affects every map and the other sessions' screenshots, so it's left for you to decide); retinting the brick texture to grey (one more texture to maintain, and plaster or stone already does the job).
 
 ## Open questions
 

@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-062.
+> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-063.
 
 ## Playing them
 
@@ -21,9 +21,22 @@
 | Spawns | 5 per side, 3 m apart: defenders at the north end (−z, facing south), attackers at the south end (+z, facing north), 49–51 m apart | D-042 |
 | Bomb sites | A in the west half, B in the east half, both at the defenders' end | M8 bomb rounds |
 | Respawn points | 12, in four zones (north, south, west, east), for the later respawn mode | M8 respawn mode |
-| Looks | Existing retro textures, cool daylight; no desert or CS look | D-031 |
+| Looks | Minimal and pixelated; see "Look rules" below | D-031, D-063 |
 
-**Building rules** (what the characters and the bots can handle):
+## Look rules
+
+Your direction: *"everything should be minimalistic and pixelated, cs/quake/cod like with the characters like I showed you"* (D-063).
+
+- **Minimal and blocky.** Simple box geometry, clean readable spaces, no clutter, nothing detailed or realistic. Props are plain boxes: crates, containers, stalls, tanks.
+- **Few materials: at most 5 per map**, from the existing 64 × 64 retro textures with nearest filtering. The world renders at 480 lines (D-048). Depot and Spillway use 5, Square 4.
+- **Players stand out.** Characters wear their team colour, painted at runtime: your team blue, enemies red (D-042). So no saturated red or blue on large map surfaces: walls, floors and big props are neutral greys (concrete, plaster, stone, gravel, metal), plus wood as the one warm accent. Muted greens or ochres are fine too. `bricks_red` isn't used: on average it's a muted brown, but 21 % of its pixels are strong reds.
+- **Neutral shadows.** The maps' environments light shadows with a neutral grey ambient light instead of the blue sky. With the sky's light, shadowed floors rendered as rgb (43–50, 63–70, 92–100): the same hue as the blue team (215° vs 220°) at 50 % saturation. With grey ambient they render as rgb (63, 64, 65), 3 % saturation, about as bright as before.
+- **Cool daylight, no desert:** neutral white sun, grey-blue sky and haze; warm light only from lamps (D-031).
+- **Measured, not guessed:** in the screenshots, sunlit and shadowed map surfaces measure at most 5 % saturation; the blue team colour is 64 % and the red 75 %.
+
+## Building rules
+
+What the characters and the bots can handle:
 
 - **No steps.** Characters don't climb steps; every height change is a ramp of 26° or less (the navmesh allows 46°).
 - **Doors and gaps at least 2.5 m wide** (bots are 1 m wide on the navmesh) and 3 m tall.
@@ -31,7 +44,7 @@
 - **Raised floors see over walls:** a 1.5 m terrace adds 1.5 m to your eye height, so the walls it overlooks must be taller (Spillway's channel fences are 3 m for that reason).
 - **The centre of each bomb site is open floor** (a plant spot), not a crate.
 
-### Markers in each map scene
+## Markers in each map scene
 
 Every map scene has the same nodes, like the test map:
 
@@ -47,7 +60,7 @@ Every map scene has the same nodes, like the test map:
 | `Lamps`, `Sun`, `WorldEnvironment` | Lighting and the map's sky and fog | — |
 | `Player` | You (stands at the attackers' spawn when no rules move you) | `main.gd` |
 
-### Editing a map
+## Editing a map
 
 The `.map` files in `maps/` are the source: open them in TrenchBroom (README, "Making maps with TrenchBroom"). Then:
 
@@ -68,7 +81,7 @@ A freight yard. **Indoor mid, open side lanes.**
 - **West, site A:** an open container yard. Overlapping containers (2.6 m) and crates break up the views. A sits in the north-west corner beside a container.
 - **East, site B:** a boxcar on the track, a small signal hut and a 1.2 m loading dock along the east wall. B is on the dock, with ramps up from the south end and from the west. Pallet stacks on the dock break the view along it.
 - **Spawns:** container stacks (5.2 m) split each spawn yard from the side lanes; wooden stacks in the forecourts give cover and cut the long views across them.
-- **Look:** grey gravel, red brick, metal containers, wood. Today's cool daylight (`cool_daylight.tres`), sun 38° high.
+- **Look (5 materials):** gravel ground, concrete walls and dock, a light plaster warehouse, dark metal containers, wooden stacks. Clear noon (`clear_noon.tres`: today's cool-daylight sky with neutral ambient light), sun 38° high.
 
 ## Map 2: Square
 
@@ -80,7 +93,7 @@ An old-town square. **Open mid, tight side lanes.**
 - **West, site A:** a narrow zig-zag alley between houses. The two houses that jut into it overlap, so no straight line runs through. A is a small square with a well at the alley's north end. A covered passage through the houses connects the alley to the plaza.
 - **East, site B:** a long market hall with a roof, stone pillars and stalls. A wall with a gap on the east side splits it in two; B is **indoors** at the north end. An arch through the houses connects the plaza to the hall's north half. The hall's doors are offset from the gap, so you can't see down the whole hall.
 - **Spawns:** a kiosk in front of each spawn breaks the views across the spawn yards.
-- **Look:** stone paving, painted plaster and brick houses, wooden stalls. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky and a little more haze).
+- **Look (4 materials):** stone paving, pale plaster houses, stone corner houses and pillars, a gravel alley, wooden stalls, kiosks and hall roof. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky, a little more haze, neutral ambient light).
 
 ## Map 3: Spillway
 
@@ -91,7 +104,7 @@ A dry concrete water works. **Sunken mid, high sides.**
 - **Mid:** a dry channel 3 m deep, with ramps down at both ends and 3 m fences along its edges. A walled footbridge crosses it in the middle; under the bridge the channel narrows to a 2.5 m culvert, and concrete blocks on either side of the bridge stop anyone seeing straight through. Two overlooks with low parapets let the sides shoot down into the channel.
 - **West, site A:** a pump house you can go through (offset doors with a pump in between) or around (two corridors with overlapping blockers). A is in front of its north door.
 - **East, site B:** a tank yard split by a pipe wall with two gaps, each with a tank right behind it, so no view runs through. B is on a 1.5 m terrace with ramps up from the south and the west; a control house blocks the view from the yard up onto the terrace.
-- **Look:** concrete, plaster and metal under an overcast sky (`overcast.tres`: grey sky, flatter light, more fog), a weak high sun.
+- **Look (5 materials):** concrete, plaster, metal, gravel and a few wooden crates under an overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
 
 ## Measurements
 
