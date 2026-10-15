@@ -20,7 +20,8 @@
 - Retro texture tool (`tools/make_retro_texture.gd`): square crop, shrink in halving steps, k-means palette, lossless + mipmapped import. Tested on a generated brick image: crisp 64 × 64, 12 colors, tiles cleanly.
 - You picked style B (sharp HUD) from screenshots, approved all 8 textures, the func_godot addon and the Silkscreen font, and will install TrenchBroom yourself (D-027, D-028).
 - Downloaded the 8 ambientCG textures (sizes matched ambientCG's listing to the byte) and turned them into 64 × 64, 16-color textures. Smooth surfaces came out almost flat, so the tool got a contrast option (2–3 for concrete, plaster, sand, metal). Started `docs/CREDITS.md`.
-- You installed TrenchBroom.
+- You installed TrenchBroom (it's at `~/Downloads/TrenchBroom.app`).
+- Installed the func_godot addon (pure GDScript, MIT) and the Silkscreen font (OFL). Silkscreen is now the default UI font and the font of all 3D labels (fixed on-screen size, crisp pixels), which should make dummy titles and damage numbers readable again at 360 lines.
 
 ## 2026-10-15 — Session 4: M2 shooting
 

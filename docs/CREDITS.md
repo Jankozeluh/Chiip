@@ -27,6 +27,18 @@ All textures come from **ambientCG** (https://ambientcg.com) under **CC0 1.0 Uni
 
 To recreate one: download `<asset>_1K-JPG.zip` from ambientCG, extract `<asset>_1K-JPG_Color.jpg`, and run the tool with the contrast value above (see CLAUDE.md).
 
+## Fonts
+
+| File | Source | License |
+|---|---|---|
+| `assets/fonts/Silkscreen-Regular.ttf`, `Silkscreen-Bold.ttf` | Silkscreen by Jason Kottke, via Google Fonts (https://github.com/google/fonts/tree/main/ofl/silkscreen) | SIL Open Font License 1.1. The license text is in `assets/fonts/Silkscreen-OFL.txt` and must ship with the game. The font may be used and embedded in a commercial game but not sold on its own. |
+
+## Addons (part of the project)
+
+| What | Source | License |
+|---|---|---|
+| `addons/func_godot/`: FuncGodot 2025.12 (imports TrenchBroom `.map` files) | https://github.com/func-godot/func_godot_plugin | MIT (`addons/func_godot/LICENSE`) |
+
 ## Tools (used to make the game, not shipped with it)
 
 | What | Source | License |

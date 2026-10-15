@@ -7,6 +7,7 @@ extends Node3D
 
 const HEADSHOT_COLOR := Color(1.0, 0.3, 0.25)
 const HIT_COLOR := Color(1.0, 0.9, 0.4)
+const PIXEL_FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
 
 ## Shown above the dummy, e.g. its distance from the firing line.
 @export var title: String = ""
@@ -72,8 +73,13 @@ func _show_damage_number(damage: float, zone: Hitbox.Zone, hit_position: Vector3
 	label.modulate = HEADSHOT_COLOR if zone == Hitbox.Zone.HEAD else HIT_COLOR
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
-	label.font_size = 56
-	label.outline_size = 12
+	# Same look as the other labels: pixel font, fixed size on screen, crisp pixels.
+	label.font = PIXEL_FONT
+	label.font_size = 8
+	label.outline_size = 2
+	label.fixed_size = true
+	label.pixel_size = _total_label.pixel_size
+	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	# Moved every frame by a tween, so don't smooth it between physics ticks.
 	label.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	# Added next to the dummy, not to it, so it doesn't move along with a moving dummy.

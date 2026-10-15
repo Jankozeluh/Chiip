@@ -3,6 +3,7 @@
 [ext_resource type="Shader" path="res://shaders/prototype_grid.gdshader" id="grid_shader"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
 [ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="dummy_scene"]
+[ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="pixel_font"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_material"]
 sky_top_color = Color(0.32, 0.42, 0.58, 1)
@@ -259,74 +260,114 @@ position = Vector3(-4.5, 1.45, -4)
 billboard = 1
 text = "32 u · 0.81 m
 jump"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="Box48Label" type="Label3D" parent="Labels"]
 position = Vector3(-1.5, 1.85, -4)
 billboard = 1
 text = "48 u · 1.22 m
 jump"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="Box64Label" type="Label3D" parent="Labels"]
 position = Vector3(1.5, 2.25, -4)
 billboard = 1
 text = "64 u · 1.63 m
 crouch-jump"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="Box80Label" type="Label3D" parent="Labels"]
 position = Vector3(4.5, 2.65, -4)
 billboard = 1
 text = "80 u · 2.03 m
 too high"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="RampLabel" type="Label3D" parent="Labels"]
 position = Vector3(-15.5, 2.8, -3.5)
 billboard = 1
 text = "25° ramp"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="StairsLabel" type="Label3D" parent="Labels"]
 position = Vector3(-12.5, 2.8, -3.5)
 billboard = 1
 text = "Stairs
 (clip ramp)"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="TunnelLabel" type="Label3D" parent="Labels"]
 position = Vector3(14, 3.6, -6.5)
 billboard = 1
 text = "Crouch tunnel
 1.5 m"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="PeekLabel" type="Label3D" parent="Labels"]
 position = Vector3(0, 3.6, -20)
 billboard = 1
 text = "Peek practice"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="RangeLabel" type="Label3D" parent="Labels"]
 position = Vector3(12, 2.2, 16)
 billboard = 1
 text = "Shooting range · firing line"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2
 
 [node name="SprayWallLabel" type="Label3D" parent="Labels"]
 position = Vector3(-20, 4.6, 26)
 billboard = 1
 text = "Spray wall · 10 m
 aim at the dark mark"
-font_size = 48
-outline_size = 12
+pixel_size = 0.008333
+fixed_size = true
+texture_filter = 0
+font = ExtResource("pixel_font")
+font_size = 8
+outline_size = 2

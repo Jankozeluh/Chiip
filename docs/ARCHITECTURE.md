@@ -33,12 +33,12 @@ Chiip/
 ├── README.md          Start here
 ├── CLAUDE.md          Working rules for Claude, including documentation rules
 ├── docs/              All documentation
-├── addons/            Third-party Godot plugins only
+├── addons/            Third-party Godot plugins only (func_godot)
 ├── assets/            Shared raw assets
 │   ├── textures/      Retro 64 × 64 textures (sources in docs/CREDITS.md)
 │   ├── models/
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
-│   └── fonts/
+│   └── fonts/         Silkscreen pixel font (+ its OFL license text)
 ├── player/            Player scene, movement, camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene, AI, state machine
@@ -74,6 +74,8 @@ Chiip/
 | `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
+| `assets/fonts/Silkscreen-*.ttf` | Pixel font: the project's default UI font (*Project Settings → GUI → Theme → Custom Font*) and the font of all 3D labels. Imported without antialiasing, hinting or subpixel positioning so pixels stay sharp |
+| `addons/func_godot/` | FuncGodot addon (enabled in *Project Settings → Plugins*): builds Godot scenes from TrenchBroom `.map` files |
 | `assets/sounds/*.wav` | Generated 22 kHz mono sounds, referenced by `weapons/rifle.tres` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `tests/weapon_test.tscn` + `.gd` | Automated weapon checks: fire rate, ammo, reloads, inaccuracy, first-shot accuracy, zone damage, falloff, spray pattern, recovery |
@@ -134,6 +136,7 @@ Main (Node, main.gd)
 - Sharp-HUD style: the window itself stays full resolution, so the HUD is crisp. Pixelated-HUD style: the window's *content scale* is set to the low resolution (`Window.content_scale_mode = viewport`), so everything is pixelated, HUD included.
 - The HUD and overlay are laid out for a 720-pixel-tall window and scaled with `UiScale` to the real UI height.
 - Mouse look uses `screen_relative`, so sensitivity is the same in both styles (checked: 2.200° for 100 counts).
+- Text in the 3D world (`Label3D`) uses the pixel font with *Fixed Size* (the same size on screen at any distance) and a `pixel_size` of 0.008333, so one font pixel covers 2 × 2 pixels of the 360-line world image.
 
 ## How the player and the weapon work together
 
