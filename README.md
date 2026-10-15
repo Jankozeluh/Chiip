@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners) and a hold-Tab scoreboard are in (tasks 1–7 of 13), so F5 starts a 3v3 match to 5 rounds won; menus and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme and saved settings (sensitivity, field of view, video, audio, crosshair, key bindings; set from the console for now) are in (tasks 1–9 of 13), so F5 starts a 3v3 match to 5 rounds won; the menus follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -54,7 +54,27 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, and the settings commands (see *Settings* below). Up/down arrows recall earlier commands.
+
+## Settings
+
+Your settings are saved the moment you change them and apply at once. They live in a text file you can open and edit (with the game closed), `settings.cfg` in Godot's user data folder, which on macOS is:
+
+```
+~/Library/Application Support/Godot/app_userdata/Chiip/settings.cfg
+```
+
+Until the settings menu exists (M5 task 10), change them from the developer console (the key left of 1). Without a value, a command shows the current one:
+
+| Command | What it sets | Default |
+|---|---|---|
+| `sensitivity [0.05-10]` | Mouse sensitivity on CS's scale (your CS number feels the same) | 1.0 |
+| `fov [70-110]` | Field of view the CS way, degrees across a 4:3 screen | 90 |
+| `volume [0-1]` | Master volume | 1.0 |
+| `fps_max [0\|30-1000]` | Frame rate limit, 0 = unlimited | 0 |
+| `settings_reset` | Everything back to its default, key bindings included | |
+
+The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) and the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
 
 ## Making maps with TrenchBroom
 
@@ -121,6 +141,12 @@ Automated checks run without a window in about a second each:
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/ui_test.tscn
 ```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/settings_test.tscn
+```
+
+The tests never touch your real `settings.cfg`. The settings test prints one Godot "ConfigFile parse error" on purpose: it loads a broken file to check that the game falls back to the defaults.
 
 ## Documentation
 

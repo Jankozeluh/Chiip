@@ -21,13 +21,6 @@ const DEGREES_PER_MOUSE_COUNT := 0.022
 ## How far up or down you can look, in degrees (CS: 89).
 const MAX_PITCH_DEGREES := 89.0
 
-@export_group("Mouse")
-## Mouse sensitivity on CS's scale: each mouse count turns sensitivity × 0.022°.
-@export var sensitivity: float = 1.0
-## Flip vertical mouse look.
-@export var invert_y: bool = false
-
-@export_group("")
 ## The first-person camera.
 @export var camera: Camera3D
 
@@ -40,6 +33,12 @@ const MAX_PITCH_DEGREES := 89.0
 ## Seconds after the teammate you watch dies before the view moves to the next
 ## living one.
 @export var spectate_switch_delay: float = 1.5
+
+## Mouse sensitivity on CS's scale: each mouse count turns sensitivity × 0.022°.
+## Copied from [Settings] when the node is ready and whenever the setting changes.
+var sensitivity: float = 1.0
+## Flip vertical mouse look. Copied from [Settings] like [member sensitivity].
+var invert_y: bool = false
 
 ## Horizontal look angle (left/right) in radians.
 var _yaw: float = 0.0
@@ -68,6 +67,8 @@ func _ready() -> void:
 	# hiding a node doesn't affect physics.
 	character.get_node("Body").visible = false
 	character.died.connect(_on_character_died)
+	Settings.get_instance().changed.connect(_on_setting_changed)
+	_apply_settings()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -201,6 +202,20 @@ func _process(_delta: float) -> void:
 		angles = head.basis.get_euler()
 	var punch := source.weapon.view_punch if source.weapon != null else Vector2.ZERO
 	camera.global_rotation = Vector3(angles.x + deg_to_rad(punch.y), angles.y - deg_to_rad(punch.x), 0.0)
+
+
+## Takes the mouse sensitivity, Y inversion and field of view from the settings.
+## The field of view is the camera's vertical one, from CS's horizontal one at 4:3.
+func _apply_settings() -> void:
+	var settings := Settings.get_instance()
+	sensitivity = settings.sensitivity
+	invert_y = settings.invert_y
+	camera.fov = Settings.vertical_fov(settings.fov)
+
+
+func _on_setting_changed(key: StringName) -> void:
+	if key == &"sensitivity" or key == &"invert_y" or key == &"fov":
+		_apply_settings()
 
 
 ## Turns the view by a mouse movement measured in mouse counts.

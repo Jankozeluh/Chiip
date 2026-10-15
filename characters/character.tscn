@@ -32,8 +32,10 @@ position = Vector3(0, 1.6256, 0)
 
 [node name="FootstepAudio" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0
+bus = &"Effects"
 
 [node name="FootstepAudio3D" type="AudioStreamPlayer3D" parent="."]
 volume_db = 2.0
 unit_size = 10.0
 max_distance = 30.0
+bus = &"Effects"

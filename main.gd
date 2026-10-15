@@ -31,15 +31,10 @@ const UI_DESIGN_HEIGHT := 720.0
 @export var mode: Mode = Mode.MATCH
 ## The rules of a match: team sizes, bot skill, length, friendly fire.
 @export var match_settings: MatchSettings = MatchSettings.new()
-## Height of the world image in pixels; the width follows the window's shape.
-## 480 gives 853 × 480 in a 16:9 window. Pixels are scaled by whole numbers, so
-## the real height is the closest whole fraction of the window: 480 on a
-## 1440-pixel screen (3 × 3 pixels), 540 on 1080, 360 on 720 (D-048).
-@export var pixel_height: int = 480
-## Pixelate the HUD too, by rendering the whole window at the low resolution.
-@export var pixelate_hud: bool = false
-## Limit the world's colors with the retro palette effect (shaders/palette_limit.gdshader).
-@export var palette_effect: bool = true
+## Read the player's settings file ([method Settings.load_from_disk]) when the
+## game starts, and save every change to it. Tests that load this scene turn it
+## off so they never touch the real file.
+@export var load_settings: bool = true
 
 @onready var _world: SubViewportContainer = $World
 @onready var _viewport: SubViewport = $World/SubViewport
@@ -55,6 +50,12 @@ var _map: Node
 
 
 func _ready() -> void:
+	var settings := Settings.get_instance()
+	if load_settings:
+		var result := settings.load_from_disk()
+		if result != OK and result != ERR_FILE_NOT_FOUND:
+			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
+	settings.changed.connect(_on_setting_changed)
 	_console.main = self
 	_match_end_screen.play_again_pressed.connect(restart_match)
 	_match_end_screen.quit_pressed.connect(get_tree().quit)
@@ -149,13 +150,22 @@ func _map_has_group(group: String) -> bool:
 	return get_tree().get_nodes_in_group(group).any(func(node: Node) -> bool: return _map.is_ancestor_of(node))
 
 
-## Applies [member pixel_height], [member pixelate_hud] and [member palette_effect].
-## Call it again after changing them.
+## Applies the pixel settings (D-027, D-030, D-048): [member Settings.pixel_height],
+## the height of the world image in pixels (the width follows the window's
+## shape; 480 gives 853 × 480 in a 16:9 window; pixels are scaled by whole
+## numbers, so the real height is the closest whole fraction of the window: 480
+## on a 1440-pixel screen, 540 on 1080, 360 on 720), [member Settings.pixelate_hud]
+## (render the whole window at the low resolution, HUD included) and
+## [member Settings.palette_effect] (the retro color limit,
+## shaders/palette_limit.gdshader). Runs when one of them changes and when the
+## window is resized.
 func apply_pixel_settings() -> void:
-	_palette_effect.visible = palette_effect
+	var settings := Settings.get_instance()
+	var pixel_height := settings.pixel_height
+	_palette_effect.visible = settings.palette_effect
 	var window := get_tree().root
 	var ui_height: float
-	if pixelate_hud:
+	if settings.pixelate_hud:
 		var aspect := float(window.size.x) / window.size.y
 		window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 		window.content_scale_size = Vector2i(roundi(pixel_height * aspect), pixel_height)
@@ -172,3 +182,8 @@ func apply_pixel_settings() -> void:
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+
+
+func _on_setting_changed(key: StringName) -> void:
+	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect":
+		apply_pixel_settings()

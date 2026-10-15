@@ -217,6 +217,7 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 - **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
 - Walking (Shift) and crouch-walking are silent for everyone.
 - While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.
+- Three volumes (D-058): **master**, **effects** (footsteps, shots, reloads) and **interface** (menus), so the menu or the effects can be turned down on their own. Menu sounds don't exist yet.
 
 ### 4.9 Classes
 
@@ -266,14 +267,30 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Free / capture the mouse | Esc / click |
 | Debug overlay | F3 |
 
-Keys are bound by physical position, so they stay in the same place on any keyboard layout (e.g. Czech QWERTZ). All keys will be rebindable. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
+Keys are bound by physical position, so they stay in the same place on any keyboard layout (e.g. Czech QWERTZ). These are the defaults: every action except Esc can be rebound (each with a second key or button), see section 7. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
 
 ## 7. Settings that matter to CS players
 
-- Mouse sensitivity that matches CS, so your CS sensitivity feels the same.
-- Field of view.
-- Crosshair style: size, gap, thickness, color and center dot, like CS crosshair settings. Built in M2 (`ui/crosshair.gd`); the defaults are green, 7 px lines, a 4 px gap, 2 px thick, outlined, no dot, static (D-021). Dynamic mode widens the gap to match the actual inaccuracy cone, e.g. +38 px at 720p for 4.5°.
-- Later: viewmodel (weapon) position.
+Settings are saved in a file (`settings.cfg` in the game's user data folder, D-058) the moment they change and apply at once, with no Apply button. They are the player's own, never part of the match rules. The settings menu (M5 task 10) edits them; until then the console commands `sensitivity`, `fov`, `volume`, `fps_max` and `settings_reset` do. Defaults are today's behaviour.
+
+| Section | Setting | Default | Range |
+|---|---|---|---|
+| Game | **Mouse sensitivity**, CS's scale: each mouse count turns sensitivity × 0.022° (D-016), so your CS number feels the same | 1.0 | 0.05 – 10 |
+| Game | Invert Y | off | |
+| Game | **Field of view** the CS way: degrees across a 4:3 screen (90 there is what CS means by 90); a wider window shows more to the sides | 90 | 70 – 110 |
+| Video | Fullscreen | off | |
+| Video | V-Sync | on | |
+| Video | Frame limit (CS's `fps_max`), 0 = unlimited; the menu will offer 60, 120, 144 and 240 | unlimited | 0 or 30 – 1000 |
+| Video | **Pixel resolution**: height of the 3D world image in pixels (D-048) | 480 | 270, 360, 480, 540, 720 |
+| Video | Palette effect, the retro color limit and dithering (D-030) | on | |
+| Video | Pixelated HUD, the whole window at the low resolution (D-027) | off | |
+| Audio | Master, Effects (footsteps and shots) and Interface (menus) volume, each on its own audio bus | 1.0 each | 0 – 1 |
+| Crosshair | Color, size (line length), gap, thickness, outline, center dot and dynamic, like CS's crosshair settings (the sizes are in pixels at 720p and scale with the window) | green, 7 px, gap 4, thickness 2, outline on, no dot, static (D-021) | size 1 – 30, gap 0 – 20, thickness 1 – 8 |
+| Controls | Keys and mouse buttons of move, jump, crouch, walk, shoot, aim, reload, scoreboard, debug overlay and console, each with a primary and a secondary binding; Esc stays fixed. A key is bound by physical position (D-012) | section 6 | |
+
+- The crosshair was built in M2 (`ui/crosshair.gd`, D-021). Dynamic mode widens the gap to match the actual inaccuracy cone, e.g. +38 px at 720p for 4.5°.
+- A value outside its range is clamped; the file can be edited by hand, and anything unreadable falls back to the default.
+- *Later:* viewmodel (weapon) position.
 
 ## 8. Out of scope for now
 

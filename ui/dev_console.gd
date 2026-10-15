@@ -121,6 +121,11 @@ func _register_commands() -> void:
 	register_command("noclip", _cmd_noclip, "noclip", "Toggle flying through walls")
 	register_command("mp_friendlyfire", _cmd_friendly_fire, "mp_friendlyfire [0|1]", "Teammates can hurt each other (no argument: show)")
 	register_command("map", _cmd_map, "map <name>", "Load a map, e.g. map test_map (no name: list maps)")
+	register_command("sensitivity", _cmd_setting.bind(&"sensitivity", "sensitivity"), "sensitivity [0.05-10]", "Mouse sensitivity, CS scale (no value: show)")
+	register_command("fov", _cmd_setting.bind(&"fov", "fov"), "fov [70-110]", "Field of view across a 4:3 screen, like CS (no value: show)")
+	register_command("volume", _cmd_setting.bind(&"master_volume", "volume"), "volume [0-1]", "Master volume (no value: show)")
+	register_command("fps_max", _cmd_setting.bind(&"fps_cap", "fps_max"), "fps_max [0|30-1000]", "Frame rate limit, 0 = unlimited (no value: show)")
+	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting and key back to its default")
 
 
 func _cmd_help(_args: Array) -> void:
@@ -217,6 +222,25 @@ func _cmd_map(args: Array) -> void:
 		return
 	main.change_map(path)
 	print_line("Loaded %s." % path)
+
+
+## Shows or changes a number setting: [param command_name] is what the player
+## typed, [param key] the setting behind it. The shown value is the one the
+## setting really took (it is clamped to its range).
+func _cmd_setting(args: Array, key: StringName, command_name: String) -> void:
+	var settings := Settings.get_instance()
+	if not args.is_empty():
+		var text: String = args[0]
+		if not text.is_valid_float():
+			print_line("Usage: %s [value]" % command_name)
+			return
+		settings.set_value(key, text.to_float())
+	print_line("%s = %s" % [command_name, settings.get_value(key)])
+
+
+func _cmd_settings_reset(_args: Array) -> void:
+	Settings.get_instance().reset_to_defaults()
+	print_line("All settings and keys are back to their defaults.")
 
 
 # --- Helpers ---
