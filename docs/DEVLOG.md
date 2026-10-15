@@ -47,6 +47,20 @@
 
 **Next:** Task 9, first-person arms.
 
+## 2026-10-15 — Crew concept sheets (M6 task 1, done early in another session)
+
+**Done**
+- Reworked the concept tool (`tools/concept/spritegen.py` and `preview_template.html`) into the crew. The four classes now differ in height, build, posture and headgear: Rifleman 1.82 m, Bulwark 1.92 m, Marksman 1.88 m, Scout 1.72 m. The prototype's Heavy and Infiltrator became the Bulwark and the Scout.
+- Signature guns: AK-style rifle, pump shotgun (replaces the machine gun), sniper rifle, compact SMG.
+- The prototype's two team palettes are gone. Every class wears a neutral kit, and its team-colour parts are rendered once in blue and once in red, the way the runtime shader will paint them.
+- The style follows the prototype sprites, which you confirmed are the reference for "the characters like I showed you".
+- New output: `lineup.png` (both teams, front and side silhouettes, height lines) and `turnaround_<class>.png`, plus the interactive `preview.html` with perks instead of stat bars. `--anims idle,aim` renders just what the sheets need in about 10 s; all animations take about 90 s.
+- You approved the looks and kept the working names (D-070).
+
+**Next:** M5 continues in its own session. When M6 starts, task 2 (the model generator) builds the Rifleman from these sheets.
+
+*Later the same day:* M6's own session had made and shown you a second version of the sheets (team sleeves on every class), which you also approved, and the models were built from it. Shown both line-ups side by side, you chose that one; this branch was merged for its history (D-070).
+
 ## 2026-10-15 — Session 11: crew, classes and arsenal planned
 
 **Done**

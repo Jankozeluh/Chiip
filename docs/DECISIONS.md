@@ -571,7 +571,9 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Why:** You approved the looks as shown and kept the working names, which tell a CS player the role (rifler, anchor, AWPer, lurker). The first version had team colour only on armbands and a scarf for the Marksman: 6% of the body, 8% from behind, against the clarity rule. Team sleeves on every class are one simple rule, they match the first-person arms, and the measured share now keeps every class readable as friend or foe from every side.
 
-**Alternatives:** Team colour only on small marks (too little on the Marksman); a whole team-colour jacket for everyone (the kit would no longer be neutral and the classes would read less by their gear); callsign names (Striker, Anvil, Longshot, Shade) or squad slang (Pointman, Breacher, Longshot, Runner).
+**Alternatives:** Team colour only on small marks (too little on the Marksman); a whole team-colour jacket for everyone (the kit would no longer be neutral and the classes would read less by their gear); callsign names (Striker, Anvil, Longshot, Shade; or Wolf, Bear, Heron and Fox, which would also avoid "Scout", a sniper rifle in CS 1.6), Vanguard, Bulwark, Overwatch and Runner, or squad slang (Pointman, Breacher, Longshot, Runner).
+
+**A second approved version:** another session made the concept sheets in parallel (commit 31f9a75) and you approved those too: armbands on everyone plus per-class accents (the Rifleman's helmet stripe, straps and patches; the Bulwark's shoulder plates; the Marksman's scarf, cowl and tail; the Scout's beanie and rig straps), 8–12% of the body from the front, a long dark-grey coat with a pointed hood for the Marksman, and a bent-kneed, wide stance for the Bulwark. Shown both line-ups side by side, you chose the version above, which the 3D models were already built from (tasks 2–7) and which gives the first-person arms team-colour sleeves (task 9). The other branch was merged for its history; its tool changes were not kept.
 
 ## D-071 — Python tools run in a Miniconda environment (2026-10-15)
 
