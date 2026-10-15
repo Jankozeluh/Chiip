@@ -93,9 +93,17 @@ var _was_on_ground: bool = true
 ## The zone of the last hit taken, to pick the death (a headshot crumples).
 var _last_hit_zone: int = -1
 var _dead: bool = false
+## The style of the last death played, to play it again after a class change.
+var _death_style: String = "backward"
 
 
 func _ready() -> void:
+	_build()
+
+
+## Builds the model, its hit zones, the gun and the animation tree from [member model] and
+## [member hit_zones]. [method _ready] and [method set_class] both use it.
+func _build() -> void:
 	if model == null:
 		return
 	var instance := model.instantiate() as Node3D
@@ -144,6 +152,36 @@ func attach(character: Character) -> void:
 		character.weapon.reload_started.connect(_on_reload_started)
 
 
+## Makes this body that of another class: the model and the hit zones are replaced by those of
+## [param data] ([member ClassData.model] and [member ClassData.hit_zones]). The team colour, the
+## attached character and the [member animated] setting stay; the animation tree and the hit
+## zones are built again, so whoever listens to the old [Hitbox] nodes must look for the new
+## ones ([method Character] does).
+##
+## The old model leaves the tree at once ([method Node.remove_child], so the new one can be
+## called "Model" too) but is freed only at the end of the frame ([method Node.queue_free]): a
+## class can change while one of its hit zones is still announcing a hit, and freeing an object
+## inside its own signal would crash. A dead body gets its death animation again, from the start.
+func set_class(data: ClassData) -> void:
+	var was_dead := _dead
+	var old := get_node_or_null("Model")
+	if old != null:
+		remove_child(old)
+		old.queue_free()
+	_meshes.clear()
+	_hitboxes.clear()
+	_hitbox_shapes.clear()
+	_skeleton = null
+	_tree = null
+	_gun_flash = null
+	_flash_time_left = 0.0
+	model = data.model
+	hit_zones = data.hit_zones
+	_build()
+	if was_dead:
+		play_death(_death_style)
+
+
 ## Sets the animation graph from a character's state for this physics tick:
 ## [param velocity] in m/s relative to where the character faces (x right, y forward),
 ## [param crouching], [param on_ground], and the aim pitch in degrees (up is positive).
@@ -175,6 +213,7 @@ func update_animation_state(velocity: Vector2, crouching: bool, on_ground: bool,
 ## frame, lying on the floor, until [method play_alive].
 func play_death(style: String) -> void:
 	_dead = true
+	_death_style = style
 	if _tree == null:
 		return
 	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)

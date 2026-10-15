@@ -142,6 +142,18 @@ func on_respawned() -> void:
 		character.weapon.visible = true
 
 
+## Stops the character from shooting until [method unblock_shooting]: for a menu that opens over
+## the game (the class menu), so a click on it is not also a shot.
+func block_shooting() -> void:
+	_shooting_blocked = true
+
+
+## Lets the character shoot again after [method block_shooting]. If the fire button is held down
+## right now (the click that closed the menu), shooting stays blocked until it is released.
+func unblock_shooting() -> void:
+	_shooting_blocked = Input.is_action_pressed("shoot")
+
+
 ## The character whose eyes the camera shows: a teammate while you spectate,
 ## otherwise yourself.
 func get_view_target() -> Character:

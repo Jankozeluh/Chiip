@@ -89,6 +89,19 @@ const DEAD_EYE_HEIGHT := 0.35
 		if is_node_ready():
 			update_team_color()
 
+@export_group("Class")
+## The class this character plays: its body (model and hit zones) and, from M7, its perk
+## (D-052, D-078). Bots get theirs from the [RoundManager] at the start of a match, and a class
+## change in the middle of a match goes through [method RoundManager.request_class]. Setting it
+## on a character that is in the game swaps the body at once: the hit zones are gathered again.
+## The default is the Rifleman, whose model the body scene already holds.
+@export var class_data: ClassData:
+	set(value):
+		class_data = value
+		# Before _ready the body doesn't exist yet; _ready builds the right one then.
+		if is_node_ready():
+			_apply_class()
+
 @export_group("Sound")
 ## Played for each loud footstep (walking and crouching are silent). Tests set it to null.
 @export var footstep_sound: AudioStream = preload("res://assets/sounds/footsteps.tres")
@@ -154,6 +167,10 @@ func _ready() -> void:
 	health = max_health
 	_alive_collision_layer = collision_layer
 	add_to_group("characters")
+	# The body built the scene's default model in its own _ready (children are ready first):
+	# swap it for the class's before the hit zones are gathered, so they are gathered once.
+	if class_data != null and not _body_is_of_class(class_data):
+		body.set_class(class_data)
 	_set_up_body()
 	for child in get_children():
 		if child is CharacterController:
@@ -415,10 +432,36 @@ func _die(killer: Character) -> void:
 func _set_up_body() -> void:
 	update_team_color()
 	body.attach(self)
-	for node in body.find_children("*", "", true, false):
-		if node is Hitbox:
-			_hitboxes.append(node)
-			(node as Hitbox).hit.connect(_on_hitbox_hit)
+	_gather_hitboxes()
+
+
+## Listens to every hit zone of the body (see [method CrewBody.get_hitboxes]).
+func _gather_hitboxes() -> void:
+	for hitbox in body.get_hitboxes():
+		_hitboxes.append(hitbox)
+		hitbox.hit.connect(_on_hitbox_hit)
+
+
+## True if the body already has the model and hit zones of [param data]. A body without
+## explicit hit zones takes the file next to its model, which is the class's.
+func _body_is_of_class(data: ClassData) -> bool:
+	return body.model == data.model and (body.hit_zones == null or body.hit_zones == data.hit_zones)
+
+
+## Gives the body the new [member class_data]: swaps the model and the hit zones, and listens
+## to the new zones instead of the old ones. A dead character's new zones stay switched off.
+func _apply_class() -> void:
+	if class_data == null or _body_is_of_class(class_data):
+		return
+	for hitbox in _hitboxes:
+		if is_instance_valid(hitbox) and hitbox.hit.is_connected(_on_hitbox_hit):
+			hitbox.hit.disconnect(_on_hitbox_hit)
+	_hitboxes.clear()
+	body.set_class(class_data)
+	_gather_hitboxes()
+	if not is_alive():
+		for hitbox in _hitboxes:
+			hitbox.collision_layer = 0
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:

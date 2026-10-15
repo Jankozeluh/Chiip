@@ -665,6 +665,19 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Hit zones from the body only, without gear (fairer sizes, but shots through visible plates and packs would miss); one shared hit-zone set for every class (CS's rule, rejected in D-055); smaller shoulder plates now, before anyone has played against it.
 
+## D-078 — Class data and the class pick (2026-10-15) — *provisional*
+
+**Decision:**
+- **One `ClassData` resource per class** (`characters/crew/classes/*.tres`, script `characters/crew/class_data.gd`): id, name, role, height, the model and hit zones that make the body, a slot for the first-person arms (task 9), the signature gun, the look and the perk's name and text. The perk *numbers* are stored there too (`reload_time_factor` 0.85 for the Rifleman, `armor_damage_factor` 0.9 and `armor_wear_factor` 0.7 for the Bulwark, `scoped_recovery_factor` 1.3 and `scope_in_time_factor` 0.8 for the Marksman, `running_footstep_range_factor` 0.7 for the Scout; every other factor 1.0), but nothing reads them until M7, when armour and scopes exist (D-052). `ClassData.all()` is the one list of classes, in menu order.
+- **The round manager decides class changes.** `RoundManager.request_class()` accepts a change only in freeze time (and before the first round), refuses it in a live round, at the round end and after the match, and emits `class_changed`. The class menu and the console ask it; nobody sets a player's `class_data` directly in a match. In practice mode `ArenaRules.request_class()` always accepts, because there is no freeze time.
+- **When you choose:** a menu opens by itself when round 1's freeze time begins; M opens and closes it during freeze time (any time in practice mode); it closes when the round goes live. Keys 1 to 4 or a click pick, Esc closes without a change. M is the key CS uses for its team and class menu. Your class stays between rounds until you change it.
+- **Bots get a mix:** when the match starts each team's bots cycle through the four classes starting at a random one, so three bots are always three different classes. The offset is drawn from a second generator seeded from `rng.seed`, so a seed still gives the same class mix, and the spawn spots and starting sides of older seeds stay the same. The player keeps the Rifleman unless `MatchSettings.player_class` says otherwise.
+- **A class change swaps the body at runtime:** `Character.class_data` is set, `CrewBody.set_class()` removes the old model (`remove_child` and `queue_free`), builds the new one and the character gathers the new hit zones. Whoever dies is still dead afterwards (new zones off, the death plays again).
+
+**Why:** Data in resources keeps the classes in one place a designer can edit (Godot's answer to Unity's ScriptableObject, like `WeaponData`), and storing the perk numbers now means M7 only has to read them. Putting the rule in the round manager keeps to the multiplayer rule: the host decides, the menu only asks (D-033). Freeze time is when everyone stands still at the spawn, like CS's buy time, so a class change costs nothing and nobody changes mid-fight. A mix of bots means you meet all four silhouettes and hit-zone sizes in every match, which is what the playtest of D-077 needs.
+
+**Alternatives:** Choosing the class only in match setup, once (simpler, but D-052 wants a change during freeze time); locking the class for a half (rejected in D-052); random bot classes with repeats (a team could be three Scouts, and the mix would not show all classes); applying the perks now without armour or scopes (the Bulwark's and the Marksman's perks would do nothing yet, and the numbers would be tuned blind); drawing the class offsets from `rng` itself (more direct, but it shifts every later draw and changes which team attacks and who fights whom in the seeded tests).
+
 ## Open questions
 
 | Question | Decide in |

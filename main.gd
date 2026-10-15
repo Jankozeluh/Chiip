@@ -1,7 +1,7 @@
 extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
-## the HUD, debug overlay, hold-Tab scoreboard and match-end screen on top.
+## the HUD, debug overlay, hold-Tab scoreboard, class menu and match-end screen on top.
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
@@ -49,6 +49,7 @@ const UI_DESIGN_HEIGHT := 720.0
 @onready var _console: DevConsole = $DevConsole
 @onready var _scoreboard: Scoreboard = $Scoreboard
 @onready var _match_end_screen: MatchEndScreen = $MatchEndScreen
+@onready var _class_menu: ClassMenu = $ClassMenu
 
 ## The map currently loaded.
 var _map: Node
@@ -108,6 +109,8 @@ func _spawn_map(scene: PackedScene) -> void:
 	_hud.set_round_manager(rules as RoundManager)
 	# The hold-Tab scoreboard also exists only in a match.
 	_scoreboard.set_round_manager(rules as RoundManager)
+	# The class menu opens at the start of a match, and on M during freeze time (any time in practice).
+	_class_menu.set_rules(rules, player)
 	_hud.set_player(player)
 	_hud.respawn_hint = rules is ArenaRules
 	_set_up_spectating(player, rules is RoundManager)
@@ -172,3 +175,4 @@ func apply_pixel_settings() -> void:
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_class_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)

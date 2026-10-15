@@ -1,0 +1,313 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/class_menu.gd" id="menu_script"]
+
+[node name="ClassMenu" type="CanvasLayer"]
+layer = 4
+visible = false
+script = ExtResource("menu_script")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.62)
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_type_variation = &"ModalPanel"
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_type_variation = &"PanelMarginWide"
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Title" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Choose your class"
+horizontal_alignment = 1
+
+[node name="Classes" type="HBoxContainer" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"FormRow"
+
+[node name="Card1" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+layout_mode = 2
+custom_minimum_size = Vector2(208, 0)
+size_flags_horizontal = 3
+
+[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card1"]
+layout_mode = 2
+toggle_mode = true
+
+[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card1"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PanelMargin"
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card1/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content/Top"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "1"
+
+[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"DimLabel"
+horizontal_alignment = 2
+
+[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Rifleman"
+
+[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "1.82 m"
+
+[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+text = "Stocky and upright: the all-rounder"
+autowrap_mode = 3
+
+[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Quick Hands"
+
+[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+text = "Reloads and weapon switches 15% faster."
+autowrap_mode = 3
+
+[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Gun: AK-style rifle"
+autowrap_mode = 3
+
+[node name="Card2" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+layout_mode = 2
+custom_minimum_size = Vector2(208, 0)
+size_flags_horizontal = 3
+
+[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card2"]
+layout_mode = 2
+toggle_mode = true
+
+[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card2"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PanelMargin"
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card2/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content/Top"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "2"
+
+[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"DimLabel"
+horizontal_alignment = 2
+
+[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Bulwark"
+
+[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "1.92 m"
+
+[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+text = "Tall and broad: the anchor"
+autowrap_mode = 3
+
+[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Plated"
+
+[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+text = "With armor on, takes 10% less damage and the armor wears down 30% slower."
+autowrap_mode = 3
+
+[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Gun: Pump shotgun"
+autowrap_mode = 3
+
+[node name="Card3" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+layout_mode = 2
+custom_minimum_size = Vector2(208, 0)
+size_flags_horizontal = 3
+
+[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card3"]
+layout_mode = 2
+toggle_mode = true
+
+[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card3"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PanelMargin"
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card3/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content/Top"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "3"
+
+[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"DimLabel"
+horizontal_alignment = 2
+
+[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Marksman"
+
+[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "1.88 m"
+
+[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+text = "Lanky, in a long coat: the long-range pick"
+autowrap_mode = 3
+
+[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Steady"
+
+[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+text = "Scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster."
+autowrap_mode = 3
+
+[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Gun: Sniper rifle"
+autowrap_mode = 3
+
+[node name="Card4" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+layout_mode = 2
+custom_minimum_size = Vector2(208, 0)
+size_flags_horizontal = 3
+
+[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card4"]
+layout_mode = 2
+toggle_mode = true
+
+[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card4"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PanelMargin"
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card4/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content/Top"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "4"
+
+[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"DimLabel"
+horizontal_alignment = 2
+
+[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"BrightLabel"
+text = "Scout"
+
+[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "1.72 m"
+
+[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+text = "Short and slim: the lurker"
+autowrap_mode = 3
+
+[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Light Step"
+
+[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+text = "Running footsteps carry 70% as far."
+autowrap_mode = 3
+
+[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Gun: SMG"
+autowrap_mode = 3
+
+[node name="Footer" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Perks switch on in M7: until then the classes differ in looks and hit zones. Everyone carries the AK-style rifle for now. M: change class during freeze time."
+horizontal_alignment = 1
+autowrap_mode = 3

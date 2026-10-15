@@ -220,7 +220,7 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 
 ### 4.9 Classes
 
-Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy anything, so the economy stays CS-like. The signature gun is only what the class holds in the class menu. You pick a class at match start and can change it during freeze time; bots get a mix. Perks switch on in M7; until then the classes differ only in looks.
+Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy anything, so the economy stays CS-like. The signature gun is only what the class holds in the class menu. You pick a class at match start and can change it during freeze time; bots get a mix. Perks switch on in M7; until then the classes differ only in looks and hit-zone sizes. **How you pick** (D-078): a class menu opens by itself when the match starts (four cards: click one or press **1** to **4**; **Esc** closes it without a change), and **M** opens it again during freeze time of any round, so you can change class between rounds but never in a live round. Your class stays until you change it. In practice mode, which has no freeze time, M works at any time. The console's `class [name]` does the same. **Bots get a mix:** each team's bots cycle through the four classes from a random one, so three bots are three different classes.
 
 | Class | Build and silhouette | Perk *(tune)* | Signature gun |
 |---|---|---|---|
@@ -261,6 +261,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades, 5 bomb |
 | Use / defuse | E |
 | Buy menu | B |
+| Class menu (opens at match start; M in freeze time; 1–4 or click to pick) | M |
 | Scoreboard (hold, in a match) | Tab |
 | Developer console | ` (backtick / tilde key) |
 | Free / capture the mouse | Esc / click |

@@ -26,6 +26,8 @@ var _player: Character
 var _player_start: Transform3D
 var _rng := RandomNumberGenerator.new()
 var _bots_made: int = 0
+## Which class the next bot gets: the bots cycle through the classes from a random one.
+var _next_class: int = _rng.randi_range(0, ClassData.all().size() - 1)
 
 
 func _ready() -> void:
@@ -45,6 +47,9 @@ func add_bot(difficulty: BotDifficulty = bot_difficulty, team: int = 1) -> Chara
 	_bots_made += 1
 	bot.name = "Bot%d" % _bots_made
 	bot.team = team  # Before add_child, so the body gets the right color from the start.
+	var classes := ClassData.all()
+	bot.class_data = classes[_next_class % classes.size()]
+	_next_class += 1
 	(bot.get_node("BotController") as BotController).difficulty = difficulty
 	var spot := _pick_bot_spawn()
 	bot.position = spot.origin
@@ -52,6 +57,16 @@ func add_bot(difficulty: BotDifficulty = bot_difficulty, team: int = 1) -> Chara
 	get_parent().add_child(bot)
 	bot.died.connect(_on_died.bind(bot))
 	return bot
+
+
+## Gives [param character] the class [param data]. Practice mode has no freeze time, so it
+## always works (the same call as [method RoundManager.request_class], which only allows it
+## during freeze time). Returns false only when there is nothing to change.
+func request_class(character: Character, data: ClassData) -> bool:
+	if data == null or not is_instance_valid(character):
+		return false
+	character.class_data = data
+	return true
 
 
 ## Removes the most recently added bot. Returns false if there are none.

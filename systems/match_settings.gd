@@ -28,3 +28,8 @@ extends Resource
 @export var round_time: float = 115.0
 ## Seconds between a round's result and the next round's freeze time.
 @export var round_end_time: float = 5.0
+
+@export_group("Player")
+## The class the player starts the match with. Null keeps the class of the map's [code]Player[/code]
+## character (the Rifleman); the class menu changes it during freeze time (D-052, D-078).
+@export var player_class: ClassData

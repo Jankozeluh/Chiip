@@ -16,6 +16,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 2. Press **F5** (or the ▶ button at the top right) to play. A 3v3 match starts on the test map: you and two bot teammates (blue) against three bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
+   At the start of the match a class menu opens: pick Rifleman, Bulwark, Marksman or Scout (click a card, or press 1 to 4; Esc closes it). **M** opens it again during freeze time. For now the classes differ in looks and hit zones; the perks switch on in M7. Bots get a mix of classes.
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Quit** buttons.
 3. For the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), run with `-- --practice` (see below).
 
@@ -50,11 +51,12 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Shoot | Left mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Class menu (opens by itself at the start of a match; during freeze time, any time in practice mode; then click a card or press 1 to 4) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `clear`. Up/down arrows recall earlier commands.
 
 ## Making maps with TrenchBroom
 
@@ -156,6 +158,10 @@ Automated checks run without a window in about a second each:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/crew_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 200000 res://tests/class_test.tscn
 ```
 
 ## Documentation
