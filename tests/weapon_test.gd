@@ -11,7 +11,7 @@ extends Node3D
 
 const PLAYER_SCENE := preload("res://player/player.tscn")
 const DUMMY_SCENE := preload("res://maps/props/target_dummy.tscn")
-const U := Player.UNITS_TO_METRES
+const U := Character.UNITS_TO_METRES
 ## The wall's front face is this far straight ahead of the player.
 const WALL_DISTANCE := 30.0
 ## A dummy close by (off to the right, in front of the wall) and one far away (past the wall's end).
@@ -20,7 +20,7 @@ const FAR_DUMMY_SPOT := Vector3(20, 0, -40)
 ## Pause after a single shot, long enough for recoil to wear off completely.
 const TAP_PAUSE := 0.4
 
-var _player: Player
+var _player: Character
 var _weapon: Weapon
 var _rifle: WeaponData
 var _near_dummy: TargetDummy

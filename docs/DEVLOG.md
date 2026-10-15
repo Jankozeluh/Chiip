@@ -9,7 +9,11 @@
 - Wrote the detailed M4 plan (bots, 12 tasks). Central idea: every character is driven by per-tick input commands (like CS's "usercmd"), so bots follow exactly the same rules as you, which is also the structure multiplayer needs.
 - Multiplayer decided: yes, after the single-player game, as a new milestone M8 (D-033). Added M8 to the plan and five "keep multiplayer possible" rules to ARCHITECTURE.md for M4–M7.
 
-**Next:** Your go-ahead to start M4.
+
+## 2026-10-15 — Session 8: M4 bots
+
+**Done**
+- Split `Player` into a shared, command-driven `Character` (`characters/`) plus a `PlayerController`; `player.tscn` is now an inherited variant of `characters/character.tscn` (D-034). All 33 checks pass with identical numbers, and mouse sensitivity is unchanged.
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 

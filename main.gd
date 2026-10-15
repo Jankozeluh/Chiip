@@ -3,7 +3,7 @@ extends Node
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
 ## the HUD and debug overlay on top.
 ##
-## Every map scene must contain a [Player] node named "Player".
+## Every map scene must contain a [Character] node named "Player" (the local player).
 ##
 ## Two pixel styles (see docs/DECISIONS.md):
 ## - Pixelated HUD: the whole window renders at the low resolution, HUD included.
@@ -45,7 +45,7 @@ func _load_map() -> void:
 		scene = load(args[map_arg + 1])
 	var map := scene.instantiate()
 	_viewport.add_child(map)
-	var player := map.get_node("Player") as Player
+	var player := map.get_node("Player") as Character
 	_hud.set_player(player)
 	_debug_overlay.player = player
 

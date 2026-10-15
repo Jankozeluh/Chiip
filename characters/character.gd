@@ -1,6 +1,13 @@
-class_name Player
+class_name Character
 extends CharacterBody3D
-## The player: first-person mouse look and Counter-Strike-style movement.
+## A character that moves and fights by Counter-Strike's rules. The player
+## and every bot use this same script.
+##
+## It never reads the keyboard. Every physics tick it asks its
+## [CharacterController] (a child node) for a [CharacterInput] command and
+## simulates it, the way a CS server simulates each client's "usercmd". So
+## bots follow exactly the same movement and shooting rules as the player, and
+## network players in M8 will too.
 ##
 ## Movement follows the Quake/Source engine model that CS is built on:
 ## friction slows you down on the ground, acceleration pushes you toward the
@@ -12,16 +19,6 @@ extends CharacterBody3D
 
 ## CS/Source distance units to metres (1 unit ≈ 1 inch).
 const UNITS_TO_METRES := 0.0254
-## Degrees turned per mouse count at sensitivity 1, the same as CS's m_yaw and m_pitch.
-const DEGREES_PER_MOUSE_COUNT := 0.022
-## How far up or down you can look, in degrees (CS: 89).
-const MAX_PITCH_DEGREES := 89.0
-
-@export_group("Mouse")
-## Mouse sensitivity on CS's scale: each mouse count turns sensitivity × 0.022°.
-@export var sensitivity: float = 1.0
-## Flip vertical mouse look.
-@export var invert_y: bool = false
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -63,84 +60,64 @@ const MAX_PITCH_DEGREES := 89.0
 ## Seconds for the view to move between standing and crouched height.
 @export var crouch_transition_time: float = 0.15
 
+@export_group("")
+## The gun this character holds.
+@export var weapon: Weapon
+
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
 
-## Horizontal look angle (left/right) in radians.
-var _yaw: float = 0.0
-## Vertical look angle (up/down) in radians.
-var _pitch: float = 0.0
-## Set when jump is pressed and used up by the next physics tick.
-var _jump_queued: bool = false
-## True while a click shouldn't shoot: after freeing the mouse, and for the
-## click that captures it again, until the button is released.
-var _shooting_blocked: bool = false
+## The command being simulated this tick, from the controller.
+var _input := CharacterInput.new()
+## Whatever drives this character: the first CharacterController among its children.
+var _controller: CharacterController
 ## Current eye height above the feet. Moves smoothly toward the standing or crouched height.
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
 var _hull_height_difference: float = 0.0
 
-## The gun in your hands.
-@onready var weapon: Weapon = $Head/Camera3D/Weapon
-@onready var _head: Node3D = $Head
-@onready var _camera: Camera3D = $Head/Camera3D
+## The eyes: shots start here, and a first-person camera follows it.
+@onready var head: Node3D = $Head
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
 @onready var _crouching_collision: CollisionShape3D = $CrouchingCollision
 
 
 func _ready() -> void:
-	_yaw = rotation.y
+	_input.yaw = rotation.y
 	_eye_height = stand_eye_height
-	_head.position.y = _eye_height
+	head.position.y = _eye_height
 	var standing_shape := _standing_collision.shape as CapsuleShape3D
 	var crouching_shape := _crouching_collision.shape as CapsuleShape3D
 	_hull_height_difference = standing_shape.height - crouching_shape.height
 	_set_crouch_hull(false)
-	# The camera is placed by code every rendered frame (see _process) instead
-	# of following its parent, so mouse look has no physics-tick delay.
-	_camera.top_level = true
-	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	weapon.equip(self)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_look((event as InputEventMouseMotion).screen_relative)
-	elif event.is_action_pressed("jump"):
-		# Remember the press; the next physics tick decides whether you jump.
-		# This also catches mouse-wheel jumps, which press and release instantly.
-		_jump_queued = true
-	elif event.is_action_pressed("reload"):
-		weapon.reload()
-	elif event.is_action_pressed("toggle_mouse"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			_shooting_blocked = true
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			_shooting_blocked = false
-	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		# This click only captures the mouse; it shouldn't also fire a shot.
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		_shooting_blocked = true
-	elif event.is_action_released("shoot") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_shooting_blocked = false
+	for child in get_children():
+		if child is CharacterController:
+			_controller = child
+			break
+	if _controller != null:
+		_controller.set_look_angles(_input.yaw, _input.pitch)
+	if weapon != null:
+		weapon.equip(self)
 
 
 func _physics_process(delta: float) -> void:
-	# Face where the mouse points, so "forward" is where you look.
-	rotation.y = _yaw
-	# The weapon processes after the player (children run after their parent),
-	# so it sees this tick's trigger state.
-	weapon.trigger_held = Input.is_action_pressed("shoot") and not _shooting_blocked
+	if _controller != null:
+		_input = _controller.get_input(delta)
+	# Face where the command looks, so "forward" is where you look. The head
+	# tilts up and down, which points a third-person gun (bots) at the target.
+	rotation.y = _input.yaw
+	head.rotation.x = _input.pitch
+	if weapon != null:
+		# The weapon processes after the character (children run after their
+		# parent), so it sees this tick's trigger state.
+		weapon.trigger_held = _input.shoot
+		if _input.reload:
+			weapon.reload()
 
 	var on_ground := is_on_floor()
-	var wants_jump := _jump_queued
-	_jump_queued = false
 	# As in CS, you jump only on the tick you press jump while on the ground.
 	# Holding jump doesn't jump again when you land.
-	if on_ground and wants_jump:
+	if on_ground and _input.jump:
 		_jump()
 		on_ground = false
 
@@ -163,36 +140,29 @@ func _physics_process(delta: float) -> void:
 		velocity += half_gravity
 
 
-func _process(_delta: float) -> void:
-	# Position: where the head is drawn this frame (smoothed between physics ticks).
-	_camera.global_position = _head.get_global_transform_interpolated().origin
-	# Rotation: straight from the mouse, so looking around is instant, plus the
-	# weapon's recoil kick (which moves the view but not your aim).
-	var punch := weapon.view_punch
-	_camera.global_rotation = Vector3(_pitch + deg_to_rad(punch.y), _yaw - deg_to_rad(punch.x), 0.0)
-
-
-## The first-person camera.
+## The camera this character is seen through (the player's), or null for bots.
 func get_camera() -> Camera3D:
-	return _camera
+	return _controller.get_camera() if _controller != null else null
 
 
 ## Where shots start from: the eyes, as of this physics tick.
 func get_eye_position() -> Vector3:
-	return _head.global_position
+	return head.global_position
 
 
-## Where you're aiming as (yaw, pitch) in radians, without any recoil.
+## Where the character is aiming as (yaw, pitch) in radians, without any recoil.
 func get_aim_angles() -> Vector2:
-	return Vector2(_yaw, _pitch)
+	return Vector2(_input.yaw, _input.pitch)
 
 
 ## Turns the view to look at a world position. Used by tests.
 func aim_at(target: Vector3) -> void:
 	var direction := (target - get_eye_position()).normalized()
-	_yaw = atan2(-direction.x, -direction.z)
-	_pitch = asin(direction.y)
-	rotation.y = _yaw
+	_input.yaw = atan2(-direction.x, -direction.z)
+	_input.pitch = asin(direction.y)
+	rotation.y = _input.yaw
+	if _controller != null:
+		_controller.set_look_angles(_input.yaw, _input.pitch)
 
 
 ## Top running speed right now: set by the held weapon (CS: rifles 215 u/s),
@@ -203,19 +173,9 @@ func get_max_speed() -> float:
 	return max_speed
 
 
-## Turns the view by a mouse movement measured in mouse counts.
-func _look(mouse_motion: Vector2) -> void:
-	var radians_per_count := deg_to_rad(sensitivity * DEGREES_PER_MOUSE_COUNT)
-	var vertical_sign := -1.0 if invert_y else 1.0
-	_yaw -= mouse_motion.x * radians_per_count
-	_pitch -= mouse_motion.y * radians_per_count * vertical_sign
-	_pitch = clampf(_pitch, deg_to_rad(-MAX_PITCH_DEGREES), deg_to_rad(MAX_PITCH_DEGREES))
-
-
 ## Returns the horizontal direction the movement keys point to, relative to where you look.
 func _get_wish_direction() -> Vector3:
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	return (transform.basis * Vector3(input.x, 0.0, input.y)).normalized()
+	return (transform.basis * Vector3(_input.move.x, 0.0, _input.move.y)).normalized()
 
 
 ## Returns the top speed for the current stance and weapon.
@@ -227,7 +187,7 @@ func _get_wish_speed() -> float:
 func _get_stance_factor() -> float:
 	if is_crouching:
 		return crouch_speed_factor
-	if Input.is_action_pressed("walk"):
+	if _input.walk:
 		return walk_speed_factor
 	return 1.0
 
@@ -287,18 +247,17 @@ func _jump() -> void:
 	velocity = horizontal + Vector3.UP * sqrt(2.0 * get_gravity().length() * jump_height)
 
 
-## Crouches or stands up to match the crouch key, and moves the view smoothly.
+## Crouches or stands up to match the crouch command, and moves the eyes smoothly.
 func _update_crouch(on_ground: bool, delta: float) -> void:
-	var wants_crouch := Input.is_action_pressed("crouch")
-	if wants_crouch and not is_crouching:
+	if _input.crouch and not is_crouching:
 		_crouch(on_ground)
-	elif not wants_crouch and is_crouching:
+	elif not _input.crouch and is_crouching:
 		_try_stand_up(on_ground)
 
 	var target_eye_height := crouch_eye_height if is_crouching else stand_eye_height
 	var eye_speed := (stand_eye_height - crouch_eye_height) / crouch_transition_time
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
-	_head.position.y = _eye_height
+	head.position.y = _eye_height
 
 
 func _crouch(on_ground: bool) -> void:

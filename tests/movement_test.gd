@@ -9,7 +9,7 @@ extends Node3D
 ## (0 means everything passed).
 
 const PLAYER_SCENE := preload("res://player/player.tscn")
-const U := Player.UNITS_TO_METRES
+const U := Character.UNITS_TO_METRES
 ## CS weapons are accurate below about 34% of top speed; "stopped" means slower than this.
 const ACCURATE_SPEED_FACTOR := 0.34
 ## Where the 1.5 m ceiling is (see _build_level).
@@ -17,7 +17,7 @@ const CEILING_SPOT := Vector3(40, 0, 0)
 ## An open spot next to the ceiling.
 const OPEN_SPOT := Vector3(30, 0, 0)
 
-var _player: Player
+var _player: Character
 var _failures: int = 0
 
 

@@ -41,7 +41,8 @@ Chiip/
 │   ├── models/
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   └── fonts/         Silkscreen pixel font (+ its OFL license text)
-├── player/            Player scene, movement, camera
+├── characters/        Shared Character (movement + CS rules), input commands, controller base
+├── player/            The player: a Character variant with keyboard/mouse controller and camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene, AI, state machine
 ├── maps/              Test maps and playable maps
@@ -68,8 +69,12 @@ Chiip/
 | `maps/comparison/trenchbroom_room.tscn` | That map built by func_godot (`Map` node, built geometry stored in the scene), lights set to *Static* for baking, a `LightmapGI` node, and a Player |
 | `maps/comparison/csg_room.tscn` | The same room made of CSG boxes with triplanar materials, same lights, and a Player |
 | `maps/test_map.tscn` | Test map (shown inside `main.tscn`). Lighting: neutral white sun (35° high, shadows), the shared cool-daylight environment, three colored `OmniLight3D` lamps (D-031). Retextured in M3: concrete floor (course), grey gravel (range), muted red brick outer walls, grey stone platform/stairs/peek walls, wooden crates, metal tunnel, painted spray wall. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
-| `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
-| `player/player.gd` | `Player` class: mouse look and CS-style movement |
+| `characters/character.gd` | `Character` (`CharacterBody3D`): all CS movement rules (run/walk/crouch, jump, air strafing), weapon handling, eye position and aim. Simulates one `CharacterInput` per physics tick from its controller |
+| `characters/character.tscn` | Base character scene: standing and crouching capsules, a `Head` at eye height. Player and bots are *inherited* variants of it |
+| `characters/character_input.gd` | `CharacterInput`: one tick of commands (move direction, look yaw/pitch, jump, crouch, walk, shoot, reload), like CS's "usercmd" |
+| `characters/character_controller.gd` | `CharacterController`: base for whatever drives a character (`get_input()`, `set_look_angles()`, `get_camera()`) |
+| `player/player.tscn` | The player: inherits `character.tscn`, adds `Head/Camera3D` with the rifle and a `PlayerController`. On the player layer |
+| `player/player_controller.gd` | `PlayerController`: keyboard and mouse → commands, CS sensitivity, mouse capture (no shot on the recapture click), first-person camera with recoil kick |
 | `ui/debug_overlay.tscn` + `.gd` | F3 readout: speed, position, jump peak, stance, shoot/aim buttons, weapon inaccuracy, built-up recoil, last hit (zone, damage, distance) |
 | `systems/physics_layers.gd` | `PhysicsLayers` constants: bit values of the named physics layers |
 | `weapons/weapon_data.gd` | `WeaponData` resource: every number of a weapon (damage, fire rate, ammo, accuracy, spray pattern, recoil, sounds) |
@@ -98,7 +103,7 @@ Chiip/
 
 | System | Purpose | Milestone | Status |
 |---|---|---|---|
-| Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
+| Character + controllers | CS-style movement for everyone, driven by per-tick commands | M1, M4 | Built: `Character`, `PlayerController` (bots in M4) |
 | Debug overlay | Speed and position readout | M1 | Built |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M5) |
@@ -117,13 +122,13 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 
 | Action | Default binding | Used by |
 |---|---|---|
-| `move_forward` / `move_back` / `move_left` / `move_right` | W / S / A / D | Player |
-| `jump` | Space, mouse wheel down | Player |
-| `crouch` | Ctrl | Player |
-| `walk` | Shift | Player |
+| `move_forward` / `move_back` / `move_left` / `move_right` | W / S / A / D | PlayerController |
+| `jump` | Space, mouse wheel down | PlayerController |
+| `crouch` | Ctrl | PlayerController |
+| `walk` | Shift | PlayerController |
 | `shoot` / `aim` | Left / right mouse button | Debug overlay now, weapons from M2 |
-| `reload` | R | Player → weapon |
-| `toggle_mouse` | Esc | Player (frees or captures the mouse) |
+| `reload` | R | PlayerController → command → weapon |
+| `toggle_mouse` | Esc | PlayerController (frees or captures the mouse) |
 | `toggle_debug` | F3 | Debug overlay |
 
 ## How the player camera works
@@ -160,14 +165,29 @@ Main (Node, main.gd)
 - Mouse look uses `screen_relative`, so sensitivity is the same in both styles (checked: 2.200° for 100 counts).
 - Text in the 3D world (`Label3D`) uses the pixel font with nearest filtering. Map signs are world-sized (`pixel_size` 0.04, about 0.32 m tall) and shrink with distance. Dummy titles and damage numbers use *Fixed Size* (the same size on screen at any distance) with `pixel_size` 0.004167, so one font pixel = one pixel of the 360-line world image.
 
-## How the player and the weapon work together
+## How characters are controlled (M4)
 
-- The weapon scene sits under the player's camera, so a first-person model will follow the view.
-- Each physics tick the player sets `weapon.trigger_held` from the shoot button. The player processes first and its children after, so the weapon sees the new value in the same tick.
-- R calls `weapon.reload()`. The weapon sets the player's top speed (`Player.get_max_speed()`).
-- The click that recaptures the mouse, and clicks while the mouse is free, never fire.
-- Shots start at `Player.get_eye_position()` and use `Player.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the player's own body.
-- Recoil has two parts. `Weapon._get_shot_direction()` adds the spray pattern offset to the aim. `Weapon.view_punch` (half the pattern, smoothed every frame) is added to the camera rotation in `Player._process`. The aim itself never changes, so the view returns to it as recoil wears off.
+```
+Character (CharacterBody3D, character.gd)        ← simulates commands by CS rules
+├── StandingCollision / CrouchingCollision
+├── Head (eyes; tilts with pitch)
+│   └── Camera3D + Weapon (player)  or  Weapon (bot, later)
+└── PlayerController / BotController            ← produces one CharacterInput per tick
+```
+
+1. Each physics tick, `Character._physics_process` asks its controller for a `CharacterInput` (`get_input()`): the *pull* model guarantees the command is fresh for this tick.
+2. The character applies it: it faces `yaw`, tilts the head to `pitch`, sets `weapon.trigger_held` and reloads, then moves, jumps and crouches by the CS rules.
+3. The player's controller reads keys in `get_input()` and the mouse in `_unhandled_input()`; its camera follows the head every rendered frame, so mouse look stays instant.
+4. A bot's controller (M4) fills the same command from its AI; in M8 a network controller will fill it from packets. The character can't tell the difference.
+
+## How a character and its weapon work together
+
+- The player's weapon scene sits under the camera, so the first-person model follows the view.
+- The character sets `weapon.trigger_held` from the command. The character processes first and its children after, so the weapon sees the new value in the same tick.
+- The weapon sets the character's top speed (`Character.get_max_speed()`).
+- The click that recaptures the mouse, and clicks while the mouse is free, never fire (`PlayerController`).
+- Shots start at `Character.get_eye_position()` and use `Character.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the character's own body.
+- Recoil has two parts. `Weapon._get_shot_direction()` adds the spray pattern offset to the aim. `Weapon.view_punch` (half the pattern, smoothed every frame) is added to the camera rotation in `PlayerController._process`. The aim itself never changes, so the view returns to it as recoil wears off.
 - When a ray hits a `Hitbox`, the weapon computes `damage × range_modifier^(distance / 500 units)` and calls `Hitbox.receive_hit()`, which applies the zone multiplier and emits `hit` to whoever owns the hitbox (the dummy now, bots in M4).
 - The viewmodel moves with the camera because it's a child of it. Shot kick is a tween back to the rest pose; the reload dip is computed every frame from the reload progress. Viewmodel meshes don't cast shadows. Known limitation: the gun pokes into walls when you stand right against them (proper viewmodel rendering later).
 - Bullet holes are parented to whatever was hit, so they move with moving targets. Each weapon keeps its last 100.
@@ -179,7 +199,7 @@ Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit va
 | Layer | Name | Bit value | Used by |
 |---|---|---|---|
 | 1 | world | 1 | Map geometry |
-| 2 | player | 2 | Player body (collides with world and bots: mask 5) |
+| 2 | player | 2 | The player's body (collides with world and bots: mask 5) |
 | 3 | bots | 4 | Bot bodies, target dummies |
 | 4 | hitboxes | 8 | Head / chest / stomach / arm / leg zones (`Area3D`) that bullets hit |
 | 5 | triggers | 16 | Buy zones, bombsites |

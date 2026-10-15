@@ -1,35 +1,20 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://player/player.gd" id="player_script"]
+[ext_resource type="PackedScene" path="res://characters/character.tscn" id="character_scene"]
 [ext_resource type="PackedScene" path="res://weapons/rifle.tscn" id="rifle_scene"]
+[ext_resource type="Script" path="res://player/player_controller.gd" id="controller_script"]
 
-[sub_resource type="CapsuleShape3D" id="standing_shape"]
-radius = 0.4
-height = 1.8288
-
-[sub_resource type="CapsuleShape3D" id="crouching_shape"]
-radius = 0.4
-height = 1.3716
-
-[node name="Player" type="CharacterBody3D"]
+[node name="Player" node_paths=PackedStringArray("weapon") instance=ExtResource("character_scene")]
 collision_layer = 2
 collision_mask = 5
-script = ExtResource("player_script")
-
-[node name="StandingCollision" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.9144, 0)
-shape = SubResource("standing_shape")
-
-[node name="CrouchingCollision" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.6858, 0)
-shape = SubResource("crouching_shape")
-disabled = true
-
-[node name="Head" type="Node3D" parent="."]
-position = Vector3(0, 1.6256, 0)
+weapon = NodePath("Head/Camera3D/Weapon")
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
 current = true
 fov = 73.74
 
 [node name="Weapon" parent="Head/Camera3D" instance=ExtResource("rifle_scene")]
+
+[node name="PlayerController" type="Node" parent="." node_paths=PackedStringArray("camera")]
+script = ExtResource("controller_script")
+camera = NodePath("../Head/Camera3D")

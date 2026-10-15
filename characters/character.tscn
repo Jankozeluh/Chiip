@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/character.gd" id="character_script"]
+
+[sub_resource type="CapsuleShape3D" id="standing_shape"]
+radius = 0.4
+height = 1.8288
+
+[sub_resource type="CapsuleShape3D" id="crouching_shape"]
+radius = 0.4
+height = 1.3716
+
+[node name="Character" type="CharacterBody3D"]
+script = ExtResource("character_script")
+
+[node name="StandingCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.9144, 0)
+shape = SubResource("standing_shape")
+
+[node name="CrouchingCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.6858, 0)
+shape = SubResource("crouching_shape")
+disabled = true
+
+[node name="Head" type="Node3D" parent="."]
+position = Vector3(0, 1.6256, 0)

@@ -7,7 +7,7 @@ const LOW_AMMO_FRACTION := 0.25
 const LOW_AMMO_COLOR := Color(1.0, 0.4, 0.3)
 
 ## The player whose weapon the HUD shows. Set with [method set_player].
-var player: Player
+var player: Character
 
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _ammo_label: Label = $AmmoLabel
@@ -15,7 +15,7 @@ var player: Player
 
 
 ## Shows this player's weapon on the HUD.
-func set_player(new_player: Player) -> void:
+func set_player(new_player: Character) -> void:
 	player = new_player
 	var weapon := player.weapon
 	weapon.ammo_changed.connect(_on_ammo_changed)

@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M4 — Bots (planned, waiting for your go-ahead)
+> **Current milestone:** M4 — Bots (in progress)
 
 ## Your open checks
 
@@ -28,7 +28,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M1 | Project setup & movement | ✅ | Run, walk, crouch and jump around a test map |
 | M2 | Shooting | ✅ | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ✅ | The test map looks like a 90s shooter |
-| M4 | Bots | ⬜ | Bots hunt you and shoot back |
+| M4 | Bots | 🟨 | Bots hunt you and shoot back |
 | M5 | Health, rounds & game flow | ⬜ | Full rounds against bots, with menus and settings |
 | M6 | Economy & arsenal | ⬜ | Earn money and buy weapons between rounds |
 | M7 | Bomb mode & first real map | ⬜ | A complete plant/defuse match on a real map |
@@ -141,7 +141,7 @@ Things only you can check, kept here until done instead of moving from milestone
 
 The pixelation variant (task 1) and the palette effect (task 9) are decided during M3 from screenshots.
 
-## M4 — Bots ⬜
+## M4 — Bots 🟨
 
 **Goal:** enemies that move around, spot you and fight back fairly, playing by exactly the same movement and shooting rules as you.
 
@@ -149,7 +149,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Tasks**, in order, one commit each:
 
-1. [ ] **Shared character.** Split today's `Player` into a `Character` (movement, crouching, jumping, weapon, all the CS rules) that only follows `CharacterInput` commands, plus a `PlayerController` that turns your keyboard and mouse into commands and owns the camera. All 33 existing movement and weapon checks must still pass unchanged.
+1. [x] **Shared character.** Split today's `Player` into a `Character` (movement, crouching, jumping, weapon, all the CS rules) that only follows `CharacterInput` commands, plus a `PlayerController` that turns your keyboard and mouse into commands and owns the camera. All 33 existing movement and weapon checks must still pass unchanged.
 2. [ ] **Health and hit zones on characters.** Characters get 100 HP and the same CS-sized hit zones as the dummies (head ×4, …). Taking damage, dying, and a `died` signal. Armor stays in M5.
 3. [ ] **Navigation mesh.** A `NavigationRegion3D` baked for the test map, so bots know where they can walk (stairs, ramp, crouch tunnel excluded or marked).
 4. [ ] **Bot body and movement.** A bot scene: a character with a blocky, clearly colored soldier model holding the rifle, and a `NavigationAgent3D` that turns paths into movement commands (run, walk when sneaking, crouch).

@@ -262,6 +262,14 @@
 
 **Alternatives:** multiplayer right after rounds (before economy and bomb), single-player only, or deciding later.
 
+## D-034 — Characters are driven by per-tick input commands (2026-10-15)
+
+**Decision:** All movement and shooting rules live in one `Character` script. It never reads the keyboard: each physics tick it asks its controller (a child node) for a `CharacterInput` and simulates it. The player's keyboard/mouse is one controller; bots (M4) and network players (M8) are others. Player and bot scenes are *inherited* variants of one base `character.tscn`.
+
+**Why:** Bots follow exactly the player's rules (fair, and no second movement system to keep in sync). It's the same structure CS uses (the client's "usercmd"), and the one multiplayer needs (D-033). The *pull* model (the character asks) guarantees each tick uses a fresh command, whatever order the nodes process in.
+
+**Checked:** after the split, all 33 movement and weapon checks pass with identical numbers, and mouse sensitivity is unchanged (2.200° per 100 counts).
+
 ## Open questions
 
 | Question | Decide in |

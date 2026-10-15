@@ -3,7 +3,7 @@ extends CanvasLayer
 ## Toggle it with F3 (the toggle_debug action).
 
 ## The player to show information about. Set by the main scene.
-var player: Player
+var player: Character
 
 ## Feet height the last time the player stood on the ground.
 var _ground_height: float = 0.0
@@ -47,10 +47,10 @@ func _process(_delta: float) -> void:
 	var feet := player.global_position
 	_label.text = "\n".join([
 		"FPS        %d" % Engine.get_frames_per_second(),
-		"Speed      %5.2f m/s  %4.0f u/s" % [speed, speed / Player.UNITS_TO_METRES],
+		"Speed      %5.2f m/s  %4.0f u/s" % [speed, speed / Character.UNITS_TO_METRES],
 		"Vertical   %5.2f m/s" % player_velocity.y,
 		"Position   %6.2f %6.2f %6.2f" % [feet.x, feet.y, feet.z],
-		"Jump peak  %5.2f m    %4.0f u" % [_jump_peak, _jump_peak / Player.UNITS_TO_METRES],
+		"Jump peak  %5.2f m    %4.0f u" % [_jump_peak, _jump_peak / Character.UNITS_TO_METRES],
 		"On floor   %s" % _yes_no(player.is_on_floor()),
 		"Crouching  %s" % _yes_no(player.is_crouching),
 		"Walking    %s" % _yes_no(Input.is_action_pressed("walk")),

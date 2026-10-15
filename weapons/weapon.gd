@@ -54,7 +54,7 @@ var last_hit: Dictionary = {}
 ## The player adds it to the camera; it doesn't change where you aim.
 var view_punch: Vector2 = Vector2.ZERO
 
-var _wielder: Player
+var _wielder: Character
 ## Seconds until the next shot is allowed.
 var _cooldown: float = 0.0
 ## Seconds of reload left; 0 when not reloading.
@@ -88,7 +88,7 @@ func _ready() -> void:
 
 
 ## Hands the weapon to its holder, who supplies aim and movement state.
-func equip(wielder: Player) -> void:
+func equip(wielder: Character) -> void:
 	_wielder = wielder
 	ammo_changed.emit(magazine, reserve)
 
@@ -266,7 +266,7 @@ func _shoot_bullet(direction: Vector3) -> void:
 ## How much damage is left after the bullet travels [param distance] metres:
 ## [member WeaponData.range_modifier] for every 500 units (12.7 m), as in CS.
 func _get_damage_falloff(distance: float) -> float:
-	return pow(data.range_modifier, distance / Player.UNITS_TO_METRES / 500.0)
+	return pow(data.range_modifier, distance / Character.UNITS_TO_METRES / 500.0)
 
 
 ## Leaves a bullet hole and sparks, attached to what was hit so it moves along with it.

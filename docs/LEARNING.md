@@ -208,3 +208,14 @@
 **Instancing a scene from code** (`main.gd`)
 - `load("res://maps/x.tscn").instantiate()` + `add_child()` puts a whole map into the running game, like `Instantiate()` with a prefab, or additive scene loading in Unity.
 - `OS.get_cmdline_user_args()` returns the arguments after `--` on the command line.
+
+### M4 — Bots
+
+**Base classes and overriding** (`characters/character_controller.gd`)
+- `class_name PlayerController extends CharacterController` inherits all of `CharacterController`, and can replace (override) its methods by defining them again, like a C# subclass overriding a `virtual` method. GDScript has no `virtual` keyword: any method can be overridden.
+- Code that only knows the base type (`Character` calls `_controller.get_input()`) automatically runs the subclass's version.
+
+**Inherited scenes** (`player/player.tscn`)
+- A scene can *inherit* another scene, like a Unity prefab variant. `player.tscn` starts from `characters/character.tscn` and adds a camera, the rifle and a controller; a change to the base (e.g. the capsule size) applies to the player and every bot.
+- In the editor: *Scene → New Inherited Scene*. Inherited nodes appear yellow-ish in the scene tree, and changed properties show a revert arrow.
+- In the `.tscn` file, the root node has `instance=ExtResource(...)` and no `type`.
