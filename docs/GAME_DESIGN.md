@@ -77,6 +77,7 @@ Starting physics values, CS:GO-like *(tune)*:
   - Inaccuracy grows with movement speed, jumping and sustained fire. Crouching reduces it.
   - Each automatic weapon has a fixed, learnable **spray pattern** plus a little random spread.
   - Recoil recovers over time once you stop shooting.
+  - **How recoil works in Chiip:** each shot's position in the spray pattern pushes it away from your aim. The view kicks by half of that (aim punch), so while spraying the bullets land above the crosshair and you pull down to compensate. After you stop, the pattern wears off at 12 shots per second (starting 0.15 s after the last shot): a 3-shot burst is gone in about 0.4 s, a full 30-shot spray in about 2.6 s. Checked: shots follow the pattern exactly (0.0000° off with random spread switched off).
   - Shots land at a random spot inside a cone around your aim. The distance from the center is uniform (as in CS), so on average shots land halfway out and most hit near the middle. Measured with 20 taps each: standing 0.057° average / 0.115° worst (cone 0.12°), running 2.5° / 4.4° (cone 4.6°).
 - **Damage by hit zone** (CS-like multipliers *(tune)*):
 

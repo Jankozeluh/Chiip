@@ -166,8 +166,10 @@ func _physics_process(delta: float) -> void:
 func _process(_delta: float) -> void:
 	# Position: where the head is drawn this frame (smoothed between physics ticks).
 	_camera.global_position = _head.get_global_transform_interpolated().origin
-	# Rotation: straight from the mouse, so looking around is instant.
-	_camera.global_rotation = Vector3(_pitch, _yaw, 0.0)
+	# Rotation: straight from the mouse, so looking around is instant, plus the
+	# weapon's recoil kick (which moves the view but not your aim).
+	var punch := weapon.view_punch
+	_camera.global_rotation = Vector3(_pitch + deg_to_rad(punch.y), _yaw - deg_to_rad(punch.x), 0.0)
 
 
 ## Where shots start from: the eyes, as of this physics tick.

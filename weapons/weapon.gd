@@ -21,6 +21,8 @@ signal hit_landed(hit: Dictionary)
 const RELOAD_SOUND_STEPS: Array[float] = [0.1, 0.6, 0.85]
 ## Below this fraction of top speed you count as standing still (CS: about 34%).
 const ACCURATE_SPEED_FRACTION := 0.34
+## How quickly the view follows the recoil kick (higher = snappier).
+const VIEW_PUNCH_SMOOTHING := 30.0
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
@@ -39,6 +41,9 @@ var rng := RandomNumberGenerator.new()
 ## The most recent bullet hit: [code]position[/code], [code]distance[/code] (metres),
 ## [code]zone[/code] (hit zone name, or "" for the world) and [code]damage[/code].
 var last_hit: Dictionary = {}
+## How far recoil currently kicks the view, in degrees (x = right, y = up).
+## The player adds it to the camera; it doesn't change where you aim.
+var view_punch: Vector2 = Vector2.ZERO
 
 var _wielder: Player
 ## Seconds until the next shot is allowed.
@@ -47,8 +52,12 @@ var _cooldown: float = 0.0
 var _reload_time_left: float = 0.0
 ## True once the trigger has been let go since the last shot or empty click.
 var _trigger_released: bool = true
-## Shots fired in the current spray.
-var _spray_shots: int = 0
+## How far into the spray pattern the next shot is (0 = first shot). Goes up
+## by 1 per shot and wears off again once you stop firing, so short pauses
+## partly reset the pattern, as in CS.
+var _spray_position: float = 0.0
+## Seconds since the last shot.
+var _time_since_shot: float = 0.0
 ## Bullet holes this weapon made, oldest first.
 var _impacts: Array[Node3D] = []
 
@@ -80,7 +89,13 @@ func get_inaccuracy() -> float:
 	inaccuracy += data.moving_inaccuracy * move_fraction
 	if not _wielder.is_on_floor():
 		inaccuracy += data.air_inaccuracy
+	inaccuracy += minf(_spray_position * data.spray_inaccuracy_per_shot, data.max_spray_inaccuracy)
 	return inaccuracy
+
+
+## The number the next shot would have within the current spray (1 = first shot).
+func get_spray_shot() -> int:
+	return floori(_spray_position) + 1
 
 
 ## True while a reload is in progress.
@@ -100,17 +115,35 @@ func _physics_process(delta: float) -> void:
 	if _wielder == null:
 		return
 	_cooldown -= delta
+	_time_since_shot += delta
 	if is_reloading():
 		_update_reload(delta)
 	elif trigger_held:
 		_try_fire()
 	if not trigger_held:
 		_trigger_released = true
-		_spray_shots = 0
 		if magazine == 0:
 			reload()  # Auto-reload once you let go of an empty gun, like CS.
+	_recover_recoil(delta)
 	# A negative cooldown only carries over between back-to-back shots, which keeps the fire rate exact.
 	_cooldown = maxf(_cooldown, 0.0)
+
+
+func _process(delta: float) -> void:
+	if data == null:
+		return
+	# The view kicks toward where the next shot would go, by view_punch_fraction
+	# of the pattern, and follows smoothly instead of jumping.
+	var target := data.get_spray_offset(_spray_position) * data.view_punch_fraction
+	view_punch = view_punch.lerp(target, 1.0 - exp(-VIEW_PUNCH_SMOOTHING * delta))
+
+
+## Lets the spray pattern wear off once you stop firing. While firing
+## continuously the gap between shots stays below 1.5 shot intervals, so a
+## full-auto spray follows the pattern exactly.
+func _recover_recoil(delta: float) -> void:
+	if _time_since_shot > data.get_shot_interval() * 1.5:
+		_spray_position = maxf(_spray_position - data.recoil_recovery_rate * delta, 0.0)
 
 
 func _try_fire() -> void:
@@ -131,23 +164,31 @@ func _try_fire() -> void:
 
 func _fire() -> void:
 	magazine -= 1
-	_spray_shots += 1
+	var spray_shot := get_spray_shot()
 	_shot_audio.play()
 	_shoot_bullet(_get_shot_direction())
-	fired.emit(_spray_shots)
+	_spray_position += 1.0
+	_time_since_shot = 0.0
+	fired.emit(spray_shot)
 	ammo_changed.emit(magazine, reserve)
 
 
-## The direction this shot travels: your aim plus random spread.
+## The direction this shot travels: your aim, pushed by the spray pattern,
+## plus random spread.
 func _get_shot_direction() -> Vector3:
 	var aim := _wielder.get_aim_angles()
-	# Random spread: pick a random direction around the aim and a random
+	# Recoil: the pattern says where this shot goes relative to your aim.
+	# x is right (a smaller yaw), y is up (a bigger pitch).
+	var recoil := data.get_spray_offset(_spray_position)
+	var yaw := aim.x - deg_to_rad(recoil.x)
+	var pitch := aim.y + deg_to_rad(recoil.y)
+	# Random spread: pick a random direction around that point and a random
 	# distance up to the inaccuracy. As in CS, the distance is uniform, so
 	# most shots land near the middle of the cone.
 	var spread_direction := rng.randf() * TAU
 	var spread := deg_to_rad(get_inaccuracy()) * rng.randf()
-	var yaw := aim.x + cos(spread_direction) * spread
-	var pitch := aim.y + sin(spread_direction) * spread
+	yaw += cos(spread_direction) * spread
+	pitch += sin(spread_direction) * spread
 	return _direction_from_angles(yaw, pitch)
 
 

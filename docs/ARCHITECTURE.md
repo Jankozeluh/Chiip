@@ -71,7 +71,7 @@ Chiip/
 |---|---|---|---|
 | Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
 | Debug overlay | Speed and position readout | M1 | Built |
-| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy |
+| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |
@@ -112,6 +112,7 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 - R calls `weapon.reload()`. The weapon sets the player's top speed (`Player.get_max_speed()`).
 - The click that recaptures the mouse, and clicks while the mouse is free, never fire.
 - Shots start at `Player.get_eye_position()` and use `Player.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the player's own body.
+- Recoil has two parts. `Weapon._get_shot_direction()` adds the spray pattern offset to the aim. `Weapon.view_punch` (half the pattern, smoothed every frame) is added to the camera rotation in `Player._process`. The aim itself never changes, so the view returns to it as recoil wears off.
 - Bullet holes are parented to whatever was hit, so they move with moving targets. Each weapon keeps its last 100.
 
 ## Physics layers
