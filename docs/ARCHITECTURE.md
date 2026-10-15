@@ -60,7 +60,7 @@ Chiip/
 | File | What it is |
 |---|---|
 | `main.tscn` + `main.gd` | Root (main) scene. `get_map()`, `change_map(path)` (console), `restart_match()` (reloads the current map in the current mode: the match-end screen's Play again). Loads the map from `map_scene` (default `maps/test_map.tscn`, or `-- --map <scene>` on the command line), puts it in the world viewport, adds the game rules and hands its `Player` to the HUD and overlay, and the round manager (if the rules are a match) to the match-end screen, which hides again whenever a map loads. Game rules by `mode` (`Mode.MATCH` by default, `-- --practice` for `Mode.PRACTICE`): a `RoundManager` with `match_settings` on maps with navigation and both team spawn groups, else an `ArenaRules` on maps with navigation, else none. Maps hold only the level; the rules node is added as a child of the map, named after its class. In a match it also turns on `PlayerController.spectating_enabled` and connects the controller's `view_target_changed` to the HUD (`_set_up_spectating()`). The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD, debug overlay and match-end screen sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
-| `shaders/palette_limit.gdshader` | Optional retro color limit for the world image: 12 shades per channel with 4 × 4 ordered (Bayer) dithering. Drawn by a full-screen `ColorRect` in `World/SubViewport/PaletteEffect`, switched by `Main.palette_effect` |
+| `shaders/palette_limit.gdshader` | Optional retro color limit for the world image: 16 shades per channel with 4 × 4 ordered (Bayer) dithering. Drawn by a full-screen `ColorRect` in `World/SubViewport/PaletteEffect`, switched by `Main.palette_effect` |
 | `ui/dev_console.tscn` + `.gd` | `DevConsole` (key left of 1): commands `help`, `clear`, `bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick`, `bot_difficulty`, `god`, `noclip`, `mp_friendlyfire [0|1]`, `map`; history with ↑/↓. `DevConsole.is_open` (static) makes the player's controls ignore input. `run(text)` runs a command from code. Lives in `main.tscn` (not an autoload) |
 | `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
 | `assets/environments/cool_daylight.tres` | The shared `Environment`: blue sky with a grey-blue horizon, ambient light, cool haze, tonemapping and color adjustments (D-031) |
@@ -105,7 +105,7 @@ Chiip/
 | `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
 | `tools/export_trenchbroom_config.gd` | Writes Chiip's TrenchBroom game configuration (GameConfig.cfg, icon, FGD) into TrenchBroom's games folder |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
-| `assets/materials/*.tres` | One `StandardMaterial3D` per texture: world triplanar mapping at Quake's density (64 px = 64 units = 1.63 m, `uv1_scale` 0.6152), nearest-with-mipmaps filtering, matte (roughness 1, specular 0.2) |
+| `assets/materials/*.tres` | One `StandardMaterial3D` per texture: world triplanar mapping at Quake's density (64 px = 64 units = 1.63 m, `uv1_scale` 0.6152), nearest filtering with mipmaps and anisotropic filtering (sharp at grazing angles), matte (roughness 1, specular 0.2) |
 | `assets/textures/*.png` | Retro textures, 64 × 64, 16 colors, made from ambientCG CC0 photos (list and settings in `docs/CREDITS.md`) |
 | `assets/fonts/Silkscreen-*.ttf` | Pixel font: the project's default UI font (*Project Settings → GUI → Theme → Custom Font*) and the font of all 3D labels. Imported without antialiasing, hinting or subpixel positioning so pixels stay sharp |
 | `addons/func_godot/` | FuncGodot addon (enabled in *Project Settings → Plugins*): builds Godot scenes from TrenchBroom `.map` files |
@@ -177,8 +177,8 @@ TrenchBroom axes become Godot axes as (x, y, z) → (y, z, x), divided by 39.37.
 
 ```
 Main (Node, main.gd)
-├── World (SubViewportContainer: stretch on, shrink = window height / 360, nearest filter)
-│   └── SubViewport (640 × 360 in a 720p window)
+├── World (SubViewportContainer: stretch on, shrink = window height / 480 rounded, nearest filter)
+│   └── SubViewport (853 × 480 on a 1440p screen, 640 × 360 in a 720p window)
 │       ├── TestMap (map + Player)
 │       └── PaletteEffect (CanvasLayer, optional full-screen color limit)
 ├── HUD (CanvasLayer)

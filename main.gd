@@ -32,8 +32,10 @@ const UI_DESIGN_HEIGHT := 720.0
 ## The rules of a match: team sizes, bot skill, length, friendly fire.
 @export var match_settings: MatchSettings = MatchSettings.new()
 ## Height of the world image in pixels; the width follows the window's shape.
-## 360 gives 640 × 360 in a 16:9 window.
-@export var pixel_height: int = 360
+## 480 gives 853 × 480 in a 16:9 window. Pixels are scaled by whole numbers, so
+## the real height is the closest whole fraction of the window: 480 on a
+## 1440-pixel screen (3 × 3 pixels), 540 on 1080, 360 on 720 (D-048).
+@export var pixel_height: int = 480
 ## Pixelate the HUD too, by rendering the whole window at the low resolution.
 @export var pixelate_hud: bool = false
 ## Limit the world's colors with the retro palette effect (shaders/palette_limit.gdshader).

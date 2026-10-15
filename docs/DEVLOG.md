@@ -2,6 +2,14 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Look tweak: less pixelation and blur
+
+**Done**
+- You asked for less blur and pixelation. Before/after screenshots at 1440 pixels tall (your monitor) found the main blur in mipmapped floor textures, then dither grain and fog haze.
+- The world now renders at 480 lines (3 × 3 pixels on your monitor, was 4 × 4). Textures got anisotropic filtering. The palette effect uses 16 shades with lighter dithering, and the fog is lighter (D-048).
+
+**Next:** Check the look in-game. Every value is in one place if it needs another step: `Main.pixel_height`, the palette shader's `levels` and `dither_strength`, and the environment's fog density.
+
 ## 2026-10-15 — Session 10: M5 rounds & game flow
 
 **Done**

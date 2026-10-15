@@ -204,10 +204,10 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 
 The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 
-- Low internal render resolution, upscaled crisply so pixels stay sharp.
-- Pixelated textures with nearest-neighbor filtering, so no smoothing.
+- Low internal render resolution (480 lines), upscaled crisply so pixels stay sharp (D-027, D-048).
+- Pixelated textures with nearest-neighbor filtering, so no smoothing. Anisotropic filtering keeps floors sharp into the distance.
 - Simple geometry: blocky architecture and low-poly models.
-- World image limited to 12 shades per color channel with ordered dithering (D-030).
+- World image limited to 16 shades per color channel with light ordered dithering (D-030, D-048).
 - Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Baked lightmaps are being evaluated in M3.
 - **Clarity rule:** enemies must always stand out from the background.
 

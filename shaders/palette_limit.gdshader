@@ -7,9 +7,9 @@ shader_type canvas_item;
 
 uniform sampler2D screen_texture : hint_screen_texture, filter_nearest;
 // Shades per color channel (8-bit color has 256).
-uniform float levels = 12.0;
+uniform float levels = 16.0;
 // How much dithering mixes neighbouring shades (0 = hard bands).
-uniform float dither_strength : hint_range(0.0, 1.0) = 0.6;
+uniform float dither_strength : hint_range(0.0, 1.0) = 0.35;
 
 // 4 × 4 Bayer matrix: a fixed pattern of thresholds that repeats across the screen.
 const float BAYER[16] = float[16](
