@@ -8,8 +8,10 @@ extends Resource
 @export var display_name: String = "normal"
 
 @export_group("Reaction")
-## Seconds between first seeing an enemy and the first shot. Humans: about 0.2–0.4.
-@export var reaction_time: float = 0.3
+## Multiplies how long it takes to notice an enemy in view (see [BotSenses]); higher = slower.
+@export var notice_time_scale: float = 1.0
+## Seconds between noticing an enemy and the first shot. Humans: about 0.2–0.4.
+@export var reaction_time: float = 0.45
 
 @export_group("Aim")
 ## How fast the bot can turn its view while fighting, in degrees per second.

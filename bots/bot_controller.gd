@@ -16,17 +16,26 @@ extends CharacterController
 
 enum State { PATROL, ENGAGE, SEARCH }
 
-## How fast the bot turns its view while walking, in degrees per second.
-const WALK_TURN_SPEED := 360.0
+## The fastest the bot turns its view while walking, in degrees per second.
+const WALK_TURN_SPEED := 200.0
+## How quickly the view eases toward where the bot wants to look (per second).
+## Turning eases in and out like a hand on a mouse, instead of snapping at a
+## constant speed. Small corrections are gentle, so moving targets are harder.
+const TURN_RESPONSIVENESS := 7.0
 ## How close the aim must be to where the bot wants it before it pulls the trigger, in degrees.
 const ON_TARGET_DEGREES := 2.5
 ## How long the bot looks around after reaching the last known position, in seconds.
-const LOOK_AROUND_TIME := 2.0
+const LOOK_AROUND_TIME := 2.4
+## How far the bot looks to each side while looking around, in degrees.
+const LOOK_AROUND_DEGREES := 55.0
 ## Group of Marker3D nodes on the map that bots patrol between.
 const PATROL_GROUP := "patrol_points"
 
 ## How well this bot fights.
 @export var difficulty: BotDifficulty = preload("res://bots/difficulty_normal.tres")
+## Stay put and watch the current direction instead of patrolling, like a CS
+## player holding an angle. The bot still fights and searches.
+@export var hold_position: bool = false
 
 ## What the bot is doing right now. Read-only for other scripts.
 var state: State = State.PATROL
@@ -52,6 +61,8 @@ var _shots_in_burst: int = 0
 var _pause_left: float = 0.0
 ## Seconds spent looking around at the end of a search.
 var _look_around_left: float = 0.0
+## The direction the bot faced on arriving at the last known position; it looks to either side of it.
+var _look_around_yaw: float = NAN
 ## Randomness for aim error and decisions. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
 
@@ -105,6 +116,7 @@ func get_input(delta: float) -> CharacterInput:
 
 
 func _update_state() -> void:
+	_senses.notice_time_scale = difficulty.notice_time_scale
 	if _senses.visible_enemy != null:
 		if state != State.ENGAGE or _senses.visible_enemy != _target:
 			_start_engaging(_senses.visible_enemy)
@@ -115,6 +127,7 @@ func _update_state() -> void:
 		_target = null
 		move_to(_senses.last_known_position)
 		_look_around_left = LOOK_AROUND_TIME
+		_look_around_yaw = NAN
 	elif state == State.SEARCH and not _senses.has_lead():
 		state = State.PATROL
 		_pick_patrol_point()
@@ -141,6 +154,8 @@ func _start_engaging(enemy: Character) -> void:
 
 
 func _patrol(input: CharacterInput, delta: float) -> void:
+	if hold_position:
+		return
 	if has_arrived():
 		_pick_patrol_point()
 	_walk(input, delta, true)
@@ -152,8 +167,13 @@ func _search(input: CharacterInput, delta: float) -> void:
 		_walk(input, delta, false)
 		_turn_toward_point(_senses.last_known_position + Vector3.UP * 1.5, WALK_TURN_SPEED, delta)
 		return
+	# Arrived: check left, then right, then straight ahead, like a player clearing an area.
+	if is_nan(_look_around_yaw):
+		_look_around_yaw = _yaw
 	_look_around_left -= delta
-	_yaw += deg_to_rad(90.0) * delta
+	var progress := 1.0 - _look_around_left / LOOK_AROUND_TIME
+	var side := -1.0 if progress < 0.33 else (1.0 if progress < 0.66 else 0.0)
+	_turn_toward(_look_around_yaw + deg_to_rad(LOOK_AROUND_DEGREES) * side, 0.0, WALK_TURN_SPEED, delta)
 	if _look_around_left <= 0.0:
 		_senses.forget()
 
@@ -242,11 +262,14 @@ func _turn_toward_point(point: Vector3, speed: float, delta: float) -> void:
 	_turn_toward(atan2(-to_point.x, -to_point.z), asin(to_point.normalized().y), speed, delta)
 
 
-## Turns the view toward (yaw, pitch) by at most [param speed] degrees per second.
+## Eases the view toward (yaw, pitch): it covers a share of the remaining
+## angle each tick (TURN_RESPONSIVENESS), but never faster than [param speed]
+## degrees per second.
 func _turn_toward(yaw: float, pitch: float, speed: float, delta: float) -> void:
+	var blend := 1.0 - exp(-TURN_RESPONSIVENESS * delta)
 	var max_step := deg_to_rad(speed) * delta
-	_yaw += clampf(angle_difference(_yaw, yaw), -max_step, max_step)
-	_pitch += clampf(pitch - _pitch, -max_step, max_step)
+	_yaw += clampf(angle_difference(_yaw, yaw) * blend, -max_step, max_step)
+	_pitch += clampf((pitch - _pitch) * blend, -max_step, max_step)
 
 
 ## The movement keys (as a CharacterInput.move vector) that walk in a world

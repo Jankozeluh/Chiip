@@ -5,15 +5,16 @@
 [resource]
 script = ExtResource("difficulty_script")
 display_name = "normal"
-reaction_time = 0.3
-aim_turn_speed = 300.0
-initial_aim_error = 5.0
-aim_settle_time = 0.6
-minimum_aim_error = 0.9
-headshot_chance = 0.3
-recoil_control = 0.55
+notice_time_scale = 1.0
+reaction_time = 0.45
+aim_turn_speed = 220.0
+initial_aim_error = 8.0
+aim_settle_time = 0.9
+minimum_aim_error = 1.1
+headshot_chance = 0.15
+recoil_control = 0.5
 counter_strafes = true
 burst_distance = 15.0
 burst_length = 2
-spray_length = 10
-burst_pause = 0.35
+spray_length = 6
+burst_pause = 0.45

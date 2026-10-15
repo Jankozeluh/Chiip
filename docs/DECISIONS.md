@@ -278,7 +278,7 @@
 
 **Checked:** seen in the open; not seen behind a crate, behind the bot or behind a wall; heard when running behind it; not heard when walking or crouch-walking.
 
-## D-036 — How bots fight (2026-10-15)
+## D-036 — How bots fight (2026-10-15) — *values retuned in D-037*
 
 **Decision:** Bots fight through the same commands as the player, with human limits:
 - a reaction time before the first shot;
@@ -292,6 +292,39 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 **Why:** Fair bots (design pillar 4) that reward CS skills: moving, peeking and spraying well beat them.
 
 **Found while tuning:** a fixed leftover aim error made some bots miss a standing target with all 30 rounds (the offset always pointed the same way, off the head). The wobble fixes it. Normal's minimum error was raised from 0.6° to 0.9° so it misses sometimes.
+
+## D-037 — Bot tuning after the M4 playtest (2026-10-15)
+
+**Decision:**
+- Bots notice enemies gradually: one must stay in view for 0.25 s + 1 s per 35 m, 2.5× longer outside the central 50° of vision, scaled per difficulty. Sight range drops from 80 m to 60 m.
+- Reaction time is counted from noticing.
+- Turning eases in and out (no constant-speed snapping), with a lower turn-speed cap.
+- Aim is less precise on every difficulty (see GAME_DESIGN.md, 4.4).
+- Searching looks left, right and ahead instead of spinning on the spot.
+- Getting shot tells a bot where the shooter is.
+- Bots can hold a position (`hold_position`) instead of patrolling.
+
+**Why:** In your playtest the bots "killed me without a chance", "aimed instantly" and turned unnaturally. Spotting you instantly at any distance and range of view was the main cause.
+
+**Result (measured):**
+- Normal needs ~0.95 s from seeing you at 10 m to its first shot (was 0.3 s).
+- Killing a standing player at 10 m takes Easy / Normal / Hard about 4.3 / 2–4 / 1.1–1.5 s.
+
+## D-038 — Sound is gameplay information: clear and symmetric (2026-10-15)
+
+**Decision:**
+- New, brighter footstep sound (36% of its energy in the high range, was 1%).
+- Your own footsteps at −7 dB (was −16).
+- Enemy footsteps at +2 dB, loud out to 10 m, fading out at 30 m.
+- Enemy gunshots carry to 120 m.
+
+**Why:** Your feedback that sound must be clear because it should feel like multiplayer. As in CS, footsteps tell you where enemies are and whether you're being loud. Hearing is kept symmetric: you hear bots about as far as they hear you (25 m).
+
+## D-039 — Procedural walk animation as a placeholder (2026-10-15)
+
+**Decision:** The blocky soldier gets hip and shoulder joints, and `SoldierBody` swings legs and arms and bobs the body in time with the footsteps, all computed in code. Hit zones move with the limbs.
+
+**Why:** The bots "glided". Real animated character models need their own milestone (see the plan). This placeholder costs little and removes the worst problem now.
 
 ## Open questions
 

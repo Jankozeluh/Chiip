@@ -29,6 +29,14 @@
 
 **Decisions:** D-034 to D-036 in [DECISIONS.md](DECISIONS.md).
 
+**Playtest 1 feedback:** bots killed you without a chance and aimed instantly, they glided, turned unnaturally, and sounds (your own included) weren't clear enough. Changes:
+- Gradual noticing, slower reaction and less precise aim, so you have about a second at 10 m against Normal (D-037).
+- Eased turning and left/right search sweeps instead of spinning.
+- A procedural walk cycle with hip and shoulder joints (D-039).
+- A brighter footstep sound, your own steps much louder, and enemy steps and shots clearer and symmetric with bot hearing (D-038).
+- Bot tests updated: holding an angle, a new noticing check, and "Normal wins within 5 s". All 45 checks pass. Visual check: bots now stride.
+- You asked when it gets properly animated (not in the roadmap yet; asked where to put it) and asked to use cheaper models where possible (routing guide added to CLAUDE.md).
+
 **Next:** You playtest M4: fight the 2 bots on the test map (console: `bot_add hard`, `bot_difficulty easy`, `god`, …) and tell me how fair and fun they feel. Then we tune, close M4 and plan M5 (rounds, menus, settings).
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned

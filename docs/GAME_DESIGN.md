@@ -137,14 +137,20 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 
   | | Easy | Normal | Hard |
   |---|---|---|---|
-  | Reaction time | 0.45 s | 0.3 s | 0.18 s |
-  | Aim error (start → smallest wobble) | 6° → 1.2° | 5° → 0.9° | 2.5° → 0.4° |
-  | Headshot chance | 10% | 30% | 60% |
-  | Recoil control | 20% | 55% | 85% |
+  | Noticing speed | 1.5× slower | baseline | 0.7× |
+  | Reaction time (after noticing) | 0.6 s | 0.45 s | 0.3 s |
+  | Max turn speed | 150°/s | 220°/s | 320°/s |
+  | Aim error (start → smallest wobble) | 10° → 2° | 8° → 1.1° | 5° → 0.8° |
+  | Headshot chance | 5% | 15% | 35% |
+  | Recoil control | 10% | 50% | 65% |
   | Counter-strafes before shooting | no | yes | yes |
 
-  Measured against a player standing still at 10 m (3 runs each): first shot after ~0.45 / ~0.3 / ~0.17 s, kill after ~1.45 / 0.6–1.2 / ~0.35 s. Easy sometimes empties a magazine for one hit. A moving target is much harder for them.
-- **States:** patrol → engage (enemy visible) → search (walk to the last known position, look around) → patrol. Hearing you run makes a patrolling bot come and check.
+  *Noticing*: an enemy must stay in view for a moment before a bot reacts: 0.25 s + 1 s per 35 m, 2.5× longer outside the central 50° of its vision (D-037). Measured for Normal: 0.50 s at 10 m straight ahead, 1.31 s at 40 m, 1.11 s at 10 m at the edge of vision.
+
+  Measured against a player standing still at 10 m with the bot holding an angle (3 runs each, after the M4 playtest tuning): first shot after ~1.4 / ~0.95 / ~0.6 s, kill after ~4.3 / 2–4 / 1.1–1.5 s. A moving target is much harder for them.
+- **States:** patrol → engage (enemy noticed) → search (walk to the last known position, look left, right and ahead) → patrol. Hearing you run, or being shot, makes a bot come and check. A bot can also *hold* a position (watch one direction) instead of patrolling.
+- **Turning** eases in and out like a hand on a mouse (no constant-speed snapping), so tracking a moving target lags a little.
+- **Animation:** procedural walk cycle (legs swing from the hips, arms a little, the body bobs), a placeholder until real animated models (D-039).
 
 ### 4.5 Rounds and match
 
@@ -169,6 +175,11 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 ### 4.8 Audio
 
 In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots must be directional and easy to read. They are retro-styled but clear.
+
+- **Your own footsteps** are clearly audible (−7 dB), so you always know when you're making noise.
+- **Enemy footsteps** are loud and directional and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
+- **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
+- Walking (Shift) and crouch-walking are silent for everyone.
 
 ## 5. Look and feel
 

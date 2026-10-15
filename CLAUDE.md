@@ -30,6 +30,19 @@ Update the "Last updated" date on every document you change.
 - Once git is set up in M1, commit after each finished task, with the message prefixed by the milestone, e.g. `M1: Add crouching`.
 - Use third-party assets only if their license allows it, and record each one in docs/CREDITS.md. Ask the user before every download (file, source, size). Downloads go to the scratchpad, each in its own folder; only processed results go into the project.
 
+## Choosing a model (keep token cost down)
+
+The user wants cheaper models used wherever they do the job just as well:
+
+| Model | Use for | Chiip examples |
+|---|---|---|
+| Haiku | Mechanical work with a clear spec | Running the test suites and reporting pass/fail, searching code, running the texture/sound/navmesh/map tools, filling docs and devlog from a list of changes, renames, repetitive scene edits |
+| Sonnet | Well-defined features | Menus and settings UI, console commands, HUD layouts, tool scripts, new weapons from a stats table |
+| Opus | Design, tricky debugging, tuning by feel | Architecture, movement and physics feel, bot AI, netcode (M8), decisions with trade-offs |
+
+- Delegate mechanical subtasks to a subagent with `model: "haiku"` (or Sonnet), giving it a complete brief, and keep design work in the main session.
+- Start a fresh session for each milestone: long conversations re-read their whole history every step. This file and the docs exist so a new session can pick up the project without the old conversation.
+
 ## Code conventions
 
 See docs/ARCHITECTURE.md. In short: Godot style guide naming, static typing everywhere, feature folders, and tunable values as `@export` variables or Resources.

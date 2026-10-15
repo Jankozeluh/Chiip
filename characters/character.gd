@@ -123,10 +123,8 @@ var _hull_height_difference: float = 0.0
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
-## The visible body with its hit zones (characters/soldier_body.tscn).
-@onready var body: Node3D = $Body
-## Head, chest, stomach and arms: they sink when crouching, as in CS.
-@onready var _upper_body: Node3D = $Body/Upper
+## The visible body with its hit zones and walk animation (characters/soldier_body.tscn).
+@onready var body: SoldierBody = $Body
 @onready var _footstep_audio: AudioStreamPlayer = $FootstepAudio
 @onready var _footstep_audio_3d: AudioStreamPlayer3D = $FootstepAudio3D
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
@@ -320,8 +318,7 @@ func respawn(at: Vector3, yaw: float) -> void:
 	_set_crouch_hull(false)
 	_eye_height = stand_eye_height
 	head.position.y = _eye_height
-	_upper_body.position.y = 0.0
-	body.rotation = Vector3.ZERO
+	body.reset_pose()
 	collision_layer = _alive_collision_layer
 	for hitbox in _hitboxes:
 		hitbox.collision_layer = PhysicsLayers.HITBOXES
@@ -455,7 +452,10 @@ func _update_crouch(on_ground: bool, delta: float) -> void:
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
 	head.position.y = _eye_height
 	if is_alive():
-		_upper_body.position.y = _eye_height - stand_eye_height
+		# Head, chest, stomach and arms sink when crouching (as in CS), and the
+		# limbs swing with walking speed.
+		var speed := Vector2(velocity.x, velocity.z).length()
+		body.update_pose(speed, get_max_speed(), _eye_height - stand_eye_height, on_ground, delta)
 
 
 func _crouch(on_ground: bool) -> void:

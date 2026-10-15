@@ -4,9 +4,10 @@ extends Node3D
 ##     Godot --headless --path . --fixed-fps 128 res://tests/bot_test.tscn
 ##
 ## Builds an open floor with one wall, bakes a navigation mesh for it, and puts
-## bots against a player that stands still (no keyboard input). Checks walking,
-## vision, hearing, reaction time, never shooting through walls, that bots
-## can win, that difficulty matters, and dying. Random numbers are seeded, so
+## bots against a player that stands still (no keyboard input). Bots hold their
+## position (like holding an angle) except in the walking check. Checks walking,
+## vision, gradual noticing, hearing, reaction time, never shooting through
+## walls, that bots can win, that difficulty matters, and dying. Random numbers are seeded, so
 ## every run gives the same results. Quits with the number of failed checks as
 ## the exit code (0 means everything passed).
 
@@ -37,6 +38,7 @@ func _ready() -> void:
 func _run_all() -> void:
 	await _test_walks_to_a_point()
 	await _test_vision()
+	await _test_noticing_takes_time()
 	await _test_hearing()
 	await _test_reaction_time()
 	await _test_no_shooting_through_walls()
@@ -53,7 +55,7 @@ func _test_walks_to_a_point() -> void:
 	add_child(goal)
 	# Hide the player behind the wall, so the bot only walks and doesn't stop to fight.
 	await _place_player(Vector3(0, 0, WALL_Z - 5.0))
-	var bot := await _add_bot(Vector3(-20, 0, 20), Vector3(0, 1.6, 20), "normal", 1)
+	var bot := await _add_bot(Vector3(-20, 0, 20), Vector3(0, 1.6, 20), "normal", 1, false)
 	var ticks := 0
 	var miss := INF
 	while ticks < 128 * 15:
@@ -73,23 +75,46 @@ func _test_vision() -> void:
 	var bot := await _add_bot(Vector3(0, 0, 10), Vector3(0, 1.6, 0), "normal", 1)
 	var senses := _senses(bot)
 	_player.god_mode = true
-	await _wait_seconds(0.3)
-	_check("Sees the player in the open, in front", senses.visible_enemy == _player, "10 m away, facing the player")
+	await _wait_seconds(1.0)
+	_check("Notices the player in the open, in front", senses.visible_enemy == _player, "10 m away, facing the player, after 1 s")
 	await _remove(bot)
 
 	bot = await _add_bot(Vector3(0, 0, 10), Vector3(0, 1.6, 30), "normal", 1)
 	senses = _senses(bot)
-	await _wait_seconds(0.3)
+	await _wait_seconds(1.0)
 	_check("Doesn't see the player behind its back", senses.visible_enemy == null, "facing away")
 	await _remove(bot)
 
 	await _place_player(Vector3(0, 0, WALL_Z - 5.0))
 	bot = await _add_bot(Vector3(0, 0, WALL_Z + 10.0), Vector3(0, 1.6, WALL_Z - 5.0), "normal", 1)
 	senses = _senses(bot)
-	await _wait_seconds(0.3)
+	await _wait_seconds(1.0)
 	_check("Doesn't see the player behind a wall", senses.visible_enemy == null, "facing the wall, player 5 m behind it")
 	await _remove(bot)
 	_player.god_mode = false
+
+
+func _test_noticing_takes_time() -> void:
+	_player.god_mode = true
+	var times := {}
+	for case in [["10 m, straight ahead", Vector3(0, 0, 10), Vector3(0, 1.6, 0)],
+			["40 m, straight ahead", Vector3(0, 0, 40), Vector3(0, 1.6, 0)],
+			["10 m, edge of vision", Vector3(0, 0, 10), Vector3(-9, 1.6, 2)]]:
+		await _place_player(Vector3(0, 0, 0))
+		var bot := await _add_bot(case[1], case[2], "normal", 1)
+		var senses := _senses(bot)
+		var ticks := 0
+		while senses.visible_enemy != _player and ticks < 128 * 6:
+			await get_tree().physics_frame
+			ticks += 1
+		times[case[0]] = ticks / 128.0
+		await _remove(bot)
+	_player.god_mode = false
+	var near: float = times["10 m, straight ahead"]
+	var far: float = times["40 m, straight ahead"]
+	var side: float = times["10 m, edge of vision"]
+	_check("Noticing takes longer far away and at the edge of vision", near < far and near < side and near >= 0.25,
+			"Normal bot notices: 10 m ahead %.2f s, 40 m ahead %.2f s, 10 m at the edge %.2f s" % [near, far, side])
 
 
 func _test_hearing() -> void:
@@ -150,10 +175,10 @@ func _test_normal_bot_wins() -> void:
 	var details: PackedStringArray = []
 	for seed in [1, 2, 3]:
 		var seconds := await _duel("normal", seed)
-		if seconds <= 3.0:
+		if seconds <= 5.0:
 			kills += 1
 		details.append("%.2f s" % seconds if seconds < INF else "no kill")
-	_check("A Normal bot kills a standing player at 10 m within 3 s (most runs)", kills >= 2,
+	_check("A Normal bot kills a standing player at 10 m within 5 s (most runs)", kills >= 2,
 			"seeds 1–3: %s" % ", ".join(details))
 
 
@@ -197,13 +222,16 @@ func _duel(level: String, seed: int) -> float:
 	return seconds
 
 
-func _add_bot(spot: Vector3, look_at_point: Vector3, level: String, seed: int) -> Character:
+## Adds a bot at [param spot] looking at [param look_at_point]. With [param hold]
+## it stays put and watches (like holding an angle) instead of patrolling.
+func _add_bot(spot: Vector3, look_at_point: Vector3, level: String, seed: int, hold: bool = true) -> Character:
 	var bot: Character = BOT_SCENE.instantiate()
 	bot.position = spot
 	_silence(bot)
 	var brain: BotController = bot.get_node("BotController")
 	brain.difficulty = load("res://bots/difficulty_%s.tres" % level)
 	brain.rng.seed = seed
+	brain.hold_position = hold
 	bot.weapon.rng.seed = seed
 	add_child(bot)
 	await _wait_ticks(2)

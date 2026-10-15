@@ -260,3 +260,9 @@
 - Input events go through `_input()` first, then the UI (Controls such as a `LineEdit` text field), then `_unhandled_input()`. The console catches its own key in `_input()` and calls `get_viewport().set_input_as_handled()`, so the key doesn't also type a character or reach the game.
 - `LineEdit` is a one-line text box; its `text_submitted` signal fires on Enter.
 - A `Dictionary` of `Callable`s maps command names to functions, so adding a command is one `register_command()` line.
+
+**Procedural animation** (`characters/soldier_body.gd`)
+- Animation doesn't have to come from animation files. Rotating a *pivot* node (a `Node3D` at the hip) swings everything under it, the leg mesh and its hit zone, like a joint. `sin(phase)` gives a back-and-forth swing, and `phase` advances with distance walked, so the legs keep time with the footsteps. Unity would use an Animator; this is the code-only equivalent for placeholders.
+
+**Smoothing toward a target** (`BotController._turn_toward`)
+- `value += (target - value) * (1 - exp(-rate * delta))` covers a share of the remaining distance each tick: fast when far, gentle when close, and the same at any tick rate. Capping the step adds a maximum speed. It feels much more human than moving at a constant speed.

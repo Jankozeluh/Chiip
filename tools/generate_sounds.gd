@@ -44,18 +44,23 @@ func _gunshot(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	return _finish(samples)
 
 
-## A footstep on grit: a short low thud plus a crunchy burst of filtered noise.
+## A footstep on grit: a bright heel scuff, a quieter toe scuff 25 ms later,
+## and a short mid-range tap. Mostly mid and high frequencies, so it carries
+## on laptop speakers as well as headphones.
 func _footstep(rng: RandomNumberGenerator) -> PackedFloat32Array:
-	var samples := _silence(0.14)
+	var samples := _silence(0.12)
 	var low_pass := 0.0
-	var thud_pitch := rng.randf_range(70.0, 95.0)
+	var tap_pitch := rng.randf_range(170.0, 240.0)
+	var toe_delay := rng.randf_range(0.02, 0.03)
 	for i in samples.size():
 		var t := float(i) / MIX_RATE
 		var noise := rng.randf_range(-1.0, 1.0)
-		low_pass += (noise - low_pass) * 0.35
-		var crunch := low_pass * exp(-t * 45.0) * (0.6 + 0.4 * rng.randf())
-		var thud := sin(TAU * thud_pitch * t) * exp(-t * 35.0)
-		samples[i] = crunch * 0.7 + thud * 0.9
+		low_pass += (noise - low_pass) * 0.25
+		var bright := noise - low_pass  # high-passed: the gritty part
+		var heel := bright * exp(-t * 60.0)
+		var toe := bright * exp(-(t - toe_delay) * 70.0) * 0.6 if t >= toe_delay else 0.0
+		var tap := sin(TAU * tap_pitch * t) * exp(-t * 45.0)
+		samples[i] = heel + toe + tap * 0.5
 	return _finish(samples)
 
 
