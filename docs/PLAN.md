@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M1 — Project setup & movement (not started, waiting for plan review)
+> **Current milestone:** M1 — Project setup & movement (in progress)
 
 ## How this plan works
 
@@ -17,7 +17,7 @@
 | # | Milestone | Status | What you can play at the end |
 |---|---|---|---|
 | M0 | Plan & documentation | ✅ | Nothing yet. This plan and the docs exist |
-| M1 | Project setup & movement | ⬜ | Run, walk, crouch and jump around a test map |
+| M1 | Project setup & movement | 🟨 | Run, walk, crouch and jump around a test map |
 | M2 | Shooting | ⬜ | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ⬜ | The test map looks like a 90s shooter |
 | M4 | Bots | ⬜ | Bots hunt you and shoot back |
@@ -35,13 +35,13 @@
 - [x] Create the project folder and the documentation structure
 - [x] Write the README, game design, plan, architecture, decision log, devlog and learning notes
 
-## M1 — Project setup & movement ⬜
+## M1 — Project setup & movement 🟨
 
 **Goal:** a first-person player that moves like in CS, on a simple test map.
 
-- [ ] Create the Godot project in this folder (`project.godot`) and the folder structure from [ARCHITECTURE.md](ARCHITECTURE.md)
-- [ ] Set up git with a Godot `.gitignore` and make the first commit
-- [ ] Decide the renderer and physics tick rate (see open questions)
+- [x] Create the Godot project in this folder (`project.godot`) and the folder structure from [ARCHITECTURE.md](ARCHITECTURE.md)
+- [x] Set up git with a Godot `.gitignore` and make the first commit
+- [x] Decide the renderer and physics tick rate (see open questions)
 - [ ] Define input actions (move, jump, crouch, walk, …) in the Input Map
 - [ ] Build a test map from simple blocks: floor, walls, boxes, ramps, stairs
 - [ ] Player scene: `CharacterBody3D` with a collision capsule and a camera

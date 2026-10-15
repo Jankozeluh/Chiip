@@ -1,0 +1,8 @@
+# Godot 4 cache and import data (rebuilt automatically by the editor)
+.godot/
+
+# Exported builds
+/builds/
+
+# macOS
+.DS_Store

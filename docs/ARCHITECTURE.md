@@ -2,13 +2,25 @@
 
 > How the project is organized and which rules the code follows. Updated whenever a folder, system or convention is added.
 >
-> Last updated: 2026-10-15. This is the planned structure; no code exists yet.
+> Last updated: 2026-10-15. The Godot project exists; the folders below are created, systems are added milestone by milestone.
 
 ## Engine
 
 - Godot 4.7.2, standard edition, scripted in GDScript.
-- Renderer: to be decided in M1 (see [DECISIONS.md](DECISIONS.md)).
 - Units: 1 Godot unit = 1 metre. Godot's Y axis points up and "forward" is −Z.
+
+## Key project settings
+
+Stored in `project.godot`. The reasons are in [DECISIONS.md](DECISIONS.md).
+
+| Setting | Value | Decision |
+|---|---|---|
+| Renderer | Forward+ | D-008 |
+| 3D physics engine | Jolt Physics | D-009 |
+| Physics ticks per second | 128 | D-010 |
+| Physics interpolation | On (jitter fix 0) | D-010 |
+| Default gravity | 20.32 m/s² (CS `sv_gravity 800`) | D-011 |
+| Window size | 1280 × 720 | — |
 
 ## Folder structure (planned)
 

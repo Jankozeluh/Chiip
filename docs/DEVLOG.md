@@ -2,6 +2,13 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 2: M1 project setup & movement
+
+**Done**
+- Started git. The first commit holds the M0 planning docs.
+- Created the Godot project (`project.godot`, icon, `.gitignore`, `.gitattributes`) and the folder structure from ARCHITECTURE.md. Empty folders contain a `.gitkeep` file so git tracks them.
+- Engine settings: Forward+ renderer, Jolt physics, 128 ticks per second with physics interpolation, CS gravity (D-008 to D-011).
+
 ## 2026-10-15 — Session 1: Choosing the game
 
 **Done**
