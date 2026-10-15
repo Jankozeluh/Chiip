@@ -42,7 +42,7 @@
 - [x] Create the Godot project in this folder (`project.godot`) and the folder structure from [ARCHITECTURE.md](ARCHITECTURE.md)
 - [x] Set up git with a Godot `.gitignore` and make the first commit
 - [x] Decide the renderer and physics tick rate (see open questions)
-- [ ] Define input actions (move, jump, crouch, walk, …) in the Input Map
+- [x] Define input actions (move, jump, crouch, walk, …) in the Input Map
 - [ ] Build a test map from simple blocks: floor, walls, boxes, ramps, stairs
 - [ ] Player scene: `CharacterBody3D` with a collision capsule and a camera
 - [ ] Mouse look with a captured cursor, using CS's sensitivity formula so your CS sensitivity carries over

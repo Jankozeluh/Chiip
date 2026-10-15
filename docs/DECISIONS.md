@@ -88,6 +88,14 @@
 
 **Why:** CS movement and jump heights are tuned for this gravity. Setting it project-wide means everything that falls (players, grenades, ragdolls) uses the same value. Real-world gravity is 9.8 m/s², but CS has always felt "heavier" than reality.
 
+## D-012 — Keys are bound by physical position (2026-10-15)
+
+**Decision:** All keyboard bindings use *physical* keycodes, meaning the position of the key, not the letter printed on it. Jump is also bound to mouse wheel down, as many CS players do.
+
+**Why:** The user has a Czech QWERTZ keyboard, where Y and Z are swapped and the number row types `ěščřžýáíé`. With physical keycodes, WASD and the number keys (weapon slots from M2) stay in the same place on any layout.
+
+**Alternatives:** Letter-based keycodes, which would break on non-US layouts.
+
 ## Open questions
 
 | Question | Decide in |

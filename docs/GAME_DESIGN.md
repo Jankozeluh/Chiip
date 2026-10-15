@@ -132,7 +132,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Move | W A S D |
 | Look | Mouse |
 | Shoot / scope | Left mouse / right mouse |
-| Jump | Space |
+| Jump | Space or mouse wheel down |
 | Crouch | Ctrl |
 | Walk (silent) | Shift |
 | Reload | R |
@@ -141,8 +141,10 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Buy menu | B |
 | Scoreboard | Tab |
 | Developer console | ` (backtick / tilde key) |
+| Free / capture the mouse | Esc / click |
+| Debug overlay | F3 |
 
-All keys will be rebindable. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
+Keys are bound by physical position, so they stay in the same place on any keyboard layout (e.g. Czech QWERTZ). All keys will be rebindable. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
 
 ## 7. Settings that matter to CS players
 

@@ -64,6 +64,20 @@ Chiip/
 | Economy | Money, rewards, buy menu | M6 | Planned |
 | Bomb | Plant, defuse, explosion | M7 | Planned |
 
+## Input actions
+
+Defined in *Project → Project Settings → Input Map* (stored in `project.godot`). Keys are bound by physical position (D-012). Code only uses action names, never raw keys.
+
+| Action | Default binding | Used by |
+|---|---|---|
+| `move_forward` / `move_back` / `move_left` / `move_right` | W / S / A / D | Player |
+| `jump` | Space, mouse wheel down | Player |
+| `crouch` | Ctrl | Player |
+| `walk` | Shift | Player |
+| `shoot` / `aim` | Left / right mouse button | Debug overlay now, weapons from M2 |
+| `toggle_mouse` | Esc | Player (frees or captures the mouse) |
+| `toggle_debug` | F3 | Debug overlay |
+
 ## Physics layers (planned, finalized in M2)
 
 | Layer | Name | Used by |
