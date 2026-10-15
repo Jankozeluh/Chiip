@@ -164,6 +164,20 @@ Automated checks run without a window in about a second each:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 200000 res://tests/class_test.tscn
 ```
 
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/zone_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
+```
+
+To see the frame rate with ten animated characters, run the performance test in a window (it prints FPS after 15 s):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip --resolution 1920x1080 --quit-after 100000 res://tests/perf_test.tscn -- --window
+```
+
 ## Documentation
 
 All design, planning and technical notes live in [`docs/`](docs/):

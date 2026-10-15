@@ -51,7 +51,11 @@
 - 3 new crew checks (49 in all): every class's weapon holds that class's arms with the gun and muzzle flash on their weapon bone; the sleeves wear the team colour and hidden arms don't animate; a shot plays the kick clip and a reload the reload clip at the weapon's reload speed. The class check that expected no arms yet (task 8) now requires each class's own arms.
 - Also merged: a second session had made concept sheets in parallel (31f9a75), which you had approved too. Shown both line-ups, you chose this session's version; the merge keeps it and records the other in D-070.
 
-**Next:** Task 10, performance and the animated hit-zone checks.
+- **Task 10, performance and tests.** New `tests/perf_test.tscn`: a seeded bots-only 5v5 on the test map with 8-second rounds, so respawns fall into the measured 20 s. Headless, a physics tick costs 0.42 ms on average (99th percentile 0.51 ms, worst 0.57 ms) against a budget of 7.8 ms; switching off the ten animation trees saves only 0.09 ms. With `-- --window` it also measures the frame rate: 60 FPS every second at 1920 × 1080, which is the display's refresh rate (macOS paces windowed Metal to it even with V-Sync off), with the CPU working 1.6 ms of each 16.7 ms frame. The engine's own time monitors only update once a second, so the test times each tick itself.
+- New `tests/zone_test.tscn` (24 checks, every class): while running, all 15 zones stay exactly on their bones (worst error 0.00 mm, no tick of lag; the bones move up to 65 mm a tick); the shins swing 0.6 m and stand still within 9 mm; aiming up 60° raises the hands 0.18–0.65 m and tilts the head zone 50°; crouching lowers the head zone 0.43 m; rays at a strafing body's shins and head hit legs and head every tick.
+- All 10 suites pass: movement 13, weapon 20, bot 16, round 74, tactics 4, ui 35, crew 49, class 57, zone 24, perf 3. M6 is built and waits for your playtest (checklist under "Your open checks" in PLAN.md).
+
+**Next:** Your M6 playtest. Then M7 (arsenal, perks & economy) builds on the classes: the perks switch on, and each weapon brings its own models from the generator.
 
 ## 2026-10-15 — Crew concept sheets (M6 task 1, done early in another session)
 
