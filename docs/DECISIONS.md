@@ -441,6 +441,17 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** 540 lines, which on a 1440-pixel screen can't scale by whole pixels and gives uneven pixel sizes; turning mipmaps off, which makes distant floors shimmer when you move.
 
+## D-049 — Three quick maps and a respawn mode, like Call of Duty (2026-10-15)
+
+**Decision:**
+- **M8 builds three maps,** not one, in a rotation. They're small and fast like CoD's: about 40–60 m across, three lanes with connections, first contact within 5–10 s of spawning, and short sightlines.
+- **M8 adds a team respawn mode** next to the bomb rounds, like CoD's Team Deathmatch: respawn about 3 s after dying, away from enemies, first to a kill limit or most kills after 10 minutes. Every map works in both modes.
+- M8 is renamed **"Modes & 3 quick maps"**. Multiplayer (M9) starts with all three maps.
+
+**Why:** You want a map rotation of three, and quick maps with a lot of action, more like Call of Duty. Small maps alone speed up the rounds; a respawn mode gives non-stop action. Today's Practice arena already works that way.
+
+**Alternatives:** One map in M8 and two more in their own milestone, or after multiplayer (multiplayer sooner, with fewer maps). Rounds only, with all the action coming from the small maps. The respawn mode as the main mode.
+
 ## Open questions
 
 | Question | Decide in |

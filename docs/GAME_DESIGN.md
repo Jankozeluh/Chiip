@@ -177,6 +177,10 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 - **How a match ends:** when a team wins its 5th (10th, 15th) round, the usual round-end pause still plays so you see how that round was won. Then everyone is frozen and the **end screen** opens over the scene with the mouse free: "Victory" or "Defeat" for your team, the final score ("yours - theirs", your number blue, theirs red), and a scoreboard with your team first (blue) and the enemy team below (red): one row per player with kills, deaths, assists and damage, best first (kills, then damage), your own row highlighted. Buttons: **Play again** (a fresh match on the same map) and **Quit**; the main menu (M5 task 11) replaces Quit.
 - **Spawns:** each side has five spawn points at its own end of the map. On the test map the defenders start at the north end behind the peek walls and the attackers at the south end of the range, 112 m apart.
 - Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive. With it off, bullets pass through teammates (as in CS), so a teammate walking through your spray doesn't block it.
+- **Modes** (D-049):
+  - **Rounds** (today's mode): one life per round, the bomb objective from M8. Like CS, or CoD's Search & Destroy.
+  - **Team respawn** (M8): like CoD's Team Deathmatch. You respawn about 3 s after dying, at a spawn point away from enemies. The first team to the kill limit wins (*tune*: 30 kills at 3v3), or the team with more kills after 10 minutes.
+- **Maps** (D-049): three small, fast maps in rotation (M8), built for action like CoD's maps rather than CS's long ones. About 40–60 m across, with three lanes and connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map has two bomb sites and spawn zones, so it works in both modes.
 
 ### 4.6 Economy
 

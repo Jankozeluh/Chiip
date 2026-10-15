@@ -32,7 +32,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M5 | Rounds & game flow | 🟨 | Full matches against bots, with teammates, menus and settings |
 | M6 | Characters & animation | ⬜ | Soldiers that run, crouch, aim, reload and die with real animations; your own arms and rifle on screen |
 | M7 | Economy & arsenal | ⬜ | Earn money and buy weapons between rounds |
-| M8 | Bomb mode & first real map | ⬜ | A complete plant/defuse match on a real map |
+| M8 | Modes & 3 quick maps | ⬜ | Bomb rounds and team respawn matches on three small, fast maps in rotation |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
 | — | Backlog | — | Ideas for later |
 
@@ -245,20 +245,24 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** inheritance vs. composition in Godot, particle systems, more advanced UI.
 
-## M8 — Bomb mode & first real map ⬜
+## M8 — Modes & 3 quick maps ⬜
 
-**Goal:** CS's full objective mode on a proper map.
+**Goal:** fast, action-packed maps like Call of Duty's, three of them in rotation, playable in two modes: CS-style bomb rounds and a team respawn mode (D-049).
 
-- [ ] Sketch, then build, the first real map with two bombsites, in TrenchBroom (D-032)
-- [ ] Baked lighting (lightmaps) for the real map, moved from M3, and a decision on baked vs. real-time lighting
-- [ ] Bomb: carry, plant, timer, explosion, defuse (faster with a kit)
-- [ ] Bots play the objective: attack a site, plant, rotate, defuse
+- [ ] **Map rules:** small and fast: about 40–60 m across, three lanes with connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map works in both modes: two bomb sites plus spawn zones for respawning. Sketch all three on paper first
+- [ ] **Maps 1, 2 and 3** in TrenchBroom (D-032), each one blockout → bot test → detail: navmesh, side spawns, bomb sites, bot attack routes and hold spots. Three distinct looks within the no-desert rule (D-031)
+- [ ] **Map rotation:** match setup picks a map or "Rotation"; after a match, "Next map" continues to the next one
+- [ ] Baked lighting (lightmaps) for the maps, moved from M3, and a decision on baked vs. real-time lighting
+- [ ] **Bomb:** carry, plant, timer, explosion, defuse (faster with a kit)
+- [ ] **Bots play the objective:** attack a site, plant, rotate, defuse
+- [ ] **Team respawn mode** (like CoD's Team Deathmatch): you respawn about 3 s after dying, at a spawn point away from enemies; the first team to a kill limit wins, or the team with most kills when the time runs out. Grows out of today's Practice arena
+- [ ] **Bots in the respawn mode:** hunt in small groups instead of attacking and holding
 - [ ] Full sound pass: weapons, footsteps on different surfaces, bomb beeps, UI
 - [ ] Performance check and the first exported macOS build
 
-**Done when:** you can play a full bomb-defusal match against bots on a real map, from an exported app.
+**Done when:** you can play both modes on all three maps against bots, the rotation moves from map to map, and it runs from an exported app.
 
-**You learn:** level design workflow in TrenchBroom, lightmap baking, `Area3D` triggers, audio buses, exporting a game.
+**You learn:** level design in TrenchBroom (lanes, sightlines, timing), lightmap baking, `Area3D` triggers, spawn selection, exporting a game.
 
 ## M9 — Multiplayer ⬜
 

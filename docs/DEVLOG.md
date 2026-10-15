@@ -2,11 +2,13 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
-## 2026-10-15 — Look tweak: less pixelation and blur
+## 2026-10-15 — Look tweak, and three quick maps
 
 **Done**
 - You asked for less blur and pixelation. Before/after screenshots at 1440 pixels tall (your monitor) found the main blur in mipmapped floor textures, then dither grain and fog haze.
 - The world now renders at 480 lines (3 × 3 pixels on your monitor, was 4 × 4). Textures got anisotropic filtering. The palette effect uses 16 shades with lighter dithering, and the fog is lighter (D-048).
+
+- You want a rotation of three quick, action-packed maps, more like Call of Duty. M8 is now "Modes & 3 quick maps": three small maps (40–60 m, three lanes, first contact within 5–10 s) and a team respawn mode next to the bomb rounds (D-049).
 
 **Next:** Check the look in-game. Every value is in one place if it needs another step: `Main.pixel_height`, the palette shader's `levels` and `dither_strength`, and the environment's fog density.
 
