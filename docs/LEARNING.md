@@ -220,7 +220,7 @@
 - In the editor: *Scene → New Inherited Scene*. Inherited nodes appear yellow-ish in the scene tree, and changed properties show a revert arrow.
 - In the `.tscn` file, the root node has `instance=ExtResource(...)` and no `type`.
 
-**Groups and material overrides** (`characters/soldier_body.tscn`, `Character._set_up_body`)
+**Groups and material overrides** (`characters/soldier_body.tscn`, `Character._set_up_body`; the soldier body was retired in M6, D-074)
 - A node can belong to named *groups* (`groups=["team_colored"]`), like Unity tags but a node can have many. `node.is_in_group("team_colored")` checks it; `get_tree().get_nodes_in_group(...)` finds them all.
 - `MeshInstance3D.material_override` replaces a mesh's material on just that instance, so every character can wear its own team color while sharing one mesh.
 - Hiding a node (`visible = false`) only affects drawing. Physics and areas keep working, which is how your own hit zones stay active while your body is invisible to you.
@@ -261,7 +261,7 @@
 - `LineEdit` is a one-line text box; its `text_submitted` signal fires on Enter.
 - A `Dictionary` of `Callable`s maps command names to functions, so adding a command is one `register_command()` line.
 
-**Procedural animation** (`characters/soldier_body.gd`)
+**Procedural animation** (`characters/soldier_body.gd`, retired in M6, D-074)
 - Animation doesn't have to come from animation files. Rotating a *pivot* node (a `Node3D` at the hip) swings everything under it, the leg mesh and its hit zone, like a joint. `sin(phase)` gives a back-and-forth swing, and `phase` advances with distance walked, so the legs keep time with the footsteps. Unity would use an Animator; this is the code-only equivalent for placeholders.
 
 **Smoothing toward a target** (`BotController._turn_toward`)
@@ -549,3 +549,62 @@
 
 **Audio buses that don't exist yet**
 - `AudioStreamPlayer3D.bus = &"Effects"` names a bus of the audio bus layout (Unity's Audio Mixer groups). If the layout has no such bus, the sound plays on *Master* instead, without an error, so a sound can be put on a bus before the settings task creates it.
+
+### M6 — Crew & animation
+
+**Importing a glTF model** (`assets/models/crew/rifleman.glb`)
+- Drop a `.glb` (binary glTF) into the project and Godot imports it into a scene, the way Unity imports an FBX into a model prefab. The import settings live in a `.import` file next to it (Unity keeps them in a `.meta` file). You can instance the result like any scene, but not edit its nodes in place: you either make an *inherited scene* from it or, as Chiip does, put it into your own scene and change things from code.
+- glTF is the format Godot prefers (FBX needs a converter). It can reference textures as separate files: Godot then uses the project's own imported PNG, with that PNG's import settings. Chiip's generated textures are imported lossless with `detect_3d/compress_to=0`; otherwise Godot switches a texture to lossy VRAM compression the first time it sees it on a 3D model, and the palette would smear.
+- glTF faces +Z by convention, Godot's forward is −Z. Chiip's generator writes its models facing −Z, so they need no turning.
+
+**`Skeleton3D`: bones are not nodes**
+- In Unity a rig is a hierarchy of Transforms and a `SkinnedMeshRenderer` points at them. In Godot the whole rig is *one* `Skeleton3D` node holding a list of bones (name, parent, rest pose, current pose), and the skinned `MeshInstance3D` is its child. You find a bone with `find_bone("hand_r")` and read its pose with `get_bone_global_pose()`. Godot may order the bones differently from the file, so always look them up by name.
+- Each bone's *rest* is its pose in the file (Chiip's T-pose); animations set the *pose* on top of it.
+
+**A `--script` can load and inspect any scene**
+- A script that `extends SceneTree` (run with `--script`) can `load()` an imported model, `instantiate()` it and walk its nodes, which is a quick way to check what an importer built without opening the editor.
+
+**Godot's shading language** (`characters/crew/crew.gdshader`)
+- A Godot shader is one `.gdshader` text file, written in a GLSL-like language, with no wrapper around it: `shader_type spatial;` on the first line says it is a 3D surface shader (`canvas_item` is the 2D one, like the palette effect). Unity has ShaderLab around HLSL, with `Properties`, `SubShader` and `Pass` blocks and `#pragma` lines; Godot has none of that. The engine supplies the lighting, so you don't write passes: you fill in built-in outputs in a `fragment()` function (`ALBEDO`, `EMISSION`, `ROUGHNESS`, `SPECULAR`, `METALLIC`, ...), which is what a Unity *surface shader* does with `SurfaceOutputStandard`. `UV` and the textures' `texture(sampler, UV)` work as expected.
+- Anything declared `uniform` at the top becomes a property of the material, shown in the Inspector (Unity's `Properties` block, but declared in the same line as the variable). *Hints* after the colon say how to treat it: `source_color` marks a texture or a vec4 as an sRGB colour, so Godot converts it to linear light for the maths (Unity does this for you with the sRGB flag on a texture, and a `[HDR]` or colour property); `filter_nearest_mipmap_anisotropic` and `repeat_disable` pick the sampling (Chiip's pixel look: nearest neighbour, but mipmaps and anisotropic filtering so far-away textures don't shimmer). A texture that holds data rather than colour (the team mask) gets no `source_color`.
+- A `ShaderMaterial` is the shader plus the values of its uniforms (Unity: a Material). In code, `material.set_shader_parameter("name", value)`. `const` values (like `TEAM_BASE`) are baked into the shader and can't change.
+
+**Per-instance shader parameters** (`instance uniform`, `set_instance_shader_parameter`)
+- Unity has a trap here: setting a colour on `renderer.material` makes a copy of the material for that one renderer, and the `MaterialPropertyBlock` is the way to give one renderer its own value while sharing the material. Godot's version is built into the shader: declare `instance uniform vec4 team_color : source_color = ...;` and set it per mesh with `mesh_instance.set_instance_shader_parameter("team_color", color)` (read it back with `get_instance_shader_parameter()`). The material stays shared, so ten soldiers use one material and can still be blue and red.
+- Instance uniforms live on the `GeometryInstance3D` (a mesh, multimesh, ...), not on the material, so `CrewBody` keeps the wanted colour in a variable and sets it on every mesh of the model when it builds the model in `_ready()`, and again whenever `set_team_color()` is called. Use them for a few values that differ per object, like this colour; the shared material keeps everything else.
+
+**`BoneAttachment3D`: a node that follows a bone** (`characters/crew/crew_body.gd`)
+- In Unity you make a GameObject a child of a bone's Transform and it follows the bone, because every bone *is* a Transform. In Godot bones aren't nodes (see `Skeleton3D` above), so there is nothing to parent to. A `BoneAttachment3D` is the stand-in: a node you add as a child of the `Skeleton3D`, with `bone_name` set to a bone. Every time the skeleton updates its pose, the attachment copies that bone's global pose, and everything under the attachment moves with it (Unity: a weapon socket, or a hitbox object on the hand bone). Chiip's hit zones are `Hitbox` areas under `BoneAttachment3D` nodes, so they follow the animated body instead of a fixed box.
+- The skeleton updates its bones at the end of the frame, after the code that changed a pose has run, so a zone's position lags a pose change by up to one physics tick. A test that moves a bone waits a frame (and can call `skeleton.force_update_all_bone_transforms()`) before reading where the zones went. `skeleton.set_bone_pose_rotation(bone, quaternion)` and `set_bone_pose_position()` are the calls that pose a bone by hand (what an animation would do each frame); the bone's *rest* stays untouched.
+
+**Adding nodes to an instanced imported scene at runtime** (`CrewBody._build_hit_zones`)
+- An imported `.glb` is a scene you can `instantiate()`, but its nodes aren't meant to be edited in the editor, so extra nodes can't be saved into it. Code adds them after instancing: `CrewBody._ready()` instances the model, finds its `Skeleton3D` with `find_children("*", "Skeleton3D", true, false)` and adds the attachments to it (Unity: instantiating a model prefab and adding components to its children in `Awake`). Nodes made with `Hitbox.new()` and `CollisionShape3D.new()` have no scene file; they need a name (`node.name = ...`) and must be added with `add_child()` after their own children are set up. The same code builds every class's zones from a `HitZones` resource, so a new class needs no scene editing.
+- A parent's `_ready()` runs after its children's, so the body (a child of `Character`) has built its zones by the time `Character._set_up_body()` looks for them with `find_children`.
+
+**Animations from a glTF file** (`assets/models/crew/rifleman.glb`)
+- A glTF file can carry animations, and Godot imports them into an `AnimationPlayer` in the model's scene (Unity puts them into the model's import as animation clips). Each clip has one track per bone; a bone track is written `Skeleton3D:hips`, the node path and the bone name. `get_animation_list()` lists the clips and `play("run_f")` plays one, which is what the crew preview does with N and P.
+- glTF has no "loop" flag. Godot's importer loops an animation whose name ends in `-loop` (or `-cycle`) and removes the suffix, so the generator names `run_f` as `run_f-loop` in the file. The same setting is in the editor: double-click the `.glb`, *Animation* tab, *Loop Mode* (Unity: the model importer's *Animation* tab, *Loop Time*).
+
+**`AnimationTree`: Godot's Animator** (`characters/crew/crew_animation_tree.tres`, `crew_body.gd`)
+- An `AnimationTree` plays the clips of an `AnimationPlayer` through a graph, like Unity's Animator controller. Its root here is an `AnimationNodeBlendTree`: nodes wired into each other, ending in `output`. Each node's settings live in *parameters* on the tree, set from code: `tree.set("parameters/Stand/blend_position", Vector2(...))`, like `animator.SetFloat()`.
+- **Blend spaces**: `AnimationNodeBlendSpace2D` blends clips placed at points of a 2D space (here velocity: x right, y forward), Unity's 2D blend tree; `AnimationNodeBlendSpace1D` along one axis (the aim pitch). `sync = true` keeps all clips advancing together so legs stay in step.
+- **Filters** are Unity's avatar masks: a node with `filter_enabled` only affects the listed tracks (`Skeleton3D:spine`...). The `Upper` Blend2 takes spine, chest, head and arms from the aim blend and everything else from the legs.
+- **One-shots** (`AnimationNodeOneShot`) play a clip once on top, when you set `parameters/Fire/request` to `ONE_SHOT_REQUEST_FIRE`, like a trigger parameter. With `mix_mode = MIX_MODE_ADD` the clip is *added* (Unity's additive layer), so a recoil kick works at any aim pitch. Additive clips hold differences from a base pose.
+- **Transitions** (`AnimationNodeTransition`) switch between inputs by name (`transition_request = "headshot"`), with a cross-fade. Gotcha: a new Transition has no current state and outputs *nothing*, so the model stays in its rest pose; request a first state when you build the tree.
+- `callback_mode_process = PHYSICS` runs the tree on physics ticks (Unity's Animator *Update Mode: Animate Physics*), and a `Skeleton3D`'s `modifier_callback_mode_process` does the same for the skeleton.
+
+**Swapping a model at runtime** (`CrewBody.set_class()`)
+- To change what a node shows while the game runs, take the old child out and put a new one in. In Unity you would `Destroy(oldGameObject)` and `Instantiate(newPrefab, parent)`. In Godot the two steps are `remove_child(old)` and `old.queue_free()`, then `add_child(new)`.
+- `queue_free()` (Unity's `Destroy`) deletes the node at the end of the frame; `free()` (Unity's `DestroyImmediate`) deletes it on the spot. Swapping with `queue_free()` is the safe choice: the old hit zones can still be in the middle of announcing a hit (a signal handler is running because of them), and an object freed during its own signal would crash the game. The old node and its children are still valid objects for the rest of the frame, but they are out of the tree, so they no longer take part in physics.
+- `remove_child()` is not optional. A node queued for freeing is still in the tree until the frame ends, so the new model could not be named `Model` too (Godot would rename it `@Model@2`), and `find_children` would still find the old hit zones. Taking it out first also stops the old zones from being hit during that frame.
+- Anything that kept a reference to the old nodes (the body's lists of meshes and hit zones, the animation tree, the muzzle flash) must let go of them before the new model is built. Signals connected *to* the body or the character stay as they are, because those two nodes are not replaced; the signals of the old hit zones are disconnected by hand.
+
+**A Resource as a data file with a static registry** (`characters/crew/class_data.gd`, `classes/*.tres`)
+- A class that `extends Resource` and has `@export` variables is a data type, like `WeaponData` (Unity: a `ScriptableObject`). Each `.tres` file is one saved instance. Here there is one per crew class, with its texts, numbers, the model (a `PackedScene`) and the hit zones (another Resource) as references to other files; in a hand-written `.tres`, those are `[ext_resource]` lines at the top.
+- A *static registry* is a `static func` on the resource class that knows where the instances are: `ClassData.all()` loads the four files from a constant list of paths, `ClassData.find(id)` looks one up. Unity would use a `ScriptableObject` list or `Resources.LoadAll`. It uses `load()` and not `preload()` because the `.tres` files refer back to the script: a `preload` of them from inside the script would be a circle. `load()` runs when called, and Godot caches the result, so every call gives the same objects (that is why `class_data == other_class_data` works as a comparison).
+- The perk values are stored in the resource now and read by the M7 code later, so they can be tuned in the Inspector without touching a script.
+- A property with a setter on a Node (`Character.class_data`) runs before `_ready()` when a scene is loaded or a script sets it before `add_child`. Code that needs the children (the body) must check `is_node_ready()` first, as `Character.team` does.
+
+**Playing clips from code, and moving a node to another parent** (`weapons/weapon.gd`)
+- `AnimationPlayer.play("fp_fire", blend, speed)` plays a clip (with a short cross-fade and a speed factor, here to stretch the reload to the weapon's reload time), `seek(0.0, true)` restarts it when the same clip is already playing, and `queue("fp_idle")` plays the idle clip once it ends: Unity's `Animator.Play()` and a transition back, without a state machine. Setting `active = false` stops a player from doing any work, which the hidden arms of every bot use.
+- `node.reparent(new_parent)` moves a node to another parent in one call (Unity: `transform.SetParent()`); with `keep_global_transform = false` it keeps its *local* position instead. The muzzle flash moves onto the gun's bone attachment this way, so it follows the gun's kick and reload.

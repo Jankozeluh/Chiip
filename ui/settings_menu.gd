@@ -37,7 +37,8 @@ signal closed
 const ACTION_NAMES := {
 	&"move_forward": "Move forward", &"move_back": "Move back", &"move_left": "Move left",
 	&"move_right": "Move right", &"jump": "Jump", &"crouch": "Crouch", &"walk": "Walk (silent)",
-	&"shoot": "Shoot", &"aim": "Aim", &"reload": "Reload", &"scoreboard": "Scoreboard (hold)",
+	&"shoot": "Shoot", &"aim": "Aim", &"reload": "Reload", &"use": "Plant / defuse (hold)",
+	&"scoreboard": "Scoreboard (hold)", &"class_menu": "Class menu",
 	&"toggle_debug": "Debug overlay", &"toggle_console": "Console",
 }
 ## The crosshair colors offered as swatches: name and color (the opacity is kept).

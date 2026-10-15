@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ClassData" format=3]
+
+[ext_resource type="Script" path="res://characters/crew/class_data.gd" id="class_script"]
+[ext_resource type="PackedScene" path="res://assets/models/crew/marksman.glb" id="model"]
+[ext_resource type="Resource" path="res://assets/models/crew/marksman_hit_zones.tres" id="hit_zones"]
+[ext_resource type="PackedScene" path="res://assets/models/crew/marksman_arms.glb" id="arms_model"]
+
+[resource]
+script = ExtResource("class_script")
+id = &"marksman"
+display_name = "Marksman"
+role = "Lanky, in a long coat: the long-range pick"
+height = 1.88
+model = ExtResource("model")
+hit_zones = ExtResource("hit_zones")
+arms_model = ExtResource("arms_model")
+signature_weapon = "Sniper rifle"
+look = "Knee-length moss-grey coat with team-colour sleeves, a team panel across the back and a hood, a team-colour scarf over the face, lean chest rig."
+perk_name = "Steady"
+perk_description = "Scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster."
+scoped_recovery_factor = 1.3
+scope_in_time_factor = 0.8

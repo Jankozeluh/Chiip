@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[sub_resource type="Gradient" id="flash_gradient"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 0.95, 0.7, 1, 1, 0.6, 0.15, 0.8, 1, 0.4, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="flash_texture"]
+gradient = SubResource("flash_gradient")
+width = 16
+height = 16
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="flash_material"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_texture = SubResource("flash_texture")
+texture_filter = 0
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="flash_mesh"]
+material = SubResource("flash_material")
+size = Vector2(0.24, 0.24)
+
+[node name="GunFlash" type="Node3D"]
+visible = false
+
+[node name="Flash" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("flash_mesh")
+
+[node name="Light" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.7, 0.35, 1)
+light_energy = 1.5
+omni_range = 5.0

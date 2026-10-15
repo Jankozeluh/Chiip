@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ClassData" format=3]
+
+[ext_resource type="Script" path="res://characters/crew/class_data.gd" id="class_script"]
+[ext_resource type="PackedScene" path="res://assets/models/crew/rifleman.glb" id="model"]
+[ext_resource type="Resource" path="res://assets/models/crew/rifleman_hit_zones.tres" id="hit_zones"]
+[ext_resource type="PackedScene" path="res://assets/models/crew/rifleman_arms.glb" id="arms_model"]
+
+[resource]
+script = ExtResource("class_script")
+id = &"rifleman"
+display_name = "Rifleman"
+role = "Stocky and upright: the all-rounder"
+height = 1.82
+model = ExtResource("model")
+hit_zones = ExtResource("hit_zones")
+arms_model = ExtResource("arms_model")
+signature_weapon = "AK-style rifle"
+look = "High-cut helmet with a team stripe, goggles, plate carrier with three mag pouches, sleeves in team colour, olive-grey trousers."
+perk_name = "Quick Hands"
+perk_description = "Reloads and weapon switches 15% faster."
+reload_time_factor = 0.85
+weapon_switch_time_factor = 0.85

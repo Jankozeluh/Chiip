@@ -69,7 +69,7 @@ const REFERENCE_ASPECT := 4.0 / 3.0
 ## The actions whose keys can be changed. Esc ([code]pause[/code]) is fixed.
 const BINDABLE_ACTIONS: Array[StringName] = [
 	&"move_forward", &"move_back", &"move_left", &"move_right", &"jump", &"crouch", &"walk",
-	&"shoot", &"aim", &"reload", &"scoreboard", &"toggle_debug", &"toggle_console",
+	&"shoot", &"aim", &"reload", &"use", &"scoreboard", &"class_menu", &"toggle_debug", &"toggle_console",
 ]
 
 ## Every setting: its section in the file, its default and its limits. The

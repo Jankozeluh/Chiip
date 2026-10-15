@@ -17,9 +17,10 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
    **Play** opens match setup: the size of your team and of the enemy team (1–5 each, you included in yours), the bots' difficulty (Easy, Normal, Hard), the match length (first to 5, 10 or 15 rounds), friendly fire and the map. The defaults are a 3v3 match, Normal bots, first to 5, friendly fire off, on the test map, and the game remembers your last choices. **Start** begins the match: you and your bot teammates (blue) against the bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
+   At the start of the match a class menu opens: pick Rifleman, Bulwark, Marksman or Scout (click a card, or press 1 to 4; Esc closes it). **M** opens it again during freeze time. For now the classes differ in looks and hit zones; the perks switch on in M7. Bots get a mix of classes.
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Main menu** buttons.
    **Esc** during a game opens the **pause menu**, which pauses everything (the round timer, the bots, the sounds): **Resume**, **Settings** and **Leave match** (back to the main menu). Esc again resumes.
-3. **Practice** in the main menu is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
+3. **Practice** in the main menu (or running with `-- --practice`, see below) is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
 
 **From the terminal**, without opening the editor (this opens the main menu):
 
@@ -68,12 +69,13 @@ To play a different map (also straight into the game, as a match where the map a
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
+| Class menu (opens by itself at the start of a match; during freeze time, any time in practice mode; then click a card or press 1 to 4) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 
 ## Settings
 
@@ -155,15 +157,47 @@ Every menu is styled by one Godot theme, `ui/chiip_theme.tres` (D-057). To see a
 
 The theme is generated from `tools/ui_palette.gd` (colors), `tools/generate_ui_icons.gd` (pixel-art icons in `assets/ui/`) and `tools/make_ui_theme.gd`. After changing one of them, run the three steps (the commands are in [CLAUDE.md](CLAUDE.md)): the icon tool, the asset import, then the theme tool.
 
+## Python tools
+
+The character concept art (and, from M6 task 2, the model generator) are Python scripts that run outside Godot. They use Miniconda with one environment named `chiip` (D-071). One-time setup, already done on this Mac:
+
+1. Download the Miniconda installer for macOS (Apple silicon: `Miniconda3-latest-MacOSX-arm64.sh`) from https://repo.anaconda.com/miniconda/.
+2. Install it without touching your shell profile: `bash Miniconda3-latest-MacOSX-arm64.sh -b -p ~/miniconda3`
+3. Create the environment: `~/miniconda3/bin/conda create -n chiip python=3.12 numpy pillow`
+
+Render the crew's concept sheets (line-up and 8-direction turnarounds in blue and red) into a folder outside the project:
+
+```bash
+~/miniconda3/envs/chiip/bin/python /Users/kozeluhj/Documents/Games/Chiip/tools/concept/spritegen.py --sheet --out ~/Desktop/chiip_concept
+```
+
+Leave out `--sheet` to render every animation frame and `preview.html`, a page where you can spin each class.
+
+The crew's 3D models are generated too (D-054). After changing `tools/modelgen/`, regenerate them and let Godot import them:
+
+```bash
+~/miniconda3/envs/chiip/bin/python /Users/kozeluhj/Documents/Games/Chiip/tools/modelgen/modelgen.py all
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --import
+```
+
+To look at them on a turntable (Space pauses, arrow keys turn, T switches between your team's blue and the enemies' red, N / P play the animations):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip res://characters/crew/crew_preview.tscn
+```
+
 ## Tests
 
-Run all the automated checks with one command (no window, about 30 seconds in all):
+Run all the automated checks with one command (no window, about a minute and a quarter in all):
 
 ```bash
 cd /Users/kozeluhj/Documents/Games/Chiip && bash tools/run_tests.sh
 ```
 
-It runs the eight suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the sixteen suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
@@ -223,6 +257,28 @@ The maps test plays bot rounds on all three quick maps and takes a minute or two
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 400000 res://tests/maps_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/crew_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 200000 res://tests/class_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/zone_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
+```
+
+To see the frame rate with ten animated characters, run the performance test in a window (it prints FPS after 15 s):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip --resolution 1920x1080 --quit-after 100000 res://tests/perf_test.tscn -- --window
 ```
 
 ## Documentation

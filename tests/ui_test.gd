@@ -406,10 +406,10 @@ func _test_console() -> void:
 	var scaled_size := output.get_theme_font_size("font_size")
 	var scaled_input := input.get_theme_font_size("font_size")
 	console.set_ui_scale(1.0)
-	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), 16 px at 1.0 and 24 px at 1.5, its panel 344 → 516 px minimum height",
+	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), 16 px at 1.0 and 24 px at 1.5, its panel 360 → 540 px minimum height (18 lines, D-065)",
 			panel.theme_type_variation == &"ConsolePanel" and style != null and style.border_color == _theme.get_color("accent", "Palette")
 					and not output.has_theme_font_size_override("font_size") and not panel.has_theme_stylebox_override("panel")
-					and base_size == 16 and scaled_size == 24 and scaled_input == 24 and panel.custom_minimum_size.y == 344.0
+					and base_size == 16 and scaled_size == 24 and scaled_input == 24 and panel.custom_minimum_size.y == 360.0
 					and (input.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == _theme.get_stylebox("normal", "LineEdit").bg_color,
 			"font %d → %d, input %d, panel minimum back at %.0f" % [base_size, scaled_size, scaled_input, panel.custom_minimum_size.y])
 	remove_child(console)
@@ -1017,6 +1017,8 @@ func _test_console_and_menus() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	await get_tree().physics_frame
+	_close_class_menu(main)
 	var console := main.get_node("DevConsole") as DevConsole
 	var menu := main.get_settings_menu() as SettingsMenu
 	console.set_open(true)
@@ -1491,6 +1493,7 @@ func _test_scene_flow() -> void:
 	await tree.process_frame
 	await tree.physics_frame
 	var game := tree.current_scene
+	_close_class_menu(game)
 	var rounds: RoundManager = game.get_map().get_node_or_null("RoundManager") if game != null and game.has_method("get_map") else null
 	_check("The real flow: Play, the chosen 2v4 / Easy / first to 10 and Start change the scene to the game, which plays exactly that (the menu is gone, and the choices were saved to the settings file)",
 			game != null and game.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(menu) and saved_file and rounds != null
@@ -1841,6 +1844,7 @@ func _test_pause_leaves_the_game() -> void:
 	if menu != null:
 		for character: Character in game.get_map().find_children("*", "Character", true, false):
 			_silence(character)
+		_close_class_menu(game)
 		_send(_key_event(KEY_ESCAPE))
 		_send(_key_event(KEY_ESCAPE, false))
 	var paused_in_game := menu != null and menu.is_open() and tree.paused
@@ -1967,6 +1971,14 @@ func _send(event: InputEvent) -> void:
 ## description with short timings), with every character silenced and the bots
 ## holding their ground, once the first frames have run. Sets [member _rounds]
 ## and [member _player].
+## Closes the class menu, which opens by itself in a match's first freeze time (M6, D-078), so a
+## test of another menu or of Esc starts with nothing open.
+func _close_class_menu(game: Node) -> void:
+	var class_menu := game.get_node_or_null("ClassMenu") as ClassMenu if game != null else null
+	if class_menu != null and class_menu.is_open():
+		class_menu.close()
+
+
 func _new_game(rounds_to_win: int = 5) -> Node:
 	# An earlier test's map would share the physics world with this game (the
 	# SubViewport has no world of its own), and its bots would shoot at ours.
@@ -1992,6 +2004,7 @@ func _new_game(rounds_to_win: int = 5) -> Node:
 		_silence(character)
 		if character != _player:
 			(character.get_node("BotController") as BotController).hold_position = true
+	_close_class_menu(main)
 	return main
 
 

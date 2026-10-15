@@ -73,9 +73,6 @@ func _ready() -> void:
 	# of following its parent, so mouse look has no physics-tick delay.
 	camera.top_level = true
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	# Hide your own body from your camera. Its hit zones still work, since
-	# hiding a node doesn't affect physics.
-	character.get_node("Body").visible = false
 	character.died.connect(_on_character_died)
 	Settings.get_instance().changed.connect(_on_setting_changed)
 	_apply_settings()
@@ -164,6 +161,18 @@ func on_respawned() -> void:
 	_set_view_target(null)
 	if character.weapon != null:
 		character.weapon.visible = true
+
+
+## Stops the character from shooting until [method unblock_shooting]: for a menu that opens over
+## the game (the class menu), so a click on it is not also a shot.
+func block_shooting() -> void:
+	_shooting_blocked = true
+
+
+## Lets the character shoot again after [method block_shooting]. If the fire button is held down
+## right now (the click that closed the menu), shooting stays blocked until it is released.
+func unblock_shooting() -> void:
+	_shooting_blocked = Input.is_action_pressed("shoot")
 
 
 ## The character whose eyes the camera shows: a teammate while you spectate,
@@ -279,20 +288,19 @@ func _find_next_teammate() -> Character:
 	return null
 
 
-## Points the camera at [param target], or back at yourself with null. Hides
-## what would block the view: the teammate's body and your own rifle (a child of
-## the camera); both are shown again when the view moves on. The teammate's
-## rifle stays: it hangs under their head at the same offset as your own
-## first-person rifle, so from their eyes it looks like their viewmodel, with
-## their muzzle flash and kick.
+## Points the camera at [param target], or back at yourself with null. The
+## teammate is shown first person ([method Character.set_first_person]): their
+## body is hidden and their rifle's viewmodel shows, with their muzzle flash and
+## kick, as it would on their screen. Your own rifle (a child of the camera) is
+## hidden meanwhile. Both are switched back when the view moves on.
 func _set_view_target(target: Character) -> void:
 	if target == _view_target:
 		return
 	if _view_target != null and is_instance_valid(_view_target):
-		_view_target.body.visible = true
+		_view_target.set_first_person(false)
 	_view_target = target
 	if target != null:
-		target.body.visible = false
+		target.set_first_person(true)
 	if character.weapon != null:
 		character.weapon.visible = target == null
 	view_target_changed.emit(get_view_target())

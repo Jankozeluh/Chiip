@@ -496,7 +496,7 @@ func _engage(input: CharacterInput, delta: float) -> void:
 
 	# Aim: where the target is, minus the recoil the bot pulls against, plus a
 	# human error that shrinks as the aim settles.
-	var aim_point := _target.get_eye_position() if _aiming_for_head else _target.get_visibility_points()[1]
+	var aim_point := _target.get_head_position() if _aiming_for_head else _target.get_chest_position()
 	var to_target := aim_point - character.get_eye_position()
 	var desired := Vector2(atan2(-to_target.x, -to_target.z), asin(to_target.normalized().y))
 	var recoil := character.weapon.data.get_spray_offset(maxf(character.weapon.get_spray_shot() - 1, 0))

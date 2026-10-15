@@ -33,6 +33,10 @@ extends Node
 ## the groups from [method Teams.spawn_group]; each team spawns at its side's
 ## end of the map.
 ##
+## Classes (D-052, D-078): the bots get a mix when the match starts, the player keeps their own
+## class (or [member MatchSettings.player_class]), and [method request_class] changes a class
+## during freeze time only.
+##
 ## This is authority code (docs/ARCHITECTURE.md, "Keeping multiplayer
 ## possible"): in M9 only the host runs it, and the clients show what it
 ## announces. Add it as a child of the map, with [member settings] set first.
@@ -62,6 +66,8 @@ signal match_ended(winner: int)
 ## Emitted for every death. [param killer] may be null; [param headshot] is
 ## true when the killing bullet hit the head.
 signal character_killed(victim: Character, killer: Character, headshot: bool)
+## Emitted when [method request_class] gave [param character] another class.
+signal class_changed(character: Character, data: ClassData)
 
 const BOT_SCENE := preload("res://bots/bot.tscn")
 const BOMB_SCENE := preload("res://bomb/bomb.tscn")
@@ -103,6 +109,10 @@ var rng := RandomNumberGenerator.new()
 ## [member MatchSettings.bomb_rounds] off): rounds are then won by elimination
 ## and time only.
 var bomb: Bomb
+
+## Randomness for the bots' class mix. It is seeded from [member rng] without drawing from it,
+## so the mix doesn't change the spawn spots and the starting sides a seed gives.
+var _class_rng := RandomNumberGenerator.new()
 
 ## The map's Player node (you), or null on a map without one (then team 0 is all bots).
 var _player: Character
@@ -191,19 +201,42 @@ func is_team_respawn() -> bool:
 	return false
 
 
+## Changes the class of [param character] to [param data], if the rules allow it: only during
+## freeze time (and before the first round has started). Returns true if the character now has
+## that class, false when refused (a live round, a round end, the end of the match) or when
+## there is nothing to change to. Emits [signal class_changed] when the class was another one.
+## The class menu and the console's [code]class[/code] command ask here; nobody sets
+## [member Character.class_data] of a player in a match directly (authority code, D-078).
+func request_class(character: Character, data: ClassData) -> bool:
+	if phase != Phase.FREEZE or data == null or not is_instance_valid(character):
+		return false
+	if character.class_data != data:
+		character.class_data = data
+		class_changed.emit(character, data)
+	return true
+
+
 # --- Match and round flow ---
 
 
 func _start_match() -> void:
 	Teams.friendly_fire = settings.friendly_fire
+	_class_rng.seed = rng.seed
+	var classes := ClassData.all()
+	# Each team's bots cycle through the classes from a random one, so three bots are three classes.
+	var class_offsets: Array[int] = []
+	for team in Teams.COUNT:
+		class_offsets.append(_class_rng.randi_range(0, classes.size() - 1))
 	var bots_on_player_team := settings.team_size
 	if _player != null:
+		if settings.player_class != null:
+			_player.class_data = settings.player_class
 		_join(_player)
 		bots_on_player_team -= 1
 	for i in bots_on_player_team:
-		_add_bot(player_team)
+		_add_bot(player_team, classes[(class_offsets[player_team] + i) % classes.size()])
 	for i in settings.enemy_team_size:
-		_add_bot(Teams.other(player_team))
+		_add_bot(Teams.other(player_team), classes[(class_offsets[Teams.other(player_team)] + i) % classes.size()])
 	attacking_team = rng.randi_range(0, Teams.COUNT - 1)
 	score.clear()
 	for team in Teams.COUNT:
@@ -371,11 +404,12 @@ func _on_bomb_defused(_defuser: Character) -> void:
 # --- Players ---
 
 
-func _add_bot(team: int) -> void:
+func _add_bot(team: int, data: ClassData) -> void:
 	var bot: Character = BOT_SCENE.instantiate()
 	_bots_made += 1
 	bot.name = "Bot%d" % _bots_made
 	bot.team = team
+	bot.class_data = data
 	(bot.get_node("BotController") as BotController).difficulty = settings.bot_difficulty
 	get_parent().add_child(bot)
 	_join(bot)

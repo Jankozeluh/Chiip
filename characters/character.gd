@@ -33,8 +33,6 @@ const UNITS_TO_METRES := 0.0254
 const STEP_DISTANCE := 1.8
 ## Where the eyes (and a player's camera) end up after dying: close to the floor.
 const DEAD_EYE_HEIGHT := 0.35
-## Seconds the body takes to fall over.
-const DEATH_FALL_TIME := 0.45
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -82,14 +80,27 @@ const DEATH_FALL_TIME := 0.45
 
 @export_group("Team")
 ## Which team this character is on: 0 or 1. Teams have no names (see [Teams]).
-## Characters only fight the other team, and the clothes are blue for the
-## viewer's own team and red for the other. Changing it recolors the body.
+## Characters only fight the other team, and the team parts of the body are blue
+## for the viewer's own team and red for the other. Changing it recolors the body.
 @export var team: int = 0:
 	set(value):
 		team = value
 		# Before _ready the body doesn't exist yet; _set_up_body colors it then.
 		if is_node_ready():
 			update_team_color()
+
+@export_group("Class")
+## The class this character plays: its body (model and hit zones) and, from M7, its perk
+## (D-052, D-078). Bots get theirs from the [RoundManager] at the start of a match, and a class
+## change in the middle of a match goes through [method RoundManager.request_class]. Setting it
+## on a character that is in the game swaps the body at once: the hit zones are gathered again.
+## The default is the Rifleman, whose model the body scene already holds.
+@export var class_data: ClassData:
+	set(value):
+		class_data = value
+		# Before _ready the body doesn't exist yet; _ready builds the right one then.
+		if is_node_ready():
+			_apply_class()
 
 @export_group("Sound")
 ## Played for each loud footstep (walking and crouching are silent). Tests set it to null.
@@ -120,7 +131,7 @@ var is_crouching: bool = false
 var _input := CharacterInput.new()
 ## Whatever drives this character: the first CharacterController among its children.
 var _controller: CharacterController
-## The damage zones on the body.
+## The damage zones on the body (found in [method _set_up_body]).
 var _hitboxes: Array[Hitbox] = []
 ## Distance walked since the last footstep.
 var _distance_since_step: float = 0.0
@@ -130,10 +141,6 @@ var _alive_collision_layer: int = 0
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
 var _hull_height_difference: float = 0.0
-## The clothes material on chest and arms, colored by [method update_team_color].
-var _clothes := StandardMaterial3D.new()
-## The body tipping over after death, stopped if the character respawns first.
-var _fall_tween: Tween
 ## Set by [method respawn]: skip moving for the rest of this tick. The physics
 ## engine (Jolt) only moves teleported bodies at the next physics step, so
 ## characters moving in the same tick as a round start would still bump into
@@ -142,8 +149,10 @@ var _respawned_this_tick: bool = false
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
-## The visible body with its hit zones and walk animation (characters/soldier_body.tscn).
-@onready var body: SoldierBody = $Body
+## The visible body with its hit zones and animations (characters/crew/crew_body.tscn, a
+## generated class model from M6). It paints its team parts through
+## [method CrewBody.set_team_color] and animates from this character's state.
+@onready var body: CrewBody = $Body
 @onready var _footstep_audio: AudioStreamPlayer = $FootstepAudio
 @onready var _footstep_audio_3d: AudioStreamPlayer3D = $FootstepAudio3D
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
@@ -161,6 +170,10 @@ func _ready() -> void:
 	health = max_health
 	_alive_collision_layer = collision_layer
 	add_to_group("characters")
+	# The body built the scene's default model in its own _ready (children are ready first):
+	# swap it for the class's before the hit zones are gathered, so they are gathered once.
+	if class_data != null and not _body_is_of_class(class_data):
+		body.set_class(class_data)
 	_set_up_body()
 	for child in get_children():
 		if child is CharacterController:
@@ -170,6 +183,9 @@ func _ready() -> void:
 		_controller.set_look_angles(_input.yaw, _input.pitch)
 	if weapon != null:
 		weapon.equip(self)
+	_set_up_arms()
+	# Only the player at this computer looks through these eyes; everyone else sees the body.
+	set_first_person(is_local_player())
 
 
 func _physics_process(delta: float) -> void:
@@ -257,20 +273,53 @@ func is_holding_use() -> bool:
 	return is_alive() and _input.use
 
 
+## Shows this character as seen through its own eyes ([param on] true: the body is hidden and
+## the weapon's first-person viewmodel shows) or from outside (the body shows, holding its gun,
+## and the viewmodel is hidden). The player at this computer is first person; spectating a
+## teammate switches that teammate too. The hit zones stay active either way.
+func set_first_person(on: bool) -> void:
+	(get_node("Body") as Node3D).visible = not on
+	if weapon != null:
+		weapon.set_viewmodel_visible(on)
+
+
 ## True for the player at this computer (see [method CharacterController.is_local]).
 func is_local_player() -> bool:
 	return _controller != null and _controller.is_local()
 
 
 ## Points other characters check for line of sight: head and chest.
+## They are the centres of the body's hit zones (see [method get_head_position] and
+## [method get_chest_position]), so a bot sees what it can hit.
 func get_visibility_points() -> Array[Vector3]:
-	return [get_eye_position(), global_position + Vector3.UP * (_eye_height - 0.35)]
+	return [get_head_position(), get_chest_position()]
 
 
-## Gives the clothes the color of this character's team as the viewer sees it
-## (see [method Teams.color_for]). Call it after the viewer's team changes.
+## The centre of the body's head hit zone, where a bot aims for a headshot. Every class has
+## the same eye height (CS's 64 units) but its own height, so the head zone sits a little above
+## or below the eyes: aiming at the visible head ("what you see is what you hit", D-055) beats
+## aiming at the eye position. Falls back to the eye position when the body has no head zone.
+func get_head_position() -> Vector3:
+	if body.has_zone(Hitbox.Zone.HEAD):
+		return body.get_zone_center(Hitbox.Zone.HEAD)
+	return get_eye_position()
+
+
+## The centre of the body's chest hit zone, where a bot aims for the body. It follows the
+## class's build and the crouch like the head does. Falls back to a point 35 cm below the
+## eyes when the body has no chest zone.
+func get_chest_position() -> Vector3:
+	if body.has_zone(Hitbox.Zone.CHEST):
+		return body.get_zone_center(Hitbox.Zone.CHEST)
+	return global_position + Vector3.UP * (_eye_height - 0.35)
+
+
+## Paints the body's team parts in the color of this character's team as the
+## viewer sees it (see [method Teams.color_for]). Call it after the viewer's team changes.
 func update_team_color() -> void:
-	_clothes.albedo_color = Teams.color_for(team)
+	body.set_team_color(Teams.color_for(team))
+	if weapon != null:
+		weapon.set_arms_team_color(Teams.color_for(team))
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -358,8 +407,6 @@ func _play_footstep() -> void:
 ## Brings the character back at [param at], facing [param yaw], with full
 ## health and a full weapon.
 func respawn(at: Vector3, yaw: float) -> void:
-	if _fall_tween != null:
-		_fall_tween.kill()
 	global_position = at
 	rotation.y = yaw
 	_respawned_this_tick = true
@@ -370,7 +417,6 @@ func respawn(at: Vector3, yaw: float) -> void:
 	_set_crouch_hull(false)
 	_eye_height = stand_eye_height
 	head.position.y = _eye_height
-	body.reset_pose()
 	collision_layer = _alive_collision_layer
 	for hitbox in _hitboxes:
 		hitbox.collision_layer = PhysicsLayers.HITBOXES
@@ -392,23 +438,56 @@ func _die(killer: Character) -> void:
 	for hitbox in _hitboxes:
 		hitbox.set_deferred("collision_layer", 0)
 	set_deferred("collision_layer", 0)
-	# Tip the body over backwards around the feet. Run the tween on physics
-	# ticks so physics interpolation smooths it like any other movement.
-	_fall_tween = create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-	_fall_tween.tween_property(body, "rotation:x", -PI / 2.0, DEATH_FALL_TIME) \
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	died.emit(killer)
 
 
-## Finds the body's hit zones and gives the clothes this character's team color.
+## Finds the body's hit zones, gives the body this character's team color, and ties its
+## animations to this character (see [method CrewBody.attach]).
+## The [CrewBody] builds its hit zones in its own _ready, which runs before this one
+## (children are ready first), so they are all there to find.
 func _set_up_body() -> void:
 	update_team_color()
-	for node in body.find_children("*", "", true, false):
-		if node is Hitbox:
-			_hitboxes.append(node)
-			(node as Hitbox).hit.connect(_on_hitbox_hit)
-		elif node is MeshInstance3D and node.is_in_group("team_colored"):
-			(node as MeshInstance3D).material_override = _clothes
+	body.attach(self)
+	_gather_hitboxes()
+
+
+## Listens to every hit zone of the body (see [method CrewBody.get_hitboxes]).
+func _gather_hitboxes() -> void:
+	for hitbox in body.get_hitboxes():
+		_hitboxes.append(hitbox)
+		hitbox.hit.connect(_on_hitbox_hit)
+
+
+## True if the body already has the model and hit zones of [param data]. A body without
+## explicit hit zones takes the file next to its model, which is the class's.
+func _body_is_of_class(data: ClassData) -> bool:
+	return body.model == data.model and (body.hit_zones == null or body.hit_zones == data.hit_zones)
+
+
+## Gives the body the new [member class_data]: swaps the model and the hit zones, and listens
+## to the new zones instead of the old ones. A dead character's new zones stay switched off.
+func _apply_class() -> void:
+	if class_data == null or _body_is_of_class(class_data):
+		return
+	for hitbox in _hitboxes:
+		if is_instance_valid(hitbox) and hitbox.hit.is_connected(_on_hitbox_hit):
+			hitbox.hit.disconnect(_on_hitbox_hit)
+	_hitboxes.clear()
+	body.set_class(class_data)
+	_gather_hitboxes()
+	_set_up_arms()
+	if not is_alive():
+		for hitbox in _hitboxes:
+			hitbox.collision_layer = 0
+
+
+## Puts the class's first-person arms into the weapon's viewmodel (D-079): its own sleeves
+## and gloves, painted with the class's material in this character's team colour.
+func _set_up_arms() -> void:
+	if weapon == null or class_data == null or class_data.arms_model == null:
+		return
+	weapon.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
+	weapon.set_arms_team_color(Teams.color_for(team))
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:
@@ -502,11 +581,6 @@ func _update_crouch(on_ground: bool, delta: float) -> void:
 	var eye_speed := (stand_eye_height - crouch_eye_height) / crouch_transition_time
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
 	head.position.y = _eye_height
-	if is_alive():
-		# Head, chest, stomach and arms sink when crouching (as in CS), and the
-		# limbs swing with walking speed.
-		var speed := Vector2(velocity.x, velocity.z).length()
-		body.update_pose(speed, get_max_speed(), _eye_height - stand_eye_height, on_ground, delta)
 
 
 func _crouch(on_ground: bool) -> void:

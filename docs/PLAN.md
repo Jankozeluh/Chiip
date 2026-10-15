@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks); your playtest is in "Your open checks". Next: M6 and the other milestones.
+> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and the M8 work (bomb rounds, team respawn mode, three quick maps, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". Next: M7 — Arsenal, perks & economy.
 
 ## Your open checks
 
@@ -27,6 +27,14 @@ Things only you can check, kept here until done instead of moving from milestone
 - [ ] **M8 playtest: sound.** With headphones: can you tell gravel, concrete, metal (container and warehouse roofs) and wood (crates) apart by the footsteps? Is the headshot "dink" satisfying and the body hit clear? Are the round stingers, the "go" beep, the bomb-planted alert and menu clicks pleasant, or too loud? (D-084)
 - [ ] **M8: the exported app.** Double-click `builds/macos/Chiip.app` in the `m8-maps` worktree (or re-export, README "Exporting the game"): does it start, play a match and quit normally? (D-086)
 - [ ] **M8: lighting.** Look at `docs/maps/lighting_depot.jpg`: is staying with real-time lighting (left column) right, or do you want SSAO as a video setting, or a lightmap bake once the maps are final? (D-085)
+- [ ] **M6 playtest (crew & animation).** Start a match (F5); the class menu opens in the first freeze time (M changes class in any freeze time, `-- --practice` and the console's `class` command any time). Check:
+  1. **Silhouettes:** you can tell the four classes apart at a distance by shape alone: the medium Rifleman, the broad Bulwark, the Marksman in his coat, the short Scout with the antenna.
+  2. **Team colour:** teammates blue, enemies red, readable from every side and at range.
+  3. **Animation:** bots run, strafe, walk backward, crouch-walk, jump, aim up and down, fire (flash in the hands), reload and die (forward, backward, the headshot crumple) without popping or sliding badly; the Bulwark hunches.
+  4. **Your arms:** your class's own gloves, sleeves in your team's blue; the draw after respawning, the kick, the reload; the gun lags a little when you turn and rocks when you run. Does the gun sit right (low right, receiver and magazine visible)?
+  5. **Hit zones:** headshots land on the heads you see, also on crouching and running bots. Is the Bulwark a fair target? Its zones are about twice the Rifleman's (D-077).
+  6. **Spectating:** after dying, the teammate you watch shows their own first-person arms.
+  7. **Smoothness:** no stutter with ten characters (a 5v5 from match setup, or `bot_add` in practice).
 
 ## How this plan works
 
@@ -46,7 +54,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M3 | Retro look & map tools | ✅ | The test map looks like a 90s shooter |
 | M4 | Bots | ✅ | Bots hunt you and shoot back |
 | M5 | Rounds & game flow | ✅ | Full matches against bots, with teammates, menus and settings |
-| M6 | Crew & animation | ⬜ | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
+| M6 | Crew & animation | 🟨 built, waiting for your playtest | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
 | M7 | Arsenal, perks & economy | ⬜ | Earn money, buy from the full arsenal, and play each class a little differently |
 | M8 | Modes & 3 quick maps | 🟨 | Bomb rounds and team respawn matches on three small, fast maps in rotation |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
@@ -228,7 +236,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 | Friendly fire | A match setting: off by default, a third of the damage when on |
 | Team names | No names. Your team is shown in blue and the enemies in red |
 
-## M6 — Crew & animation ⬜
+## M6 — Crew & animation 🟨 *(built, waiting for your playtest)*
 
 **Goal:** a crew of four classes that look and move like people, from the outside and in first person (D-040, D-051). Replaces the blocky placeholder and its code-driven walk cycle (D-039).
 
@@ -236,16 +244,16 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"):
 
-1. [ ] **Concept sheets.** Adapt the sprite prototype in `tools/concept/` to the crew and the team-colour rule: a neutral kit, team colour on the masked parts, no desert colours (D-031). Render turnarounds of all four classes in blue and red. You approve the looks and the class names before any modelling. *(Opus)*
-2. [ ] **Model generator v1.** A Python tool in `tools/modelgen/` that builds the Rifleman from a part list: the low-poly mesh, a palette-limited texture with a team mask, and a skeleton with each piece fixed to one bone. It exports a `.glb` that Godot imports, shown in a T-pose. *(Opus)*
-3. [ ] **Team-colour shader.** Paints the masked parts in the viewer's team colours (your team blue, enemies red: `Teams.FRIENDLY_COLOR` and `Teams.ENEMY_COLOR`, D-042) and keeps the shading. `Teams.set_viewer_team()` recolours everyone through it, as it does today. *(Sonnet)*
-4. [ ] **Hit zones on bones.** A `BoneAttachment3D` per zone (head, chest, stomach, arms, legs), sized from the class's part list (D-055). The blocky `SoldierBody` is retired. All existing checks still pass. *(Sonnet)*
-5. [ ] **Long-gun animations**, written as keyframes by the generator: idle; walk and run in 8 directions; crouch and crouch-walk; jump, fall and land; aim up and down; fire; reload; a hit flinch; three deaths (forward, backward, headshot). *(Opus, tuned by feel)*
-6. [ ] **AnimationTree.** The legs blend by speed and by direction relative to where the character faces. The upper body aims up and down on its own and layers fire, reload and the flinch on top. Driven only by the character's state, never by input, so network players animate the same way in M9. *(Opus)*
-7. [ ] **The other three classes:** Bulwark, Marksman and Scout, built from the approved concept sheets. *(Opus)*
-8. [ ] **Class data and class pick.** A `ClassData` resource per class: name, model, hit-zone sizes and perk values. You pick a class at match start and can change it during freeze time (D-052); bots get a mix. Classes differ only in looks until the perks switch on in M7. *(Sonnet)*
-9. [ ] **First-person arms.** Arms for each class (its own gloves and sleeves, sleeves in your team colour), made by the same generator, holding the AK-style rifle: draw, fire and reload animations, plus weapon sway and bob in code. *(Opus)*
-10. [ ] **Performance and tests.** 10 animated characters on the test map at full frame rate. New checks that hit zones follow the animated body; the existing checks still pass. *(Sonnet writes, Haiku runs and reports)*
+1. [x] **Concept sheets.** Adapt the sprite prototype in `tools/concept/` to the crew and the team-colour rule: a neutral kit, team colour on the masked parts, no desert colours (D-031). Render turnarounds of all four classes in blue and red. You approve the looks and the class names before any modelling. *(Opus)* Approved as shown, names final (D-070): `spritegen.py --sheet` renders a line-up (blue, red and black silhouettes with height lines) and 8-direction turnarounds; every class has team-colour sleeves plus one mark of its own, 11–23% of the body from every side. Python now runs in Miniconda (D-071).
+2. [x] **Model generator v1.** A Python tool in `tools/modelgen/` that builds the Rifleman from a part list: the low-poly mesh, a palette-limited texture with a team mask, and a skeleton with each piece fixed to one bone. It exports a `.glb` that Godot imports, shown in a T-pose. *(Opus)* Built (D-072): `modelgen.py rifleman` writes `assets/models/crew/rifleman.glb` (17 bones, 50 pieces, 2,106 triangles, exactly 1.82 m) with a 256 × 352 palette texture and a team mask; `characters/crew/crew_preview.tscn` shows it on a turntable.
+3. [x] **Team-colour shader.** Paints the masked parts in the viewer's team colours (your team blue, enemies red: `Teams.FRIENDLY_COLOR` and `Teams.ENEMY_COLOR`, D-042) and keeps the shading. `Teams.set_viewer_team()` recolours everyone through it, as it does today. *(Sonnet)* Built (D-073): `characters/crew/crew.gdshader` multiplies the grey team texels by an `instance uniform` colour, one shared material per class; `CrewBody` (`crew_body.tscn`) builds a model and takes `set_team_color()`, the same call `SoldierBody` now has, so `Character.update_team_color()` works with either body; the turntable shows blue and red (T); new `tests/crew_test.tscn` (15 checks).
+4. [x] **Hit zones on bones.** A `BoneAttachment3D` per zone (head, chest, stomach, arms, legs), sized from the class's part list (D-055). The blocky `SoldierBody` is retired. All existing checks still pass. *(Sonnet)* Built (D-074): the generator writes `<class>_hit_zones.tres` (a `HitZones` resource, 15 boxes), `CrewBody` builds a `BoneAttachment3D` + `Hitbox` + box per entry under the model's skeleton, `Character.body` is a `CrewBody` (`SoldierBody` deleted), and bots aim at and look for the zones' centres (`get_head_position()`, `get_chest_position()`); 16 new checks in `tests/crew_test.tscn`; the tactics check "Rounds are decided by fighting" now plays 8 rounds (6 must end by elimination, the same 75%) because 4 seeded rounds were too few (see the devlog).
+5. [x] **Long-gun animations**, written as keyframes by the generator: idle; walk and run in 8 directions; crouch and crouch-walk; jump, fall and land; aim up and down; fire; reload; a hit flinch; three deaths (forward, backward, headshot). *(Opus, tuned by feel)* Built (D-075): `tools/modelgen/anims.py` solves every pose for the class with two-bone IK (feet on their targets, both hands on the gun) and writes 41 clips into the `.glb` at 30 keys a second; locomotion cycles last 0.66 s, so a run step is 1.8 m like the footstep sounds; fire and the flinch are additive; the AK-style rifle (`assets/models/weapons/ak_rifle.glb`) sits on the weapon bone. N / P in the crew preview play them.
+6. [x] **AnimationTree.** The legs blend by speed and by direction relative to where the character faces. The upper body aims up and down on its own and layers fire, reload and the flinch on top. Driven only by the character's state, never by input, so network players animate the same way in M9. *(Opus)* Built (D-076): one shared graph, `characters/crew/crew_animation_tree.tres` (made by `tools/make_crew_animation_tree.gd`); `CrewBody` sets it every physics tick from velocity, stance, floor contact and aim pitch, and plays the character's shots, reloads, hits, deaths and respawns; the AK-style rifle is in the hands with its own muzzle flash, and the first-person viewmodel shows only for whoever looks through a character's eyes; 15 new crew checks.
+7. [x] **The other three classes:** Bulwark, Marksman and Scout, built from the approved concept sheets. *(Opus)* Built (D-077): `modelgen.py all` makes all four (1,800–2,400 triangles each, exactly 1.72–1.92 m, 41 clips each, solved for their own limbs); the Bulwark's hit zones are about twice the Rifleman's, the Scout's 60% (a point for your playtest).
+8. [x] **Class data and class pick.** A `ClassData` resource per class: name, model, hit-zone sizes and perk values. You pick a class at match start and can change it during freeze time (D-052); bots get a mix. Classes differ only in looks until the perks switch on in M7. *(Sonnet)* Built (D-078): `ClassData` resources in `characters/crew/classes/` (name, role, height, model, hit zones, signature gun, look, perk text and the stored-but-inert perk factors) with `ClassData.all()` / `find()`; `Character.class_data` swaps the body's model and hit zones at runtime (`CrewBody.set_class()`); the `RoundManager` decides class changes (`request_class()`: freeze time only; practice mode any time), gives each team's bots a mix cycling from a random class, and applies `MatchSettings.player_class`; a class menu (`ui/class_menu.tscn`) opens at the start of a match and on M during freeze time (click or keys 1 to 4); console command `class [name]`; new `tests/class_test.tscn` (57 checks).
+9. [x] **First-person arms.** Arms for each class (its own gloves and sleeves, sleeves in your team colour), made by the same generator, holding the AK-style rifle: draw, fire and reload animations, plus weapon sway and bob in code. *(Opus)* Built (D-079): `modelgen.py` also writes `<class>_arms.glb` (the class's own sleeves, gloves and wrist detail on a 7-bone camera-space rig, sharing the body's texture) with draw, idle, fire and reload clips; the weapon's viewmodel holds them with the AK-style rifle on their weapon bone; sway and bob in code; the old box gun and its code-driven kick and dip are gone; 3 new crew checks.
+10. [x] **Performance and tests.** 10 animated characters on the test map at full frame rate. New checks that hit zones follow the animated body; the existing checks still pass. *(Sonnet writes, Haiku runs and reports)* Built: `tests/perf_test.tscn` (a seeded bots-only 5v5 on the test map: 0.42 ms per physics tick headless, 0.7 ms windowed, against the 7.8 ms budget; 60 FPS windowed, which is the display's refresh rate, with the CPU busy 10% of the time) and `tests/zone_test.tscn` (24 checks: every class's zones stay on their bones while running, with no lag at all; shins swing, hands rise when aiming up, the head zone drops 0.43 m crouched, rays hit the running body where it is). All 10 suites pass.
 
 **Done when:** all four classes visibly run, crouch, jump, aim, shoot, reload and die, in blue and red; you can tell the classes apart by silhouette alone; hit zones follow the animated body; and you see your own arms and rifle in first person.
 
@@ -261,6 +269,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 | Where models come from | Generated by a tool in `tools/modelgen/`, not modelled by hand or taken from asset packs |
 | Hit zones | Follow each class's body, so the tall Bulwark is a bigger target |
 | Class choice | At match start, changeable during freeze time |
+| Class names | Rifleman, Bulwark, Marksman, Scout: final (D-070) |
 
 ## M7 — Arsenal, perks & economy ⬜
 

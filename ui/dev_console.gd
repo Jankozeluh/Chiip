@@ -14,7 +14,7 @@ extends CanvasLayer
 
 ## How many output lines show at once. The panel is as tall as this many lines
 ## need: [code]help[/code] (one line per command, plus the echo of the command) fits.
-const VISIBLE_LINES := 17
+const VISIBLE_LINES := 18
 ## How many output lines are kept to scroll back through.
 const HISTORY_LINES := 200
 ## How many lines the mouse wheel scrolls per notch.
@@ -184,6 +184,7 @@ func _register_commands() -> void:
 	register_command("settings", _cmd_settings, "settings", "Open the settings menu (Esc closes it)")
 	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting, key and the match setup back to its default")
 	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu")
+	register_command("class", _cmd_class, "class [name]", "List the classes, or take one (in a match: during freeze time)")
 
 
 func _cmd_help(_args: Array) -> void:
@@ -319,6 +320,35 @@ func _cmd_disconnect(_args: Array) -> void:
 	main.return_to_menu()
 
 
+## class lists the classes and tells which one you are; class bulwark asks the game rules for
+## that class (a match allows it during freeze time only, practice mode any time).
+func _cmd_class(args: Array) -> void:
+	var player := _get_player()
+	if player == null:
+		return
+	if args.is_empty():
+		for data in ClassData.all():
+			print_line("%-9s %.2f m  %s: %s" % [data.id, data.height, data.perk_name, data.perk_description])
+		print_line("You are the %s." % (player.class_data.display_name if player.class_data != null else "?"))
+		return
+	var data := ClassData.find(StringName(String(args[0]).to_lower()))
+	if data == null:
+		print_line("Unknown class '%s'. Classes: %s" % [args[0], ", ".join(ClassData.all().map(func(c: ClassData) -> String: return String(c.id)))])
+		return
+	var rules := _get_rules()
+	var accepted := true
+	if rules is RoundManager:
+		accepted = (rules as RoundManager).request_class(player, data)
+	elif rules is ArenaRules:
+		accepted = (rules as ArenaRules).request_class(player, data)
+	else:
+		player.class_data = data
+	if accepted:
+		print_line("You are the %s now." % data.display_name)
+	else:
+		print_line("You can change class only during freeze time.")
+
+
 # --- Helpers ---
 
 
@@ -329,6 +359,15 @@ func _get_map() -> Node:
 func _get_player() -> Character:
 	var map := _get_map()
 	return map.get_node_or_null("Player") as Character if map != null else null
+
+
+## The map's game rules: the match ([RoundManager]) or practice mode ([ArenaRules]), or null.
+func _get_rules() -> Node:
+	var map := _get_map()
+	if map == null:
+		return null
+	var rounds := map.get_node_or_null("RoundManager")
+	return rounds if rounds != null else map.get_node_or_null("ArenaRules")
 
 
 func _get_arena() -> ArenaRules:

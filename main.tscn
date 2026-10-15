@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://ui/match_end_screen.tscn" id="match_end_scene"]
 [ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="pause_menu_scene"]
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
+[ext_resource type="PackedScene" path="res://ui/class_menu.tscn" id="class_menu_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -54,5 +55,7 @@ mouse_filter = 2
 [node name="MatchEndScreen" parent="." instance=ExtResource("match_end_scene")]
 
 [node name="SettingsMenu" parent="." instance=ExtResource("settings_menu_scene")]
+
+[node name="ClassMenu" parent="." instance=ExtResource("class_menu_scene")]
 
 [node name="DevConsole" parent="." instance=ExtResource("console_scene")]

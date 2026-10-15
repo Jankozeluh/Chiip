@@ -66,3 +66,8 @@ enum GameMode {
 @export var time_limit: float = 600.0
 ## Seconds from dying to coming back in a team respawn match.
 @export var respawn_delay: float = 3.0
+
+@export_group("Player")
+## The class the player starts the match with. Null keeps the class of the map's [code]Player[/code]
+## character (the Rifleman); the class menu changes it during freeze time (D-052, D-078).
+@export var player_class: ClassData

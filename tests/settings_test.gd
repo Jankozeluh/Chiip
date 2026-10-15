@@ -756,8 +756,8 @@ func _default_bindings() -> Dictionary:
 	return {
 		&"move_forward": [_k(KEY_W), ""], &"move_back": [_k(KEY_S), ""], &"move_left": [_k(KEY_A), ""], &"move_right": [_k(KEY_D), ""],
 		&"jump": [_k(KEY_SPACE), _m(MOUSE_BUTTON_WHEEL_DOWN)], &"crouch": [_k(KEY_CTRL), ""], &"walk": [_k(KEY_SHIFT), ""],
-		&"shoot": [_m(MOUSE_BUTTON_LEFT), ""], &"aim": [_m(MOUSE_BUTTON_RIGHT), ""], &"reload": [_k(KEY_R), ""],
-		&"scoreboard": [_k(KEY_TAB), ""], &"toggle_debug": [_k(KEY_F3), ""], &"toggle_console": [_k(KEY_QUOTELEFT), ""],
+		&"shoot": [_m(MOUSE_BUTTON_LEFT), ""], &"aim": [_m(MOUSE_BUTTON_RIGHT), ""], &"reload": [_k(KEY_R), ""], &"use": [_k(KEY_E), ""],
+		&"scoreboard": [_k(KEY_TAB), ""], &"class_menu": [_k(KEY_M), ""], &"toggle_debug": [_k(KEY_F3), ""], &"toggle_console": [_k(KEY_QUOTELEFT), ""],
 	}
 
 
