@@ -12,6 +12,8 @@ const BOT_SPAWN_GROUP := "bot_spawns"
 const PLAYER_SPAWN_GROUP := "player_spawns"
 ## Random bot spawns stay at least this far from the player, in metres.
 const MIN_SPAWN_DISTANCE := 20.0
+## A spawn marker counts as taken if someone stands closer than this, in metres.
+const SPAWN_CLEARANCE := 3.0
 
 ## How many bots to put on the map at the start.
 @export var bot_count: int = 2
@@ -83,7 +85,7 @@ func _on_died(_killer: Character, victim: Character) -> void:
 func _pick_bot_spawn() -> Transform3D:
 	var markers := get_tree().get_nodes_in_group(BOT_SPAWN_GROUP)
 	if not markers.is_empty():
-		return (markers[_rng.randi() % markers.size()] as Node3D).global_transform
+		return _pick_free_marker(markers)
 	var map := (get_parent() as Node3D).get_world_3d().navigation_map
 	var point := Vector3.ZERO
 	for attempt in 20:
@@ -97,4 +99,15 @@ func _pick_from_group(group: String, fallback: Transform3D) -> Transform3D:
 	var markers := get_tree().get_nodes_in_group(group)
 	if markers.is_empty():
 		return fallback
-	return (markers[_rng.randi() % markers.size()] as Node3D).global_transform
+	return _pick_free_marker(markers)
+
+
+## A random marker with nobody standing on it (any marker if all are taken).
+func _pick_free_marker(markers: Array[Node]) -> Transform3D:
+	var free: Array[Node] = markers.filter(func(marker: Node) -> bool:
+		for character in get_tree().get_nodes_in_group("characters"):
+			if (character as Character).is_alive() and (character as Node3D).global_position.distance_to((marker as Node3D).global_position) < SPAWN_CLEARANCE:
+				return false
+		return true)
+	var choices := free if not free.is_empty() else markers
+	return (choices[_rng.randi() % choices.size()] as Node3D).global_transform

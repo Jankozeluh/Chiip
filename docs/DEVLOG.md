@@ -22,6 +22,7 @@
 - Footstep sounds (three generated variations, randomized) and positional audio: your own steps and shots play in both ears, bots' come from where they are. Check: routing correct for both. Existing rifle sounds unchanged when regenerating.
 - Death and respawn: bodies tip over and stop blocking, your view sinks to the floor and the HUD names your killer; `ArenaRules` (temporary until M5) keeps 2 bots on the test map and brings everyone back after 3 s with full health and ammo.
 - Developer console (key left of 1): `help`, `bot_add`, `bot_kick`, `bot_difficulty`, `god`, `noclip`, `map`, `clear`, with history. `main.gd` can now switch maps at runtime. All commands checked.
+- Bot arena on the test map: 11 patrol points, 4 bot spawns in the far corners, your spawn; all on walkable floor. Fixed two bots spawning on the same marker (spawns now prefer free markers).
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 

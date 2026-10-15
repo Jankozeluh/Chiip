@@ -352,5 +352,60 @@ font = ExtResource("pixel_font")
 font_size = 8
 outline_size = 2
 
+[node name="Arena" type="Node3D" parent="."]
+
+[node name="Patrol1" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(-14, 2, -10)
+
+[node name="Patrol2" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(0, 0, -26)
+
+[node name="Patrol3" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(14, 0, -3)
+
+[node name="Patrol4" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(-22, 0, 6)
+
+[node name="Patrol5" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(22, 0, 6)
+
+[node name="Patrol6" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(-6, 0, 2)
+
+[node name="Patrol7" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(0, 0, 40)
+
+[node name="Patrol8" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(-20, 0, 50)
+
+[node name="Patrol9" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(20, 0, 45)
+
+[node name="Patrol10" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(10, 0, 75)
+
+[node name="Patrol11" type="Marker3D" parent="Arena" groups=["patrol_points"]]
+position = Vector3(-15, 0, 80)
+
+[node name="BotSpawn1" type="Marker3D" parent="Arena" groups=["bot_spawns"]]
+position = Vector3(-28, 0, -28)
+rotation = Vector3(0, 3.9270, 0)
+
+[node name="BotSpawn2" type="Marker3D" parent="Arena" groups=["bot_spawns"]]
+position = Vector3(28, 0, -28)
+rotation = Vector3(0, 2.3562, 0)
+
+[node name="BotSpawn3" type="Marker3D" parent="Arena" groups=["bot_spawns"]]
+position = Vector3(-28, 0, 84)
+rotation = Vector3(0, -0.7854, 0)
+
+[node name="BotSpawn4" type="Marker3D" parent="Arena" groups=["bot_spawns"]]
+position = Vector3(28, 0, 84)
+rotation = Vector3(0, 0.7854, 0)
+
+[node name="PlayerSpawn" type="Marker3D" parent="Arena" groups=["player_spawns"]]
+position = Vector3(0, 0, 14)
+rotation = Vector3(0, 3.14159, 0)
+
 [node name="ArenaRules" type="Node" parent="."]
 script = ExtResource("arena_rules")
