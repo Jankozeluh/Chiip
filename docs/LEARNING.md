@@ -220,7 +220,7 @@
 - In the editor: *Scene → New Inherited Scene*. Inherited nodes appear yellow-ish in the scene tree, and changed properties show a revert arrow.
 - In the `.tscn` file, the root node has `instance=ExtResource(...)` and no `type`.
 
-**Groups and material overrides** (`characters/soldier_body.tscn`, `Character._set_up_body`)
+**Groups and material overrides** (`characters/soldier_body.tscn`, `Character._set_up_body`; the soldier body was retired in M6, D-074)
 - A node can belong to named *groups* (`groups=["team_colored"]`), like Unity tags but a node can have many. `node.is_in_group("team_colored")` checks it; `get_tree().get_nodes_in_group(...)` finds them all.
 - `MeshInstance3D.material_override` replaces a mesh's material on just that instance, so every character can wear its own team color while sharing one mesh.
 - Hiding a node (`visible = false`) only affects drawing. Physics and areas keep working, which is how your own hit zones stay active while your body is invisible to you.
@@ -261,7 +261,7 @@
 - `LineEdit` is a one-line text box; its `text_submitted` signal fires on Enter.
 - A `Dictionary` of `Callable`s maps command names to functions, so adding a command is one `register_command()` line.
 
-**Procedural animation** (`characters/soldier_body.gd`)
+**Procedural animation** (`characters/soldier_body.gd`, retired in M6, D-074)
 - Animation doesn't have to come from animation files. Rotating a *pivot* node (a `Node3D` at the hip) swings everything under it, the leg mesh and its hit zone, like a joint. `sin(phase)` gives a back-and-forth swing, and `phase` advances with distance walked, so the legs keep time with the footsteps. Unity would use an Animator; this is the code-only equivalent for placeholders.
 
 **Smoothing toward a target** (`BotController._turn_toward`)
@@ -414,3 +414,11 @@
 **Per-instance shader parameters** (`instance uniform`, `set_instance_shader_parameter`)
 - Unity has a trap here: setting a colour on `renderer.material` makes a copy of the material for that one renderer, and the `MaterialPropertyBlock` is the way to give one renderer its own value while sharing the material. Godot's version is built into the shader: declare `instance uniform vec4 team_color : source_color = ...;` and set it per mesh with `mesh_instance.set_instance_shader_parameter("team_color", color)` (read it back with `get_instance_shader_parameter()`). The material stays shared, so ten soldiers use one material and can still be blue and red.
 - Instance uniforms live on the `GeometryInstance3D` (a mesh, multimesh, ...), not on the material, so `CrewBody` keeps the wanted colour in a variable and sets it on every mesh of the model when it builds the model in `_ready()`, and again whenever `set_team_color()` is called. Use them for a few values that differ per object, like this colour; the shared material keeps everything else.
+
+**`BoneAttachment3D`: a node that follows a bone** (`characters/crew/crew_body.gd`)
+- In Unity you make a GameObject a child of a bone's Transform and it follows the bone, because every bone *is* a Transform. In Godot bones aren't nodes (see `Skeleton3D` above), so there is nothing to parent to. A `BoneAttachment3D` is the stand-in: a node you add as a child of the `Skeleton3D`, with `bone_name` set to a bone. Every time the skeleton updates its pose, the attachment copies that bone's global pose, and everything under the attachment moves with it (Unity: a weapon socket, or a hitbox object on the hand bone). Chiip's hit zones are `Hitbox` areas under `BoneAttachment3D` nodes, so they follow the animated body instead of a fixed box.
+- The skeleton updates its bones at the end of the frame, after the code that changed a pose has run, so a zone's position lags a pose change by up to one physics tick. A test that moves a bone waits a frame (and can call `skeleton.force_update_all_bone_transforms()`) before reading where the zones went. `skeleton.set_bone_pose_rotation(bone, quaternion)` and `set_bone_pose_position()` are the calls that pose a bone by hand (what an animation would do each frame); the bone's *rest* stays untouched.
+
+**Adding nodes to an instanced imported scene at runtime** (`CrewBody._build_hit_zones`)
+- An imported `.glb` is a scene you can `instantiate()`, but its nodes aren't meant to be edited in the editor, so extra nodes can't be saved into it. Code adds them after instancing: `CrewBody._ready()` instances the model, finds its `Skeleton3D` with `find_children("*", "Skeleton3D", true, false)` and adds the attachments to it (Unity: instantiating a model prefab and adding components to its children in `Awake`). Nodes made with `Hitbox.new()` and `CollisionShape3D.new()` have no scene file; they need a name (`node.name = ...`) and must be added with `add_child()` after their own children are set up. The same code builds every class's zones from a `HitZones` resource, so a new class needs no scene editing.
+- A parent's `_ready()` runs after its children's, so the body (a child of `Character`) has built its zones by the time `Character._set_up_body()` looks for them with `find_children`.

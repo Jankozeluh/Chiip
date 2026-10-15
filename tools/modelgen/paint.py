@@ -119,7 +119,7 @@ class Painter:
         lo, hi = pm.lo, pm.hi
         height = max(hi[1] - lo[1], 1e-6)
         rel_y = (P[..., 1] - lo[1]) / height              # 0 at the bottom of the piece, 1 at the top
-        for mat in set(mats.ravel()):
+        for mat in sorted(set(mats.ravel())):     # sorted: the same grain on every run
             sel = mats == mat
             md = MATERIALS[mat]
             ramp, rlo, rhi, team = material_ramp(mat, self.kit, self.skin)

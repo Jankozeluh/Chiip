@@ -117,7 +117,7 @@ var is_crouching: bool = false
 var _input := CharacterInput.new()
 ## Whatever drives this character: the first CharacterController among its children.
 var _controller: CharacterController
-## The damage zones on the body.
+## The damage zones on the body (found in [method _set_up_body]).
 var _hitboxes: Array[Hitbox] = []
 ## Distance walked since the last footstep.
 var _distance_since_step: float = 0.0
@@ -137,9 +137,9 @@ var _respawned_this_tick: bool = false
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
-## The visible body with its hit zones and walk animation (characters/soldier_body.tscn).
-## It paints its team parts through [code]set_team_color()[/code].
-@onready var body: SoldierBody = $Body
+## The visible body with its hit zones (characters/crew/crew_body.tscn, a generated class model
+## from M6). It paints its team parts through [method CrewBody.set_team_color].
+@onready var body: CrewBody = $Body
 @onready var _footstep_audio: AudioStreamPlayer = $FootstepAudio
 @onready var _footstep_audio_3d: AudioStreamPlayer3D = $FootstepAudio3D
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
@@ -253,8 +253,29 @@ func is_local_player() -> bool:
 
 
 ## Points other characters check for line of sight: head and chest.
+## They are the centres of the body's hit zones (see [method get_head_position] and
+## [method get_chest_position]), so a bot sees what it can hit.
 func get_visibility_points() -> Array[Vector3]:
-	return [get_eye_position(), global_position + Vector3.UP * (_eye_height - 0.35)]
+	return [get_head_position(), get_chest_position()]
+
+
+## The centre of the body's head hit zone, where a bot aims for a headshot. Every class has
+## the same eye height (CS's 64 units) but its own height, so the head zone sits a little above
+## or below the eyes: aiming at the visible head ("what you see is what you hit", D-055) beats
+## aiming at the eye position. Falls back to the eye position when the body has no head zone.
+func get_head_position() -> Vector3:
+	if body.has_zone(Hitbox.Zone.HEAD):
+		return body.get_zone_center(Hitbox.Zone.HEAD)
+	return get_eye_position()
+
+
+## The centre of the body's chest hit zone, where a bot aims for the body. It follows the
+## class's build and the crouch like the head does. Falls back to a point 35 cm below the
+## eyes when the body has no chest zone.
+func get_chest_position() -> Vector3:
+	if body.has_zone(Hitbox.Zone.CHEST):
+		return body.get_zone_center(Hitbox.Zone.CHEST)
+	return global_position + Vector3.UP * (_eye_height - 0.35)
 
 
 ## Paints the body's team parts in the color of this character's team as the
@@ -387,6 +408,8 @@ func _die(killer: Character) -> void:
 
 
 ## Finds the body's hit zones and gives the body this character's team color.
+## The [CrewBody] builds its hit zones in its own _ready, which runs before this one
+## (children are ready first), so they are all there to find.
 func _set_up_body() -> void:
 	update_team_color()
 	for node in body.find_children("*", "", true, false):
@@ -487,8 +510,8 @@ func _update_crouch(on_ground: bool, delta: float) -> void:
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
 	head.position.y = _eye_height
 	if is_alive():
-		# Head, chest, stomach and arms sink when crouching (as in CS), and the
-		# limbs swing with walking speed.
+		# Head, chest and stomach sink when crouching (as in CS), and the
+		# limbs will swing with walking speed once the body is animated (M6).
 		var speed := Vector2(velocity.x, velocity.z).length()
 		body.update_pose(speed, get_max_speed(), _eye_height - stand_eye_height, on_ground, delta)
 

@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/character.gd" id="character_script"]
-[ext_resource type="PackedScene" path="res://characters/soldier_body.tscn" id="body_scene"]
+[ext_resource type="PackedScene" path="res://characters/crew/crew_body.tscn" id="body_scene"]
 
 [sub_resource type="CapsuleShape3D" id="standing_shape"]
 radius = 0.4

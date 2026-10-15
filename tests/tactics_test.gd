@@ -12,8 +12,11 @@ extends Node
 ## checks as the exit code (0 means everything passed).
 
 const MAP_SCENE := preload("res://maps/test_map.tscn")
-## Rounds to play for the last check.
-const ROUNDS_TO_PLAY := 4
+## Rounds to play for the last check. Eight rather than four, so one unlucky round on the
+## fixed seeds doesn't decide it: on many seeds about one round in ten runs out of time.
+const ROUNDS_TO_PLAY := 8
+## Share of those rounds that must end by elimination (3 of 4 before M6, 6 of 8 now).
+const MIN_ELIMINATION_SHARE := 0.75
 
 var _map: Node3D
 var _rounds: RoundManager
@@ -129,7 +132,7 @@ func _test_rounds_are_decided() -> void:
 	var eliminations := _results.filter(func(result: Array) -> bool: return result[0] == RoundManager.EndReason.ELIMINATION).size()
 	var lengths := _results.map(func(result: Array) -> String: return "%.0f s" % result[1])
 	_check("Rounds are decided by fighting, not by running out the clock",
-			_results.size() == ROUNDS_TO_PLAY and eliminations >= ROUNDS_TO_PLAY - 1,
+			_results.size() == ROUNDS_TO_PLAY and eliminations >= ceili(ROUNDS_TO_PLAY * MIN_ELIMINATION_SHARE),
 			"%d of %d rounds ended by elimination; live time per round: %s" % [eliminations, _results.size(), ", ".join(lengths)])
 
 

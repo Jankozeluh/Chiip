@@ -326,6 +326,8 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Why:** The bots "glided". Real animated character models need their own milestone (M6, D-040). This placeholder costs little and removes the worst problem now.
 
+**Update (M6 task 4):** `SoldierBody` was retired when `CrewBody` took over the characters (D-074).
+
 ## D-040 — A characters & animation milestone after M5 (2026-10-15)
 
 **Decision:** A new **M6 — Characters & animation**: rigged soldier models, third-person animations, hit zones on bones, and first-person arms with the rifle. The later milestones move back one: economy & arsenal is now M7, bomb mode & the first real map M8, multiplayer M9. Entries above this one and older DEVLOG entries keep the old numbers.
@@ -607,6 +609,23 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 - *One material per character*, as `Character` did with a `StandardMaterial3D` for the blocky body: simple, but then every character is its own material (10 characters, 10 materials per class), each holding its own references to the textures.
 - *Baking a blue and a red texture* and swapping: doubles the textures, and only works if there are exactly two colours (a spectator or a team-colour setting later would need more).
 - *The team mask in the albedo's alpha*: one texture fewer, but Godot's import can alter colour under alpha (alpha border fixing, premultiplying) and would break the palette; two textures are clearer (D-072).
+
+## D-074 — Hit zones are boxes on bones, built from the part list (2026-10-15) — *provisional*
+
+**Decision:**
+- **The generator measures the boxes.** For each class it measures the pieces of every zone per bone: one box for the head, one for the chest, one for the stomach, and one for each arm bone and each leg bone (upper arm, forearm and hand; thigh, shin and foot, per side): 15 boxes per class, written to `assets/models/crew/<class>_hit_zones.tres` as a `HitZones` resource (bones, zones, centres in the bone's frame, sizes). Chest and stomach are split at the bottom of the ribcage, 6 cm × body scale below the chest bone (about 1.26 m on the Rifleman); the stomach box covers the pelvis too.
+- **`CrewBody` builds them at runtime**: a `BoneAttachment3D` per box under the model's `Skeleton3D`, a `Hitbox` area under it and a `BoxShape3D` at the box's centre. `Character` finds the hit zones as before (`find_children`). `Character.body` is a `CrewBody` and `SoldierBody` is deleted.
+- **Every class keeps CS's hull and eye height** (64 units standing, 46 crouched), whatever its height (1.72 to 1.92 m). A taller class shows its head above cover a little before it can see over it, and the Scout a little after; the perks balance this (D-052, D-055).
+- **Bots aim at and look for the hit zones' centres** (`Character.get_head_position()` and `get_chest_position()`, with `get_visibility_points()` built from them) instead of the eye position, so they shoot at the head they actually see.
+- **Interim, until the AnimationTree (task 6):** the T-pose arms are lowered 75 degrees when the body is built, and `update_pose()` only sinks the hips by the crouch offset, so the head, chest and stomach zones sink 0.457 m as in CS (the legs sink into the floor too).
+
+**Why:** D-055 asks that what you see is what you hit, and boxes on bones are the cheapest way to get it: the zones come from the same part list as the visible model, so they grow with the class, and they follow whatever the skeleton does, including the animations of later tasks. One box per bone for the limbs keeps the hit tests cheap (15 areas per character, 10 characters) while arms and legs can still move away from the body. Keeping the eye height fixed keeps CS's cover and peeking rules the same for every class, so movement and the maps don't depend on who is playing. Aiming at the zone centres matters because the head zone's centre is no longer at the eyes.
+
+**Alternatives:**
+- *One box per zone only* (a single arms box, a single legs box): fewer areas, but arms and legs couldn't follow the limbs when they move.
+- *Capsules* for the limbs: closer to the limbs' shape, but harder to size from the box-shaped part list, and not as cheap to build.
+- *CS's identical hit zones for everyone*: rejected in D-055.
+- *A per-class eye height*: a taller class would see over cover sooner and a shorter one later, which changes every map's lines of sight per class.
 
 ## Open questions
 

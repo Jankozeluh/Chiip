@@ -14,6 +14,7 @@ Writes into assets/models/crew/:
     <class>.glb              mesh, skeleton (17 bones, T-pose rest) and animations
     <class>_albedo.png       palette-limited colours; team parts in neutral grey
     <class>_mask.png         red = team colour, green = glows (see paint.py)
+    <class>_hit_zones.tres   the hit-zone boxes per bone (a HitZones resource, D-055)
 Then run Godot's import (CLAUDE.md) so the game sees the new files.
 """
 import argparse
@@ -30,6 +31,10 @@ from geometry import Atlas, PieceMesh  # noqa: E402
 from gltf import Glb  # noqa: E402
 from paint import Painter  # noqa: E402
 from rig import BONES, INDEX, PARENT, quat  # noqa: E402
+
+# The chest and stomach hit zones meet this far below the chest bone (times the body scale):
+# at the bottom of the ribcage, about 1.26 m on the Rifleman.
+TORSO_SPLIT = 0.06
 
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 OUT_DIR = os.path.join(PROJECT, 'assets', 'models', 'crew')
@@ -129,6 +134,67 @@ def write_glb(model, path, animations=()):
     return len(pos), len(idx) // 3
 
 
+# Hitbox.Zone in weapons/hitbox.gd
+ZONE_IDS = {'head': 0, 'stomach': 1, 'chest': 2, 'arms': 3, 'legs': 4}
+
+
+def hit_zones(model):
+    """the hit-zone boxes of a class: (bone, zone, centre, size), centre in the bone's frame.
+
+    Head, arms and legs get one box per bone around the pieces of that zone. The torso is
+    split at TORSO_SPLIT below the chest bone: everything of the chest and stomach zones
+    above it is the chest box (on the chest bone), everything below it the stomach box (on
+    the spine bone, down over the pelvis), so the two never overlap and a plate carrier
+    that hangs low counts as stomach where it covers the belly, as in CS."""
+    rest = model['body'].rest_globals()
+    s = model['s']
+    split = rest['chest'][1][1] - TORSO_SPLIT * s
+    groups = {}
+    torso = []
+    for pm in model['meshes']:
+        p = pm.piece
+        if p.zone is None:
+            continue
+        rot, origin = rest[p.bone]
+        basis = rot @ p.basis()
+        place = origin + rot @ p.pos
+        pts = np.array([place + basis @ q for tri, _, _ in pm.triangles(model['atlas']) for q in tri])
+        if p.zone in ('chest', 'stomach'):
+            torso.append(pts)
+        else:
+            groups.setdefault((p.bone, p.zone), []).append(pts)
+    boxes = []
+    for (bone, zone), pts in groups.items():
+        boxes.append((bone, zone, np.concatenate(pts)))
+    above = [q[q[:, 1] >= split] for q in torso]
+    below = [q[q[:, 1] < split] for q in torso]
+    chest = np.concatenate([q for q in above if len(q)])
+    stomach = np.concatenate([q for q in below if len(q)])
+    chest = np.vstack([chest, chest[:1] * [1, 0, 1] + [0, split, 0]])       # starts exactly at the split
+    stomach = np.vstack([stomach, stomach[:1] * [1, 0, 1] + [0, split, 0]])
+    boxes += [('chest', 'chest', chest), ('spine', 'stomach', stomach)]
+    out = []
+    for bone, zone, pts in boxes:
+        lo, hi = pts.min(0), pts.max(0)
+        out.append((bone, zone, (lo + hi) / 2 - rest[bone][1], hi - lo))
+    order = ['head', 'chest', 'stomach', 'arms', 'legs']
+    return sorted(out, key=lambda b: (order.index(b[1]), BONES.index(b[0])))
+
+
+def write_hit_zones(boxes, path):
+    """a HitZones resource (characters/crew/hit_zones.gd) in Godot's text format."""
+    vec = lambda vs: ', '.join(f'{v:.4f}' for vec3 in vs for v in vec3)
+    lines = ['[gd_resource type="Resource" script_class="HitZones" format=3]', '',
+             '[ext_resource type="Script" path="res://characters/crew/hit_zones.gd" id="hit_zones_script"]', '',
+             '[resource]', 'script = ExtResource("hit_zones_script")',
+             'bones = PackedStringArray(' + ', '.join(f'"{b[0]}"' for b in boxes) + ')',
+             'zones = PackedInt32Array(' + ', '.join(str(ZONE_IDS[b[1]]) for b in boxes) + ')',
+             'centers = PackedVector3Array(' + vec([b[2] for b in boxes]) + ')',
+             'sizes = PackedVector3Array(' + vec([b[3] for b in boxes]) + ')', '']
+    with open(path, 'w') as fh:
+        fh.write('\n'.join(lines))
+
+
 def write_texture(image, path):
     Image.fromarray(image).save(path, optimize=True)
     if not os.path.exists(path + '.import'):
@@ -148,6 +214,10 @@ def main():
         write_texture(model['albedo'], os.path.join(a.out, f'{name}_albedo.png'))
         write_texture(model['mask'], os.path.join(a.out, f'{name}_mask.png'))
         nv, nt = write_glb(model, os.path.join(a.out, f'{name}.glb'))
+        boxes = hit_zones(model)
+        write_hit_zones(boxes, os.path.join(a.out, f'{name}_hit_zones.tres'))
+        for bone, zone, centre, size in boxes:
+            print(f'  {zone:8s} on {bone:12s} size {size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f}')
         print(f'{name}: scale {model["s"]:.3f}, {len(model["pieces"])} pieces, {nv} vertices, {nt} triangles, '
               f'texture {model["atlas"].width}x{model["atlas"].height()}')
 
