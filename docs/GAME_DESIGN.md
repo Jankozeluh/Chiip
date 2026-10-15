@@ -194,7 +194,7 @@ Keys are bound by physical position, so they stay in the same place on any keybo
 
 - Mouse sensitivity that matches CS, so your CS sensitivity feels the same.
 - Field of view.
-- Crosshair style: size, gap, thickness, color and center dot, like CS crosshair settings.
+- Crosshair style: size, gap, thickness, color and center dot, like CS crosshair settings. Built in M2 (`ui/crosshair.gd`); the defaults are green, 7 px lines, a 4 px gap, 2 px thick, outlined, no dot, static (D-021). Dynamic mode widens the gap to match the actual inaccuracy cone, e.g. +38 px at 720p for 4.5°.
 - Later: viewmodel (weapon) position.
 
 ## 8. Out of scope for now

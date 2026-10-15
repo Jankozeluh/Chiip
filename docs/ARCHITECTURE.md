@@ -65,6 +65,8 @@ Chiip/
 | `weapons/hitbox.gd` | `Hitbox` (`Area3D`): one damage zone with its multiplier; emits `hit` |
 | `maps/props/target_dummy.tscn` + `.gd` | `TargetDummy`: CS-sized, color-coded hitboxes (head red, chest blue, stomach teal, arms light blue, legs dark), floating damage numbers, running total, optional side-to-side movement |
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players. Instanced in the player under `Head/Camera3D` |
+| `ui/hud.tscn` + `.gd` | HUD: crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
+| `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
@@ -76,7 +78,7 @@ Chiip/
 | Debug overlay | Speed and position readout | M1 | Built |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M5) |
-| HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |
+| HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Built: crosshair, ammo, weapon name |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |
 | Bot AI | Navigation, perception, state machine, aim | M4 | Planned |
 | Developer console | `bot_add`, `noclip` and similar commands | M4 | Planned |

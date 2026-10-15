@@ -3,6 +3,7 @@
 [ext_resource type="Shader" path="res://shaders/prototype_grid.gdshader" id="grid_shader"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
 [ext_resource type="PackedScene" path="res://ui/debug_overlay.tscn" id="debug_overlay_scene"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="hud_scene"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_material"]
 sky_top_color = Color(0.32, 0.42, 0.58, 1)
@@ -201,6 +202,9 @@ material = SubResource("wall_material")
 position = Vector3(0, 0, 8)
 
 [node name="DebugOverlay" parent="." node_paths=PackedStringArray("player") instance=ExtResource("debug_overlay_scene")]
+player = NodePath("../Player")
+
+[node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("hud_scene")]
 player = NodePath("../Player")
 
 [node name="Labels" type="Node3D" parent="."]

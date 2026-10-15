@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** Milestone 1. You can move around a test map with CS-style movement. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** Milestone 2 in progress. You can move around a test map with CS-style movement and shoot a rifle with CS-like recoil. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -31,6 +31,8 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 | Crouch (crouch in the air to crouch-jump) | Ctrl |
 | Walk (silent) | Shift |
 | Free / capture the mouse | Esc / click |
+| Shoot | Left mouse button |
+| Reload | R |
 | Debug overlay (speed, position, jump peak) | F3 |
 
 ## Tests
