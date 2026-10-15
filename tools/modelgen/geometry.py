@@ -59,7 +59,7 @@ class Piece:
     shape  'box', 'cyl', 'ell' or 'dome' (see the module docstring)
     pos    where the shape's origin sits in the bone's frame (box/ell/dome: centre; cyl: start)
     rot    extra rotation in degrees (pitch, yaw, roll)
-    axis   for 'cyl': the direction it runs from its start ('+x', '-y', ...)
+    axis   for 'cyl': the direction it runs from its start ('+x', '-y', ... or a vector)
     mat    material name (paint.py); 'team' parts are painted in the team colour at runtime
     zone   hit zone it belongs to ('head', 'chest', 'stomach', 'arms', 'legs') or None
     decals list of (test(x, y, z, side) -> bool, material): paint another material where the
@@ -80,7 +80,7 @@ class Piece:
         """the shape's frame inside the bone's frame."""
         b = rot(*self.rot)
         if self.shape == 'cyl':
-            b = b @ basis_from_y(AXES[self.axis])
+            b = b @ basis_from_y(AXES[self.axis] if isinstance(self.axis, str) else self.axis)
         return b
 
 
@@ -172,8 +172,11 @@ def _ell(radii, sides, rings, clip=None):
         n /= np.linalg.norm(n)
         for row in pts:
             for p in row:
-                if np.dot(p, n) < h:            # press the point up onto the plane
-                    p[1] = (h - n[0] * p[0] - n[2] * p[2]) / n[1]
+                if np.dot(p, n) < h:
+                    if abs(n[1]) > 0.9:         # a near-level cut (helmets): press the point up onto it
+                        p[1] = (h - n[0] * p[0] - n[2] * p[2]) / n[1]
+                    else:                       # a steep cut (a hood's face opening): along the normal
+                        p += (h - np.dot(p, n)) * n
     polys = []
     for r in range(rings):
         for i in range(len(pts[r])):

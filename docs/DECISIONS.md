@@ -654,6 +654,17 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** An `AnimationNodeStateMachine` for locomotion (good for distinct states, but walk/run/strafe blend continuously, which blend spaces do better); playing clips with `AnimationPlayer` and cross-fades in code (simple, but no per-bone layering); keeping the bot's viewmodel as its third-person gun (it floated under the head, not in the hands); animating on rendered frames (smoother on fast monitors, but hit zones would lag the simulation).
 
+## D-077 — The other three classes, and how big a target each one is (2026-10-15) — *provisional*
+
+**Decision:**
+- **Bulwark, Marksman and Scout are built from the approved concept sheets** by the same generator, each with its own kit and the shared skeleton and clips (solved for its own body): Bulwark 2,435 triangles, Marksman 1,805, Scout 1,898 (Rifleman 2,106); textures 256 × 288 to 256 × 576.
+- **The Marksman's coat is one flap per thigh plus a pelvis piece**, so it swings with the legs like a segmented model; the Scout's goggles glow (the mask's green channel); the Bulwark's shoulder plates carry its team-colour edge.
+- **Hit zones keep following the visible body** (D-055), gear included. Total zone volume: Scout 132 L, Marksman 173 L, Rifleman 223 L, Bulwark 484 L. The Bulwark's chest zone is 0.91 m wide (shoulder plates) and 0.59 m deep (ammo pack). Kept as is for the playtest.
+
+**Why:** These are the looks you approved, and the generator keeps them consistent with the Rifleman. Leaving gear out of the hit zones would let bullets pass through things you can see. The Bulwark's size is the trade D-052/D-055 accepted (a bigger target, balanced by *Plated*); the playtest decides if it's too big, and the fix would be in its part list (smaller plates or pack), not in special hit-zone rules.
+
+**Alternatives:** Hit zones from the body only, without gear (fairer sizes, but shots through visible plates and packs would miss); one shared hit-zone set for every class (CS's rule, rejected in D-055); smaller shoulder plates now, before anyone has played against it.
+
 ## Open questions
 
 | Question | Decide in |

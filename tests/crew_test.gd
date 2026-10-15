@@ -21,7 +21,8 @@ extends Node3D
 ## crouch; a shot kicks the gun back and it settles; the reload moves the left hand off the
 ## gun but leaves the torso aiming; deaths lie on the floor and respawning stands up again; a
 ## character picks the death from the last hit and where the killer stood; and only whoever
-## looks through a character's eyes sees its viewmodel. These checks put a still body
+## looks through a character's eyes sees its viewmodel. Task 7 checks that every class has its
+## model, textures, hit zones and clips, and that the hit zones grow with the class. These checks put a still body
 ## (animated = false, the rest pose) under the older ones, which measure the zones as made.
 ## Quits with the number of failed checks as the exit code (0 means everything passed).
 
@@ -39,6 +40,8 @@ const HEIGHT_TOLERANCE := 0.02
 const FOREGRIP := Vector3(0.0, -0.008, -0.31)
 const LEFT_WRIST_FROM_FOREGRIP := Vector3(-0.035, -0.035, 0.045)
 const RUN_SPEED := 215.0 * 0.0254
+## Every class and its height in metres (GAME_DESIGN.md 4.9, D-070).
+const CLASS_HEIGHTS := {"rifleman": 1.82, "bulwark": 1.92, "marksman": 1.88, "scout": 1.72}
 
 var _failures: int = 0
 
@@ -69,6 +72,7 @@ func _run_all() -> void:
 	await _test_deaths()
 	await _test_character_deaths()
 	await _test_first_person()
+	await _test_classes()
 
 
 func _test_model_and_material() -> void:
@@ -484,6 +488,55 @@ func _test_first_person() -> void:
 			"from outside: %s, first person: %s" % [outside, inside])
 	bot.queue_free()
 	await _wait_ticks(2)
+
+
+## Task 7: every class has its model, textures, hit zones and clips, and its hit zones grow with
+## its body: the head zone's top is the class's height, the Scout is the smallest target and the
+## Bulwark the biggest.
+func _test_classes() -> void:
+	var complete := true
+	var details := ""
+	var volumes := {}
+	var heights_ok := true
+	for class_id: String in CLASS_HEIGHTS:
+		var base := "res://assets/models/crew/" + class_id
+		var files_ok := ResourceLoader.exists(base + ".glb") and ResourceLoader.exists(base + "_albedo.png") \
+				and ResourceLoader.exists(base + "_mask.png") and ResourceLoader.exists(base + "_hit_zones.tres")
+		if not files_ok:
+			complete = false
+			details += " %s: files missing;" % class_id
+			continue
+		var body := BODY_SCENE.instantiate() as CrewBody
+		body.model = load(base + ".glb")
+		body.animated = false
+		add_child(body)
+		await _wait_ticks(3)
+		var player := body.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+		var bones := body.get_skeleton().get_bone_count()
+		var clips := player.get_animation_list().size()
+		var zones := body.get_hitboxes().size()
+		if bones != 17 or clips != 41 or zones != 15:
+			complete = false
+		details += " %s: %d bones, %d clips, %d zones;" % [class_id, bones, clips, zones]
+		var top := 0.0
+		var volume := 0.0
+		for hitbox in body.get_hitboxes():
+			var shape := hitbox.get_child(0) as CollisionShape3D
+			var size := (shape.shape as BoxShape3D).size
+			volume += size.x * size.y * size.z
+			if hitbox.zone == Hitbox.Zone.HEAD:
+				top = shape.global_position.y + size.y / 2.0
+		volumes[class_id] = volume
+		if absf(top - CLASS_HEIGHTS[class_id]) > HEIGHT_TOLERANCE:
+			heights_ok = false
+		details += " head top %.3f m, zones %.0f L;" % [top, volume * 1000.0]
+		body.queue_free()
+		await _wait_ticks(2)
+	_check("Every class has its model, textures and hit zones, 17 bones, 41 clips and 15 hit zones", complete, details)
+	_check("Each class's head zone reaches its height (1.72 to 1.92 m, within 2 cm)", heights_ok, details)
+	_check("The hit zones grow with the body: the Scout is the smallest target, the Bulwark the biggest",
+			volumes.size() == 4 and volumes["scout"] == volumes.values().min() and volumes["bulwark"] == volumes.values().max(),
+			str(volumes))
 
 
 ## A crew body with the default model (the Rifleman) in the scene: still, in its rest pose,
