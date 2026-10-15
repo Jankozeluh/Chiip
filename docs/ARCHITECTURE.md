@@ -216,4 +216,14 @@ These follow the official Godot style guide.
 - **Documented code.** Every script starts with a `##` doc comment that explains its purpose. Exported variables and public functions get `##` comments too. Godot shows these in its built-in help (F1), so the documentation is visible inside the editor.
 - **No magic numbers.** Gameplay values are `@export` variables or stored in Resource data files, so they can be tuned in the editor.
 - **Signals for "something happened"** (e.g. `died`, `round_ended`), and direct function calls for "do this".
-- **Keep multiplayer possible.** Keep player input separate from the simulation that uses it, and avoid global state where it isn't needed.
+- **Keep multiplayer possible** (it comes in M8, D-033). See the next section.
+
+## Keeping multiplayer possible
+
+Multiplayer is added in M8, after the single-player game. These rules for M4–M7 keep that retrofit manageable:
+
+1. **Characters only move and shoot through input commands.** A `Character` never reads the keyboard; a controller (player, bot, later network) gives it a `CharacterInput` each tick.
+2. **Game rules live in "authority" code, separate from what's shown.** Damage, deaths, round state, money and the bomb are decided by gameplay nodes and announced with signals. HUD, sounds and effects only react to those signals. In M8 the host runs the rules, and clients just show the results.
+3. **Gameplay runs in `_physics_process`**, at a fixed tick (128 Hz). `_process` is only for visuals (camera, effects, UI).
+4. **Randomness that affects gameplay uses seeded generators** (like `Weapon.rng`), never the global `randf()`. Visual-only randomness (spark directions, hole rotation) can stay global.
+5. **Characters and other gameplay objects get stable IDs**, so the host and clients can refer to the same thing.

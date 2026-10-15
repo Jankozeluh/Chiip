@@ -56,6 +56,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Input bindings created from code need `device = -1` (all devices), like bindings made in the editor.
 - In a `--script` that extends `SceneTree`, nodes added in `_init()` aren't ready yet, so `@onready` variables are null. Await a few `physics_frame`s first.
 - A built TrenchBroom map scene stores references to its textures. Rebuild the map (tools/build_maps.gd) *before* deleting or renaming a texture it uses, or the scene can't be loaded anymore.
+- Multiplayer comes in M8 (D-033). Follow "Keeping multiplayer possible" in docs/ARCHITECTURE.md in all gameplay code.
 - Keep Chiip visually distinct from Counter-Strike: no desert/dust palettes, no CS-like map layouts or names (D-031).
 - Headless runs use a dummy audio driver where sounds never finish; anything still "playing" at exit is reported as leaked. Tests use silent weapon data.
 - GDScript lambdas copy captured locals: assigning to a captured `int`/`Vector2` inside a lambda doesn't change the outer variable. Capture an `Array`/`Dictionary` instead.

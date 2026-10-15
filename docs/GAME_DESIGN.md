@@ -200,6 +200,6 @@ Keys are bound by physical position, so they stay in the same place on any keybo
 
 ## 8. Out of scope for now
 
-Online multiplayer, matchmaking, skins and cosmetics, ranked mode, mobile.
+Matchmaking, ranked mode, skins and cosmetics, mobile.
 
-These can be reconsidered later. The code should not make multiplayer impossible.
+Multiplayer *is* planned, as M8 after the single-player game: one player hosts, friends join and bots fill empty slots (D-033).

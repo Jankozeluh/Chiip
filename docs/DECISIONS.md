@@ -252,6 +252,16 @@
 
 **Alternatives:** CSG for everything (no extra tools, but no per-face alignment or easy baking), or deciding later.
 
+## D-033 — Multiplayer comes after the single-player game, as M8 (2026-10-15)
+
+**Decision:** Chiip gets multiplayer, in a new milestone **M8** after M7: one player hosts and friends join (LAN first, then Steam lobbies), with bots filling empty slots. There's no matchmaking or ranked play. M4–M7 stay single-player but follow network-friendly rules (see ARCHITECTURE.md, "Keeping multiplayer possible"), which keeps the retrofit manageable.
+
+**Why:** You chose to finish a complete single-player game first (rounds, economy, bomb, a real map). That's the faster route to something fully playable.
+
+**Cost, accepted knowingly:** rounds, economy and bomb are built without networking, so M8 has to retrofit replication, client prediction and lag compensation. That's more work than building them networked from the start.
+
+**Alternatives:** multiplayer right after rounds (before economy and bomb), single-player only, or deciding later.
+
 ## Open questions
 
 | Question | Decide in |
@@ -260,5 +270,4 @@
 | Team sizes: 1 vs N, or 5v5 with bot teammates? | M5 |
 | Weapon names | M6 |
 | Team names and the game's setting/theme | Any time |
-| Multiplayer (e.g. Steam lobbies, one player hosting, with bots)? If yes, restructure player control into per-tick input commands with server authority *before* bots, since bots and network players should drive characters the same way | Before M4 |
 | Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |

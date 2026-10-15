@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M4 — Bots (planned, waiting for the multiplayer decision and your go-ahead)
+> **Current milestone:** M4 — Bots (planned, waiting for your go-ahead)
 
 ## Your open checks
 
@@ -32,6 +32,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M5 | Health, rounds & game flow | ⬜ | Full rounds against bots, with menus and settings |
 | M6 | Economy & arsenal | ⬜ | Earn money and buy weapons between rounds |
 | M7 | Bomb mode & first real map | ⬜ | A complete plant/defuse match on a real map |
+| M8 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -165,7 +166,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** composition (one `Character`, different controllers), `NavigationRegion3D` / `NavigationAgent3D`, state machines, raycasts for vision, `AudioStreamPlayer3D`, groups, timers, autoloads (Godot's singletons, for the console).
 
-**Decision before starting: multiplayer.** See the options in the chat; the result is recorded in DECISIONS.md and may reorder the milestones after M5.
+**Multiplayer:** decided, it comes in M8 after the single-player game (D-033). M4 builds the command-driven character, which M8 will reuse for network players.
 
 ## M5 — Health, rounds & game flow ⬜
 
@@ -217,6 +218,23 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** level design workflow in TrenchBroom, lightmap baking, `Area3D` triggers, audio buses, exporting a game.
 
+## M8 — Multiplayer ⬜
+
+**Goal:** play Chiip with friends. One player hosts, others join, and bots fill the empty slots (D-033).
+
+- [ ] Networking foundation: Godot's high-level multiplayer (ENet), host/join by IP on a LAN
+- [ ] Server authority: the host runs the game rules (damage, rounds, money, bomb); clients send their per-tick input commands (from M4)
+- [ ] Client-side prediction and correction for your own movement, so it stays as responsive as single-player
+- [ ] Lag compensation for hitscan shots: the host checks hits against where targets were when you fired
+- [ ] Replicate rounds, economy, bomb and bots to all players
+- [ ] Lobby: host/join, team choice, bots fill empty slots
+- [ ] Steam lobbies and friend invites via the GodotSteam addon
+- [ ] Network tests: simulated latency and packet loss
+
+**Done when:** you and a friend can play a full bomb-defusal match together against bots, over LAN and through a Steam lobby, and shooting feels fair at normal pings.
+
+**You learn:** Godot's multiplayer API (RPCs, `MultiplayerSynchronizer`, `MultiplayerSpawner`), authority, prediction, lag compensation, Steamworks basics.
+
 ## Backlog (ideas, not scheduled)
 
 - More maps and map voting
@@ -225,4 +243,3 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 - Training modes: aim trainer, spray practice, movement maps (KZ- or surf-style)
 - Match statistics (K/D, ADR, headshot %) and a stats screen
 - Demo recording and replays
-- Online multiplayer

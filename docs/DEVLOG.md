@@ -7,7 +7,9 @@
 **Done**
 - You playtested M3: the look is good. **M3 is closed.**
 - Wrote the detailed M4 plan (bots, 12 tasks). Central idea: every character is driven by per-tick input commands (like CS's "usercmd"), so bots follow exactly the same rules as you, which is also the structure multiplayer needs.
-- Put the multiplayer question to you before M4 (see DECISIONS.md).
+- Multiplayer decided: yes, after the single-player game, as a new milestone M8 (D-033). Added M8 to the plan and five "keep multiplayer possible" rules to ARCHITECTURE.md for M4–M7.
+
+**Next:** Your go-ahead to start M4.
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 
