@@ -1,13 +1,13 @@
 [gd_scene format=3]
 
-[ext_resource type="Environment" path="res://assets/environments/dusty_afternoon.tres" id="environment"]
+[ext_resource type="Environment" path="res://assets/environments/cool_daylight.tres" id="environment"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
 [ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="dummy_scene"]
 [ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="pixel_font"]
 [ext_resource type="Material" path="res://assets/materials/concrete_floor.tres" id="concrete_floor"]
-[ext_resource type="Material" path="res://assets/materials/sand.tres" id="sand"]
+[ext_resource type="Material" path="res://assets/materials/gravel_grey.tres" id="gravel_grey"]
 [ext_resource type="Material" path="res://assets/materials/bricks_red.tres" id="bricks_red"]
-[ext_resource type="Material" path="res://assets/materials/stone_beige.tres" id="stone_beige"]
+[ext_resource type="Material" path="res://assets/materials/stone_grey.tres" id="stone_grey"]
 [ext_resource type="Material" path="res://assets/materials/wood_planks.tres" id="wood_planks"]
 [ext_resource type="Material" path="res://assets/materials/metal_plates.tres" id="metal_plates"]
 [ext_resource type="Material" path="res://assets/materials/painted_plaster.tres" id="painted_plaster"]
@@ -28,7 +28,7 @@ environment = ExtResource("environment")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation = Vector3(-0.610865, 0.9, 0)
-light_color = Color(1, 0.86, 0.68, 1)
+light_color = Color(0.96, 0.97, 1, 1)
 light_energy = 1.2
 shadow_enabled = true
 
@@ -64,7 +64,7 @@ material = ExtResource("concrete_floor")
 position = Vector3(0, -0.5, 50)
 use_collision = true
 size = Vector3(64, 1, 76)
-material = ExtResource("sand")
+material = ExtResource("gravel_grey")
 
 [node name="WallNorth" type="CSGBox3D" parent="Geometry"]
 position = Vector3(0, 3, -32.5)
@@ -118,51 +118,51 @@ material = ExtResource("wood_planks")
 position = Vector3(-14, 1, -10)
 use_collision = true
 size = Vector3(6, 2, 6)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Ramp25" type="CSGBox3D" parent="Geometry"]
 position = Vector3(-15.5, 0.5469, -5.0668)
 rotation = Vector3(0.436332, 0, 0)
 use_collision = true
 size = Vector3(3, 1, 4.7324)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="StairsVisual" type="CSGCombiner3D" parent="Geometry"]
 
 [node name="Step1" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.125, -4.725)
 size = Vector3(3, 0.25, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Step2" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.25, -5.075)
 size = Vector3(3, 0.5, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Step3" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.375, -5.425)
 size = Vector3(3, 0.75, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Step4" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.5, -5.775)
 size = Vector3(3, 1, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Step5" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.625, -6.125)
 size = Vector3(3, 1.25, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Step6" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.75, -6.475)
 size = Vector3(3, 1.5, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Step7" type="CSGBox3D" parent="Geometry/StairsVisual"]
 position = Vector3(-12.5, 0.875, -6.825)
 size = Vector3(3, 1.75, 0.35)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="StairsClip" type="StaticBody3D" parent="Geometry"]
 position = Vector3(-12.5, 0.91863, -5.65812)
@@ -187,13 +187,13 @@ material = ExtResource("metal_plates")
 position = Vector3(-3.5, 1.5, -20)
 use_collision = true
 size = Vector3(5, 3, 0.5)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="PeekWallRight" type="CSGBox3D" parent="Geometry"]
 position = Vector3(3.5, 1.5, -20)
 use_collision = true
 size = Vector3(5, 3, 0.5)
-material = ExtResource("stone_beige")
+material = ExtResource("stone_grey")
 
 [node name="Player" parent="." instance=ExtResource("player_scene")]
 position = Vector3(0, 0, 14)

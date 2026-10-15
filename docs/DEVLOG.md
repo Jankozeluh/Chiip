@@ -31,6 +31,7 @@
 - Real-time screenshots of both rooms look the same, except the TrenchBroom floor was brighter: the darkening was a tint on the CSG materials only. Moved it into the textures (new brightness option in the texture tool), so both pipelines share one source.
 - Frame-rate check: 120 fps (the display's limit), slowest 1% of frames ~10 ms, on the range and the course.
 - You switched the palette effect on (D-030).
+- You said the look was too much like Counter-Strike. Right: I had steered toward a dust-map palette (D-029). You chose to keep the materials and take the dust out: grey stone and grey gravel from the same photos (the texture tool got a saturation option), muted brick, and cool daylight instead of a warm afternoon (D-031). Found on the way: a built TrenchBroom scene can't be loaded once a texture it uses is deleted, so rebuild first (added to CLAUDE.md gotchas). Rooms still match within 0.1 mm and both test suites pass.
 
 **Decisions:** D-024 to D-030 in [DECISIONS.md](DECISIONS.md).
 

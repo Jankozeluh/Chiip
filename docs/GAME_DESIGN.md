@@ -167,7 +167,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 - Pixelated textures with nearest-neighbor filtering, so no smoothing.
 - Simple geometry: blocky architecture and low-poly models.
 - World image limited to 12 shades per color channel with ordered dithering (D-030).
-- Lighting: a sun-baked dusty afternoon (D-029): low warm sun, long shadows, light haze, colored lamps as accents. Baked lightmaps are being evaluated in M3.
+- Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Baked lightmaps are being evaluated in M3.
 - **Clarity rule:** enemies must always stand out from the background.
 
 ## 6. Controls (default)

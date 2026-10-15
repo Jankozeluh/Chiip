@@ -216,9 +216,9 @@
 
 ## D-028 — Downloads approved for M3 (2026-10-15)
 
-**Decision:** Eight ambientCG CC0 textures (Concrete034, Plaster001, Bricks075A (actually beige stone), Bricks097, Ground080, Planks037A, MetalPlates006, PaintedPlaster017), the `func_godot` 2025.12 addon (MIT) and the Silkscreen font (OFL). The user installs TrenchBroom themselves. Only the processed 64 × 64 textures are kept in the project, and the original downloads are deleted.
+**Decision:** Eight ambientCG CC0 textures (Concrete034, Plaster001, Bricks075A (stone, now used desaturated as grey stone), Bricks097, Ground080, Planks037A, MetalPlates006, PaintedPlaster017), the `func_godot` 2025.12 addon (MIT) and the Silkscreen font (OFL). The user installs TrenchBroom themselves. Only the processed 64 × 64 textures are kept in the project, and the original downloads are deleted.
 
-## D-029 — Look: sun-baked dusty afternoon (2026-10-15)
+## D-029 — Look: sun-baked dusty afternoon (2026-10-15) — *Replaced by D-031*
 
 **Decision:** The test map's atmosphere is a warm late-afternoon desert look, closer to CS's dust maps than to Quake's dark dungeons. That means a low warm sun with long shadows, a dusty blue sky with a sandy horizon, darker ambient light, light haze, slightly more contrast and less saturation, plus colored lamps for accents.
 
@@ -233,6 +233,14 @@
 **Why:** It adds the grain and slight banding of 90s software rendering. The HUD isn't affected.
 
 **Alternatives:** Off, for a cleaner image. It remains a setting.
+
+## D-031 — Look: neutral greys and cool daylight, not a dust map (2026-10-15)
+
+**Decision:** Keep the same set of materials, but take the dust out. Sand and beige stone become grey gravel and grey stone (the same CC0 photos, desaturated), and the red brick is muted. The lighting becomes cool daylight: a neutral white sun, a blue sky, a grey-blue horizon and haze (`assets/environments/cool_daylight.tres`). The only warm accents are wooden crates, colored lamps and the yellow firing line. Replaces D-029.
+
+**Why:** You pointed out that the sand, beige and warm light looked too much like Counter-Strike's dust maps. Chiip should have its own identity, which also matters for a possible Steam release. Of the four directions offered, you chose the smallest change.
+
+**Alternatives:** A dark Quake look, retro sci-fi industrial, or urban night. Any of these can still be tried later.
 
 ## Open questions
 
