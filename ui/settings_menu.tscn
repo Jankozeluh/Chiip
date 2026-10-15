@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://ui/crosshair.gd" id="crosshair_script"]
 
 [node name="SettingsMenu" type="CanvasLayer"]
+process_mode = 3
 layer = 6
 visible = false
 script = ExtResource("menu_script")

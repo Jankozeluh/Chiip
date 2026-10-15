@@ -15,6 +15,11 @@ extends CanvasLayer
 ## open ([MenuState]) and once the match is over (the [MatchEndScreen] shows
 ## the final table then).
 ##
+## It keeps running while the game is paused ([code]process_mode = Always[/code],
+## D-065): a paused node's [code]_process[/code] stops, and a scoreboard that was
+## up when Esc was pressed would stay on screen over the pause menu. Running, it
+## sees that a menu is open and hides.
+##
 ## Its look comes from the UI theme (D-057): the panel, the header and the
 ## scores use theme type variations, and [method set_ui_scale] hands the
 ## menu a theme scaled for the window ([UiTheme]).

@@ -5,7 +5,9 @@ extends CanvasLayer
 ##
 ## While it's open, the player's controls ignore the keyboard and mouse: it
 ## registers with [MenuState] like the menus do. Up and down recall earlier
-## commands; Esc or the console key closes it. The output shows the last
+## commands; Esc or the console key closes it (Esc closes only the console, even
+## over the pause menu). It works while the game is paused too
+## ([code]process_mode = Always[/code], D-065). The output shows the last
 ## [constant VISIBLE_LINES] lines; the mouse wheel and Page Up / Page Down
 ## scroll back through the last [constant HISTORY_LINES], so a long answer such
 ## as [code]help[/code] is never lost.
@@ -53,7 +55,7 @@ func _input(event: InputEvent) -> void:
 	# A menu waiting for a key to bind would lose it to the console key.
 	if MenuState.capturing_input:
 		return
-	if event.is_action_pressed("toggle_console") or (is_open and event.is_action_pressed("toggle_mouse")):
+	if event.is_action_pressed("toggle_console") or (is_open and event.is_action_pressed("pause")):
 		set_open(not is_open)
 		get_viewport().set_input_as_handled()
 	elif is_open and event is InputEventKey and event.is_pressed():
@@ -293,7 +295,7 @@ func _cmd_setting(args: Array, key: StringName, command_name: String) -> void:
 
 
 ## Opens the settings menu over the game and closes the console, so the menu has
-## the keyboard and the mouse. The main menu's Settings button opens it too, and the pause menu will (task 12).
+## the keyboard and the mouse. The main menu's and the pause menu's Settings buttons open it too.
 func _cmd_settings(_args: Array) -> void:
 	if main == null:
 		print_line("There is no game to open the settings menu in.")

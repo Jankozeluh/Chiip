@@ -34,8 +34,10 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Esc would hand the mouse back to the player controls; the buttons need it free.
-	if visible and event.is_action_pressed("toggle_mouse"):
+	# Esc would open the pause menu (it comes before this screen in main.tscn, and
+	# later nodes see input first, so this screen swallows Esc): the match is over,
+	# there is nothing to pause.
+	if visible and event.is_action_pressed("pause"):
 		get_viewport().set_input_as_handled()
 
 

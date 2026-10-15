@@ -1,9 +1,9 @@
 class_name MenuState
 extends RefCounted
 ## One shared answer to "is a menu open?" (D-059): the settings menu, the
-## developer console, the main menu and match setup (task 11) and, in task 12,
-## the pause menu all register here, and everything that must stop reacting while a menu is up
-## asks here. The player controller ignores movement, shooting and looking, the
+## developer console, the main menu and match setup (task 11) and the pause
+## menu (task 12) all register here, and everything that must stop reacting
+## while a menu is up asks here. The player controller ignores movement, shooting and looking, the
 ## hold-Tab scoreboard stays hidden, and the mouse is shown while the first menu
 ## opens and captured again when the last one closes.
 ##
@@ -29,7 +29,7 @@ extends RefCounted
 ##
 ## func _input(event: InputEvent) -> void:
 ##     # Only the menu on top reacts to Esc.
-##     if visible and MenuState.is_top(self) and event.is_action_pressed("toggle_mouse"):
+##     if visible and MenuState.is_top(self) and event.is_action_pressed("pause"):
 ##         close()
 ##         get_viewport().set_input_as_handled()
 ## [/codeblock]

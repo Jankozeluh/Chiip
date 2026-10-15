@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) the settings menu, and the main menu with match setup (Play, Practice, Settings, Quit over a camera flight) are in (tasks 1–11 of 13), so F5 opens the main menu and Play starts a match you set up; the pause menu follows. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) the settings menu, the main menu with match setup (Play, Practice, Settings, Quit over a camera flight) and the pause menu (Esc: Resume, Settings, Leave match) are in (tasks 1–12 of 13), so F5 opens the main menu and Play starts a match you set up. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -18,6 +18,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Main menu** buttons.
+   **Esc** during a game opens the **pause menu**, which pauses everything (the round timer, the bots, the sounds): **Resume**, **Settings** and **Leave match** (back to the main menu). Esc again resumes.
 3. **Practice** in the main menu is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
 
 **From the terminal**, without opening the editor (this opens the main menu):
@@ -53,14 +54,15 @@ To play a different map (also straight into the game, as a match where the map a
 | Jump | Space or mouse wheel down |
 | Crouch (crouch in the air to crouch-jump) | Ctrl |
 | Walk (silent) | Shift |
-| Free / capture the mouse | Esc / click |
+| Pause menu (pauses the game and frees the mouse; Esc again resumes) | Esc |
+| Capture the mouse again (after alt-tab, with no menu open) | Click in the window |
 | Shoot | Left mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
-| Settings menu | **Settings** in the main menu, or type `settings` in the console during a game (the pause menu will open it later); Esc or Back closes it |
+| Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 
 **Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 
@@ -72,7 +74,7 @@ Your settings are saved the moment you change them and apply at once. They live 
 ~/Library/Application Support/Godot/app_userdata/Chiip/settings.cfg
 ```
 
-Open the **settings menu** with **Settings** in the main menu, or by typing `settings` in the developer console (the key left of 1) during a game; the pause menu will open it too. It has five tabs, and every change applies and is saved at once, with no Apply button:
+Open the **settings menu** with **Settings** in the main menu, or by typing `settings` in the developer console (the key left of 1) during a game, or from the pause menu (Esc). It has five tabs, and every change applies and is saved at once, with no Apply button:
 
 - **Game:** mouse sensitivity (CS's scale: a slider and a number field you can type an exact value into), invert Y, field of view (90 across a 4:3 screen, like CS).
 - **Video:** fullscreen, V-Sync, frame rate limit, pixel resolution (270 to 720 lines), palette effect, pixelated HUD.

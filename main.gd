@@ -1,15 +1,15 @@
 extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
-## the HUD, debug overlay, hold-Tab scoreboard, match-end screen, settings menu
-## and developer console on top.
+## the HUD, debug overlay, hold-Tab scoreboard, pause menu, match-end screen,
+## settings menu and developer console on top.
 ##
 ## The game starts from the main menu (ui/main_menu.tscn, the project's main
 ## scene), which leaves a [GameLaunch] description for [method _load_map] to read
 ## (D-064); started directly, with the command-line shortcuts or by a test, it
-## uses its exported values below. The match-end screen's "Main menu" button and
-## the console's [code]disconnect[/code] come back to the menu with
-## [method return_to_menu].
+## uses its exported values below. The pause menu's "Leave" button, the match-end
+## screen's "Main menu" button and the console's [code]disconnect[/code] come back
+## to the menu with [method return_to_menu].
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
@@ -54,6 +54,7 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 @onready var _console: DevConsole = $DevConsole
 @onready var _scoreboard: Scoreboard = $Scoreboard
 @onready var _match_end_screen: MatchEndScreen = $MatchEndScreen
+@onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
 
 ## The map currently loaded.
@@ -70,6 +71,11 @@ func _ready() -> void:
 	_console.main = self
 	_match_end_screen.play_again_pressed.connect(restart_match)
 	_match_end_screen.main_menu_pressed.connect(return_to_menu)
+	# The pause menu (D-065): Settings opens the settings menu over it, Leave goes
+	# back to the main menu, and the menu comes back when the settings close.
+	_pause_menu.settings_pressed.connect(open_settings)
+	_pause_menu.leave_pressed.connect(return_to_menu)
+	_settings_menu.closed.connect(_pause_menu.settings_closed)
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -80,9 +86,9 @@ func get_map() -> Node:
 	return _map
 
 
-## Opens the settings menu over the game (console: settings). The main menu
-## and the pause menu open the same menu; it reports back with its
-## [signal SettingsMenu.closed].
+## Opens the settings menu over the game (console: settings, and the pause
+## menu's Settings button). The main menu opens the same menu; it reports back
+## with its [signal SettingsMenu.closed].
 func open_settings() -> void:
 	_settings_menu.open()
 
@@ -90,6 +96,11 @@ func open_settings() -> void:
 ## The settings menu, so a menu that wants to know when it closes can connect to it.
 func get_settings_menu() -> SettingsMenu:
 	return _settings_menu
+
+
+## The pause menu (Esc).
+func get_pause_menu() -> PauseMenu:
+	return _pause_menu
 
 
 ## Replaces the current map with the scene at [param path] (console: map).
@@ -106,10 +117,13 @@ func restart_match() -> void:
 	change_map(_map.scene_file_path)
 
 
-## Leaves the game for the main menu (the match-end screen's "Main menu" button,
-## console: disconnect). The game scene is freed and the menu scene starts; the
-## menus and the console in the game close with it.
+## Leaves the game for the main menu (the pause menu's Leave button, the
+## match-end screen's "Main menu" button, console: disconnect). The game scene is
+## freed and the menu scene starts; the menus and the console in the game close
+## with it. The game is unpaused first: the pause is a property of the tree, not
+## of the scene, so the main menu would otherwise start frozen (and deaf to clicks).
 func return_to_menu() -> void:
+	get_tree().paused = false
 	get_tree().change_scene_to_file(GameLaunch.MENU_SCENE)
 
 
@@ -159,6 +173,7 @@ func _spawn_map(scene: PackedScene) -> void:
 	_scoreboard.set_round_manager(rules as RoundManager)
 	_hud.set_player(player)
 	_hud.respawn_hint = rules is ArenaRules
+	_pause_menu.set_leave_text("Leave match" if rules is RoundManager else ("Leave practice" if rules is ArenaRules else "Leave"))
 	_set_up_spectating(player, rules is RoundManager)
 	_debug_overlay.player = player
 	Teams.set_viewer_team(player.team)
@@ -217,6 +232,7 @@ func apply_pixel_settings() -> void:
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_pause_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_settings_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 
 

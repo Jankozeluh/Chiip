@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://ui/dev_console.tscn" id="console_scene"]
 [ext_resource type="PackedScene" path="res://ui/scoreboard.tscn" id="scoreboard_scene"]
 [ext_resource type="PackedScene" path="res://ui/match_end_screen.tscn" id="match_end_scene"]
+[ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="pause_menu_scene"]
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
@@ -47,6 +48,8 @@ mouse_filter = 2
 [node name="DebugOverlay" parent="." instance=ExtResource("overlay_scene")]
 
 [node name="Scoreboard" parent="." instance=ExtResource("scoreboard_scene")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("pause_menu_scene")]
 
 [node name="MatchEndScreen" parent="." instance=ExtResource("match_end_scene")]
 

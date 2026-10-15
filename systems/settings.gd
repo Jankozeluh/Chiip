@@ -66,7 +66,7 @@ const BINDING_SLOTS := 2
 ## CS's field of view is measured across a 4:3 screen: 90° there. [method vertical_fov] converts.
 const REFERENCE_ASPECT := 4.0 / 3.0
 
-## The actions whose keys can be changed. Esc ([code]toggle_mouse[/code]) is fixed.
+## The actions whose keys can be changed. Esc ([code]pause[/code]) is fixed.
 const BINDABLE_ACTIONS: Array[StringName] = [
 	&"move_forward", &"move_back", &"move_left", &"move_right", &"jump", &"crouch", &"walk",
 	&"shoot", &"aim", &"reload", &"scoreboard", &"toggle_debug", &"toggle_console",

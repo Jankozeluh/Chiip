@@ -349,7 +349,7 @@ func _test_bindings() -> void:
 	_check("find_action_using() names the action a key is already bound to (W: move_forward), not counting the one asked about",
 			clash == &"move_forward" and _settings.find_action_using(_key(KEY_W), &"move_forward") == &"" and _settings.find_action_using(_key(KEY_F12)) == &"",
 			"W is bound to '%s'" % clash)
-	var refused := not _settings.set_binding(&"reload", InputEventJoypadButton.new()) and not _settings.set_binding(&"toggle_mouse", _key(KEY_T)) \
+	var refused := not _settings.set_binding(&"reload", InputEventJoypadButton.new()) and not _settings.set_binding(&"pause", _key(KEY_T)) \
 			and not _settings.set_binding(&"reload", _key(KEY_T), 2)
 	_check("Only keys and mouse buttons can be bound, only to the bindable actions (not Esc), in slots 0 and 1", refused, "refused %s" % refused)
 	_check("binding_text() names keys and buttons for a menu",

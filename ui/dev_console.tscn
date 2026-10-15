@@ -6,6 +6,7 @@
 font_names = PackedStringArray("Menlo", "Monaco", "Courier New", "monospace")
 
 [node name="DevConsole" type="CanvasLayer"]
+process_mode = 3
 layer = 10
 script = ExtResource("console_script")
 

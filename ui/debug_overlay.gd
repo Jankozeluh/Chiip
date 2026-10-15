@@ -60,7 +60,7 @@ func _process(_delta: float) -> void:
 		"Recoil     %d shot(s) built up" % (player.weapon.get_spray_shot() - 1),
 		"Last hit   %s" % _describe_hit(player.weapon.last_hit),
 		"",
-		"F3 hide · Esc free mouse",
+		"F3 hide · Esc pause menu",
 	])
 
 

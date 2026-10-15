@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://ui/scoreboard_table.tscn" id="table_scene"]
 
 [node name="Scoreboard" type="CanvasLayer"]
+process_mode = 3
 layer = 3
 visible = false
 script = ExtResource("scoreboard_script")

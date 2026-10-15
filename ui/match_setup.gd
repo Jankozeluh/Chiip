@@ -68,7 +68,7 @@ func _exit_tree() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if visible and MenuState.is_top(self) and event.is_action_pressed("toggle_mouse"):
+	if visible and MenuState.is_top(self) and event.is_action_pressed("pause"):
 		close()
 		get_viewport().set_input_as_handled()
 

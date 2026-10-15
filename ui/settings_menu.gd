@@ -7,8 +7,11 @@ extends CanvasLayer
 ## [method open] is called and tells the owner with [signal closed] when the
 ## player leaves it (Back or Esc). The main menu (task 11, which holds an
 ## instance of its own) and the console command [code]settings[/code] in a game
-## open this scene, and the pause menu (task 12) will too. While it is open it registers with [MenuState], so the player's controls
-## ignore the keyboard and mouse and the mouse is shown.
+## open this scene, and so does the pause menu (task 12), over which it opens and
+## to which Esc or Back returns. While it is open it registers with [MenuState],
+## so the player's controls ignore the keyboard and mouse and the mouse is shown.
+## It has [code]process_mode = Always[/code] (D-065), so it works while the game
+## is paused behind the pause menu.
 ##
 ## It has no Apply button. Every control writes to [Settings] the moment it
 ## changes (the class clamps, applies and saves), and the menu follows
@@ -119,7 +122,7 @@ func _input(event: InputEvent) -> void:
 	if _listening_action != &"":
 		if listen(event):
 			get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("toggle_mouse") and MenuState.is_top(self):
+	elif event.is_action_pressed("pause") and MenuState.is_top(self):
 		close()
 		get_viewport().set_input_as_handled()
 
@@ -227,7 +230,7 @@ func listen(event: InputEvent) -> bool:
 		var key := event as InputEventKey
 		if not key.pressed or key.echo:
 			return false
-		if event.is_action_pressed("toggle_mouse"):
+		if event.is_action_pressed("pause"):
 			stop_listening()
 			return true
 		if key.keycode == KEY_BACKSPACE or key.physical_keycode == KEY_BACKSPACE:

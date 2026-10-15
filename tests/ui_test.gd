@@ -20,8 +20,10 @@ extends Node
 ## the menu's buttons and its background without a player, the camera flight,
 ## Esc, match setup's defaults, controls, stored choices and map list, the
 ## launch description and what main.gd builds from it, the match-end screen's
-## "Main menu" button and the way back to the menu. The pause menu (task 12)
-## adds its own checks here.
+## "Main menu" button and the way back to the menu. The pause menu (task 12,
+## D-065) adds checks for the `pause` action on Esc, Esc opening and closing the
+## menu (and who else takes Esc), the whole game standing still while it is
+## open, Resume, Settings over it, Leave, and its look and scaling.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -36,6 +38,7 @@ const SETTINGS_MENU_SCENE := preload("res://ui/settings_menu.tscn")
 const MAIN_SCENE := preload("res://main.tscn")
 const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
+const PAUSE_MENU_SCENE := preload("res://ui/pause_menu.tscn")
 const THEME_PATH := "res://ui/chiip_theme.tres"
 const FONT_PATH := "res://assets/fonts/Silkscreen-Regular.ttf"
 ## The file the match setup and scene-change checks store settings in instead of the real one.
@@ -87,6 +90,12 @@ func _ready() -> void:
 	await _test_match_setup()
 	await _test_game_launch()
 	await _test_scene_flow()
+	_test_pause_action()
+	await _test_pause_menu()
+	await _test_pause_game_stands_still()
+	await _test_pause_esc_rules()
+	await _test_pause_menu_look()
+	await _test_pause_leaves_the_game()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -1542,6 +1551,353 @@ func _test_scene_flow() -> void:
 	_remove_temp_file()
 
 
+# --- The pause menu (D-065) ---
+
+
+## The `pause` action is Esc, is not one of the rebindable actions, and the old
+## `toggle_mouse` is gone.
+func _test_pause_action() -> void:
+	var events := InputMap.action_get_events(&"pause")
+	var on_esc := events.size() == 1 and events[0] is InputEventKey and (events[0] as InputEventKey).physical_keycode == KEY_ESCAPE
+	_check("The `pause` action is on Esc alone; Esc is not rebindable (not one of Settings.BINDABLE_ACTIONS); the old `toggle_mouse` action no longer exists",
+			on_esc and InputMap.has_action(&"pause") and not InputMap.has_action(&"toggle_mouse") and not Settings.BINDABLE_ACTIONS.has(&"pause")
+					and not Settings.get_instance().set_binding(&"pause", _key_event(KEY_T)),
+			"%d event(s), on Esc %s, toggle_mouse exists %s" % [events.size(), on_esc, InputMap.has_action(&"toggle_mouse")])
+
+
+## Esc in a game opens the pause menu, which pauses the tree and registers with
+## MenuState; Resume and Esc close it; Settings opens over it and Esc comes back.
+func _test_pause_menu() -> void:
+	var tree := get_tree()
+	MenuState.reset()
+	var main: Node = await _new_game()
+	var menu := main.get_pause_menu() as PauseMenu
+	var settings_menu := main.get_settings_menu() as SettingsMenu
+	var closed_at_first := not menu.visible and not menu.is_open() and not tree.paused and not MenuState.is_any_open()
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_check("Esc in a game with nothing else open opens the pause menu: it is shown, registered with MenuState (on top, so the player's controls stop) and the whole tree is paused",
+			closed_at_first and menu.visible and menu.is_open() and MenuState.is_open(menu) and MenuState.is_top(menu)
+					and MenuState.blocks_gameplay() and tree.paused,
+			"closed before %s, visible %s, open %s, paused %s" % [closed_at_first, menu.visible, menu.is_open(), tree.paused])
+	var texts := _texts([menu.get_resume_button(), menu.get_settings_button(), menu.get_leave_button()])
+	_check("It offers Resume, Settings and Leave match (the game is a match here), with Resume focused so Enter resumes",
+			texts == ["Resume", "Settings", "Leave match"] and menu.get_resume_button().has_focus() and (menu.get_node("Panel/Margin/Content/Title") as Label).text == "Paused",
+			"buttons %s, focus on Resume %s" % [texts, menu.get_resume_button().has_focus()])
+
+	menu.get_resume_button().pressed.emit()
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	_check("The Resume button closes the menu and unpauses the game: nothing is open, nothing blocks the player, and no hidden button keeps the keyboard focus (Space must jump, not press it again)",
+			not menu.visible and not menu.is_open() and not tree.paused and not MenuState.is_any_open() and not MenuState.blocks_gameplay() and focus_owner == null,
+			"visible %s, paused %s, any menu %s, focus owner %s" % [menu.visible, tree.paused, MenuState.is_any_open(), focus_owner])
+
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var open_again := menu.is_open() and tree.paused
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_check("Esc again in the pause menu resumes: closed, unpaused, nothing registered (one press, one step)",
+			open_again and not menu.visible and not menu.is_open() and not tree.paused and not MenuState.is_any_open(),
+			"reopened %s, then visible %s, paused %s" % [open_again, menu.visible, tree.paused])
+
+	# Settings opens over the pause menu; Esc there comes back to it, still paused.
+	menu.open()
+	menu.get_settings_button().pressed.emit()
+	var over := settings_menu.visible and MenuState.is_top(settings_menu) and menu.is_open() and not menu.visible and tree.paused
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var back := not settings_menu.visible and MenuState.is_top(menu) and menu.visible and menu.is_open() and tree.paused \
+			and menu.get_settings_button().has_focus()
+	_check("Settings opens the settings menu over the pause menu (the game stays paused, the pause panel steps aside); Esc in the settings menu returns to the pause menu, still paused, with the Settings button focused",
+			over and back,
+			"settings over %s; back at the pause menu %s (visible %s, paused %s)" % [over, back, menu.visible, tree.paused])
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_check("One more Esc resumes from there: the settings menu was only a step on the way",
+			not menu.is_open() and not tree.paused and not MenuState.is_any_open() and not settings_menu.visible,
+			"open %s, paused %s" % [menu.is_open(), tree.paused])
+
+	# The console stays out of it: Esc closes it and nothing else, paused or not.
+	var console := main.get_node("DevConsole") as DevConsole
+	console.set_open(true)
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var closed_console := not console.visible and not DevConsole.is_open and not menu.is_open() and not tree.paused and not MenuState.is_any_open()
+	menu.open()
+	console.set_open(true)
+	var console_over := console.visible and tree.paused and MenuState.is_top(console)
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var pause_kept := not console.visible and menu.is_open() and tree.paused and MenuState.is_top(menu)
+	_check("Esc with the console open closes the console only: in a running game the pause menu doesn't open as well, and over the pause menu the console works (it runs while paused) and the pause menu is still there after",
+			closed_console and console_over and pause_kept,
+			"closed console %s, console over pause %s, pause kept %s" % [closed_console, console_over, pause_kept])
+	menu.close()
+
+	main.queue_free()
+	await tree.process_frame
+	tree.paused = false
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	Settings.get_instance().reset_to_defaults()
+
+
+## While the menu is open the whole game stands still: the round timer, a
+## running character, the sounds, and the Tab scoreboard stays hidden; and each
+## part that must keep going does (the menus and the console).
+func _test_pause_game_stands_still() -> void:
+	var tree := get_tree()
+	MenuState.reset()
+	var main: Node = await _new_game()
+	var menu := main.get_pause_menu() as PauseMenu
+	var map: Node = main.get_map()
+	var controller := _player.get_node("PlayerController") as PlayerController
+	var board := main.get_node("Scoreboard") as Scoreboard
+	# A game sound is a plain player in the world (it must pause); a menu sound has to be Always (it must not).
+	# (A silent second on a loop: headless runs have a dummy audio driver, where a short real sound can end by itself.)
+	var sound := AudioStreamWAV.new()
+	sound.format = AudioStreamWAV.FORMAT_8_BITS
+	sound.mix_rate = 8000
+	var silence := PackedByteArray()
+	silence.resize(8000)
+	sound.data = silence
+	sound.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	sound.loop_end = 8000
+	var game_sound := AudioStreamPlayer3D.new()
+	var menu_sound := AudioStreamPlayer.new()
+	menu_sound.process_mode = Node.PROCESS_MODE_ALWAYS
+	game_sound.stream = sound
+	menu_sound.stream = sound
+	map.add_child(game_sound)
+	add_child(menu_sound)
+	game_sound.play()
+	menu_sound.play()
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	Input.action_press("move_forward")
+	Input.action_press("scoreboard")
+	var time_before := _rounds.time_left
+	var position_before := _player.global_position
+	for i in 30:
+		await tree.physics_frame
+	await tree.process_frame
+	var ran := _rounds.time_left < time_before - 0.1 and _player.global_position.distance_to(position_before) > 0.2 and board.visible \
+			and game_sound.playing and not game_sound.stream_paused
+	var ran_detail := "time %.2f → %.2f, moved %.2f m, scoreboard %s" % [time_before, _rounds.time_left, _player.global_position.distance_to(position_before), board.visible]
+
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	await tree.process_frame
+	await tree.process_frame
+	var bots_before := _positions(_rounds.get_participants())
+	var time_paused := _rounds.time_left
+	var frames_before := Engine.get_physics_frames()
+	for i in 30:
+		await tree.physics_frame
+	await tree.process_frame
+	var still := _rounds.time_left == time_paused and _positions(_rounds.get_participants()) == bots_before
+	_check("Before the pause the game runs (the round timer counts down, a character moves, the Tab scoreboard shows); while it is paused for 30 physics ticks the round manager's time_left and every character's position (the player is holding forward) don't change at all",
+			ran and still and Engine.get_physics_frames() - frames_before >= 30 and tree.paused,
+			"running: %s; paused: time %.4f → %.4f over %d ticks, characters unchanged %s" % [
+					ran_detail, time_paused, _rounds.time_left, Engine.get_physics_frames() - frames_before, still])
+	_check("The Tab scoreboard stays hidden while paused, though Tab is still held (it was up when Esc was pressed): it keeps running to see that a menu is open",
+			not board.visible and board.process_mode == Node.PROCESS_MODE_ALWAYS and Input.is_action_pressed("scoreboard"),
+			"visible %s, process mode %d" % [board.visible, board.process_mode])
+	var console := main.get_node("DevConsole") as DevConsole
+	var settings_menu := main.get_settings_menu() as SettingsMenu
+	_check("Paused means the map, the round manager, the player and the HUD can't process, while the pause menu, the settings menu, the console and the scoreboard still can",
+			not map.can_process() and not _rounds.can_process() and not controller.can_process() and not main.get_node("HUD").can_process()
+					and menu.can_process() and settings_menu.can_process() and console.can_process() and board.can_process(),
+			"map %s, rounds %s, player %s, HUD %s; menu %s, settings %s, console %s, scoreboard %s" % [
+					map.can_process(), _rounds.can_process(), controller.can_process(), main.get_node("HUD").can_process(),
+					menu.can_process(), settings_menu.can_process(), console.can_process(), board.can_process()])
+	_check("Sounds follow the pause: a sound playing in the world (an AudioStreamPlayer3D, like footsteps and shots) is paused while the tree is, and a player set to Always (what a menu sound needs) keeps playing",
+			game_sound.stream_paused and not menu_sound.stream_paused and menu_sound.playing,
+			"world sound: paused %s; Always sound: paused %s, playing %s" % [game_sound.stream_paused, menu_sound.stream_paused, menu_sound.playing])
+
+	# Resume: everything runs again, and a fire button still held waits until it is let go.
+	Input.action_press("shoot")
+	menu.close()
+	var after_resume := controller.get_input(0.0)
+	var time_resumed := _rounds.time_left
+	var position_resumed := _player.global_position
+	for i in 30:
+		await tree.physics_frame
+	await tree.process_frame
+	_check("Resume starts the game again where it stopped: the round timer counts down, the player runs on, the world sound is no longer paused, and the fire button still held doesn't shoot until it is released",
+			not tree.paused and _rounds.time_left < time_resumed - 0.1 and _player.global_position.distance_to(position_resumed) > 0.2
+					and not game_sound.stream_paused and not after_resume.shoot and after_resume.move.y < 0.0,
+			"time %.2f → %.2f, moved %.2f m, sound paused %s, shoot %s, move %s" % [
+					time_resumed, _rounds.time_left, _player.global_position.distance_to(position_resumed), game_sound.stream_paused,
+					after_resume.shoot, after_resume.move])
+	game_sound.stop()
+	menu_sound.stop()
+	menu_sound.queue_free()
+	Input.action_release("shoot")
+	Input.action_release("move_forward")
+	Input.action_release("scoreboard")
+
+	# A jump pressed just before Esc doesn't happen after Resume.
+	controller._unhandled_input(_action_event("jump"))
+	menu.open()
+	menu.close()
+	var jump_after := controller.get_input(0.0).jump
+	_check("A jump pressed in the moment before Esc is forgotten by the pause, not carried out after Resume", not jump_after, "jump queued after resume: %s" % jump_after)
+
+	main.queue_free()
+	await tree.process_frame
+	tree.paused = false
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	Settings.get_instance().reset_to_defaults()
+
+
+## When the match is over Esc does nothing new: the match-end screen has the
+## screen, and no pause menu opens behind it.
+func _test_pause_esc_rules() -> void:
+	var tree := get_tree()
+	MenuState.reset()
+	var main: Node = await _new_game(1)
+	var menu := main.get_pause_menu() as PauseMenu
+	var screen := main.get_node("MatchEndScreen") as MatchEndScreen
+	await _win_round(Teams.viewer_team)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	await tree.process_frame
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	await tree.process_frame
+	_check("With the match-end screen up Esc does nothing new: no pause menu, the game is not paused, and the screen is still there",
+			screen.visible and not menu.is_open() and not menu.visible and not tree.paused and not MenuState.is_any_open(),
+			"screen %s, pause menu %s, paused %s" % [screen.visible, menu.is_open(), tree.paused])
+	main.queue_free()
+	await tree.process_frame
+	tree.paused = false
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	Settings.get_instance().reset_to_defaults()
+
+
+## The menu's look (a modal panel with a title and three big buttons, no style
+## overrides, a click-blocking background) and its scaling.
+func _test_pause_menu_look() -> void:
+	var menu := PAUSE_MENU_SCENE.instantiate() as PauseMenu
+	add_child(menu)
+	await get_tree().process_frame
+	var panel := menu.get_panel()
+	var title := menu.get_node("Panel/Margin/Content/Title") as Label
+	var background := menu.get_background()
+	var buttons: Array[Button] = [menu.get_resume_button(), menu.get_settings_button(), menu.get_leave_button()]
+	var all_big := buttons.all(func(button: Button) -> bool: return button.theme_type_variation == &"BigButton" and button.get_theme_font_size("font_size") == 32)
+	_check("It is hidden until opened; its look comes from variations: a modal panel (accent frame), a 48 px title, three 32 px big buttons; it sits between the Tab scoreboard (3) and the match-end screen (5), and keeps running while paused",
+			not menu.visible and panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel" and title.get_theme_font_size("font_size") == 48
+					and all_big and (panel.get_theme_stylebox("panel") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette")
+					and menu.layer == 4 and menu.process_mode == Node.PROCESS_MODE_ALWAYS,
+			"visible %s, panel '%s', title %d px, big buttons %s, layer %d, process mode %d" % [
+					menu.visible, panel.theme_type_variation, title.get_theme_font_size("font_size"), all_big, menu.layer, menu.process_mode])
+	var overrides := _style_or_size_overrides(menu)
+	_check("Nothing in the pause menu carries a stylebox or font-size override of its own, so the theme alone decides its look",
+			overrides.is_empty(), "controls with overrides: %s" % [overrides])
+	_check("A full-screen background (a dim ColorRect) and the panel both stop mouse clicks, so no click reaches the player controls behind the menu",
+			background.mouse_filter == Control.MOUSE_FILTER_STOP and background.anchor_left == 0.0 and background.anchor_top == 0.0
+					and background.anchor_right == 1.0 and background.anchor_bottom == 1.0 and panel.mouse_filter == Control.MOUSE_FILTER_STOP,
+			"background filter %d, anchors (%.0f, %.0f, %.0f, %.0f), panel filter %d" % [background.mouse_filter, background.anchor_left,
+					background.anchor_top, background.anchor_right, background.anchor_bottom, panel.mouse_filter])
+	menu.set_ui_scale(1.5)
+	await get_tree().process_frame
+	var scaled := panel.custom_minimum_size.x == 720.0 and title.get_theme_font_size("font_size") == 72 \
+			and menu.get_resume_button().get_theme_font_size("font_size") == 48
+	menu.set_ui_scale(1.0)
+	await get_tree().process_frame
+	var restored := panel.custom_minimum_size.x == 480.0 and title.get_theme_font_size("font_size") == 48 \
+			and menu.get_resume_button().get_theme_font_size("font_size") == 32
+	_check("Scaled by 1.5 the panel goes 480 → 720 px, the title 48 → 72 px and the buttons 32 → 48 px; back at 1.0 each returns to its design size",
+			scaled and restored, "scaled %s, restored %s" % [scaled, restored])
+	remove_child(menu)
+	menu.queue_free()
+	MenuState.reset()
+
+
+## Leave match (and the console's `disconnect` over the pause menu) change to the
+## main menu with the game unpaused, in the real flow through the scenes.
+func _test_pause_leaves_the_game() -> void:
+	var tree := get_tree()
+	var shared := Settings.get_instance()
+	_remove_temp_file()
+	shared.load_from_disk(TEMP_PATH)
+	var holder := Node.new()
+	tree.root.add_child(holder)
+	tree.current_scene = holder
+	var rules := MatchSettings.new()
+	rules.freeze_time = 0.3
+	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	tree.change_scene_to_file(GameLaunch.GAME_SCENE)
+	for i in 3:
+		await tree.process_frame
+	var game := tree.current_scene
+	var in_game := game != null and game.scene_file_path == GameLaunch.GAME_SCENE
+	var menu: PauseMenu = game.get_pause_menu() if in_game else null
+	if menu != null:
+		for character: Character in game.get_map().find_children("*", "Character", true, false):
+			_silence(character)
+		_send(_key_event(KEY_ESCAPE))
+		_send(_key_event(KEY_ESCAPE, false))
+	var paused_in_game := menu != null and menu.is_open() and tree.paused
+	var match_text := menu.get_leave_button().text if menu != null else ""
+	if menu != null:
+		menu.get_leave_button().pressed.emit()
+		for i in 3:
+			await tree.process_frame
+	var back := tree.current_scene as MainMenu
+	_check("In a game Esc pauses it; the leave button (\"Leave match\" in a match) changes to the main menu scene, which is not paused, has the mouse free and answers to Esc like before (it does nothing on the main page)",
+			paused_in_game and match_text == "Leave match" and back != null and back.scene_file_path == GameLaunch.MENU_SCENE and not tree.paused
+					and MenuState.is_top(back) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and not is_instance_valid(game),
+			"in game %s, paused there %s, text '%s', scene '%s', paused now %s" % [in_game, paused_in_game, match_text,
+					tree.current_scene.scene_file_path if tree.current_scene != null else "none", tree.paused])
+	if back != null:
+		# Practice: the button reads "Leave practice"; the console's `disconnect` over the pause menu leads back as well.
+		back.get_buttons()[1].pressed.emit()
+		for i in 3:
+			await tree.process_frame
+		var practice := tree.current_scene
+		var practice_menu: PauseMenu = practice.get_pause_menu() if practice != null and practice.has_method("get_pause_menu") else null
+		var practice_text := ""
+		var practice_paused := false
+		if practice_menu != null:
+			for character: Character in practice.get_map().find_children("*", "Character", true, false):
+				_silence(character)
+			_send(_key_event(KEY_ESCAPE))
+			_send(_key_event(KEY_ESCAPE, false))
+			practice_text = practice_menu.get_leave_button().text
+			practice_paused = practice_menu.is_open() and tree.paused
+			(practice.get_node("DevConsole") as DevConsole).run("disconnect")
+			for i in 3:
+				await tree.process_frame
+		var again := tree.current_scene as MainMenu
+		_check("In practice mode the leave button reads \"Leave practice\"; the console's `disconnect`, run over the pause menu, also lands in an unpaused main menu",
+				practice_paused and practice_text == "Leave practice" and again != null and again.scene_file_path == GameLaunch.MENU_SCENE
+						and not tree.paused and MenuState.is_top(again) and not is_instance_valid(practice),
+				"paused there %s, text '%s', scene '%s', paused now %s" % [practice_paused, practice_text,
+						tree.current_scene.scene_file_path if tree.current_scene != null else "none", tree.paused])
+		if again != null:
+			again.free()
+	else:
+		_failures += 1
+		print("FAIL  The practice and disconnect pause checks were skipped: there was no menu to go back to")
+	tree.paused = false
+	tree.current_scene = self
+	if is_instance_valid(holder):
+		holder.free()
+	await tree.process_frame
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	shared.reset_to_defaults()
+	shared.save_path = ""
+	_remove_temp_file()
+
+
 ## The real settings file is exactly as it was when the test started.
 func _test_real_file_untouched() -> void:
 	var now := FileAccess.get_md5(Settings.SETTINGS_PATH) if FileAccess.file_exists(Settings.SETTINGS_PATH) else ""
@@ -1605,6 +1961,46 @@ func _action_event(action: String) -> InputEventAction:
 func _send(event: InputEvent) -> void:
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
+
+
+## A game on the test map the way the main menu starts one (a [GameLaunch]
+## description with short timings), with every character silenced and the bots
+## holding their ground, once the first frames have run. Sets [member _rounds]
+## and [member _player].
+func _new_game(rounds_to_win: int = 5) -> Node:
+	# An earlier test's map would share the physics world with this game (the
+	# SubViewport has no world of its own), and its bots would shoot at ours.
+	if _map != null and is_instance_valid(_map):
+		remove_child(_map)
+		_map.queue_free()
+		_map = null
+	var rules := MatchSettings.new()
+	rules.freeze_time = 0.3
+	rules.round_time = 30.0
+	rules.round_end_time = 0.3
+	rules.rounds_to_win = rounds_to_win
+	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	var main := MAIN_SCENE.instantiate()
+	main.load_settings = false
+	add_child(main)
+	for i in 3:
+		await get_tree().physics_frame
+	await get_tree().process_frame
+	_rounds = main.get_map().get_node("RoundManager") as RoundManager
+	_player = main.get_map().get_node("Player") as Character
+	for character in _rounds.get_participants():
+		_silence(character)
+		if character != _player:
+			(character.get_node("BotController") as BotController).hold_position = true
+	return main
+
+
+## The global positions of [param characters], in order.
+func _positions(characters: Array[Character]) -> Array[Vector3]:
+	var positions: Array[Vector3] = []
+	for character in characters:
+		positions.append(character.global_position)
+	return positions
 
 
 ## Starts a match first to [param rounds_to_win] on a fresh copy of the test map

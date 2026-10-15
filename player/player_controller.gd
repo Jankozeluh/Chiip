@@ -13,7 +13,10 @@ extends CharacterController
 ##
 ## While a menu or the developer console is open ([method MenuState.blocks_gameplay])
 ## the controller ignores keys, buttons and mouse movement: the character stands
-## still and doesn't shoot, and the view stays where it was.
+## still and doesn't shoot, and the view stays where it was. Esc is not handled
+## here: it opens the [PauseMenu], which pauses the whole tree (D-065), so this
+## node doesn't run at all until the game is resumed. The only mouse rule left is
+## the click that captures a free mouse (after alt-tab, say) without firing.
 
 ## Emitted when the view moves to a teammate you now watch, or back to your own
 ## body. [param target] is the character the view belongs to, you included. The
@@ -52,8 +55,9 @@ var _pitch: float = 0.0
 var _jump_queued: bool = false
 ## Set when reload is pressed and used up by the next command.
 var _reload_queued: bool = false
-## True while a click shouldn't shoot: after freeing the mouse, and for the
-## click that captures it again, until the button is released.
+## True while a click shouldn't shoot: for the click that captures a free mouse
+## again, and after the game is resumed with the fire button still held, until
+## the button is released.
 var _shooting_blocked: bool = false
 ## True while a menu or the console was open at the last frame (see [MenuState]).
 var _was_blocked: bool = false
@@ -78,6 +82,19 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func _notification(what: int) -> void:
+	# The pause menu pauses the whole tree (D-065), and this node pauses with it:
+	# its _process and get_input() don't run meanwhile, so what they would clear
+	# when a menu closes is done here, when the pause starts and ends.
+	if what == NOTIFICATION_PAUSED:
+		# A jump or reload pressed just before Esc shouldn't happen after Resume.
+		_jump_queued = false
+		_reload_queued = false
+	elif what == NOTIFICATION_UNPAUSED:
+		# A fire button still held (Esc pressed mid-burst) waits until it is let go.
+		_shooting_blocked = Input.is_action_pressed("shoot")
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if MenuState.blocks_gameplay():
 		return
@@ -89,13 +106,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_jump_queued = true
 	elif event.is_action_pressed("reload"):
 		_reload_queued = true
-	elif event.is_action_pressed("toggle_mouse"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			_shooting_blocked = true
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			_shooting_blocked = false
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		# This click only captures the mouse; it shouldn't also fire a shot.
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
