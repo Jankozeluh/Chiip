@@ -21,7 +21,7 @@ const UI_DESIGN_HEIGHT := 720.0
 ## Pixelate the HUD too, by rendering the whole window at the low resolution.
 @export var pixelate_hud: bool = false
 ## Limit the world's colors with the retro palette effect (shaders/palette_limit.gdshader).
-@export var palette_effect: bool = false
+@export var palette_effect: bool = true
 
 @onready var _world: SubViewportContainer = $World
 @onready var _viewport: SubViewport = $World/SubViewport

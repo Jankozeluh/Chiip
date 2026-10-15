@@ -29,6 +29,12 @@
 - `main.tscn` can load any map (`map_scene`, or `-- --map <scene>`); the HUD and overlay get the player from the loaded map. Moved the sky/fog settings into `assets/environments/dusty_afternoon.tres` so every map shares them.
 - Map comparison setup: one layout (a CS-sized room with a doorway, crates, platform and ramp) generated as a TrenchBroom `.map` and as a CSG scene. func_godot builds the `.map` headlessly (`tools/build_maps.gd`) with lightmap UVs and our textures. Raycasts at 9 spots: both versions match within 0.1 mm (after fixing a ramp bug in my generator that affected both). Installed a "Chiip" game config in TrenchBroom (`tools/export_trenchbroom_config.gd`).
 - Real-time screenshots of both rooms look the same, except the TrenchBroom floor was brighter: the darkening was a tint on the CSG materials only. Moved it into the textures (new brightness option in the texture tool), so both pipelines share one source.
+- Frame-rate check: 120 fps (the display's limit), slowest 1% of frames ~10 ms, on the range and the course.
+- You switched the palette effect on (D-030).
+
+**Decisions:** D-024 to D-030 in [DECISIONS.md](DECISIONS.md).
+
+**Next (your part):** try TrenchBroom on the comparison room and bake its lightmaps in the editor. Then I compare baked vs. real-time lighting, we decide the map workflow (task 10) and close M3. The Ctrl + click and sensitivity checks are still open.
 
 ## 2026-10-15 — Session 4: M2 shooting
 

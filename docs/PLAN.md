@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M3 — Retro look & map tools (in progress)
+> **Current milestone:** M3 — Retro look & map tools (waiting for your TrenchBroom trial and lightmap bake)
 
 ## How this plan works
 
@@ -112,11 +112,11 @@
 5. [x] **Retro materials.** Textures are placed by world position (triplanar), so any box gets them without UV work, at Quake's texel density (a 64-pixel texture covers 64 units = 1.63 m). Matte surfaces, no shiny reflections. This replaces the grid placeholder.
 6. [x] **Retexture the test map.** Crates look like wooden crates, walls get brick and plaster, the floor concrete and sand. The rifle and dummies get matching retro colors. Dummies stay bright enough to stand out (clarity rule).
 7. [x] **Lighting and atmosphere.** A darker, moodier scene: lower ambient light, a warm sun, a few colored lamps, distance fog, a retro sky.
-8. [ ] **Baked lighting experiment.** Bake lightmaps (`LightmapGI`) for the test map and compare with real-time lighting, then decide which to use. Godot bakes on the GPU in the editor, so this step may need one click from you (I'll show where) if it can't be automated.
-9. [x] **Optional color palette effect.** Built (`Main.palette_effect`, off for now). Your choice from screenshots is still open. A full-screen shader that limits colors (fewer shades per channel, optional dithering), switchable. Screenshots on/off; you decide.
-10. [ ] **How maps get built.** The same small CS-style room (doorway, crates, a ramp) built twice: with CSG in Godot, and with TrenchBroom (the Quake map editor, very close to CS's Hammer) imported through the `func_godot` plugin. We compare effort, texture alignment, collision and baked lighting, then decide the workflow for the real map in M7.
-11. [ ] **Credits.** `docs/CREDITS.md` lists every third-party asset and tool with its source and license.
-12. [ ] **Checks.** Screenshots of every area of the test map, both test suites still passing, and a frame-rate check at the chosen resolution.
+8. [ ] **Baked lighting experiment.** *Ready, waiting for you:* `maps/comparison/trenchbroom_room.tscn` has a `LightmapGI` and lights set to bake. Baking needs one click in the editor. Bake lightmaps (`LightmapGI`) for the test map and compare with real-time lighting, then decide which to use. Godot bakes on the GPU in the editor, so this step may need one click from you (I'll show where) if it can't be automated.
+9. [x] **Optional color palette effect.** You chose **on** (D-030). A full-screen shader that limits colors (fewer shades per channel, optional dithering), switchable. Screenshots on/off; you decide.
+10. [ ] **How maps get built.** *Ready, waiting for you:* both rooms are built and match within 0.1 mm. Your TrenchBroom trial decides it. The same small CS-style room (doorway, crates, a ramp) built twice: with CSG in Godot, and with TrenchBroom (the Quake map editor, very close to CS's Hammer) imported through the `func_godot` plugin. We compare effort, texture alignment, collision and baked lighting, then decide the workflow for the real map in M7.
+11. [x] **Credits.** `docs/CREDITS.md` lists every third-party asset and tool with its source and license.
+12. [x] **Checks.** Screenshots of every area; both test suites pass; 120 fps (the display's limit) with the slowest 1% of frames at ~10 ms on an Apple M5, world image 640 × 360. Screenshots of every area of the test map, both test suites still passing, and a frame-rate check at the chosen resolution.
 
 **Done when:** the test map and range look like a 90s shooter, dummies remain easy to spot, the HUD is readable, and we know how the real map in M7 will be built.
 

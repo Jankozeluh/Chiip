@@ -226,6 +226,14 @@
 
 **Alternatives:** A dark, moody Quake-style look (harder to read at a distance).
 
+## D-030 — Palette effect on by default (2026-10-15)
+
+**Decision:** The world image is limited to 12 shades per color channel with ordered dithering (`Main.palette_effect = true`). Chosen by the user from on/off screenshots.
+
+**Why:** It adds the grain and slight banding of 90s software rendering. The HUD isn't affected.
+
+**Alternatives:** Off, for a cleaner image. It remains a setting.
+
 ## Open questions
 
 | Question | Decide in |

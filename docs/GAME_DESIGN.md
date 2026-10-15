@@ -166,6 +166,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 - Low internal render resolution, upscaled crisply so pixels stay sharp.
 - Pixelated textures with nearest-neighbor filtering, so no smoothing.
 - Simple geometry: blocky architecture and low-poly models.
+- World image limited to 12 shades per color channel with ordered dithering (D-030).
 - Lighting: a sun-baked dusty afternoon (D-029): low warm sun, long shadows, light haze, colored lamps as accents. Baked lightmaps are being evaluated in M3.
 - **Clarity rule:** enemies must always stand out from the background.
 
