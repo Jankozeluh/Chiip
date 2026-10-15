@@ -32,6 +32,10 @@
 - Frame-rate check: 120 fps (the display's limit), slowest 1% of frames ~10 ms, on the range and the course.
 - You switched the palette effect on (D-030).
 - You said the look was too much like Counter-Strike. Right: I had steered toward a dust-map palette (D-029). You chose to keep the materials and take the dust out: grey stone and grey gravel from the same photos (the texture tool got a saturation option), muted brick, and cool daylight instead of a warm afternoon (D-031). Found on the way: a built TrenchBroom scene can't be loaded once a texture it uses is deleted, so rebuild first (added to CLAUDE.md gotchas). Rooms still match within 0.1 mm and both test suites pass.
+- The bake and the TrenchBroom trial didn't reach the project: there was no lightmap file, no map edits, and TrenchBroom's game path for Chiip wasn't set. Checked whether a script could bake instead: Godot 4.7 has no scripting call for it, only the editor button. You chose to skip the bake (moved to M7) and said you hadn't really tried TrenchBroom yet.
+- Map workflow decided from the comparison: **TrenchBroom for real maps, CSG for quick tests**, provisional until your hands-on trial (D-032). Added a "Making maps with TrenchBroom" guide to the README and a "Your open checks" list at the top of the plan (Ctrl + click, sensitivity, TrenchBroom trial), so these stop moving from milestone to milestone.
+
+**Next:** You playtest M3 (the look in-game). Then we close M3 and plan M4 (bots). One decision is due before M4: whether Chiip gets multiplayer (see DECISIONS.md, open questions), because that changes how bots should control their characters.
 
 **Decisions:** D-024 to D-030 in [DECISIONS.md](DECISIONS.md).
 

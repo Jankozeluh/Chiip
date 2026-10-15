@@ -2,13 +2,21 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M3 — Retro look & map tools (waiting for your TrenchBroom trial and lightmap bake)
+> **Current milestone:** M3 — Retro look & map tools (built, waiting for your playtest)
+
+## Your open checks
+
+Things only you can check, kept here until done instead of moving from milestone to milestone:
+
+- [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
+- [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
+- [ ] **TrenchBroom hands-on:** set up and try TrenchBroom (see README, "Making maps with TrenchBroom") before M7, so the map-tool choice (D-032) can be confirmed.
 
 ## How this plan works
 
 - The game is built in **milestones**. Each one ends with something you can play and test.
 - Each milestone lists its **tasks** (checkboxes), a **Done when** test, and the **Godot concepts** you learn along the way.
-- Status icons: ⬜ not started · 🟨 in progress · ✅ done
+- Status icons: ⬜ not started · 🟨 in progress · ✅ done. Tasks: [x] done, [ ] open, [-] skipped or moved.
 - Tasks are ticked here as the work happens. Details of each work session go into [DEVLOG.md](DEVLOG.md).
 - Milestones can be reordered or changed at any time. The reason is recorded in [DECISIONS.md](DECISIONS.md).
 
@@ -99,9 +107,7 @@
 
 **Goal:** give Chiip its 90s shooter look (pixelated, chunky textures, moody light) while keeping enemies easy to see, and decide how real maps will be built.
 
-**Your checks, carried over from M1/M2:**
-- [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
-- [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
+*Your checks (Ctrl + click, sensitivity) moved to "Your open checks" at the top.*
 
 **Tasks**, in order, one commit each:
 
@@ -112,9 +118,9 @@
 5. [x] **Retro materials.** Textures are placed by world position (triplanar), so any box gets them without UV work, at Quake's texel density (a 64-pixel texture covers 64 units = 1.63 m). Matte surfaces, no shiny reflections. This replaces the grid placeholder.
 6. [x] **Retexture the test map.** Crates look like wooden crates, walls get brick and plaster, the floor concrete and sand. The rifle and dummies get matching retro colors. Dummies stay bright enough to stand out (clarity rule).
 7. [x] **Lighting and atmosphere.** A darker, moodier scene: lower ambient light, a warm sun, a few colored lamps, distance fog, a retro sky.
-8. [ ] **Baked lighting experiment.** *Ready, waiting for you:* `maps/comparison/trenchbroom_room.tscn` has a `LightmapGI` and lights set to bake. Baking needs one click in the editor. Bake lightmaps (`LightmapGI`) for the test map and compare with real-time lighting, then decide which to use. Godot bakes on the GPU in the editor, so this step may need one click from you (I'll show where) if it can't be automated.
+8. [-] **Baked lighting experiment.** *Skipped, moved to M7.* `maps/comparison/trenchbroom_room.tscn` is ready to bake (`LightmapGI`, lights set to bake), but baking only works from the editor's button, and you chose to bake on the real map instead. Bake lightmaps (`LightmapGI`) for the test map and compare with real-time lighting, then decide which to use. Godot bakes on the GPU in the editor, so this step may need one click from you (I'll show where) if it can't be automated.
 9. [x] **Optional color palette effect.** You chose **on** (D-030). A full-screen shader that limits colors (fewer shades per channel, optional dithering), switchable. Screenshots on/off; you decide.
-10. [ ] **How maps get built.** *Ready, waiting for you:* both rooms are built and match within 0.1 mm. Your TrenchBroom trial decides it. The same small CS-style room (doorway, crates, a ramp) built twice: with CSG in Godot, and with TrenchBroom (the Quake map editor, very close to CS's Hammer) imported through the `func_godot` plugin. We compare effort, texture alignment, collision and baked lighting, then decide the workflow for the real map in M7.
+10. [x] **How maps get built.** **TrenchBroom** for real maps, CSG for quick tests (D-032). Provisional until your hands-on trial (see "Your open checks"). The same small CS-style room (doorway, crates, a ramp) built twice: with CSG in Godot, and with TrenchBroom (the Quake map editor, very close to CS's Hammer) imported through the `func_godot` plugin. We compare effort, texture alignment, collision and baked lighting, then decide the workflow for the real map in M7.
 11. [x] **Credits.** `docs/CREDITS.md` lists every third-party asset and tool with its source and license.
 12. [x] **Checks.** Screenshots of every area; both test suites pass; 120 fps (the display's limit) with the slowest 1% of frames at ~10 ms on an Apple M5, world image 640 × 360. Screenshots of every area of the test map, both test suites still passing, and a frame-rate check at the chosen resolution.
 
@@ -190,7 +196,8 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Goal:** CS's full objective mode on a proper map.
 
-- [ ] Sketch, then build, the first real map with two bombsites
+- [ ] Sketch, then build, the first real map with two bombsites, in TrenchBroom (D-032)
+- [ ] Baked lighting (lightmaps) for the real map, moved from M3, and a decision on baked vs. real-time lighting
 - [ ] Bomb: carry, plant, timer, explosion, defuse (faster with a kit)
 - [ ] Bots play the objective: attack a site, plant, rotate, defuse
 - [ ] Full sound pass: weapons, footsteps on different surfaces, bomb beeps, UI
@@ -198,7 +205,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Done when:** you can play a full bomb-defusal match against bots on a real map, from an exported app.
 
-**You learn:** level design workflow, `Area3D` triggers, audio buses, exporting a game.
+**You learn:** level design workflow in TrenchBroom, lightmap baking, `Area3D` triggers, audio buses, exporting a game.
 
 ## Backlog (ideas, not scheduled)
 

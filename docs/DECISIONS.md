@@ -242,12 +242,21 @@
 
 **Alternatives:** A dark Quake look, retro sci-fi industrial, or urban night. Any of these can still be tried later.
 
+## D-032 — Real maps are built in TrenchBroom; CSG for quick tests (2026-10-15)
+
+**Decision:** Real maps (from M7 on) are made in TrenchBroom and imported with func_godot. CSG stays for quick test setups. This is provisional until you've built something in TrenchBroom yourself. Baked lighting is decided on the real map in M7.
+
+**Why:** In the M3 comparison both produced identical geometry and collision (within 0.1 mm). TrenchBroom wins on the things that matter for full maps: a dedicated Hammer-like brush editor, per-face texture alignment, lightmap UVs built automatically, and static merged meshes instead of CSG computed at load time. Its costs are an extra app and the func_godot addon, plus one *Build* click (or `tools/build_maps.gd`) after editing.
+
+**Evidence not collected:** the lightmap bake was skipped (it can only be started from the editor's button), and you hadn't really tried TrenchBroom yet.
+
+**Alternatives:** CSG for everything (no extra tools, but no per-face alignment or easy baking), or deciding later.
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
-| Map building: Godot CSG, or TrenchBroom with `func_godot`? | M3 |
 | Team sizes: 1 vs N, or 5v5 with bot teammates? | M5 |
 | Weapon names | M6 |
 | Team names and the game's setting/theme | Any time |
