@@ -151,7 +151,7 @@ mesh = SubResource("leg_mesh")
 [node name="TotalLabel" type="Label3D" parent="."]
 position = Vector3(0, 2.15, 0)
 billboard = 1
-pixel_size = 0.008333
+pixel_size = 0.004167
 fixed_size = true
 texture_filter = 0
 font = ExtResource("pixel_font")

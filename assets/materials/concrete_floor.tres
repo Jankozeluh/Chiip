@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" path="res://assets/textures/concrete_floor.png" id="albedo"]
 
 [resource]
+albedo_color = Color(0.62, 0.62, 0.62, 1)
 albedo_texture = ExtResource("albedo")
 metallic_specular = 0.2
 roughness = 1.0

@@ -58,7 +58,7 @@ Chiip/
 |---|---|
 | `main.tscn` + `main.gd` | Root (main) scene. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
 | `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
-| `maps/test_map.tscn` | Test map and current main scene. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
+| `maps/test_map.tscn` | Test map (shown inside `main.tscn`). Retextured in M3: concrete floor (course), sand (range), red brick outer walls, beige stone platform/stairs/peek walls, wooden crates, metal tunnel, painted spray wall. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
 | `player/player.gd` | `Player` class: mouse look and CS-style movement |
 | `ui/debug_overlay.tscn` + `.gd` | F3 readout: speed, position, jump peak, stance, shoot/aim buttons, weapon inaccuracy, built-up recoil, last hit (zone, damage, distance) |
@@ -138,7 +138,7 @@ Main (Node, main.gd)
 - Sharp-HUD style: the window itself stays full resolution, so the HUD is crisp. Pixelated-HUD style: the window's *content scale* is set to the low resolution (`Window.content_scale_mode = viewport`), so everything is pixelated, HUD included.
 - The HUD and overlay are laid out for a 720-pixel-tall window and scaled with `UiScale` to the real UI height.
 - Mouse look uses `screen_relative`, so sensitivity is the same in both styles (checked: 2.200° for 100 counts).
-- Text in the 3D world (`Label3D`) uses the pixel font with *Fixed Size* (the same size on screen at any distance) and a `pixel_size` of 0.008333, so one font pixel covers 2 × 2 pixels of the 360-line world image.
+- Text in the 3D world (`Label3D`) uses the pixel font with nearest filtering. Map signs are world-sized (`pixel_size` 0.04, about 0.32 m tall) and shrink with distance. Dummy titles and damage numbers use *Fixed Size* (the same size on screen at any distance) with `pixel_size` 0.004167, so one font pixel = one pixel of the 360-line world image.
 
 ## How the player and the weapon work together
 

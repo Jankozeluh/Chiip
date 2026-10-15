@@ -23,6 +23,7 @@
 - You installed TrenchBroom (it's at `~/Downloads/TrenchBroom.app`).
 - Installed the func_godot addon (pure GDScript, MIT) and the Silkscreen font (OFL). Silkscreen is now the default UI font and the font of all 3D labels (fixed on-screen size, crisp pixels), which should make dummy titles and damage numbers readable again at 360 lines.
 - Retro materials (`assets/materials/`): one per texture, world triplanar at Quake's texel density, nearest-with-mipmaps filtering, matte.
+- Retextured the test map and the rifle. Visual check: the textures read well and the dummies stand out, but the concrete looked like snow (darkened it), and fixed-size labels piled on top of each other (map signs now shrink with distance; only dummy titles and damage numbers stay fixed size, at 1 font pixel per world-image pixel).
 
 ## 2026-10-15 — Session 4: M2 shooting
 

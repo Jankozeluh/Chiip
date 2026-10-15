@@ -2,15 +2,24 @@
 
 [ext_resource type="Script" path="res://weapons/weapon.gd" id="weapon_script"]
 [ext_resource type="Resource" path="res://weapons/rifle.tres" id="rifle_data"]
+[ext_resource type="Texture2D" path="res://assets/textures/metal_plates.png" id="metal_texture"]
+[ext_resource type="Texture2D" path="res://assets/textures/wood_planks.png" id="wood_texture"]
 
 [sub_resource type="StandardMaterial3D" id="metal_material"]
-albedo_color = Color(0.13, 0.13, 0.14, 1)
-metallic = 0.6
-roughness = 0.5
+albedo_color = Color(0.55, 0.55, 0.6, 1)
+albedo_texture = ExtResource("metal_texture")
+metallic = 0.3
+roughness = 0.7
+uv1_scale = Vector3(8, 8, 8)
+uv1_triplanar = true
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="wood_material"]
-albedo_color = Color(0.42, 0.24, 0.11, 1)
-roughness = 0.8
+albedo_texture = ExtResource("wood_texture")
+roughness = 0.9
+uv1_scale = Vector3(5, 5, 5)
+uv1_triplanar = true
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="magazine_material"]
 albedo_color = Color(0.32, 0.2, 0.11, 1)
