@@ -24,20 +24,34 @@ const UI_DESIGN_HEIGHT := 720.0
 ## the window's shape; 480 gives 853 × 480 in a 16:9 window); pixels are scaled
 ## by whole numbers, so the real height is the closest whole fraction of the
 ## window: 480 on a 1440-pixel screen, 540 on 1080, 360 on 720. With the HUD
-## pixelated the whole window renders at the low resolution and the UI height is
-## the pixel height; otherwise only the world is low-res and the UI uses the
-## window's height.
+## pixelated the whole window renders at that low resolution (the window's size
+## divided by the same whole number) and the UI height is that height; otherwise
+## only the world is low-res and the UI uses the window's height.
 static func apply(settings: Settings, window: Window, world: SubViewportContainer, palette_effect: CanvasLayer) -> float:
-	var pixel_height := settings.pixel_height
 	palette_effect.visible = settings.palette_effect
+	# How many window pixels one image pixel covers: a whole number, so pixels stay sharp and even.
+	var scale := get_pixel_scale(window.size.y, settings.pixel_height)
 	if settings.pixelate_hud:
-		var aspect := float(window.size.x) / window.size.y
+		# Render the whole window at its size divided by the scale (rounded down,
+		# so the integer stretch below really scales by that number and fills
+		# the window). Asking for exactly pixel_height lines instead would make
+		# Godot's integer stretch round 1.5 down to 1 in a 720-pixel window and
+		# show a small, unscaled image.
+		var low_res := Vector2i(maxi(1, window.size.x / scale), maxi(1, window.size.y / scale))
 		window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
-		window.content_scale_size = Vector2i(roundi(pixel_height * aspect), pixel_height)
+		window.content_scale_size = low_res
 		window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
 		world.stretch_shrink = 1
-		return pixel_height
+		return low_res.y
 	window.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	# The SubViewport renders at the container's size divided by this.
-	world.stretch_shrink = maxi(1, roundi(float(window.size.y) / pixel_height))
+	world.stretch_shrink = scale
 	return window.size.y
+
+
+## The whole number of window pixels per image pixel for a window
+## [param window_height] tall and the chosen [param pixel_height]: the closest
+## whole fraction, at least 1 (then nothing is pixelated: the window is too small
+## for that resolution).
+static func get_pixel_scale(window_height: int, pixel_height: int) -> int:
+	return maxi(1, roundi(float(window_height) / pixel_height))

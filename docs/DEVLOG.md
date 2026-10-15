@@ -116,6 +116,8 @@
 - Found by the full-match test: a round ran out the clock because the last attacker and a holding defender traded bursts 58 m apart for over a minute (bots rarely hit at that range, and a fighting bot stops to shoot). Attackers now give up a duel beyond 35 m after 6 s and close in for 4 s (D-067). New bot check: the attacker closes to 35 m after 10.4 s (without the rule it stays at 48 m). In the seeded full match, every round the bots attacked now ends by elimination.
 - **M5 is built:** all 13 tasks, eight suites with 340 checks, all passing (`bash tools/run_tests.sh`). The playtest checklist is in PLAN.md, "Your open checks".
 
+- Your feedback: **Pixelated HUD did nothing.** Since the default went from 360 to 480 lines (D-048), the pixelated-HUD style asked Godot for exactly 480 lines, and Godot's whole-number stretch rounds 720 ÷ 480 = 1.5 down to 1, so in a 720-pixel window the image wasn't scaled up at all. `PixelView` now picks the whole number first, like the world-only style (720p → 2, so 640 × 360), and renders the whole window at its size divided by it. New settings check for 720p, 1080p, 1440p and an odd window size (it fails with the old code). In a window smaller than about 1.5 × the chosen lines (e.g. a small Game view inside the editor) the scale is 1 and nothing is pixelated in either style; pick 360 lines or a bigger window then.
+
 **Next:** You playtest M5 (checklist in PLAN.md, "Your open checks"). Then M6 and the other milestones, each in its own session.
 
 ## 2026-10-15 — Session 9: M4 closed, M5 planned

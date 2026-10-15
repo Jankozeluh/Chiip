@@ -587,6 +587,25 @@ func _test_main_and_console() -> void:
 	_check("Pixelating the HUD renders the whole window at the low resolution (640 × 360), and switching it off goes back",
 			pixelated and window.content_scale_mode == Window.CONTENT_SCALE_MODE_DISABLED and world.stretch_shrink == 2,
 			"pixelated %s, then mode %d, shrink %d" % [pixelated, window.content_scale_mode, world.stretch_shrink])
+	# The default 480 lines with the HUD pixelated: the whole window must be scaled
+	# by the same whole number as the world-only style, so it fills the window
+	# (asking for exactly 480 lines in a 720-pixel window gave an unscaled image).
+	_settings.pixel_height = 480
+	var sizes := []
+	for window_size in [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(1281, 721)]:
+		window.size = window_size
+		_settings.pixelate_hud = true
+		main.apply_pixel_settings()
+		var content: Vector2i = window.content_scale_size
+		var fills: bool = content.x * PixelView.get_pixel_scale(window_size.y, 480) <= window_size.x and content.y * PixelView.get_pixel_scale(window_size.y, 480) <= window_size.y
+		sizes.append([window_size, content, fills])
+		_settings.pixelate_hud = false
+	var expected := [Vector2i(640, 360), Vector2i(960, 540), Vector2i(853, 480), Vector2i(640, 360)]
+	var all_right := true
+	for i in sizes.size():
+		all_right = all_right and sizes[i][1] == expected[i] and sizes[i][2]
+	_check("Pixelated HUD at the default 480 lines uses a whole scale that fills the window (720p: 640 × 360, 1080p: 960 × 540, 1440p: 853 × 480)",
+			all_right, "window → image: %s" % ", ".join(sizes.map(func(entry: Array) -> String: return "%s → %s" % [entry[0], entry[1]])))
 	_settings.reset_to_defaults()
 	var console := main.get_node("DevConsole") as DevConsole
 	var output := console.find_child("Output", true, false) as Label
