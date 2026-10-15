@@ -10,7 +10,8 @@ extends Node3D
 ##
 ## N and P play the next and previous animation of the models (idle, walk, run, crouch, aim,
 ## fire, reload, deaths...; tools/modelgen/anims.py) straight from their AnimationPlayer, with
-## the AK-style rifle on the weapon bone. Start with one: [code]-- --clip run_f[/code].
+## the AK-style rifle on the weapon bone; they start with [code]idle[/code]. Start with another:
+## [code]-- --clip run_f[/code]. (In the game an AnimationTree blends the clips instead, D-076.)
 
 ## Where tools/modelgen/modelgen.py writes the class models.
 const MODEL_DIR := "res://assets/models/crew/"
@@ -18,8 +19,6 @@ const MODEL_DIR := "res://assets/models/crew/"
 const CLASSES: Array[String] = ["rifleman", "bulwark", "marksman", "scout"]
 ## The body scene each class model is shown in.
 const BODY_SCENE := preload("res://characters/crew/crew_body.tscn")
-## The gun the models hold (tools/modelgen/weapons.py).
-const GUN_SCENE := preload("res://assets/models/weapons/ak_rifle.glb")
 
 ## Distance between two models, in metres.
 @export var spacing: float = 1.4
@@ -45,16 +44,14 @@ func _ready() -> void:
 			var body := BODY_SCENE.instantiate() as CrewBody
 			# The model is built in the body's _ready, so choose it before adding the body.
 			body.model = load(path) as PackedScene
+			# No AnimationTree: here the clips play straight from the AnimationPlayer (N / P).
+			body.animated = false
 			_models.add_child(body)
 			found.append(body)
 	for i in found.size():
 		found[i].position.x = (i - (found.size() - 1) / 2.0) * spacing
 		# Models face -Z (Godot's forward); turn them to face the camera.
 		found[i].rotation.y = PI
-		var gun_mount := BoneAttachment3D.new()
-		gun_mount.bone_name = "weapon"
-		(found[i].find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D).add_child(gun_mount)
-		gun_mount.add_child(GUN_SCENE.instantiate())
 	if not found.is_empty():
 		var player := _player_of(found[0])
 		if player != null:
@@ -68,8 +65,7 @@ func _ready() -> void:
 	_show_team(OS.get_cmdline_user_args().has("--enemy"))
 	var args := OS.get_cmdline_user_args()
 	var clip_arg := args.find("--clip")
-	if clip_arg >= 0 and clip_arg + 1 < args.size():
-		_play(_clips.find(args[clip_arg + 1]))
+	_play(_clips.find(args[clip_arg + 1] if clip_arg >= 0 and clip_arg + 1 < args.size() else "idle"))
 
 
 func _process(delta: float) -> void:

@@ -642,6 +642,18 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Motion capture or Mixamo clips (not for our rigid low-poly rig, and every download needs your OK); procedural animation at runtime, as `SoldierBody` did (cheaper to change but not authorable, and the network game would have to run it on every machine); per-speed cycle lengths with a cadence-matching node (more natural cadence, harder blending); sideways steps without turning the legs (the legs would cross at running speed).
 
+## D-076 — One shared AnimationTree, driven by the character's state (2026-10-15) — *provisional*
+
+**Decision:**
+- **One graph for every class** (`characters/crew/crew_animation_tree.tres`, built by `tools/make_crew_animation_tree.gd`), since all classes share bone names and clip names. From the legs up: 2D blend spaces of the locomotion clips with the velocity relative to the facing as the blend position (m/s; idle in the middle, walks at 2.84, runs at 5.46, crouch-walks at 1.86), a crouch blend, a time scale so the feet keep up outside the walk–run range, a blend to the falling pose, one-shots for jump and landing (after at least 0.25 s in the air), then the upper body: a Blend2 filtered to spine, chest, head and arms takes them from a 1D blend space of the five aim poses by pitch. Fire and the flinch are *additive* one-shots on top; the reload is a one-shot filtered to the arms (so the head keeps aiming), stretched to the held weapon's reload time; a transition switches to one of three deaths.
+- **Driven only by state.** `CrewBody` reads the character every physics tick (velocity, crouching, on the floor, aim pitch) and its events (shot, reload start, damage, death, respawn), never the input. The death picks the headshot crumple after a head hit, otherwise the body falls away from the killer.
+- **Physics-tick animation.** The tree and the skeleton update on physics ticks, so hit zones are where the animation put them in the tick a shot is simulated, and the same on every machine.
+- **First person vs. third person.** The body holds the gun model on the `weapon` bone with its own muzzle flash. The weapon's first-person viewmodel shows only for whoever looks through that character's eyes (`Character.set_first_person()`: the local player, a spectated teammate); everyone else sees the body.
+
+**Why:** A blend tree is Godot's equivalent of Unity's Animator controller, and one generated graph keeps four classes consistent (the graph is data, so it can be opened and inspected in the editor, but changed in one script). Filtering the upper body is what lets a character run one way and aim another, as in CS. Additive layers keep the kick and the flinch on top of whatever aim pitch the body has; replacing them would snap the gun to level. State-only driving is the M9 rule (ARCHITECTURE, "Keeping multiplayer possible"): a client receives positions, velocities, stance and view angles and animates them the same way. Physics ticks make what you hit match what the server simulates.
+
+**Alternatives:** An `AnimationNodeStateMachine` for locomotion (good for distinct states, but walk/run/strafe blend continuously, which blend spaces do better); playing clips with `AnimationPlayer` and cross-fades in code (simple, but no per-bone layering); keeping the bot's viewmodel as its third-person gun (it floated under the head, not in the hands); animating on rendered frames (smoother on fast monitors, but hit zones would lag the simulation).
+
 ## Open questions
 
 | Question | Decide in |

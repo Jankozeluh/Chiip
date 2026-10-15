@@ -33,8 +33,6 @@ const UNITS_TO_METRES := 0.0254
 const STEP_DISTANCE := 1.8
 ## Where the eyes (and a player's camera) end up after dying: close to the floor.
 const DEAD_EYE_HEIGHT := 0.35
-## Seconds the body takes to fall over.
-const DEATH_FALL_TIME := 0.45
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -127,8 +125,6 @@ var _alive_collision_layer: int = 0
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
 var _hull_height_difference: float = 0.0
-## The body tipping over after death, stopped if the character respawns first.
-var _fall_tween: Tween
 ## Set by [method respawn]: skip moving for the rest of this tick. The physics
 ## engine (Jolt) only moves teleported bodies at the next physics step, so
 ## characters moving in the same tick as a round start would still bump into
@@ -137,8 +133,9 @@ var _respawned_this_tick: bool = false
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
-## The visible body with its hit zones (characters/crew/crew_body.tscn, a generated class model
-## from M6). It paints its team parts through [method CrewBody.set_team_color].
+## The visible body with its hit zones and animations (characters/crew/crew_body.tscn, a
+## generated class model from M6). It paints its team parts through
+## [method CrewBody.set_team_color] and animates from this character's state.
 @onready var body: CrewBody = $Body
 @onready var _footstep_audio: AudioStreamPlayer = $FootstepAudio
 @onready var _footstep_audio_3d: AudioStreamPlayer3D = $FootstepAudio3D
@@ -166,6 +163,8 @@ func _ready() -> void:
 		_controller.set_look_angles(_input.yaw, _input.pitch)
 	if weapon != null:
 		weapon.equip(self)
+	# Only the player at this computer looks through these eyes; everyone else sees the body.
+	set_first_person(is_local_player())
 
 
 func _physics_process(delta: float) -> void:
@@ -245,6 +244,16 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## Shows this character as seen through its own eyes ([param on] true: the body is hidden and
+## the weapon's first-person viewmodel shows) or from outside (the body shows, holding its gun,
+## and the viewmodel is hidden). The player at this computer is first person; spectating a
+## teammate switches that teammate too. The hit zones stay active either way.
+func set_first_person(on: bool) -> void:
+	(get_node("Body") as Node3D).visible = not on
+	if weapon != null:
+		weapon.set_viewmodel_visible(on)
 
 
 ## True for the player at this computer (see [method CharacterController.is_local]).
@@ -366,8 +375,6 @@ func _play_footstep() -> void:
 ## Brings the character back at [param at], facing [param yaw], with full
 ## health and a full weapon.
 func respawn(at: Vector3, yaw: float) -> void:
-	if _fall_tween != null:
-		_fall_tween.kill()
 	global_position = at
 	rotation.y = yaw
 	_respawned_this_tick = true
@@ -377,7 +384,6 @@ func respawn(at: Vector3, yaw: float) -> void:
 	_set_crouch_hull(false)
 	_eye_height = stand_eye_height
 	head.position.y = _eye_height
-	body.reset_pose()
 	collision_layer = _alive_collision_layer
 	for hitbox in _hitboxes:
 		hitbox.collision_layer = PhysicsLayers.HITBOXES
@@ -399,19 +405,16 @@ func _die(killer: Character) -> void:
 	for hitbox in _hitboxes:
 		hitbox.set_deferred("collision_layer", 0)
 	set_deferred("collision_layer", 0)
-	# Tip the body over backwards around the feet. Run the tween on physics
-	# ticks so physics interpolation smooths it like any other movement.
-	_fall_tween = create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-	_fall_tween.tween_property(body, "rotation:x", -PI / 2.0, DEATH_FALL_TIME) \
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	died.emit(killer)
 
 
-## Finds the body's hit zones and gives the body this character's team color.
+## Finds the body's hit zones, gives the body this character's team color, and ties its
+## animations to this character (see [method CrewBody.attach]).
 ## The [CrewBody] builds its hit zones in its own _ready, which runs before this one
 ## (children are ready first), so they are all there to find.
 func _set_up_body() -> void:
 	update_team_color()
+	body.attach(self)
 	for node in body.find_children("*", "", true, false):
 		if node is Hitbox:
 			_hitboxes.append(node)
@@ -509,11 +512,6 @@ func _update_crouch(on_ground: bool, delta: float) -> void:
 	var eye_speed := (stand_eye_height - crouch_eye_height) / crouch_transition_time
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
 	head.position.y = _eye_height
-	if is_alive():
-		# Head, chest and stomach sink when crouching (as in CS), and the
-		# limbs will swing with walking speed once the body is animated (M6).
-		var speed := Vector2(velocity.x, velocity.z).length()
-		body.update_pose(speed, get_max_speed(), _eye_height - stand_eye_height, on_ground, delta)
 
 
 func _crouch(on_ground: bool) -> void:

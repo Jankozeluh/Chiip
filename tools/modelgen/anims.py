@@ -183,7 +183,8 @@ class Rig:
         pose['local']['chest'] = turn_right(turn * 0.5 + twist * 0.5) @ tilt_right(tilt * 0.5) @ lean_forward(h * 0.6) @ pitch_up(aim * 0.3)
         w = self.world(pose)
         hp, hy, hr = head
-        want = turn_right(turn + hy) @ tilt_right(hr) @ pitch_up(aim * 0.85 + hp)
+        # the head looks where the hips face (the front, unless the whole body is falling)
+        want = w['hips'][0] @ turn_right(turn + hy) @ tilt_right(hr) @ pitch_up(aim * 0.85 + hp)
         pose['local']['head'] = w['chest'][0].T @ want
 
     def hold(self, aim=0.0, kick=0.0, pose=None):
@@ -195,7 +196,7 @@ class Rig:
         shoulder_l = pc + rc @ self.off['upper_arm_l']
         rot = pitch_up(aim)
         butt = shoulder_r + rc @ np.array([-0.075 * self.body.w, -0.01, -0.07])
-        pos = butt - rot @ self.gun['butt'] + rot @ np.array([0, 0, kick])
+        pos = butt - rot @ self.gun['butt']
         reach = (self.body.upper_arm + self.body.forearm) * 0.985
         for _ in range(40):
             wrist = pos + rot @ (self.gun['foregrip'] + self.hand_l_wrist)
@@ -203,7 +204,8 @@ class Rig:
             if extra <= 0:
                 break
             pos = pos + rot @ np.array([0, 0, min(extra, 0.02) + 0.002])
-        return rot, pos
+        # the recoil kick comes after the fit, so a gun already pulled back still kicks
+        return rot, pos + rot @ np.array([0, 0, kick])
 
     def arm(self, pose, side, wrist, hand_rot, pole):
         """bends one arm so the wrist reaches `wrist` with the hand turned to `hand_rot`."""
@@ -463,14 +465,14 @@ def death(rig, style):
                              arms={'l': ((-0.35, 0.35, -0.10), (0, 0, 1)), 'r': ((0.30, 0.30, -0.15), (0, 0, 1))})),
                  (0.82, body(settle=True, hips_y=0.13, pitch=-89, z=-0.57, spine=2, head=(25, -20, 0), legs={'l': (-8, 25), 'r': (-12, 8)},
                              arms={'l': ((-0.38, 0.38, -0.08), (0, 0, 1)), 'r': ((0.32, 0.32, -0.12), (0, 0, 1))}))]
-    else:  # headshot: head snaps back, knees buckle, the body drops onto its side
-        keys += [(0.08, body(rig.off['hips'][1] - 0.03, 4, head=(35, 0, -10))),
-                 (0.32, body(0.50, -10, roll=-15, spine=15, head=(30, 0, -20), legs={'l': (70, 110), 'r': (50, 100)},
+    else:  # headshot: head snaps back, knees buckle, the body drops onto its left side
+        keys += [(0.08, body(rig.off['hips'][1] - 0.03, 4, head=(35, 0, 10))),
+                 (0.32, body(0.50, -10, roll=15, spine=15, head=(30, 0, 20), legs={'l': (70, 110), 'r': (50, 100)},
                              arms={'l': ((-0.30, -0.35, -0.10), (0, 0, 1)), 'r': ((0.25, -0.40, -0.05), (0, 0, 1))})),
-                 (0.62, body(settle=True, hips_y=0.16, pitch=-15, roll=-85, x=-0.30, spine=10, head=(10, 0, -25), legs={'l': (45, 70), 'r': (35, 60)},
-                             arms={'l': ((-0.35, -0.10, -0.25), (0, 0, 1)), 'r': ((0.30, -0.30, -0.20), (0, 0, 1))})),
-                 (0.80, body(settle=True, hips_y=0.15, pitch=-12, roll=-88, x=-0.32, spine=8, head=(5, 0, -30), legs={'l': (50, 75), 'r': (40, 65)},
-                             arms={'l': ((-0.37, -0.08, -0.25), (0, 0, 1)), 'r': ((0.30, -0.32, -0.22), (0, 0, 1))}))]
+                 (0.62, body(settle=True, hips_y=0.16, pitch=-4, roll=86, x=0.30, spine=2, head=(0, 0, 12), legs={'l': (45, 70), 'r': (35, 60)},
+                             arms={'l': ((-0.12, 0.28, -0.30), (-1, 0, 0.5)), 'r': ((0.26, -0.18, -0.26), (0, 0, 1))})),
+                 (0.80, body(settle=True, hips_y=0.15, pitch=-2, roll=92, x=0.32, spine=0, head=(0, 0, 15), legs={'l': (50, 75), 'r': (40, 65)},
+                             arms={'l': ((-0.10, 0.30, -0.32), (-1, 0, 0.5)), 'r': ((0.27, -0.20, -0.27), (0, 0, 1))}))]
     return keyframes(rig, keys, 1.0)
 
 

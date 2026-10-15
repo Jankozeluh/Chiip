@@ -1,27 +1,56 @@
 class_name CrewBody
 extends Node3D
-## The visible body of a generated crew model (M6, D-053, D-072, D-073): it puts the
-## class's model under itself and paints it in a team colour.
+## The visible body of a generated crew model (M6, D-053, D-072 to D-076): it puts the
+## class's model under itself, paints it in a team colour, carries the hit zones and animates.
 ##
-## Every mesh of the model gets the class's shared [ShaderMaterial] (see [method material_for]
-## and characters/crew/crew.gdshader), and the team colour goes into a per-instance shader
-## parameter. That is Godot's answer to Unity's MaterialPropertyBlock: the material is shared,
-## so all characters of a class cost the same, but each [MeshInstance3D] carries its own
-## colour for the parameter declared [code]instance uniform[/code] in the shader.
+## Team colour: every mesh of the model gets the class's shared [ShaderMaterial] (see
+## [method material_for] and characters/crew/crew.gdshader), and the colour goes into a
+## per-instance shader parameter, Godot's answer to Unity's MaterialPropertyBlock.
 ##
-## The body also carries the character's hit zones (D-055, D-074). They are built from the
-## class's [HitZones] resource: one [Hitbox] area per box, each under a [BoneAttachment3D] on
-## the model's [Skeleton3D], so the zones follow the bones. That is "what you see is what you
-## hit": a taller class has a taller head zone, and bots aim at the zones' centres.
+## Hit zones (D-055, D-074): one [Hitbox] area per box of the class's [HitZones], each under a
+## [BoneAttachment3D] on the model's [Skeleton3D], so the zones follow the animated bones.
 ##
-## A [Character] drives the body through [method set_team_color], [method update_pose] and
-## [method reset_pose], and finds its hit zones through [method get_hitboxes].
+## Animation (D-076): an [AnimationTree] runs the shared graph
+## (characters/crew/crew_animation_tree.tres, made by tools/make_crew_animation_tree.gd) on the
+## model's clips. Every physics tick the body reads its [Character]'s *state*: velocity relative
+## to where it faces, crouching, on the ground or not, and the aim pitch, never the input, so
+## in M9 a network player animates from the same replicated state. The character's events (a
+## shot, a reload, a hit, death, respawn) play their layers. The tree runs on physics ticks, so
+## the hit zones move in step with the game's simulation.
+##
+## The body also holds the third-person gun on the [code]weapon[/code] bone, with its own muzzle
+## flash. Whoever looks through a character's eyes sees its first-person viewmodel instead (see
+## [method Character.set_first_person]).
 
 ## The shader every crew model uses.
 const SHADER := preload("res://characters/crew/crew.gdshader")
-
-## INTERIM: how far the upper arms swing down from the T-pose, in degrees (75: 15 degrees off vertical).
-const INTERIM_ARM_DEGREES := 75.0
+## The animation graph every class shares.
+const ANIMATION_TREE := preload("res://characters/crew/crew_animation_tree.tres")
+## The gun in the hands (the AK-style rifle in M6; the arsenal comes in M7).
+const GUN_SCENE := preload("res://assets/models/weapons/ak_rifle.glb")
+## The third-person muzzle flash.
+const GUN_FLASH_SCENE := preload("res://characters/crew/gun_flash.tscn")
+## Where the gun's muzzle is, in weapon space (tools/modelgen/weapons.py).
+const GUN_MUZZLE := Vector3(0.0, 0.022, -0.58)
+## How long the muzzle flash shows, in seconds (as long as the first-person one).
+const GUN_FLASH_TIME := 0.04
+## Speeds the locomotion clips were made for, in m/s (tools/modelgen/anims.py): CS's rifle run
+## (215 units/s), walk (x0.52) and crouch-walk (x0.34). The clips play faster or slower so the
+## feet keep up with the real speed.
+const RUN_SPEED := 215.0 * 0.0254
+const WALK_SPEED := RUN_SPEED * 0.52
+const CROUCH_SPEED := RUN_SPEED * 0.34
+## Length of the reload clip in seconds (the rifle's reload time when it was made); it is
+## stretched to the held weapon's own reload time.
+const RELOAD_CLIP_TIME := 2.5
+## Seconds to blend into or out of crouching (the character's crouch takes 0.15 s).
+const CROUCH_BLEND_TIME := 0.15
+## Seconds to blend between the ground poses and the falling pose.
+const AIR_BLEND_TIME := 0.12
+## Time in the air before landing plays the landing (smaller hops just blend back).
+const LAND_AFTER_AIR_TIME := 0.25
+## Upward speed in m/s that counts as a jump when the feet leave the ground.
+const JUMP_SPEED := 0.5
 
 ## The generated class model, a [code].glb[/code] from assets/models/crew/ (see tools/modelgen).
 ## Its textures are found next to it: [code]rifleman.glb[/code] uses [code]rifleman_albedo.png[/code]
@@ -32,6 +61,10 @@ const INTERIM_ARM_DEGREES := 75.0
 ## is empty, the file next to the model is used: [code]rifleman.glb[/code] uses
 ## [code]rifleman_hit_zones.tres[/code].
 @export var hit_zones: HitZones
+
+## Run the animation graph. Off, the model keeps its rest pose (the T-pose), which tests use to
+## measure the hit zones as the generator made them.
+@export var animated: bool = true
 
 ## One shared material per class model, by model path.
 static var _materials: Dictionary = {}
@@ -46,11 +79,20 @@ var _skeleton: Skeleton3D
 var _hitboxes: Array[Hitbox] = []
 ## The collision shape of each hit zone, parallel to [member _hitboxes].
 var _hitbox_shapes: Array[CollisionShape3D] = []
-## The bone the crouch sinks (the root of the skeleton), and where it rests.
-var _hips_bone: int = -1
-var _hips_rest_position: Vector3 = Vector3.ZERO
-## How far the hips are lowered right now (negative when crouched), to skip redundant pose updates.
-var _crouch_offset: float = 0.0
+## The character whose state the animations follow (see [method attach]).
+var _character: Character
+var _tree: AnimationTree
+var _gun_flash: Node3D
+var _flash_time_left: float = 0.0
+## Smoothed 0..1 amounts for the crouch and the falling pose.
+var _crouch: float = 0.0
+var _air: float = 0.0
+## Seconds since the feet left the ground.
+var _air_time: float = 0.0
+var _was_on_ground: bool = true
+## The zone of the last hit taken, to pick the death (a headshot crumples).
+var _last_hit_zone: int = -1
+var _dead: bool = false
 
 
 func _ready() -> void:
@@ -66,12 +108,118 @@ func _ready() -> void:
 		_meshes.append(mesh)
 	set_team_color(_team_color)
 	_skeleton = _find_skeleton(instance)
-	if _skeleton != null:
-		_hips_bone = _skeleton.find_bone("hips")
-		if _hips_bone >= 0:
-			_hips_rest_position = _skeleton.get_bone_rest(_hips_bone).origin
-		_build_hit_zones()
-		_set_interim_pose()
+	if _skeleton == null:
+		return
+	# Update the bones on physics ticks, like the AnimationTree, so the hit zones keep step.
+	_skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
+	_build_hit_zones()
+	_build_gun()
+	if animated:
+		_build_animation_tree(instance)
+
+
+func _physics_process(delta: float) -> void:
+	if _character == null or _tree == null or _dead:
+		return
+	var local := _character.global_basis.inverse() * _character.velocity
+	update_animation_state(Vector2(local.x, -local.z), _character.is_crouching, _character.is_on_floor(),
+			rad_to_deg(_character.get_aim_angles().y), delta)
+
+
+func _process(delta: float) -> void:
+	if _flash_time_left > 0.0:
+		_flash_time_left -= delta
+		_gun_flash.visible = _flash_time_left > 0.0
+
+
+## Ties the body to [param character]: the animations follow its state from now on, and its
+## shots, reloads, hits, death and respawn play their animations. [Character] calls it once.
+func attach(character: Character) -> void:
+	_character = character
+	character.damaged.connect(_on_damaged)
+	character.died.connect(_on_died)
+	character.respawned.connect(_on_respawned)
+	if character.weapon != null:
+		character.weapon.fired.connect(_on_fired)
+		character.weapon.reload_started.connect(_on_reload_started)
+
+
+## Sets the animation graph from a character's state for this physics tick:
+## [param velocity] in m/s relative to where the character faces (x right, y forward),
+## [param crouching], [param on_ground], and the aim pitch in degrees (up is positive).
+## [method _physics_process] calls it with the attached character's state; tests call it directly.
+func update_animation_state(velocity: Vector2, crouching: bool, on_ground: bool, aim_degrees: float, delta: float) -> void:
+	if _tree == null:
+		return
+	_crouch = move_toward(_crouch, 1.0 if crouching else 0.0, delta / CROUCH_BLEND_TIME)
+	_air = move_toward(_air, 0.0 if on_ground else 1.0, delta / AIR_BLEND_TIME)
+	if on_ground:
+		if not _was_on_ground and _air_time >= LAND_AFTER_AIR_TIME:
+			_tree.set("parameters/Land/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		_air_time = 0.0
+	else:
+		if _was_on_ground and _character != null and _character.velocity.y > JUMP_SPEED:
+			_tree.set("parameters/Jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		_air_time += delta
+	_was_on_ground = on_ground
+	_tree.set("parameters/Stand/blend_position", velocity)
+	_tree.set("parameters/CrouchMove/blend_position", velocity)
+	_tree.set("parameters/Crouch/blend_amount", _crouch)
+	_tree.set("parameters/AirPose/blend_amount", _crouch)
+	_tree.set("parameters/Air/blend_amount", _air)
+	_tree.set("parameters/LocoSpeed/scale", _locomotion_speed_scale(velocity.length(), crouching))
+	_tree.set("parameters/Aim/blend_position", aim_degrees)
+
+
+## Plays a death: [param style] is "forward", "backward" or "headshot". The body holds the last
+## frame, lying on the floor, until [method play_alive].
+func play_death(style: String) -> void:
+	_dead = true
+	if _tree == null:
+		return
+	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	_tree.set("parameters/Death/transition_request", style)
+
+
+## Back to the living animations (on respawn), standing.
+func play_alive() -> void:
+	_dead = false
+	_crouch = 0.0
+	_air = 0.0
+	_air_time = 0.0
+	_was_on_ground = true
+	_last_hit_zone = -1
+	if _tree == null:
+		return
+	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	_tree.set("parameters/Death/transition_request", "alive")
+
+
+## Which way a character falls when [param killer] kills it: a headshot crumples, otherwise
+## it falls away from the shooter (backward when shot from the front).
+func death_style(killer: Character) -> String:
+	if _last_hit_zone == Hitbox.Zone.HEAD:
+		return "headshot"
+	if killer == null or _character == null or killer == _character:
+		return "backward"
+	var to_killer := killer.global_position - _character.global_position
+	var facing := -_character.global_basis.z
+	return "backward" if facing.dot(to_killer) >= 0.0 else "forward"
+
+
+## The meshes of the class model (they wear the team colour; the gun isn't one of them).
+func get_meshes() -> Array[MeshInstance3D]:
+	return _meshes
+
+
+## The animation tree, for tests and debugging (null if the body isn't animated).
+func get_animation_tree() -> AnimationTree:
+	return _tree
+
+
+## The model's skeleton (null before the model is built).
+func get_skeleton() -> Skeleton3D:
+	return _skeleton
 
 
 ## The material for the class model at [param model_path]: the crew shader with the model's
@@ -122,27 +270,14 @@ func get_zone_center(zone: Hitbox.Zone) -> Vector3:
 	return shape.global_position if shape != null else Vector3.ZERO
 
 
-## Moves the body for this physics tick. The [Character] calls it every tick.
-##
-## INTERIM (until the AnimationTree of M6 task 6): only the crouch is animated. The hips
-## sink by [param crouch_offset] (negative when crouched), and the head, chest and stomach
-## zones sink with them, as in CS. The legs sink with the hips too, so crouched feet are
-## below the floor for now. The other parameters (speed, top speed, on the ground, time step)
-## are for the walk animation and unused yet.
-func update_pose(_speed: float, _run_speed: float, crouch_offset: float, _on_ground: bool, _delta: float) -> void:
-	if _hips_bone < 0 or is_equal_approx(_crouch_offset, crouch_offset):
-		return
-	_crouch_offset = crouch_offset
-	_skeleton.set_bone_pose_position(_hips_bone, _hips_rest_position + Vector3(0.0, crouch_offset, 0.0))
-
-
-## Back to standing upright (on respawn): the hips at rest, and the death fall undone.
-func reset_pose() -> void:
-	rotation = Vector3.ZERO
-	if _hips_bone < 0:
-		return
-	_crouch_offset = 0.0
-	_skeleton.set_bone_pose_position(_hips_bone, _hips_rest_position)
+## How fast the locomotion clips play so the feet keep up with [param speed]: between the walk
+## and run speeds the blend itself matches; slower than walking, the clips slow down a little;
+## faster than running (the knife), they speed up.
+func _locomotion_speed_scale(speed: float, crouching: bool) -> float:
+	if speed < 0.2:
+		return 1.0
+	var made_for := CROUCH_SPEED if crouching else clampf(speed, WALK_SPEED, RUN_SPEED)
+	return clampf(speed / made_for, 0.5, 1.5)
 
 
 ## Finds the first [Skeleton3D] under [param root] (the model's).
@@ -185,22 +320,73 @@ func _build_hit_zones() -> void:
 		_hitbox_shapes.append(shape)
 
 
-## INTERIM: the model is in a T-pose, so lower the upper arms until they hang at the sides.
-## The AnimationTree of M6 task 6 poses the whole body and replaces this.
-func _set_interim_pose() -> void:
-	# The bones' rest rotations are the identity, so a pose rotation about Z swings an arm in
-	# the model's XY plane: the right arm points +X, and a negative angle swings it down.
-	var right_arm := _skeleton.find_bone("upper_arm_r")
-	var left_arm := _skeleton.find_bone("upper_arm_l")
-	if right_arm >= 0:
-		_skeleton.set_bone_pose_rotation(right_arm, Quaternion(Vector3.BACK, deg_to_rad(-INTERIM_ARM_DEGREES)))
-	if left_arm >= 0:
-		_skeleton.set_bone_pose_rotation(left_arm, Quaternion(Vector3.BACK, deg_to_rad(INTERIM_ARM_DEGREES)))
+## Puts the gun on the weapon bone (the grip), with a muzzle flash at its muzzle.
+func _build_gun() -> void:
+	if _skeleton.find_bone("weapon") < 0:
+		return
+	var mount := BoneAttachment3D.new()
+	mount.name = "Gun"
+	mount.bone_name = "weapon"
+	_skeleton.add_child(mount)
+	mount.add_child(GUN_SCENE.instantiate())
+	_gun_flash = GUN_FLASH_SCENE.instantiate()
+	_gun_flash.position = GUN_MUZZLE
+	mount.add_child(_gun_flash)
 
 
-## The collision shape of the first hit zone of [param zone], or null.
+## Adds the AnimationTree next to the model's AnimationPlayer. Its root node is the model's root
+## (where the clips' tracks, "Skeleton3D:hips" and so on, start), the same as the player's.
+func _build_animation_tree(instance: Node3D) -> void:
+	var found := instance.find_children("*", "AnimationPlayer", true, false)
+	if found.is_empty():
+		return
+	var player := found[0] as AnimationPlayer
+	_tree = AnimationTree.new()
+	_tree.name = "AnimationTree"
+	_tree.tree_root = ANIMATION_TREE
+	_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+	instance.add_child(_tree)
+	_tree.anim_player = _tree.get_path_to(player)
+	_tree.set("parameters/Upper/blend_amount", 1.0)
+	_tree.set("parameters/ReloadSpeed/scale", 1.0)
+	_tree.set("parameters/LocoSpeed/scale", 1.0)
+	# A Transition starts with no state at all (and then outputs nothing): pick "alive".
+	_tree.set("parameters/Death/transition_request", "alive")
+	_tree.active = true
+
+
 func _first_shape_of(zone: Hitbox.Zone) -> CollisionShape3D:
 	for i in _hitboxes.size():
 		if _hitboxes[i].zone == zone:
 			return _hitbox_shapes[i]
 	return null
+
+
+func _on_fired(_spray_shot: int) -> void:
+	if _tree != null:
+		_tree.set("parameters/Fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	if _gun_flash != null:
+		_gun_flash.visible = true
+		_gun_flash.rotation.z = randf() * TAU
+		_flash_time_left = GUN_FLASH_TIME
+
+
+func _on_reload_started() -> void:
+	if _tree == null or _character == null or _character.weapon == null:
+		return
+	_tree.set("parameters/ReloadSpeed/scale", RELOAD_CLIP_TIME / maxf(_character.weapon.data.reload_time, 0.1))
+	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+func _on_damaged(_amount: float, zone: Hitbox.Zone, _attacker: Character) -> void:
+	_last_hit_zone = zone
+	if _tree != null and not _dead:
+		_tree.set("parameters/Flinch/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+func _on_died(killer: Character) -> void:
+	play_death(death_style(killer))
+
+
+func _on_respawned() -> void:
+	play_alive()

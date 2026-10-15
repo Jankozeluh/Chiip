@@ -14,6 +14,15 @@ extends Node3D
 ## class's height), rays hit the right zone, the zones follow the bones (bending the spine moves
 ## the chest) and sink when the body crouches, and a [Character] takes its head and chest
 ## positions from them.
+##
+## Task 6 added the animations: an animated body runs the shared AnimationTree on physics ticks;
+## standing, the left hand holds the foregrip; the gun points at the aim pitch; running and
+## strafing move the feet through a full stride; crouching lowers the head zone like CS's
+## crouch; a shot kicks the gun back and it settles; the reload moves the left hand off the
+## gun but leaves the torso aiming; deaths lie on the floor and respawning stands up again; a
+## character picks the death from the last hit and where the killer stood; and only whoever
+## looks through a character's eyes sees its viewmodel. These checks put a still body
+## (animated = false, the rest pose) under the older ones, which measure the zones as made.
 ## Quits with the number of failed checks as the exit code (0 means everything passed).
 
 const BODY_SCENE := preload("res://characters/crew/crew_body.tscn")
@@ -25,6 +34,11 @@ const MASK_PATH := "res://assets/models/crew/rifleman_mask.png"
 ## The Rifleman's height in metres (the top of the head zone, within HEIGHT_TOLERANCE).
 const RIFLEMAN_HEIGHT := 1.82
 const HEIGHT_TOLERANCE := 0.02
+## Gun points in weapon space (tools/modelgen/weapons.py, rig.py): the AK's foregrip and where
+## the left wrist sits relative to it.
+const FOREGRIP := Vector3(0.0, -0.008, -0.31)
+const LEFT_WRIST_FROM_FOREGRIP := Vector3(-0.035, -0.035, 0.045)
+const RUN_SPEED := 215.0 * 0.0254
 
 var _failures: int = 0
 
@@ -47,13 +61,21 @@ func _run_all() -> void:
 	await _test_hit_zones_shape_and_rays()
 	await _test_hit_zones_follow_bones()
 	await _test_character_aim_points()
+	await _test_animation_tree()
+	await _test_aiming()
+	await _test_strides()
+	await _test_crouch_animation()
+	await _test_fire_and_reload()
+	await _test_deaths()
+	await _test_character_deaths()
+	await _test_first_person()
 
 
 func _test_model_and_material() -> void:
 	var first := _add_body()
 	var second := _add_body()
 	await _wait_ticks(2)
-	var meshes := _meshes(first)
+	var meshes := first.get_meshes()
 	_check("The rifleman model is built under the body", first.has_node("Model") and not meshes.is_empty(),
 			"%d mesh(es) under \"Model\"" % meshes.size())
 	var all_ok := not meshes.is_empty()
@@ -68,7 +90,7 @@ func _test_model_and_material() -> void:
 			all_ok = false
 			details = "%s is missing a texture" % mesh.name
 	_check("Every mesh uses the crew shader with its albedo and mask", all_ok, details)
-	var other := _meshes(second)
+	var other := second.get_meshes()
 	_check("Two bodies of a class share one material",
 			not other.is_empty() and other[0].material_override == meshes[0].material_override,
 			"same ShaderMaterial object")
@@ -85,8 +107,8 @@ func _test_team_color_per_instance() -> void:
 	await _wait_ticks(2)
 	first.set_team_color(Teams.FRIENDLY_COLOR)
 	second.set_team_color(Teams.ENEMY_COLOR)
-	var mesh := _meshes(first)[0]
-	var other := _meshes(second)[0]
+	var mesh := first.get_meshes()[0]
+	var other := second.get_meshes()[0]
 	_check("Team colour blue is set on the mesh",
 			mesh.get_instance_shader_parameter("team_color") == Teams.FRIENDLY_COLOR
 			and first.get_team_color() == Teams.FRIENDLY_COLOR,
@@ -221,22 +243,11 @@ func _test_hit_zones_shape_and_rays() -> void:
 			chest_hit == Hitbox.Zone.CHEST, "zone %d (chest is %d)" % [chest_hit, Hitbox.Zone.CHEST])
 	_check("A ray from the front at stomach height hits the stomach zone",
 			stomach_hit == Hitbox.Zone.STOMACH, "zone %d (stomach is %d)" % [stomach_hit, Hitbox.Zone.STOMACH])
-	# The interim pose: the arms hang at the sides, so the hands are well below the shoulders.
-	var hands_down := true
-	var hand_details := ""
-	for hitbox in body.get_hitboxes():
-		if (hitbox.get_parent() as BoneAttachment3D).bone_name.begins_with("hand"):
-			var hand := (hitbox.get_child(0) as CollisionShape3D).global_position
-			hand_details += " %.2f/%.2f" % [hand.x, hand.y]
-			if hand.y > chest.y - 0.3 or absf(hand.x) > 0.45:
-				hands_down = false
-	_check("The interim pose lets the arms hang at the sides (hands below the chest, near the body)",
-			hands_down, "hand x/y:%s, chest y %.2f" % [hand_details, chest.y])
 	body.queue_free()
 	await _wait_ticks(2)
 
 
-## The zones follow the bones: bending the spine moves the chest zone, and crouching sinks the head.
+## The zones follow the bones: bending the spine moves the chest zone.
 func _test_hit_zones_follow_bones() -> void:
 	var body := _add_body()
 	await _wait_ticks(3)
@@ -258,21 +269,6 @@ func _test_hit_zones_follow_bones() -> void:
 			body.get_zone_center(Hitbox.Zone.CHEST).distance_to(chest_before) < 0.001,
 			"%.4f m off" % body.get_zone_center(Hitbox.Zone.CHEST).distance_to(chest_before))
 
-	var head_before := body.get_zone_center(Hitbox.Zone.HEAD)
-	var crouch := (64.0 - 46.0) * Character.UNITS_TO_METRES
-	body.update_pose(0.0, 5.0, -crouch, true, 0.016)
-	await _wait_ticks(2)
-	skeleton.force_update_all_bone_transforms()
-	await _wait_ticks(1)
-	var drop := head_before.y - body.get_zone_center(Hitbox.Zone.HEAD).y
-	_check("Crouching sinks the head zone by 0.45 to 0.47 m (CS: 64 to 46 units)",
-			drop >= 0.45 and drop <= 0.47, "dropped %.3f m" % drop)
-	body.reset_pose()
-	await _wait_ticks(2)
-	skeleton.force_update_all_bone_transforms()
-	await _wait_ticks(1)
-	var back := body.get_zone_center(Hitbox.Zone.HEAD).distance_to(head_before)
-	_check("reset_pose brings the head zone back", back < 0.001, "%.4f m off" % back)
 	body.queue_free()
 	await _wait_ticks(2)
 
@@ -298,11 +294,218 @@ func _test_character_aim_points() -> void:
 	await _wait_ticks(2)
 
 
-## A crew body with the default model (the Rifleman) in the scene.
-func _add_body() -> CrewBody:
+## Task 6: an animated body runs the shared graph, and both hands hold the gun.
+func _test_animation_tree() -> void:
+	var body := _add_body(true)
+	await _wait_ticks(2)
+	var tree := body.get_animation_tree()
+	_check("An animated body runs the shared crew animation graph on physics ticks",
+			tree != null and tree.active and tree.tree_root == load("res://characters/crew/crew_animation_tree.tres")
+			and tree.callback_mode_process == AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS,
+			"tree %s" % tree)
+	await _drive(body, Vector2.ZERO, false, 0.0, 40)
+	var gun := _bone(body, "weapon")
+	var wrist := gun * (FOREGRIP + LEFT_WRIST_FROM_FOREGRIP)
+	var off := _bone(body, "hand_l").origin.distance_to(wrist)
+	_check("Standing still, the left hand holds the gun's foregrip (within 3 cm)", off < 0.03, "%.3f m off" % off)
+	body.queue_free()
+	await _wait_ticks(2)
+
+
+## The upper body aims on its own: the gun points at the aim pitch, whatever the legs do.
+func _test_aiming() -> void:
+	var body := _add_body(true)
+	var results := ""
+	var worst := 0.0
+	for aim: float in [0.0, 40.0, -40.0, 70.0]:
+		await _drive(body, Vector2(0, RUN_SPEED), false, aim, 30)
+		var forward := -_bone(body, "weapon").basis.z.normalized()
+		var pitch := rad_to_deg(asin(forward.y))
+		worst = maxf(worst, absf(pitch - aim))
+		results += " %+.0f->%+.1f" % [aim, pitch]
+	_check("Running, the gun points at the aim pitch (within 4 degrees at 0, +-40 and +70)", worst < 4.0,
+			"aim -> gun pitch:%s" % results)
+	body.queue_free()
+	await _wait_ticks(2)
+
+
+## Running forward moves the feet through a full stride along the run; strafing turns the legs
+## and moves the feet sideways.
+func _test_strides() -> void:
+	var body := _add_body(true)
+	await _drive(body, Vector2(0, RUN_SPEED), false, 0.0, 20)
+	var foot := body.get_skeleton().find_bone("foot_l")
+	var lo := INF
+	var hi := -INF
+	for i in 90:
+		await _drive(body, Vector2(0, RUN_SPEED), false, 0.0, 1)
+		var z := body.get_skeleton().get_bone_global_pose(foot).origin.z
+		lo = minf(lo, z)
+		hi = maxf(hi, z)
+	_check("Running, the left foot swings through a stride of over 0.6 m front to back", hi - lo > 0.6,
+			"foot z from %.2f to %.2f m" % [lo, hi])
+	var tree := body.get_animation_tree()
+	_check("The legs blend by velocity relative to the facing (blend position = local velocity)",
+			tree.get("parameters/Stand/blend_position") == Vector2(0, RUN_SPEED)
+			and is_equal_approx(tree.get("parameters/LocoSpeed/scale"), 1.0),
+			"blend %s, speed scale %.2f" % [tree.get("parameters/Stand/blend_position"), tree.get("parameters/LocoSpeed/scale")])
+	await _drive(body, Vector2(RUN_SPEED, 0), false, 0.0, 30)
+	lo = INF
+	hi = -INF
+	for i in 90:
+		await _drive(body, Vector2(RUN_SPEED, 0), false, 0.0, 1)
+		var x := body.get_skeleton().get_bone_global_pose(foot).origin.x
+		lo = minf(lo, x)
+		hi = maxf(hi, x)
+	_check("Strafing right, the left foot moves sideways by over 0.4 m", hi - lo > 0.4,
+			"foot x from %.2f to %.2f m" % [lo, hi])
+	body.queue_free()
+	await _wait_ticks(2)
+
+
+## Crouching lowers the head zone about as much as CS lowers the eyes (18 units, 0.457 m).
+func _test_crouch_animation() -> void:
+	var body := _add_body(true)
+	await _drive(body, Vector2.ZERO, false, 0.0, 40)
+	var standing := body.get_zone_center(Hitbox.Zone.HEAD).y
+	await _drive(body, Vector2.ZERO, true, 0.0, 60)
+	var crouched := body.get_zone_center(Hitbox.Zone.HEAD).y
+	_check("Crouching lowers the head zone by 0.35 to 0.55 m (CS lowers the eyes 0.457 m)",
+			standing - crouched > 0.35 and standing - crouched < 0.55,
+			"head zone %.2f m standing, %.2f m crouched" % [standing, crouched])
+	await _drive(body, Vector2.ZERO, false, 0.0, 60)
+	var back := body.get_zone_center(Hitbox.Zone.HEAD).y
+	_check("Standing up raises it again", absf(back - standing) < 0.01, "%.2f m" % back)
+	body.queue_free()
+	await _wait_ticks(2)
+
+
+## A shot kicks the gun back, added on top of the aim; the reload moves the left hand off the
+## gun while the torso keeps aiming.
+func _test_fire_and_reload() -> void:
+	var body := _add_body(true)
+	await _drive(body, Vector2.ZERO, false, 20.0, 40)
+	var tree := body.get_animation_tree()
+	var rest := _bone(body, "weapon")
+	tree.set("parameters/Fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	var kick := 0.0
+	for i in 8:
+		await _drive(body, Vector2.ZERO, false, 20.0, 1)
+		kick = maxf(kick, (_bone(body, "weapon").origin - rest.origin).dot(rest.basis.z))
+	await _drive(body, Vector2.ZERO, false, 20.0, 50)
+	var settle := _bone(body, "weapon").origin.distance_to(rest.origin)
+	_check("A shot kicks the gun back by 1 to 6 cm and it settles again (within 5 mm)",
+			kick > 0.01 and kick < 0.06 and settle < 0.005, "kick %.3f m, %.4f m off afterwards" % [kick, settle])
+	var chest_before := _bone(body, "chest").basis.get_rotation_quaternion()
+	var wrist := rest * (FOREGRIP + LEFT_WRIST_FROM_FOREGRIP)
+	tree.set("parameters/ReloadSpeed/scale", 1.0)
+	tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	var away := 0.0
+	var chest_turn := 0.0
+	for i in 160:
+		await _drive(body, Vector2.ZERO, false, 20.0, 1)
+		away = maxf(away, _bone(body, "hand_l").origin.distance_to(wrist))
+		chest_turn = maxf(chest_turn, rad_to_deg(chest_before.angle_to(_bone(body, "chest").basis.get_rotation_quaternion())))
+	_check("The reload takes the left hand off the gun (over 15 cm) but leaves the torso aiming (under 1 degree)",
+			away > 0.15 and chest_turn < 1.0, "left hand up to %.2f m away, chest turned %.2f degrees" % [away, chest_turn])
+	body.queue_free()
+	await _wait_ticks(2)
+
+
+## Every death ends lying on the floor, and respawning stands up again.
+func _test_deaths() -> void:
+	var results := ""
+	var all_down := true
+	for style: String in ["forward", "backward", "headshot"]:
+		var body := _add_body(true)
+		await _drive(body, Vector2.ZERO, false, 0.0, 20)
+		body.play_death(style)
+		await _wait_ticks(170)
+		var head := body.get_zone_center(Hitbox.Zone.HEAD).y
+		var lowest := INF
+		for hitbox in body.get_hitboxes():
+			lowest = minf(lowest, (hitbox.get_child(0) as CollisionShape3D).global_position.y)
+		results += " %s: head %.2f m, lowest zone centre %.2f m;" % [style, head, lowest]
+		if head > 0.45 or lowest < -0.05:
+			all_down = false
+		if style == "headshot":
+			body.play_alive()
+			await _drive(body, Vector2.ZERO, false, 0.0, 40)
+			var up := body.get_zone_center(Hitbox.Zone.HEAD).y
+			_check("After a death, play_alive stands the body up again", up > 1.5, "head zone at %.2f m" % up)
+		body.queue_free()
+		await _wait_ticks(2)
+	_check("Each of the three deaths ends lying on the floor (head zone under 0.45 m, nothing below it)", all_down, results)
+
+
+## A character picks its death from its last hit and from where its killer stood, and comes back
+## to life on respawn.
+func _test_character_deaths() -> void:
+	var victim := _add_bot(1)
+	var in_front := _add_bot(0)
+	var behind := _add_bot(0)
+	await _wait_ticks(3)
+	victim.respawn(Vector3(0, 0, 0), 0.0)
+	in_front.respawn(Vector3(0, 0, -6), 0.0)
+	behind.respawn(Vector3(0, 0, 6), 0.0)
+	await _wait_ticks(3)
+	victim.take_damage(1.0, Hitbox.Zone.CHEST, in_front)
+	var from_front := victim.body.death_style(in_front)
+	var from_behind := victim.body.death_style(behind)
+	victim.take_damage(1.0, Hitbox.Zone.HEAD, behind)
+	var headshot := victim.body.death_style(behind)
+	_check("Shot from the front a character falls backward, from behind forward, and a headshot crumples",
+			from_front == "backward" and from_behind == "forward" and headshot == "headshot",
+			"%s, %s, %s" % [from_front, from_behind, headshot])
+	victim.take_damage(500.0, Hitbox.Zone.STOMACH, in_front)
+	await _wait_ticks(2)
+	var dead_state: String = victim.body.get_animation_tree().get("parameters/Death/current_state")
+	victim.respawn(Vector3(0, 0, 0), 0.0)
+	await _wait_ticks(2)
+	var alive_state: String = victim.body.get_animation_tree().get("parameters/Death/current_state")
+	_check("Dying plays the death, respawning plays the living animations again",
+			dead_state == "backward" and alive_state == "alive", "dead: %s, after respawn: %s" % [dead_state, alive_state])
+	for bot: Character in [victim, in_front, behind]:
+		bot.queue_free()
+	await _wait_ticks(2)
+
+
+## Only whoever looks through a character's eyes sees its viewmodel; everyone else sees its body.
+func _test_first_person() -> void:
+	var bot := _add_bot(1)
+	await _wait_ticks(2)
+	var viewmodel := bot.weapon.get_node("Viewmodel") as Node3D
+	var outside := bot.body.visible and not viewmodel.visible
+	bot.set_first_person(true)
+	var inside := not bot.body.visible and viewmodel.visible
+	bot.set_first_person(false)
+	_check("A bot shows its body and hides its viewmodel; first person swaps them",
+			outside and inside and bot.body.visible and not viewmodel.visible,
+			"from outside: %s, first person: %s" % [outside, inside])
+	bot.queue_free()
+	await _wait_ticks(2)
+
+
+## A crew body with the default model (the Rifleman) in the scene: still, in its rest pose,
+## unless [param animated].
+func _add_body(animated: bool = false) -> CrewBody:
 	var body := BODY_SCENE.instantiate() as CrewBody
+	body.animated = animated
 	add_child(body)
 	return body
+
+
+## Feeds [param body] the same state for [param ticks] physics ticks.
+func _drive(body: CrewBody, velocity: Vector2, crouching: bool, aim: float, ticks: int) -> void:
+	for i in ticks:
+		body.update_animation_state(velocity, crouching, true, aim, 1.0 / 128.0)
+		await get_tree().physics_frame
+
+
+## A bone's transform in world space.
+func _bone(body: CrewBody, bone: String) -> Transform3D:
+	var skeleton := body.get_skeleton()
+	return skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(bone))
 
 
 ## A bot on [param team], with its sounds off (headless runs have no audio device).
@@ -338,14 +541,6 @@ func _ray_hits(point: Vector3) -> int:
 	if result.is_empty() or not result.collider is Hitbox:
 		return -1
 	return (result.collider as Hitbox).zone
-
-
-## Every MeshInstance3D under the body's model.
-func _meshes(body: CrewBody) -> Array[MeshInstance3D]:
-	var meshes: Array[MeshInstance3D] = []
-	for node in body.find_children("*", "MeshInstance3D", true, false):
-		meshes.append(node as MeshInstance3D)
-	return meshes
 
 
 ## Loads a PNG's pixels straight from the file, not through the importer.

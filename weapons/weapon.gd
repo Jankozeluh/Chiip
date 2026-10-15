@@ -89,6 +89,13 @@ func _ready() -> void:
 	_viewmodel_rest = _viewmodel.transform
 
 
+## Shows or hides the first-person model (gun, muzzle flash, kick). Only whoever looks through
+## the holder's eyes sees it; from outside, the holder's body shows its own gun
+## ([method Character.set_first_person]).
+func set_viewmodel_visible(on: bool) -> void:
+	$Viewmodel.visible = on
+
+
 ## Hands the weapon to its holder, who supplies aim and movement state.
 func equip(wielder: Character) -> void:
 	_wielder = wielder
