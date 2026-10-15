@@ -341,14 +341,17 @@ func _update_footsteps(on_ground: bool, delta: float) -> void:
 
 
 ## Your own steps play in both ears; everyone else's come from where they are.
+## They sound like the floor: gravel, metal, wood, or [member footstep_sound]
+## on hard floors (D-084). No [member footstep_sound] means silent (tests).
 func _play_footstep() -> void:
 	if footstep_sound == null:
 		return
+	var sound := Surfaces.footstep_sound(Surfaces.floor_kind(get_world_3d(), global_position), footstep_sound)
 	if is_local_player():
-		_footstep_audio.stream = footstep_sound
+		_footstep_audio.stream = sound
 		_footstep_audio.play()
 	else:
-		_footstep_audio_3d.stream = footstep_sound
+		_footstep_audio_3d.stream = sound
 		_footstep_audio_3d.play()
 
 

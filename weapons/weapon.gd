@@ -35,6 +35,12 @@ const RELOAD_DIP_ANGLE_DEGREES := -35.0
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
+## A bullet hitting a body, and a head (as recognisable as CS's headshot sound, D-084).
+const HIT_BODY_SOUND := preload("res://assets/sounds/hit_body.wav")
+const HIT_HEAD_SOUND := preload("res://assets/sounds/hit_head.wav")
+## How much louder a headshot sounds than other hits, in dB, and how far it carries (unit size, metres).
+const HEADSHOT_VOLUME_DB := 6.0
+const HEADSHOT_UNIT_SIZE := 8.0
 
 ## The weapon's stats.
 @export var data: WeaponData
@@ -278,6 +284,7 @@ func _shoot_bullet(direction: Vector3) -> void:
 		"damage": damage,
 	}
 	_spawn_impact(hit_position, result.normal, result.collider)
+	_play_impact_sound(result)
 	hit_landed.emit(last_hit)
 
 
@@ -317,6 +324,27 @@ func _spawn_impact(hit_position: Vector3, normal: Vector3, collider: Object) -> 
 		var oldest: Node3D = _impacts.pop_front()
 		if is_instance_valid(oldest):
 			oldest.queue_free()
+
+
+## The sound of the bullet landing, from where it hit, for everyone nearby: the
+## surface it hit (gravel, metal, wood or hard, see [Surfaces]), a thwack on a
+## body, a louder "dink" on a head. A weapon without a shot sound (tests) is silent here too.
+func _play_impact_sound(hit: Dictionary) -> void:
+	if data.shot_sound == null or _impacts.is_empty():
+		return
+	var audio := _impacts.back().get_node_or_null("Audio") as AudioStreamPlayer3D
+	if audio == null:
+		return
+	var hitbox := hit.collider as Hitbox
+	if hitbox != null:
+		var head := hitbox.zone == Hitbox.Zone.HEAD
+		audio.stream = HIT_HEAD_SOUND if head else HIT_BODY_SOUND
+		if head:
+			audio.volume_db += HEADSHOT_VOLUME_DB
+			audio.unit_size = HEADSHOT_UNIT_SIZE
+	else:
+		audio.stream = Surfaces.impact_sound(Surfaces.kind_of(hit.collider, hit.shape, hit.normal))
+	audio.play()
 
 
 ## Turns a yaw/pitch pair (radians) into a direction. Yaw 0, pitch 0 looks along −Z.

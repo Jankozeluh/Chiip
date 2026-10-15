@@ -137,6 +137,12 @@ The bomb test plays short bomb rounds on Depot (plant, explosion, drop and picku
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
 ```
 
+The sound test checks footsteps per floor, bullet impact and headshot sounds, and menu sounds on Depot:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 20000 res://tests/sound_test.tscn
+```
+
 The respawn test plays short team respawn matches on Depot (kills, respawns, spawn choice, kill limit, time limit, overtime):
 
 ```bash

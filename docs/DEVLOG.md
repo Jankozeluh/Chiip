@@ -15,7 +15,9 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 
 - **Bots hunt in pairs** in the respawn mode (D-083, provisional): each team's bots form groups of about two with a shared `HuntPlan`; the member alive the longest leads, to a teammate's sighting within 25 m or roaming the patrol points, and the other follows about 6 m behind watching a flank. Measuring where kills happened showed everyone piling into mid (80–90%) when every bot answered every sighting and gunshot, hence the 25 m reach. The kill limit went from 30 to 50: bots-only matches score about 20 kills a minute. 4 new respawn checks (19 in all), and the maps test now plays a respawn match on every map (to 20 kills in 84–124 s).
 
-**Next:** the full sound pass.
+- **Sound pass** (D-084, provisional): footsteps sound like the floor (hard, gravel, metal, wood), read from the texture of the brush under your feet, which the maps now store when built (Chiip's own worldspawn class; the three maps were rebuilt). Bullets make impact sounds per surface, a thwack on bodies and a louder CS-like "dink" on heads. A planted-bomb alert, menu hover and click sounds, a "go" beep at round start and won/lost stingers. 24 new generated sounds, made by a Sonnet subagent from a brief and measured by spectrum; the old sounds are unchanged. New `tests/sound_test.tscn` (8 checks).
+
+**Next:** lighting (baked vs. real-time), then the performance check and the first macOS export.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

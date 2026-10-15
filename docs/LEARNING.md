@@ -428,6 +428,13 @@
 **Asking a NavigationAgent3D for a new path** (`BotController._check_stuck()`)
 - Setting `target_position` again, even to the same point, makes the agent compute a fresh path from where the bot is now. That's how a stuck bot gets a new route after backing off; Unity's `NavMeshAgent.SetDestination()` works the same way.
 
+**Metadata from func_godot, and which shape a ray hit** (`systems/surfaces.gd`)
+- Any node can carry extra data with `set_meta()` / `get_meta()`, like a Dictionary attached to the node and saved with the scene. func_godot can store per-face data (texture, normal, which brush) there when the entity class asks for it; Chiip's worldspawn class does.
+- `intersect_ray()` also returns `shape`, the index of the hit shape inside the body. `body.shape_find_owner(shape)` and `shape_owner_get_owner()` turn it into the `CollisionShape3D` node, whose name links it to the brush's faces. Unity's `RaycastHit.collider` gives the collider directly; with one body made of many shapes Godot needs the extra step.
+
+**Static classes that own a node** (`ui/ui_sounds.gd`)
+- A class with only static members can still play sounds: it creates one `AudioStreamPlayer`, adds it to `get_tree().root` (deferred, since the tree may be busy) and keeps it in a static variable. That's the job a Unity singleton `MonoBehaviour` with `DontDestroyOnLoad` would do, without an autoload.
+
 **Text you can see through walls** (the bomb's marker)
 - `Label3D.no_depth_test = true` draws the text on top of everything, like a waypoint marker; `fixed_size` keeps it the same size on screen at any distance. Unity would use a world-space canvas with a shader that ignores depth.
 

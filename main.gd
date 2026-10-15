@@ -58,6 +58,8 @@ var _map: Node
 
 func _ready() -> void:
 	_console.main = self
+	# Menu buttons tick and click (D-084).
+	UiSounds.attach(_match_end_screen)
 	_match_end_screen.play_again_pressed.connect(restart_match)
 	_match_end_screen.quit_pressed.connect(get_tree().quit)
 	_load_map()

@@ -173,6 +173,7 @@ func _on_dropped(_at: Vector3) -> void:
 
 func _on_planted(site: Area3D, _planter: Character) -> void:
 	_show_message("Bomb planted at %s" % Bomb.site_letter(site), Teams.text_color_for(_bomb.attacking_team))
+	UiSounds.play(UiSounds.BOMB_PLANTED)
 
 
 func _show_message(text: String, color: Color) -> void:
