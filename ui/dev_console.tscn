@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/dev_console.gd" id="console_script"]
+
+[sub_resource type="StyleBoxFlat" id="panel_style"]
+bg_color = Color(0.05, 0.06, 0.07, 0.9)
+border_width_bottom = 2
+border_color = Color(0.85, 0.48, 0.16, 1)
+
+[sub_resource type="SystemFont" id="mono_font"]
+font_names = PackedStringArray("Menlo", "Monaco", "Courier New", "monospace")
+
+[node name="DevConsole" type="CanvasLayer"]
+layer = 10
+script = ExtResource("console_script")
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 344.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("panel_style")
+
+[node name="Output" type="Label" parent="Panel"]
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 292.0
+theme_override_fonts/font = SubResource("mono_font")
+theme_override_font_sizes/font_size = 16
+vertical_alignment = 2
+
+[node name="Input" type="LineEdit" parent="Panel"]
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 300.0
+offset_right = -16.0
+offset_bottom = 332.0
+theme_override_fonts/font = SubResource("mono_font")
+theme_override_font_sizes/font_size = 16
+placeholder_text = "type a command, e.g. help"

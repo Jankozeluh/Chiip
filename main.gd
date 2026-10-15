@@ -28,24 +28,47 @@ const UI_DESIGN_HEIGHT := 720.0
 @onready var _hud: Node = $HUD
 @onready var _debug_overlay: Node = $DebugOverlay
 @onready var _palette_effect: CanvasLayer = $World/SubViewport/PaletteEffect
+@onready var _console: DevConsole = $DevConsole
+
+## The map currently loaded.
+var _map: Node
 
 
 func _ready() -> void:
+	_console.main = self
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
 
 
-## Puts the map into the world viewport and connects its player to the HUD and overlay.
+## The map currently loaded.
+func get_map() -> Node:
+	return _map
+
+
+## Replaces the current map with the scene at [param path] (console: map).
+func change_map(path: String) -> void:
+	if _map != null:
+		_viewport.remove_child(_map)
+		_map.queue_free()
+	_spawn_map(load(path))
+
+
+## Loads the map from the command line (-- --map ...) or [member map_scene].
 func _load_map() -> void:
 	var scene := map_scene
 	var args := OS.get_cmdline_user_args()
 	var map_arg := args.find("--map")
 	if map_arg >= 0 and map_arg + 1 < args.size():
 		scene = load(args[map_arg + 1])
-	var map := scene.instantiate()
-	_viewport.add_child(map)
-	var player := map.get_node("Player") as Character
+	_spawn_map(scene)
+
+
+## Puts the map into the world viewport and connects its player to the HUD and overlay.
+func _spawn_map(scene: PackedScene) -> void:
+	_map = scene.instantiate()
+	_viewport.add_child(_map)
+	var player := _map.get_node("Player") as Character
 	_hud.set_player(player)
 	_debug_overlay.player = player
 
@@ -70,3 +93,4 @@ func apply_pixel_settings() -> void:
 		ui_height = window.size.y
 	_hud.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_debug_overlay.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)

@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="hud_scene"]
 [ext_resource type="PackedScene" path="res://ui/debug_overlay.tscn" id="overlay_scene"]
 [ext_resource type="Shader" path="res://shaders/palette_limit.gdshader" id="palette_shader"]
+[ext_resource type="PackedScene" path="res://ui/dev_console.tscn" id="console_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -41,3 +42,5 @@ mouse_filter = 2
 [node name="HUD" parent="." instance=ExtResource("hud_scene")]
 
 [node name="DebugOverlay" parent="." instance=ExtResource("overlay_scene")]
+
+[node name="DevConsole" parent="." instance=ExtResource("console_scene")]

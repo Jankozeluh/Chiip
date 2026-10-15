@@ -47,6 +47,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if DevConsole.is_open:
+		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_look((event as InputEventMouseMotion).screen_relative)
 	elif event.is_action_pressed("jump"):
@@ -72,6 +74,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func get_input(_delta: float) -> CharacterInput:
 	var input := CharacterInput.new()
+	if DevConsole.is_open:
+		# Typing in the console shouldn't move or shoot.
+		input.yaw = _yaw
+		input.pitch = _pitch
+		return input
 	input.move = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	input.yaw = _yaw
 	input.pitch = _pitch

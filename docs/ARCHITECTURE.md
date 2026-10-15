@@ -59,8 +59,9 @@ Chiip/
 
 | File | What it is |
 |---|---|
-| `main.tscn` + `main.gd` | Root (main) scene. Loads the map from `map_scene` (default `maps/test_map.tscn`, or `-- --map <scene>` on the command line), puts it in the world viewport and hands its `Player` to the HUD and overlay. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
+| `main.tscn` + `main.gd` | Root (main) scene. `get_map()`, `change_map(path)` (console). Loads the map from `map_scene` (default `maps/test_map.tscn`, or `-- --map <scene>` on the command line), puts it in the world viewport and hands its `Player` to the HUD and overlay. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
 | `shaders/palette_limit.gdshader` | Optional retro color limit for the world image: 12 shades per channel with 4 × 4 ordered (Bayer) dithering. Drawn by a full-screen `ColorRect` in `World/SubViewport/PaletteEffect`, switched by `Main.palette_effect` |
+| `ui/dev_console.tscn` + `.gd` | `DevConsole` (key left of 1): commands `help`, `clear`, `bot_add`, `bot_kick`, `bot_difficulty`, `god`, `noclip`, `map`; history with ↑/↓. `DevConsole.is_open` (static) makes the player's controls ignore input. `run(text)` runs a command from code. Lives in `main.tscn` (not an autoload) |
 | `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
 | `assets/environments/cool_daylight.tres` | The shared `Environment`: blue sky with a grey-blue horizon, ambient light, cool haze, tonemapping and color adjustments (D-031) |
 | `assets/materials/map_default.tres` | Base material for TrenchBroom maps: func_godot copies it and sets each face's texture. Uses the map's own UVs (no triplanar), nearest-with-mipmaps, matte |
@@ -69,7 +70,7 @@ Chiip/
 | `maps/comparison/trenchbroom_room.tscn` | That map built by func_godot (`Map` node, built geometry stored in the scene), lights set to *Static* for baking, a `LightmapGI` node, and a Player |
 | `maps/comparison/csg_room.tscn` | The same room made of CSG boxes with triplanar materials, same lights, and a Player |
 | `maps/test_map.tscn` | Test map (shown inside `main.tscn`). An `ArenaRules` node (2 Normal bots). A `Navigation` region (`NavigationRegion3D`) covers the `Geometry` and `Range` nodes (group `navigation_source`). Lighting: neutral white sun (35° high, shadows), the shared cool-daylight environment, three colored `OmniLight3D` lamps (D-031). Retextured in M3: concrete floor (course), grey gravel (range), muted red brick outer walls, grey stone platform/stairs/peek walls, wooden crates, metal tunnel, painted spray wall. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
-| `characters/character.gd` | `Character` (`CharacterBody3D`): all CS movement rules (run/walk/crouch, jump, air strafing), weapon handling, eye position and aim, 100 HP (`take_damage()`, signals `damaged`, `died` and `respawned`; dead characters stop acting, tip over and stop blocking others; `respawn()` resets health, stance and weapon), `team` (0 = player's, 1 = bots'), footsteps every 1.8 m (`footstep` signal; loud ones make noise). In the `characters` group. Simulates one `CharacterInput` per physics tick from its controller |
+| `characters/character.gd` | `Character` (`CharacterBody3D`): all CS movement rules (run/walk/crouch, jump, air strafing), weapon handling, eye position and aim, 100 HP (`take_damage()`, signals `damaged`, `died` and `respawned`; dead characters stop acting, tip over and stop blocking others; `respawn()` resets health, stance and weapon), `god_mode` and `noclip` (console), `team` (0 = player's, 1 = bots'), footsteps every 1.8 m (`footstep` signal; loud ones make noise). In the `characters` group. Simulates one `CharacterInput` per physics tick from its controller |
 | `characters/character.tscn` | Base character scene: standing and crouching capsules, a `Head` at eye height, the soldier `Body`. On the **bots** layer by default (bullets pass through the capsule to the hit zones); the player overrides this. Player and bots are *inherited* variants of it |
 | `characters/soldier_body.tscn` | The visible body with CS hit zones (`Hitbox` areas): `Upper` (head, chest, stomach, arms; sinks 0.457 m when crouching) and `Legs`. Chest and arm meshes are in the `team_colored` group and get the character's team color |
 | `characters/character_input.gd` | `CharacterInput`: one tick of commands (move direction, look yaw/pitch, jump, crouch, walk, shoot, reload), like CS's "usercmd" |
@@ -140,6 +141,7 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `reload` | R | PlayerController → command → weapon |
 | `toggle_mouse` | Esc | PlayerController (frees or captures the mouse) |
 | `toggle_debug` | F3 | Debug overlay |
+| `toggle_console` | key left of 1 (`` ` `` / `~`; on Czech keyboards the key under Esc) | Developer console |
 
 ## How the player camera works
 

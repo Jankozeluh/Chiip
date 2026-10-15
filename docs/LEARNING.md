@@ -255,3 +255,8 @@
 - `create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)` runs a tween on physics ticks, so physics interpolation smooths it like other movement. Use it for anything that moves a physics-interpolated node.
 - `await get_tree().create_timer(3.0).timeout` waits 3 seconds without blocking the game, like `yield return new WaitForSeconds(3)` in a Unity coroutine.
 - `func.bind(extra)` adds an argument to a signal connection: `bot.died.connect(_on_died.bind(bot))` tells the handler *which* bot died.
+
+**Input order and a text field** (`ui/dev_console.gd`)
+- Input events go through `_input()` first, then the UI (Controls such as a `LineEdit` text field), then `_unhandled_input()`. The console catches its own key in `_input()` and calls `get_viewport().set_input_as_handled()`, so the key doesn't also type a character or reach the game.
+- `LineEdit` is a one-line text box; its `text_submitted` signal fires on Enter.
+- A `Dictionary` of `Callable`s maps command names to functions, so adding a command is one `register_command()` line.

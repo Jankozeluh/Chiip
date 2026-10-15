@@ -98,6 +98,10 @@ const DEATH_FALL_TIME := 0.45
 
 ## Current health; 0 means dead. Read-only for other scripts (use [method take_damage]).
 var health: float = 0.0
+## Takes no damage (console: god).
+var god_mode: bool = false
+## Flies through walls in the direction it looks, ignoring gravity (console: noclip).
+var noclip: bool = false
 
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
@@ -170,6 +174,9 @@ func _physics_process(delta: float) -> void:
 		weapon.trigger_held = _input.shoot
 		if _input.reload:
 			weapon.reload()
+	if noclip:
+		_fly(delta)
+		return
 
 	var on_ground := is_on_floor()
 	# As in CS, you jump only on the tick you press jump while on the ground.
@@ -205,7 +212,7 @@ func is_alive() -> bool:
 
 ## Lowers health and reports it; at 0 the character dies. [param attacker] may be null.
 func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
-	if not is_alive():
+	if not is_alive() or god_mode:
 		return
 	health = maxf(health - amount, 0.0)
 	damaged.emit(amount, zone, attacker)
@@ -262,6 +269,15 @@ func get_max_speed() -> float:
 	if weapon != null and weapon.data != null:
 		return weapon.data.max_speed_units * UNITS_TO_METRES
 	return max_speed
+
+
+## Noclip: moves straight where the movement keys point relative to the view
+## (looking up and pressing forward flies up), at twice running speed, through walls.
+func _fly(delta: float) -> void:
+	var view := Basis.from_euler(Vector3(_input.pitch, _input.yaw, 0.0))
+	var direction := view * Vector3(_input.move.x, 0.0, _input.move.y)
+	velocity = direction.limit_length(1.0) * max_speed * 2.0
+	global_position += velocity * delta
 
 
 ## Counts distance walked on the ground and takes a step every STEP_DISTANCE.

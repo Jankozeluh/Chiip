@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** Milestones 1 and 2 done: CS-style movement and a rifle with CS-like recoil on a test map with a shooting range. Next: M3, the retro look. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M3 done (CS-style movement, a rifle with CS-like recoil, the retro look). M4 (bots) in progress: two bots fight you on the test map; see the console commands below. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -40,6 +40,9 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Shoot | Left mouse button |
 | Reload | R |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
+| Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
+
+**Console commands:** `help`, `bot_add [easy|normal|hard]`, `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
 
 ## Making maps with TrenchBroom
 
