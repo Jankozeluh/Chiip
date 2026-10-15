@@ -69,8 +69,9 @@ Chiip/
 | `maps/comparison/trenchbroom_room.tscn` | That map built by func_godot (`Map` node, built geometry stored in the scene), lights set to *Static* for baking, a `LightmapGI` node, and a Player |
 | `maps/comparison/csg_room.tscn` | The same room made of CSG boxes with triplanar materials, same lights, and a Player |
 | `maps/test_map.tscn` | Test map (shown inside `main.tscn`). Lighting: neutral white sun (35° high, shadows), the shared cool-daylight environment, three colored `OmniLight3D` lamps (D-031). Retextured in M3: concrete floor (course), grey gravel (range), muted red brick outer walls, grey stone platform/stairs/peek walls, wooden crates, metal tunnel, painted spray wall. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
-| `characters/character.gd` | `Character` (`CharacterBody3D`): all CS movement rules (run/walk/crouch, jump, air strafing), weapon handling, eye position and aim. Simulates one `CharacterInput` per physics tick from its controller |
-| `characters/character.tscn` | Base character scene: standing and crouching capsules, a `Head` at eye height. Player and bots are *inherited* variants of it |
+| `characters/character.gd` | `Character` (`CharacterBody3D`): all CS movement rules (run/walk/crouch, jump, air strafing), weapon handling, eye position and aim, 100 HP (`take_damage()`, signals `damaged` and `died`, dead characters stop acting). Simulates one `CharacterInput` per physics tick from its controller |
+| `characters/character.tscn` | Base character scene: standing and crouching capsules, a `Head` at eye height, the soldier `Body`. On the **bots** layer by default (bullets pass through the capsule to the hit zones); the player overrides this. Player and bots are *inherited* variants of it |
+| `characters/soldier_body.tscn` | The visible body with CS hit zones (`Hitbox` areas): `Upper` (head, chest, stomach, arms; sinks 0.457 m when crouching) and `Legs`. Chest and arm meshes are in the `team_colored` group and get the character's team color |
 | `characters/character_input.gd` | `CharacterInput`: one tick of commands (move direction, look yaw/pitch, jump, crouch, walk, shoot, reload), like CS's "usercmd" |
 | `characters/character_controller.gd` | `CharacterController`: base for whatever drives a character (`get_input()`, `set_look_angles()`, `get_camera()`) |
 | `player/player.tscn` | The player: inherits `character.tscn`, adds `Head/Camera3D` with the rifle and a `PlayerController`. On the player layer |
@@ -81,10 +82,10 @@ Chiip/
 | `weapons/rifle.tres` | The Rifle's data (AK-like) |
 | `weapons/weapon.gd` | `Weapon` node: firing, ammo, reload. Signals `fired`, `ammo_changed`, `reload_started`, `reload_finished` |
 | `weapons/bullet_impact.tscn` | Bullet hole (16 × 16 pixel radial gradient quad) and a burst of sparks |
-| `weapons/hitbox.gd` | `Hitbox` (`Area3D`): one damage zone with its multiplier; emits `hit` |
+| `weapons/hitbox.gd` | `Hitbox` (`Area3D`): one damage zone with its multiplier; emits `hit` with the damage, zone, position and attacker |
 | `maps/props/target_dummy.tscn` + `.gd` | `TargetDummy`: CS-sized, color-coded hitboxes (head red, chest blue, stomach teal, arms light blue, legs dark), floating damage numbers, running total, optional side-to-side movement |
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players + a blocky first-person model (`Viewmodel`) with a muzzle flash (gradient quad + orange light). Instanced in the player under `Head/Camera3D` |
-| `ui/hud.tscn` + `.gd` | HUD: crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
+| `ui/hud.tscn` + `.gd` | HUD: health (bottom left, red at ≤ 25), crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
 | `tools/make_retro_texture.gd` | Turns any image into a retro texture: square crop, shrink in halving steps to 64 × 64, optional contrast, brightness and saturation, k-means palette (16 colors), PNG + lossless/mipmapped import settings, into `assets/textures/` |
 | `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
@@ -186,7 +187,8 @@ Character (CharacterBody3D, character.gd)        ← simulates commands by CS ru
 - The character sets `weapon.trigger_held` from the command. The character processes first and its children after, so the weapon sees the new value in the same tick.
 - The weapon sets the character's top speed (`Character.get_max_speed()`).
 - The click that recaptures the mouse, and clicks while the mouse is free, never fire (`PlayerController`).
-- Shots start at `Character.get_eye_position()` and use `Character.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the character's own body.
+- Shots start at `Character.get_eye_position()` and use `Character.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, and excludes the shooter's own hit zones (`Character.get_hitbox_rids()`), since it starts inside their head.
+- Damage path: weapon → `Hitbox.receive_hit()` (zone multiplier) → `hit` signal → `Character.take_damage()` → `damaged` / `died` signals → HUD, and later kill feed and rounds.
 - Recoil has two parts. `Weapon._get_shot_direction()` adds the spray pattern offset to the aim. `Weapon.view_punch` (half the pattern, smoothed every frame) is added to the camera rotation in `PlayerController._process`. The aim itself never changes, so the view returns to it as recoil wears off.
 - When a ray hits a `Hitbox`, the weapon computes `damage × range_modifier^(distance / 500 units)` and calls `Hitbox.receive_hit()`, which applies the zone multiplier and emits `hit` to whoever owns the hitbox (the dummy now, bots in M4).
 - The viewmodel moves with the camera because it's a child of it. Shot kick is a tween back to the rest pose; the reload dip is computed every frame from the reload progress. Viewmodel meshes don't cast shadows. Known limitation: the gun pokes into walls when you stand right against them (proper viewmodel rendering later).
@@ -200,7 +202,7 @@ Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit va
 |---|---|---|---|
 | 1 | world | 1 | Map geometry |
 | 2 | player | 2 | The player's body (collides with world and bots: mask 5) |
-| 3 | bots | 4 | Bot bodies, target dummies |
+| 3 | bots | 4 | Bot bodies (and any `Character` by default; mask 7), target dummies |
 | 4 | hitboxes | 8 | Head / chest / stomach / arm / leg zones (`Area3D`) that bullets hit |
 | 5 | triggers | 16 | Buy zones, bombsites |
 

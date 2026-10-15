@@ -40,6 +40,9 @@ func _ready() -> void:
 	# of following its parent, so mouse look has no physics-tick delay.
 	camera.top_level = true
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Hide your own body from your camera. Its hit zones still work, since
+	# hiding a node doesn't affect physics.
+	character.get_node("Body").visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 

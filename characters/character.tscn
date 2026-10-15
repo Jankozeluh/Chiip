@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/character.gd" id="character_script"]
+[ext_resource type="PackedScene" path="res://characters/soldier_body.tscn" id="body_scene"]
 
 [sub_resource type="CapsuleShape3D" id="standing_shape"]
 radius = 0.4
@@ -11,6 +12,8 @@ radius = 0.4
 height = 1.3716
 
 [node name="Character" type="CharacterBody3D"]
+collision_layer = 4
+collision_mask = 7
 script = ExtResource("character_script")
 
 [node name="StandingCollision" type="CollisionShape3D" parent="."]
@@ -24,3 +27,5 @@ disabled = true
 
 [node name="Head" type="Node3D" parent="."]
 position = Vector3(0, 1.6256, 0)
+
+[node name="Body" parent="." instance=ExtResource("body_scene")]

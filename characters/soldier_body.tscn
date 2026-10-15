@@ -1,0 +1,133 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/hitbox.gd" id="hitbox_script"]
+
+[sub_resource type="StandardMaterial3D" id="skin_material"]
+albedo_color = Color(0.78, 0.58, 0.44, 1)
+
+[sub_resource type="StandardMaterial3D" id="clothes_material"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="vest_material"]
+albedo_color = Color(0.24, 0.22, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="trousers_material"]
+albedo_color = Color(0.22, 0.23, 0.26, 1)
+
+[sub_resource type="BoxMesh" id="head_mesh"]
+material = SubResource("skin_material")
+size = Vector3(0.24, 0.26, 0.26)
+
+[sub_resource type="BoxShape3D" id="head_shape"]
+size = Vector3(0.24, 0.26, 0.26)
+
+[sub_resource type="BoxMesh" id="chest_mesh"]
+material = SubResource("clothes_material")
+size = Vector3(0.46, 0.38, 0.26)
+
+[sub_resource type="BoxShape3D" id="chest_shape"]
+size = Vector3(0.46, 0.38, 0.26)
+
+[sub_resource type="BoxMesh" id="stomach_mesh"]
+material = SubResource("vest_material")
+size = Vector3(0.42, 0.25, 0.24)
+
+[sub_resource type="BoxShape3D" id="stomach_shape"]
+size = Vector3(0.42, 0.25, 0.24)
+
+[sub_resource type="BoxMesh" id="arm_mesh"]
+material = SubResource("clothes_material")
+size = Vector3(0.12, 0.6, 0.14)
+
+[sub_resource type="BoxShape3D" id="arm_shape"]
+size = Vector3(0.12, 0.6, 0.14)
+
+[sub_resource type="BoxMesh" id="leg_mesh"]
+material = SubResource("trousers_material")
+size = Vector3(0.18, 0.85, 0.2)
+
+[sub_resource type="BoxShape3D" id="leg_shape"]
+size = Vector3(0.18, 0.85, 0.2)
+
+[node name="Body" type="Node3D"]
+
+[node name="Upper" type="Node3D" parent="."]
+
+[node name="Head" type="Area3D" parent="Upper"]
+position = Vector3(0, 1.63, 0)
+script = ExtResource("hitbox_script")
+zone = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Upper/Head"]
+shape = SubResource("head_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Upper/Head"]
+mesh = SubResource("head_mesh")
+
+[node name="Chest" type="Area3D" parent="Upper"]
+position = Vector3(0, 1.29, 0)
+script = ExtResource("hitbox_script")
+zone = 2
+
+[node name="Shape" type="CollisionShape3D" parent="Upper/Chest"]
+shape = SubResource("chest_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Upper/Chest" groups=["team_colored"]]
+mesh = SubResource("chest_mesh")
+
+[node name="Stomach" type="Area3D" parent="Upper"]
+position = Vector3(0, 0.975, 0)
+script = ExtResource("hitbox_script")
+zone = 1
+
+[node name="Shape" type="CollisionShape3D" parent="Upper/Stomach"]
+shape = SubResource("stomach_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Upper/Stomach"]
+mesh = SubResource("stomach_mesh")
+
+[node name="LeftArm" type="Area3D" parent="Upper"]
+position = Vector3(-0.31, 1.18, 0)
+script = ExtResource("hitbox_script")
+zone = 3
+
+[node name="Shape" type="CollisionShape3D" parent="Upper/LeftArm"]
+shape = SubResource("arm_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Upper/LeftArm" groups=["team_colored"]]
+mesh = SubResource("arm_mesh")
+
+[node name="RightArm" type="Area3D" parent="Upper"]
+position = Vector3(0.31, 1.18, 0)
+script = ExtResource("hitbox_script")
+zone = 3
+
+[node name="Shape" type="CollisionShape3D" parent="Upper/RightArm"]
+shape = SubResource("arm_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Upper/RightArm" groups=["team_colored"]]
+mesh = SubResource("arm_mesh")
+
+[node name="Legs" type="Node3D" parent="."]
+
+[node name="LeftLeg" type="Area3D" parent="Legs"]
+position = Vector3(-0.11, 0.425, 0)
+script = ExtResource("hitbox_script")
+zone = 4
+
+[node name="Shape" type="CollisionShape3D" parent="Legs/LeftLeg"]
+shape = SubResource("leg_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Legs/LeftLeg"]
+mesh = SubResource("leg_mesh")
+
+[node name="RightLeg" type="Area3D" parent="Legs"]
+position = Vector3(0.11, 0.425, 0)
+script = ExtResource("hitbox_script")
+zone = 4
+
+[node name="Shape" type="CollisionShape3D" parent="Legs/RightLeg"]
+shape = SubResource("leg_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Legs/RightLeg"]
+mesh = SubResource("leg_mesh")

@@ -242,6 +242,8 @@ func _shoot_bullet(direction: Vector3) -> void:
 	var query := PhysicsRayQueryParameters3D.create(
 			from, from + direction * data.max_range, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
 	query.collide_with_areas = true
+	# The ray starts inside your own head hitbox; never hit yourself.
+	query.exclude = _wielder.get_hitbox_rids()
 	var result := get_world_3d().direct_space_state.intersect_ray(query)
 	if result.is_empty():
 		return
@@ -251,7 +253,7 @@ func _shoot_bullet(direction: Vector3) -> void:
 	var damage := 0.0
 	if result.collider is Hitbox:
 		var hitbox := result.collider as Hitbox
-		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance), hit_position)
+		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance), hit_position, _wielder)
 		zone = hitbox.get_zone_name()
 	last_hit = {
 		"position": hit_position,

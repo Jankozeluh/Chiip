@@ -17,6 +17,11 @@ extends CharacterBody3D
 ## Distances are in metres and speeds in metres per second. CS values are
 ## converted with [constant UNITS_TO_METRES]. See docs/GAME_DESIGN.md, section 4.1.
 
+## Emitted when the character takes damage.
+signal damaged(amount: float, zone: Hitbox.Zone, attacker: Character)
+## Emitted once when health reaches 0. [param killer] may be null.
+signal died(killer: Character)
+
 ## CS/Source distance units to metres (1 unit ≈ 1 inch).
 const UNITS_TO_METRES := 0.0254
 
@@ -60,9 +65,20 @@ const UNITS_TO_METRES := 0.0254
 ## Seconds for the view to move between standing and crouched height.
 @export var crouch_transition_time: float = 0.15
 
+@export_group("Health")
+## Health at spawn. CS: 100.
+@export var max_health: float = 100.0
+
+@export_group("Look")
+## Color of the clothes on chest and arms: the team color.
+@export var team_color: Color = Color(0.25, 0.4, 0.7)
+
 @export_group("")
 ## The gun this character holds.
 @export var weapon: Weapon
+
+## Current health; 0 means dead. Read-only for other scripts (use [method take_damage]).
+var health: float = 0.0
 
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
@@ -71,6 +87,8 @@ var is_crouching: bool = false
 var _input := CharacterInput.new()
 ## Whatever drives this character: the first CharacterController among its children.
 var _controller: CharacterController
+## The damage zones on the body.
+var _hitboxes: Array[Hitbox] = []
 ## Current eye height above the feet. Moves smoothly toward the standing or crouched height.
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
@@ -78,6 +96,10 @@ var _hull_height_difference: float = 0.0
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
+## The visible body with its hit zones (characters/soldier_body.tscn).
+@onready var body: Node3D = $Body
+## Head, chest, stomach and arms: they sink when crouching, as in CS.
+@onready var _upper_body: Node3D = $Body/Upper
 @onready var _standing_collision: CollisionShape3D = $StandingCollision
 @onready var _crouching_collision: CollisionShape3D = $CrouchingCollision
 
@@ -90,6 +112,8 @@ func _ready() -> void:
 	var crouching_shape := _crouching_collision.shape as CapsuleShape3D
 	_hull_height_difference = standing_shape.height - crouching_shape.height
 	_set_crouch_hull(false)
+	health = max_health
+	_set_up_body()
 	for child in get_children():
 		if child is CharacterController:
 			_controller = child
@@ -101,8 +125,14 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if _controller != null:
+	if _controller != null and is_alive():
 		_input = _controller.get_input(delta)
+	elif not is_alive():
+		# Dead characters don't act: keep facing the same way, press nothing.
+		var still := CharacterInput.new()
+		still.yaw = _input.yaw
+		still.pitch = _input.pitch
+		_input = still
 	# Face where the command looks, so "forward" is where you look. The head
 	# tilts up and down, which points a third-person gun (bots) at the target.
 	rotation.y = _input.yaw
@@ -140,6 +170,29 @@ func _physics_process(delta: float) -> void:
 		velocity += half_gravity
 
 
+## True while health is above 0.
+func is_alive() -> bool:
+	return health > 0.0
+
+
+## Lowers health and reports it; at 0 the character dies. [param attacker] may be null.
+func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
+	if not is_alive():
+		return
+	health = maxf(health - amount, 0.0)
+	damaged.emit(amount, zone, attacker)
+	if health <= 0.0:
+		_die(attacker)
+
+
+## Physics IDs of this character's hit zones, so its own shots can ignore them.
+func get_hitbox_rids() -> Array[RID]:
+	var rids: Array[RID] = []
+	for hitbox in _hitboxes:
+		rids.append(hitbox.get_rid())
+	return rids
+
+
 ## The camera this character is seen through (the player's), or null for bots.
 func get_camera() -> Camera3D:
 	return _controller.get_camera() if _controller != null else null
@@ -171,6 +224,31 @@ func get_max_speed() -> float:
 	if weapon != null and weapon.data != null:
 		return weapon.data.max_speed_units * UNITS_TO_METRES
 	return max_speed
+
+
+func _die(killer: Character) -> void:
+	if weapon != null:
+		weapon.trigger_held = false
+	# Dead bodies can't be hit again.
+	for hitbox in _hitboxes:
+		hitbox.set_deferred("collision_layer", 0)
+	died.emit(killer)
+
+
+## Finds the body's hit zones and gives the clothes this character's team color.
+func _set_up_body() -> void:
+	var clothes := StandardMaterial3D.new()
+	clothes.albedo_color = team_color
+	for node in body.find_children("*", "", true, false):
+		if node is Hitbox:
+			_hitboxes.append(node)
+			(node as Hitbox).hit.connect(_on_hitbox_hit)
+		elif node is MeshInstance3D and node.is_in_group("team_colored"):
+			(node as MeshInstance3D).material_override = clothes
+
+
+func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:
+	take_damage(damage, zone, attacker as Character)
 
 
 ## Returns the horizontal direction the movement keys point to, relative to where you look.
@@ -258,6 +336,7 @@ func _update_crouch(on_ground: bool, delta: float) -> void:
 	var eye_speed := (stand_eye_height - crouch_eye_height) / crouch_transition_time
 	_eye_height = move_toward(_eye_height, target_eye_height, eye_speed * delta)
 	head.position.y = _eye_height
+	_upper_body.position.y = _eye_height - stand_eye_height
 
 
 func _crouch(on_ground: bool) -> void:
