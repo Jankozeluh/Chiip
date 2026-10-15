@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) the settings menu, the main menu with match setup (Play, Practice, Settings, Quit over a camera flight) and the pause menu (Esc: Resume, Settings, Leave match) are in (tasks 1–12 of 13), so F5 opens the main menu and Play starts a match you set up. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire, rounds, the match flow, bots that attack and defend, spectating a teammate after you die, the round HUD (timer, score, players alive, kill feed, round banners), a hold-Tab scoreboard, the UI theme, saved settings (sensitivity, field of view, video, audio, crosshair, key bindings) the settings menu, the main menu with match setup (Play, Practice, Settings, Quit over a camera flight) and the pause menu (Esc: Resume, Settings, Leave match) are in, with the tests for all of it (all 13 tasks built, playtest next), so F5 opens the main menu and Play starts a match you set up. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -134,7 +134,15 @@ The theme is generated from `tools/ui_palette.gd` (colors), `tools/generate_ui_i
 
 ## Tests
 
-Automated checks run without a window in about a second each:
+Run all the automated checks with one command (no window, about 30 seconds in all):
+
+```bash
+cd /Users/kozeluhj/Documents/Games/Chiip && bash tools/run_tests.sh
+```
+
+It runs the eight suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+
+To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/movement_test.tscn
@@ -164,7 +172,11 @@ Automated checks run without a window in about a second each:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 60000 res://tests/settings_test.tscn
 ```
 
-The tests never touch your real `settings.cfg`. The settings test prints one Godot "ConfigFile parse error" on purpose: it loads a broken file to check that the game falls back to the defaults.
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 200000 res://tests/match_test.tscn
+```
+
+The match test plays a whole 3v3 match, bots and all, through the real game scene and prints one line per round before its checks; it plays the same match every time. The tests never touch your real `settings.cfg`. The settings test prints one Godot "ConfigFile parse error" on purpose: it loads a broken file to check that the game falls back to the defaults.
 
 ## Documentation
 
