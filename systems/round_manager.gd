@@ -10,8 +10,18 @@ extends Node
 ##    health and ammo, and can look around but not move or shoot.
 ## 2. [b]Live[/b]: the round timer runs. Eliminating the other team wins the
 ##    round; when time runs out, the defending side wins (as in CS).
-## 3. [b]Round end[/b]: a short pause with the winner known. Survivors can
-##    still move and shoot. Then the next round starts.
+## 3. [b]Round end[/b]: a short pause with the winner known and the score
+##    updated. Survivors can still move and shoot. Then the next round starts.
+##
+## A match is first to [member MatchSettings.rounds_to_win] rounds (D-041).
+## After [code]rounds_to_win - 1[/code] rounds the sides swap ([signal
+## sides_swapped]): the teams keep their numbers, only [member attacking_team]
+## flips, so each team spawns at the other end. That makes the longest match
+## [code]2 × rounds_to_win - 1[/code] rounds, so a draw is impossible. When a
+## team reaches [code]rounds_to_win[/code], the last round's pause still runs,
+## then the phase becomes [constant Phase.MATCH_END], everyone is frozen and
+## [signal match_ended] is emitted. Nothing happens after that: it's up to the
+## match-end screen to restart or leave.
 ##
 ## Whoever dies stays dead until the next round. Spawns are Marker3D nodes in
 ## the groups from [method Teams.spawn_group]; each team spawns at its side's
@@ -21,7 +31,8 @@ extends Node
 ## possible"): in M9 only the host runs it, and the clients show what it
 ## announces. Add it as a child of the map, with [member settings] set first.
 
-## The parts of a round. [constant MATCH_END] is reserved for the end of the match.
+## The parts of a match. [constant MATCH_END] comes once a team has won the
+## match and never ends: everyone stays frozen.
 enum Phase { FREEZE, LIVE, ROUND_END, MATCH_END }
 ## Why a round was won.
 enum EndReason { ELIMINATION, TIME }
@@ -30,8 +41,18 @@ enum EndReason { ELIMINATION, TIME }
 signal phase_changed(phase: Phase)
 ## Emitted when a round's freeze time begins, after everyone has respawned.
 signal round_started(round_number: int)
-## Emitted once per round with the winning team and why it won.
+## Emitted once per round with the winning team and why it won. [member score]
+## already counts this round.
 signal round_ended(winner: int, reason: EndReason)
+## Emitted at half time, after the round-end pause and before the next round
+## starts: [member attacking_team] has just flipped, and everyone is about to
+## respawn at the other end.
+signal sides_swapped
+## Emitted once, when the match is decided and the round-end pause of the last
+## round is over. [param winner] is the team that reached
+## [member MatchSettings.rounds_to_win]. The phase is [constant Phase.MATCH_END]
+## and everyone is frozen.
+signal match_ended(winner: int)
 ## Emitted for every death. [param killer] may be null; [param headshot] is
 ## true when the killing bullet hit the head.
 signal character_killed(victim: Character, killer: Character, headshot: bool)
@@ -64,6 +85,11 @@ var round_number: int = 0
 var time_left: float = 0.0
 ## The team on the attacking side this half; the other team defends.
 var attacking_team: int = 0
+## Rounds won so far by each team (index = team number). Reset when the match
+## starts, and counted before [signal round_ended] is emitted.
+var score: Array[int] = []
+## The team that won the match, or -1 while it is still being played.
+var winner: int = -1
 ## Randomness for spawn spots and the starting sides. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
 
@@ -102,7 +128,7 @@ func _physics_process(delta: float) -> void:
 		Phase.LIVE:
 			_end_round(get_defending_team(), EndReason.TIME)
 		Phase.ROUND_END:
-			_start_round()
+			_after_round_end()
 
 
 ## The side [param team] plays this half.
@@ -153,6 +179,10 @@ func _start_match() -> void:
 	for i in settings.enemy_team_size:
 		_add_bot(Teams.other(player_team))
 	attacking_team = rng.randi_range(0, Teams.COUNT - 1)
+	score.clear()
+	for team in Teams.COUNT:
+		score.append(0)
+	winner = -1
 	_start_round()
 
 
@@ -172,9 +202,33 @@ func _go_live() -> void:
 	_set_phase(Phase.LIVE, settings.round_time)
 
 
-func _end_round(winner: int, reason: EndReason) -> void:
+func _end_round(round_winner: int, reason: EndReason) -> void:
+	# Count the round first, so everyone listening to the signals sees the new score.
+	score[round_winner] += 1
 	_set_phase(Phase.ROUND_END, settings.round_end_time)
-	round_ended.emit(winner, reason)
+	round_ended.emit(round_winner, reason)
+
+
+## Runs when a round's end pause is over: either the match is decided, or the
+## next round starts, after swapping sides if this was the last round before
+## half time.
+func _after_round_end() -> void:
+	for team in Teams.COUNT:
+		if score[team] >= settings.rounds_to_win:
+			_end_match(team)
+			return
+	# Nobody can have won yet at this point, so half time never clashes with a match end.
+	if round_number == settings.rounds_to_win - 1:
+		attacking_team = get_defending_team()
+		sides_swapped.emit()
+	_start_round()
+
+
+func _end_match(match_winner: int) -> void:
+	winner = match_winner
+	_set_frozen(true)
+	_set_phase(Phase.MATCH_END, 0.0)
+	match_ended.emit(match_winner)
 
 
 ## Ends the round when a team has nobody left. Runs at the end of the frame,

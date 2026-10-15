@@ -45,6 +45,7 @@ const UI_DESIGN_HEIGHT := 720.0
 @onready var _debug_overlay: Node = $DebugOverlay
 @onready var _palette_effect: CanvasLayer = $World/SubViewport/PaletteEffect
 @onready var _console: DevConsole = $DevConsole
+@onready var _match_end_screen: MatchEndScreen = $MatchEndScreen
 
 ## The map currently loaded.
 var _map: Node
@@ -52,6 +53,8 @@ var _map: Node
 
 func _ready() -> void:
 	_console.main = self
+	_match_end_screen.play_again_pressed.connect(restart_match)
+	_match_end_screen.quit_pressed.connect(get_tree().quit)
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -68,6 +71,12 @@ func change_map(path: String) -> void:
 		_viewport.remove_child(_map)
 		_map.queue_free()
 	_spawn_map(load(path))
+
+
+## Plays the current map again in the current mode, with a fresh match
+## (the match-end screen's "Play again" button).
+func restart_match() -> void:
+	change_map(_map.scene_file_path)
 
 
 ## Loads the map from the command line (-- --map ...) or [member map_scene].
@@ -90,6 +99,8 @@ func _spawn_map(scene: PackedScene) -> void:
 	var player := _map.get_node("Player") as Character
 	Teams.friendly_fire = false
 	var rules := _add_game_rules()
+	# Hides the match-end screen of the previous map; it opens when this match ends.
+	_match_end_screen.set_round_manager(rules as RoundManager)
 	_hud.set_player(player)
 	_hud.respawn_hint = rules is ArenaRules
 	_debug_overlay.player = player
@@ -139,3 +150,4 @@ func apply_pixel_settings() -> void:
 	_hud.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_debug_overlay.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)

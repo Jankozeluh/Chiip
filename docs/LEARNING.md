@@ -287,5 +287,22 @@
 **Inner classes** (`RoundManager.Stats`)
 - `class Stats:` inside a script declares a small class, like a nested C# class. Outside it's `RoundManager.Stats`. It's a `RefCounted` object (freed automatically when nothing refers to it), handy for a typed bundle of numbers instead of a Dictionary with string keys.
 
+**Teleporting a physics body**
+- Setting `global_position` on a `CharacterBody3D` doesn't move it inside the physics engine (Jolt) right away: the engine picks up the new position at the next physics step. Until then, other bodies' `move_and_slide()` still collide with the *old* position. When the round manager teleports everyone in one tick, a bot could be pushed off its spawn by where a teammate stood a moment ago. `Character.respawn()` therefore makes the character skip moving for the rest of that tick. In Unity, `Rigidbody.position` and `Physics.SyncTransforms()` deal with the same problem.
+
 **A typing quirk with enums**
 - `Teams` and `Character` refer to each other (`Teams.damage_factor(victim: Character, …)`, `Character` calls `Teams`). In that kind of cycle GDScript can treat `Teams.Side` written in a third script as a different type from `Side` inside `Teams`, and refuse the call ("argument should be Side but is Teams.Side"). `Teams.spawn_group()` takes the side as an `int` to avoid it. Enums are ints underneath, so nothing is lost but the type check.
+
+**UI containers** (`ui/match_end_screen.tscn`)
+- A `Container` places its children itself: you don't set their positions, you set sizes and spacing. `VBoxContainer` stacks children top to bottom, `HBoxContainer` left to right, `MarginContainer` adds padding around one child, and `PanelContainer` draws a background behind its child. They replace Unity's Vertical/Horizontal Layout Group, Content Size Fitter and padding settings. A container is as big as its children's *minimum sizes* need (`custom_minimum_size` sets a floor), and a child with `size_flags_horizontal = SIZE_EXPAND_FILL` takes the free space left over, like "Control Child Size" and flexible width in Unity. The scoreboard is built from code: one `PanelContainer` → `MarginContainer` → `HBoxContainer` of `Label`s per player.
+- A container can't be moved by offsets, so `UiScale` (which scales offsets) isn't enough. The screen scales font sizes, minimum sizes and the spacing "theme constants" (`separation`, `margin_left`…) instead, and remembers each control's original values in `set_meta()`, like `UiScale` does.
+- A node centered with anchors (`anchors_preset = 8`, `grow_horizontal`/`grow_vertical` = both) keeps its minimum size and grows from the middle, so the panel stays centered however many rows it holds.
+
+**`Button.pressed`** (`MatchEndScreen`)
+- A `Button` emits `pressed` when clicked (or activated with Enter/Space while it has focus). `button.pressed.connect(handler)` is Unity's `button.onClick.AddListener(handler)`; in a scene you can also connect it in the editor's Node tab. `grab_focus()` gives the keyboard focus to a button. Here the buttons just re-emit their own signals (`play_again_pressed`, `quit_pressed`) so the screen doesn't need to know what the game does with them.
+
+**`mouse_filter`** (`Background` in the match-end screen)
+- Every `Control` has a `mouse_filter`: `STOP` takes mouse events and ends them there, `PASS` takes them and also offers them to its parent, `IGNORE` lets them fall through. That's Unity's *Raycast Target*, with three modes instead of on/off. Events a `STOP` control took never reach `_unhandled_input`, which is why a full-screen `STOP` background keeps clicks from reaching the `PlayerController`. Labels default to `IGNORE`, buttons and panels to `STOP`.
+
+**`scene_file_path`** (`main.restart_match()`)
+- Any node that is the root of an instanced scene knows which file it came from: `node.scene_file_path` (e.g. `res://maps/test_map.tscn`). `restart_match()` loads the current map again from that path. Unity has no direct equivalent; you'd keep the scene name or prefab reference yourself.

@@ -8,8 +8,11 @@ extends Node
 ## Bots hold their spawn after freeze time, so nobody meets, and the test
 ## decides the fights by dealing damage directly. Checks freeze time, spawns,
 ## winning by elimination and on time-out, that the dead stay dead until the
-## next round, and the kill, assist and damage stats. Quits with the number of
-## failed checks as the exit code (0 means everything passed).
+## next round, and the kill, assist and damage stats. Then the same match goes
+## on to its end (first to 5 by default): the score, the half-time side swap
+## and the match end. Finally two tiny matches (first to 1 and first to 2) check
+## the edges of those rules. Quits with the number of failed checks as the exit
+## code (0 means everything passed).
 
 const MAP_SCENE := preload("res://maps/test_map.tscn")
 const FREEZE_TIME := 0.5
@@ -24,27 +27,16 @@ var _failures: int = 0
 var _results: Array = []
 ## [victim, killer, headshot] for every character_killed signal.
 var _kills: Array = []
+## The score as [team 0, team 1] at the moment of every round_ended signal.
+var _score_at_signal: Array = []
+## How many times sides_swapped was emitted.
+var _swaps: int = 0
+## The winner of every match_ended signal.
+var _match_ends: Array = []
 
 
 func _ready() -> void:
-	_map = MAP_SCENE.instantiate()
-	add_child(_map)
-	_player = _map.get_node("Player")
-	_silence(_player)
-	var settings := MatchSettings.new()
-	settings.freeze_time = FREEZE_TIME
-	settings.round_time = ROUND_TIME
-	settings.round_end_time = ROUND_END_TIME
-	_rounds = RoundManager.new()
-	_rounds.settings = settings
-	_rounds.rng.seed = 7
-	_rounds.round_ended.connect(func(winner: int, reason: RoundManager.EndReason) -> void: _results.append([winner, reason]))
-	_rounds.character_killed.connect(func(victim: Character, killer: Character, headshot: bool) -> void: _kills.append([victim, killer, headshot]))
-	_map.add_child(_rounds)
-	# The match starts at the end of the first frame.
-	await _wait_ticks(2)
-	for character in _rounds.get_participants():
-		_silence(character)
+	await _new_match(MatchSettings.new().rounds_to_win)
 	await _run_all()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -53,11 +45,52 @@ func _ready() -> void:
 	get_tree().quit(_failures)
 
 
+## Starts a match first to [param rounds_to_win] on a fresh copy of the test
+## map (an earlier map is removed), with the short test timings, and waits until
+## everyone has joined.
+func _new_match(rounds_to_win: int) -> void:
+	if _map != null:
+		remove_child(_map)
+		_map.queue_free()
+	_results.clear()
+	_kills.clear()
+	_score_at_signal.clear()
+	_swaps = 0
+	_match_ends.clear()
+	_map = MAP_SCENE.instantiate()
+	add_child(_map)
+	_player = _map.get_node("Player")
+	_silence(_player)
+	var settings := MatchSettings.new()
+	settings.freeze_time = FREEZE_TIME
+	settings.round_time = ROUND_TIME
+	settings.round_end_time = ROUND_END_TIME
+	settings.rounds_to_win = rounds_to_win
+	_rounds = RoundManager.new()
+	_rounds.settings = settings
+	_rounds.rng.seed = 7
+	_rounds.round_ended.connect(func(winner: int, reason: RoundManager.EndReason) -> void:
+		_results.append([winner, reason])
+		_score_at_signal.append([_rounds.score[0], _rounds.score[1]]))
+	_rounds.character_killed.connect(func(victim: Character, killer: Character, headshot: bool) -> void: _kills.append([victim, killer, headshot]))
+	_rounds.sides_swapped.connect(func() -> void: _swaps += 1)
+	_rounds.match_ended.connect(func(winner: int) -> void: _match_ends.append(winner))
+	_map.add_child(_rounds)
+	# The match starts at the end of the first frame.
+	await _wait_ticks(2)
+	for character in _rounds.get_participants():
+		_silence(character)
+
+
 func _run_all() -> void:
 	await _test_round_start()
 	await _test_freeze_time()
 	await _test_elimination()
 	await _test_time_out()
+	await _test_score()
+	await _test_half_time()
+	await _test_match_end()
+	await _test_short_matches()
 
 
 func _test_round_start() -> void:
@@ -148,6 +181,100 @@ func _test_time_out() -> void:
 			"defending team %d, result %s" % [defenders, _results.back() if _results.size() > results_before else "none"])
 
 
+## Score: the match so far is at the end of round 2 (round 1 went to your team,
+## round 2 to whoever defended). The enemy wins round 3 and you win round 4, so
+## the score isn't one-sided.
+func _test_score() -> void:
+	await _win_round(1)
+	await _win_round(0)
+	var running := [0, 0]
+	var expected_at_signal := []
+	for result: Array in _results:
+		running[result[0]] += 1
+		expected_at_signal.append(running.duplicate())
+	_check("The score counts each round's winner and is already updated when round_ended is emitted",
+			_results.size() == 4 and _rounds.score == running and _score_at_signal == expected_at_signal and running[1] >= 1,
+			"round winners %s, score %s (expected %s), score at each round_ended %s (expected %s)" % [
+					_results.map(func(result: Array) -> int: return result[0]), _rounds.score, running, _score_at_signal, expected_at_signal])
+
+
+## Half time: after round (rounds_to_win - 1) the sides swap, before the next round.
+func _test_half_time() -> void:
+	var to_win := _rounds.settings.rounds_to_win
+	var attacker_before := _rounds.attacking_team
+	var swaps_in_pause := _swaps
+	var round_before := _rounds.round_number
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	_check("Half time: after round %d the sides swap once, in time for the next round" % (to_win - 1),
+			round_before == to_win - 1 and swaps_in_pause == 0 and _swaps == 1 and _rounds.round_number == to_win
+					and _rounds.attacking_team == Teams.other(attacker_before),
+			"round %d -> %d, swaps %d -> %d, attacking team %d -> %d" % [
+					round_before, _rounds.round_number, swaps_in_pause, _swaps, attacker_before, _rounds.attacking_team])
+	# The ends are 112 m apart; everyone must stand on a marker of the new end.
+	var on_other_end := true
+	var detail := ""
+	for member in _rounds.get_participants():
+		var old_side := Teams.Side.ATTACKING if member.team == attacker_before else Teams.Side.DEFENDING
+		var near_new := _distance_to_group(member, Teams.spawn_group(_rounds.get_side(member.team)))
+		var near_old := _distance_to_group(member, Teams.spawn_group(old_side))
+		if near_new > 0.5 or near_old < 10.0:
+			on_other_end = false
+			detail += "%s (team %d): %.1f m from the new end's marker, %.1f m from the old end's; " % [member.name, member.team, near_new, near_old]
+	_check("After half time each team stands on the other end's spawn markers", on_other_end,
+			"everyone is on a marker of the new end" if on_other_end else detail)
+
+
+## Match end: the enemy wins every round from now on until it reaches rounds_to_win.
+func _test_match_end() -> void:
+	var to_win := _rounds.settings.rounds_to_win
+	while _rounds.score[1] < to_win:
+		await _win_round(1)
+	var rounds_played := _rounds.round_number
+	_check("The last round's pause still runs before the match ends",
+			_rounds.phase == RoundManager.Phase.ROUND_END and _rounds.score == [_rounds.score[0], to_win]
+					and _match_ends.is_empty() and _rounds.winner == -1,
+			"phase %s, score %s, match_ended count %d, winner %d" % [
+					RoundManager.Phase.keys()[_rounds.phase], _rounds.score, _match_ends.size(), _rounds.winner])
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	var all_frozen := _rounds.get_participants().all(func(member: Character) -> bool: return member.frozen)
+	_check("Match end: the phase is MATCH_END, match_ended came once with the winner, everyone is frozen",
+			_rounds.phase == RoundManager.Phase.MATCH_END and _match_ends == [1] and _rounds.winner == 1
+					and _rounds.score[0] < to_win and all_frozen and _rounds.round_number == rounds_played,
+			"phase %s, match_ended %s, winner %d, score %s, all frozen: %s, %d rounds (at most %d), %d half-time swap(s)" % [
+					RoundManager.Phase.keys()[_rounds.phase], _match_ends, _rounds.winner, _rounds.score, all_frozen,
+					rounds_played, 2 * to_win - 1, _swaps])
+	await _wait_seconds(FREEZE_TIME + ROUND_TIME + ROUND_END_TIME)
+	var still_frozen := _rounds.get_participants().all(func(member: Character) -> bool: return member.frozen)
+	_check("Nothing happens after the match ends: no new round, no second signal, still frozen",
+			_rounds.round_number == rounds_played and _rounds.phase == RoundManager.Phase.MATCH_END
+					and _match_ends.size() == 1 and _results.size() == rounds_played and still_frozen and _swaps == 1,
+			"round %d (was %d), phase %s, match_ended count %d, still frozen: %s" % [
+					_rounds.round_number, rounds_played, RoundManager.Phase.keys()[_rounds.phase], _match_ends.size(), still_frozen])
+
+
+## The edges of the rules: a match first to 1 has no half time, one first to 2
+## swaps after round 1 and lasts at most 2 × 2 - 1 = 3 rounds.
+func _test_short_matches() -> void:
+	await _new_match(1)
+	_hold_bots()
+	await _win_round(1)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	_check("First to 1: the match ends after round 1, with no half-time swap",
+			_match_ends == [1] and _rounds.round_number == 1 and _swaps == 0 and _rounds.score == [0, 1],
+			"match_ended %s after %d round(s), %d swap(s), score %s" % [_match_ends, _rounds.round_number, _swaps, _rounds.score])
+	await _new_match(2)
+	_hold_bots()
+	await _win_round(1)
+	await _win_round(0)
+	var tied_and_going := _rounds.score == [1, 1] and _match_ends.is_empty() and _rounds.phase == RoundManager.Phase.ROUND_END
+	await _win_round(0)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	_check("First to 2: sides swap once after round 1, a 1-1 tie plays on, round 3 decides",
+			tied_and_going and _swaps == 1 and _match_ends == [0] and _rounds.round_number == 3 and _rounds.score == [2, 1],
+			"tied after round 2 and going on: %s, swaps %d, match_ended %s after %d round(s), score %s" % [
+					tied_and_going, _swaps, _match_ends, _rounds.round_number, _rounds.score])
+
+
 # --- Helpers ---
 
 
@@ -156,6 +283,30 @@ func _distance_to_own_spawn(member: Character) -> float:
 	for marker in get_tree().get_nodes_in_group(Teams.spawn_group(_rounds.get_side(member.team))):
 		closest = minf(closest, member.global_position.distance_to((marker as Node3D).global_position))
 	return closest
+
+
+func _distance_to_group(member: Character, group: String) -> float:
+	var closest := INF
+	for marker in get_tree().get_nodes_in_group(group):
+		closest = minf(closest, member.global_position.distance_to((marker as Node3D).global_position))
+	return closest
+
+
+## Makes the bots hold their spawn, so the teams never meet.
+func _hold_bots() -> void:
+	for member in _rounds.get_participants():
+		if member != _player:
+			(member.get_node("BotController") as BotController).hold_position = true
+
+
+## Plays a round to its end: waits for the live phase, then [param team] kills
+## the whole other team, and waits for the round-end pause.
+func _win_round(team: int) -> void:
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	var killer := _rounds.get_members(team)[0]
+	for victim in _rounds.get_members(Teams.other(team)):
+		victim.take_damage(500.0, Hitbox.Zone.CHEST, killer)
+	await _wait_for_phase(RoundManager.Phase.ROUND_END)
 
 
 ## Waits until the round manager reaches [param phase] (at most 10 s).

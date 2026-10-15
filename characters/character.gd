@@ -131,6 +131,11 @@ var _hull_height_difference: float = 0.0
 var _clothes := StandardMaterial3D.new()
 ## The body tipping over after death, stopped if the character respawns first.
 var _fall_tween: Tween
+## Set by [method respawn]: skip moving for the rest of this tick. The physics
+## engine (Jolt) only moves teleported bodies at the next physics step, so
+## characters moving in the same tick as a round start would still bump into
+## each other's old positions and get pushed off their spawn.
+var _respawned_this_tick: bool = false
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
@@ -165,6 +170,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _respawned_this_tick:
+		_respawned_this_tick = false
+		return
 	if _controller != null and is_alive():
 		_input = _controller.get_input(delta)
 	elif not is_alive():
@@ -342,6 +350,7 @@ func respawn(at: Vector3, yaw: float) -> void:
 		_fall_tween.kill()
 	global_position = at
 	rotation.y = yaw
+	_respawned_this_tick = true
 	velocity = Vector3.ZERO
 	health = max_health
 	is_crouching = false

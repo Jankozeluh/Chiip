@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow (in progress: tasks 1–2 of 13 done)
+> **Current milestone:** M5 — Rounds & game flow (in progress: tasks 1–3 of 13 done)
 
 ## Your open checks
 
@@ -183,7 +183,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 1. [x] **Teams and spawns.** Two teams without names (D-041). You always see your own team in blue and the enemies in red, so enemies stand out for every player, including in M9. Internally the two sides are *attacking* and *defending* ends of the map, with five spawn points each at opposite ends of the test map. Bot teammates use the same bot scene. Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, as in CS competitive. *(Sonnet)* Built as `systems/teams.gd` (D-042); with friendly fire off, bullets pass through teammates.
 2. [x] **Round manager.** Freeze time of 5 s (you can look around but not move or shoot) → live round with a timer → round end. A round is won by eliminating the other team; when time runs out, the defending side wins, as in CS. At each round start, everyone gets full health, ammo and a spawn point. Whoever dies stays dead until the next round. Replaces today's respawning `ArenaRules` in matches. *(Opus: game state design)* Built as `systems/round_manager.gd` with `MatchSettings` (D-043); F5 now starts a 3v3 match, `-- --practice` the old arena.
-3. [ ] **Match flow.** Score and first to 5, 10 or 15 rounds. Sides swap at half time (after 4, 9 or 14 rounds, so a draw is impossible). A match-end screen shows the winner and the scoreboard. *(Sonnet)*
+3. [x] **Match flow.** Score and first to 5, 10 or 15 rounds. Sides swap at half time (after 4, 9 or 14 rounds, so a draw is impossible). A match-end screen shows the winner and the scoreboard. *(Sonnet)* Built as score, half time and match end in `RoundManager`, plus `ui/match_end_screen.tscn` with Play again and Quit until the main menu exists (D-044).
 4. [ ] **Bots play rounds.** Today's bots wander between patrol points, so a round could stall. The attacking side pushes toward the defending end in loose groups. Defenders hold angles near their end, then rotate toward fights they hear. Bots hold fire while a teammate is in the line of fire. *(Opus: AI)*
 5. [ ] **Spectating.** After you die, watch a living teammate through their eyes, like CS. Click to switch to the next teammate. If no teammate is alive, you see the end of the round from where you died. *(Sonnet)*
 6. [ ] **Round HUD.** Top bar: round timer, score (yours vs. theirs), and players alive per team. Also a kill feed (killer → victim, with a headshot mark, in team colors), round-end banners ("Round won" / "Round lost"), and the freeze-time countdown. *(Sonnet)*
