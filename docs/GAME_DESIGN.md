@@ -103,9 +103,29 @@ Starting physics values, CS:GO-like *(tune)*:
 
 ### 4.3 Weapons
 
-Weapons get their own names in Chiip. CS names are used here only as a reference. Weapon stats are stored in data files (`weapons/*.tres`), so they're easy to compare and tune.
+Weapons get their own names in Chiip (provisional, D-090: your check). CS names are used here only as a reference. Every weapon is one data file (`weapons/<role>.tres`, D-091), and **`docs/weapons.csv`** is the balancing table exported from those files (`tools/export_weapon_table.gd`): every stat plus damage per second, shots to kill with and without armor, and whether a headshot kills through a helmet, at 10 and 30 m. Open it in Excel or Numbers. Starting values *(tune)*:
 
-**Rifle** (working name, AK-like), starting values *(tune)*:
+| Slot | Weapon (role) | CS reference | Price | Kill reward | Damage | Armor pen. | Fire rate | Magazine | Reload | Speed (u/s) | Draw |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Pistol | **Sparrow** (service pistol, semi-auto) | Glock / USP | $200 (you start with it) | $300 | 32, ×0.90 | 50% | 400 /min | 15 + 45 | 2.2 s | 240 | 0.6 s |
+| Pistol | **Verdict** (hand cannon, semi-auto) | Desert Eagle | $700 | $300 | 63, ×0.81 | 93.2% | 267 /min | 7 + 35 | 2.2 s | 230 | 0.75 s |
+| Primary | **Hornet** (SMG) | MP9 / MAC-10 | $1,250 | $600 | 26, ×0.87 | 60% | 857 /min | 30 + 120 | 2.1 s | 240 | 0.75 s |
+| Primary | **Breaker** (pump shotgun, 9 pellets in a 3.2° cone) | Nova | $1,050 | $900 | 9 × 26, ×0.70, 30 m reach | 50% | 68 /min | 8 + 32 | 0.4 s + 0.5 s per shell | 220 | 0.85 s |
+| Primary | **Ram** (AK-style rifle) | AK-47 | $2,700 | $300 | 36, ×0.98 | 77.5% | 600 /min | 30 + 90 | 2.5 s | 215 | 0.95 s |
+| Primary | **Warden** (carbine) | M4A4 | $3,100 | $300 | 33, ×0.97 | 70% | 666 /min | 30 + 90 | 3.1 s | 225 | 0.95 s |
+| Primary | **Heron** (sniper rifle, scoped) | AWP | $4,750 | $100 | 115, ×0.99 | 97.5% | 41 /min | 5 + 30 | 3.7 s | 200 (100 scoped) | 1.15 s |
+| Knife | **Knife** (slash 40, stab 65; from behind 90 / 180) | Knife | free | $1,500 | — | 85% | slash 0.4 s, stab 1 s | — | — | 250 | 0.5 s |
+| Grenade | **Frag** (high explosive) | HE grenade | $300 | $300 | 98 at the centre | 57.5% | — | 1 | — | 245 | 0.5 s |
+| Grenade | **Flashbang** | Flashbang | $200 | — | blinds | — | — | 2 | — | 245 | 0.5 s |
+| Grenade | **Smoke** | Smoke grenade | $300 | — | an 18 s cloud | — | — | 1 | — | 245 | 0.5 s |
+
+Damage is per bullet at point-blank, then ×the falloff for every 500 units (12.7 m). *Armor pen.* is the share of a hit on armor that still reaches health (CS's armor ratio halved, see 4.2). *Draw* is the time after switching to it before it can fire. What the numbers mean in a fight (from the table, 10 m):
+
+- **A headshot through a helmet kills** with the Ram (111), the Verdict, the Heron and a full Breaker blast; not with the Warden (92), the Hornet or the Sparrow. That's CS's AK-vs-M4 trade: the Warden is more accurate, moves faster and holds 30 rounds, but needs a second bullet on a helmet.
+- **Body shots to kill:** Ram 3 (4 through armor), Warden 4 (5), Hornet 5 (8), Sparrow 4 (7), Verdict 2 (3), Breaker one blast (two through armor), Heron one, armor or not.
+- **Rewards make cheap guns pay:** a Hornet kill earns $600 and a Breaker kill $900, so they're the anti-eco buys; the Heron pays only $100.
+
+**Rifle** (the Ram, AK-like), its M2 values in detail *(tune)*:
 
 | Stat | Value | CS AK-47 reference |
 |---|---|---|
@@ -119,19 +139,7 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 | Spray | 30-shot pattern: climbs ~6° over 10 shots, sways left to −2.3°, then right to +1.95° | Similar shape |
 | Aim punch | The view kicks 50% of the pattern; recoil wears off at 12 shots per second | ~50% |
 
-The arsenal (D-056), working names until M7:
-
-| Slot | Weapon | Role | CS reference |
-|---|---|---|---|
-| Primary | Rifle (AK-style) | Main automatic weapon, one-tap headshots | AK-47 |
-| Primary | Carbine | More accurate than the rifle, less damage | M4 |
-| Primary | SMG | Cheap and fast to move with, for eco and anti-eco rounds | MP9 / MAC-10 |
-| Primary | Pump shotgun | Close range, holds tight corners | Nova |
-| Primary | Sniper rifle | One-shot body kill, slow, scoped | AWP |
-| Pistol | Service pistol | Free default sidearm | Glock / USP |
-| Pistol | Hand cannon | Expensive, one-tap headshots | Desert Eagle |
-| Knife | Knife | Melee, fastest movement | Knife |
-| Grenades | High explosive, flashbang, smoke | Utility | HE / flashbang / smoke |
+The other automatic guns have their own patterns: the Warden climbs about 78% as high and sways right first, the Hornet climbs only 3.6° and then wobbles quickly from side to side; quick pistol shots climb (the Verdict 2.8° a shot), and the Breaker and Heron kick once per shot.
 
 Every weapon is generated from one part list (D-054) and comes as a world model (drops and pickups), a third-person model in the character's hand, a first-person model with arms, and buy-menu and kill-feed icons.
 

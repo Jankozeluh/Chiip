@@ -9,7 +9,9 @@ Started M7 in its own worktree (branch `m7-arsenal`), cut from main with M8's la
 **Done**
 - **Task 1, the plan:** M7 is now a list of 14 tasks with model tags (PLAN.md), and its open choices are decided provisionally in D-090: CS2's money values, buying in the 15 s freeze time plus 10 s near your spawn, survivors keep their gear, a free loadout in team respawn, one generated model per weapon, and proposed weapon names (Ram, Warden, Hornet, Breaker, Heron, Sparrow, Verdict, Knife, Frag, Flashbang, Smoke), added to your open checks.
 
-**Next:** task 2, the arsenal's data files and balancing table.
+- **Task 2, the arsenal's data** (D-091): `WeaponData` holds everything a weapon needs (slot, price, kill reward, armor penetration, draw time, pellets, scope, melee and grenade values, model and icons), and the eleven weapons have their data files with CS-based numbers. `docs/weapons.csv` is the balancing table, exported from those files by `tools/export_weapon_table.gd` (a Sonnet subagent wrote the tool and the new `tests/arsenal_test.tscn`, 28 checks); it uses the new `Armor` class, CS:GO's armor rule, which the characters get in task 4.
+
+**Next:** task 3 (weapon models and icons, a Sonnet subagent is on it) and task 4 (armor).
 
 ## 2026-10-15 — Merges into main: M8 and M6
 

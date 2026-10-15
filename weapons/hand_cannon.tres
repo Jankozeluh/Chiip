@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_shot.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_reload.wav" id="reload_sound"]
+
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"hand_cannon"
+display_name = "Verdict"
+slot = 1
+category = 4
+hold = 1
+max_speed_units = 230.0
+draw_time = 0.75
+price = 700
+kill_reward = 300
+damage = 63.0
+range_modifier = 0.81
+armor_penetration = 0.932
+magazine_size = 7
+reserve_ammo = 35
+fire_rate_rpm = 267.0
+reload_time = 2.2
+automatic = false
+standing_inaccuracy = 0.18
+crouching_inaccuracy = 0.12
+moving_inaccuracy = 3.0
+air_inaccuracy = 7.0
+spray_inaccuracy_per_shot = 1.2
+max_spray_inaccuracy = 4.0
+spray_pattern = PackedVector2Array(0, 0, 0.15, 2.8, 0.3, 5.2, 0.2, 7.2, 0, 8.8, -0.2, 10, -0.3, 10.8)
+view_punch_fraction = 0.6
+recoil_recovery_rate = 4.0
+shot_sound = ExtResource("shot_sound")
+dry_fire_sound = ExtResource("dry_fire_sound")
+reload_sound = ExtResource("reload_sound")

@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"knife"
+display_name = "Knife"
+slot = 2
+category = 5
+hold = 2
+max_speed_units = 250.0
+draw_time = 0.5
+price = 0
+kill_reward = 1500
+damage = 40.0
+range_modifier = 1.0
+max_range = 1.5
+armor_penetration = 0.85
+magazine_size = 0
+reserve_ammo = 0
+fire_rate_rpm = 150.0
+reload_time = 0.0
+automatic = true
+standing_inaccuracy = 0.0
+crouching_inaccuracy = 0.0
+moving_inaccuracy = 0.0
+air_inaccuracy = 0.0
+spray_inaccuracy_per_shot = 0.0
+max_spray_inaccuracy = 0.0
+spray_pattern = PackedVector2Array(0, 0)
+view_punch_fraction = 0.0
+recoil_recovery_rate = 12.0
+melee_range = 1.5
+stab_damage = 65.0
+stab_range = 1.1
+stab_interval = 1.0
+backstab_damage = 90.0
+stab_backstab_damage = 180.0

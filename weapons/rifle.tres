@@ -1,17 +1,25 @@
 [gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/ak_rifle.glb" id="model"]
 [ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_shot.wav" id="shot_sound"]
 [ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
 [ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_reload.wav" id="reload_sound"]
 
 [resource]
 script = ExtResource("weapon_data_script")
-display_name = "Rifle"
+id = &"rifle"
+display_name = "Ram"
+slot = 0
+category = 0
+hold = 0
 max_speed_units = 215.0
+draw_time = 0.95
+price = 2700
+kill_reward = 300
 damage = 36.0
 range_modifier = 0.98
-max_range = 208.0
+armor_penetration = 0.775
 magazine_size = 30
 reserve_ammo = 90
 fire_rate_rpm = 600.0
@@ -26,6 +34,8 @@ max_spray_inaccuracy = 1.5
 spray_pattern = PackedVector2Array(0, 0, 0.05, 0.45, 0.1, 1.05, 0.1, 1.8, 0.15, 2.6, 0.2, 3.4, 0.15, 4.15, 0.05, 4.8, -0.1, 5.35, -0.35, 5.8, -0.7, 6.15, -1.1, 6.4, -1.5, 6.6, -1.85, 6.75, -2.1, 6.85, -2.25, 6.9, -2.3, 6.95, -2.2, 7, -1.85, 7.05, -1.3, 7.1, -0.65, 7.15, 0.05, 7.2, 0.7, 7.25, 1.25, 7.3, 1.65, 7.35, 1.9, 7.4, 1.95, 7.45, 1.75, 7.5, 1.4, 7.55, 1, 7.6)
 view_punch_fraction = 0.5
 recoil_recovery_rate = 12.0
+muzzle_point = Vector3(0, 0.022, -0.58)
+model = ExtResource("model")
 shot_sound = ExtResource("shot_sound")
 dry_fire_sound = ExtResource("dry_fire_sound")
 reload_sound = ExtResource("reload_sound")

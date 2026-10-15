@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_shot.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_reload.wav" id="reload_sound"]
+
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"sniper"
+display_name = "Heron"
+slot = 0
+category = 3
+hold = 0
+max_speed_units = 200.0
+draw_time = 1.15
+price = 4750
+kill_reward = 100
+damage = 115.0
+range_modifier = 0.99
+armor_penetration = 0.975
+magazine_size = 5
+reserve_ammo = 30
+fire_rate_rpm = 41.0
+reload_time = 3.7
+automatic = false
+standing_inaccuracy = 4.0
+crouching_inaccuracy = 3.5
+moving_inaccuracy = 6.0
+air_inaccuracy = 12.0
+spray_inaccuracy_per_shot = 0.0
+max_spray_inaccuracy = 0.0
+spray_pattern = PackedVector2Array(0, 0, 0, 4)
+view_punch_fraction = 0.7
+recoil_recovery_rate = 1.5
+zoom_levels = PackedFloat32Array(0.4444, 0.1667)
+scoped_inaccuracy = 0.02
+scope_in_time = 0.3
+scoped_recovery_time = 0.35
+scoped_max_speed_units = 100.0
+unscope_after_shot = true
+shot_sound = ExtResource("shot_sound")
+dry_fire_sound = ExtResource("dry_fire_sound")
+reload_sound = ExtResource("reload_sound")

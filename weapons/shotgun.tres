@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_shot.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_reload.wav" id="reload_sound"]
+
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"shotgun"
+display_name = "Breaker"
+slot = 0
+category = 2
+hold = 0
+max_speed_units = 220.0
+draw_time = 0.85
+price = 1050
+kill_reward = 900
+damage = 26.0
+range_modifier = 0.7
+max_range = 30.0
+armor_penetration = 0.5
+pellets = 9
+pellet_spread = 3.2
+magazine_size = 8
+reserve_ammo = 32
+fire_rate_rpm = 68.0
+reload_time = 0.5
+reload_per_shell = true
+reload_start_time = 0.4
+automatic = false
+standing_inaccuracy = 0.4
+crouching_inaccuracy = 0.35
+moving_inaccuracy = 1.5
+air_inaccuracy = 6.0
+spray_inaccuracy_per_shot = 0.0
+max_spray_inaccuracy = 0.0
+spray_pattern = PackedVector2Array(0, 0, 0, 3.2, 0, 6, 0, 8.4)
+view_punch_fraction = 0.6
+recoil_recovery_rate = 2.5
+shot_sound = ExtResource("shot_sound")
+dry_fire_sound = ExtResource("dry_fire_sound")
+reload_sound = ExtResource("reload_sound")
