@@ -89,7 +89,21 @@ Starting physics values, CS:GO-like *(tune)*:
 
 ### 4.3 Weapons
 
-Weapons get their own names in Chiip. CS names are used here only as a reference. Weapon stats are stored in data files, so they're easy to compare and tune.
+Weapons get their own names in Chiip. CS names are used here only as a reference. Weapon stats are stored in data files (`weapons/*.tres`), so they're easy to compare and tune.
+
+**Rifle** (working name, AK-like), starting values *(tune)*:
+
+| Stat | Value | CS AK-47 reference |
+|---|---|---|
+| Damage | 36, ×0.98 per 500 units of distance | 36, 0.98 |
+| Headshot | 144 at point-blank: kills an unarmored player in one shot | 143 |
+| Fire rate | 600 rounds/min | 600 |
+| Magazine | 30 + 90 | 30 + 90 |
+| Reload | 2.5 s | ~2.5 s |
+| Speed while held | 215 u/s | 215 |
+| Accuracy (cone radius) | 0.12° standing, 0.08° crouched, +4.5° at full run, +9° in the air, +0.1° per spray shot (max +1.5°) | — |
+| Spray | 30-shot pattern: climbs ~6° over 10 shots, sways left to −2.3°, then right to +1.95° | Similar shape |
+| Aim punch | The view kicks 50% of the pattern; recoil wears off at 12 shots per second | ~50% |
 
 | Slot | Role | CS reference |
 |---|---|---|

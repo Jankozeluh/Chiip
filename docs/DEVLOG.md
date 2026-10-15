@@ -7,6 +7,7 @@
 **Done**
 - Recorded the M2 decisions: working name "Rifle", generated placeholder sounds, static CS-like crosshair (D-019 to D-021).
 - Named the physics layers (world, player, bots, hitboxes, triggers), added code constants in `systems/physics_layers.gd`, put the player on its layer, and added the reload key R (D-022).
+- `WeaponData` resource and `weapons/rifle.tres`: AK-like stats, a 30-shot spray pattern, accuracy and recoil values, and sound slots.
 
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 

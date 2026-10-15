@@ -56,6 +56,9 @@ Chiip/
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
 | `player/player.gd` | `Player` class: mouse look and CS-style movement |
 | `ui/debug_overlay.tscn` + `.gd` | F3 readout: speed, position, jump peak, stance, shoot/aim buttons |
+| `systems/physics_layers.gd` | `PhysicsLayers` constants: bit values of the named physics layers |
+| `weapons/weapon_data.gd` | `WeaponData` resource: every number of a weapon (damage, fire rate, ammo, accuracy, spray pattern, recoil, sounds) |
+| `weapons/rifle.tres` | The Rifle's data (AK-like) |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
