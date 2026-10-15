@@ -60,5 +60,6 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Multiplayer comes in M8 (D-033). Follow "Keeping multiplayer possible" in docs/ARCHITECTURE.md in all gameplay code.
 - Keep Chiip visually distinct from Counter-Strike: no desert/dust palettes, no CS-like map layouts or names (D-031).
 - Headless runs use a dummy audio driver where sounds never finish; anything still "playing" at exit is reported as leaked. Tests use silent weapon data.
+- Autoloads don't exist in `--script` runs (tools, checks), so code that tools load must not use autoload names. Use a class with a static shared instance instead (see `systems/noises.gd`).
 - GDScript lambdas copy captured locals: assigning to a captured `int`/`Vector2` inside a lambda doesn't change the outer variable. Capture an `Array`/`Dictionary` instead.
 - A script error inside a headless run can leave Godot running forever. Always pass `--quit-after <frames>` as a safety net (macOS has no `timeout` command).

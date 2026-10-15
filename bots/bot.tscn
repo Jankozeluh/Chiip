@@ -3,8 +3,10 @@
 [ext_resource type="PackedScene" path="res://characters/character.tscn" id="character_scene"]
 [ext_resource type="PackedScene" path="res://weapons/rifle.tscn" id="rifle_scene"]
 [ext_resource type="Script" path="res://bots/bot_controller.gd" id="controller_script"]
+[ext_resource type="Script" path="res://bots/bot_senses.gd" id="senses_script"]
 
 [node name="Bot" node_paths=PackedStringArray("weapon") instance=ExtResource("character_scene")]
+team = 1
 team_color = Color(0.72, 0.22, 0.18, 1)
 weapon = NodePath("Head/Weapon")
 
@@ -19,3 +21,6 @@ height = 2.0
 
 [node name="BotController" type="Node" parent="."]
 script = ExtResource("controller_script")
+
+[node name="BotSenses" type="Node" parent="."]
+script = ExtResource("senses_script")

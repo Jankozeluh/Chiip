@@ -153,7 +153,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 2. [x] **Health and hit zones on characters.** Characters get 100 HP and the same CS-sized hit zones as the dummies (head ×4, …). Taking damage, dying, and a `died` signal. Armor stays in M5.
 3. [x] **Navigation mesh.** A `NavigationRegion3D` baked for the test map, so bots know where they can walk (stairs, ramp, crouch tunnel excluded or marked).
 4. [x] **Bot body and movement.** A bot scene: a character with a blocky, clearly colored soldier model holding the rifle, and a `NavigationAgent3D` that turns paths into movement commands (run, walk when sneaking, crouch).
-5. [ ] **Perception.** Vision: a field of view plus line-of-sight rays to head and body, so no wallhacks. Hearing: running footsteps and gunshots within range; walking is silent. Bots remember where they last saw or heard you.
+5. [x] **Perception.** Vision: a field of view plus line-of-sight rays to head and body, so no wallhacks. Hearing: running footsteps and gunshots within range; walking is silent. Bots remember where they last saw or heard you.
 6. [ ] **Behaviour.** A state machine: patrol (between points on the map) → engage (fight) → search (go to the last known position) → back to patrol.
 7. [ ] **Fighting like a human.** Reaction time before the first shot, aim that starts off and settles onto you, stopping (counter-strafing) before shooting, tapping at range and spraying up close with partial recoil control. Difficulty presets Easy / Normal / Hard change these numbers.
 8. [ ] **Footsteps.** Generated footstep sounds for you and bots; bots' steps and shots are positional 3D sound. Walking (Shift) is silent, like CS.

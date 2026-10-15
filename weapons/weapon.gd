@@ -210,6 +210,7 @@ func _fire() -> void:
 	var spray_shot := get_spray_shot()
 	_play(_shot_audio, data.shot_sound)
 	_play_shot_effects()
+	Noises.make_noise(_wielder.get_eye_position(), Noises.GUNSHOT_RANGE, _wielder)
 	_shoot_bullet(_get_shot_direction())
 	_spray_position += 1.0
 	_time_since_shot = 0.0

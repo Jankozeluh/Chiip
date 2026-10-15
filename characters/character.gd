@@ -21,9 +21,13 @@ extends CharacterBody3D
 signal damaged(amount: float, zone: Hitbox.Zone, attacker: Character)
 ## Emitted once when health reaches 0. [param killer] may be null.
 signal died(killer: Character)
+## Emitted for each footstep. [param loud] is false when walking or crouching (silent, as in CS).
+signal footstep(loud: bool)
 
 ## CS/Source distance units to metres (1 unit ≈ 1 inch).
 const UNITS_TO_METRES := 0.0254
+## Distance covered per footstep, in metres (about 3 steps per second at full run).
+const STEP_DISTANCE := 1.8
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -69,6 +73,11 @@ const UNITS_TO_METRES := 0.0254
 ## Health at spawn. CS: 100.
 @export var max_health: float = 100.0
 
+@export_group("Team")
+## Which side this character is on: 0 = the player's team, 1 = the bots'.
+## Characters only fight the other team.
+@export var team: int = 0
+
 @export_group("Look")
 ## Color of the clothes on chest and arms: the team color.
 @export var team_color: Color = Color(0.25, 0.4, 0.7)
@@ -89,6 +98,8 @@ var _input := CharacterInput.new()
 var _controller: CharacterController
 ## The damage zones on the body.
 var _hitboxes: Array[Hitbox] = []
+## Distance walked since the last footstep.
+var _distance_since_step: float = 0.0
 ## Current eye height above the feet. Moves smoothly toward the standing or crouched height.
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
@@ -113,6 +124,7 @@ func _ready() -> void:
 	_hull_height_difference = standing_shape.height - crouching_shape.height
 	_set_crouch_hull(false)
 	health = max_health
+	add_to_group("characters")
 	_set_up_body()
 	for child in get_children():
 		if child is CharacterController:
@@ -168,6 +180,7 @@ func _physics_process(delta: float) -> void:
 		velocity += half_gravity
 		move_and_slide()
 		velocity += half_gravity
+	_update_footsteps(on_ground, delta)
 
 
 ## True while health is above 0.
@@ -183,6 +196,11 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 	damaged.emit(amount, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## Points other characters check for line of sight: head and chest.
+func get_visibility_points() -> Array[Vector3]:
+	return [get_eye_position(), global_position + Vector3.UP * (_eye_height - 0.35)]
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -224,6 +242,22 @@ func get_max_speed() -> float:
 	if weapon != null and weapon.data != null:
 		return weapon.data.max_speed_units * UNITS_TO_METRES
 	return max_speed
+
+
+## Counts distance walked on the ground and takes a step every STEP_DISTANCE.
+## Steps faster than walking speed are loud and can be heard by bots.
+func _update_footsteps(on_ground: bool, delta: float) -> void:
+	if not on_ground:
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	_distance_since_step += speed * delta
+	if _distance_since_step < STEP_DISTANCE:
+		return
+	_distance_since_step = 0.0
+	var loud := not is_crouching and speed > get_max_speed() * walk_speed_factor * 1.05
+	footstep.emit(loud)
+	if loud:
+		Noises.make_noise(global_position, Noises.FOOTSTEP_RANGE, self)
 
 
 func _die(killer: Character) -> void:

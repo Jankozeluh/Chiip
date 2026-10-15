@@ -17,6 +17,7 @@
 - Characters got 100 HP and a shared soldier body (`characters/soldier_body.tscn`) with CS hit zones; the upper body sinks when crouching, the clothes take a team color, and your own body is hidden from you. HUD shows health. Check: chest 35.6, headshot 142.4 and death credited to the shooter; your own shots never hit you. Found and fixed: the base character was on the world layer, so bullets stopped at its capsule; characters now default to the bots layer.
 - Navigation mesh for the test map (153 polygons, bake tool `tools/bake_navmesh.gd`). Checked paths: spawn → platform top (via ramp/stairs), long routes around walls and dummies; the 1.5 m tunnel is correctly excluded.
 - Bot scene (`bots/bot.tscn`, red team) and `BotController` that walks paths by pressing movement keys. Check: reaches the platform top (y = 2.00), goes around the peek wall and down the range, stopping within 0.8 m of each goal.
+- Bot perception (`BotSenses`) and a noise bus (`Noises`), plus teams and footsteps on characters (D-035). All seven perception cases behave as intended. Found: autoloads aren't available to `--script` runs, which would have broken our tools, so the noise bus is a class with a static instance instead.
 
 ## 2026-10-15 — Session 5: M2 closed, M3 planned
 
