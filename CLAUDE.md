@@ -42,6 +42,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Run the game: `/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip`
 - Import assets and refresh the class cache (run after adding scripts with `class_name`): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import`
 - Run the movement tests: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 res://tests/movement_test.tscn` (exit code = number of failures)
+- Regenerate the placeholder sounds, then import them: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/generate_sounds.gd` and then the import command above
 - Smoke-run the game headless: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 300`
 - Visual check: `/Applications/Godot.app/Contents/MacOS/Godot --path . --resolution 1280x720 --write-movie <scratchpad>/frame.png --quit-after 45` writes PNG frames. This opens a window briefly and can capture the user's mouse.
 

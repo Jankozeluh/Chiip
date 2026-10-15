@@ -151,6 +151,14 @@
 - *Cast Shadow = Off* on the first-person gun avoids a floating gun shadow on the floor.
 - An `OmniLight3D` is a point light. Switching it on for 0.04 s per shot makes the muzzle flash light up nearby walls.
 
+**Sound** (`weapons/rifle.tscn`, `tools/generate_sounds.gd`)
+- `AudioStreamPlayer` plays a sound without position, which is right for your own gun. `AudioStreamPlayer3D` plays it from a point in the world (bots' guns in M4), like an AudioSource with Spatial Blend 1 in Unity.
+- *Max Polyphony* lets one player overlap several copies of a sound, so fast shots don't cut each other off.
+- Sounds can be generated in code: fill an `AudioStreamWAV` with samples and call `save_to_wav()`.
+
+**Tool scripts**
+- A script that `extends SceneTree` can run on its own with `--script`, without opening a scene, like a Unity editor script run from the command line. Chiip keeps these in `tools/`.
+
 **Spawning scenes** (`Weapon._spawn_impact`)
 - `const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")` loads a scene when the script loads. `IMPACT_SCENE.instantiate()` + `add_child()` is Unity's `Instantiate(prefab, parent)`, and `queue_free()` is `Destroy()`.
 - `look_at(target, up)` turns a node so its −Z axis points at the target.

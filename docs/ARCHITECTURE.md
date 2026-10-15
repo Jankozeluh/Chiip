@@ -36,7 +36,7 @@ Chiip/
 ├── assets/            Shared raw assets
 │   ├── textures/
 │   ├── models/
-│   ├── sounds/
+│   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   └── fonts/
 ├── player/            Player scene, movement, camera
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
@@ -46,7 +46,8 @@ Chiip/
 ├── ui/                HUD, menus, developer console
 ├── systems/           Global systems (autoloads): game state, rounds, settings, console commands
 ├── shaders/           Shaders (grid placeholder now, retro look in M3)
-└── tests/             Automated test scenes, run headless (D-018)
+├── tests/             Automated test scenes, run headless (D-018)
+└── tools/             One-off tool scripts run from the command line (not part of the game)
 ```
 
 ## Scenes and files
@@ -67,6 +68,8 @@ Chiip/
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players + a blocky first-person model (`Viewmodel`) with a muzzle flash (gradient quad + orange light). Instanced in the player under `Head/Camera3D` |
 | `ui/hud.tscn` + `.gd` | HUD: crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
+| `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
+| `assets/sounds/*.wav` | Generated 22 kHz mono sounds, referenced by `weapons/rifle.tres` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
 
