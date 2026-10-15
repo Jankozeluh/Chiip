@@ -15,6 +15,7 @@
 - Spray pattern and aim punch: shots follow the 30-point pattern exactly, the view kicks by half the pattern, and recoil wears off at 12 shots/s once you stop (a 10-shot burst is gone after a 1 s pause).
 - Hit zones (`Hitbox` areas: head ×4, stomach ×1.25, chest/arms ×1, legs ×0.75), damage falloff (×0.98 per 500 units), and a target dummy with floating damage numbers and a running total. Measured: headshot 142.9 at 5 m, 135.2 at 40 m.
 - HUD (`ui/hud.tscn`): CS-style crosshair drawn in code (static, green; dynamic mode as a setting), weapon name and ammo counter that turns red when low.
+- First-person Rifle model built from boxes and a cylinder (metal + wood), muzzle flash (gradient quad + light), kick on every shot (tween), dip while reloading.
 
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 

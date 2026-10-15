@@ -23,6 +23,15 @@ const RELOAD_SOUND_STEPS: Array[float] = [0.1, 0.6, 0.85]
 const ACCURATE_SPEED_FRACTION := 0.34
 ## How quickly the view follows the recoil kick (higher = snappier).
 const VIEW_PUNCH_SMOOTHING := 30.0
+## How long the muzzle flash stays visible, in seconds.
+const MUZZLE_FLASH_TIME := 0.04
+## How far the gun model jumps back and up on each shot, and how long it takes to settle.
+const KICK_OFFSET := Vector3(0.0, 0.005, 0.035)
+const KICK_ANGLE_DEGREES := 2.5
+const KICK_RETURN_TIME := 0.09
+## How far the gun model dips while reloading.
+const RELOAD_DIP_OFFSET := Vector3(0.0, -0.1, 0.0)
+const RELOAD_DIP_ANGLE_DEGREES := -35.0
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
@@ -60,15 +69,23 @@ var _spray_position: float = 0.0
 var _time_since_shot: float = 0.0
 ## Bullet holes this weapon made, oldest first.
 var _impacts: Array[Node3D] = []
+## Seconds the muzzle flash stays visible.
+var _flash_time_left: float = 0.0
+## Where the gun model sits when nothing is happening.
+var _viewmodel_rest: Transform3D
+var _kick_tween: Tween
 
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
+@onready var _viewmodel: Node3D = $Viewmodel
+@onready var _muzzle_flash: Node3D = $Viewmodel/MuzzleFlash
 
 
 func _ready() -> void:
 	magazine = data.magazine_size
 	reserve = data.reserve_ammo
 	_shot_audio.stream = data.shot_sound
+	_viewmodel_rest = _viewmodel.transform
 
 
 ## Hands the weapon to its holder, who supplies aim and movement state.
@@ -136,6 +153,33 @@ func _process(delta: float) -> void:
 	# of the pattern, and follows smoothly instead of jumping.
 	var target := data.get_spray_offset(_spray_position) * data.view_punch_fraction
 	view_punch = view_punch.lerp(target, 1.0 - exp(-VIEW_PUNCH_SMOOTHING * delta))
+	_update_viewmodel(delta)
+
+
+## Hides the muzzle flash after a moment, and dips the gun while reloading.
+func _update_viewmodel(delta: float) -> void:
+	if _flash_time_left > 0.0:
+		_flash_time_left -= delta
+		_muzzle_flash.visible = _flash_time_left > 0.0
+	if is_reloading():
+		# 0 → 1 → 0 over the reload: down, hold, back up.
+		var dip := sin(PI * (1.0 - _reload_time_left / data.reload_time))
+		_viewmodel.transform = _viewmodel_rest.translated_local(RELOAD_DIP_OFFSET * dip).rotated_local(
+				Vector3.RIGHT, deg_to_rad(RELOAD_DIP_ANGLE_DEGREES) * dip)
+
+
+## Muzzle flash and a kick of the gun model, which springs back with a tween.
+func _play_shot_effects() -> void:
+	_muzzle_flash.visible = true
+	_muzzle_flash.rotation.z = randf() * TAU
+	_flash_time_left = MUZZLE_FLASH_TIME
+	if _kick_tween != null:
+		_kick_tween.kill()
+	_viewmodel.transform = _viewmodel_rest.translated_local(KICK_OFFSET).rotated_local(
+			Vector3.RIGHT, deg_to_rad(KICK_ANGLE_DEGREES))
+	_kick_tween = create_tween()
+	_kick_tween.tween_property(_viewmodel, "transform", _viewmodel_rest, KICK_RETURN_TIME) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 ## Lets the spray pattern wear off once you stop firing. While firing
@@ -166,6 +210,7 @@ func _fire() -> void:
 	magazine -= 1
 	var spray_shot := get_spray_shot()
 	_shot_audio.play()
+	_play_shot_effects()
 	_shoot_bullet(_get_shot_direction())
 	_spray_position += 1.0
 	_time_since_shot = 0.0
@@ -260,6 +305,7 @@ func _update_reload(delta: float) -> void:
 		var loaded := mini(data.magazine_size - magazine, reserve)
 		magazine += loaded
 		reserve -= loaded
+		_viewmodel.transform = _viewmodel_rest
 		ammo_changed.emit(magazine, reserve)
 		reload_finished.emit()
 

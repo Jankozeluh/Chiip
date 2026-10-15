@@ -64,7 +64,7 @@ Chiip/
 | `weapons/bullet_impact.tscn` | Bullet hole (16 × 16 pixel radial gradient quad) and a burst of sparks |
 | `weapons/hitbox.gd` | `Hitbox` (`Area3D`): one damage zone with its multiplier; emits `hit` |
 | `maps/props/target_dummy.tscn` + `.gd` | `TargetDummy`: CS-sized, color-coded hitboxes (head red, chest blue, stomach teal, arms light blue, legs dark), floating damage numbers, running total, optional side-to-side movement |
-| `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players. Instanced in the player under `Head/Camera3D` |
+| `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players + a blocky first-person model (`Viewmodel`) with a muzzle flash (gradient quad + orange light). Instanced in the player under `Head/Camera3D` |
 | `ui/hud.tscn` + `.gd` | HUD: crosshair, weapon name ("· reloading"), ammo counter (red at ≤ 25%). Listens to the weapon's signals |
 | `ui/crosshair.gd` | `Crosshair` (`Control`): CS-style crosshair drawn with `_draw()`; static or dynamic |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
@@ -119,6 +119,7 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 - Shots start at `Player.get_eye_position()` and use `Player.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the player's own body.
 - Recoil has two parts. `Weapon._get_shot_direction()` adds the spray pattern offset to the aim. `Weapon.view_punch` (half the pattern, smoothed every frame) is added to the camera rotation in `Player._process`. The aim itself never changes, so the view returns to it as recoil wears off.
 - When a ray hits a `Hitbox`, the weapon computes `damage × range_modifier^(distance / 500 units)` and calls `Hitbox.receive_hit()`, which applies the zone multiplier and emits `hit` to whoever owns the hitbox (the dummy now, bots in M4).
+- The viewmodel moves with the camera because it's a child of it. Shot kick is a tween back to the rest pose; the reload dip is computed every frame from the reload progress. Viewmodel meshes don't cast shadows. Known limitation: the gun pokes into walls when you stand right against them (proper viewmodel rendering later).
 - Bullet holes are parented to whatever was hit, so they move with moving targets. Each weapon keeps its last 100.
 
 ## Physics layers
