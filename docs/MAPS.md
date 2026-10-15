@@ -2,11 +2,11 @@
 
 > Last updated: 2026-10-15
 >
-> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot** first, Square and Spillway next (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-062.
+> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot** and **Square**, Spillway next (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-062.
 
 ## Playing them
 
-- In the game: open the console (the key left of 1) and type `map depot`. `map` alone lists all maps.
+- In the game: open the console (the key left of 1) and type `map depot` or `map square`. `map` alone lists all maps.
 - From the terminal: add `-- --map res://maps/depot.tscn` to the run command (see README). Add `--practice` for the bot arena where everyone respawns.
 - A match (the default) puts the defenders at the north end and the attackers at the south end; sides swap at half time.
 
@@ -70,21 +70,33 @@ A freight yard. **Indoor mid, open side lanes.**
 - **Spawns:** container stacks (5.2 m) split each spawn yard from the side lanes; wooden stacks in the forecourts give cover and cut the long views across them.
 - **Look:** grey gravel, red brick, metal containers, wood. Today's cool daylight (`cool_daylight.tres`), sun 38° high.
 
+## Map 2: Square
+
+![Square plan](maps/square.svg)
+
+An old-town square. **Open mid, tight side lanes.**
+
+- **Mid:** an open plaza around a 5.5 m stone column on a fountain basin, with two market stalls and planters. The streets from the spawns enter it at opposite corners.
+- **West, site A:** a narrow zig-zag alley between houses. The two houses that jut into it overlap, so no straight line runs through. A is a small square with a well at the alley's north end. A covered passage through the houses connects the alley to the plaza.
+- **East, site B:** a long market hall with a roof, stone pillars and stalls. A wall with a gap on the east side splits it in two; B is **indoors** at the north end. An arch through the houses connects the plaza to the hall's north half. The hall's doors are offset from the gap, so you can't see down the whole hall.
+- **Spawns:** a kiosk in front of each spawn breaks the views across the spawn yards.
+- **Look:** stone paving, painted plaster and brick houses, wooden stalls. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky and a little more haze).
+
 ## Measurements
 
 From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the round going live) and `tools/map_report.gd`. Walking distances follow the navmesh from the middle spawn marker.
 
-| | Depot |
+| | Depot | Square |
 |---|---|---|---|
-| First contact, each round (median) | 5.3, 5.6, 5.8, 6.2 s (5.7 s) |
-| Round length (all ended by elimination) | 9–16 s |
-| Spawn to spawn, walking (straight line) | 52 m (49 m) |
-| Attackers to A / B | 57 m / 52 m |
-| Defenders to A / B | 25 m / 23 m |
-| Routes west / mid / east | 58 / 49 / 68 m |
-| Longest sightline | 44 m |
-| Spot pairs that see each other over 30 m / 40 m | 560 / 3 |
-| Spawn-to-spawn views | 0 |
+| First contact, each round (median) | 5.3, 5.6, 5.8, 6.2 s (5.7 s) | 5.6, 6.5, 6.7, 7.1 s (6.6 s) |
+| Round length (all ended by elimination) | 9–16 s | 9–23 s |
+| Spawn to spawn, walking (straight line) | 52 m (49 m) | 62 m (50 m) |
+| Attackers to A / B | 57 m / 52 m | 65 m / 54 m |
+| Defenders to A / B | 25 m / 23 m | 18 m / 20 m |
+| Routes west / mid / east | 58 / 49 / 68 m | 61 / 51 / 59 m |
+| Longest sightline | 44 m | 35 m |
+| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 |
+| Spawn-to-spawn views | 0 | 0 |
 
 At 5.5 m/s (rifle in hand) a 52 m walk takes about 9.5 s. Contact comes earlier because defenders move up to their hold spots and toward the sound of footsteps.
 

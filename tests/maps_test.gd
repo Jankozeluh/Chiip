@@ -13,7 +13,7 @@ extends Node
 ## first contact (the first bot to notice an enemy), which should be 5–10 s,
 ## and how rounds end. Quits with the number of failed checks as the exit code.
 
-const MAPS: Array[String] = ["res://maps/depot.tscn"]
+const MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn"]
 ## Rounds to play on each map.
 const ROUNDS_TO_PLAY := 4
 ## First contact should come this many seconds after the round goes live (D-049).

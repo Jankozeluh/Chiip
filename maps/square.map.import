@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://pfeinc1c2752"
+path="res://.godot/imported/square.map-2d5187eaa0b2b5439202b16297136067.tres"
+
+[deps]
+
+source_file="res://maps/square.map"
+dest_files=["res://.godot/imported/square.map-2d5187eaa0b2b5439202b16297136067.tres"]
+
+[params]
+
