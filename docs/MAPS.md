@@ -2,11 +2,11 @@
 
 > Last updated: 2026-10-15
 >
-> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot** and **Square**, Spillway next (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-062.
+> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed, without baked lighting and without bomb logic. Decisions: D-060–D-062.
 
 ## Playing them
 
-- In the game: open the console (the key left of 1) and type `map depot` or `map square`. `map` alone lists all maps.
+- In the game: open the console (the key left of 1) and type `map depot`, `map square` or `map spillway`. `map` alone lists all maps.
 - From the terminal: add `-- --map res://maps/depot.tscn` to the run command (see README). Add `--practice` for the bot arena where everyone respawns.
 - A match (the default) puts the defenders at the north end and the attackers at the south end; sides swap at half time.
 
@@ -82,23 +82,42 @@ An old-town square. **Open mid, tight side lanes.**
 - **Spawns:** a kiosk in front of each spawn breaks the views across the spawn yards.
 - **Look:** stone paving, painted plaster and brick houses, wooden stalls. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky and a little more haze).
 
+## Map 3: Spillway
+
+![Spillway plan](maps/spillway.svg)
+
+A dry concrete water works. **Sunken mid, high sides.**
+
+- **Mid:** a dry channel 3 m deep, with ramps down at both ends and 3 m fences along its edges. A walled footbridge crosses it in the middle; under the bridge the channel narrows to a 2.5 m culvert, and concrete blocks on either side of the bridge stop anyone seeing straight through. Two overlooks with low parapets let the sides shoot down into the channel.
+- **West, site A:** a pump house you can go through (offset doors with a pump in between) or around (two corridors with overlapping blockers). A is in front of its north door.
+- **East, site B:** a tank yard split by a pipe wall with two gaps, each with a tank right behind it, so no view runs through. B is on a 1.5 m terrace with ramps up from the south and the west; a control house blocks the view from the yard up onto the terrace.
+- **Look:** concrete, plaster and metal under an overcast sky (`overcast.tres`: grey sky, flatter light, more fog), a weak high sun.
+
 ## Measurements
 
 From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the round going live) and `tools/map_report.gd`. Walking distances follow the navmesh from the middle spawn marker.
 
-| | Depot | Square |
+| | Depot | Square | Spillway |
 |---|---|---|---|
-| First contact, each round (median) | 5.3, 5.6, 5.8, 6.2 s (5.7 s) | 5.6, 6.5, 6.7, 7.1 s (6.6 s) |
-| Round length (all ended by elimination) | 9–16 s | 9–23 s |
-| Spawn to spawn, walking (straight line) | 52 m (49 m) | 62 m (50 m) |
-| Attackers to A / B | 57 m / 52 m | 65 m / 54 m |
-| Defenders to A / B | 25 m / 23 m | 18 m / 20 m |
-| Routes west / mid / east | 58 / 49 / 68 m | 61 / 51 / 59 m |
-| Longest sightline | 44 m | 35 m |
-| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 |
-| Spawn-to-spawn views | 0 | 0 |
+| First contact, each round (median) | 5.3, 5.6, 5.8, 6.2 s (5.7 s) | 5.6, 6.5, 6.7, 7.1 s (6.6 s) | 5.5, 5.7, 6.0, 9.2 s (5.8 s) |
+| Round length (all ended by elimination) | 9–16 s | 9–23 s | 11–17 s |
+| Spawn to spawn, walking (straight line) | 52 m (49 m) | 62 m (50 m) | 52 m (51 m) |
+| Attackers to A / B | 57 m / 52 m | 65 m / 54 m | 51 m / 53 m |
+| Defenders to A / B | 25 m / 23 m | 18 m / 20 m | 20 m / 21 m |
+| Routes west / mid / east | 58 / 49 / 68 m | 61 / 51 / 59 m | 57 / 53 / 55 m |
+| Longest sightline | 44 m | 35 m | 38 m |
+| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 | 375 / 0 |
+| Spawn-to-spawn views | 0 | 0 | 0 |
 
 At 5.5 m/s (rifle in hand) a 52 m walk takes about 9.5 s. Contact comes earlier because defenders move up to their hold spots and toward the sound of footsteps.
+
+## How the layouts were tuned
+
+The blockouts were generated once from a small layout script (outside the repository, so the `.map` files are the only source), then tuned in three rounds with bots and the sightline report:
+
+1. **First build:** first contact Depot 4.1–5.1 s, Square 6.1–7.6 s, Spillway 3.4–5.8 s. Depot and Spillway were too quick: defenders who heard footsteps met attackers early, and on Spillway an attacker in the tank yard could see a defender on the B terrace 30 m away. Both maps got 2 m deeper spawn yards at each end (56 m long), Depot's corridor between the warehouse and the boxcar was closed to the south, and Spillway got a control house in front of the terrace.
+2. **Sightlines:** the report found 45–60 m diagonals slipping between obstacles that had only been placed against straight north–south views. Obstacles now overlap (the alley houses, the containers, the pump-house corridor blockers), doors are offset (pump house, market hall, the passage and arch on Square), there are "gates" with something right behind them (Spillway's pipe wall), and kiosks and wooden stacks break the views across the spawn yards and forecourts.
+3. **Bugs found on the way:** Depot's west ramp onto the dock started against a container stack, so it couldn't be walked onto (bots took a 43 m detour); the ramp and stack moved. Spillway's 1.5 m terrace saw over the 2.4 m channel fences, which are now 3 m.
 
 ## Next for these maps
 

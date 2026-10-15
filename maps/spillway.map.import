@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://dqwsqy4qjyg8r"
+path="res://.godot/imported/spillway.map-60cbba526204f92552eb0664f5cf536d.tres"
+
+[deps]
+
+source_file="res://maps/spillway.map"
+dest_files=["res://.godot/imported/spillway.map-60cbba526204f92552eb0664f5cf536d.tres"]
+
+[params]
+
