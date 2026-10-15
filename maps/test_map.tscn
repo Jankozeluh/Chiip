@@ -3,7 +3,6 @@
 [ext_resource type="Environment" path="res://assets/environments/cool_daylight.tres" id="environment"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
 [ext_resource type="NavigationMesh" path="res://maps/test_map_navmesh.tres" id="navmesh"]
-[ext_resource type="Script" path="res://systems/arena_rules.gd" id="arena_rules"]
 [ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="dummy_scene"]
 [ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="pixel_font"]
 [ext_resource type="Material" path="res://assets/materials/concrete_floor.tres" id="concrete_floor"]
@@ -442,5 +441,3 @@ position = Vector3(3, 0, 84)
 [node name="AttackSpawn5" type="Marker3D" parent="Arena" groups=["attack_spawns"]]
 position = Vector3(6, 0, 84)
 
-[node name="ArenaRules" type="Node" parent="."]
-script = ExtResource("arena_rules")

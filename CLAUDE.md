@@ -54,7 +54,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Open the editor: `/Applications/Godot.app/Contents/MacOS/Godot -e --path /Users/kozeluhj/Documents/Games/Chiip`
 - Run the game: `/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip`
 - Import assets and refresh the class cache (run after adding scripts with `class_name`): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import`
-- Run the tests (exit code = number of failures): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn`, and the same with `res://tests/weapon_test.tscn` and `res://tests/bot_test.tscn` (use `--quit-after 100000` for the bot test). Run suites one at a time when reading their output
+- Run the tests (exit code = number of failures): `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn`, and the same with `res://tests/weapon_test.tscn` and `res://tests/bot_test.tscn` (use `--quit-after 100000` for the bot test) and `res://tests/round_test.tscn`. Run suites one at a time when reading their output
 - Regenerate the placeholder sounds, then import them: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/generate_sounds.gd` and then the import command above
 - Make a retro texture: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast] [brightness] [saturation]`, then the import command. Record the source and settings in docs/CREDITS.md
 - Build TrenchBroom maps into their scenes: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 500 --script res://tools/build_maps.gd -- res://maps/comparison/trenchbroom_room.tscn`
@@ -75,4 +75,6 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - Headless runs use a dummy audio driver where sounds never finish; anything still "playing" at exit is reported as leaked. Tests use silent weapon data.
 - Autoloads don't exist in `--script` runs (tools, checks), so code that tools load must not use autoload names. Use a class with a static shared instance instead (see `systems/noises.gd`).
 - GDScript lambdas copy captured locals: assigning to a captured `int`/`Vector2` inside a lambda doesn't change the outer variable. Capture an `Array`/`Dictionary` instead.
+- `Teams` and `Character` refer to each other. In such a cycle GDScript can reject an enum from one of them passed in from a third script ("should be Side but is Teams.Side"). Take such parameters as `int`.
+- Run the game in practice mode (old bot arena) with `-- --practice`; the default is a 3v3 match.
 - A script error inside a headless run can leave Godot running forever. Always pass `--quit-after <frames>` as a safety net (macOS has no `timeout` command).

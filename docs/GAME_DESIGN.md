@@ -156,8 +156,12 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 
 - Two teams **without names** (D-041). Each player sees their own team in **blue** and the enemies in **red**. Underneath, one side attacks and the other defends, which decides where they spawn and who wins on time-out.
 - You plus bot teammates vs. a bot team: 1–5 per side, 3v3 by default.
-- Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (~1:55) → round end (~5 s). During freeze time you can look around but not move or shoot.
-- A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS.
+- Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (1:55) → round end (5 s). During freeze time you can look around, crouch and reload, but not move, jump or shoot.
+- At each round start everyone is back at their side's spawn with full health and a full rifle.
+- A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too.
+- Whoever dies stays dead until the next round. During the round-end pause the survivors can still move and shoot, but the result stands.
+- **Stats** for the scoreboard: kills (a teamkill counts −1), deaths, assists (more than 40 damage to an enemy someone else kills, as in CS) and damage (health actually removed, so a 142-damage headshot on a 30 HP enemy counts 30).
+- **Practice** (`-- --practice` for now, a main-menu entry later): today's bot arena without rounds; bots and you respawn after 3 s.
 - Match: first to **5** (default), **10** or **15** rounds. Sides swap at half time, after 4, 9 or 14 rounds, so a draw is impossible.
 - **Spawns:** each side has five spawn points at its own end of the map. On the test map the defenders start at the north end behind the peek walls and the attackers at the south end of the range, 112 m apart.
 - Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive. With it off, bullets pass through teammates (as in CS), so a teammate walking through your spray doesn't block it.

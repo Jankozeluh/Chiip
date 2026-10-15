@@ -46,8 +46,10 @@ static var friendly_fire: bool = false
 static var viewer_team: int = 0
 
 
-## The name of the group holding the spawn markers of [param side].
-static func spawn_group(side: Side) -> String:
+## The name of the group holding the spawn markers of [param side] (a [enum Side] value).
+## The parameter is an int because GDScript can mistake [code]Teams.Side[/code]
+## from another script for a different type while Teams and Character load each other.
+static func spawn_group(side: int) -> String:
 	return ATTACK_SPAWN_GROUP if side == Side.ATTACKING else DEFEND_SPAWN_GROUP
 
 

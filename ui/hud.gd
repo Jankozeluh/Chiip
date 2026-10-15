@@ -10,6 +10,9 @@ const LOW_HEALTH := 25.0
 
 ## The player whose weapon the HUD shows. Set with [method set_player].
 var player: Character
+## Say "Respawning..." under the death message (practice mode brings you back;
+## in a match the dead wait for the next round).
+var respawn_hint: bool = true
 
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _ammo_label: Label = $AmmoLabel
@@ -67,7 +70,7 @@ func _update_health() -> void:
 
 
 func _on_player_died(killer: Character) -> void:
-	_death_label.text = ("Killed by %s" % killer.name if killer != null else "You died") + "\nRespawning..."
+	_death_label.text = ("Killed by %s" % killer.name if killer != null else "You died") + ("\nRespawning..." if respawn_hint else "")
 	_death_label.visible = true
 	_crosshair.visible = false
 

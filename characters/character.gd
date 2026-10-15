@@ -17,7 +17,8 @@ extends CharacterBody3D
 ## Distances are in metres and speeds in metres per second. CS values are
 ## converted with [constant UNITS_TO_METRES]. See docs/GAME_DESIGN.md, section 4.1.
 
-## Emitted when the character takes damage.
+## Emitted when the character takes damage. [param amount] is the health
+## actually lost: a 142-damage headshot on 30 HP reports 30.
 signal damaged(amount: float, zone: Hitbox.Zone, attacker: Character)
 ## Emitted once when health reaches 0. [param killer] may be null.
 signal died(killer: Character)
@@ -104,6 +105,10 @@ var health: float = 0.0
 var god_mode: bool = false
 ## Flies through walls in the direction it looks, ignoring gravity (console: noclip).
 var noclip: bool = false
+## Set by the game rules during freeze time: the character can look around,
+## crouch and reload, but not move, jump or shoot. The rule is applied here,
+## to whatever the controller sends, so it holds for every kind of controller.
+var frozen: bool = false
 
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
@@ -124,6 +129,8 @@ var _eye_height: float = 0.0
 var _hull_height_difference: float = 0.0
 ## The clothes material on chest and arms, colored by [method update_team_color].
 var _clothes := StandardMaterial3D.new()
+## The body tipping over after death, stopped if the character respawns first.
+var _fall_tween: Tween
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
@@ -166,6 +173,10 @@ func _physics_process(delta: float) -> void:
 		still.yaw = _input.yaw
 		still.pitch = _input.pitch
 		_input = still
+	if frozen:
+		_input.move = Vector2.ZERO
+		_input.jump = false
+		_input.shoot = false
 	# Face where the command looks, so "forward" is where you look. The head
 	# tilts up and down, which points a third-person gun (bots) at the target.
 	rotation.y = _input.yaw
@@ -222,9 +233,9 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 	var factor := Teams.damage_factor(self, attacker)
 	if factor <= 0.0:
 		return
-	amount *= factor
-	health = maxf(health - amount, 0.0)
-	damaged.emit(amount, zone, attacker)
+	var lost := minf(amount * factor, health)
+	health -= lost
+	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
 
@@ -327,6 +338,8 @@ func _play_footstep() -> void:
 ## Brings the character back at [param at], facing [param yaw], with full
 ## health and a full weapon.
 func respawn(at: Vector3, yaw: float) -> void:
+	if _fall_tween != null:
+		_fall_tween.kill()
 	global_position = at
 	rotation.y = yaw
 	velocity = Vector3.ZERO
@@ -359,8 +372,8 @@ func _die(killer: Character) -> void:
 	set_deferred("collision_layer", 0)
 	# Tip the body over backwards around the feet. Run the tween on physics
 	# ticks so physics interpolation smooths it like any other movement.
-	var fall := create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-	fall.tween_property(body, "rotation:x", -PI / 2.0, DEATH_FALL_TIME) \
+	_fall_tween = create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	_fall_tween.tween_property(body, "rotation:x", -PI / 2.0, DEATH_FALL_TIME) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	died.emit(killer)
 

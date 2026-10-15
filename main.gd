@@ -4,10 +4,22 @@ extends Node
 ## the HUD and debug overlay on top.
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
+## Maps hold only the level: geometry, navigation and markers. The game rules
+## are added here, depending on [member mode]: a match ([RoundManager]) on maps
+## with attack and defend spawns, practice ([ArenaRules]: bots that respawn) on
+## other maps with navigation, and nothing (free roaming) on the rest.
 ##
 ## Two pixel styles (see docs/DECISIONS.md):
 ## - Pixelated HUD: the whole window renders at the low resolution, HUD included.
 ## - Sharp HUD: only the world is low-res; the HUD uses the full window resolution.
+
+## What to play on the map.
+enum Mode {
+	## Rounds with two teams (you plus bot teammates against bots).
+	MATCH,
+	## Today's bot arena: bots respawn, no rounds. For warm-ups and testing.
+	PRACTICE,
+}
 
 ## The HUD and overlay are laid out for a window this many pixels tall.
 const UI_DESIGN_HEIGHT := 720.0
@@ -15,6 +27,10 @@ const UI_DESIGN_HEIGHT := 720.0
 ## The map to play. Can be overridden from the command line:
 ## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]
 @export var map_scene: PackedScene = preload("res://maps/test_map.tscn")
+## Match or practice. [code]-- --practice[/code] on the command line picks practice.
+@export var mode: Mode = Mode.MATCH
+## The rules of a match: team sizes, bot skill, length, friendly fire.
+@export var match_settings: MatchSettings = MatchSettings.new()
 ## Height of the world image in pixels; the width follows the window's shape.
 ## 360 gives 640 × 360 in a 16:9 window.
 @export var pixel_height: int = 360
@@ -61,17 +77,45 @@ func _load_map() -> void:
 	var map_arg := args.find("--map")
 	if map_arg >= 0 and map_arg + 1 < args.size():
 		scene = load(args[map_arg + 1])
+	if args.has("--practice"):
+		mode = Mode.PRACTICE
 	_spawn_map(scene)
 
 
-## Puts the map into the world viewport and connects its player to the HUD and overlay.
+## Puts the map into the world viewport, adds the game rules, and connects
+## its player to the HUD and overlay.
 func _spawn_map(scene: PackedScene) -> void:
 	_map = scene.instantiate()
 	_viewport.add_child(_map)
 	var player := _map.get_node("Player") as Character
+	Teams.friendly_fire = false
+	var rules := _add_game_rules()
 	_hud.set_player(player)
+	_hud.respawn_hint = rules is ArenaRules
 	_debug_overlay.player = player
 	Teams.set_viewer_team(player.team)
+
+
+## Adds the node that runs the game on the current map (see [enum Mode]) and returns it, or null.
+func _add_game_rules() -> Node:
+	var has_navigation := not _map.find_children("*", "NavigationRegion3D").is_empty()
+	var has_spawns := _map_has_group(Teams.ATTACK_SPAWN_GROUP) and _map_has_group(Teams.DEFEND_SPAWN_GROUP)
+	var rules: Node = null
+	if mode == Mode.MATCH and has_navigation and has_spawns:
+		var rounds := RoundManager.new()
+		rounds.settings = match_settings
+		rules = rounds
+	elif has_navigation:
+		rules = ArenaRules.new()
+	if rules != null:
+		# Named like the class, so the console finds it ("ArenaRules").
+		rules.name = rules.get_script().get_global_name()
+		_map.add_child(rules)
+	return rules
+
+
+func _map_has_group(group: String) -> bool:
+	return get_tree().get_nodes_in_group(group).any(func(node: Node) -> bool: return _map.is_ancestor_of(node))
 
 
 ## Applies [member pixel_height], [member pixelate_hud] and [member palette_effect].

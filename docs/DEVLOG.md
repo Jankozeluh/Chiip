@@ -12,7 +12,13 @@
 - Practice mode: `ArenaRules.add_bot(difficulty, team)`; console `bot_add [easy|normal|hard] [ally|enemy]` (either order) and new `mp_friendlyfire [0|1]` (no argument shows the state). All checked in the real main scene.
 - Bot tests: 3 new checks (friendly fire off: no damage; on: a third, 88 HP vs. 64 HP from an enemy; off: bullets pass through a teammate and hit the enemy behind). The bullet check also runs once with friendly fire on to prove the teammate really is in the line of fire. All 48 checks pass (movement 13, weapon 20, bot 15), and the 12 old bot checks print exactly the same numbers as before.
 
-**Next:** task 2, the round manager (freeze time → live → round end, winner by elimination or time-out, everyone reset at round start).
+- **Task 2, the round manager** (D-043). `systems/round_manager.gd` owns the match: it adds you plus bot teammates against bots (3v3 by default, from a new `MatchSettings` resource), picks the attacking team, and runs each round: freeze time (5 s) → live (1:55) → round end (5 s). Everyone respawns on their side's spawn with full health and ammo; the dead stay dead until the next round; eliminating the other team wins, a time-out goes to the defenders. It announces everything with signals (`round_started`, `phase_changed`, `round_ended`, `character_killed` with a headshot flag) and keeps kills, deaths, assists and damage.
+- `Character.frozen` holds anyone in place during freeze time (looking, crouching and reloading still work). `Character.damaged` now reports the health actually lost. A death fall that is still running stops when the character respawns.
+- `main.gd` adds the game rules to the map: a match by default, the old respawning bot arena with `-- --practice`. The test map no longer has its own `ArenaRules`. In a match the HUD no longer says "Respawning...", and the bot console commands explain that they work in practice only.
+- New round test (`tests/round_test.tscn`, 9 checks) on the real test map with short timings: setup, spawns, freeze time, going live, elimination, kill credit and headshots, staying dead, assists and damage, time-out. Watched a headless 3v3 match for three rounds: two eliminations, one time-out win for the defenders. Bots still just wander, so rounds can drag; task 4 fixes that.
+- Found a GDScript quirk: with `Teams` and `Character` referring to each other, `Teams.Side` from a third script didn't match `Side` inside `Teams`. `Teams.spawn_group()` now takes an int (LEARNING.md, CLAUDE.md gotchas).
+
+**Next:** task 3, match flow (score, first to 5/10/15, half-time side swap, match-end screen).
 
 ## 2026-10-15 — Session 9: M4 closed, M5 planned
 

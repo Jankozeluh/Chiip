@@ -275,3 +275,17 @@
 
 **The SceneTree from static code** (`systems/teams.gd`)
 - A class made only of `static` functions (like a C# static class) has no node, so it has no `get_tree()`. `Engine.get_main_loop() as SceneTree` returns the running game's tree from anywhere, and it's `null` when there isn't one, so check before using it. `Teams.set_viewer_team()` uses it to find every node in the `characters` group and recolor it.
+
+**Game state with signals** (`systems/round_manager.gd`)
+- One node owns the state (phase, timer, alive counts, score) and *announces* each change with a signal: `round_started`, `phase_changed`, `round_ended`, `character_killed`. Anything that shows the state (HUD, kill feed, scoreboard) connects to those and never changes the state itself. In Unity you'd use C# events or UnityEvents on a GameManager the same way.
+- Signal parameters can be typed with the emitter's own enums (`signal round_ended(winner: int, reason: EndReason)`), and listeners refer to them as `RoundManager.EndReason`.
+
+**`call_deferred()`**
+- `_check_elimination.call_deferred()` runs the function at the end of the current frame instead of now, after every node has finished its physics tick. Like a Unity coroutine that waits `WaitForEndOfFrame`, without the coroutine. Here it lets two players who kill each other in the same tick both die before the round result is decided.
+- `RoundManager._ready()` also defers starting the match: when a node's `_ready()` runs, its siblings later in the scene may not be ready yet.
+
+**Inner classes** (`RoundManager.Stats`)
+- `class Stats:` inside a script declares a small class, like a nested C# class. Outside it's `RoundManager.Stats`. It's a `RefCounted` object (freed automatically when nothing refers to it), handy for a typed bundle of numbers instead of a Dictionary with string keys.
+
+**A typing quirk with enums**
+- `Teams` and `Character` refer to each other (`Teams.damage_factor(victim: Character, …)`, `Character` calls `Teams`). In that kind of cycle GDScript can treat `Teams.Side` written in a third script as a different type from `Side` inside `Teams`, and refuse the call ("argument should be Side but is Teams.Side"). `Teams.spawn_group()` takes the side as an `int` to avoid it. Enums are ints underneath, so nothing is lost but the type check.

@@ -237,7 +237,7 @@ func _get_arena() -> ArenaRules:
 	var map := _get_map()
 	var arena := map.get_node_or_null("ArenaRules") as ArenaRules if map != null else null
 	if arena == null:
-		print_line("This map has no bots (no ArenaRules node).")
+		print_line("Bot commands work in practice mode only (bots in a match are part of the teams).")
 	return arena
 
 

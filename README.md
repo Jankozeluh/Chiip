@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams with blue/red colors, spawn ends and friendly fire are in (task 1 of 13); two bots still fight you on the test map; see the console commands below. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams, spawns, friendly fire and rounds are in (tasks 1–2 of 13), so F5 starts a 3v3 match; menus, HUD and settings follow. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -13,12 +13,19 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 
 **From the Godot editor** (recommended):
 1. Open Godot. In the Project Manager, click **Import**, select this folder's `project.godot`, and open it.
-2. Press **F5** (or the ▶ button at the top right) to play. You start on the shooting range of the test map; turn around for the movement course.
+2. Press **F5** (or the ▶ button at the top right) to play. A 3v3 match starts on the test map: you and two bot teammates (blue) against three bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
+3. For the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), run with `-- --practice` (see below).
 
 **From the terminal**, without opening the editor:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip
+```
+
+For practice mode, add `-- --practice`:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
 To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom comparison room:
@@ -86,6 +93,10 @@ Automated checks run without a window in about a second each:
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/bot_test.tscn
+```
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/round_test.tscn
 ```
 
 ## Documentation
