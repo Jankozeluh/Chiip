@@ -107,6 +107,7 @@ Chiip/
 | `assets/sounds/*.wav` | Generated 22 kHz mono sounds: rifle shot, empty click, reload clack (referenced by `weapons/rifle.tres`) and three footsteps |
 | `assets/sounds/footsteps.tres` | `AudioStreamRandomizer`: picks one of the three footsteps each step, with ±12% pitch and ±2 dB volume |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
+| `tests/bot_test.tscn` + `.gd` | Automated bot checks (11): patrol walking, vision (open / behind / wall), hearing (run vs walk), reaction time, no shooting through walls, Normal bot wins, Hard faster than Easy, death at 100 damage. Builds its own level and bakes a navigation mesh at runtime |
 | `tests/weapon_test.tscn` + `.gd` | Automated weapon checks: fire rate, ammo, reloads, inaccuracy, first-shot accuracy, zone damage, falloff, spray pattern, recovery |
 | `shaders/prototype_grid.gdshader` | World-space 1 m grid "developer texture", no longer used on the test map; kept for quick blockouts |
 
@@ -233,6 +234,7 @@ Run the checks from the project folder:
 ```
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/weapon_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/bot_test.tscn
 ```
 
 `--headless` means no window, and `--fixed-fps 128` runs exactly one physics tick per frame as fast as possible. `--quit-after` is a safety net in case a script error stops a test from finishing. Each check prints PASS or FAIL, and the exit code is the number of failures. The weapon test seeds the spread so every run fires the same shots, and uses a silent copy of the rifle data because headless runs have no audio device. When a test file uses a `class_name` for the first time, run `Godot --headless --path . --import` first so Godot knows the class.

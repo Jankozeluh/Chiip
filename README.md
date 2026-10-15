@@ -84,6 +84,10 @@ Automated checks run without a window in about a second each:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/weapon_test.tscn
 ```
 
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 res://tests/bot_test.tscn
+```
+
 ## Documentation
 
 All design, planning and technical notes live in [`docs/`](docs/):

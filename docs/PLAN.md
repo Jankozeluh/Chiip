@@ -160,7 +160,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 9. [x] **Death and respawn.** Characters collapse when killed (a simple fall-over, no ragdoll yet); bots respawn after a few seconds, and you respawn on death until rounds exist in M5.
 10. [x] **Developer console** (`` ` `` key): `bot_add [easy|normal|hard]`, `bot_kick`, `bot_difficulty`, `noclip`, `god`, `map <name>`, `help`.
 11. [x] **Bot arena.** Patrol points and spawn points on the test map, so 1–5 bots have room to fight you.
-12. [ ] **Bot tests.** Automated checks: a bot walks to a point; it spots you in its view but never through a wall; it waits its reaction time before shooting; a Normal bot lands roughly the expected share of shots at 10 m; it dies at 100 damage.
+12. [x] **Bot tests.** Automated checks: a bot walks to a point; it spots you in its view but never through a wall; it waits its reaction time before shooting; a Normal bot lands roughly the expected share of shots at 10 m; it dies at 100 damage.
 
 **Done when:** you can fight 1–5 bots on the test map and they feel fair: they react with a delay, miss sometimes, stop to shoot, can be outplayed, never see through walls, and don't hear you walking.
 
