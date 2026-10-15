@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — M7 arsenal, perks & economy
+
+Started M7 in its own worktree (branch `m7-arsenal`), cut from main with M8's last commit (mode choice and map rotation) on top.
+
+**Done**
+- **Task 1, the plan:** M7 is now a list of 14 tasks with model tags (PLAN.md), and its open choices are decided provisionally in D-090: CS2's money values, buying in the 15 s freeze time plus 10 s near your spawn, survivors keep their gear, a free loadout in team respawn, one generated model per weapon, and proposed weapon names (Ram, Warden, Hornet, Breaker, Heron, Sparrow, Verdict, Knife, Frag, Flashbang, Smoke), added to your open checks.
+
+**Next:** task 2, the arsenal's data files and balancing table.
+
 ## 2026-10-15 — Merges into main: M8 and M6
 
 Main now holds M5, the M8 work and M6 together.

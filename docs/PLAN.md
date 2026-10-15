@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". Next: M7 — Arsenal, perks & economy.
+> **Current milestone:** M7 — Arsenal, perks & economy, in progress (the task list is in the M7 section). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built and wait for your playtest in "Your open checks".
 
 ## Your open checks
 
@@ -10,6 +10,7 @@ Things only you can check, kept here until done instead of moving from milestone
 
 - [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
+- [ ] **Confirm weapon names** (M7, D-090): Ram (AK-style rifle), Warden (carbine), Hornet (SMG), Breaker (pump shotgun), Heron (sniper rifle), Sparrow (service pistol), Verdict (hand cannon), Knife, Frag, Flashbang, Smoke. Keep them, or tell me the ones you'd rather have: only the data files change.
 - [ ] **M5 playtest** (rounds & game flow). Start the game: the main menu appears. Then:
   - **Play** a default match (3v3, first to 5). In freeze time you can look but not move or shoot, and the line in the middle says whether you attack or defend.
   - Watch the bots: blue teammates and red enemies attack in loose pairs along three lanes or hold angles near the north end. Rounds should end in fights, not drag on.
@@ -56,7 +57,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M4 | Bots | ✅ | Bots hunt you and shoot back |
 | M5 | Rounds & game flow | ✅ | Full matches against bots, with teammates, menus and settings |
 | M6 | Crew & animation | 🟨 built, waiting for your playtest | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
-| M7 | Arsenal, perks & economy | ⬜ | Earn money, buy from the full arsenal, and play each class a little differently |
+| M7 | Arsenal, perks & economy | 🟨 in progress | Earn money, buy from the full arsenal, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
 | — | Backlog | — | Ideas for later |
@@ -272,25 +273,48 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 | Class choice | At match start, changeable during freeze time |
 | Class names | Rifleman, Bulwark, Marksman, Scout: final (D-070) |
 
-## M7 — Arsenal, perks & economy ⬜
+## M7 — Arsenal, perks & economy 🟨
 
-**Goal:** CS's buy-or-save decisions with a full arsenal, and classes that each play a little differently. Planned in detail when M7 starts.
+**Goal:** CS's buy-or-save decisions with a full arsenal, and classes that each play a little differently.
 
-- [ ] Armor and helmet, bought in the buy menu (moved from M5, D-041). CS:GO's rules: armor covers chest, stomach and arms, the helmet covers the head, and each weapon's *armor penetration* (rifle: 77.5%, like the AK) sets how much damage gets through; armor wears down as it absorbs hits. Armor on the HUD
-- [ ] Money: rewards for wins, losses (with loss bonus) and kills
-- [ ] Buy zone and buy menu (B) during freeze time (15 s from now on)
-- [ ] Weapon slots, switching, dropping and picking up weapons
-- [ ] The full arsenal (D-056): AK-style rifle, carbine, SMG, pump shotgun, sniper rifle, service pistol, hand cannon and knife. Stats in one data file each, and a balancing table that exports to a spreadsheet
-- [ ] Weapon models from the generator (D-054): a world model, a third-person model on the hand bone, a first-person model, and buy-menu and kill-feed icons rendered from the model
-- [ ] Holds and animations for pistols, the knife and grenades, in first and third person, and a reload for each weapon
-- [ ] Grenades: high explosive, flashbang, smoke
-- [ ] Class perks switch on (D-052), now that armor and scopes exist
-- [ ] Bots choose a class and buy based on their money
-- [ ] Weapon names
+**The key idea:** money and gear follow CS's rules, and every rule lives in authority code. The `RoundManager` pays out money and decides every purchase (`request_buy()`), the same way it already decides class changes, so in M9 the host runs the economy and the buy menu only asks. A character carries its weapons in slots (an `Inventory` node), holds one at a time, and switches, drops and throws through its per-tick input commands, so bots follow exactly the same rules as you. Each weapon is one data file (`WeaponData`, Godot's ScriptableObject) and one generated model (D-054); the balancing table is exported from those files, so the spreadsheet can never drift from the game.
+
+**Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"):
+
+1. [ ] **Plan.** This task list, the decisions below (D-090, provisional) and the proposed weapon names. *(Opus)*
+2. [ ] **The arsenal's data and balancing table.** `WeaponData` grows the fields the arsenal needs: an id, slot (primary, pistol, knife, grenade), price, kill reward, *armor penetration*, draw time, how it's held, pellets (shotgun), scope levels (sniper), melee and grenade values. One data file per weapon in `weapons/`: the AK-style rifle (today's numbers), carbine, SMG, pump shotgun, sniper rifle, service pistol, hand cannon, knife, and the three grenades, with CS-based starting numbers. `tools/export_weapon_table.gd` writes `docs/weapons.csv` (open it in Excel or Numbers): every stat plus derived columns (damage per second, shots to kill with and without armor, whether a headshot kills through a helmet, at 10 and 30 m). New `tests/arsenal_test.tscn` checks the files and that the CSV is up to date. *(Opus: the numbers; Sonnet: the export tool)*
+3. [ ] **Weapon models and icons.** The generator (`tools/modelgen/weapons.py`) builds every weapon from a part list, like the AK: carbine, SMG, pump shotgun, sniper rifle with a scope, service pistol, hand cannon, knife, the three grenades and the defuse kit, each with the points the animations need (grip, foregrip, magazine, muzzle...). One model per weapon serves as the world model (lying on the floor), the third-person model on the hand bone and the first-person model (D-090). The generator also renders each weapon's icons: a shaded side view for the buy menu and a white silhouette for the kill feed. *(Sonnet: part lists from a spec; Opus reviews the renders)*
+4. [ ] **Armor and helmet.** CS:GO's rules: armor covers chest, stomach and arms, the helmet the head; on an armored hit only the weapon's armor penetration gets through to health (the AK: 77.5%, so an AK headshot still kills through a helmet and a carbine's doesn't), and armor wears down by half of what it stopped. Bought from task 10; survivors keep what's left of theirs. The Bulwark's *Plated* perk switches on (10% less damage and 30% less wear while armored). Armor and helmet on the HUD; console `armor`. *(Opus)*
+5. [ ] **Weapon slots, switching, dropping and picking up.** An `Inventory` per character: primary, pistol, knife and grenades, plus armor, helmet and kit. Keys: **1** primary, **2** pistol, **3** knife, **4** grenades (again for the next one), **Q** last weapon, **G** drop. Every weapon has a draw time before it can fire (the Rifleman's *Quick Hands* makes it 15% shorter). A dropped gun lies on the floor with its ammo; walking over it picks it up when that slot is free, **E** while looking at it swaps. On death your best gun drops. Survivors keep their weapons into the next round (ammo refilled, as in CS:GO); the dead start again with the knife and the service pistol. The HUD, the third-person body and the bots follow whichever weapon is held. *(Opus: architecture)*
+6. [ ] **How each gun works.** Pistols fire once per click. The shotgun fires 9 pellets and reloads shell by shell (fire to interrupt). The sniper rifle zooms in two steps with the right mouse button (a scope overlay, sensitivity scaled to the zoom), is accurate only scoped and standing, and unscopes after each shot; the Marksman's *Steady* switches on (scoped accuracy recovers 30% faster, scoping in is 20% faster). The knife slashes (left) and stabs (right), and a hit in the back does more. The Rifleman's faster reload switches on. *(Opus)*
+7. [ ] **Holds and animations.** The generator writes the new holds for the body and the first-person arms: pistols (two hands, arms out), the knife (one hand, low), grenades (pin, throw, lob), their aim poses, fire kicks and attacks, and a reload for each weapon (the shotgun one shell at a time, the sniper with its bolt). The AnimationTree switches the upper body by the held weapon; the body holds the weapon's own model. *(Opus: tuned by feel)*
+8. [ ] **Grenades.** High explosive (damage that walls stop, armor halves), flashbang (blinds anyone who looks toward it, teammates and bots included, less when looking away; a white screen and a ring for you, no sight for bots) and smoke (a cloud for 18 s that blocks sight for you and the bots). Left click throws, right click lobs; they bounce off walls and floors. Kills with a grenade count, with the grenade in the kill feed. *(Opus: design)*
+9. [ ] **Money.** CS's economy in the round manager (D-090): $800 to start, at most $16,000; round wins, losses with a growing loss bonus, kill rewards per weapon, plant and defuse bonuses; back to $800 at half time. Your money on the HUD with a line for each reward ("+$300 · kill with the rifle"), your teammates' money in the Tab scoreboard, console `money`. *(Opus: balance)*
+10. [ ] **Buy zone, buy time and buy menu.** Freeze time becomes 15 s. You can buy during freeze time and the first 10 s of the round, near your side's spawn. **B** opens the buy menu: categories (pistols, mid-tier, rifles, gear, grenades), each item with its icon, price and key, greyed out when you can't afford or carry it; keys or the mouse to buy. It asks the round manager, which decides. Practice mode buys anything for free; in team respawn the same menu picks your free loadout for your next respawn (D-090). On the UI theme, registered with `MenuState`, with `UiSounds`. *(Sonnet: the menu; Opus: the rules)*
+11. [ ] **Defuse kits.** Defenders can buy a kit for $400; it halves the defuse time through the bomb's `kit_check` hook (D-080). A kit icon on the HUD and in the Tab scoreboard. *(Sonnet)*
+12. [ ] **Class perks switch on.** The Scout's *Light Step* (running steps carry 70% as far, for bots and for your ears alike) completes the four perks; the class menu and docs describe them as working. Checks for all four perks. *(Sonnet)*
+13. [ ] **Bots choose a class and buy by their money.** Bots pick their class at the match start and at half time (still a mix per team), then buy every round like a CS team: eco, force buy or full buy, decided together from the team's money, with each class's favourite guns, armor, grenades and kits. They use what they buy: tap with pistols, close in with the shotgun and SMG, scope with the sniper rifle, switch to the pistol when the magazine runs dry, and throw grenades at enemies they know about. *(Opus: AI)*
+14. [ ] **Names, checks and the playtest list.** The weapon names (provisional until you confirm them) everywhere, the balancing table refreshed, all suites passing, and the M7 playtest list in "Your open checks". *(Sonnet writes, Haiku runs and reports)*
 
 **Done when:** you play several rounds where buying, saving and eco rounds actually matter, and each class plays a little differently.
 
-**You learn:** inheritance vs. composition in Godot, particle systems, rendering to a texture (`SubViewport`) for icons, more advanced UI.
+**You learn:** composition vs. inheritance in Godot (an `Inventory` node next to the character instead of a weapon class hierarchy), simple projectile physics with shape casts, particles (`GPUParticles3D`) for smoke and explosions, camera zoom and a scope overlay, a data-driven buy menu, and exporting data to a spreadsheet from a tool script.
+
+**Decisions** (provisional, D-090; you asked for the whole roadmap to be built and will playtest at the end, so these are my recommendations, applied until you say otherwise):
+
+| Question | Options | My recommendation (applied) |
+|---|---|---|
+| Weapon names | **(a)** Names of their own: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. **(b)** Plain descriptions ("Rifle", "Carbine"...). | **(a)**, provisional: short, easy to call out, nothing taken from CS or another well-known shooter. Files and code use the role ids (`rifle`, `carbine`...), so renaming touches only the data files. Your check: "Confirm weapon names" |
+| Money values | **(a)** CS2's: $800 start, $16,000 cap; win $3,250 ($3,500 by bomb explosion or defuse); loss $1,400 + $500 per loss in a row up to $3,400, one step lower after a win; kills: knife $1,500, shotgun $900, SMG $600, sniper $100, the rest $300; plant $300 (and $800 for each attacker if the planted bomb doesn't win), defuse $300, teamkill −$300; attackers alive when time runs out get no loss bonus. **(b)** A simpler flat economy. | **(a)**: the numbers you know, and they make ecos and force buys work |
+| Buying | **(a)** During the 15 s freeze time and the first 10 s of the round, within 10 m of your side's spawn points. **(b)** Freeze time only. **(c)** Buy zones drawn into each map. | **(a)**: like CS's buy time, and needs no map work. Explicit zones can come with the maps' detail pass |
+| What you keep between rounds | **(a)** CS: survivors keep their weapons, armor and grenades (ammo refilled); the dead get the knife and the service pistol; dropped weapons vanish at the next round; money and weapons reset at half time. **(b)** Everything resets every round. | **(a)**: saving a gun by surviving is half of CS's economy |
+| Weapons in team respawn (no money) | **(a)** A free loadout: the buy menu (B) picks a primary, a pistol and a grenade at no cost, used from your next respawn; until you pick, your class's signature gun. Everyone spawns with armor and a helmet. Bots take their class's signature gun. **(b)** A fixed loadout per class. **(c)** Everyone gets the AK-style rifle, as today. | **(a)**: CoD-like choice with nothing to save up for, and the classes' signature guns give bots variety |
+| Practice mode | **(a)** Buy anything for free, anywhere, any time. **(b)** No buying. | **(a)**: practice is for warm-ups and trying weapons |
+| Models | **(a)** One generated model per weapon, used on the floor, in the hand and in first person; icons rendered from the same part list by the Python generator. **(b)** Separate detailed first-person models; icons rendered in Godot with a `SubViewport`. | **(a)**: our models are low-poly anyway; Python renders icons headless, with no window popping up (a Godot render needs a window) |
+| The bomb | **(a)** Stays on Use (hold E, D-080); no slot 5. **(b)** CS's way: slot 5 and fire. | **(a)**: it works today and bots already use it |
+| Grenades | **(a)** CS's limits: 1 frag, 2 flashbangs, 1 smoke; left click throws, right click lobs; flashbangs blind everyone who looks, teammates too. **(b)** One grenade of any kind. | **(a)** |
+| Dropping on death | **(a)** Your best gun drops (primary, else pistol); grenades and kits are lost. **(b)** Everything drops, like CS. | **(a)**: fewer things on the floor, and bots don't need to loot |
+| Bulwark's *Plated* | **(a)** While its armor lasts, every hit does 10% less to health and wears the armor 30% less. **(b)** Only armored zones. | **(a)**: simplest to read, matches the perk's text |
 
 ## M8 — Modes & 3 quick maps ✅
 

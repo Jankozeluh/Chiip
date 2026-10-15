@@ -957,11 +957,30 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** "Rotation" as an entry in the map list (one control, but the list would no longer be the maps on disk); a random order or a shuffled playlist (less predictable when you want to learn the maps); a map vote at the end of a match (the backlog's "map voting"); putting the test map in the rotation (it has no bomb sites or respawn zones of its own); moving on automatically after a few seconds, like CoD's lobby countdown (you'd lose the end screen while reading it).
 
+## D-090 — The M7 plan: CS's economy, gear kept by survivors, a free loadout in team respawn (2026-10-15) — *provisional*
+
+**Decision** (the open choices of the M7 plan, my recommendations, applied until you say otherwise; the M7 section of PLAN.md has the table):
+- **Weapon names**, provisional: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. Files, ids and code use the weapon's role (`rifle`, `carbine`, `smg`, `shotgun`, `sniper`, `pistol`, `hand_cannon`, `knife`, `frag`, `flashbang`, `smoke`); only `display_name` in the data files carries the name. "Confirm weapon names" is in your open checks.
+- **Money: CS2's values.** $800 to start, at most $16,000. A round win pays $3,250 ($3,500 when the bomb explodes or is defused). A loss pays $1,400 plus $500 for each loss in a row before it, up to $3,400; a win lowers the count by one instead of clearing it (CS since 2019). Kill rewards per weapon: knife $1,500, shotgun $900, SMG $600, sniper rifle $100, everything else $300. Planting pays the planter $300, and if the planted bomb doesn't win the round, each attacker gets $800 on top of the loss bonus; defusing pays $300. A teamkill costs $300. Attackers still alive when the time runs out get no loss bonus (they chose to save). At half time everyone goes back to $800 and the starting loadout.
+- **Buying:** during the freeze time (15 s from M7 on) and the first 10 s of the live round, within 10 m of one of your side's spawn points. The round manager decides every purchase.
+- **Between rounds:** survivors keep their weapons, grenades, armor and kit, with their guns' ammo refilled (as in CS:GO); the dead start again with the knife and the service pistol. Weapons lying on the floor vanish when the next round starts.
+- **Team respawn has no money:** the buy menu (B) becomes a free loadout picker (a primary, a pistol, a grenade) used from your next respawn; until you pick, you get your class's signature gun. Everyone spawns with armor and a helmet. Bots take their class's signature gun.
+- **Practice mode:** buy anything for free, anywhere, any time.
+- **Models:** one generated model per weapon serves on the floor, in the third-person hand and in first person; the generator also renders the buy-menu and kill-feed icons (headless, in Python).
+- **The bomb stays on Use** (hold E, D-080); there is no slot 5.
+- **Grenades:** CS's limits (1 frag, 2 flashbangs, 1 smoke); left click throws, right click lobs; a flashbang blinds everyone who looks toward it, teammates too.
+- **On death** your best gun drops (the primary, else the pistol); grenades and kits are lost.
+- **The Bulwark's *Plated*:** while its armor lasts, every hit does 10% less to health and wears the armor 30% less (D-052's text).
+
+**Why:** These are CS's rules, which you know, and they are what makes the buy-or-save decision real: the loss bonus keeps a losing team in the game, kill rewards make the SMG and shotgun worth buying on an eco, the time-out rule makes saving a choice, and keeping gear by surviving gives a reason to save a rifle. Buy time and zones from the spawn points need no map work on maps that are still blockouts. The team respawn mode has no rounds to save for, so a free loadout keeps it CoD-like, and the signature guns give the bots variety. One model per weapon is enough at our polygon count, and rendering icons in Python avoids a window popping up for a Godot render.
+
+**Alternatives:** A simpler flat economy; buying only in the freeze time; buy zones drawn into each map; everything reset every round; a fixed loadout per class, or the AK for everyone, in team respawn; no buying in practice; separate first-person models and icons rendered in Godot through a `SubViewport`; CS's bomb slot (5 and fire); one grenade of any kind; dropping everything on death like CS; the Bulwark's perk only on armored zones.
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
-| Weapon names | M7 |
+| Weapon names: proposed and applied provisionally (D-090) | Your check |
 | Team names and the game's setting/theme | Any time |
 | Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |
