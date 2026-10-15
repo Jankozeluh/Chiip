@@ -43,7 +43,7 @@
 - [x] Set up git with a Godot `.gitignore` and make the first commit
 - [x] Decide the renderer and physics tick rate (see open questions)
 - [x] Define input actions (move, jump, crouch, walk, …) in the Input Map
-- [ ] Build a test map from simple blocks: floor, walls, boxes, ramps, stairs
+- [x] Build a test map from simple blocks: floor, walls, boxes, ramps, stairs
 - [ ] Player scene: `CharacterBody3D` with a collision capsule and a camera
 - [ ] Mouse look with a captured cursor, using CS's sensitivity formula so your CS sensitivity carries over
 - [ ] CS-style ground movement: acceleration, friction, top speed

@@ -9,6 +9,7 @@
 - Created the Godot project (`project.godot`, icon, `.gitignore`, `.gitattributes`) and the folder structure from ARCHITECTURE.md. Empty folders contain a `.gitkeep` file so git tracks them.
 - Engine settings: Forward+ renderer, Jolt physics, 128 ticks per second with physics interpolation, CS gravity (D-008 to D-011).
 - Input actions for movement, jump, crouch, walk, shoot/aim, freeing the mouse and the debug overlay, bound by physical key position (D-012).
+- Test map (`maps/test_map.tscn`): CS crate heights (32/48/64/80 units), a platform with a 25° ramp and stairs (invisible clip ramp, D-013), a 1.5 m crouch tunnel and peek walls, all in a world-space grid "developer texture" (D-014). Verified every surface height with headless raycasts.
 
 ## 2026-10-15 — Session 1: Choosing the game
 

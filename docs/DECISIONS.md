@@ -96,6 +96,20 @@
 
 **Alternatives:** Letter-based keycodes, which would break on non-US layouts.
 
+## D-013 — Stairs use invisible clip ramps (2026-10-15)
+
+**Decision:** Stairs are visual only. Players walk on an invisible collision ramp laid over the step edges, like the "clip brushes" on many CS maps. There's no code for stepping up onto ledges for now.
+
+**Why:** It's simple and smooth, and it's how CS maps usually handle stairs. Godot's `CharacterBody3D` doesn't climb steps by itself, and step-up code is tricky to get right.
+
+**Alternatives:** Step-up code in the player, which can be added later if maps need small ledges (curbs, door frames) that players should walk over.
+
+## D-014 — Blockout with CSG and a grid shader (2026-10-15)
+
+**Decision:** The M1 test map is built from CSG shapes (`CSGBox3D`, with a subtraction for the tunnel) using a world-space grid shader as a placeholder "developer texture". Box heights match CS's standard 32/48/64/80-unit crates.
+
+**Why:** CSG is built in and editable right in the Godot editor, so it's ideal for quick blockouts. The 1 m grid makes speed and distances easy to judge. The final map workflow is decided in M3.
+
 ## Open questions
 
 | Question | Decide in |

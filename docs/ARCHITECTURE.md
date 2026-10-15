@@ -47,6 +47,13 @@ Chiip/
 └── shaders/           Shaders for the retro look
 ```
 
+## Scenes and files
+
+| File | What it is |
+|---|---|
+| `maps/test_map.tscn` | M1 movement test map and the current main scene: jump boxes (32/48/64/80 u), platform with a 25° ramp and stairs, crouch tunnel, peek walls |
+| `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
+
 ## Systems
 
 | System | Purpose | Milestone | Status |
