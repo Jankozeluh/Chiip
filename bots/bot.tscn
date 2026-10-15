@@ -7,7 +7,6 @@
 
 [node name="Bot" node_paths=PackedStringArray("weapon") instance=ExtResource("character_scene")]
 team = 1
-team_color = Color(0.72, 0.22, 0.18, 1)
 weapon = NodePath("Head/Weapon")
 
 [node name="Weapon" parent="Head" instance=ExtResource("rifle_scene")]

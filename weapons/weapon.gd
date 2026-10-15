@@ -259,7 +259,7 @@ func _shoot_bullet(direction: Vector3) -> void:
 			from, from + direction * data.max_range, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
 	query.collide_with_areas = true
 	# The ray starts inside your own head hitbox; never hit yourself.
-	query.exclude = _wielder.get_hitbox_rids()
+	query.exclude = _get_passable_hitbox_rids()
 	var result := get_world_3d().direct_space_state.intersect_ray(query)
 	if result.is_empty():
 		return
@@ -279,6 +279,20 @@ func _shoot_bullet(direction: Vector3) -> void:
 	}
 	_spawn_impact(hit_position, result.normal, result.collider)
 	hit_landed.emit(last_hit)
+
+
+## Hit zones a bullet passes through: your own, and with friendly fire off also
+## those of your living teammates, so a teammate walking through your spray
+## doesn't eat your bullets (as in CS). With friendly fire on, teammates get hit.
+func _get_passable_hitbox_rids() -> Array[RID]:
+	var rids := _wielder.get_hitbox_rids()
+	if Teams.friendly_fire:
+		return rids
+	for node in get_tree().get_nodes_in_group("characters"):
+		var other := node as Character
+		if other != _wielder and other.team == _wielder.team and other.is_alive():
+			rids.append_array(other.get_hitbox_rids())
+	return rids
 
 
 ## How much damage is left after the bullet travels [param distance] metres:

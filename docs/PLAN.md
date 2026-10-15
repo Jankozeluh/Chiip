@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow (planned, decisions made; ready to start)
+> **Current milestone:** M5 — Rounds & game flow (in progress: task 1 of 13 done)
 
 ## Your open checks
 
@@ -29,7 +29,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M2 | Shooting | ✅ | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ✅ | The test map looks like a 90s shooter |
 | M4 | Bots | ✅ | Bots hunt you and shoot back |
-| M5 | Rounds & game flow | ⬜ | Full matches against bots, with teammates, menus and settings |
+| M5 | Rounds & game flow | 🟨 | Full matches against bots, with teammates, menus and settings |
 | M6 | Characters & animation | ⬜ | Soldiers that run, crouch, aim, reload and die with real animations; your own arms and rifle on screen |
 | M7 | Economy & arsenal | ⬜ | Earn money and buy weapons between rounds |
 | M8 | Bomb mode & first real map | ⬜ | A complete plant/defuse match on a real map |
@@ -173,7 +173,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Multiplayer:** decided, it comes in M9 after the single-player game (D-033). M4 builds the command-driven character, which M9 will reuse for network players.
 
-## M5 — Rounds & game flow ⬜
+## M5 — Rounds & game flow 🟨
 
 **Goal:** a real game. Start a match from the main menu, fight round after round with bot teammates against a bot team, and play until one team wins. Settings are saved to disk. (Health came early, in M4.)
 
@@ -181,7 +181,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"):
 
-1. [ ] **Teams and spawns.** Two teams without names (D-041). You always see your own team in blue and the enemies in red, so enemies stand out for every player, including in M9. Internally the two sides are *attacking* and *defending* ends of the map, with five spawn points each at opposite ends of the test map. Bot teammates use the same bot scene. Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, as in CS competitive. *(Sonnet)*
+1. [x] **Teams and spawns.** Two teams without names (D-041). You always see your own team in blue and the enemies in red, so enemies stand out for every player, including in M9. Internally the two sides are *attacking* and *defending* ends of the map, with five spawn points each at opposite ends of the test map. Bot teammates use the same bot scene. Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, as in CS competitive. *(Sonnet)* Built as `systems/teams.gd` (D-042); with friendly fire off, bullets pass through teammates.
 2. [ ] **Round manager.** Freeze time of 5 s (you can look around but not move or shoot) → live round with a timer → round end. A round is won by eliminating the other team; when time runs out, the defending side wins, as in CS. At each round start, everyone gets full health, ammo and a spawn point. Whoever dies stays dead until the next round. Replaces today's respawning `ArenaRules` in matches. *(Opus: game state design)*
 3. [ ] **Match flow.** Score and first to 5, 10 or 15 rounds. Sides swap at half time (after 4, 9 or 14 rounds, so a draw is impossible). A match-end screen shows the winner and the scoreboard. *(Sonnet)*
 4. [ ] **Bots play rounds.** Today's bots wander between patrol points, so a round could stall. The attacking side pushes toward the defending end in loose groups. Defenders hold angles near their end, then rotate toward fights they hear. Bots hold fire while a teammate is in the line of fire. *(Opus: AI)*

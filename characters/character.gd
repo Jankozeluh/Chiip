@@ -80,17 +80,19 @@ const DEATH_FALL_TIME := 0.45
 @export var max_health: float = 100.0
 
 @export_group("Team")
-## Which side this character is on: 0 = the player's team, 1 = the bots'.
-## Characters only fight the other team.
-@export var team: int = 0
+## Which team this character is on: 0 or 1. Teams have no names (see [Teams]).
+## Characters only fight the other team, and the clothes are blue for the
+## viewer's own team and red for the other. Changing it recolors the body.
+@export var team: int = 0:
+	set(value):
+		team = value
+		# Before _ready the body doesn't exist yet; _set_up_body colors it then.
+		if is_node_ready():
+			update_team_color()
 
 @export_group("Sound")
 ## Played for each loud footstep (walking and crouching are silent). Tests set it to null.
 @export var footstep_sound: AudioStream = preload("res://assets/sounds/footsteps.tres")
-
-@export_group("Look")
-## Color of the clothes on chest and arms: the team color.
-@export var team_color: Color = Color(0.25, 0.4, 0.7)
 
 @export_group("")
 ## The gun this character holds.
@@ -120,6 +122,8 @@ var _alive_collision_layer: int = 0
 var _eye_height: float = 0.0
 ## How much taller the standing capsule is than the crouching one (CS: 18 units).
 var _hull_height_difference: float = 0.0
+## The clothes material on chest and arms, colored by [method update_team_color].
+var _clothes := StandardMaterial3D.new()
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
@@ -209,9 +213,16 @@ func is_alive() -> bool:
 
 
 ## Lowers health and reports it; at 0 the character dies. [param attacker] may be null.
+## Damage from a teammate is scaled by [method Teams.damage_factor] (nothing
+## unless friendly fire is on). The rule lives here, in the code that owns the
+## health, so a network client can't skip it.
 func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 	if not is_alive() or god_mode:
 		return
+	var factor := Teams.damage_factor(self, attacker)
+	if factor <= 0.0:
+		return
+	amount *= factor
 	health = maxf(health - amount, 0.0)
 	damaged.emit(amount, zone, attacker)
 	if health <= 0.0:
@@ -226,6 +237,12 @@ func is_local_player() -> bool:
 ## Points other characters check for line of sight: head and chest.
 func get_visibility_points() -> Array[Vector3]:
 	return [get_eye_position(), global_position + Vector3.UP * (_eye_height - 0.35)]
+
+
+## Gives the clothes the color of this character's team as the viewer sees it
+## (see [method Teams.color_for]). Call it after the viewer's team changes.
+func update_team_color() -> void:
+	_clothes.albedo_color = Teams.color_for(team)
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -350,14 +367,13 @@ func _die(killer: Character) -> void:
 
 ## Finds the body's hit zones and gives the clothes this character's team color.
 func _set_up_body() -> void:
-	var clothes := StandardMaterial3D.new()
-	clothes.albedo_color = team_color
+	update_team_color()
 	for node in body.find_children("*", "", true, false):
 		if node is Hitbox:
 			_hitboxes.append(node)
 			(node as Hitbox).hit.connect(_on_hitbox_hit)
 		elif node is MeshInstance3D and node.is_in_group("team_colored"):
-			(node as MeshInstance3D).material_override = clothes
+			(node as MeshInstance3D).material_override = _clothes
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:

@@ -2,6 +2,18 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 10: M5 rounds & game flow
+
+**Done**
+- **Task 1, teams and spawns** (D-042). New `systems/teams.gd` (`Teams`): two teams (numbers 0 and 1), the two sides (`ATTACKING` / `DEFENDING`) kept separate from them, the viewer-relative colors, the spawn group names, the friendly-fire setting and `damage_factor()`. A plain static class, not an autoload, so `--script` tools can load maps with characters.
+- Characters: `team_color` is gone. The clothes color comes from `Teams.color_for(team)` (your team blue, the other red) through one material per character and `update_team_color()`. Changing `team` at runtime recolors the body (a property setter), and `Teams.set_viewer_team()` recolors everyone. `main.gd` sets the viewer team to the player's team after loading a map. Checked in the real main scene: the player and ally bots are blue, enemy bots red; flipping the viewer team swaps them; changing a bot's team at runtime recolors it.
+- Friendly fire: off by default. `Character.take_damage()` scales a teammate's damage by `Teams.damage_factor()` (nothing when off, a third when on), so the rule sits in the code that owns health. With it off, bullets pass through living teammates (`Weapon._shoot_bullet` skips their hit zones), as in CS.
+- Spawns on the test map: 5 defender spawns at the north end behind the peek walls (z = −28, facing south) and 5 attacker spawns at the south end of the range (z = 84, facing north), 112 m apart. Checked headless: every marker stands on floor at y = 0.000, nothing within 1 m (nearest wall 4.00 m), sits on the navigation mesh, and a navmesh path exists from every attack spawn to every defend spawn (25 pairs). The old bot, player and patrol markers stay for practice mode.
+- Practice mode: `ArenaRules.add_bot(difficulty, team)`; console `bot_add [easy|normal|hard] [ally|enemy]` (either order) and new `mp_friendlyfire [0|1]` (no argument shows the state). All checked in the real main scene.
+- Bot tests: 3 new checks (friendly fire off: no damage; on: a third, 88 HP vs. 64 HP from an enemy; off: bullets pass through a teammate and hit the enemy behind). The bullet check also runs once with friendly fire on to prove the teammate really is in the line of fire. All 48 checks pass (movement 13, weapon 20, bot 15), and the 12 old bot checks print exactly the same numbers as before.
+
+**Next:** task 2, the round manager (freeze time → live → round end, winner by elimination or time-out, everyone reset at round start).
+
 ## 2026-10-15 — Session 9: M4 closed, M5 planned
 
 **Done**

@@ -266,3 +266,12 @@
 
 **Smoothing toward a target** (`BotController._turn_toward`)
 - `value += (target - value) * (1 - exp(-rate * delta))` covers a share of the remaining distance each tick: fast when far, gentle when close, and the same at any tick rate. Capping the step adds a maximum speed. It feels much more human than moving at a constant speed.
+
+### M5 — Rounds & game flow
+
+**Property setters** (`Character.team`)
+- A `var` can run code when it's assigned: `@export var team: int = 0:` followed by an indented `set(value):` block. It's like a C# property with a `set` accessor, but the field and the property are the same name, and inside the setter `team = value` stores the value (it doesn't call the setter again). Here it recolors the body whenever `team` changes.
+- A setter on an `@export` variable also runs when a scene file loads, *before* the node is ready, when `@onready` variables and child nodes don't exist yet. `is_node_ready()` tells you whether `_ready()` has run, so the setter does its work only then, and `_ready()` does it for the starting value.
+
+**The SceneTree from static code** (`systems/teams.gd`)
+- A class made only of `static` functions (like a C# static class) has no node, so it has no `get_tree()`. `Engine.get_main_loop() as SceneTree` returns the running game's tree from anywhere, and it's `null` when there isn't one, so check before using it. `Teams.set_viewer_team()` uses it to find every node in the `characters` group and recolor it.

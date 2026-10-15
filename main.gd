@@ -71,6 +71,7 @@ func _spawn_map(scene: PackedScene) -> void:
 	var player := _map.get_node("Player") as Character
 	_hud.set_player(player)
 	_debug_overlay.player = player
+	Teams.set_viewer_team(player.team)
 
 
 ## Applies [member pixel_height], [member pixelate_hud] and [member palette_effect].

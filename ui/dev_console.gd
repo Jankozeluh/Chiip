@@ -116,11 +116,12 @@ func _browse_history(step: int) -> void:
 func _register_commands() -> void:
 	register_command("help", _cmd_help, "help", "List all commands")
 	register_command("clear", func(_args: Array) -> void: _lines.clear(); _output.text = "", "clear", "Clear the console")
-	register_command("bot_add", _cmd_bot_add, "bot_add [easy|normal|hard]", "Add a bot")
+	register_command("bot_add", _cmd_bot_add, "bot_add [easy|normal|hard] [ally|enemy]", "Add a bot (ally = on your team)")
 	register_command("bot_kick", _cmd_bot_kick, "bot_kick [all]", "Remove the newest bot, or all bots")
 	register_command("bot_difficulty", _cmd_bot_difficulty, "bot_difficulty <easy|normal|hard>", "Set the skill of all bots, including new ones")
 	register_command("god", _cmd_god, "god", "Toggle taking no damage")
 	register_command("noclip", _cmd_noclip, "noclip", "Toggle flying through walls")
+	register_command("mp_friendlyfire", _cmd_friendly_fire, "mp_friendlyfire [0|1]", "Teammates can hurt each other (no argument: show)")
 	register_command("map", _cmd_map, "map <name>", "Load a map, e.g. map test_map (no name: list maps)")
 
 
@@ -128,18 +129,31 @@ func _cmd_help(_args: Array) -> void:
 	var names := _commands.keys()
 	names.sort()
 	for command_name in names:
-		print_line("%-34s %s" % [_commands[command_name][1], _commands[command_name][2]])
+		print_line("%-40s %s" % [_commands[command_name][1], _commands[command_name][2]])
 
 
+## bot_add takes a difficulty and a side in either order: "bot_add hard ally", "bot_add ally".
 func _cmd_bot_add(args: Array) -> void:
 	var arena := _get_arena()
 	if arena == null:
 		return
-	var difficulty := _load_difficulty(args[0] if args.size() > 0 else arena.bot_difficulty.display_name)
+	var level: String = arena.bot_difficulty.display_name
+	var ally := false
+	for arg: String in args:
+		match arg.to_lower():
+			"ally":
+				ally = true
+			"enemy":
+				ally = false
+			_:
+				level = arg
+	var difficulty := _load_difficulty(level)
 	if difficulty == null:
 		return
-	var bot := arena.add_bot(difficulty)
-	print_line("Added %s (%s)." % [bot.name, difficulty.display_name])
+	var player := _get_player()
+	var player_team := player.team if player != null else 0
+	var bot := arena.add_bot(difficulty, player_team if ally else Teams.other(player_team))
+	print_line("Added %s (%s, %s)." % [bot.name, difficulty.display_name, "ally" if ally else "enemy"])
 
 
 func _cmd_bot_kick(args: Array) -> void:
@@ -168,6 +182,17 @@ func _cmd_bot_difficulty(args: Array) -> void:
 	for bot in arena.get_bots():
 		(bot.get_node("BotController") as BotController).difficulty = difficulty
 	print_line("Bots are now %s." % difficulty.display_name)
+
+
+func _cmd_friendly_fire(args: Array) -> void:
+	if args.is_empty():
+		print_line("mp_friendlyfire = %d" % (1 if Teams.friendly_fire else 0))
+		return
+	if args[0] != "0" and args[0] != "1":
+		print_line("Usage: mp_friendlyfire [0|1]")
+		return
+	Teams.friendly_fire = args[0] == "1"
+	print_line("Friendly fire %s." % ("on: teammates take a third of the damage" if Teams.friendly_fire else "off"))
 
 
 func _cmd_god(_args: Array) -> void:

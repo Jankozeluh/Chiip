@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M3 done (CS-style movement, a rifle with CS-like recoil, the retro look). M4 (bots) in progress: two bots fight you on the test map; see the console commands below. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** M1–M4 done (CS-style movement, a rifle with CS-like recoil, the retro look, bots). M5 (rounds & game flow) in progress: teams with blue/red colors, spawn ends and friendly fire are in (task 1 of 13); two bots still fight you on the test map; see the console commands below. Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -42,7 +42,7 @@ To play a different map, add `-- --map` and the map scene, e.g. the TrenchBroom 
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard]`, `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `clear`. Up/down arrows recall earlier commands.
 
 ## Making maps with TrenchBroom
 

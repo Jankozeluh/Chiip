@@ -7,8 +7,9 @@ extends Node3D
 ## bots against a player that stands still (no keyboard input). Bots hold their
 ## position (like holding an angle) except in the walking check. Checks walking,
 ## vision, gradual noticing, hearing, reaction time, never shooting through
-## walls, that bots can win, that difficulty matters, and dying. Random numbers are seeded, so
-## every run gives the same results. Quits with the number of failed checks as
+## walls, that bots can win, that difficulty matters, dying, and friendly fire
+## (off: teammates take no damage and bullets pass through them; on: a third).
+## Random numbers are seeded, so every run gives the same results. Quits with the number of failed checks as
 ## the exit code (0 means everything passed).
 
 const PLAYER_SCENE := preload("res://player/player.tscn")
@@ -45,6 +46,9 @@ func _run_all() -> void:
 	await _test_normal_bot_wins()
 	await _test_difficulty_matters()
 	await _test_dies_at_100_damage()
+	await _test_friendly_fire_off()
+	await _test_friendly_fire_on()
+	await _test_bullets_pass_through_teammates()
 
 
 func _test_walks_to_a_point() -> void:
@@ -205,6 +209,67 @@ func _test_dies_at_100_damage() -> void:
 	await _remove(bot)
 
 
+func _test_friendly_fire_off() -> void:
+	Teams.friendly_fire = false
+	# Out of the bots' sight, so they only stand there.
+	await _place_player(Vector3(0, 0, WALL_Z - 5.0))
+	var victim := await _add_bot(Vector3(10, 0, 30), Vector3(10, 1.6, 40), "normal", 1)
+	var mate := await _add_bot(Vector3(16, 0, 30), Vector3(16, 1.6, 40), "normal", 2)
+	var damage_events := []
+	victim.damaged.connect(func(amount: float, _zone: Hitbox.Zone, _attacker: Character) -> void: damage_events.append(amount))
+	victim.take_damage(36.0, Hitbox.Zone.CHEST, mate)
+	_check("Friendly fire off: teammates take no damage",
+			victim.health == victim.max_health and damage_events.is_empty(),
+			"a teammate's 36 damage: %d HP left, %d damaged signals" % [ceili(victim.health), damage_events.size()])
+	await _remove(victim)
+	await _remove(mate)
+
+
+func _test_friendly_fire_on() -> void:
+	Teams.friendly_fire = true
+	await _place_player(Vector3(0, 0, WALL_Z - 5.0))
+	var victim := await _add_bot(Vector3(10, 0, 30), Vector3(10, 1.6, 40), "normal", 1)
+	var mate := await _add_bot(Vector3(16, 0, 30), Vector3(16, 1.6, 40), "normal", 2)
+	victim.take_damage(36.0, Hitbox.Zone.CHEST, mate)
+	# The player is on the other team, so the same hit counts in full.
+	mate.take_damage(36.0, Hitbox.Zone.CHEST, _player)
+	_check("Friendly fire on: teammates take a third",
+			is_equal_approx(victim.health, 88.0) and is_equal_approx(mate.health, 64.0),
+			"36 damage: from a teammate %.1f HP left (expected 88), from an enemy %.1f HP left (expected 64)" % [victim.health, mate.health])
+	Teams.friendly_fire = false
+	await _remove(victim)
+	await _remove(mate)
+
+
+func _test_bullets_pass_through_teammates() -> void:
+	# The player shoots from the origin toward -Z at a teammate 6 m away, with an
+	# enemy 12 m away directly behind the teammate. Both stand still and have no
+	# brain, so nothing else shoots.
+	var results := {}
+	for friendly_fire in [true, false]:
+		Teams.friendly_fire = friendly_fire
+		await _place_player(Vector3(0, 0, 0))
+		var mate := await _add_target(Vector3(0, 0, -6), 0)
+		var enemy := await _add_target(Vector3(0, 0, -12), 1)
+		_player.weapon.rng.seed = 1
+		_player.aim_at(enemy.global_position + Vector3.UP * 1.2)
+		Input.action_press("shoot")
+		await _wait_ticks(2)
+		Input.action_release("shoot")
+		results[friendly_fire] = [mate.health < mate.max_health, enemy.health < enemy.max_health]
+		await _remove(mate)
+		await _remove(enemy)
+	Teams.friendly_fire = false
+	var control: Array = results[true]
+	var test: Array = results[false]
+	# With friendly fire on the teammate stops the bullet (so the setup really
+	# has him in the line of fire); with it off the bullet reaches the enemy.
+	_check("Friendly fire off: bullets pass through teammates",
+			control == [true, false] and test == [false, true],
+			"teammate in front, enemy behind. Friendly fire on: teammate hit = %s, enemy hit = %s. Off: teammate hit = %s, enemy hit = %s" % [
+					control[0], control[1], test[0], test[1]])
+
+
 # --- Helpers ---
 
 
@@ -237,6 +302,20 @@ func _add_bot(spot: Vector3, look_at_point: Vector3, level: String, seed: int, h
 	await _wait_ticks(2)
 	bot.aim_at(look_at_point)
 	return bot
+
+
+## A character that just stands at [param spot] on [param team]: the bot's body
+## and hit zones, but no brain, so it neither moves nor shoots.
+func _add_target(spot: Vector3, team: int) -> Character:
+	var target: Character = BOT_SCENE.instantiate()
+	target.get_node("BotController").free()
+	target.get_node("BotSenses").free()
+	target.team = team
+	target.position = spot
+	_silence(target)
+	add_child(target)
+	await _wait_ticks(2)
+	return target
 
 
 func _remove(bot: Character) -> void:

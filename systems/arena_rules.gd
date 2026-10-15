@@ -37,11 +37,14 @@ func _ready() -> void:
 	_add_starting_bots.call_deferred()
 
 
-## Adds a bot at a spawn point and returns it.
-func add_bot(difficulty: BotDifficulty = bot_difficulty) -> Character:
+## Adds a bot at a spawn point and returns it. [param team] is the bot's team:
+## 1 (the enemies of a team-0 player) unless told otherwise; a bot with the
+## player's team is a teammate. The scene is the same for both.
+func add_bot(difficulty: BotDifficulty = bot_difficulty, team: int = 1) -> Character:
 	var bot: Character = BOT_SCENE.instantiate()
 	_bots_made += 1
 	bot.name = "Bot%d" % _bots_made
+	bot.team = team  # Before add_child, so the body gets the right color from the start.
 	(bot.get_node("BotController") as BotController).difficulty = difficulty
 	var spot := _pick_bot_spawn()
 	bot.position = spot.origin

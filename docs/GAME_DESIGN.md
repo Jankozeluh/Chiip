@@ -159,7 +159,8 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 - Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (~1:55) → round end (~5 s). During freeze time you can look around but not move or shoot.
 - A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS.
 - Match: first to **5** (default), **10** or **15** rounds. Sides swap at half time, after 4, 9 or 14 rounds, so a draw is impossible.
-- Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive.
+- **Spawns:** each side has five spawn points at its own end of the map. On the test map the defenders start at the north end behind the peek walls and the attackers at the south end of the range, 112 m apart.
+- Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive. With it off, bullets pass through teammates (as in CS), so a teammate walking through your spray doesn't block it.
 
 ### 4.6 Economy
 
