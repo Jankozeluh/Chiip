@@ -98,7 +98,7 @@ Starting physics values, CS:GO-like *(tune)*:
   | Legs | 26.8 | 25.3 |
 
   A headshot kills an unarmored player (100 HP) at any distance on the range. Damage is shown rounded down, as in CS.
-- **Armor** reduces body damage, and a **helmet** reduces headshot damage (M5).
+- **Armor** reduces body damage, and a **helmet** reduces headshot damage. Bought from M7 on; until then nobody has armor (D-041).
 - Later (backlog): wallbangs (shooting through thin surfaces) and tagging (getting hit slows you down).
 
 ### 4.3 Weapons
@@ -154,11 +154,12 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 
 ### 4.5 Rounds and match
 
-- Two teams: attackers and defenders. Names are still to be decided.
-- It starts as the player against bots (1 vs N). Later it can be 5v5 with bot teammates.
-- Round phases *(tune)*: freeze time and buying (~15 s) → live round (~1:55) → round end (~5 s).
-- A round is won by eliminating the other team, or through the bomb objective (M8).
-- Match: first to 13 rounds wins, like CS2, with a side swap at half time. Shorter formats are available for quick games.
+- Two teams **without names** (D-041). Each player sees their own team in **blue** and the enemies in **red**. Underneath, one side attacks and the other defends, which decides where they spawn and who wins on time-out.
+- You plus bot teammates vs. a bot team: 1–5 per side, 3v3 by default.
+- Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (~1:55) → round end (~5 s). During freeze time you can look around but not move or shoot.
+- A round is won by eliminating the other team, or through the bomb objective (M8). If time runs out, the defending side wins, as in CS.
+- Match: first to **5** (default), **10** or **15** rounds. Sides swap at half time, after 4, 9 or 14 rounds, so a draw is impossible.
+- Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive.
 
 ### 4.6 Economy
 

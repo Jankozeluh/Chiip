@@ -118,7 +118,7 @@ Chiip/
 | Character + controllers | CS-style movement for everyone, driven by per-tick commands | M1, M4 | Built: `Character`, `PlayerController` (bots in M4) |
 | Debug overlay | Speed and position readout | M1 | Built |
 | Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | Built: data, firing, ammo, reload, hitscan, impacts, accuracy, spray pattern, aim punch |
-| Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M5) |
+| Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Built: zones and falloff (armor in M7) |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Built: crosshair, ammo, weapon name |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Built: low-res world, palette with dithering, two HUD styles |
 | Bot AI | Navigation, perception, state machine, aim | M4 | Built: senses with gradual noticing, patrol/engage/search, navmesh paths, difficulty levels |

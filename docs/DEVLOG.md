@@ -6,10 +6,11 @@
 
 **Done**
 - Playtest 2: the bots feel right now. Your own footsteps were too loud and went from −7 to −12 dB. **M4 is closed.**
-- Wrote the detailed M5 plan (rounds & game flow, 14 tasks): armor, teams with bot teammates, a round manager that owns the game state, match flow, bots that push and hold, spectating, round HUD, scoreboard, a UI theme, saved settings with a settings menu, main and pause menus, and tests. Each task names the model that builds it.
+- Wrote the detailed M5 plan (rounds & game flow): teams with bot teammates, a round manager that owns the game state, match flow, bots that push and hold, spectating, round HUD, scoreboard, a UI theme, saved settings with a settings menu, main and pause menus, and tests. Each task names the model that builds it.
 - Renamed M5 from "Health, rounds & game flow" to "Rounds & game flow", because health came early in M4.
+- M5 decisions (D-041): 3v3 with bot teammates by default; first to 5, 10 or 15; 5 s freeze time; no armor until M7 (the armor task moved there); friendly fire as a match setting; no team names, so your team is blue and the enemies are red. M5 now has 13 tasks.
 
-**Next:** Your go-ahead for M5 and answers to the six decisions in PLAN.md (or "defaults").
+**Next:** Start M5 with task 1 (teams and spawns), in a fresh session.
 
 ## 2026-10-15 — Session 7: M3 closed, M4 planned
 

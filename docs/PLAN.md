@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow (planned, waiting for your go-ahead and decisions)
+> **Current milestone:** M5 — Rounds & game flow (planned, decisions made; ready to start)
 
 ## Your open checks
 
@@ -151,7 +151,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 **Tasks**, in order, one commit each:
 
 1. [x] **Shared character.** Split today's `Player` into a `Character` (movement, crouching, jumping, weapon, all the CS rules) that only follows `CharacterInput` commands, plus a `PlayerController` that turns your keyboard and mouse into commands and owns the camera. All 33 existing movement and weapon checks must still pass unchanged.
-2. [x] **Health and hit zones on characters.** Characters get 100 HP and the same CS-sized hit zones as the dummies (head ×4, …). Taking damage, dying, and a `died` signal. Armor stays in M5.
+2. [x] **Health and hit zones on characters.** Characters get 100 HP and the same CS-sized hit zones as the dummies (head ×4, …). Taking damage, dying, and a `died` signal. Armor moved to M7.
 3. [x] **Navigation mesh.** A `NavigationRegion3D` baked for the test map, so bots know where they can walk (stairs, ramp, crouch tunnel excluded or marked).
 4. [x] **Bot body and movement.** A bot scene: a character with a blocky, clearly colored soldier model holding the rifle, and a `NavigationAgent3D` that turns paths into movement commands (run, walk when sneaking, crouch).
 5. [x] **Perception.** Vision: a field of view plus line-of-sight rays to head and body, so no wallhacks. Hearing: running footsteps and gunshots within range; walking is silent. Bots remember where they last saw or heard you.
@@ -181,35 +181,34 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"):
 
-1. [ ] **Armor and helmet.** CS:GO's rules: armor covers chest, stomach and arms, and the helmet covers the head. A weapon's *armor penetration* (rifle: 77.5%, like the AK) sets how much damage still gets through, and armor wears down as it absorbs hits. Armor on the HUD. *(Sonnet, formula given)*
-2. [ ] **Teams and spawns.** Two sides with placeholder names (Attackers and Defenders), each with a color: red-orange and blue. Five spawn points per side at opposite ends of the test map. Bot teammates use the same bot scene in your team's color. Friendly fire per the decision below. *(Sonnet)*
-3. [ ] **Round manager.** Freeze time (you can look around but not move or shoot) → live round with a timer → round end. A round is won by eliminating the other team; when time runs out, the defenders win, as in CS. At each round start, everyone gets full health, armor, ammo and a spawn point. Whoever dies stays dead until the next round. Replaces today's respawning `ArenaRules` in matches. *(Opus: game state design)*
-4. [ ] **Match flow.** Score, first to N rounds, sides swap at half time, and a match-end screen showing the winner and the scoreboard. *(Sonnet)*
-5. [ ] **Bots play rounds.** Today's bots wander between patrol points, so a round could stall. Attackers push toward the defenders' end in loose groups. Defenders hold angles near their end, then rotate toward fights they hear. Teammates don't shoot through each other. *(Opus: AI)*
-6. [ ] **Spectating.** After you die, watch a living teammate through their eyes, like CS. Click to switch to the next teammate. If no teammate is alive, you see the end of the round from where you died. *(Sonnet)*
-7. [ ] **Round HUD.** Top bar: round timer, score, and players alive per side. Also a kill feed (killer → victim, with a headshot mark, in team colors), round-end banners ("Defenders win"), and the freeze-time countdown. *(Sonnet)*
-8. [ ] **Scoreboard** (hold Tab): both teams with kills, deaths, assists and damage, and who's alive. *(Sonnet)*
-9. [ ] **UI theme.** One Godot `Theme` for every menu: pixel font, colors, buttons, sliders, tabs. It keeps menus consistent and changeable in one place. *(Sonnet, with screenshots for you to judge)*
-10. [ ] **Settings, saved to disk.** A `Settings` class, saved as `user://settings.cfg` and applied the moment something changes. Settings: sensitivity (CS-compatible numbers), field of view, volumes through audio buses (master, effects, interface), crosshair, key bindings, and video (fullscreen, V-Sync, FPS cap, pixel resolution, palette effect, pixelated HUD). *(Sonnet)*
-11. [ ] **Settings menu.** Tabs for Game, Video, Audio, Crosshair (with a live preview) and Controls (click an action, then press its new key). *(Sonnet)*
-12. [ ] **Main menu and match setup.** Main menu: Play, Practice, Settings, Quit, over a slow camera flight across the map. Play opens match setup: team sizes (1–5 per side, you included), bot difficulty and match length. Practice is today's respawning bot arena, kept for warm-ups and testing. *(Sonnet)*
-13. [ ] **Pause menu.** Esc pauses the game: Resume, Settings, Leave match. Single-player only; in M9 it becomes an overlay that doesn't pause. *(Sonnet)*
-14. [ ] **Tests and checks.** Armor math. Rounds end on elimination and on time-out, with the right winner. Score, half-time swap and match end. Settings survive a save and load. The existing 45 checks still pass. A full 3v3 match runs without errors. *(Sonnet writes, Haiku runs and reports)*
+1. [ ] **Teams and spawns.** Two teams without names (D-041). You always see your own team in blue and the enemies in red, so enemies stand out for every player, including in M9. Internally the two sides are *attacking* and *defending* ends of the map, with five spawn points each at opposite ends of the test map. Bot teammates use the same bot scene. Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, as in CS competitive. *(Sonnet)*
+2. [ ] **Round manager.** Freeze time of 5 s (you can look around but not move or shoot) → live round with a timer → round end. A round is won by eliminating the other team; when time runs out, the defending side wins, as in CS. At each round start, everyone gets full health, ammo and a spawn point. Whoever dies stays dead until the next round. Replaces today's respawning `ArenaRules` in matches. *(Opus: game state design)*
+3. [ ] **Match flow.** Score and first to 5, 10 or 15 rounds. Sides swap at half time (after 4, 9 or 14 rounds, so a draw is impossible). A match-end screen shows the winner and the scoreboard. *(Sonnet)*
+4. [ ] **Bots play rounds.** Today's bots wander between patrol points, so a round could stall. The attacking side pushes toward the defending end in loose groups. Defenders hold angles near their end, then rotate toward fights they hear. Bots hold fire while a teammate is in the line of fire. *(Opus: AI)*
+5. [ ] **Spectating.** After you die, watch a living teammate through their eyes, like CS. Click to switch to the next teammate. If no teammate is alive, you see the end of the round from where you died. *(Sonnet)*
+6. [ ] **Round HUD.** Top bar: round timer, score (yours vs. theirs), and players alive per team. Also a kill feed (killer → victim, with a headshot mark, in team colors), round-end banners ("Round won" / "Round lost"), and the freeze-time countdown. *(Sonnet)*
+7. [ ] **Scoreboard** (hold Tab): both teams with kills, deaths, assists and damage, and who's alive. *(Sonnet)*
+8. [ ] **UI theme.** One Godot `Theme` for every menu: pixel font, colors, buttons, sliders, tabs. It keeps menus consistent and changeable in one place. *(Sonnet, with screenshots for you to judge)*
+9. [ ] **Settings, saved to disk.** A `Settings` class, saved as `user://settings.cfg` and applied the moment something changes. Settings: sensitivity (CS-compatible numbers), field of view, volumes through audio buses (master, effects, interface), crosshair, key bindings, and video (fullscreen, V-Sync, FPS cap, pixel resolution, palette effect, pixelated HUD). *(Sonnet)*
+10. [ ] **Settings menu.** Tabs for Game, Video, Audio, Crosshair (with a live preview) and Controls (click an action, then press its new key). *(Sonnet)*
+11. [ ] **Main menu and match setup.** Main menu: Play, Practice, Settings, Quit, over a slow camera flight across the map. Play opens match setup: team sizes (1–5 per side, you included; 3v3 by default), bot difficulty, match length (first to 5, 10 or 15; 5 by default) and friendly fire. Practice is today's respawning bot arena, kept for warm-ups and testing. *(Sonnet)*
+12. [ ] **Pause menu.** Esc pauses the game: Resume, Settings, Leave match. Single-player only; in M9 it becomes an overlay that doesn't pause. *(Sonnet)*
+13. [ ] **Tests and checks.** Rounds end on elimination and on time-out, with the right winner. Score, half-time swap and match end. Friendly fire off and on. Settings survive a save and load. The existing 45 checks still pass. A full 3v3 match runs without errors. *(Sonnet writes, Haiku runs and reports)*
 
 **Done when:** you can start a match from the main menu, play it to the end with bot teammates against bots, see the score, kill feed and scoreboard, change settings, and find them still there after restarting the game.
 
 **You learn:** game state with signals, switching scenes (`change_scene_to_packed`), pausing (`process_mode`), saving data (`ConfigFile`, `user://`), UI containers and themes, audio buses, remapping input at runtime (`InputMap`).
 
-**Decisions** (my recommendation first; say "defaults" to accept all of them):
+**Decisions** (made on 2026-10-15, see D-041):
 
-| Question | Options | My recommendation |
-|---|---|---|
-| Team setup | **(a)** You plus bot teammates vs. bots, sizes chosen in match setup. **(b)** Always you alone vs. bots. | **(a)**, default 3v3: closer to CS, and spectating needs teammates. Up to 5v5 fits the test map |
-| Match length | First to 5, 9 (CS2's short match) or 13 (CS2's full match), chosen in match setup | Default **first to 5** until the economy (M7) makes rounds play differently |
-| Freeze time | 5 s now (nothing to buy yet), 15 s once the buy menu exists (M7) | **5 s now** |
-| Armor | **(a)** Everyone gets armor and helmet every round. **(b)** No armor until the economy (M7). | **(a):** headshots and armor penetration matter from the start |
-| Friendly fire | **(a)** Off. **(b)** On, at reduced damage, like CS competitive. | **(a) Off for now:** bots don't yet avoid teammates in the line of fire. Revisit in M8 |
-| Team names | **(a)** Placeholders (Attackers / Defenders) for now. **(b)** Choose names now. | **(a):** the names matter once the sides have different jobs in bomb mode (M8). Ideas welcome any time |
+| Question | Decision |
+|---|---|
+| Team setup | You plus bot teammates vs. bots; 3v3 by default, 1–5 per side in match setup |
+| Match length | First to 5 (default), 10 or 15, chosen in match setup |
+| Freeze time | 5 s now; 15 s once the buy menu exists (M7) |
+| Armor | None until the economy: armor and helmet are bought from M7 on |
+| Friendly fire | A match setting: off by default, a third of the damage when on |
+| Team names | No names. Your team is shown in blue and the enemies in red |
 
 ## M6 — Characters & animation ⬜
 
@@ -233,6 +232,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Goal:** CS's buy-or-save decisions.
 
+- [ ] Armor and helmet, bought in the buy menu (moved from M5, D-041). CS:GO's rules: armor covers chest, stomach and arms, the helmet covers the head, and each weapon's *armor penetration* (rifle: 77.5%, like the AK) sets how much damage gets through; armor wears down as it absorbs hits. Armor on the HUD
 - [ ] Money: rewards for wins, losses (with loss bonus) and kills
 - [ ] Buy zone and buy menu (B) during freeze time
 - [ ] Weapon slots, switching, dropping and picking up weapons

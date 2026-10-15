@@ -334,6 +334,20 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Right after M4 (looks better sooner, but the game would stay a sandbox longer), or after the last gameplay milestone (cheapest, but blocky placeholders for a long time).
 
+## D-041 — M5 match rules (2026-10-15)
+
+**Decision:**
+- **Teams:** you plus bot teammates vs. a bot team, 1–5 per side, 3v3 by default.
+- **No team names.** Each player sees their own team in blue and the enemies in red. Underneath, one side attacks and the other defends: that decides spawns, bot behaviour and who wins on time-out.
+- **Match length:** first to 5 (default), 10 or 15; sides swap after 4, 9 or 14 rounds.
+- **Freeze time:** 5 s, then 15 s once there's something to buy (M7).
+- **No armor until the economy (M7),** where armor and helmet are bought. The armor task moves from M5 to M7.
+- **Friendly fire** is a match setting: off by default, a third of the damage when on (CS competitive's reduction).
+
+**Why:** Your choices, from my recommendations and your changes. You picked first to 5/10/15 over CS2's 5/9/13, no armor until it can be bought, a friendly-fire setting, and no team names. A first-to-N match with an odd maximum (9, 19 or 29 rounds) can't end in a draw. Colors relative to the viewer keep enemies clearly red for every player, which also suits multiplayer (M9).
+
+**Alternatives:** CS2's 9/13 lengths; armor every round; fixed side colors (red-orange attackers, blue defenders, which swap at half time); placeholder names (Attackers / Defenders).
+
 ## Open questions
 
 | Question | Decide in |
