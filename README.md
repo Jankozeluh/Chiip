@@ -33,7 +33,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 | Free / capture the mouse | Esc / click |
 | Shoot | Left mouse button |
 | Reload | R |
-| Debug overlay (speed, position, jump peak) | F3 |
+| Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 
 ## Tests
 

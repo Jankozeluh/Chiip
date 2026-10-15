@@ -1,5 +1,5 @@
 extends CanvasLayer
-## On-screen readout of the player's movement, like CS's cl_showpos.
+## On-screen readout of the player's movement and weapon, like CS's cl_showpos.
 ## Toggle it with F3 (the toggle_debug action).
 
 ## The player to show information about.
@@ -51,8 +51,21 @@ func _process(_delta: float) -> void:
 		"Walking    %s" % _yes_no(Input.is_action_pressed("walk")),
 		"Shoot/Aim  %s / %s" % [_yes_no(Input.is_action_pressed("shoot")), _yes_no(Input.is_action_pressed("aim"))],
 		"",
+		"Inaccuracy %5.2f°" % player.weapon.get_inaccuracy(),
+		"Recoil     %d shot(s) built up" % (player.weapon.get_spray_shot() - 1),
+		"Last hit   %s" % _describe_hit(player.weapon.last_hit),
+		"",
 		"F3 hide · Esc free mouse",
 	])
+
+
+## One-line summary of a bullet hit, e.g. "Head 142 dmg at 5.0 m".
+func _describe_hit(hit: Dictionary) -> String:
+	if hit.is_empty():
+		return "-"
+	if hit.zone == "":
+		return "world at %.1f m" % hit.distance
+	return "%s %d dmg at %.1f m" % [hit.zone, int(hit.damage), hit.distance]
 
 
 func _yes_no(value: bool) -> String:
