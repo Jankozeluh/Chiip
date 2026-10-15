@@ -170,6 +170,24 @@ func _process(_delta: float) -> void:
 	_camera.global_rotation = Vector3(_pitch, _yaw, 0.0)
 
 
+## Where shots start from: the eyes, as of this physics tick.
+func get_eye_position() -> Vector3:
+	return _head.global_position
+
+
+## Where you're aiming as (yaw, pitch) in radians, without any recoil.
+func get_aim_angles() -> Vector2:
+	return Vector2(_yaw, _pitch)
+
+
+## Turns the view to look at a world position. Used by tests.
+func aim_at(target: Vector3) -> void:
+	var direction := (target - get_eye_position()).normalized()
+	_yaw = atan2(-direction.x, -direction.z)
+	_pitch = asin(direction.y)
+	rotation.y = _yaw
+
+
 ## Top running speed right now: set by the held weapon (CS: rifles 215 u/s),
 ## or [member max_speed] with nothing in hand.
 func get_max_speed() -> float:

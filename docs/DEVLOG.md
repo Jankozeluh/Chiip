@@ -10,6 +10,7 @@
 - `WeaponData` resource and `weapons/rifle.tres`: AK-like stats, a 30-shot spray pattern, accuracy and recoil values, and sound slots.
 - `Weapon` node and `weapons/rifle.tscn` in the player's hands: full-auto at exactly 600 rpm (10 shots in 1 s), 30-round magazine, R to reload (2.5 s), empty click and auto-reload, 215 u/s while held. Clicks that capture the mouse don't fire.
 - The movement tests caught a bug: crouch-walking with the rifle couldn't overcome friction. Fixed by basing ground acceleration on 250 u/s like CS:GO (D-023). All 13 checks pass again.
+- Hitscan shots (ray against world + hitboxes, up to 208 m) and bullet impacts: a pixelated hole plus sparks, attached to what was hit, last 100 kept. Check: a shot aimed at the peek wall hit 0.0 mm from the aim point at 28 m.
 
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 

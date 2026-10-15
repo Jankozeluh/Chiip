@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[sub_resource type="Gradient" id="hole_gradient"]
+offsets = PackedFloat32Array(0, 0.45, 0.7, 1)
+colors = PackedColorArray(0.04, 0.035, 0.03, 1, 0.07, 0.06, 0.05, 0.95, 0.12, 0.1, 0.08, 0.45, 0.15, 0.13, 0.1, 0)
+
+[sub_resource type="GradientTexture2D" id="hole_texture"]
+gradient = SubResource("hole_gradient")
+width = 16
+height = 16
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="hole_material"]
+transparency = 1
+albedo_texture = SubResource("hole_texture")
+roughness = 1.0
+texture_filter = 0
+
+[sub_resource type="QuadMesh" id="hole_mesh"]
+material = SubResource("hole_material")
+size = Vector2(0.06, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="spark_material"]
+shading_mode = 0
+albedo_color = Color(1, 0.75, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="spark_mesh"]
+material = SubResource("spark_material")
+size = Vector3(0.015, 0.015, 0.015)
+
+[node name="BulletImpact" type="Node3D"]
+
+[node name="Hole" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("hole_mesh")
+
+[node name="Sparks" type="CPUParticles3D" parent="."]
+cast_shadow = 0
+emitting = true
+amount = 10
+lifetime = 0.35
+one_shot = true
+explosiveness = 1.0
+mesh = SubResource("spark_mesh")
+direction = Vector3(0, 0, 1)
+spread = 50.0
+gravity = Vector3(0, -20, 0)
+initial_velocity_min = 2.0
+initial_velocity_max = 5.0

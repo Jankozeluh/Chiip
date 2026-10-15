@@ -60,6 +60,7 @@ Chiip/
 | `weapons/weapon_data.gd` | `WeaponData` resource: every number of a weapon (damage, fire rate, ammo, accuracy, spray pattern, recoil, sounds) |
 | `weapons/rifle.tres` | The Rifle's data (AK-like) |
 | `weapons/weapon.gd` | `Weapon` node: firing, ammo, reload. Signals `fired`, `ammo_changed`, `reload_started`, `reload_finished` |
+| `weapons/bullet_impact.tscn` | Bullet hole (16 × 16 pixel radial gradient quad) and a burst of sparks |
 | `weapons/rifle.tscn` | The Rifle as a scene: `Weapon` script + `rifle.tres` + audio players. Instanced in the player under `Head/Camera3D` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
@@ -70,7 +71,7 @@ Chiip/
 |---|---|---|---|
 | Player controller | Mouse look, CS-style movement | M1 | Built: mouse look, run/walk/crouch, jump, air strafing |
 | Debug overlay | Speed and position readout | M1 | Built |
-| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload |
+| Weapon system | Hitscan, spread, recoil, ammo; stats in Resources | M2 | In progress: data, firing, ammo, reload, hitscan, impacts |
 | Hitbox / damage | Hit zones, damage multipliers, armor | M2 | Planned |
 | HUD | Crosshair, ammo, later health, timer, kill feed | M2 → M5 | Planned |
 | Retro rendering | Low-res output, pixel filtering, palette | M3 | Planned |
@@ -110,6 +111,8 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 - Each physics tick the player sets `weapon.trigger_held` from the shoot button. The player processes first and its children after, so the weapon sees the new value in the same tick.
 - R calls `weapon.reload()`. The weapon sets the player's top speed (`Player.get_max_speed()`).
 - The click that recaptures the mouse, and clicks while the mouse is free, never fire.
+- Shots start at `Player.get_eye_position()` and use `Player.get_aim_angles()`, the aim *without* recoil kick. The ray tests world + hitboxes only, so it can't hit the player's own body.
+- Bullet holes are parented to whatever was hit, so they move with moving targets. Each weapon keeps its last 100.
 
 ## Physics layers
 
