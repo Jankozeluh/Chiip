@@ -10,7 +10,8 @@ Usage (from the project folder, in the chiip conda environment, D-071):
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py rifleman
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py all
 
-Writes into assets/models/crew/:
+Writes the AK-style rifle into assets/models/weapons/ (ak_rifle.glb + albedo), and into
+assets/models/crew/:
     <class>.glb              mesh, skeleton (17 bones, T-pose rest) and animations
     <class>_albedo.png       palette-limited colours; team parts in neutral grey
     <class>_mask.png         red = team colour, green = glows (see paint.py)
@@ -26,7 +27,9 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import anims  # noqa: E402
 import crew  # noqa: E402
+import weapons  # noqa: E402
 from geometry import Atlas, PieceMesh  # noqa: E402
 from gltf import Glb  # noqa: E402
 from paint import Painter  # noqa: E402
@@ -38,6 +41,9 @@ TORSO_SPLIT = 0.06
 
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 OUT_DIR = os.path.join(PROJECT, 'assets', 'models', 'crew')
+GUN_DIR = os.path.join(PROJECT, 'assets', 'models', 'weapons')
+# The gun every class holds in M6 (the arsenal follows in M7).
+HELD_GUN = 'ak_rifle'
 
 # Godot import settings for the generated textures: lossless (the palette must survive),
 # mipmaps for distance, and no switch to VRAM compression when Godot sees them used in 3D.
@@ -65,7 +71,27 @@ def build(name):
     atlas.pack()
     cd = crew.CLASSES[name]
     albedo, mask = Painter(cd['kit'], cd['skin'], seed=sum(map(ord, name))).paint(meshes, atlas)
-    return dict(name=name, s=s, body=body, pieces=pieces, atlas=atlas, meshes=meshes, albedo=albedo, mask=mask)
+    model = dict(name=name, s=s, body=body, pieces=pieces, atlas=atlas, meshes=meshes, albedo=albedo, mask=mask)
+    rig = anims.Rig(body, weapons.GUNS[HELD_GUN]()[1])
+    rig.points = bone_points(model)
+    model['rig'] = rig
+    return model
+
+
+def bone_points(model):
+    """every bone's mesh vertices relative to the bone (rest rotations are the identity)."""
+    rest = model['body'].rest_globals()
+    pts = {}
+    for pm in model['meshes']:
+        p = pm.piece
+        if p.bone == 'weapon':
+            continue
+        rot, origin = rest[p.bone]
+        basis = rot @ p.basis()
+        place = origin + rot @ p.pos
+        v = np.array([place + basis @ q for tri, _, _ in pm.triangles(model['atlas']) for q in tri])
+        pts.setdefault(p.bone, []).append(v - origin)
+    return {b: np.unique(np.round(np.concatenate(v), 4), axis=0) for b, v in pts.items()}
 
 
 def skinned_arrays(model):
@@ -195,6 +221,39 @@ def write_hit_zones(boxes, path):
         fh.write('\n'.join(lines))
 
 
+def write_gun(name, out_dir):
+    """a static gun model in weapon space (weapons.py), with its own palette texture."""
+    pieces, _ = weapons.GUNS[name]()
+    atlas = Atlas()
+    meshes = [PieceMesh(p, atlas) for p in pieces]
+    atlas.pack()
+    albedo, _ = Painter(weapons.GUN_KIT, 'skin_l', seed=7).paint(meshes, atlas)
+    pos, nrm, uv, idx = [], [], [], []
+    verts = {}
+    for pm in meshes:
+        basis = pm.piece.basis()
+        for tri, normals, texel in pm.triangles(atlas):
+            for k in range(3):
+                v = pm.piece.pos + basis @ tri[k]
+                n = basis @ normals[k]
+                t = (texel[k, 0] / atlas.width, texel[k, 1] / atlas.height())
+                key = tuple(np.round(v, 5)) + tuple(np.round(n, 4)) + tuple(np.round(t, 6))
+                if key not in verts:
+                    verts[key] = len(pos)
+                    pos.append(v)
+                    nrm.append(n / np.linalg.norm(n))
+                    uv.append(t)
+                idx.append(verts[key])
+    os.makedirs(out_dir, exist_ok=True)
+    write_texture(albedo, os.path.join(out_dir, f'{name}_albedo.png'))
+    g = Glb()
+    mat = g.material(name, g.texture(f'{name}_albedo.png'))
+    mesh = g.mesh(name, np.array(pos), np.array(nrm), np.array(uv), np.array(idx, np.uint32), mat)
+    g.root(g.node(name, mesh=mesh))
+    g.write(os.path.join(out_dir, f'{name}.glb'))
+    return len(idx) // 3
+
+
 def write_texture(image, path):
     Image.fromarray(image).save(path, optimize=True)
     if not os.path.exists(path + '.import'):
@@ -213,13 +272,17 @@ def main():
         model = build(name)
         write_texture(model['albedo'], os.path.join(a.out, f'{name}_albedo.png'))
         write_texture(model['mask'], os.path.join(a.out, f'{name}_mask.png'))
-        nv, nt = write_glb(model, os.path.join(a.out, f'{name}.glb'))
+        clips = anims.all_clips(model['rig'])
+        glb_path = os.path.join(a.out, f'{name}.glb')
+        # Godot's importer loops animations whose names end in "-loop" and drops the suffix.
+        nv, nt = write_glb(model, glb_path, [(n + ('-loop' if loop else ''), ch) for n, loop, ch in clips])
         boxes = hit_zones(model)
         write_hit_zones(boxes, os.path.join(a.out, f'{name}_hit_zones.tres'))
         for bone, zone, centre, size in boxes:
             print(f'  {zone:8s} on {bone:12s} size {size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f}')
         print(f'{name}: scale {model["s"]:.3f}, {len(model["pieces"])} pieces, {nv} vertices, {nt} triangles, '
-              f'texture {model["atlas"].width}x{model["atlas"].height()}')
+              f'texture {model["atlas"].width}x{model["atlas"].height()}, {len(clips)} animations')
+    print(f'{HELD_GUN}: {write_gun(HELD_GUN, GUN_DIR)} triangles')
 
 
 if __name__ == '__main__':

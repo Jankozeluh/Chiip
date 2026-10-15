@@ -7,6 +7,10 @@ extends Node3D
 ## Space pauses the turning; the left and right arrow keys turn the models by hand; T switches
 ## every model between your team's blue and the enemies' red. Start in red with
 ## [code]-- --enemy[/code] after the scene path.
+##
+## N and P play the next and previous animation of the models (idle, walk, run, crouch, aim,
+## fire, reload, deaths...; tools/modelgen/anims.py) straight from their AnimationPlayer, with
+## the AK-style rifle on the weapon bone. Start with one: [code]-- --clip run_f[/code].
 
 ## Where tools/modelgen/modelgen.py writes the class models.
 const MODEL_DIR := "res://assets/models/crew/"
@@ -14,9 +18,11 @@ const MODEL_DIR := "res://assets/models/crew/"
 const CLASSES: Array[String] = ["rifleman", "bulwark", "marksman", "scout"]
 ## The body scene each class model is shown in.
 const BODY_SCENE := preload("res://characters/crew/crew_body.tscn")
+## The gun the models hold (tools/modelgen/weapons.py).
+const GUN_SCENE := preload("res://assets/models/weapons/ak_rifle.glb")
 
 ## Distance between two models, in metres.
-@export var spacing: float = 1.9
+@export var spacing: float = 1.4
 ## How fast the models turn, in degrees per second.
 @export var turn_speed_degrees: float = 30.0
 
@@ -24,6 +30,9 @@ var _turning: bool = true
 ## True while the models wear the enemy colour (red) instead of your team's (blue).
 var _showing_enemies: bool = false
 var _label: Label
+## The names of the models' animations, and which one is playing (-1: none, the model's own pose).
+var _clips: PackedStringArray = []
+var _clip: int = -1
 
 @onready var _models: Node3D = $Models
 
@@ -42,6 +51,14 @@ func _ready() -> void:
 		found[i].position.x = (i - (found.size() - 1) / 2.0) * spacing
 		# Models face -Z (Godot's forward); turn them to face the camera.
 		found[i].rotation.y = PI
+		var gun_mount := BoneAttachment3D.new()
+		gun_mount.bone_name = "weapon"
+		(found[i].find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D).add_child(gun_mount)
+		gun_mount.add_child(GUN_SCENE.instantiate())
+	if not found.is_empty():
+		var player := _player_of(found[0])
+		if player != null:
+			_clips = player.get_animation_list()
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	_label = Label.new()
@@ -49,6 +66,10 @@ func _ready() -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_label)
 	_show_team(OS.get_cmdline_user_args().has("--enemy"))
+	var args := OS.get_cmdline_user_args()
+	var clip_arg := args.find("--clip")
+	if clip_arg >= 0 and clip_arg + 1 < args.size():
+		_play(_clips.find(args[clip_arg + 1]))
 
 
 func _process(delta: float) -> void:
@@ -68,6 +89,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_turning = not _turning
 			KEY_T:
 				_show_team(not _showing_enemies)
+			KEY_N:
+				_play((_clip + 1) % _clips.size() if not _clips.is_empty() else -1)
+			KEY_P:
+				_play((_clip - 1 + _clips.size()) % _clips.size() if not _clips.is_empty() else -1)
 
 
 ## Paints every model in the enemy colour or in your team's, and says which in the label.
@@ -76,4 +101,27 @@ func _show_team(enemies: bool) -> void:
 	var color := Teams.ENEMY_COLOR if enemies else Teams.FRIENDLY_COLOR
 	for body in _models.get_children():
 		(body as CrewBody).set_team_color(color)
-	_label.text = "Enemies (red) — T: show your team" if enemies else "Your team (blue) — T: show enemies"
+	_update_label()
+
+
+## Plays clip number [param index] of [member _clips] on every model (looping clips loop,
+## the others hold their last frame).
+func _play(index: int) -> void:
+	_clip = index
+	if index >= 0:
+		for body in _models.get_children():
+			var player := _player_of(body)
+			if player != null:
+				player.play(_clips[index])
+	_update_label()
+
+
+func _update_label() -> void:
+	var team := "Enemies (red) — T: show your team" if _showing_enemies else "Your team (blue) — T: show enemies"
+	var clip := _clips[_clip] if _clip >= 0 else "none"
+	_label.text = "%s\nAnimation: %s — N / P: next / previous" % [team, clip]
+
+
+func _player_of(body: Node) -> AnimationPlayer:
+	var found := body.find_children("*", "AnimationPlayer", true, false)
+	return found[0] as AnimationPlayer if not found.is_empty() else null

@@ -120,7 +120,7 @@ The crew's 3D models are generated too (D-054). After changing `tools/modelgen/`
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --import
 ```
 
-To look at them on a turntable (Space pauses, arrow keys turn, T switches between your team's blue and the enemies' red):
+To look at them on a turntable (Space pauses, arrow keys turn, T switches between your team's blue and the enemies' red, N / P play the animations):
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip res://characters/crew/crew_preview.tscn
