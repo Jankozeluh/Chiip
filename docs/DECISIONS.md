@@ -218,6 +218,14 @@
 
 **Decision:** Eight ambientCG CC0 textures (Concrete034, Plaster001, Bricks075A (actually beige stone), Bricks097, Ground080, Planks037A, MetalPlates006, PaintedPlaster017), the `func_godot` 2025.12 addon (MIT) and the Silkscreen font (OFL). The user installs TrenchBroom themselves. Only the processed 64 × 64 textures are kept in the project, and the original downloads are deleted.
 
+## D-029 — Look: sun-baked dusty afternoon (2026-10-15)
+
+**Decision:** The test map's atmosphere is a warm late-afternoon desert look, closer to CS's dust maps than to Quake's dark dungeons. That means a low warm sun with long shadows, a dusty blue sky with a sandy horizon, darker ambient light, light haze, slightly more contrast and less saturation, plus colored lamps for accents.
+
+**Why:** It fits the textures we picked (sand, beige stone, brick, concrete) and keeps players easy to see. Fog was halved after the 40 m dummy faded into it (clarity rule).
+
+**Alternatives:** A dark, moody Quake-style look (harder to read at a distance).
+
 ## Open questions
 
 | Question | Decide in |
