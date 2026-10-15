@@ -206,12 +206,23 @@
 
 **Why:** It matches the retro look. The OFL allows using and shipping the font in a game, including a commercial one.
 
+## D-027 — Pixel style: low-res world, sharp HUD (2026-10-15)
+
+**Decision:** The 3D world renders at 360 lines (640 × 360 in a 16:9 window) and is scaled up with sharp pixels. The HUD and debug overlay are drawn at full window resolution (style B). Chosen by the user from screenshots of both styles.
+
+**Why:** Text stays readable (design pillar 3: clarity), and a pixel font still gives the HUD a retro feel. Style A (everything low-res) remains available with `Main.pixelate_hud`.
+
+**Alternatives:** Style A, the whole window at 640 × 360 including the HUD.
+
+## D-028 — Downloads approved for M3 (2026-10-15)
+
+**Decision:** Eight ambientCG CC0 textures (Concrete034, Plaster001, Bricks075A, Bricks097, Ground080, Planks037A, MetalPlates006, PaintedPlaster017), the `func_godot` 2025.12 addon (MIT) and the Silkscreen font (OFL). The user installs TrenchBroom themselves. Only the processed 64 × 64 textures are kept in the project, and the original downloads are deleted.
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
-| Low-res rendering approach: window stretch, SubViewport or 3D resolution scale? | M3 |
 | Map building: Godot CSG, or TrenchBroom with `func_godot`? | M3 |
 | Team sizes: 1 vs N, or 5v5 with bot teammates? | M5 |
 | Weapon names | M6 |

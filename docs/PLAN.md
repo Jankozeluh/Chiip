@@ -105,7 +105,7 @@
 
 **Tasks**, in order, one commit each:
 
-1. [ ] **Pixelated rendering, two variants.** A: the whole screen, HUD included, rendered at 640 × 360 and scaled up with sharp pixels. B: only the 3D world rendered low-res, with the HUD drawn sharp at full resolution. I make screenshots of both and you pick. The resolution stays adjustable (480 × 270 / 640 × 360 / 960 × 540).
+1. [x] **Pixelated rendering, two variants.** You chose **B (sharp HUD)** (D-027). A: the whole screen, HUD included, rendered at 640 × 360 and scaled up with sharp pixels. B: only the 3D world rendered low-res, with the HUD drawn sharp at full resolution. I make screenshots of both and you pick. The resolution stays adjustable (480 × 270 / 640 × 360 / 960 × 540).
 2. [x] **Mouse and crosshair at low resolution.** Checked: 100 mouse counts turn the view exactly 2.200° in both styles; crosshair sizes are rounded to whole pixels. Check that sensitivity doesn't change (it shouldn't, see D-016) and that the crosshair stays pixel-perfect.
 3. [x] **Retro texture tool.** A tool script that turns any image into a retro texture: shrinks it to 64 × 64 (or 128 × 128), reduces its colors, and imports it with sharp pixels and mipmaps (no shimmering in the distance).
 4. [ ] **Texture set.** About 8 textures: concrete floor, plaster wall, brick, sandy ground, wooden crate, metal, dark trim, spray-wall paint (source: see decisions below).
