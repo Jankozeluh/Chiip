@@ -2,6 +2,12 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-15 — Session 4: M2 shooting
+
+**Done**
+- Recorded the M2 decisions: working name "Rifle", generated placeholder sounds, static CS-like crosshair (D-019 to D-021).
+- Named the physics layers (world, player, bots, hitboxes, triggers), added code constants in `systems/physics_layers.gd`, put the player on its layer, and added the reload key R (D-022).
+
 ## 2026-10-15 — Session 3: M1 closed, M2 planned
 
 **Done**

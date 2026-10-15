@@ -87,6 +87,7 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `crouch` | Ctrl | Player |
 | `walk` | Shift | Player |
 | `shoot` / `aim` | Left / right mouse button | Debug overlay now, weapons from M2 |
+| `reload` | R | Player → weapon |
 | `toggle_mouse` | Esc | Player (frees or captures the mouse) |
 | `toggle_debug` | F3 | Debug overlay |
 
@@ -98,15 +99,19 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 2. Each physics tick, the body turns to `_yaw`, so movement keys follow your view.
 3. Each rendered frame, `_process` places the camera at the head's *interpolated* position and applies the angles directly. The camera is `top_level` (ignores its parent's transform) and has interpolation off.
 
-## Physics layers (planned, finalized in M2)
+## Physics layers
 
-| Layer | Name | Used by |
-|---|---|---|
-| 1 | world | Map geometry |
-| 2 | player | Player body |
-| 3 | bots | Bot bodies |
-| 4 | hitboxes | Head / chest / stomach / leg zones that bullets hit |
-| 5 | triggers | Buy zones, bombsites |
+Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit values from `systems/physics_layers.gd` (D-022).
+
+| Layer | Name | Bit value | Used by |
+|---|---|---|---|
+| 1 | world | 1 | Map geometry |
+| 2 | player | 2 | Player body (collides with world and bots: mask 5) |
+| 3 | bots | 4 | Bot bodies, target dummies |
+| 4 | hitboxes | 8 | Head / chest / stomach / arm / leg zones (`Area3D`) that bullets hit |
+| 5 | triggers | 16 | Buy zones, bombsites |
+
+Bullets test **world + hitboxes** (mask 9) only.
 
 ## Testing
 

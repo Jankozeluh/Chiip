@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M2 — Shooting (planned, waiting for your go-ahead)
+> **Current milestone:** M2 — Shooting (in progress)
 
 ## How this plan works
 
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | M0 | Plan & documentation | ✅ | Nothing yet. This plan and the docs exist |
 | M1 | Project setup & movement | ✅ | Run, walk, crouch and jump around a test map |
-| M2 | Shooting | ⬜ | Shoot targets with a rifle that has CS-like recoil |
+| M2 | Shooting | 🟨 | Shoot targets with a rifle that has CS-like recoil |
 | M3 | Retro look & map tools | ⬜ | The test map looks like a 90s shooter |
 | M4 | Bots | ⬜ | Bots hunt you and shoot back |
 | M5 | Health, rounds & game flow | ⬜ | Full rounds against bots, with menus and settings |
@@ -59,7 +59,7 @@
 
 **You learn:** project structure, nodes and scenes, GDScript basics, `_physics_process`, `CharacterBody3D` and `move_and_slide()`, the Input Map, `@export` variables.
 
-## M2 — Shooting ⬜
+## M2 — Shooting 🟨
 
 **Goal:** one rifle with CS-like accuracy and recoil, tested on targets in a shooting range.
 
@@ -69,7 +69,7 @@
 
 **Tasks**, in order, one commit each:
 
-1. [ ] **Physics layers.** Name the layers (world, player, bots, hitboxes, triggers) in Project Settings and assign them, so bullets know what they can hit and players don't collide with hitboxes.
+1. [x] **Physics layers.** Name the layers (world, player, bots, hitboxes, triggers) in Project Settings and assign them, so bullets know what they can hit and players don't collide with hitboxes.
 2. [ ] **Weapon data.** A `WeaponData` resource (Godot's ScriptableObject) holding every number: damage, fire rate, magazine, reload time, movement speed, accuracy, recoil. The first data file is `weapons/rifle.tres` with AK-like starting values: 36 damage, 600 rounds/min, 30 + 90 rounds, 2.5 s reload, 215 u/s while held.
 3. [ ] **Firing and ammo.** Full-auto while the button is held, magazine and reserve ammo, reload with R, an empty click. Holding the rifle slows you from 250 to 215 u/s, as in CS. The click that recaptures the mouse doesn't fire.
 4. [ ] **Hitscan and impacts.** Each shot casts a ray from the center of your view up to 208 m (CS: 8192 units). Bullet holes and sparks appear where it lands; the oldest holes disappear after 64.
@@ -87,7 +87,7 @@
 
 **You learn:** Resources, raycasts with `intersect_ray`, physics layers and masks, `Area3D`, signals (weapon → HUD, hitbox → target), custom drawing with `_draw()` for the crosshair, Tweens for kick and flash, particles, audio players, and random numbers with seeds (so tests are repeatable).
 
-**Decisions before starting** (the default applies if you don't choose):
+**Decisions** (all defaults accepted on 2026-10-15, see D-019 to D-021):
 
 | Question | Default |
 |---|---|
