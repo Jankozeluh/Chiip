@@ -5,9 +5,11 @@ extends Node
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
-## are added here, depending on [member mode]: a match ([RoundManager]) on maps
-## with attack and defend spawns, practice ([ArenaRules]: bots that respawn) on
-## other maps with navigation, and nothing (free roaming) on the rest.
+## are added here, depending on [member mode]: a match on maps with attack and
+## defend spawns (a [RoundManager], or a [RespawnMatch] when
+## [member MatchSettings.game_mode] is team respawn), practice ([ArenaRules]:
+## bots that respawn) on other maps with navigation, and nothing (free roaming)
+## on the rest.
 ##
 ## Two pixel styles (see docs/DECISIONS.md):
 ## - Pixelated HUD: the whole window renders at the low resolution, HUD included.
@@ -91,6 +93,8 @@ func _load_map() -> void:
 		scene = load(args[map_arg + 1])
 	if args.has("--practice"):
 		mode = Mode.PRACTICE
+	if args.has("--respawn"):
+		match_settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
 	_spawn_map(scene)
 
 
@@ -109,8 +113,10 @@ func _spawn_map(scene: PackedScene) -> void:
 	# The hold-Tab scoreboard also exists only in a match.
 	_scoreboard.set_round_manager(rules as RoundManager)
 	_hud.set_player(player)
-	_hud.respawn_hint = rules is ArenaRules
-	_set_up_spectating(player, rules is RoundManager)
+	# Practice and team respawn bring you back; in rounds the dead watch a teammate instead.
+	var respawning := rules is ArenaRules or rules is RespawnMatch
+	_hud.respawn_hint = respawning
+	_set_up_spectating(player, rules is RoundManager and not respawning)
 	_debug_overlay.player = player
 	Teams.set_viewer_team(player.team)
 
@@ -133,7 +139,8 @@ func _add_game_rules() -> Node:
 	var has_spawns := _map_has_group(Teams.ATTACK_SPAWN_GROUP) and _map_has_group(Teams.DEFEND_SPAWN_GROUP)
 	var rules: Node = null
 	if mode == Mode.MATCH and has_navigation and has_spawns:
-		var rounds := RoundManager.new()
+		var team_respawn := match_settings.game_mode == MatchSettings.GameMode.TEAM_RESPAWN
+		var rounds: RoundManager = RespawnMatch.new() if team_respawn else RoundManager.new()
 		rounds.settings = match_settings
 		rules = rounds
 	elif has_navigation:

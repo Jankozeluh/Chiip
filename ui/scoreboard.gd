@@ -67,7 +67,7 @@ func _should_show() -> bool:
 ## Brings the header and the table in line with the manager.
 func _refresh() -> void:
 	var you := Teams.viewer_team
-	_round_label.text = "Round %d" % _manager.round_number
+	_round_label.text = "First to %d kills" % _manager.settings.kill_limit if _manager.is_team_respawn() else "Round %d" % _manager.round_number
 	_your_score.text = str(_manager.score[you])
 	_enemy_score.text = str(_manager.score[Teams.other(you)])
 	_table.refresh()

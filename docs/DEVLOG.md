@@ -11,7 +11,9 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 
 - **Bots play the objective** (D-081, provisional): the attackers pick a target site; the carrier's group takes the route that ends nearest to it and the carrier plants there; the nearest bot fetches a dropped bomb; after the plant the attackers watch the bomb from 5–10 m. Every defender retakes; one defuses while the others cover, and a bot keeps defusing under fire only when it's 70% done. Testing found a bot stuck against the side of Depot's dock ramp for 100 s, so stuck bots now jump and then back off and find a new path. 6 new bot checks (bomb test: 32); in the maps test the bots planted in 11 of 12 rounds and no round ran out of time.
 
-**Next:** the team respawn mode.
+- **Team respawn mode** (D-082, provisional), like CoD's Team Deathmatch: `-- --respawn`. Respawn 3 s after dying at the safest respawn point (far from enemies, out of their sight), first team to 30 kills or most kills after 10 minutes, overtime on a tie. Built as `RespawnMatch`, a subclass of the round manager with one long round, so the HUD, kill feed, scoreboard and end screen work as they are. New `tests/respawn_test.tscn` (15 checks; it caught the round's own point being added to the kills).
+
+**Next:** bots in the respawn mode hunt in small groups.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

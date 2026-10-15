@@ -51,7 +51,7 @@ Chiip/
 │   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
 │   └── props/         Reusable map objects (target dummy)
 ├── ui/                HUD, scoreboard, menus, developer console, the UI theme (chiip_theme.tres) and its preview
-├── systems/           Shared systems: teams, round manager and match settings, noise bus, arena rules (practice), physics layers; later settings
+├── systems/           Shared systems: teams, round manager, team respawn match and match settings, noise bus, arena rules (practice), physics layers; later settings
 ├── shaders/           Shaders: palette effect, grid placeholder for blockouts
 ├── tests/             Automated test scenes, run headless (D-018)
 └── tools/             One-off tool scripts run from the command line (not part of the game)
@@ -153,6 +153,7 @@ Chiip/
 | Character animation | Walk cycle now; rigged models, animation blending, first-person arms later | M4 → M6 | Built: procedural walk placeholder (`SoldierBody`) |
 | Teams | Two teams, viewer-relative colors, attack/defend spawn ends, friendly fire | M5 | Built: `Teams`, 10 spawns on the test map (D-042) |
 | Round manager | Phases, timer, win conditions, match score | M5 | Built: rounds, freeze time, elimination and time-out, stats, match score, half-time swap, match end (D-044) |
+| Team respawn mode | CoD-style Team Deathmatch: respawns, kill limit, time limit | M8 | Built: `RespawnMatch extends RoundManager` (D-082), picked by `MatchSettings.game_mode` |
 | Spectating | Watch a living teammate through their eyes after you die | M5 | Built in `PlayerController`, local presentation only (D-046) |
 | Settings | Sensitivity, FOV, crosshair, audio, keys; saved to disk | M5 | Planned |
 | Match-end screen | Victory / Defeat, final score, scoreboard, Play again / Quit | M5 | Built: `MatchEndScreen` (the main menu replaces Quit in task 11) |
@@ -265,6 +266,26 @@ Map (test_map.tscn)
 9. Spectating doesn't touch the round manager: `PlayerController` notices your own death (`died`) and your respawn at the next round start (`on_respawned()`), and the HUD follows its `view_target_changed` signal (D-046).
 10. **Bomb rounds** (D-080): on a map with `bomb_sites` areas (and `MatchSettings.bomb_rounds` on) the round manager adds a `Bomb` (`bomb/bomb.tscn`) to the map at the match start. At every round start, after the respawns, `Bomb.start_round()` gives it to a random attacker; `Bomb.active` is on only in the live round. The bomb reads each character's `is_holding_use()` (from `CharacterInput.use`): a carrier inside a site plants, a defender within 1.5 m defuses, and meanwhile `Character.busy` blocks moving and shooting the way `frozen` does. Its `planted`, `exploded` and `defused` signals reach the round manager, which stops counting `time_left` after the plant, ends the round with `EndReason.BOMB_EXPLODED` / `BOMB_DEFUSED`, and after a plant ends it by elimination only when the defenders are all dead. `BombHud` (in `hud.tscn`) reads `RoundManager.bomb` every frame and listens to its `picked_up`, `dropped` and `planted` signals. Bots find the bomb through its group `bomb`.
 
+## Team respawn mode (M8, D-082)
+
+`RespawnMatch` (`systems/respawn_match.gd`) **is a** `RoundManager` with one long round, so everything that shows a match (round HUD, kill feed, Tab scoreboard, match-end screen) works unchanged; `score` holds kills. `main.gd` adds it instead of a `RoundManager` when `MatchSettings.game_mode` is `TEAM_RESPAWN` (`-- --respawn`), with spectating off.
+
+The round manager runs a fixed sequence and asks a few overridable methods for the decisions a mode makes (the *template method* pattern):
+
+| Hook | Rounds (`RoundManager`) | Team respawn (`RespawnMatch`) |
+|---|---|---|
+| `_add_bomb()` | adds the bomb on maps with sites | nothing |
+| `_plan_bots()` | `BotTactics.plan_round()` | the bots' respawn-mode orders |
+| `_round_duration()` | `round_time` (1:55) | `time_limit` (10:00) |
+| `_live_tick(delta)` | nothing | counts down respawns and brings the dead back at `pick_spawn()` |
+| `_clock_stopped()` | after the plant | in overtime |
+| `_on_time_up()` | the defenders win the round | the leader wins, or overtime on a tie |
+| `_score_kill()` / `_score_round()` | nothing / +1 round for the winner | +1 for the killer's team (enemy kills, live phase) / nothing |
+| `_check_elimination()` | a wiped team loses the round | nothing (nobody stays dead) |
+| `_after_round_end()` | next round, half time or match end | match end |
+
+`is_team_respawn()` tells views which texts to use. `RespawnMatch.overtime` and `overtime_started` mark overtime.
+
 ## Sound
 
 - **Your own** footsteps (−12 dB) and gunshots play through `AudioStreamPlayer` (no position, both ears). **Everyone else's** play through `AudioStreamPlayer3D`, from where they are: footsteps +2 dB, unit size 10 m, fading out at 30 m; gunshots unit size 20 m, out to 120 m (D-038). `Character.is_local_player()` decides which, through `CharacterController.is_local()`.
@@ -312,6 +333,7 @@ Run the checks from the project folder:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 200000 res://tests/tactics_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/ui_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/respawn_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 400000 res://tests/maps_test.tscn
 ```
 

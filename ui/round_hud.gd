@@ -13,6 +13,11 @@ extends Control
 ## [method set_round_manager] hands it the manager when a map loads, or null in
 ## practice mode, which hides everything. All of it ignores the mouse, so clicks
 ## still reach the player controls.
+##
+## A team respawn match ([RespawnMatch], D-082) is one long round: the scores
+## are kills, "First to 30" replaces the round number, the freeze time says
+## what wins, the timer shows "OT" in overtime, and the banner after the
+## deciding kill says which team won and why.
 
 ## The timer's color during freeze time.
 const FREEZE_TIMER_COLOR := Color(1.0, 0.85, 0.4)
@@ -37,6 +42,8 @@ const ATTACK_BOMB_TEXT := "You attack: plant the bomb at %s"
 const DEFEND_BOMB_TEXT := "You defend: guard %s"
 ## What the timer shows once the bomb is planted (the round clock has stopped; as in CS, the fuse isn't shown).
 const BOMB_TIMER_TEXT := "BOMB"
+## What the timer shows in a team respawn match's overtime.
+const OVERTIME_TIMER_TEXT := "OT"
 
 var _manager: RoundManager
 var _ui_scale: float = 1.0
@@ -157,12 +164,15 @@ func _refresh() -> void:
 	_enemy_score.text = str(_manager.score[them])
 	_refresh_pips(_your_pips, you)
 	_refresh_pips(_enemy_pips, them)
-	_round_label.text = "Round %d" % _manager.round_number
+	_round_label.text = _round_text()
 	match _manager.phase:
 		RoundManager.Phase.FREEZE:
 			_set_timer(_manager.time_left, FREEZE_TIMER_COLOR)
 		RoundManager.Phase.LIVE:
-			if _manager.is_bomb_planted():
+			if _is_overtime():
+				_set_timer_text(OVERTIME_TIMER_TEXT, LOW_TIME_COLOR)
+				_show_overtime()
+			elif _manager.is_bomb_planted():
 				_set_timer_text(BOMB_TIMER_TEXT, LOW_TIME_COLOR)
 			else:
 				_set_timer(_manager.time_left, LOW_TIME_COLOR if _manager.time_left <= LOW_TIME else Color.WHITE)
@@ -231,6 +241,10 @@ func _on_sides_swapped() -> void:
 func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 	var won := winner == Teams.viewer_team
 	_clear_messages()
+	if _manager.is_team_respawn():
+		_set_message(_title, "Your team wins" if won else "The enemy team wins", Teams.text_color_for(winner))
+		_set_message(_line1, _reason_text(won, reason), Color.WHITE)
+		return
 	_set_message(_title, "Round won" if won else "Round lost", Teams.text_color_for(winner))
 	_set_message(_line1, _reason_text(won, reason), Color.WHITE)
 	if reason == RoundManager.EndReason.TIME:
@@ -250,6 +264,10 @@ func _show_phase_message() -> void:
 	_clear_messages()
 	if _manager.round_number == 0 or _manager.phase != RoundManager.Phase.FREEZE:
 		return
+	if _manager.is_team_respawn():
+		_set_message(_line1, _countdown_text(), Color.WHITE)
+		_set_message(_line2, "First team to %d kills wins" % _manager.settings.kill_limit, Color.WHITE)
+		return
 	if _just_swapped:
 		_set_message(_title, "Switching sides", SWITCHING_COLOR)
 	_set_message(_line1, _countdown_text(), Color.WHITE)
@@ -258,9 +276,29 @@ func _show_phase_message() -> void:
 	_show_match_point()
 
 
-## "Round 3  ·  starts in 4".
+## "Round 3  ·  starts in 4" ("Team respawn  ·  starts in 4").
 func _countdown_text() -> String:
-	return "Round %d  ·  starts in %d" % [_manager.round_number, maxi(0, ceili(_manager.time_left))]
+	var what := "Team respawn" if _manager.is_team_respawn() else "Round %d" % _manager.round_number
+	return "%s  ·  starts in %d" % [what, maxi(0, ceili(_manager.time_left))]
+
+
+## Under the timer: the round number, or what wins a team respawn match.
+func _round_text() -> String:
+	if not _manager.is_team_respawn():
+		return "Round %d" % _manager.round_number
+	return "Next kill wins" if _is_overtime() else "First to %d" % _manager.settings.kill_limit
+
+
+func _is_overtime() -> bool:
+	var respawn := _manager as RespawnMatch
+	return respawn != null and respawn.overtime
+
+
+## The overtime notice in the middle, for as long as overtime lasts.
+func _show_overtime() -> void:
+	if _title.text != "Overtime":
+		_set_message(_title, "Overtime", SWITCHING_COLOR)
+		_set_message(_line1, "Next kill wins", Color.WHITE)
 
 
 ## A third line when a team is one round from winning the match.
@@ -302,6 +340,10 @@ func _reason_text(won: bool, reason: RoundManager.EndReason) -> String:
 			return "The bomb exploded"
 		RoundManager.EndReason.BOMB_DEFUSED:
 			return "The bomb was defused"
+		RoundManager.EndReason.KILL_LIMIT:
+			return "First to %d kills" % _manager.settings.kill_limit
+		RoundManager.EndReason.TIME_LIMIT:
+			return "Most kills when time ran out"
 	return "Time ran out: you held your end" if won else "Time ran out: the defenders held their end"
 
 

@@ -25,6 +25,12 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip
 ```
 
+For the **team respawn** mode (like Call of Duty's Team Deathmatch: respawn after 3 s, first team to 30 kills wins), add `-- --respawn`, e.g. on Depot:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/depot.tscn --respawn
+```
+
 For practice mode, add `-- --practice`:
 
 ```bash
@@ -129,6 +135,12 @@ The bomb test plays short bomb rounds on Depot (plant, explosion, drop and picku
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/bomb_test.tscn
+```
+
+The respawn test plays short team respawn matches on Depot (kills, respawns, spawn choice, kill limit, time limit, overtime):
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/respawn_test.tscn
 ```
 
 The maps test plays bot rounds on all three quick maps and takes a minute or two:

@@ -420,6 +420,11 @@
 **Teleporting a smoothed node** (`Bomb._place()`)
 - With physics interpolation on (D-010), a node moved in `_physics_process` is drawn sliding between its old and new place. After a jump, such as the bomb dropping to the floor or appearing on the next carrier, `reset_physics_interpolation()` tells Godot not to smooth that one move. Unity's `Rigidbody.interpolation` has the same problem; there you'd set the position on the Rigidbody and the transform.
 
+**Overriding methods: a subclass of a script** (`systems/respawn_match.gd`)
+- `class_name RespawnMatch extends RoundManager` inherits every variable, signal and method of the round manager, like a C# subclass. Any method can be replaced by defining one with the same name: GDScript methods are all "virtual", there is no `override` keyword. `super(killer, victim)` (or `super.method()`) calls the parent's version.
+- Signals connected with `_on_died.bind(character)` inside the parent call the subclass's `_on_died`, because the method is looked up by name on the object.
+- `rounds is RoundManager` is true for a `RespawnMatch` too, so code that takes a `RoundManager` (the HUD, the scoreboard) accepts it, and `rules is RespawnMatch` tells them apart.
+
 **Asking a NavigationAgent3D for a new path** (`BotController._check_stuck()`)
 - Setting `target_position` again, even to the same point, makes the agent compute a fresh path from where the bot is now. That's how a stuck bot gets a new route after backing off; Unity's `NavMeshAgent.SetDestination()` works the same way.
 
