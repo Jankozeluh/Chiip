@@ -47,7 +47,7 @@ Chiip/
 │   └── props/         Reusable map objects (target dummy)
 ├── ui/                HUD, menus, developer console
 ├── systems/           Global systems (autoloads): game state, rounds, settings, console commands
-├── shaders/           Shaders (grid placeholder now, retro look in M3)
+├── shaders/           Shaders: palette effect, grid placeholder for blockouts
 ├── tests/             Automated test scenes, run headless (D-018)
 └── tools/             One-off tool scripts run from the command line (not part of the game)
 ```
@@ -57,6 +57,7 @@ Chiip/
 | File | What it is |
 |---|---|
 | `main.tscn` + `main.gd` | Root (main) scene. The world (test map + player) runs inside a `SubViewport` rendered at `pixel_height` (360) lines and scaled up with nearest filtering; the HUD and debug overlay sit on top. `pixelate_hud` switches to rendering the whole window at the low resolution |
+| `shaders/palette_limit.gdshader` | Optional retro color limit for the world image: 12 shades per channel with 4 × 4 ordered (Bayer) dithering. Drawn by a full-screen `ColorRect` in `World/SubViewport/PaletteEffect`, switched by `Main.palette_effect` |
 | `ui/ui_scale.gd` | `UiScale.apply()`: scales a Control's font, outline and position for the current UI resolution |
 | `maps/test_map.tscn` | Test map (shown inside `main.tscn`). Lighting: warm sun (35° high, shadows), dusty sky, ambient 0.55 from the sky, fog density 0.0035, three colored `OmniLight3D` lamps. Retextured in M3: concrete floor (course), sand (range), red brick outer walls, beige stone platform/stairs/peek walls, wooden crates, metal tunnel, painted spray wall. North: movement course (jump boxes 32/48/64/80 u, platform with a 25° ramp and stairs, crouch tunnel, peek walls). South: shooting range (firing line at z = 16, dummies at 5/10/20/40 m, a moving dummy at 15 m, a spray wall at 10 m with an aim mark). You spawn on the range facing the targets |
 | `player/player.tscn` | Player: `CharacterBody3D` with a capsule collision, a `Head` node at eye height and a `Camera3D` |
@@ -81,7 +82,7 @@ Chiip/
 | `assets/sounds/*.wav` | Generated 22 kHz mono sounds, referenced by `weapons/rifle.tres` |
 | `tests/movement_test.tscn` + `.gd` | Automated movement checks (D-018) |
 | `tests/weapon_test.tscn` + `.gd` | Automated weapon checks: fire rate, ammo, reloads, inaccuracy, first-shot accuracy, zone damage, falloff, spray pattern, recovery |
-| `shaders/prototype_grid.gdshader` | Placeholder world-space 1 m grid "developer texture" |
+| `shaders/prototype_grid.gdshader` | World-space 1 m grid "developer texture", no longer used on the test map; kept for quick blockouts |
 
 ## Systems
 
@@ -129,7 +130,8 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 Main (Node, main.gd)
 ├── World (SubViewportContainer: stretch on, shrink = window height / 360, nearest filter)
 │   └── SubViewport (640 × 360 in a 720p window)
-│       └── TestMap (map + Player)
+│       ├── TestMap (map + Player)
+│       └── PaletteEffect (CanvasLayer, optional full-screen color limit)
 ├── HUD (CanvasLayer)
 └── DebugOverlay (CanvasLayer)
 ```

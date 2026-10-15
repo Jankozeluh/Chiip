@@ -4,6 +4,10 @@
 [ext_resource type="PackedScene" path="res://maps/test_map.tscn" id="map_scene"]
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="hud_scene"]
 [ext_resource type="PackedScene" path="res://ui/debug_overlay.tscn" id="overlay_scene"]
+[ext_resource type="Shader" path="res://shaders/palette_limit.gdshader" id="palette_shader"]
+
+[sub_resource type="ShaderMaterial" id="palette_material"]
+shader = ExtResource("palette_shader")
 
 [node name="Main" type="Node"]
 script = ExtResource("main_script")
@@ -24,6 +28,18 @@ size = Vector2i(640, 360)
 render_target_update_mode = 4
 
 [node name="TestMap" parent="World/SubViewport" instance=ExtResource("map_scene")]
+
+[node name="PaletteEffect" type="CanvasLayer" parent="World/SubViewport"]
+visible = false
+
+[node name="Rect" type="ColorRect" parent="World/SubViewport/PaletteEffect"]
+material = SubResource("palette_material")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("hud_scene")]
 player = NodePath("../World/SubViewport/TestMap/Player")

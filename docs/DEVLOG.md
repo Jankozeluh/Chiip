@@ -25,6 +25,7 @@
 - Retro materials (`assets/materials/`): one per texture, world triplanar at Quake's texel density, nearest-with-mipmaps filtering, matte.
 - Retextured the test map and the rifle. Visual check: the textures read well and the dummies stand out, but the concrete looked like snow (darkened it), and fixed-size labels piled on top of each other (map signs now shrink with distance; only dummy titles and damage numbers stay fixed size, at 1 font pixel per world-image pixel).
 - Lighting and atmosphere: warm low sun, dusty sky, darker ambient light, haze, three colored lamps (D-029). The first fog setting hid the 40 m dummy, so I halved it.
+- Optional palette effect: 12 shades per channel with ordered dithering, world image only, off by default until you decide from the side-by-side screenshots.
 
 ## 2026-10-15 — Session 4: M2 shooting
 

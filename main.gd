@@ -15,10 +15,13 @@ const UI_DESIGN_HEIGHT := 720.0
 @export var pixel_height: int = 360
 ## Pixelate the HUD too, by rendering the whole window at the low resolution.
 @export var pixelate_hud: bool = false
+## Limit the world's colors with the retro palette effect (shaders/palette_limit.gdshader).
+@export var palette_effect: bool = false
 
 @onready var _world: SubViewportContainer = $World
 @onready var _hud: Node = $HUD
 @onready var _debug_overlay: Node = $DebugOverlay
+@onready var _palette_effect: CanvasLayer = $World/SubViewport/PaletteEffect
 
 
 func _ready() -> void:
@@ -26,8 +29,10 @@ func _ready() -> void:
 	apply_pixel_settings()
 
 
-## Applies [member pixel_height] and [member pixelate_hud]. Call it again after changing them.
+## Applies [member pixel_height], [member pixelate_hud] and [member palette_effect].
+## Call it again after changing them.
 func apply_pixel_settings() -> void:
+	_palette_effect.visible = palette_effect
 	var window := get_tree().root
 	var ui_height: float
 	if pixelate_hud:

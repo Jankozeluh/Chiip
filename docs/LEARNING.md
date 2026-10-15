@@ -195,3 +195,7 @@
 - *Ambient light* is the light that fills shadows. Less of it means darker, moodier shadows.
 - Fog is exponential: it thickens with distance at the rate of *Density*, and *Sky Affect* sets how much it covers the sky.
 - `DirectionalLight3D` is the sun (only its rotation matters). `OmniLight3D` is a point light with a *Range*, like Unity's Directional and Point lights.
+
+**Full-screen effects** (`shaders/palette_limit.gdshader`)
+- A `canvas_item` shader on a full-screen `ColorRect` can read what's already drawn with `hint_screen_texture` and change it, like a Unity post-processing effect or a full-screen render pass.
+- Put inside the world's `SubViewport`, it only changes the 3D image; the HUD outside stays untouched.
