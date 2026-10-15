@@ -435,6 +435,13 @@
 **Static classes that own a node** (`ui/ui_sounds.gd`)
 - A class with only static members can still play sounds: it creates one `AudioStreamPlayer`, adds it to `get_tree().root` (deferred, since the tree may be busy) and keeps it in a static variable. That's the job a Unity singleton `MonoBehaviour` with `DontDestroyOnLoad` would do, without an autoload.
 
+**Lighting options in Godot** (D-085, `tools/map_screenshots.gd --lighting`)
+- Real-time lights (`DirectionalLight3D`, `OmniLight3D`) plus the `Environment`'s ambient light is what the maps use, like Unity's realtime lights with a flat ambient color.
+- **SSAO** (screen-space ambient occlusion) and **SSIL** darken corners and contact points from the depth buffer, per frame, like Unity's post-processing AO.
+- **SDFGI** computes bounce light in real time from a signed-distance version of the level; no baking, like Unity's Enlighten realtime GI. It also bounces the sky's color, which tinted our shadows blue.
+- **LightmapGI** bakes light into textures, like Unity's Progressive Lightmapper, but only from the editor's *Bake Lightmaps* button; there is no script call for it.
+- On macOS V-Sync is enforced by the system, so even `--disable-vsync` stays at the display's rate, and `RenderingServer.viewport_get_measured_render_time_gpu()` returns 0 with Metal.
+
 **Text you can see through walls** (the bomb's marker)
 - `Label3D.no_depth_test = true` draws the text on top of everything, like a waypoint marker; `fixed_size` keeps it the same size on screen at any distance. Unity would use a world-space canvas with a shader that ignores depth.
 

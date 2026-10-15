@@ -17,7 +17,9 @@ Continues M8 on the `m8-maps` branch, in parallel with M5 (main checkout) and M6
 
 - **Sound pass** (D-084, provisional): footsteps sound like the floor (hard, gravel, metal, wood), read from the texture of the brush under your feet, which the maps now store when built (Chiip's own worldspawn class; the three maps were rebuilt). Bullets make impact sounds per surface, a thwack on bodies and a louder CS-like "dink" on heads. A planted-bomb alert, menu hover and click sounds, a "go" beep at round start and won/lost stingers. 24 new generated sounds, made by a Sonnet subagent from a brief and measured by spectrum; the old sounds are unchanged. New `tests/sound_test.tscn` (8 checks).
 
-**Next:** lighting (baked vs. real-time), then the performance check and the first macOS export.
+- **Lighting decided: real-time** (D-085, provisional). Screenshots of today's lighting, SSAO, and SSAO with SDFGI on Depot ([maps/lighting_depot.jpg](maps/lighting_depot.jpg)): SSAO barely shows at 480 lines, SDFGI brings the blue sky back into the shadows and darkens the warehouse, and lightmaps would need a re-bake by hand after every map edit. New `tools/frame_timing.gd` and a `--lighting` option for the screenshot tool.
+
+**Next:** the performance check and the first macOS export.
 
 ## 2026-10-15 — Three quick maps (M8, started early)
 

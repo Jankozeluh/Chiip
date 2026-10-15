@@ -12,6 +12,12 @@ extends SceneTree
 ## freeze time, from places every map has: an overview from above the
 ## attackers' end, each spawn, each bomb site and the middle of the mid route.
 ## Each is saved as a PNG scaled up 2× with sharp pixels.
+##
+## [code]--lighting ssao[/code] or [code]--lighting sdfgi[/code] renders the same shots with
+## real-time lighting extras switched on in a copy of the map's environment, to
+## compare lighting options (D-085): screen-space ambient occlusion (darker
+## corners and contact shadows), or that plus SDFGI (real-time bounce light).
+## Without it the map's own environment is used.
 
 ## Size of the world image: the game's 480 lines at 16:9 (D-048).
 const WORLD_SIZE := Vector2i(854, 480)
@@ -37,6 +43,9 @@ func _init() -> void:
 	container.stretch = false
 	viewport.size = WORLD_SIZE
 	var map: Node3D = _main.get_map()
+	var lighting_index := args.find("--lighting")
+	if lighting_index >= 0 and lighting_index + 1 < args.size():
+		apply_lighting(map, args[lighting_index + 1])
 	var camera := Camera3D.new()
 	camera.fov = 73.74
 	map.add_child(camera)
@@ -53,6 +62,26 @@ func _init() -> void:
 		image.save_png(path)
 		print("Saved ", path)
 	quit()
+
+
+## Switches real-time lighting extras on in a copy of [param map]'s environment:
+## "ssao" (screen-space ambient occlusion) or "sdfgi" (SSAO plus SDFGI bounce light).
+static func apply_lighting(map: Node, variant: String) -> void:
+	var world_environment := map.find_children("*", "WorldEnvironment", true, false)[0] as WorldEnvironment
+	var environment := world_environment.environment.duplicate() as Environment
+	if variant == "ssao" or variant == "sdfgi":
+		environment.ssao_enabled = true
+		environment.ssao_radius = 1.2
+		environment.ssao_intensity = 1.6
+		environment.ssao_power = 1.5
+	if variant == "sdfgi":
+		environment.sdfgi_enabled = true
+		environment.sdfgi_use_occlusion = true
+		environment.sdfgi_cascades = 3
+		environment.sdfgi_min_cell_size = 0.2
+		environment.sdfgi_energy = 1.0
+	world_environment.environment = environment
+	print("Lighting: ", variant)
 
 
 ## Every frame: the console counts as open (the game ignores mouse and keys)

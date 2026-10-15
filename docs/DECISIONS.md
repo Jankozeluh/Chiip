@@ -679,6 +679,20 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Marking floors with trigger areas per surface (map work for every change); one footstep for every floor (less information); per-weapon impact sounds (one rifle so far); CoD-style hit markers and kill sounds for the shooter (not CS's feel; could be a setting later); downloading a CC0 sound pack (better realism, but downloads need approval and wouldn't match the retro sound); changing the approved gunshot.
 
+## D-085 — Lighting stays real-time; no lightmaps, no SSAO or SDFGI (2026-10-15) — *provisional*
+
+**Decision:** The maps keep today's real-time lighting: the sun (`DirectionalLight3D` with shadows), the warm lamps (`OmniLight3D`) and the neutral grey ambient light of D-063. No baked lightmaps, and none of Godot's real-time extras (screen-space ambient occlusion, SDFGI bounce light). The comparison tools stay: `tools/map_screenshots.gd --lighting ssao|sdfgi` and the new `tools/frame_timing.gd`.
+
+**Compared** on Depot through the real game at 480 lines (picture: [maps/lighting_depot.jpg](maps/lighting_depot.jpg); left today's lighting, middle with SSAO, right with SSAO and SDFGI; rows site A, the warehouse, site B):
+- **SSAO** darkens the foot of crates and the corners a little; at 480 lines with the palette effect it's barely visible.
+- **SDFGI** adds bounce light (warm lamp light on the warehouse floor) but also brings the sky's blue back into the shadows, which D-063 removed so a blue player in the shade stays visible, and makes the warehouse interior much darker. Both work against the clarity rule.
+- **Baked lightmaps** would give the same kind of bounce light and soft corners as SDFGI, for free at run time, but: every TrenchBroom edit needs a re-bake by hand in the editor (it can't be scripted: `LightmapGI`'s bake is editor-only), the baked files are large, characters would need light probes to match the baked light, and a bake picks up the blue sky light unless its environment is set by hand. The maps are blockouts that will still change after your playtest.
+- **Frame times:** the game holds the display rate in every variant (Depot, 3v3, world 960 × 540 in a 1080p window). macOS enforces V-Sync and Metal doesn't report GPU timestamps here, so the cost difference couldn't be measured more precisely than "within the noise" (slowest 1% of frames 18–23 ms in all three when the window ran at 60 Hz).
+
+**Why:** The look is a 90s shooter with flat, readable light; what extra lighting adds is hard to see at 480 lines and either hurts the clarity rule (SDFGI's blue shadows and dark interiors) or the map workflow (baking after every edit). Real-time lighting keeps the maps editable in TrenchBroom with one build command.
+
+**Alternatives:** Baking once the maps are final (the README keeps the steps; reconsider in a detail pass, with a grey custom environment for the bake); SSAO as an option in the video settings (cheap, small effect); SDFGI with a grey sky for the bounce (fixes the tint, keeps the dark interiors and the cost); `VoxelGI` per map (another bake step).
+
 ## Open questions
 
 | Question | Decide in |

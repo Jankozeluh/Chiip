@@ -136,6 +136,6 @@ The blockouts were generated once from a small layout script (outside the reposi
 ## Next for these maps
 
 - **Your playtest:** how they feel, what to change, and the final names.
-- **Detail pass (M8):** props, trim, signs, lamps, and baked lighting once it's decided.
+- **Detail pass (M8):** props, trim, signs, lamps. Lighting stays real-time (D-085; comparison: [maps/lighting_depot.jpg](maps/lighting_depot.jpg)).
 - **Bomb logic:** done (D-080): plant anywhere on the floor inside a site's area.
 - **Respawn mode (M8):** pick a `respawn_points` marker away from enemies.
