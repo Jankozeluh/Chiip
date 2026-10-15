@@ -175,6 +175,8 @@ func _test_overtime() -> void:
 func _test_main_scene() -> void:
 	_free_match()
 	var main := MAIN_SCENE.instantiate()
+	# Never read or write the player's settings file (M5's Settings; a no-op before it exists).
+	main.set("load_settings", false)
 	main.set("map_scene", MAP_SCENE)
 	var settings := MatchSettings.new()
 	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN

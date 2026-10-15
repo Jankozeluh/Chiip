@@ -35,6 +35,8 @@ func _init() -> void:
 	Engine.max_fps = 0
 	process_frame.connect(_keep_input_away)
 	var main: Node = load("res://main.tscn").instantiate()
+	# Measure with the default settings, never the player's file (M5's Settings; a no-op before it exists).
+	main.set("load_settings", false)
 	var team_size := int(_option(args, "--bots", "3"))
 	var settings := MatchSettings.new()
 	settings.team_size = team_size

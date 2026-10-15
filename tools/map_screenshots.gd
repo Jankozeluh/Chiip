@@ -35,6 +35,8 @@ func _init() -> void:
 	process_frame.connect(_keep_input_away)
 	# main.gd reads "--map" from the same command line.
 	_main = load("res://main.tscn").instantiate()
+	# Render with the default look, never the player's settings file (M5's Settings; a no-op before it exists).
+	_main.set("load_settings", false)
 	root.add_child(_main)
 	for i in 10:
 		await process_frame
