@@ -80,7 +80,7 @@
 }
 // brush 8
 {
-( -592 -160 -120 ) ( -592 160 -120 ) ( 592 160 -120 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -592 -160 -120 ) ( -592 160 -120 ) ( 592 160 -120 ) nature/dirt [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -592 -160 -136 ) ( 592 160 -136 ) ( -592 160 -136 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -592 -160 -136 ) ( -592 -160 -120 ) ( 592 -160 -120 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -592 160 -136 ) ( 592 160 -120 ) ( -592 160 -120 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -107,7 +107,7 @@
 }
 // brush 11
 {
-( -80 -160 0 ) ( -80 160 0 ) ( 80 160 0 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -80 -160 0 ) ( -80 160 0 ) ( 80 160 0 ) industrial/grate [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -80 -160 -16 ) ( 80 160 -16 ) ( -80 160 -16 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -80 -160 -16 ) ( -80 -160 0 ) ( 80 -160 0 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -80 160 -16 ) ( 80 160 0 ) ( -80 160 0 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -118,19 +118,19 @@
 {
 ( -80 -200 120 ) ( -80 200 120 ) ( -64 200 120 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -80 -200 0 ) ( -64 200 0 ) ( -80 200 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -80 -200 0 ) ( -80 -200 120 ) ( -64 -200 120 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -80 200 0 ) ( -64 200 120 ) ( -80 200 120 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -80 -200 0 ) ( -80 200 0 ) ( -80 200 120 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -64 -200 0 ) ( -64 200 120 ) ( -64 200 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -80 -200 0 ) ( -80 -200 120 ) ( -64 -200 120 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -80 200 0 ) ( -64 200 120 ) ( -80 200 120 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -80 -200 0 ) ( -80 200 0 ) ( -80 200 120 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -64 -200 0 ) ( -64 200 120 ) ( -64 200 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 13
 {
 ( 64 -200 120 ) ( 64 200 120 ) ( 80 200 120 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 64 -200 0 ) ( 80 200 0 ) ( 64 200 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 64 -200 0 ) ( 64 -200 120 ) ( 80 -200 120 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 64 200 0 ) ( 80 200 120 ) ( 64 200 120 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 64 -200 0 ) ( 64 200 0 ) ( 64 200 120 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 80 -200 0 ) ( 80 200 120 ) ( 80 200 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 64 -200 0 ) ( 64 -200 120 ) ( 80 -200 120 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 64 200 0 ) ( 80 200 120 ) ( 64 200 120 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 64 -200 0 ) ( 64 200 0 ) ( 64 200 120 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 80 -200 0 ) ( 80 200 120 ) ( 80 200 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 14
 {
@@ -378,7 +378,7 @@
 // brush 41
 {
 ( -312 -752 176 ) ( -312 -352 176 ) ( 240 -352 176 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -312 -752 160 ) ( 240 -352 160 ) ( -312 -352 160 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -312 -752 160 ) ( 240 -352 160 ) ( -312 -352 160 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -312 -752 160 ) ( -312 -752 176 ) ( 240 -752 176 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -312 -352 160 ) ( 240 -352 176 ) ( -312 -352 176 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -312 -752 160 ) ( -312 -352 160 ) ( -312 -352 176 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -415,46 +415,46 @@
 {
 ( -552 -944 104 ) ( -552 -688 104 ) ( -432 -688 104 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -552 -944 0 ) ( -432 -688 0 ) ( -552 -688 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -552 -944 0 ) ( -552 -944 104 ) ( -432 -944 104 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -552 -688 0 ) ( -432 -688 104 ) ( -552 -688 104 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -552 -944 0 ) ( -552 -688 0 ) ( -552 -688 104 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -432 -944 0 ) ( -432 -688 104 ) ( -432 -688 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -552 -944 0 ) ( -552 -944 104 ) ( -432 -944 104 ) industrial/corrugated_green [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -552 -688 0 ) ( -432 -688 104 ) ( -552 -688 104 ) industrial/corrugated_green [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -552 -944 0 ) ( -552 -688 0 ) ( -552 -688 104 ) industrial/corrugated_green [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -432 -944 0 ) ( -432 -688 104 ) ( -432 -688 0 ) industrial/corrugated_green [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 46
 {
 ( 352 -864 104 ) ( 352 -752 104 ) ( 472 -752 104 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 352 -864 0 ) ( 472 -752 0 ) ( 352 -752 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 352 -864 0 ) ( 352 -864 104 ) ( 472 -864 104 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 352 -752 0 ) ( 472 -752 104 ) ( 352 -752 104 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 352 -864 0 ) ( 352 -752 0 ) ( 352 -752 104 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 472 -864 0 ) ( 472 -752 104 ) ( 472 -752 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 -864 0 ) ( 352 -864 104 ) ( 472 -864 104 ) industrial/corrugated_rust [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 -752 0 ) ( 472 -752 104 ) ( 352 -752 104 ) industrial/corrugated_rust [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 -864 0 ) ( 352 -752 0 ) ( 352 -752 104 ) industrial/corrugated_rust [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 472 -864 0 ) ( 472 -752 104 ) ( 472 -752 0 ) industrial/corrugated_rust [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 47
 {
 ( -472 -352 104 ) ( -472 -240 104 ) ( -392 -240 104 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -472 -352 0 ) ( -392 -240 0 ) ( -472 -240 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -472 -352 0 ) ( -472 -352 104 ) ( -392 -352 104 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -472 -240 0 ) ( -392 -240 104 ) ( -472 -240 104 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -472 -352 0 ) ( -472 -240 0 ) ( -472 -240 104 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -392 -352 0 ) ( -392 -240 104 ) ( -392 -240 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -472 -352 0 ) ( -472 -352 104 ) ( -392 -352 104 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -472 -240 0 ) ( -392 -240 104 ) ( -472 -240 104 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -472 -352 0 ) ( -472 -240 0 ) ( -472 -240 104 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -392 -352 0 ) ( -392 -240 104 ) ( -392 -240 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 48
 {
 ( 392 -312 104 ) ( 392 -200 104 ) ( 472 -200 104 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 392 -312 0 ) ( 472 -200 0 ) ( 392 -200 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 392 -312 0 ) ( 392 -312 104 ) ( 472 -312 104 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 392 -200 0 ) ( 472 -200 104 ) ( 392 -200 104 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 392 -312 0 ) ( 392 -200 0 ) ( 392 -200 104 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 472 -312 0 ) ( 472 -200 104 ) ( 472 -200 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 392 -312 0 ) ( 392 -312 104 ) ( 472 -312 104 ) industrial/corrugated_green [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 392 -200 0 ) ( 472 -200 104 ) ( 392 -200 104 ) industrial/corrugated_green [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 392 -312 0 ) ( 392 -200 0 ) ( 392 -200 104 ) industrial/corrugated_green [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 472 -312 0 ) ( 472 -200 104 ) ( 472 -200 0 ) industrial/corrugated_green [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 49
 {
 ( -848 -784 88 ) ( -848 -672 88 ) ( -768 -672 88 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -848 -784 0 ) ( -768 -672 0 ) ( -848 -672 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -848 -784 0 ) ( -848 -784 88 ) ( -768 -784 88 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -848 -672 0 ) ( -768 -672 88 ) ( -848 -672 88 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -848 -784 0 ) ( -848 -672 0 ) ( -848 -672 88 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -768 -784 0 ) ( -768 -672 88 ) ( -768 -672 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -848 -784 0 ) ( -848 -784 88 ) ( -768 -784 88 ) industrial/corrugated_teal [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -848 -672 0 ) ( -768 -672 88 ) ( -848 -672 88 ) industrial/corrugated_teal [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -848 -784 0 ) ( -848 -672 0 ) ( -848 -672 88 ) industrial/corrugated_teal [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -768 -784 0 ) ( -768 -672 88 ) ( -768 -672 0 ) industrial/corrugated_teal [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 50
 {
@@ -478,10 +478,10 @@
 {
 ( -1104 552 56 ) ( -1104 944 56 ) ( -312 944 56 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -1104 552 0 ) ( -312 944 0 ) ( -1104 944 0 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -1104 552 0 ) ( -1104 552 56 ) ( -312 552 56 ) plaster_wall [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1104 552 0 ) ( -1104 552 56 ) ( -312 552 56 ) industrial/hazard_stripes [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -1104 944 0 ) ( -312 944 56 ) ( -1104 944 56 ) plaster_wall [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -1104 552 0 ) ( -1104 944 0 ) ( -1104 944 56 ) plaster_wall [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -312 552 0 ) ( -312 944 56 ) ( -312 944 0 ) plaster_wall [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -312 552 0 ) ( -312 944 56 ) ( -312 944 0 ) industrial/hazard_stripes [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 53
 {
@@ -514,73 +514,73 @@
 {
 ( 136 200 120 ) ( 136 272 120 ) ( 176 272 120 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 136 200 0 ) ( 176 272 0 ) ( 136 272 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 136 200 0 ) ( 136 200 120 ) ( 176 200 120 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 136 272 0 ) ( 176 272 120 ) ( 136 272 120 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 136 200 0 ) ( 136 272 0 ) ( 136 272 120 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 176 200 0 ) ( 176 272 120 ) ( 176 272 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 200 0 ) ( 136 200 120 ) ( 176 200 120 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 272 0 ) ( 176 272 120 ) ( 136 272 120 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 200 0 ) ( 136 272 0 ) ( 136 272 120 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 176 200 0 ) ( 176 272 120 ) ( 176 272 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 57
 {
 ( 136 392 120 ) ( 136 632 120 ) ( 176 632 120 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 136 392 0 ) ( 176 632 0 ) ( 136 632 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 136 392 0 ) ( 136 392 120 ) ( 176 392 120 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 136 632 0 ) ( 176 632 120 ) ( 136 632 120 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 136 392 0 ) ( 136 632 0 ) ( 136 632 120 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 176 392 0 ) ( 176 632 120 ) ( 176 632 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 392 0 ) ( 136 392 120 ) ( 176 392 120 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 632 0 ) ( 176 632 120 ) ( 136 632 120 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 392 0 ) ( 136 632 0 ) ( 136 632 120 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 176 392 0 ) ( 176 632 120 ) ( 176 632 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 58
 {
 ( 136 752 120 ) ( 136 944 120 ) ( 176 944 120 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 136 752 0 ) ( 176 944 0 ) ( 136 944 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 136 752 0 ) ( 136 752 120 ) ( 176 752 120 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 136 944 0 ) ( 176 944 120 ) ( 136 944 120 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 136 752 0 ) ( 136 944 0 ) ( 136 944 120 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 176 752 0 ) ( 176 944 120 ) ( 176 944 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 752 0 ) ( 136 752 120 ) ( 176 752 120 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 944 0 ) ( 176 944 120 ) ( 136 944 120 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 136 752 0 ) ( 136 944 0 ) ( 136 944 120 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 176 752 0 ) ( 176 944 120 ) ( 176 944 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 59
 {
 ( -96 256 160 ) ( -96 416 160 ) ( 40 416 160 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -96 256 0 ) ( 40 416 0 ) ( -96 416 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -96 256 0 ) ( -96 256 160 ) ( 40 256 160 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -96 416 0 ) ( 40 416 160 ) ( -96 416 160 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -96 256 0 ) ( -96 416 0 ) ( -96 416 160 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 40 256 0 ) ( 40 416 160 ) ( 40 416 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -96 256 0 ) ( -96 256 160 ) ( 40 256 160 ) industrial/corrugated_teal [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -96 416 0 ) ( 40 416 160 ) ( -96 416 160 ) industrial/corrugated_teal [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -96 256 0 ) ( -96 416 0 ) ( -96 416 160 ) industrial/corrugated_teal [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 40 256 0 ) ( 40 416 160 ) ( 40 416 0 ) industrial/corrugated_teal [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 60
 {
 ( -40 608 160 ) ( -40 768 160 ) ( 56 768 160 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -40 608 0 ) ( 56 768 0 ) ( -40 768 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -40 608 0 ) ( -40 608 160 ) ( 56 608 160 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -40 768 0 ) ( 56 768 160 ) ( -40 768 160 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -40 608 0 ) ( -40 768 0 ) ( -40 768 160 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 56 608 0 ) ( 56 768 160 ) ( 56 768 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -40 608 0 ) ( -40 608 160 ) ( 56 608 160 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -40 768 0 ) ( 56 768 160 ) ( -40 768 160 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -40 608 0 ) ( -40 768 0 ) ( -40 768 160 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 56 608 0 ) ( 56 768 160 ) ( 56 768 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 61
 {
 ( 312 200 160 ) ( 312 336 160 ) ( 456 336 160 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 312 200 0 ) ( 456 336 0 ) ( 312 336 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 312 200 0 ) ( 312 200 160 ) ( 456 200 160 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 312 336 0 ) ( 456 336 160 ) ( 312 336 160 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 312 200 0 ) ( 312 336 0 ) ( 312 336 160 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 456 200 0 ) ( 456 336 160 ) ( 456 336 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 312 200 0 ) ( 312 200 160 ) ( 456 200 160 ) industrial/corrugated_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 312 336 0 ) ( 456 336 160 ) ( 312 336 160 ) industrial/corrugated_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 312 200 0 ) ( 312 336 0 ) ( 312 336 160 ) industrial/corrugated_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 456 200 0 ) ( 456 336 160 ) ( 456 336 0 ) industrial/corrugated_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 62
 {
 ( 472 512 160 ) ( 472 672 160 ) ( 608 672 160 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 472 512 0 ) ( 608 672 0 ) ( 472 672 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 472 512 0 ) ( 472 512 160 ) ( 608 512 160 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 472 672 0 ) ( 608 672 160 ) ( 472 672 160 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 472 512 0 ) ( 472 672 0 ) ( 472 672 160 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 608 512 0 ) ( 608 672 160 ) ( 608 672 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 472 512 0 ) ( 472 512 160 ) ( 608 512 160 ) industrial/corrugated_teal [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 472 672 0 ) ( 608 672 160 ) ( 472 672 160 ) industrial/corrugated_teal [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 472 512 0 ) ( 472 672 0 ) ( 472 672 160 ) industrial/corrugated_teal [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 608 512 0 ) ( 608 672 160 ) ( 608 672 0 ) industrial/corrugated_teal [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 63
 {
 ( 352 752 160 ) ( 352 944 160 ) ( 496 944 160 ) metal_plates [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 352 752 0 ) ( 496 944 0 ) ( 352 944 0 ) metal_plates [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 352 752 0 ) ( 352 752 160 ) ( 496 752 160 ) metal_plates [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 352 944 0 ) ( 496 944 160 ) ( 352 944 160 ) metal_plates [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 352 752 0 ) ( 352 944 0 ) ( 352 944 160 ) metal_plates [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 496 752 0 ) ( 496 944 160 ) ( 496 944 0 ) metal_plates [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 752 0 ) ( 352 752 160 ) ( 496 752 160 ) industrial/corrugated_teal [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 944 0 ) ( 496 944 160 ) ( 352 944 160 ) industrial/corrugated_teal [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 752 0 ) ( 352 944 0 ) ( 352 944 160 ) industrial/corrugated_teal [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 496 752 0 ) ( 496 944 160 ) ( 496 944 0 ) industrial/corrugated_teal [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 64
 {
@@ -618,4 +618,406 @@
 ( -224 488 0 ) ( -224 536 0 ) ( -224 536 48 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -176 488 0 ) ( -176 536 48 ) ( -176 536 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
+}
+// entity 1
+{
+"classname" "light_cage"
+"origin" "0 108 -16"
+"light_range" "6.0"
+"light_energy" "1.2"
+}
+// entity 2
+{
+"classname" "light_ceiling"
+"origin" "-197 -610 160"
+"light_range" "7.0"
+}
+// entity 3
+{
+"classname" "light_ceiling"
+"origin" "138 -472 160"
+"light_range" "7.0"
+}
+// entity 4
+{
+"classname" "light_wall"
+"origin" "-787 944 173"
+"angle" "270"
+}
+// entity 5
+{
+"classname" "light_flood"
+"origin" "-709 -944 197"
+"angle" "90"
+}
+// entity 6
+{
+"classname" "light_flood"
+"origin" "472 -944 197"
+"angle" "90"
+}
+// entity 7
+{
+"classname" "light_flood"
+"origin" "709 944 197"
+"angle" "270"
+}
+// entity 8
+{
+"classname" "light_flood"
+"origin" "-1104 0 197"
+"angle" "0"
+}
+// entity 9
+{
+"classname" "light_flood"
+"origin" "1104 0 197"
+"angle" "180"
+}
+// entity 10
+{
+"classname" "light_wall"
+"origin" "-118 -352 118"
+"angle" "90"
+}
+// entity 11
+{
+"classname" "light_wall"
+"origin" "-433 312 126"
+"angle" "270"
+}
+// entity 12
+{
+"classname" "prop_window"
+"origin" "0 -352 79"
+"angle" "90"
+}
+// entity 13
+{
+"classname" "prop_window"
+"origin" "-177 -752 79"
+"angle" "270"
+}
+// entity 14
+{
+"classname" "prop_window"
+"origin" "240 -591 79"
+"angle" "0"
+}
+// entity 15
+{
+"classname" "prop_window"
+"origin" "-312 429 91"
+"angle" "0"
+}
+// entity 16
+{
+"classname" "prop_window"
+"origin" "-366 312 91"
+"angle" "270"
+}
+// entity 17
+{
+"classname" "prop_door"
+"origin" "-496 312 0"
+"angle" "270"
+}
+// entity 18
+{
+"classname" "prop_electric_cabinet"
+"origin" "-312 535 0"
+"angle" "0"
+}
+// entity 19
+{
+"classname" "prop_pipe_wall"
+"origin" "176 512 0"
+"angle" "0"
+}
+// entity 20
+{
+"classname" "prop_pipe_wall"
+"origin" "136 512 0"
+"angle" "180"
+}
+// entity 21
+{
+"classname" "prop_pipe_wall"
+"origin" "176 846 0"
+"angle" "0"
+}
+// entity 22
+{
+"classname" "prop_pipe_wall"
+"origin" "136 846 0"
+"angle" "180"
+}
+// entity 23
+{
+"classname" "prop_pipe_wall"
+"origin" "-472 -160 -120"
+"angle" "90"
+}
+// entity 24
+{
+"classname" "prop_pipe_wall"
+"origin" "354 -160 -120"
+"angle" "90"
+}
+// entity 25
+{
+"classname" "prop_pipe_wall"
+"origin" "-394 160 -120"
+"angle" "270"
+}
+// entity 26
+{
+"classname" "prop_debris_rubble"
+"origin" "-492 -130 -120"
+"angle" "210"
+}
+// entity 27
+{
+"classname" "prop_debris_planks"
+"origin" "453 118 -120"
+"angle" "260"
+}
+// entity 28
+{
+"classname" "prop_trash_bags"
+"origin" "394 -134 -120"
+"angle" "330"
+}
+// entity 29
+{
+"classname" "prop_grass_tuft"
+"origin" "-256 -142 -120"
+"angle" "307.9"
+}
+// entity 30
+{
+"classname" "prop_grass_tuft"
+"origin" "236 142 -120"
+"angle" "45.6"
+}
+// entity 31
+{
+"classname" "prop_grass_tuft"
+"origin" "535 -142 -120"
+"angle" "209.2"
+}
+// entity 32
+{
+"classname" "prop_grass_tuft"
+"origin" "-543 142 -120"
+"angle" "148.2"
+}
+// entity 33
+{
+"classname" "prop_grass_tuft"
+"origin" "157 -138 -120"
+"angle" "88.5"
+}
+// entity 34
+{
+"classname" "prop_grass_tuft"
+"origin" "-177 138 -120"
+"angle" "265"
+}
+// entity 35
+{
+"classname" "prop_pipe_valve"
+"origin" "-256 -944 0"
+"angle" "90"
+}
+// entity 36
+{
+"classname" "prop_pipe_valve"
+"origin" "39 944 0"
+"angle" "270"
+}
+// entity 37
+{
+"classname" "prop_pipe_wall"
+"origin" "709 -944 0"
+"angle" "90"
+}
+// entity 38
+{
+"classname" "prop_pipe_wall"
+"origin" "965 944 0"
+"angle" "270"
+}
+// entity 39
+{
+"classname" "prop_pipe_wall"
+"origin" "-1104 -630 0"
+"angle" "0"
+}
+// entity 40
+{
+"classname" "prop_pipe_wall"
+"origin" "-551 944 56"
+"angle" "270"
+}
+// entity 41
+{
+"classname" "prop_electric_cabinet"
+"origin" "-1104 -354 0"
+"angle" "0"
+}
+// entity 42
+{
+"classname" "prop_gas_cylinders"
+"origin" "-1094 354 0"
+"angle" "0"
+}
+// entity 43
+{
+"classname" "prop_electric_cabinet"
+"origin" "1104 339 0"
+"angle" "180"
+}
+// entity 44
+{
+"classname" "prop_barrel_group"
+"origin" "1079 -350 0"
+"angle" "200"
+}
+// entity 45
+{
+"classname" "prop_sign_a"
+"origin" "-312 -543 91"
+"angle" "180"
+}
+// entity 46
+{
+"classname" "prop_sign_b"
+"origin" "-630 944 126"
+"angle" "270"
+}
+// entity 47
+{
+"classname" "prop_sign_a_left"
+"origin" "864 -180 87"
+"angle" "0"
+}
+// entity 48
+{
+"classname" "prop_sign_b_right"
+"origin" "864 180 87"
+"angle" "0"
+}
+// entity 49
+{
+"classname" "prop_sign_warning"
+"origin" "-236 200 79"
+"angle" "90"
+}
+// entity 50
+{
+"classname" "prop_grass_tuft"
+"origin" "-945 -917 0"
+"angle" "337.1"
+}
+// entity 51
+{
+"classname" "prop_grass_tuft"
+"origin" "-39 -921 0"
+"angle" "2.8"
+}
+// entity 52
+{
+"classname" "prop_grass_tuft"
+"origin" "315 -913 0"
+"angle" "166.4"
+}
+// entity 53
+{
+"classname" "prop_grass_tuft"
+"origin" "1024 -921 0"
+"angle" "101.8"
+}
+// entity 54
+{
+"classname" "prop_grass_tuft"
+"origin" "236 917 0"
+"angle" "76.9"
+}
+// entity 55
+{
+"classname" "prop_grass_tuft"
+"origin" "1043 921 0"
+"angle" "70.7"
+}
+// entity 56
+{
+"classname" "prop_grass_tuft"
+"origin" "-1083 -551 0"
+"angle" "50.5"
+}
+// entity 57
+{
+"classname" "prop_grass_tuft"
+"origin" "1079 551 0"
+"angle" "307.8"
+}
+// entity 58
+{
+"classname" "prop_grass_tuft"
+"origin" "1083 -472 0"
+"angle" "11.5"
+}
+// entity 59
+{
+"classname" "prop_grass_tuft"
+"origin" "-787 -220 0"
+"angle" "263.2"
+}
+// entity 60
+{
+"classname" "prop_grass_tuft"
+"origin" "807 220 0"
+"angle" "105.3"
+}
+// entity 61
+{
+"classname" "prop_grass_tuft"
+"origin" "630 -220 0"
+"angle" "155.2"
+}
+// entity 62
+{
+"classname" "prop_grass_tuft"
+"origin" "-650 220 0"
+"angle" "196.3"
+}
+// entity 63
+{
+"classname" "prop_grass_tuft"
+"origin" "787 472 0"
+"angle" "76"
+}
+// entity 64
+{
+"classname" "prop_debris_bricks"
+"origin" "157 -909 0"
+"angle" "270"
+}
+// entity 65
+{
+"classname" "prop_pallet"
+"origin" "866 890 0"
+"angle" "260"
+}
+// entity 66
+{
+"classname" "prop_debris_boxes"
+"origin" "1075 -787 0"
+"angle" "20"
+}
+// entity 67
+{
+"classname" "prop_tire_stack"
+"origin" "1075 915 0"
 }

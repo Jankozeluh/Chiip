@@ -104,7 +104,7 @@ A dry concrete water works. **Sunken mid, high sides.**
 - **Mid:** a dry channel 3 m deep, with ramps down at both ends and 3 m fences along its edges. A walled footbridge crosses it in the middle; under the bridge the channel narrows to a 2.5 m culvert, and concrete blocks on either side of the bridge stop anyone seeing straight through. Two overlooks with low parapets let the sides shoot down into the channel.
 - **West, site A:** a pump house you can go through (offset doors with a pump in between) or around (two corridors with overlapping blockers). A is in front of its north door.
 - **East, site B:** a tank yard split by a pipe wall with two gaps, each with a tank right behind it, so no view runs through. B is on a 1.5 m terrace with ramps up from the south and the west; a control house blocks the view from the yard up onto the terrace.
-- **Look (5 materials):** concrete, plaster, metal, gravel and a few wooden crates under an overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
+- **Look (6 main materials, dressed with the map kit in M10):** concrete ground, channel walls and terrace, plaster walls and pump house, ribbed metal in grey, teal and green (tanks, the pipe wall, the bridge's walls, the blockers), dirt on the dry channel's bottom, gravel, and a few wooden crates; a grated deck on the footbridge and hazard stripes along the terrace's edge. Props and lamps (67 entities in `spillway.map`): a caged bulb in the culvert, pendants in the pump house, floodlights on the walls, lanterns on the pump and control houses, pipes along the pipe wall and the walls, drain pipes under the channel's rim, valves, windows and a door, signs to A and B on the channel fences' south ends and at each site, cabinets and cylinders in the yards' corners, debris and grass in the channel and along the walls. An overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
 
 ## Measurements
 
@@ -119,7 +119,7 @@ From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the roun
 | Defenders to A / B | 25 m / 23 m | 18 m / 20 m | 20 m / 21 m |
 | Routes west / mid / east | 58 / 49 / 68 m | 61 / 51 / 59 m | 57 / 53 / 55 m |
 | Longest sightline | 44 m | 35 m | 38 m |
-| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 | 375 / 0 |
+| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 | 370 / 0 (375 before M10: props block a few) |
 | Spawn-to-spawn views | 0 | 0 | 0 |
 | Bomb rounds with bots (D-081): plants in 4 rounds, how they ended | 4 plants: 4 defused | 4 plants: 2 defused, 2 elimination | 3 plants: 1 defused, 2 elimination; 1 round decided before a plant |
 
