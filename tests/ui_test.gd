@@ -2319,9 +2319,10 @@ func _test_console_and_menus() -> void:
 	_check("Esc closes it again and the game is free: nothing is open",
 			not menu.visible and not MenuState.is_any_open() and not MenuState.blocks_gameplay(), "menu open %s" % menu.visible)
 	var label_minimum := (menu.get_row(&"sensitivity").get_child(0) as Control).custom_minimum_size
-	var window_height := get_tree().root.size.y
-	_check("main.gd scales the menu with the window like the other UI: its 400 px row labels are 400 times the window's height over 720 wide (the headless window is %d tall)" % window_height,
-			label_minimum == (Vector2(400, 0) * (window_height / 720.0)).round(), "label minimum %s" % label_minimum)
+	var window_size := get_tree().root.size
+	var window_scale := PixelView.ui_scale_for(Vector2(window_size))
+	_check("main.gd scales the menu with the window like the other UI: its 400 px row labels are 400 times the UI scale wide (the tighter of the window's width over 1280 and height over 720; the headless window is %s)" % window_size,
+			label_minimum == (Vector2(400, 0) * window_scale).round(), "label minimum %s at scale %.3f" % [label_minimum, window_scale])
 	console.run("clear")
 	console.run("help")
 	var names := console.get_command_names()

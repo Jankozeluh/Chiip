@@ -48,9 +48,6 @@ enum Mode {
 	PRACTICE,
 }
 
-## The HUD and overlay are laid out for a window this many pixels tall.
-const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
-
 ## The map to play. The main menu's match setup overrides it with its choice
 ## ([GameLaunch]); from the command line, [code]-- --map <scene>[/code] does:
 ## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]
@@ -433,17 +430,17 @@ func _map_has_group(group: String) -> bool:
 ## shaders/palette_limit.gdshader). Runs when one of them changes and when the
 ## window is resized.
 func apply_pixel_settings() -> void:
-	var ui_height := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
-	_hud.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_debug_overlay.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_pause_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_settings_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_class_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_buy_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_loading_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	var factor := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
+	_hud.set_ui_scale(factor)
+	_debug_overlay.set_ui_scale(factor)
+	_console.set_ui_scale(factor)
+	_scoreboard.set_ui_scale(factor)
+	_match_end_screen.set_ui_scale(factor)
+	_pause_menu.set_ui_scale(factor)
+	_settings_menu.set_ui_scale(factor)
+	_class_menu.set_ui_scale(factor)
+	_buy_menu.set_ui_scale(factor)
+	_loading_screen.set_ui_scale(factor)
 
 
 func _on_setting_changed(key: StringName) -> void:

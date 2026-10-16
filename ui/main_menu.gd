@@ -204,8 +204,7 @@ func start_practice() -> void:
 ## ([PixelView], like main.gd does for the game). Runs at startup, when the
 ## video settings change and when the window is resized.
 func apply_pixel_settings() -> void:
-	var ui_height := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
-	var factor := ui_height / PixelView.UI_DESIGN_HEIGHT
+	var factor := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
 	UiTheme.apply(_page, factor)
 	_setup.set_ui_scale(factor)
 	_lobby.set_ui_scale(factor)

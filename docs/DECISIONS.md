@@ -1660,6 +1660,21 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** MIT, or source-available only; itch.io with a restricted page; UPnP and direct-IP play (it opens a port on the host's router).
 
+## D-151 — The UI scales by the tighter of width and height, in half steps (2026-10-16)
+
+**Decision:**
+- **The UI scale is the tighter of window width / 1280 and window height / 720** (`PixelView.ui_scale_for()`), so the 1280 × 720 layout always fits, whatever the window's shape. From 1.0 up it is rounded down to a half step (1, 1.5, 2, 2.5 …), because Silkscreen draws every one of its pixels as a whole number of screen pixels only at those steps (16 px text: 2 px per pixel at 1×, 3 at 1.5×, 4 at 2×); in between they come out uneven. Below 1.0 (a small window, or the pixelated HUD's low-res image) it is the exact fit.
+- 1280 × 720 → 1, 1920 × 1080 → 1.5, 2560 × 1440, 3440 × 1440 and 2560 × 1600 → 2, **2920 × 1753 → 2** (width-bound: 2920 / 1280 = 2.28), 1440 × 1080 → 1.
+- `PixelView.apply()` now returns the **factor** (it returned the UI height); `main.gd` and `MainMenu` hand it to every menu, the HUD, the console and the loading screen. Both already re-run on `Window.size_changed`, which a drag, a fullscreen switch and the editor's embedded game view all emit, so a resize re-lays everything out.
+- **The Play screen's three mode cards are equally wide in any window:** their description and last lines wrap (`autowrap_mode`) instead of widening the card. That was the second half of your cut-off screenshot: the page's minimum width was 1338 design pixels (the Practice card's one-line text made it the widest), more than the 1280 the layout is designed for, so even a 16:9 window showed it cut. It is 894 now.
+
+**Why:** Your screenshot of the editor's game view at 2920 × 1753 showed "LAY" for "PLAY", "EAM DEATHMATCH" and the right column cut off, and *"when I expanded on the full screen it completely fucked up the UI"*. The old rule was window height / 720: 2.43 there, a layout 1199 design pixels wide in a 1280-wide design.
+
+**Alternatives:**
+- **Exact fit, no steps** (2.28 there): the text would be 36.5 px, which the font engine rounds, so the pixel font's pixels come out 4 or 5 px wide at random.
+- **Whole steps only** (1×, 2×): 1920 × 1080 would drop from the mockups' exact 1.5× to 1×.
+- **Fixed 16:9 canvas with bars** (`content_scale_aspect = keep`): the ultrawide would waste its sides; the mockups' rule is to anchor to the edges.
+
 ## Open questions
 
 | Question | Decide in |
