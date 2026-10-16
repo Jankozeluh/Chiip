@@ -2,6 +2,19 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — The roadmap is built
+
+**Done**
+- Merged into main, all as fast-forwards with nothing left to resolve:
+  - M9: LAN multiplayer, with lobby, host authority, prediction, lag compensation, bots filling slots and the arsenal online
+  - the M10 Shooting Range: Practice opens it, and the test map is hidden from the player
+  - the M10 UI: your Claude Design mockups for the menus, HUD, kill feed, class draft, buy menu and lobby
+- Main passes all 31 suites, 1056 checks.
+- The exported app is rebuilt at `builds/macos/Chiip.app` (171 MB) and starts without errors.
+- M0 to M10 are all built. Steam lobbies stay in the Backlog: GodotSteam wasn't downloaded, at your request.
+
+**Next:** your playtest, from "Your open checks" in PLAN.md.
+
 ## 2026-10-16 — M10 UI refresh
 
 Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.

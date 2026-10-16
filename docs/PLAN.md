@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M7 — Arsenal, perks & economy is built (all 19 tasks, with the class draft and random map weapons of D-120) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". M10's map kit is built too (D-121 to D-129, textures redrawn in the crew's style in D-140, the Shooting Range for practice and the test map hidden in D-141 and D-142) and waits for your check. M10's modern UI is built in its own branch from your Claude Design mockups (D-130 to D-139: every menu, the HUD, kill feed, class draft, buy menu, lobby, console and loading screen) and waits for your check ("M10 UI check" in "Your open checks"). M9 — Multiplayer is built in its own branch for LAN play (Steam lobbies deferred, D-114) and waits for your playtest with a friend ("M9 playtest" in "Your open checks").
+> **Current milestone:** none. **The whole roadmap, M0 to M10, is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval.
 
 ## Your open checks
 
