@@ -30,6 +30,13 @@ var reserve: int = 0
 var dropped_by: Character
 ## The power-weapon spot that put it out, if any (it shows the spot is empty once taken).
 var spot: Node
+## Floats where it was put and turns, upright, instead of falling (a [WeaponSpot]'s gun).
+var floating: bool = false:
+	set(value):
+		floating = value
+		var model := get_node_or_null("Model") as Node3D
+		if model != null:
+			model.rotation = Vector3.ZERO if floating else Vector3(0.0, 0.0, PI * 0.5)
 
 var _ignore_dropper_left: float = 0.0
 var _fall_speed: float = 0.0
@@ -61,6 +68,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_ignore_dropper_left = maxf(_ignore_dropper_left - delta, 0.0)
+	if floating:
+		var model := get_node_or_null("Model") as Node3D
+		if model != null:
+			model.rotate_y(WeaponSpot.TURN_SPEED * delta)
+		return
 	if is_nan(_floor_y) or global_position.y <= _floor_y:
 		return
 	_fall_speed += FALL_GRAVITY * delta
@@ -72,9 +84,9 @@ func can_be_taken_by(character: Character) -> bool:
 	return not (character == dropped_by and _ignore_dropper_left > 0.0)
 
 
-## True once it lies on the floor.
+## True once it lies on the floor (a floating one counts as landed).
 func has_landed() -> bool:
-	return not is_nan(_floor_y) and global_position.y <= _floor_y + 0.001
+	return floating or (not is_nan(_floor_y) and global_position.y <= _floor_y + 0.001)
 
 
 ## The point to look at to swap for it: its middle.
@@ -84,7 +96,7 @@ func get_center() -> Vector3:
 
 ## Finds the floor under the drop point; the gun falls there.
 func _find_floor() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or floating:
 		return
 	var from := global_position + Vector3.UP * 0.3
 	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * FLOOR_SEARCH, PhysicsLayers.WORLD)

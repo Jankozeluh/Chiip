@@ -17,7 +17,9 @@
 
 - **Task 8, grenades** (D-097): CS's three. Fire pulls the pin and throws, aim lobs; they fly by rays with a light gravity and bounce. The Frag's blast falls off like a bell curve and walls stop it (98 at most, as in CS); the Flashbang blinds everyone who looks at it (a white screen and ringing ears for you, no sight for bots); the Smoke's 18 s cloud hides what's behind it from bots and greys your view inside it. Explosions with light, a fireball and particles. New `tests/grenade_test.tscn` (14 checks); all 21 suites pass.
 
-**Next:** task 9 (power weapons on the maps).
+- **Task 9, power weapons on the maps** (D-098): every quick map has a Heron and a Breaker on gold rings in contested lanes, placed so both teams walk about as far to them; back every round (in team respawn 30 s after being taken). MAPS.md has where.
+
+**Next:** task 10 (money).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

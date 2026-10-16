@@ -66,6 +66,7 @@ func _run_all() -> void:
 	await _test_console()
 	await _test_round_loadouts()
 	await _test_respawn_and_practice_loadouts()
+	await _test_weapon_spots()
 
 
 # --- Armor (D-093) ---
@@ -464,6 +465,56 @@ func _test_respawn_and_practice_loadouts() -> void:
 			and practice_player.inventory.get_weapons().size() == 4, "you: %s" % [practice_player.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id)])
 	remove_child(practice_map)
 	practice_map.queue_free()
+	await _wait_ticks(2)
+
+
+## M7 task 9 (D-098): a power-weapon spot puts a floating gun out, a walk over takes it, the spot
+## dims, comes back after its time (team respawn, practice), and in rounds at every round start.
+func _test_weapon_spots() -> void:
+	var map := MAP_SCENE.instantiate()
+	add_child(map)
+	var player := map.get_node("Player") as Character
+	_silence(player)
+	var spot := (load("res://weapons/weapon_spot.tscn") as PackedScene).instantiate() as WeaponSpot
+	spot.weapon = load("res://weapons/sniper.tres")
+	spot.respawn_time = 2.0
+	map.add_child(spot)
+	spot.global_position = player.global_position + Vector3(4, 0, 0)
+	spot.refill()
+	await _wait_ticks(3)
+	var pickup := spot.get_pickup()
+	var out := pickup != null and pickup.floating and pickup.data.id == &"sniper" and pickup.magazine == 5 \
+			and pickup.global_position.y > spot.global_position.y + 0.5
+	player.inventory.set_loadout([KNIFE, PISTOL] as Array[WeaponData])
+	player.global_position = spot.global_position
+	await _wait_ticks(3)
+	var taken := player.inventory.get_in_slot(WeaponData.Slot.PRIMARY) != null \
+			and player.inventory.get_in_slot(WeaponData.Slot.PRIMARY).data.id == &"sniper" and not spot.has_weapon()
+	var label_hidden := not (spot.get_node("Name") as Label3D).visible
+	player.global_position += Vector3(0, 0, 6)
+	await _wait_seconds(2.1)
+	_check("A power-weapon spot shows a floating Heron; walking over it takes it, the spot dims, and it's back after its time",
+			out and taken and label_hidden and spot.has_weapon(), "out %s, taken %s, dimmed %s, back %s" % [out, taken, label_hidden, spot.has_weapon()])
+	var rounds := RoundManager.new()
+	rounds.settings = _settings()
+	rounds.rng.seed = 5
+	map.add_child(rounds)
+	await _wait_ticks(3)
+	var untimed := not spot.timed and spot.has_weapon()
+	await _wait_for_live(rounds)
+	player.global_position = spot.global_position
+	await _wait_ticks(3)
+	var gone := not spot.has_weapon()
+	await _wait_seconds(2.5)
+	var waits := not spot.has_weapon()
+	for enemy in rounds.get_members(1):
+		enemy.take_damage(500.0, Hitbox.Zone.CHEST, player)
+	await _wait_for_phase(rounds, RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	_check("In rounds the spot doesn't come back on a timer, but a fresh gun is out at the next round start",
+			untimed and gone and waits and spot.has_weapon(), "untimed %s, taken %s, still empty later %s, back next round %s" % [untimed, gone, waits, spot.has_weapon()])
+	remove_child(map)
+	map.queue_free()
 	await _wait_ticks(2)
 
 

@@ -88,6 +88,11 @@ func _add_bomb() -> void:
 	pass
 
 
+## The power weapons come back 30 s after being taken (D-098).
+func _spots_timed() -> bool:
+	return true
+
+
 ## No money here (D-090): each class spawns with its own loadout (its signature gun, the Sparrow,
 ## the knife and a grenade), the round loadout for a class without one.
 func _loadout_for(character: Character) -> Array[WeaponData]:

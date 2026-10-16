@@ -77,6 +77,7 @@ func _check_map(path: String) -> void:
 	_check_structure(has_player)
 	_check_on_mesh()
 	_check_reachable()
+	_check_weapon_spots()
 	await _play_rounds()
 	_rounds.queue_free()
 	_rounds = null
@@ -142,6 +143,29 @@ func _check_reachable() -> void:
 			lines.append("%s → %s: %s" % [group.trim_suffix("_spawns"), site.name.trim_prefix("BombSite"),
 					"%.0f m" % _path_length(nav_path) if ok else "NO PATH"])
 	_check("Both spawns can walk to both bomb sites", reachable, ", ".join(lines))
+
+
+## M7 (D-098): two power-weapon spots, a Heron and a Breaker, on the navigation mesh, about as
+## far from both spawns (within 12 m of walking).
+func _check_weapon_spots() -> void:
+	var spots := _in_map(WeaponSpot.GROUP)
+	var kinds: Array = spots.map(func(spot: Node) -> String: return String((spot as WeaponSpot).weapon.id))
+	kinds.sort()
+	var lines: Array[String] = []
+	var fair := true
+	for node in spots:
+		var spot := node as WeaponSpot
+		var closest := NavigationServer3D.map_get_closest_point(_navigation_map(), spot.global_position)
+		var lengths: Array[float] = []
+		for group in [Teams.DEFEND_SPAWN_GROUP, Teams.ATTACK_SPAWN_GROUP]:
+			var start := (_in_map(group)[2] as Node3D).global_position
+			lengths.append(_path_length(NavigationServer3D.map_get_path(_navigation_map(), start, closest, true)))
+		var gap := Vector2(closest.x - spot.global_position.x, closest.z - spot.global_position.z).length()
+		var ok := gap <= ON_MESH_DISTANCE and absf(closest.y - spot.global_position.y) <= 1.0 and absf(lengths[0] - lengths[1]) <= 12.0
+		fair = fair and ok
+		lines.append("%s: defenders %.0f m, attackers %.0f m" % [spot.weapon.id, lengths[0], lengths[1]])
+	_check("Two power weapons (a Heron and a Breaker) on the navigation mesh, about as far from both spawns",
+			kinds == ["shotgun", "sniper"] and fair, "%s; %s" % [kinds, ", ".join(lines)])
 
 
 func _play_rounds() -> void:

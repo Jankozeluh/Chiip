@@ -1089,6 +1089,19 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Rigid-body grenades (Jolt does the bounce, but not the same way twice); damage through walls with a falloff (CS's HE is mostly stopped by walls); flashes that spare the thrower's team (CS doesn't); a volumetric fog smoke (`FogVolume`: prettier, but needs volumetric fog in every map's environment and costs more); bullets stopped by smoke (not CS).
 
+## D-098 — Power weapons on the maps, the light economy and the buy menu (2026-10-16) — *provisional*
+
+**Power weapons** (task 9):
+- **Two spots per quick map**, a Heron and a Breaker (`weapons/weapon_spot.tscn`, group `weapon_spots`, under each map's `Pickups` node): a gold glowing ring, the weapon's name above it, and the gun floating and turning over it (a `WeaponPickup` with `floating` on). Taking it is the same as any gun on the floor (walk over it into a free slot, E to swap); the ring dims and the name hides while it's empty.
+- **When they come back:** in rounds the `RoundManager` refills every spot at each round start (`_refill_spots()`; floor guns are cleared but spot guns stay); in team respawn (`RespawnMatch._spots_timed()`) and practice a spot comes back 30 s after being taken.
+- **Where:** in different lanes, on patrol points (on the navmesh), chosen by walking distance so both teams reach them about as fast (MAPS.md has the table; within 9 m on every map).
+
+**Why:** Your "built around picking up weapons, CS and CoD": fixed power-weapon spots are CoD's way of giving a map places worth fighting for, and in rounds they give the losing team a way to a sniper or a shotgun on an eco. Gold keeps them clear of the team colours (D-041) and of the UI's cyan; a floating, turning gun reads at a distance in pixels.
+
+**Checked:** two new gear checks (a spot's gun floats, a walk over takes it, the ring dims and the name hides, it's back after its time; in rounds no timer, but fresh at the next round start) and a maps check per map (a Heron and a Breaker on the navmesh, walks within 12 m of each other). All other suites pass.
+
+**Alternatives:** Pickups anywhere on a timer like old arena shooters (more chaos, less CS); armor and grenade spots too (could come later); spots only in team respawn (rounds would lose the eco-round fight for a power weapon); a weapon icon over the spot instead of the name (the name reads in the font we have).
+
 ## Open questions
 
 | Question | Decide in |

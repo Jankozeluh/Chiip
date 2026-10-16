@@ -257,6 +257,7 @@ func _start_round() -> void:
 	for team in Teams.COUNT:
 		_spawn_team(team)
 	_clear_floor()
+	_refill_spots()
 	for character in _participants:
 		if is_instance_valid(character):
 			_give_loadout(character)
@@ -455,6 +456,22 @@ func _give_loadout(character: Character) -> void:
 		character.inventory.set_loadout(loadout)
 	character.set_armor(0.0, false)
 	character.set_defuse_kit(false)
+
+
+## The map's power-weapon spots: rounds put a fresh gun on each at every round start (D-098);
+## a [RespawnMatch] lets them come back on their own timers.
+func _refill_spots() -> void:
+	var map := get_parent()
+	for node in get_tree().get_nodes_in_group(WeaponSpot.GROUP):
+		if map.is_ancestor_of(node):
+			var spot := node as WeaponSpot
+			spot.timed = _spots_timed()
+			spot.refill()
+
+
+## True if power-weapon spots come back by themselves after being taken (not in rounds).
+func _spots_timed() -> bool:
+	return false
 
 
 ## Removes every gun lying on the map's floor (a new round starts clean).
