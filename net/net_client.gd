@@ -529,7 +529,7 @@ func _on_welcome(values: Array) -> void:
 		else:
 			character.health = item[1]
 	_welcomed = true
-	Teams.set_viewer_team(player.team)
+	Teams.set_viewer(player)
 	print_verbose("Chiip online: welcomed as %s (network id %d, team %d) with %d characters." % [player.name, player.net_id, player.team, rules.get_participants().size()])
 	welcomed.emit()
 

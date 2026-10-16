@@ -6,7 +6,10 @@ extends Control
 ## The top bar comes in two kinds. A team respawn match ([RespawnMatch], D-082), Team Deathmatch,
 ## shows your kills in the team's colour on the left and the enemy's on the right, each with a bar
 ## under it that fills toward the clock as the team nears the kill limit, and the time with "First to
-## 50" in the middle. A rounds match shows one chip per player of each team (filled while they live,
+## 50" in the middle. A free-for-all (M17, D-240) uses the same bar for your kills on the left and the
+## best other player's (the second's when you lead) on the right, in your colour and the enemy's: the
+## teams' score stays 0–0 there ([method MatchText.ffa_scores]); it has no chips, and its banners name the
+## winner ("You win", "Bot2 wins"). A rounds match shows one chip per player of each team (filled while they live,
 ## a frame when dead), the score of each team and, in the middle, the time over the round number;
 ## once the bomb is planted an alert plate says "Bomb" in place of the time.
 ##
@@ -216,8 +219,8 @@ func _manager_connections() -> Array[Array]:
 
 ## A bot on your team called out an enemy (M15, D-216): a line in the kill feed says where ("Bot3  ENEMY NEAR A"); the
 ## compass hangs a tag on the bearing (D-232).
-func _on_callout(team: int, caller: Character, _point: Vector3, place: String) -> void:
-	if team == Teams.viewer_team:
+func _on_callout(_team: int, caller: Character, _point: Vector3, place: String) -> void:
+	if is_instance_valid(caller) and Teams.is_viewer_ally(caller):
 		_kill_feed.add_callout(caller, ("ENEMY NEAR %s" if place.length() == 1 else "ENEMY %s") % place)
 
 
@@ -240,6 +243,11 @@ func _refresh() -> void:
 	var them := Teams.other(you)
 	var your_score: int = _manager.score[you]
 	var enemy_score: int = _manager.score[them]
+	if _manager.is_free_for_all():
+		# Nobody has a team: your kills against the best of the others.
+		var kills := MatchText.ffa_scores(_manager, Teams.viewer)
+		your_score = kills.x
+		enemy_score = kills.y
 	_tdm_your_score.text = str(your_score)
 	_tdm_enemy_score.text = str(enemy_score)
 	_your_score.text = str(your_score)
@@ -368,6 +376,9 @@ func _on_sides_swapped() -> void:
 
 
 func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
+	if _manager.is_free_for_all():
+		_on_free_for_all_ended(reason)
+		return
 	var won := winner == Teams.viewer_team
 	Music.play_stinger(Music.stinger_for_round(won, reason))
 	_clear_messages()
@@ -379,6 +390,19 @@ func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 	_set_message(_line1, _reason_text(won, reason))
 	if reason == RoundManager.EndReason.TIME:
 		_set_timer(0.0, &"")
+
+
+## The end of a free-for-all: the banner names the one on top ("You win", "Bot2 wins") in their colour
+## (yours or the enemy's) and the line under it says why ("First to 20 kills", "Most kills when time ran out").
+func _on_free_for_all_ended(reason: RoundManager.EndReason) -> void:
+	var leader := (_manager as FreeForAllMatch).get_leader()
+	var won := leader != null and leader == Teams.viewer
+	Music.play_stinger(Music.stinger_for_round(won, reason))
+	_clear_messages()
+	if leader == null:
+		return
+	_set_tinted_message(_title, MatchText.ffa_winner_text(leader, Teams.viewer), Teams.ui_color_of(leader))
+	_set_message(_line1, _reason_text(won, reason))
 
 
 func _on_character_killed(victim: Character, killer: Character, headshot: bool) -> void:
@@ -399,7 +423,7 @@ func _show_phase_message() -> void:
 	_lift.visible = true
 	_set_message(_title, _countdown_text())
 	if _manager.is_team_respawn():
-		_set_message(_line1, "First team to %d kills wins" % _manager.settings.kill_limit)
+		_set_message(_line1, ("First to %d kills wins" if _manager.is_free_for_all() else "First team to %d kills wins") % _manager.settings.kill_limit)
 		return
 	var attacking := _manager.get_side(Teams.viewer_team) == Teams.Side.ATTACKING
 	_set_message(_line1, _side_text(attacking))
@@ -408,9 +432,13 @@ func _show_phase_message() -> void:
 	_show_match_point()
 
 
-## "Round 3 · starts in 4" ("Team respawn · starts in 4").
+## "Round 3 · starts in 4" ("Team respawn · starts in 4", "Free-for-all · starts in 4").
 func _countdown_text() -> String:
-	var what := "Team respawn" if _manager.is_team_respawn() else "Round %d" % _manager.round_number
+	var what := "Round %d" % _manager.round_number
+	if _manager.is_free_for_all():
+		what = MatchText.FREE_FOR_ALL
+	elif _manager.is_team_respawn():
+		what = "Team respawn"
 	return "%s · starts in %d" % [what, maxi(0, ceili(_manager.time_left))]
 
 

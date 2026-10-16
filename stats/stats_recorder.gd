@@ -1,7 +1,7 @@
 class_name StatsRecorder
 extends Node
 ## Records your own numbers in a match and saves them in your history when it ends (M14, D-202).
-## [Main] adds one under the match's rules (a [RoundManager]: rounds or Team respawn; practice has
+## [Main] adds one under the match's rules (a [RoundManager]: rounds, Team respawn or free-for-all; practice has
 ## none) and it is freed with the map.
 ##
 ## It watches only **you** (the map's Player):
@@ -82,20 +82,32 @@ func get_weapon(weapon_id: String) -> StatsWeapon:
 
 
 ## The match as it stands, as a [StatsMatch], for the team that won ([param winner], -1 for none).
+## A free-for-all (M17) has no team result: it is a win when you are the match's winner
+## ([method FreeForAllMatch.get_winner]), otherwise a loss (never a draw), and the score is your kills
+## against the most kills of anyone else.
 func build_record(winner: int) -> StatsMatch:
 	var record := StatsMatch.new()
 	record.date = int(Time.get_unix_time_from_system())
-	record.mode = StatsMatch.MODE_RESPAWN if _rules.is_team_respawn() else StatsMatch.MODE_ROUNDS
 	record.map = _map_name
 	var team := _player.team
-	if winner < 0 or winner >= _rules.score.size():
-		record.result = StatsMatch.DRAW
+	var ffa := _rules as FreeForAllMatch
+	if ffa != null:
+		record.mode = StatsMatch.MODE_FFA
+		record.result = StatsMatch.WIN if ffa.get_winner() == _player else StatsMatch.LOSS
+		record.score_us = maxi(ffa.get_kills(_player), 0)
+		for other in ffa.get_standings():
+			if other != _player:
+				record.score_them = maxi(record.score_them, ffa.get_kills(other))
 	else:
-		record.result = StatsMatch.WIN if winner == team else StatsMatch.LOSS
-	record.score_us = _rules.score[team] if team < _rules.score.size() else 0
-	for other in _rules.score.size():
-		if other != team:
-			record.score_them = maxi(record.score_them, _rules.score[other])
+		record.mode = StatsMatch.MODE_RESPAWN if _rules.is_team_respawn() else StatsMatch.MODE_ROUNDS
+		if winner < 0 or winner >= _rules.score.size():
+			record.result = StatsMatch.DRAW
+		else:
+			record.result = StatsMatch.WIN if winner == team else StatsMatch.LOSS
+		record.score_us = _rules.score[team] if team < _rules.score.size() else 0
+		for other in _rules.score.size():
+			if other != team:
+				record.score_them = maxi(record.score_them, _rules.score[other])
 	record.rounds = _rules.get_rounds_played()
 	record.duration = _seconds
 	record.online = _online
@@ -139,7 +151,7 @@ func _on_fired(_spray_shot: int) -> void:
 
 ## One bullet of someone else's damaged [param victim]; [param attacker] is who shot.
 func _on_damaged(amount: float, zone: Hitbox.Zone, attacker: Character, victim: Character) -> void:
-	if attacker != _player or victim.team == _player.team:
+	if attacker != _player or Teams.are_allies(victim, _player):
 		return
 	var source := victim.last_damage_source
 	var id := _last_gun if source == null else String(source.id)
@@ -152,7 +164,7 @@ func _on_damaged(amount: float, zone: Hitbox.Zone, attacker: Character, victim: 
 
 
 func _on_character_killed(victim: Character, killer: Character, headshot: bool) -> void:
-	if killer == _player and victim != _player and victim.team != _player.team:
+	if killer == _player and not Teams.are_allies(victim, _player):
 		_count_minute(_kills_per_minute)
 		if headshot:
 			_headshot_kills += 1

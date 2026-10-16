@@ -753,7 +753,7 @@ func _get_passable_hitbox_rids() -> Array[RID]:
 	if Teams.friendly_fire:
 		return rids
 	for other in Character.all_in_world(self):
-		if other != _wielder and other.team == _wielder.team and other.is_alive():
+		if other != _wielder and Teams.are_allies(other, _wielder) and other.is_alive():
 			rids.append_array(other.get_hitbox_rids())
 	return rids
 

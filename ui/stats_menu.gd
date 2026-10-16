@@ -6,7 +6,7 @@ extends CanvasLayer
 ##
 ## **The page:** the lifetime row (K/D, ADR, HS %, accuracy, wins, losses), the K/D of your last 20 matches as bars with
 ## the 1.00 line, the accuracy and head-shot share per weapon, the wins per mode and per map and against bots, and the
-## match history on the right, newest first. **The filter** at the top right (All, TDM, Bomb, Vs bots) narrows the
+## match history on the right, newest first. **The filter** at the top right (All, TDM, FFA, Bomb, Vs bots) narrows the
 ## numbers to those matches (All is the lifetime totals; the others are counted from the last
 ## [constant StatsBook.MAX_HISTORY] matches); **Training** swaps the page for the personal bests of the Shooting Range's aim
 ## trainer and spray practice.
@@ -25,7 +25,7 @@ extends CanvasLayer
 signal closed
 
 ## The filters, in order: id → the words on the segment.
-const FILTERS := {"all": "All", "respawn": "TDM", "rounds": "Bomb", "bots": "Vs bots", "training": "Training"}
+const FILTERS := {"all": "All", "respawn": "TDM", "ffa": "FFA", "rounds": "Bomb", "bots": "Vs bots", "training": "Training"}
 ## The most matches the history lists (newest first).
 const HISTORY_ROWS := 100
 ## How many matches the K/D bars show.
@@ -54,9 +54,9 @@ const DEATH_UNIT := 20.0
 const CHART_UP := 96.0
 const CHART_DOWN := 48.0
 ## Mode ids in the file → what the screen calls them.
-const MODE_NAMES := {"rounds": "Bomb", "respawn": "Team Deathmatch"}
+const MODE_NAMES := {"rounds": "Bomb", "respawn": "Team Deathmatch", "ffa": "Free-for-all"}
 ## ...and the short form of the history rows.
-const MODE_SHORT := {"rounds": "BOMB", "respawn": "TDM"}
+const MODE_SHORT := {"rounds": "BOMB", "respawn": "TDM", "ffa": "FFA"}
 ## Result ids → their words.
 const RESULT_NAMES := {"win": "Win", "loss": "Loss", "draw": "Draw"}
 ## The detail's headline for each result.
@@ -171,7 +171,7 @@ func get_back_button() -> Button:
 	return _back_button
 
 
-## The filter in use ("all", "respawn", "rounds", "bots" or "training").
+## The filter in use ("all", "respawn", "ffa", "rounds", "bots" or "training").
 func get_filter() -> String:
 	return _filter
 
@@ -328,13 +328,17 @@ static func win_rows(table: Dictionary, names: Callable) -> Array:
 	return rows
 
 
-## The wins list as [name, wins, losses, rule_above]: the two modes, then the maps (a rule between the groups), then
-## the matches against bots only. [param matches] are the matches counted for "Vs bots" (offline ones).
+## The wins list as [name, wins, losses, rule_above]: the modes (TDM, Bomb, and FFA once you have played one), then the
+## maps (a rule between the groups), then the matches against bots only. [param matches] are the matches counted for
+## "Vs bots" (offline ones).
 static func win_lines(totals: StatsTotals, matches: Array[StatsMatch]) -> Array:
 	var lines: Array = []
-	for mode: String in ["respawn", "rounds"]:
+	for mode: String in ["respawn", "ffa", "rounds"]:
 		var played := StatsTotals.played_in(totals.modes, mode)
 		var won := StatsTotals.won_in(totals.modes, mode)
+		# Free-for-all is new: its line appears with the first match, so nobody's page gets an empty row.
+		if mode == StatsMatch.MODE_FFA and played == 0:
+			continue
 		lines.append([MODE_SHORT[mode], won, played - won, false])
 	var first_map := true
 	for row in win_rows(totals.maps, map_name):

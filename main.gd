@@ -333,6 +333,8 @@ func _load_map() -> void:
 			scene = load(Settings.DEFAULT_MAP)
 	if args.has("--respawn"):
 		match_settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	if args.has("--ffa"):
+		match_settings.game_mode = MatchSettings.GameMode.FREE_FOR_ALL
 	if args.has("--rotation"):
 		_rotation = GameLaunch.rotation_maps()
 		_rotation_index = 0
@@ -427,7 +429,7 @@ func _spawn_map(scene: PackedScene) -> void:
 	_set_up_spectating(player, rules is RoundManager and not respawning)
 	_debug_overlay.player = player
 	_debug_overlay.net_game = _net_game
-	Teams.set_viewer_team(player.team)
+	Teams.set_viewer(player)
 
 
 ## In a match, the dead player watches a living teammate (and the HUD shows
@@ -448,8 +450,14 @@ func _add_game_rules() -> Node:
 	var has_spawns := _map_has_group(Teams.ATTACK_SPAWN_GROUP) and _map_has_group(Teams.DEFEND_SPAWN_GROUP)
 	var rules: Node = null
 	if mode == Mode.MATCH and has_navigation and has_spawns:
-		var team_respawn := match_settings.game_mode == MatchSettings.GameMode.TEAM_RESPAWN
-		var rounds: RoundManager = RespawnMatch.new() if team_respawn else RoundManager.new()
+		var rounds: RoundManager
+		match match_settings.game_mode:
+			MatchSettings.GameMode.TEAM_RESPAWN:
+				rounds = RespawnMatch.new()
+			MatchSettings.GameMode.FREE_FOR_ALL:
+				rounds = FreeForAllMatch.new()
+			_:
+				rounds = RoundManager.new()
 		rounds.settings = match_settings
 		if net_session != null:
 			# Online: the host starts when everyone has loaded; a client only shows the host's match.

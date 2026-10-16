@@ -95,9 +95,11 @@ static func clear() -> void:
 
 
 ## The [MatchSettings] for the choices stored in [param settings]: team sizes,
-## bot difficulty, match length and friendly fire, the mode and team respawn's
-## kill limit and time limit (minutes in the settings, seconds in the rules). The
-## round timings stay at their defaults. Used by the Play screen.
+## bot difficulty, match length and friendly fire, the mode and the kill limit and
+## time limit of team respawn and free-for-all (minutes in the settings, seconds in
+## the rules). The round timings stay at their defaults. Used by the Play screen.
+## A free-for-all (M17, "ffa") has one player count, the two stored team sizes added
+## together, split by [method ffa_team_sizes].
 static func match_settings_from(settings: Settings) -> MatchSettings:
 	var rules := MatchSettings.new()
 	rules.team_size = settings.match_team_size
@@ -105,10 +107,29 @@ static func match_settings_from(settings: Settings) -> MatchSettings:
 	rules.bot_difficulty = difficulty_named(settings.match_difficulty)
 	rules.rounds_to_win = settings.match_rounds_to_win
 	rules.friendly_fire = settings.match_friendly_fire
-	rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN if settings.match_mode == "respawn" else MatchSettings.GameMode.ROUNDS
+	match settings.match_mode:
+		"respawn":
+			rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+		"ffa":
+			rules.game_mode = MatchSettings.GameMode.FREE_FOR_ALL
+			var split := ffa_team_sizes(settings.match_team_size + settings.match_enemy_team_size)
+			rules.team_size = split.x
+			rules.enemy_team_size = split.y
+			# Nobody has a teammate, so friendly fire means nothing here.
+			rules.friendly_fire = false
+		_:
+			rules.game_mode = MatchSettings.GameMode.ROUNDS
 	rules.kill_limit = settings.match_kill_limit
 	rules.time_limit = settings.match_time_limit * 60.0
 	return rules
+
+
+## How a free-for-all's [param players] (you and the bots, 2 to 10) are split over the two team
+## numbers the game still uses internally (M17, D-240): x is your team's size, [code]ceil(n / 2)[/code],
+## y the other's, the rest. 7 players are 4 and 3.
+static func ffa_team_sizes(players: int) -> Vector2i:
+	var mine := ceili(players / 2.0)
+	return Vector2i(mine, players - mine)
 
 
 ## The rotation's maps that exist, in order, starting at [param first] when it

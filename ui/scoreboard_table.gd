@@ -10,6 +10,12 @@ extends VBoxContainer
 ## [member dim_dead] a dead player's row is muted (MUTE text, the icon in LINE),
 ## so you see who is still alive.
 ##
+## In a free-for-all (M17, D-240) there are no teams: one list under the titles with everyone in the
+## standings' order ([method FreeForAllMatch.get_standings]: kills, then fewest deaths, then the order
+## they joined), no coloured line, each name and icon in [method Teams.ui_color_of] (you in your colour,
+## everyone else in the enemy's); [method get_displayed] answers for [constant EVERYONE]. Your own row is
+## raised and framed as everywhere.
+##
 ## Used by the match-end screen ([MatchEndScreen], [member compact]) and by the
 ## hold-Tab overlay ([Scoreboard]). It is a pure view of a [RoundManager]:
 ## [method show_match] hands it the match, [method refresh] reads the current
@@ -37,6 +43,8 @@ const ICON_COLUMN_WIDTH := 32.0
 const NUMBER_COLUMN_WIDTH := 64.0
 ## Width of the damage column, and of the money column when it is shown (ADR is a number column).
 const WIDE_COLUMN_WIDTH := 96.0
+## The key of the one list of a free-for-all in [method get_displayed] (the teams' keys are 0 and 1).
+const EVERYONE := -1
 ## The titles of the columns after the player's name.
 const STAT_TITLES: Array[String] = ["K", "D", "A", "DMG"]
 ## The title of the name column, of the ADR column (rounds matches only, M14, D-201) and of the money column.
@@ -67,7 +75,7 @@ var _ui_scale: float = 1.0
 var _signature: Array = []
 ## Character → its row (a PanelContainer).
 var _rows: Dictionary = {}
-## Team number → the characters in the order they are shown.
+## Team number ([constant EVERYONE] in a free-for-all) → the characters in the order they are shown.
 var _displayed: Dictionary = {}
 
 
@@ -94,10 +102,12 @@ func refresh() -> void:
 		_clear()
 		return
 	var order: Array[int] = [Teams.viewer_team, Teams.other(Teams.viewer_team)]
+	if _manager.is_free_for_all():
+		order = [EVERYONE]
 	var sorted_members := {}
 	var signature: Array = [_manager.get_participants().size(), _manager.get_rounds_played()]
 	for team in order:
-		var members := _sorted_members(team)
+		var members := (_manager as FreeForAllMatch).get_standings() if team == EVERYONE else _sorted_members(team)
 		sorted_members[team] = members
 		for member in members:
 			var stats := _manager.get_stats(member)
@@ -131,7 +141,8 @@ func get_row(character: Character) -> PanelContainer:
 	return _rows.get(character)
 
 
-## The players of [param team] in the order they are shown (best first).
+## The players of [param team] in the order they are shown (best first); [constant EVERYONE] for a
+## free-for-all's one list.
 func get_displayed(team: int) -> Array[Character]:
 	var shown: Array[Character] = []
 	shown.assign(_displayed.get(team, []))
@@ -186,23 +197,26 @@ func _make_titles() -> PanelContainer:
 	return titles
 
 
-## Adds a team's line (2 px in its colour) and one row per player.
+## Adds a team's line (2 px in its colour) and one row per player. A free-for-all's one list
+## ([constant EVERYONE]) has no line.
 func _add_team(team: int, members: Array[Character]) -> void:
+	var everyone := team == EVERYONE
 	var yours := team == Teams.viewer_team
 	var box := VBoxContainer.new()
-	box.name = "Team%d" % team
+	box.name = "Everyone" if everyone else "Team%d" % team
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.theme_type_variation = &"StackBox" if compact else &"TeamBox"
 	add_child(box)
-	# Blue for your team, red for the enemy, as the theme says (the enemy's line also leaves room above it).
-	var line := PanelContainer.new()
-	line.name = "Header"
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if yours:
-		line.theme_type_variation = &"TeamHeaderFriendly"
-	else:
-		line.theme_type_variation = &"TeamHeaderEnemyTight" if compact else &"TeamHeaderEnemy"
-	box.add_child(line)
+	if not everyone:
+		# Blue for your team, red for the enemy, as the theme says (the enemy's line also leaves room above it).
+		var line := PanelContainer.new()
+		line.name = "Header"
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if yours:
+			line.theme_type_variation = &"TeamHeaderFriendly"
+		else:
+			line.theme_type_variation = &"TeamHeaderEnemyTight" if compact else &"TeamHeaderEnemy"
+		box.add_child(line)
 	_displayed[team] = members
 	for member in members:
 		var stats := _manager.get_stats(member)
@@ -220,9 +234,13 @@ func _add_team(team: int, members: Array[Character]) -> void:
 		if _shows_money():
 			cells.append(_money_text(member))
 		# A living player's icon is in their team's colour, a dead player's in LINE.
-		var tint := get_theme_color(&"line", "Palette") if muted else Teams.ui_color_for(member.team)
+		var tint := get_theme_color(&"line", "Palette") if muted else Teams.ui_color_of(member)
+		# In a free-for-all the name is in your colour or the enemy's too (there is no line to say whose row it is).
+		var name_role := &""
+		if everyone and not muted:
+			name_role = &"FriendlyLabel" if Teams.is_viewer_ally(member) else &"EnemyLabel"
 		var row := _make_row(cells, &"YouRowPanel" if is_you else &"RowPanel", &"MuteLabel" if muted else &"",
-				COMPACT_ROW_HEIGHT if compact else ROW_HEIGHT, _class_icon(member), tint)
+				COMPACT_ROW_HEIGHT if compact else ROW_HEIGHT, _class_icon(member), tint, name_role)
 		row.name = String(member.name)
 		box.add_child(row)
 		_rows[member] = row
@@ -241,7 +259,7 @@ func _shows_money() -> bool:
 
 ## A player's money as the table shows it: yours and your teammates', empty for the enemy.
 func _money_text(member: Character) -> String:
-	if not _shows_money() or member.team != Teams.viewer_team:
+	if not _shows_money() or not Teams.is_viewer_ally(member):
 		return ""
 	return "$%d" % _manager.get_money(member)
 
@@ -262,9 +280,10 @@ func _class_icon(member: Character) -> Texture2D:
 ## by side. The first cell (the name) takes the free width, the others are
 ## fixed-width numbers (the damage and the money are wider). The look is named,
 ## not built: [param panel_variation] for the background and [param
-## label_variation] for the text (empty = the plain label).
+## label_variation] for the text (empty = the plain label); [param name_variation], when it isn't
+## empty, is the first cell's (the name's) instead.
 func _make_row(cells: Array[String], panel_variation: StringName, label_variation: StringName, height: float,
-		icon: Texture2D, tint: Color) -> PanelContainer:
+		icon: Texture2D, tint: Color, name_variation: StringName = &"") -> PanelContainer:
 	var row := PanelContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.theme_type_variation = panel_variation
@@ -291,7 +310,7 @@ func _make_row(cells: Array[String], panel_variation: StringName, label_variatio
 	for i in cells.size():
 		var label := Label.new()
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.theme_type_variation = label_variation
+		label.theme_type_variation = name_variation if i == 0 and not name_variation.is_empty() else label_variation
 		label.text = cells[i]
 		label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if i == 0:

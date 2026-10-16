@@ -144,7 +144,7 @@ func give(data: WeaponData, mag: int = -1, spare: int = -1) -> Weapon:
 	weapon.set_viewmodel_visible(false)
 	weapon.process_mode = Node.PROCESS_MODE_DISABLED
 	_character.set_up_arms_for(weapon)
-	weapon.set_arms_team_color(Teams.color_for(_character.team))
+	weapon.set_arms_team_color(Teams.color_of(_character))
 	_weapons.append(weapon)
 	changed.emit()
 	if _character.weapon == null:

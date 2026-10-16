@@ -9,7 +9,10 @@ Branch `m17` (D-220). Decisions from D-239. One commit per task.
 **Done**
 - M16's open finding, bots that stopped fighting in online Team Deathmatch (D-239). Diagnostics in `netrespawn` (each bot's role, state, path, lead, gun) over 170 runs found three traps: a hunter going for a better gun on the floor never took it, because its hunt orders steered its path and view back every tick, and then chose the same gun again after giving up (both teams' leaders stood beside a gun for 3½ minutes in the failed run); a bot that jumped onto an idle teammate's head stayed there (the stuck check read the velocity, on the floor only); hunters searched each other's old positions and swapped ends. Fixed in `BotController`; `netrespawn` 40 of 40 (before: stretches of 78 s and 210 s without a kill in 25 runs), with a new check for 60 s without a kill; `respawn` checks that a hunting bot takes a better gun (fails without the fix).
 
-**Next:** free-for-all, the game browser, chat, the killcam, map voting and new maps.
+- netrespawn on the fixed commit: 50 of 50 runs passed (the longest stretch without a kill 24.6 s).
+- Free-for-all (D-240): Team Deathmatch where nobody is an ally. Characters keep their team numbers; `Teams.free_for_all` and `Teams.are_allies()` replace every team-number comparison in gameplay code (bots, bullets, damage, stats, trades, respawn spots, spectating); colours by character (`Teams.color_of()`, `ui_color_of()`: only you are blue). `FreeForAllMatch`: each player's kills are the score, the first to the limit wins, overtime on a tie at the top, the start spread over the respawn points, bots hunt alone. Menus by a Sonnet subagent: the Play screen's Free-for-all card (one Players count; four cards needed shorter card texts to fit 720 px), the lobby's "Everyone for themselves" list, the HUD score, one scoreboard list, the end screen's winner and place, `ffa` in the stats. New `ffa` suite (15 checks, offline and online), checks in `ui`, `statsrec`, `layout`. The kill limit stays one setting for both modes: picking a mode whose steps don't include it moves it to that mode's default.
+
+**Next:** the killcam, the game browser, chat, map voting and new maps.
 
 ## 2026-10-16 — M16 maintainability & debugging
 

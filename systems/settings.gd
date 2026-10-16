@@ -72,12 +72,21 @@ const MATCH_LENGTHS: Array[int] = [5, 10, 15]
 ## The bot difficulties match setup offers: the names of bots/difficulty_*.tres, easiest first.
 const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
 ## The modes match setup offers (D-087): "rounds" (bomb rounds on maps with bomb
-## sites; the menus call it Bomb) and "respawn" (team respawn, D-082; the menus
-## call it Team Deathmatch, the primary mode since D-132).
-const MATCH_MODES: Array[String] = ["rounds", "respawn"]
+## sites; the menus call it Bomb), "respawn" (team respawn, D-082; the menus
+## call it Team Deathmatch, the primary mode since D-132) and "ffa" (free-for-all, M17,
+## D-240: Team Deathmatch with everyone for themselves).
+const MATCH_MODES: Array[String] = ["rounds", "respawn", "ffa"]
 ## The kill limits the Play screen offers for Team Deathmatch (D-083: 50 is about
 ## 4 minutes with bots; D-135: the mockup's 25, 50, 75 and 100).
 const KILL_LIMITS: Array[int] = [25, 50, 75, 100]
+## The kill limits it offers for free-for-all (M17): one player's kills, so fewer than a team's. The
+## two modes share the one setting [code]match_kill_limit[/code]; each offers its own steps, and the
+## Play screen moves the value to the mode's default when you pick a mode that doesn't offer it.
+const FFA_KILL_LIMITS: Array[int] = [10, 15, 20, 30]
+## The kill limit a free-for-all starts with when the stored one is one of Team Deathmatch's.
+const FFA_DEFAULT_KILL_LIMIT := 20
+## Every kill limit a settings file may hold: the steps of both modes (the setting's valid values).
+const ALL_KILL_LIMITS: Array[int] = [10, 15, 20, 25, 30, 50, 75, 100]
 ## Team Deathmatch's time limits in minutes the Play screen offers (D-135).
 const TIME_LIMITS: Array[int] = [5, 10, 15]
 ## The practice map (D-141: the Shooting Range), and the map the game falls back to when
@@ -180,7 +189,7 @@ const SCHEMA := {
 	&"match_map": {"section": "match", "default": DEFAULT_MATCH_MAP},
 	# M8 (D-087): the mode, team respawn's kill limit, and playing the quick maps in rotation.
 	&"match_mode": {"section": "match", "default": "respawn", "choices": MATCH_MODES},
-	&"match_kill_limit": {"section": "match", "default": 50, "choices": KILL_LIMITS},
+	&"match_kill_limit": {"section": "match", "default": 50, "choices": ALL_KILL_LIMITS},
 	&"match_rotation": {"section": "match", "default": true},
 	# M10 (D-135): Team Deathmatch's time limit in minutes.
 	&"match_time_limit": {"section": "match", "default": 10, "choices": TIME_LIMITS},
@@ -400,7 +409,7 @@ var match_friendly_fire: bool:
 var match_map: String:
 	get: return _values[&"match_map"]
 	set(value): set_value(&"match_map", value)
-## How the match is played: one of [constant MATCH_MODES] ("rounds" or "respawn").
+## How the match is played: one of [constant MATCH_MODES] ("rounds", "respawn" or "ffa").
 var match_mode: String:
 	get: return _values[&"match_mode"]
 	set(value): set_value(&"match_mode", value)
@@ -408,7 +417,8 @@ var match_mode: String:
 var match_time_limit: int:
 	get: return _values[&"match_time_limit"]
 	set(value): set_value(&"match_time_limit", value)
-## Kills a team needs to win a team respawn match: one of [constant KILL_LIMITS].
+## Kills a team needs to win a team respawn match, or a player in a free-for-all: one of
+## [constant ALL_KILL_LIMITS] (the Play screen offers [constant KILL_LIMITS] or [constant FFA_KILL_LIMITS]).
 var match_kill_limit: int:
 	get: return _values[&"match_kill_limit"]
 	set(value): set_value(&"match_kill_limit", value)

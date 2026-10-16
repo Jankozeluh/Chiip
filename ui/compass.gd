@@ -183,7 +183,7 @@ func get_box_rect() -> Rect2:
 
 
 func _on_shot_fired(shot_position: Vector3, source: Character) -> void:
-	if not is_instance_valid(_view) or not is_instance_valid(source) or source == _view or source.team == Teams.viewer_team:
+	if not is_instance_valid(_view) or not is_instance_valid(source) or source == _view or Teams.is_viewer_ally(source):
 		return
 	# Another game in the same process (the online tests) has its own world.
 	if source.get_world_3d() != _view.get_world_3d():
@@ -194,8 +194,8 @@ func _on_shot_fired(shot_position: Vector3, source: Character) -> void:
 	queue_redraw()
 
 
-func _on_callout_made(team: int, _caller: Character, point: Vector3, place: String) -> void:
-	if team != Teams.viewer_team or not is_instance_valid(_view):
+func _on_callout_made(_team: int, caller: Character, point: Vector3, place: String) -> void:
+	if not is_instance_valid(caller) or not Teams.is_viewer_ally(caller) or not is_instance_valid(_view):
 		return
 	_tag = {"position": point, "text": TAG_TEXT % place, "left": get_theme_constant(&"compass_tag_ms", THEME_TYPE) / 1000.0}
 	queue_redraw()
@@ -259,7 +259,7 @@ func _draw() -> void:
 	var rects := get_marker_rects()
 	var index := 0
 	for id: int in _marks:
-		var colour := Teams.ui_color_for(Teams.other(Teams.viewer_team))
+		var colour := _enemy_colour()
 		colour.a = _alpha(_marks[id]["age"])
 		var mark := rects[index]
 		draw_rect(mark.grow(1.0), Color(shadow_colour, colour.a))
@@ -278,11 +278,18 @@ func _draw() -> void:
 	# The callout tag: ink, an enemy-coloured frame and text.
 	if not _tag.is_empty():
 		var tag := get_tag_rect()
-		var enemy := Teams.ui_color_for(Teams.other(Teams.viewer_team))
+		var enemy := _enemy_colour()
 		draw_rect(tag, enemy)
 		draw_rect(Rect2(tag.position + Vector2.ONE * thickness, tag.size - Vector2.ONE * 2.0 * thickness), get_theme_color(&"ink", PALETTE_TYPE))
 		draw_string(font, Vector2(tag.position.x + thickness + _px(TAG_PAD), roundf(tag.position.y + (tag.size.y + font.get_ascent(font_size) - font.get_descent(font_size)) / 2.0)),
 				String(_tag["text"]), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, enemy)
+
+
+## The UI colour of an enemy (the colour-blind scheme's when it is on). Every mark is an enemy's (a
+## shot by somebody on your side is ignored, [method Teams.is_viewer_ally]; in a free-for-all that is
+## everybody but you), so a mark's colour never depends on who fired.
+func _enemy_colour() -> Color:
+	return Teams.scheme_color(&"enemy_text")
 
 
 ## A size of the HUD's theme type, scaled with the HUD and rounded to whole pixels.

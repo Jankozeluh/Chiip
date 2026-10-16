@@ -501,7 +501,7 @@ func _update_view() -> void:
 ## The spectated teammate's name in their team's colour on the plate.
 func _update_spectate_name() -> void:
 	_spectate_name.text = shown.name
-	_spectate_name.add_theme_color_override("font_color", _team_color(shown.team))
+	_spectate_name.add_theme_color_override("font_color", Teams.ui_color_of(shown))
 
 
 ## The death plate and the countdown: "Killed by", the killer's name in their team's colour and
@@ -512,7 +512,7 @@ func _update_death() -> void:
 	_killer_label.visible = has_killer
 	if has_killer:
 		_killer_label.text = _killer.name
-		_killer_label.add_theme_color_override("font_color", _team_color(_killer.team))
+		_killer_label.add_theme_color_override("font_color", Teams.ui_color_of(_killer))
 	var weapon_id := &""
 	if _killer_weapon != null:
 		weapon_id = _killer_weapon.id
@@ -584,12 +584,6 @@ func _theme_size(constant_name: StringName) -> int:
 
 func _palette(color_name: StringName) -> Color:
 	return _bottom_left.get_theme_color(color_name, PALETTE_TYPE)
-
-
-## The UI colour of [param team]: friendly for the viewer's team, enemy for the other (the
-## colour-blind scheme's, D-210, when it is on).
-func _team_color(team: int) -> Color:
-	return Teams.ui_color_for(team)
 
 
 ## Your ears ring after a flashbang, as long as it blinds you.

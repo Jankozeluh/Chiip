@@ -66,14 +66,14 @@ func add_kill(victim: Character, killer: Character, headshot: bool, weapon: Weap
 	row.theme_type_variation = &"HudRowIcon"
 	line.add_child(row)
 	if has_killer:
-		row.add_child(_make_label("Killer", String(killer.name), _team_color(killer.team)))
+		row.add_child(_make_label("Killer", String(killer.name), Teams.ui_color_of(killer)))
 		_add_weapon(row, weapon)
 	elif cause != &"":
 		_add_icon(row, "Cause", cause, &"alert")
 	if headshot:
 		if not _add_icon(row, "Headshot", HEADSHOT_SLOT, &"text"):
 			row.add_child(_make_label("Headshot", HEADSHOT_TEXT, get_theme_color(&"alert", PALETTE_TYPE)))
-	row.add_child(_make_label("Victim", String(victim.name), _team_color(victim.team)))
+	row.add_child(_make_label("Victim", String(victim.name), Teams.ui_color_of(victim)))
 	UiScale.apply_tree(line, _ui_scale)
 	while get_child_count() > MAX_LINES:
 		_remove_line(get_child(0))
@@ -102,9 +102,9 @@ func add_callout(caller: Character, text: String) -> void:
 	edge.name = "Edge"
 	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	edge.custom_minimum_size.x = get_theme_constant(&"callout_edge", THEME_TYPE)
-	edge.color = _team_color(caller.team)
+	edge.color = Teams.ui_color_of(caller)
 	row.add_child(edge)
-	row.add_child(_make_label("Caller", String(caller.name), _team_color(caller.team)))
+	row.add_child(_make_label("Caller", String(caller.name), Teams.ui_color_of(caller)))
 	row.add_child(_make_label("Text", text, get_theme_color(&"text", PALETTE_TYPE)))
 	UiScale.apply_tree(line, _ui_scale)
 	var callouts := get_children().filter(func(child: Node) -> bool: return child.has_meta(CALLOUT_META))
@@ -176,12 +176,6 @@ func _make_label(label_name: String, text: String, color: Color) -> Label:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", color)
 	return label
-
-
-## The UI colour of [param team]: friendly for the viewer's team, enemy for the other (the
-## colour-blind scheme's, D-210, when it is on).
-func _team_color(team: int) -> Color:
-	return Teams.ui_color_for(team)
 
 
 func _remove_line(line: Node) -> void:

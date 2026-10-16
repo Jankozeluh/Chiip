@@ -9,6 +9,8 @@ extends RefCounted
 const MODE_ROUNDS := "rounds"
 ## [member mode] of a Team respawn match.
 const MODE_RESPAWN := "respawn"
+## [member mode] of a free-for-all match (M17, D-240).
+const MODE_FFA := "ffa"
 const WIN := "win"
 const LOSS := "loss"
 const DRAW := "draw"
@@ -18,13 +20,15 @@ const MAX_DATE := 4_102_444_800
 
 ## When the match ended, in unix seconds.
 var date: int = 0
-## [constant MODE_ROUNDS] or [constant MODE_RESPAWN].
+## [constant MODE_ROUNDS], [constant MODE_RESPAWN] or [constant MODE_FFA].
 var mode: String = MODE_RESPAWN
 ## The map's short name ("depot", "square", "spillway").
 var map: String = ""
-## [constant WIN], [constant LOSS] or [constant DRAW] for your team.
+## [constant WIN], [constant LOSS] or [constant DRAW] for your team (in a free-for-all: [constant WIN] when you
+## won the match, otherwise [constant LOSS], never a draw).
 var result: String = DRAW
-## Your team's score and the other team's: rounds won, or kills in a respawn match.
+## Your team's score and the other team's: rounds won, or kills in a respawn match. In a free-for-all:
+## your kills and the most kills of anyone else.
 var score_us: int = 0
 var score_them: int = 0
 ## Rounds played (0 in a respawn match: ADR is only for round matches).
@@ -96,7 +100,7 @@ static func from_dict(data: Variant) -> StatsMatch:
 	record.date = int(when) if (when is int or when is float) and is_finite(float(when)) and float(when) >= MIN_DATE and float(when) <= MAX_DATE else 0
 	record.mode = StatsMath.clean_text(source.get("mode"))
 	record.result = StatsMath.clean_text(source.get("result"))
-	if record.date == 0 or not [MODE_ROUNDS, MODE_RESPAWN].has(record.mode) \
+	if record.date == 0 or not [MODE_ROUNDS, MODE_RESPAWN, MODE_FFA].has(record.mode) \
 			or not [WIN, LOSS, DRAW].has(record.result):
 		return null
 	record.map = StatsMath.clean_text(source.get("map"))

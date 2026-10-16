@@ -569,13 +569,13 @@ func get_chest_position() -> Vector3:
 	return global_position + Vector3.UP * (_eye_height - 0.35)
 
 
-## Paints the body's team parts in the color of this character's team as the
-## viewer sees it (see [method Teams.color_for]). Call it after the viewer's team changes.
+## Paints the body's team parts in the color of this character's side as the
+## viewer sees it (see [method Teams.color_of]). Call it after the viewer's team changes.
 func update_team_color() -> void:
-	body.set_team_color(Teams.color_for(team))
+	body.set_team_color(Teams.color_of(self))
 	if inventory != null:
 		for carried in inventory.get_weapons():
-			carried.set_arms_team_color(Teams.color_for(team))
+			carried.set_arms_team_color(Teams.color_of(self))
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -776,7 +776,7 @@ func set_up_arms_for(carried: Weapon) -> void:
 	if carried == null or class_data == null or class_data.arms_model == null:
 		return
 	carried.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
-	carried.set_arms_team_color(Teams.color_for(team))
+	carried.set_arms_team_color(Teams.color_of(self))
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node,

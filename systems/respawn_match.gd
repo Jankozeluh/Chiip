@@ -129,6 +129,11 @@ func get_hunt_plan(team: int) -> HuntPlan:
 	return _hunt_plans[team] if team < _hunt_plans.size() else null
 
 
+## The plan [param character] (a bot) hunts with: its team's here.
+func _hunt_plan_for(character: Character) -> HuntPlan:
+	return get_hunt_plan(character.team)
+
+
 func _round_duration() -> float:
 	return settings.time_limit
 
@@ -177,7 +182,7 @@ func _check_elimination() -> void:
 
 ## A kill of an enemy in the live round is a point for the killer's team.
 func _score_kill(victim: Character, killer: Character) -> void:
-	if phase == Phase.LIVE and killer != null and killer != victim and killer.team != victim.team:
+	if phase == Phase.LIVE and killer != null and not Teams.are_allies(killer, victim):
 		score[killer.team] += 1
 
 
@@ -191,7 +196,12 @@ func _on_died(killer: Character, victim: Character) -> void:
 	if phase != Phase.LIVE:
 		return
 	_respawn_left[victim] = settings.respawn_delay
-	if killer == null or killer == victim or killer.team == victim.team:
+	_check_match_point(killer, victim)
+
+
+## Ends the match when a kill decided it: [param killer]'s team reached the kill limit, or scored in overtime.
+func _check_match_point(killer: Character, victim: Character) -> void:
+	if killer == null or Teams.are_allies(killer, victim):
 		return
 	if score[killer.team] >= settings.kill_limit:
 		_end_round(killer.team, EndReason.KILL_LIMIT)
@@ -254,8 +264,8 @@ func _clear_old_guns() -> void:
 ## A bot that comes back hunts with its group again (respawning reset its orders).
 func _rejoin_hunt(character: Character) -> void:
 	var brain := character.get_node_or_null("BotController") as BotController
-	var plan := get_hunt_plan(character.team)
-	if brain != null and plan != null:
+	var plan := _hunt_plan_for(character) if brain != null else null
+	if plan != null:
 		brain.hunt(plan)
 		plan.note_respawn(brain)
 
@@ -284,7 +294,7 @@ func _spot_score(spot: Vector3, character: Character) -> float:
 		if other == character or not is_instance_valid(other) or not other.is_alive():
 			continue
 		var distance := _flat_distance(other.global_position, spot)
-		if other.team == character.team:
+		if Teams.are_allies(other, character):
 			teammate_near = teammate_near or distance <= TEAMMATE_DISTANCE
 			continue
 		nearest_enemy = minf(nearest_enemy, distance)

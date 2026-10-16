@@ -16,6 +16,10 @@ extends CanvasLayer
 ## or "DefeatLabel" by name (your team's colour or the enemy's), and the two scores
 ## are a "FriendlyLargeLabel" and an "EnemyLargeLabel" in the scene.
 ##
+## A free-for-all (M17, D-240) has no team score: the result names the winner ("You win" in your colour,
+## "Bot2 wins" in the enemy's), the line under it says your place ("You placed 3rd of 6") next to the
+## mode and the map, and the table is the one list of everyone in the standings' order.
+##
 ## Online (M9, D-109) the host decides what comes next: the host's screen offers Next map,
 ## Play again and "Lobby" (everyone comes along), a client's only "Leave" (the
 ## host decides; [method set_online]).
@@ -33,8 +37,10 @@ var _client: bool = false
 var _next_map_title: String = ""
 
 @onready var _title: Label = %Result
+@onready var _your_trim: Control = $Header/ScoreLine/YourTrim
 @onready var _your_score: Label = %YourScore
 @onready var _mode_label: Label = %ModeLabel
+@onready var _enemy_trim: Control = $Header/ScoreLine/EnemyTrim
 @onready var _enemy_score: Label = %EnemyScore
 @onready var _table: ScoreboardTable = %Table
 @onready var _play_again: Button = %PlayAgain
@@ -44,6 +50,8 @@ var _next_map_title: String = ""
 
 func _ready() -> void:
 	visible = false
+	# A long winner's name is cut with "…" instead of running off the screen.
+	_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_next_map.visible = false
 	_play_again.pressed.connect(play_again_pressed.emit)
 	_main_menu.pressed.connect(main_menu_pressed.emit)
@@ -154,6 +162,11 @@ func _refresh_chip() -> void:
 
 
 func _on_match_ended(winner: int) -> void:
+	_enemy_trim.visible = true
+	_your_trim.visible = true
+	if _manager.is_free_for_all():
+		_show_free_for_all()
+		return
 	var you := Teams.viewer_team
 	var them := Teams.other(you)
 	var won := winner == you
@@ -165,6 +178,28 @@ func _on_match_ended(winner: int) -> void:
 	_enemy_score.text = str(_manager.score[them])
 	# Final numbers: the table doesn't dim the players who died in the last round.
 	_table.show_match(_manager)
+	_show()
+
+
+## The end of a free-for-all: the winner as the result, your place where the team scores are.
+func _show_free_for_all() -> void:
+	var winner := (_manager as FreeForAllMatch).get_winner()
+	var you := Teams.viewer
+	var won := winner != null and winner == you
+	Music.play_stinger(Music.stinger_for_match(won))
+	_title.text = MatchText.ffa_winner_text(winner, you)
+	_title.theme_type_variation = &"VictoryLabel" if won else &"DefeatLabel"
+	var place := MatchText.ffa_place_text(_manager, you)
+	_your_score.text = place
+	_your_trim.visible = not place.is_empty()
+	_enemy_trim.visible = false
+	_mode_label.text = MatchText.mode_line(_manager)
+	_table.show_match(_manager)
+	_show()
+
+
+## Shows the screen with the mouse free and a button focused.
+func _show() -> void:
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# In a rotation the next map is what you'd usually want.

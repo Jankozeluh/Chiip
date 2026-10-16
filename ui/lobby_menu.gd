@@ -20,7 +20,9 @@ extends CanvasLayer
 ## host published them, then for the host Edit setup (the [MatchSetup] panel, whose Start button reads
 ## "Done" and which offers no Practice) and Start; a client sees "Waiting for the host to start". Leave
 ## ends your part of the session (the host ends it for everyone). There is no Ready state: the host
-## starts when it likes.
+## starts when it likes. In a free-for-all (M17, D-240) there are no teams to show: one list under
+## "Everyone for themselves" holds every player and every open slot, and the Switch team button is
+## hidden (the teams still exist underneath; the host publishes the mode as the fact [code]ffa[/code]).
 ##
 ## The panel only drives a [NetSession] and its [NetLobby]: [method host_game] and
 ## [method join_game] open the session at the root of the tree ([method NetSession.open]), the
@@ -51,6 +53,8 @@ const ROW_HEIGHT := 40.0
 const CHIP_SIZE := 8.0
 ## The facts the footer shows, in order: the keys of the lobby info's [code]facts[/code] (see [method build_facts]).
 const FACT_KEYS: Array[String] = ["mode", "map", "limit"]
+## The header of the one list of a free-for-all lobby.
+const EVERYONE_TEXT := "Everyone for themselves"
 ## The Tailscale address's button, and what it says for a moment after copying (M12, D-173).
 const COPY_TEXT := "Copy"
 const COPIED_TEXT := "Copied"
@@ -318,8 +322,9 @@ func start_match() -> void:
 ## The one-line summary of the match the stored choices make, as the host publishes it:
 ## "Rounds · Depot · first to 5 rounds · Normal bots".
 func build_summary() -> String:
-	var respawn := settings.match_mode == "respawn"
-	var parts: Array[String] = ["Team respawn" if respawn else "Rounds"]
+	var ffa := settings.match_mode == "ffa"
+	var respawn := settings.match_mode != "rounds"
+	var parts: Array[String] = ["Free-for-all" if ffa else "Team respawn" if respawn else "Rounds"]
 	var rotation := _chosen_rotation()
 	if rotation.is_empty():
 		parts.append(GameLaunch.map_title(_chosen_map()))
@@ -327,24 +332,28 @@ func build_summary() -> String:
 		parts.append("Rotation: %s" % ", ".join(rotation.map(func(path: String) -> String: return GameLaunch.map_title(path))))
 	parts.append("first to %d kills" % settings.match_kill_limit if respawn else "first to %d rounds" % settings.match_rounds_to_win)
 	parts.append("%s bots" % settings.match_difficulty.capitalize())
-	if settings.match_friendly_fire:
+	if settings.match_friendly_fire and not ffa:
 		parts.append("friendly fire")
 	return " · ".join(PackedStringArray(parts))
 
 
 ## The facts of the match the stored choices make, as the footer shows them (ready-made texts the host
-## publishes with the lobby info, so a client shows the same): [code]mode[/code] ("Team Deathmatch" or
-## "Bomb"), [code]map[/code] ("Depot", or "Rotation · Depot" for the rotation starting there) and
-## [code]limit[/code] ("50 kills · 10 min", or "First to 5 rounds").
+## publishes with the lobby info, so a client shows the same): [code]mode[/code] ("Team Deathmatch",
+## "Free-for-all" or "Bomb"), [code]map[/code] ("Depot", or "Rotation · Depot" for the rotation starting there) and
+## [code]limit[/code] ("50 kills · 10 min", or "First to 5 rounds"). A free-for-all adds [code]ffa[/code]: true,
+## which tells a client's lobby to show one list instead of the two teams.
 func build_facts() -> Dictionary:
-	var respawn := settings.match_mode == "respawn"
+	var respawn := settings.match_mode != "rounds"
 	var rotation := _chosen_rotation()
-	return {
-		"mode": MatchSetup.MODES["respawn" if respawn else "rounds"]["title"],
+	var facts := {
+		"mode": MatchSetup.MODES[settings.match_mode]["title"],
 		"map": "Rotation · %s" % GameLaunch.map_title(rotation[0]) if not rotation.is_empty() else GameLaunch.map_title(_chosen_map()),
 		"limit": "%d kills · %d min" % [settings.match_kill_limit, settings.match_time_limit] if respawn
 				else "First to %d rounds" % settings.match_rounds_to_win,
 	}
+	if settings.match_mode == "ffa":
+		facts["ffa"] = true
+	return facts
 
 
 ## The scene path of the map the stored choices name: the stored map, or the default one when it
@@ -527,6 +536,12 @@ func _refresh_lobby() -> void:
 		(_fact_labels[index].get_parent() as Control).visible = not facts.is_empty()
 	var my_team := _session.get_team(_session.local_peer_id)
 	var players := _session.get_players()
+	var ffa := bool(facts.get("ffa", false))
+	_columns[1].visible = not ffa
+	_switch_button.visible = not ffa
+	if ffa:
+		_refresh_everyone(players, slots, known)
+		return
 	var members_of: Array[int] = [0, 0]
 	for team in Teams.COUNT:
 		# Colors are relative to you: your team is blue, the other one red.
@@ -552,6 +567,28 @@ func _refresh_lobby() -> void:
 		UiTheme.apply_sizes(list, _ui_scale)
 	var other := Teams.other(my_team)
 	_switch_button.disabled = known and members_of[other] >= int(slots[other])
+
+
+## The lobby of a free-for-all: one list ([constant EVERYONE_TEXT]) with every player in the order they
+## joined and an "Empty / Bot" row for each open slot (both teams' slots together), in your colour's header.
+func _refresh_everyone(players: Array, slots: Array, known: bool) -> void:
+	_header_panels[0].theme_type_variation = &"TeamTitleFriendly"
+	_header_names[0].text = EVERYONE_TEXT
+	for label in [_header_names[0], _header_counts[0]]:
+		(label as Label).theme_type_variation = &"FriendlyLabel"
+	var list := _lists[0]
+	for row in list.get_children():
+		list.remove_child(row)
+		row.queue_free()
+	for player in players:
+		var is_you := int(player["peer_id"]) == _session.local_peer_id
+		_add_player_row(list, "You" if is_you else String(player["name"]), is_you, int(player["peer_id"]) == 1)
+	var total := int(slots[0]) + int(slots[1]) if known else players.size()
+	if known:
+		for _bot in maxi(0, total - players.size()):
+			_add_empty_row(list)
+	_header_counts[0].text = "%d / %d" % [players.size(), total] if known else str(players.size())
+	UiTheme.apply_sizes(list, _ui_scale)
 
 
 ## A row of a team's list: a panel, [constant ROW_HEIGHT] high, with its parts in a row.

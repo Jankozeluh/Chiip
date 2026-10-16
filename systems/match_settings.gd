@@ -13,6 +13,9 @@ enum GameMode {
 	## Like CoD's Team Deathmatch: respawn after a few seconds, first team to the
 	## kill limit wins. A [RespawnMatch].
 	TEAM_RESPAWN,
+	## Free-for-all deathmatch (M17): Team Deathmatch with everyone for themselves, first player to
+	## the kill limit wins. A [FreeForAllMatch].
+	FREE_FOR_ALL,
 }
 
 ## Rounds or team respawn.

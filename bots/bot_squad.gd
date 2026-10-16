@@ -42,7 +42,7 @@ const SHORT_DIRECTIONS: Array[String] = ["N", "NE", "E", "SE", "S", "SW", "W", "
 static func call_team(caller: Character, point: Vector3) -> Array[BotController]:
 	var candidates: Array[Array] = []
 	for other in Character.all_in_world(caller):
-		if other == caller or other.team != caller.team or not other.is_alive():
+		if other == caller or not Teams.are_allies(other, caller) or not other.is_alive():
 			continue
 		var brain := other.get_node_or_null("BotController") as BotController
 		if brain == null or not brain.can_answer_call(point):
@@ -91,7 +91,7 @@ static func bots_by_distance(character: Character, point: Vector3) -> Array[BotC
 	var bots: Array[BotController] = []
 	for other in Character.all_in_world(character):
 		var brain := other.get_node_or_null("BotController") as BotController
-		if brain != null and other.team == character.team and other.is_alive():
+		if brain != null and Teams.are_allies(other, character) and other.is_alive():
 			bots.append(brain)
 	bots.sort_custom(func(a: BotController, b: BotController) -> bool:
 		return _flat(a.character.global_position, point) < _flat(b.character.global_position, point))

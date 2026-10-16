@@ -5,7 +5,9 @@ extends CanvasLayer
 ## red at the right), the mode and the map and what is left of the match
 ## between them ("Team Deathmatch · Depot", "First to 50 · 7:42"; "Bomb ·
 ## Depot", "Round 3 · 1:12"), and a [ScoreboardTable] of both teams with class
-## icons, kills, deaths, assists and damage, the players who are dead muted.
+## icons, kills, deaths, assists and damage, the players who are dead muted. In a free-for-all
+## (M17, D-240) the header's scores are your kills and the best other player's and the table is one
+## list of everyone, best first.
 ## Let go and it is gone. The panel is the mockup's (D-137): 880 wide, 64 px from
 ## the top, ink at 88%.
 ##
@@ -82,8 +84,14 @@ func _refresh() -> void:
 	var you := Teams.viewer_team
 	_mode_label.text = MatchText.mode_line(_manager)
 	_clock_label.text = MatchText.clock_line(_manager)
-	_your_score.text = str(_manager.score[you])
-	_enemy_score.text = str(_manager.score[Teams.other(you)])
+	if _manager.is_free_for_all():
+		# Nobody has a team: your kills against the best of the others, as on the round HUD.
+		var kills := MatchText.ffa_scores(_manager, Teams.viewer)
+		_your_score.text = str(kills.x)
+		_enemy_score.text = str(kills.y)
+	else:
+		_your_score.text = str(_manager.score[you])
+		_enemy_score.text = str(_manager.score[Teams.other(you)])
 	_table.refresh()
 
 

@@ -1,14 +1,17 @@
 class_name MatchSetup
 extends CanvasLayer
 ## The Play screen (M5 task 11, D-064; the mockup's "03 Play" since M10, D-135):
-## the main menu's Play opens it. Three mode cards, **Team Deathmatch** (first,
-## the default), **Bomb** and **Practice**: a click on the picked card plays it
+## the main menu's Play opens it. Four mode cards, **Team Deathmatch** (first,
+## the default), **Free-for-all** (M17, D-240), **Bomb** and **Practice**: a click on the picked card plays it
 ## ("click to play"), a click on another card picks that one. Under them
 ## **Custom** shows the picked mode's options as rows of segments: the map (the
 ## three quick maps or the rotation), the kill limit or the rounds to win, the
-## teams (a chip per player on each side), Team Deathmatch's time limit, the bots'
-## difficulty and friendly fire. The big **Play** button plays the picked mode;
-## Back or Esc closes the screen.
+## teams (a chip per player on each side), Team Deathmatch's and Free-for-all's time limit, the bots'
+## difficulty and friendly fire. Free-for-all has one **Players** row (you and the bots, 2 to 10)
+## instead of the teams: [method GameLaunch.ffa_team_sizes] splits the count over the two stored team
+## sizes. Its kill limit is the same setting as Team Deathmatch's, with steps of its own ([constant
+## Settings.FFA_KILL_LIMITS]); picking a mode moves the stored limit to that mode's default when the mode doesn't
+## offer it. The big **Play** button plays the picked mode; Back or Esc closes the screen.
 ##
 ## It only collects the choices and reports [signal started] and
 ## [signal closed]; the main menu starts the game ([GameLaunch]) for
@@ -16,7 +19,7 @@ extends CanvasLayer
 ## match settings, in [method set_online] mode (no Practice card; the picked card says "Picked"
 ## and a click on it only picks). Every choice is written to [Settings] (its
 ## [code][match][/code] section) the moment it changes, so the next start offers
-## the same match; picking Team Deathmatch or Bomb stores the mode too. The
+## the same match; picking Team Deathmatch, Free-for-all or Bomb stores the mode too. The
 ## screen follows [signal Settings.changed]. [member settings] is the shared
 ## instance unless a test hands in its own before the screen enters the tree.
 ##
@@ -37,7 +40,8 @@ signal closed
 ## The modes on offer, in order: the [member Settings.match_mode] value ("practice"
 ## is not stored) → its card's name, description and the line under it when not picked.
 const MODES := {
-	"respawn": {"name": "Team\nDeathmatch", "title": "Team Deathmatch", "text": "Respawn in 3 s. Most kills wins."},
+	"respawn": {"name": "Team\nDeathmatch", "title": "Team Deathmatch", "text": "3 s respawn. Most kills wins."},
+	"ffa": {"name": "Free-for-\nall", "title": "Free-for-all", "text": "Most kills wins."},
 	"rounds": {"name": "Bomb", "title": "Bomb", "text": "One life a round. Plant or defuse."},
 	"practice": {"name": "Practice", "title": "Practice", "text": "Shooting range. No rounds, no clock."},
 }
@@ -46,6 +50,12 @@ const PLAY_HINT := "Click to play"
 const PICKED_HINT := "Picked"
 ## The value of the map row that stands for the rotation of the quick maps.
 const ROTATION := "rotation"
+## Rows that are not a setting of their own (M17): Free-for-all's kill limit (the shared
+## [code]match_kill_limit[/code] with its own steps) and its player count (the two team sizes together).
+const FFA_KILL_ROW := &"ffa_kill_limit"
+const PLAYERS_ROW := &"ffa_players"
+## The player counts the Players row offers: you and 1 to 9 bots (a team has 1 to 5).
+const PLAYER_COUNTS: Array[int] = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 ## The height of a mode card and of a custom row (at 720p; the screen scales them).
 const CARD_HEIGHT := 192.0
 const ROW_HEIGHT := 40.0
@@ -54,6 +64,7 @@ const CHIP_SIZE := 16.0
 ## Which rows each mode shows (setting keys; the map row is &"match_map").
 const MODE_ROWS := {
 	"respawn": [&"match_map", &"match_kill_limit", &"match_team_size", &"match_time_limit", &"match_difficulty", &"match_friendly_fire"],
+	"ffa": [&"match_map", FFA_KILL_ROW, PLAYERS_ROW, &"match_time_limit", &"match_difficulty"],
 	"rounds": [&"match_map", &"match_rounds_to_win", &"match_team_size", &"match_difficulty", &"match_friendly_fire"],
 	"practice": [&"match_difficulty"],
 }
@@ -61,7 +72,7 @@ const MODE_ROWS := {
 ## Where the choices are stored. The shared [Settings] when null (set before the screen is in the tree).
 var settings: Settings
 
-## The picked mode: "respawn", "rounds" or "practice".
+## The picked mode: "respawn", "ffa", "rounds" or "practice".
 var _picked: String = "respawn"
 ## True in the online lobby's match settings: see [method set_online].
 var _online: bool = false
@@ -114,6 +125,7 @@ func _input(event: InputEvent) -> void:
 ## Shows the screen with the stored choices, the stored mode picked and its card focused.
 func open() -> void:
 	_picked = settings.match_mode
+	_fit_kill_limit(_picked)
 	visible = true
 	MenuState.open(self)
 	_refresh()
@@ -164,18 +176,19 @@ func set_ui_scale(factor: float) -> void:
 	UiTheme.apply(self, factor)
 
 
-## Picks [param mode] ("respawn", "rounds" or "practice"): its card is framed,
+## Picks [param mode] ("respawn", "ffa", "rounds" or "practice"): its card is framed,
 ## Custom shows its rows, and a match mode is stored as the last one chosen.
 func pick(mode: String) -> void:
 	if _online and mode == "practice":
 		return
 	_picked = mode
 	if mode != "practice":
+		_fit_kill_limit(mode)
 		settings.match_mode = mode
 	_refresh()
 
 
-## The picked mode: "respawn" (Team Deathmatch), "rounds" (Bomb) or "practice".
+## The picked mode: "respawn" (Team Deathmatch), "ffa" (Free-for-all), "rounds" (Bomb) or "practice".
 func get_picked_mode() -> String:
 	return _picked
 
@@ -206,7 +219,8 @@ func get_map_paths() -> Array[String]:
 	return GameLaunch.rotation_maps()
 
 
-## The line that sums up the choices ("Team Deathmatch: You and 2 bots against 3 bots...").
+## The line that sums up the choices ("Team Deathmatch: You and 2 bots against 3 bots...";
+## "Free-for-all: You and 5 bots, everyone for themselves...").
 func get_summary() -> String:
 	return _summary
 
@@ -283,9 +297,12 @@ func _build_rows() -> void:
 	_add_segmented_row(&"match_map", "Map", map_texts, map_values)
 	_add_segmented_row(&"match_kill_limit", "Kill limit", Settings.KILL_LIMITS.map(func(limit: int) -> String: return str(limit)),
 			Settings.KILL_LIMITS)
+	_add_segmented_row(FFA_KILL_ROW, "Kill limit", Settings.FFA_KILL_LIMITS.map(func(limit: int) -> String: return str(limit)),
+			Settings.FFA_KILL_LIMITS)
 	_add_segmented_row(&"match_rounds_to_win", "Rounds to win", Settings.MATCH_LENGTHS.map(func(rounds: int) -> String: return str(rounds)),
 			Settings.MATCH_LENGTHS)
 	_add_teams_row()
+	_add_segmented_row(PLAYERS_ROW, "Players", PLAYER_COUNTS.map(func(count: int) -> String: return str(count)), PLAYER_COUNTS)
 	_add_segmented_row(&"match_time_limit", "Match length", Settings.TIME_LIMITS.map(func(minutes: int) -> String: return "%d min" % minutes),
 			Settings.TIME_LIMITS)
 	_add_segmented_row(&"match_difficulty", "Bots", ["Easy", "Normal", "Hard"], Settings.DIFFICULTIES)
@@ -385,7 +402,33 @@ func _choose(key: StringName, value: Variant) -> void:
 			settings.match_rotation = false
 			settings.match_map = value
 		return
+	if key == FFA_KILL_ROW:
+		settings.match_kill_limit = value
+		return
+	if key == PLAYERS_ROW:
+		var split := GameLaunch.ffa_team_sizes(value)
+		settings.match_team_size = split.x
+		settings.match_enemy_team_size = split.y
+		return
 	settings.set_value(key, value)
+
+
+## The kill limit is one setting for Team Deathmatch and Free-for-all, but each mode offers its own
+## steps: when the stored limit isn't one of [param mode]'s, it becomes the mode's default (Team
+## Deathmatch's [code]match_kill_limit[/code] default, [constant Settings.FFA_DEFAULT_KILL_LIMIT] for
+## Free-for-all). Bomb has no kill limit.
+func _fit_kill_limit(mode: String) -> void:
+	if mode == "respawn" or mode == "ffa":
+		settings.match_kill_limit = _kill_limit_for(mode)
+
+
+## The kill limit [param mode] ("respawn" or "ffa") would play with: the stored one when it is one of the
+## mode's steps, otherwise the mode's default (what picking the mode stores).
+func _kill_limit_for(mode: String) -> int:
+	var steps: Array[int] = Settings.FFA_KILL_LIMITS if mode == "ffa" else Settings.KILL_LIMITS
+	if steps.has(settings.match_kill_limit):
+		return settings.match_kill_limit
+	return Settings.FFA_DEFAULT_KILL_LIMIT if mode == "ffa" else int(Settings.get_default(&"match_kill_limit"))
 
 
 # --- Keeping the controls and the settings in step ---
@@ -421,6 +464,10 @@ func _refresh() -> void:
 func _row_value(key: StringName) -> Variant:
 	if key == &"match_map":
 		return ROTATION if settings.match_rotation else settings.match_map
+	if key == FFA_KILL_ROW:
+		return settings.match_kill_limit
+	if key == PLAYERS_ROW:
+		return settings.match_team_size + settings.match_enemy_team_size
 	return settings.get_value(key)
 
 
@@ -435,22 +482,28 @@ func _refresh_chips(key: StringName, filled: StringName) -> void:
 ## The last line of a card that isn't picked: what it would play.
 func _card_line(mode: String) -> String:
 	match mode:
-		"respawn":
-			return "First to %d · %d min" % [settings.match_kill_limit, settings.match_time_limit]
+		"respawn", "ffa":
+			return "First to %d · %d min" % [_kill_limit_for(mode), settings.match_time_limit]
 		"rounds":
 			return "First to %d rounds" % settings.match_rounds_to_win
-	return "Any class, any time"
+	return "Any class, anytime"
 
 
 func _summary_text() -> String:
 	if _picked == "practice":
 		return "Practice: the %s. No rounds, no clock; bots added from the console are %s." % [GameLaunch.map_title(Settings.DEFAULT_MAP), settings.match_difficulty.capitalize()]
-	var respawn := _picked == "respawn"
+	var respawn := _picked != "rounds"
 	var goal := "first to %d kills or %d minutes" % [settings.match_kill_limit, settings.match_time_limit] if respawn \
 			else "first to %d rounds" % settings.match_rounds_to_win
-	var text := "%s: You and %s against %s. %s bots, %s, friendly fire %s." % [
-			MODES[_picked]["title"], _bots_text(settings.match_team_size - 1), _bots_text(settings.match_enemy_team_size),
-			settings.match_difficulty.capitalize(), goal, "on" if settings.match_friendly_fire else "off"]
+	var text: String
+	if _picked == "ffa":
+		var players := settings.match_team_size + settings.match_enemy_team_size
+		text = "%s: You and %s, everyone for themselves. %s bots, %s." % [
+				MODES[_picked]["title"], _bots_text(players - 1), settings.match_difficulty.capitalize(), goal]
+	else:
+		text = "%s: You and %s against %s. %s bots, %s, friendly fire %s." % [
+				MODES[_picked]["title"], _bots_text(settings.match_team_size - 1), _bots_text(settings.match_enemy_team_size),
+				settings.match_difficulty.capitalize(), goal, "on" if settings.match_friendly_fire else "off"]
 	var rotation := get_rotation_maps()
 	if not rotation.is_empty():
 		text += " Maps in rotation: %s." % ", ".join(rotation.map(func(path: String) -> String: return GameLaunch.map_title(path)))
@@ -486,7 +539,8 @@ func _on_setting_changed(key: StringName) -> void:
 
 ## The buttons of the row for the setting [param key] (e.g. [code]&"match_kill_limit"[/code];
 ## the team sizes' chips under [code]&"match_team_size"[/code] and [code]&"match_enemy_team_size"[/code];
-## the map row under [code]&"match_map"[/code]), in order.
+## the map row under [code]&"match_map"[/code]; Free-for-all's rows under [constant FFA_KILL_ROW] and
+## [constant PLAYERS_ROW]), in order.
 func get_segment_buttons(key: StringName) -> Array:
 	return _segments.get(key, [])
 
@@ -496,7 +550,7 @@ func is_row_shown(key: StringName) -> bool:
 	return _rows_by_key.has(key) and (_rows_by_key[key] as Control).visible
 
 
-## The mode cards' buttons: Team Deathmatch, Bomb, Practice.
+## The mode cards' buttons: Team Deathmatch, Free-for-all, Bomb, Practice.
 func get_mode_cards() -> Array[Button]:
 	var cards: Array[Button] = []
 	for mode: String in MODES:

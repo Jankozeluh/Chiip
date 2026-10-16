@@ -292,6 +292,11 @@ func is_team_respawn() -> bool:
 	return false
 
 
+## True in free-for-all ([FreeForAllMatch]): nobody has a teammate.
+func is_free_for_all() -> bool:
+	return false
+
+
 ## Changes the class of [param character] to [param data], if the rules allow it: only during
 ## freeze time (and before the first round has started), and only to a class of its draft
 ## ([method get_draft]). Returns true if the character now has that class, false when refused (a
@@ -331,6 +336,7 @@ func is_drafted(character: Character, data: ClassData) -> bool:
 
 func _start_match() -> void:
 	Teams.friendly_fire = settings.friendly_fire
+	Teams.free_for_all = is_free_for_all()
 	_class_rng.seed = rng.seed
 	if settings.class_draft:
 		_join_drafted()
@@ -654,7 +660,7 @@ func _pay_round(round_winner: int) -> void:
 func _pay_kill(victim: Character, killer: Character) -> void:
 	if killer == null or killer == victim or not _money.has(killer) or phase == Phase.MATCH_END:
 		return
-	if killer.team == victim.team:
+	if Teams.are_allies(killer, victim):
 		add_money(killer, -settings.teamkill_penalty, "Teamkill")
 		return
 	var weapon := victim.last_damage_source
@@ -904,7 +910,7 @@ func _shuffle(items: Array) -> void:
 
 func _on_damaged(amount: float, zone: Hitbox.Zone, attacker: Character, victim: Character) -> void:
 	_last_hit_zone[victim] = zone
-	if attacker == null or attacker == victim or attacker.team == victim.team:
+	if attacker == null or Teams.are_allies(attacker, victim):
 		return
 	(_stats[attacker] as Stats).damage += amount
 	var dealt: Dictionary = _damage_this_life.get_or_add(victim, {})
@@ -914,7 +920,7 @@ func _on_damaged(amount: float, zone: Hitbox.Zone, attacker: Character, victim: 
 func _on_died(killer: Character, victim: Character) -> void:
 	(_stats[victim] as Stats).deaths += 1
 	if killer != null and killer != victim and _stats.has(killer):
-		(_stats[killer] as Stats).kills += -1 if killer.team == victim.team else 1
+		(_stats[killer] as Stats).kills += -1 if Teams.are_allies(killer, victim) else 1
 	var dealt: Dictionary = _damage_this_life.get(victim, {})
 	for attacker: Character in dealt:
 		if attacker != killer and dealt[attacker] >= ASSIST_DAMAGE and _stats.has(attacker):
@@ -922,7 +928,7 @@ func _on_died(killer: Character, victim: Character) -> void:
 	_damage_this_life.erase(victim)
 	_pay_kill(victim, killer)
 	_score_kill(victim, killer)
-	if phase == Phase.LIVE and killer != null and killer.team != victim.team:
+	if phase == Phase.LIVE and killer != null and not Teams.are_allies(killer, victim):
 		# A trade (D-216): the victim's teammates close by go for the killer.
 		BotSquad.call_team(victim, killer.global_position)
 	character_killed.emit(victim, killer, _last_hit_zone.get(victim, -1) == Hitbox.Zone.HEAD)
@@ -932,7 +938,7 @@ func _on_died(killer: Character, victim: Character) -> void:
 ## A bot spotted an enemy at [param enemy_position] (D-216): its free teammates close by go and look, and its
 ## team hears where ([signal callout]).
 func _on_called_out(enemy_position: Vector3, caller: Character) -> void:
-	if phase != Phase.LIVE:
+	if phase != Phase.LIVE or Teams.free_for_all:
 		return
 	BotSquad.call_team(caller, enemy_position)
 	var listener: Character = _player if is_instance_valid(_player) and _player.team == caller.team else caller
@@ -948,6 +954,7 @@ func _on_called_out(enemy_position: Vector3, caller: Character) -> void:
 ## replica bomb. Call it once, before the first state arrives.
 func replica_start() -> void:
 	Teams.friendly_fire = settings.friendly_fire
+	Teams.free_for_all = is_free_for_all()
 	score.clear()
 	for team in Teams.COUNT:
 		score.append(0)

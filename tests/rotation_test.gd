@@ -57,8 +57,8 @@ func _test_setup() -> void:
 	var kill_buttons := setup.get_segment_buttons(&"match_kill_limit")
 	var map_buttons := setup.get_segment_buttons(&"match_map")
 	var rules := setup.build_match_settings()
-	_check("The Play screen (D-135) offers Team Deathmatch, Bomb and Practice cards and a map row (Depot, Square, Spillway, Rotation); by default Team Deathmatch on the rotation from Depot, the length in kills",
-			cards.size() == 3 and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"]
+	_check("The Play screen (D-135) offers Team Deathmatch, Free-for-all, Bomb and Practice cards and a map row (Depot, Square, Spillway, Rotation); by default Team Deathmatch on the rotation from Depot, the length in kills",
+			cards.size() == 4 and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"]
 					and _texts(kill_buttons) == ["25", "50", "75", "100"]
 					and setup.get_picked_mode() == "respawn" and (map_buttons[3] as Button).button_pressed
 					and not setup.is_row_shown(&"match_rounds_to_win") and setup.is_row_shown(&"match_kill_limit")
@@ -66,7 +66,7 @@ func _test_setup() -> void:
 					and setup.get_summary().begins_with("Team Deathmatch: ") and setup.get_summary().ends_with("Maps in rotation: Depot, Square, Spillway."),
 			"maps %s, kills %s, summary '%s'" % [_texts(map_buttons), _texts(kill_buttons), setup.get_summary()])
 
-	cards[1].pressed.emit()
+	cards[2].pressed.emit()
 	var bomb_rules := setup.build_match_settings()
 	var bomb_summary := setup.get_summary()
 	var bomb_rows := setup.is_row_shown(&"match_rounds_to_win") and not setup.is_row_shown(&"match_kill_limit")
@@ -100,7 +100,7 @@ func _test_setup() -> void:
 			"map %s, rotation %s" % [GameLaunch.map_path, GameLaunch.rotation])
 	GameLaunch.clear()
 	(map_buttons[1] as Button).button_pressed = true
-	cards[1].pressed.emit()
+	cards[2].pressed.emit()
 	GameLaunch.start_match(setup.get_map_path(), setup.build_match_settings(), setup.get_rotation_maps())
 	_check("Back to one map and Bomb: Start leaves just that map and the rounds rules", GameLaunch.map_path == SQUARE and GameLaunch.rotation.is_empty()
 			and GameLaunch.match_settings.game_mode == MatchSettings.GameMode.ROUNDS, "map %s, rotation %s" % [GameLaunch.map_path, GameLaunch.rotation])

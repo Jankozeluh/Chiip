@@ -69,6 +69,13 @@ const FRIENDLY_FIRE_DAMAGE := 1.0 / 3.0
 ## Whether teammates can hurt each other (a match setting, console: mp_friendlyfire).
 ## Off by default; bullets then pass through teammates (see [Weapon]).
 static var friendly_fire: bool = false
+## Free-for-all (M17, D-240): nobody has a teammate, whatever the team numbers say. Set by the match
+## ([RoundManager] when it starts, [code]main.gd[/code] for every game). Gameplay code asks
+## [method are_allies] instead of comparing team numbers, so it works in every mode.
+static var free_for_all: bool = false
+## The character of the person at this computer, for free-for-all colours (everyone else is an enemy
+## there). Set with [method set_viewer].
+static var viewer: Character = null
 
 ## The team of the person at this computer. Their team is drawn blue and the
 ## other one red. Change it with [method set_viewer_team].
@@ -84,6 +91,27 @@ static var color_scheme: int = ColorScheme.STANDARD
 ## from another script for a different type while Teams and Character load each other.
 static func spawn_group(side: int) -> String:
 	return ATTACK_SPAWN_GROUP if side == Side.ATTACKING else DEFEND_SPAWN_GROUP
+
+
+## Sets the character of the person at this computer ([member viewer]) and its team
+## ([method set_viewer_team]), and recolours every character already in the world.
+static func set_viewer(character: Character) -> void:
+	viewer = character
+	set_viewer_team(character.team)
+
+
+## True if [param a] and [param b] are on the same side: the same character, or teammates (never in
+## free-for-all). Every friend-or-foe check in gameplay code goes through this (M17).
+static func are_allies(a: Character, b: Character) -> bool:
+	return a == b or (not free_for_all and a.team == b.team)
+
+
+## True if [param character] is on the viewer's side: their own team, or in free-for-all only the
+## viewer's own character. Decides the colours ([method color_of], [method ui_color_of]).
+static func is_viewer_ally(character: Character) -> bool:
+	if free_for_all:
+		return is_instance_valid(viewer) and character == viewer
+	return character.team == viewer_team
 
 
 ## Sets the team of the person at this computer and recolors every character
@@ -131,6 +159,18 @@ static func ui_color_for(team: int, role: StringName = &"text") -> Color:
 	return SCHEMES[color_scheme][StringName(String(side) + String(role))]
 
 
+## The 3D colour of [param character] as the viewer sees it: [method friendly_color] for their side,
+## [method enemy_color] for everyone else (in free-for-all, everyone but the viewer).
+static func color_of(character: Character) -> Color:
+	return friendly_color() if is_viewer_ally(character) else enemy_color()
+
+
+## The UI colour of [param character] now ([param role] as in [method ui_color_for]).
+static func ui_color_of(character: Character, role: StringName = &"text") -> Color:
+	var side := &"friendly_" if is_viewer_ally(character) else &"enemy_"
+	return SCHEMES[color_scheme][StringName(String(side) + String(role))]
+
+
 ## The opposing team of [param team].
 static func other(team: int) -> int:
 	return 1 - team
@@ -146,6 +186,6 @@ static func color_for(team: int) -> Color:
 ## yourself and for damage without an attacker. A teammate takes
 ## [constant FRIENDLY_FIRE_DAMAGE] if [member friendly_fire] is on, otherwise nothing.
 static func damage_factor(victim: Character, attacker: Character) -> float:
-	if attacker == null or attacker == victim or attacker.team != victim.team:
+	if attacker == null or not are_allies(attacker, victim) or attacker == victim:
 		return 1.0
 	return FRIENDLY_FIRE_DAMAGE if friendly_fire else 0.0

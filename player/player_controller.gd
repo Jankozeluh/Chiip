@@ -376,7 +376,7 @@ func _on_character_died(_killer: Character) -> void:
 func _find_next_teammate() -> Character:
 	var teammates: Array[Character] = []
 	for other in Character.all_in_world(character):
-		if other != character and other.team == character.team:
+		if other != character and Teams.are_allies(other, character):
 			teammates.append(other)
 	var start := teammates.find(_view_target)
 	for step in range(1, teammates.size() + 1):

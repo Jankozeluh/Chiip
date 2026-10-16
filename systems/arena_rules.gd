@@ -36,6 +36,8 @@ var _next_class: int = _rng.randi_range(0, ClassData.all().size() - 1)
 
 
 func _ready() -> void:
+	# Practice is never free-for-all (a free-for-all match before it set the shared flag).
+	Teams.free_for_all = false
 	_player = get_parent().get_node_or_null("Player") as Character
 	if _player != null:
 		_player_start = _player.global_transform

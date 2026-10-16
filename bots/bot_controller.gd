@@ -722,7 +722,7 @@ func _teammate_in_line_of_fire(reach_to: float = -1.0) -> bool:
 	var direction := -Basis.from_euler(Vector3(_pitch, _yaw, 0.0)).z
 	var reach := reach_to if reach_to >= 0.0 else from.distance_to(_target.get_eye_position())
 	for mate in Character.all_in_world(character):
-		if mate == character or mate.team != character.team or not mate.is_alive():
+		if mate == character or not Teams.are_allies(mate, character) or not mate.is_alive():
 			continue
 		var points := mate.get_visibility_points()
 		points.append(mate.global_position + Vector3.UP * 0.6)
@@ -1168,7 +1168,7 @@ func _is_fetching() -> bool:
 		return false
 	var mine := _flat_distance(character.global_position, _bomb.global_position)
 	for other in Character.all_in_world(character):
-		if other == character or other.team != character.team or not other.is_alive():
+		if other == character or not Teams.are_allies(other, character) or not other.is_alive():
 			continue
 		if other.get_node_or_null("BotController") is BotController and _flat_distance(other.global_position, _bomb.global_position) < mine:
 			return false

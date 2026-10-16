@@ -8,8 +8,8 @@ extends Node
 ## across the test map; the build at the bottom left and the map's name at the
 ## bottom right (the build reads the project's version, M12).
 ##
-## - **Play** opens the Play screen ([MatchSetup]): three mode cards (Team
-##   Deathmatch first) and the picked mode's custom rows. Playing a match leaves a
+## - **Play** opens the Play screen ([MatchSetup]): four mode cards (Team
+##   Deathmatch first, then Free-for-all, Bomb and Practice) and the picked mode's custom rows. Playing a match leaves a
 ##   [GameLaunch] description (the map and [MatchSettings]) and changes to the
 ##   game scene; playing Practice starts the respawning bot arena ([ArenaRules])
 ##   on the test map, with the bot difficulty of the custom rows.
@@ -191,7 +191,7 @@ func prepare_practice() -> void:
 
 
 ## Leaves the description of a match in [param mode] ("respawn" for Team
-## Deathmatch, "rounds" for Bomb) with the other custom choices, and stores the
+## Deathmatch, "ffa" for Free-for-all, "rounds" for Bomb) with the other custom choices, and stores the
 ## mode as the last one chosen, without changing scenes.
 func prepare_mode(mode: String) -> void:
 	_setup.settings.match_mode = mode

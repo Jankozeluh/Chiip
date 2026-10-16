@@ -2427,6 +2427,20 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** Giving the test's idle host player something to do (hides the head trap, not the gun trap); a time-out that restarts a match without kills (hides all three); quarantining the checks (D-222 kept them because they looked like a real bug, and they were).
 
+## D-240 — M17: free-for-all is Team Deathmatch where nobody is an ally (2026-10-16)
+
+**Decision:** Free-for-all deathmatch is a `FreeForAllMatch`, a `RespawnMatch` (Team Deathmatch's rules: respawns, the loadouts, map weapons, the time limit and overtime) where everyone is an enemy:
+- **Characters keep their team numbers**; a static `Teams.free_for_all` (set by the match, like `friendly_fire`) makes `Teams.are_allies(a, b)` true only for a character and itself. Every friend-or-foe check in gameplay code now asks `are_allies()` instead of comparing team numbers (bots' eyes and ears, squads, line of fire, bullets passing through teammates, damage, stats, trades, respawn spots, spectating, the stats recorder). Colours ask `Teams.color_of(character)` / `ui_color_of(character)`: only the player at this computer (`Teams.viewer`) is friendly, everyone else wears the enemy colour of the scheme (red, or orange in the colour-blind one).
+- **The score is each player's kills** (the scoreboard's), `get_standings()` sorts them (kills, then deaths, then the join order); the first to the kill limit wins, the time limit gives it to the one with the most kills, and a tie at the top goes to overtime until a kill leaves one player alone at the top. `score` stays 0–0.
+- **Spawns:** the start spreads everyone over the respawn points (`pick_spawn()` one after another) instead of the team ends; `pick_spawn()` counts everyone as an enemy, so a respawn comes far from everyone.
+- **Bots hunt alone**: a `HuntPlan` of its own for each (no groups, no shared sightings, no callouts or trades).
+- **Online needs nothing new**: the settings carry the mode, so a client's replica is a `FreeForAllMatch` too, and its standings and winner come from the scoreboard stats the host already sends.
+- The menus: a Free-for-all card on the Play screen with one Players count, the lobby's mode choice, a single scoreboard list, the HUD's "your kills / the best other's" score, the end screen's winner and your place, and an `ffa` mode in your stats.
+
+**Why:** "If it stays simple" (D-221): with the team numbers kept, the lobby, the join, the protocol, the class draft and Team Deathmatch's code all work unchanged; the one rule "ask `are_allies()`" is all the gameplay code needed (about two dozen places, one line each), and it keeps the next mode honest. A new `ffa` suite checks the rules offline and online.
+
+**Alternatives:** A team per player (`Teams.COUNT` and every per-team array would grow; the protocol sends team numbers as bytes per character); a separate deathmatch class beside `RespawnMatch` (would repeat the respawns, loadouts and overtime); suicides costing a point as in CoD (left out: no suicides by fall damage in Chiip).
+
 ## Open questions
 
 | Question | Decide in |

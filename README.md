@@ -37,8 +37,9 @@ Every download has the licences next to the game (`LICENSE`, `LICENSE-ASSETS`, `
 
 The main menu offers **Play**, **Practice**, **Stats**, **Settings**, **Quit**, and **Host** and **Join** for online games.
 
-- **Play** opens the Play screen: **Team Deathmatch** (one click on its card starts the match), **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway, or the rotation of all three), team sizes (1 to 5 each, you included), the bots' difficulty (Easy, Normal, Hard), the match length and friendly fire. The game remembers your last choices.
+- **Play** opens the Play screen: **Team Deathmatch** (one click on its card starts the match), **Free-for-all**, **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway, or the rotation of all three), team sizes (1 to 5 each, you included), the bots' difficulty (Easy, Normal, Hard), the match length and friendly fire. The game remembers your last choices.
 - **Team Deathmatch** is respawning: first team to the kill limit (or the most kills when the time is up) wins.
+- **Free-for-all** is the same with everyone for themselves: everyone else is an enemy, and the first player to the kill limit wins (`-- --match --ffa` starts one from the command line).
 - **Bomb** is CS-style rounds: one attacker carries the bomb; hold **E** inside site A or B to plant it, and defenders hold E next to it to defuse. A match is first to 5 rounds (sides swap at half time), with freeze time to buy (**B**), and money that carries over.
 - At the start of a match a **class menu** offers two classes drawn for that match (Rifleman, Bulwark, Marksman, Scout), each with its own perk and loadout. **M** opens it again during freeze time.
 - If you die in a round-based match you watch a teammate through their eyes (left click for the next one).

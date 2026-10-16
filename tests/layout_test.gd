@@ -113,6 +113,7 @@ func _test_main_menu(pixelated: bool) -> void:
 	var screens := {
 		"main page": func() -> void: pass,
 		"Play, Team Deathmatch": func() -> void: menu.open_match_setup(); menu.get_match_setup().pick("respawn"),
+		"Play, Free-for-all": func() -> void: menu.get_match_setup().pick("ffa"),
 		"Play, Bomb": func() -> void: menu.get_match_setup().pick("rounds"),
 		"Play, Practice": func() -> void: menu.get_match_setup().pick("practice"),
 		"lobby": func() -> void: menu.get_match_setup().close(); menu.open_lobby(),

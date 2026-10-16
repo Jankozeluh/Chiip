@@ -38,7 +38,7 @@ func _run() -> void:
 	await _ticks(5)
 	var bot: Character = null
 	for other in Character.all_in_world(player):
-		if other != player and other.team != player.team:
+		if not Teams.are_allies(other, player):
 			bot = other
 	if bot == null:
 		_finish(false, "no enemy bot")

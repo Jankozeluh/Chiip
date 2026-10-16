@@ -54,6 +54,7 @@ const MAP_SCENE := preload("res://maps/test_map.tscn")
 const TEST_MAP := "res://maps/test_map.tscn"
 const SCOREBOARD_SCENE := preload("res://ui/scoreboard.tscn")
 const MATCH_END_SCENE := preload("res://ui/match_end_screen.tscn")
+const ROUND_HUD_SCENE := preload("res://ui/round_hud.tscn")
 const CONSOLE_SCENE := preload("res://ui/dev_console.tscn")
 const PREVIEW_SCENE := preload("res://ui/theme_preview.tscn")
 const SETTINGS_MENU_SCENE := preload("res://ui/settings_menu.tscn")
@@ -197,6 +198,7 @@ func _ready() -> void:
 	await _test_console()
 	await _test_scoreboard()
 	await _test_scoreboard_header_in_team_deathmatch()
+	await _test_free_for_all_screens()
 	await _test_match_end_screen()
 	await _test_menus_have_no_overrides()
 	await _test_stats_menu()
@@ -215,6 +217,7 @@ func _ready() -> void:
 	await _test_console_and_menus()
 	await _test_main_menu()
 	await _test_match_setup()
+	await _test_free_for_all_setup()
 	await _test_game_launch()
 	await _test_scene_flow()
 	_test_pause_action()
@@ -1216,6 +1219,184 @@ func _test_scoreboard_header_in_team_deathmatch() -> void:
 	Input.action_release("scoreboard")
 	remove_child(board)
 	board.queue_free()
+
+
+## Free-for-all (M17, D-240) on the screens: the round HUD's top bar is your kills against the best other player's (the
+## second's when you lead) with the kill limit under the clock, the freeze and round-end banners name the winner, the Tab
+## scoreboard is one list of everyone in the standings' order (names in your colour or the enemy's, your row raised, no team
+## lines, no ADR column) under a header of the same two numbers, and the match-end screen names the winner and your place.
+func _test_free_for_all_screens() -> void:
+	var rules := FreeForAllMatch.new()
+	await _new_match(5, rules)
+	Teams.set_viewer(_player)
+	rules.settings.kill_limit = 20
+	rules.settings.respawn_delay = 0.3
+	var hud := ROUND_HUD_SCENE.instantiate() as RoundHud
+	add_child(hud)
+	hud.set_round_manager(rules)
+	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
+	add_child(board)
+	board.set_round_manager(rules)
+	var screen := MATCH_END_SCENE.instantiate() as MatchEndScreen
+	add_child(screen)
+	screen.set_round_manager(rules)
+	var bots := rules.get_participants().filter(func(member: Character) -> bool: return member != _player)
+	var title := hud.get_node("Center/Title") as Label
+	var line := hud.get_node("Center/Line1") as Label
+	var freeze_texts := [title.text, line.text]
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	for bot: Character in bots:
+		bot.frozen = true
+	# A bot kills two, you kill that bot: your 1 against its 2.
+	bots[0].take_damage(500.0, Hitbox.Zone.CHEST, bots[1])
+	bots[2].take_damage(500.0, Hitbox.Zone.CHEST, bots[1])
+	bots[1].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _settle_frames()
+	var behind_scores := [hud.get_score_text(true), hud.get_score_text(false)]
+	var one_bar := hud.is_tdm_bar() and (hud.get_node("%TdmBar") as Control).visible and not (hud.get_node("%BombBar") as Control).visible
+	var round_text := hud.get_round_text()
+	# Three more for you: you lead, so the bar shows the second's kills.
+	await _kill_some(_player, bots, 3)
+	await _settle_frames()
+	var lead_scores := [hud.get_score_text(true), hud.get_score_text(false)]
+	var standings := rules.get_standings()
+	_check("In a free-for-all the top bar is your kills against the best other player's: 1 against 2 while a bot leads, then yours against the second's once you do; it is the one bar (no chips), the clock's line says 'First to 20' and the countdown says 'Free-for-all'",
+			one_bar and behind_scores == ["1", "2"] and standings[0] == _player and lead_scores == [str(rules.get_kills(_player)), str(rules.get_kills(standings[1]))]
+					and rules.get_kills(_player) == 4 and rules.get_kills(standings[1]) == 2 and round_text == "First to 20"
+					and freeze_texts[0].begins_with("Free-for-all · starts in") and freeze_texts[1] == "First to 20 kills wins",
+			"behind %s, leading %s (kills %d vs %d), label '%s', freeze %s" % [behind_scores, lead_scores, rules.get_kills(_player), rules.get_kills(standings[1]), round_text, freeze_texts])
+	var scores := MatchText.ffa_scores(rules, _player)
+	var plain := RoundManager.new()
+	var plain_scores := MatchText.ffa_scores(plain, _player)
+	plain.free()
+	_check("The scores the screens share (MatchText.ffa_scores) are yours, then the best of the others; zero without a viewer or in a team match",
+			scores == Vector2i(4, 2) and MatchText.ffa_scores(rules, null) == Vector2i.ZERO and plain_scores == Vector2i.ZERO,
+			"scores %s" % [scores])
+
+	# The Tab scoreboard: one list in the standings' order.
+	Input.action_press("scoreboard")
+	await _settle_frames()
+	var table := board.get_table()
+	var shown := table.get_displayed(ScoreboardTable.EVERYONE)
+	var titles := table.get_node("Titles").find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text)
+	var child_names := table.get_children().map(func(node: Node) -> String: return String(node.name))
+	var your_row := table.get_row(_player)
+	var living_bot: Character = bots.filter(func(bot: Character) -> bool: return bot.is_alive())[0]
+	var enemy_row := table.get_row(living_bot)
+	var your_name := your_row.find_children("*", "Label", true, false)[0] as Label
+	var enemy_name := enemy_row.find_children("*", "Label", true, false)[0] as Label
+	_check("The Tab scoreboard of a free-for-all is one list of all 6 in the standings' order (most kills, then fewest deaths, then join order) with no team lines or ADR column; your row is raised, your name and icon in your colour, everybody else's in the enemy's",
+			board.visible and shown == standings and shown.size() == 6 and child_names == ["Titles", "Everyone"]
+					and table.get_displayed(0).is_empty() and table.get_displayed(1).is_empty() and titles == ["Player", "K", "D", "A", "DMG"]
+					and your_row.theme_type_variation == &"YouRowPanel" and bots.all(func(bot: Character) -> bool: return table.get_row(bot).theme_type_variation == &"RowPanel")
+					and your_name.theme_type_variation == &"FriendlyLabel" and enemy_name.theme_type_variation == &"EnemyLabel"
+					and (your_row.find_child("Icon", true, false) as TextureRect).modulate == Teams.ui_color_of(_player)
+					and (enemy_row.find_child("Icon", true, false) as TextureRect).modulate == Teams.ui_color_of(living_bot)
+					and Teams.ui_color_of(_player) != Teams.ui_color_of(living_bot),
+			"order %s, children %s, titles %s" % [_names(shown), child_names, titles])
+	_check("Its header reads 'Free-for-all · Test Map' over 'First to 20 · <time>', with your kills at the left and the best other player's at the right",
+			board.get_mode_label().text == "Free-for-all · Test Map" and board.get_clock_label().text.begins_with("First to 20 · ")
+					and board.get_your_score_label().text == "4" and board.get_enemy_score_label().text == "2",
+			"'%s' / '%s', %s - %s" % [board.get_mode_label().text, board.get_clock_label().text, board.get_your_score_label().text, board.get_enemy_score_label().text])
+	Input.action_release("scoreboard")
+
+	# Reaching the kill limit: the banner names you, the end screen shows your place.
+	rules.settings.kill_limit = 6
+	var banner := []
+	rules.round_ended.connect(func(_team: int, _reason: RoundManager.EndReason) -> void: banner.append([title.text, line.text, title.get_theme_color("font_color")]))
+	await _kill_some(_player, bots, 2)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	await _settle_frames()
+	_check("The banner at the end names the winner in their colour: 'You win' over 'First to 6 kills' when it is you",
+			banner == [["You win", "First to 6 kills", Teams.ui_color_of(_player)]] and rules.get_winner() == _player,
+			"banner %s, winner %s" % [banner, rules.get_winner()])
+	_check("The match-end screen of a free-for-all says 'You win' (the victory colour) and, where the team scores are, 'You placed 1st of 6' (no enemy score), with the mode and map, and lists everyone in one table",
+			screen.visible and screen.get_result_label().text == "You win" and screen.get_result_label().theme_type_variation == &"VictoryLabel"
+					and screen.get_your_score_label().text == "You placed 1st of 6" and not screen.get_enemy_score_label().get_parent().visible
+					and screen.get_mode_label().text == "Free-for-all · Test Map" and screen.get_table().get_displayed(ScoreboardTable.EVERYONE).size() == 6
+					and screen.get_table().get_displayed(ScoreboardTable.EVERYONE)[0] == _player,
+			"result '%s', place '%s', mode '%s'" % [screen.get_result_label().text, screen.get_your_score_label().text, screen.get_mode_label().text])
+	remove_child(screen)
+	screen.queue_free()
+	remove_child(board)
+	board.queue_free()
+	remove_child(hud)
+	hud.queue_free()
+
+	# Somebody else wins: a bot gets to the kill limit first.
+	var second := FreeForAllMatch.new()
+	await _new_match(5, second)
+	Teams.set_viewer(_player)
+	second.settings.kill_limit = 3
+	second.settings.respawn_delay = 0.3
+	var other_hud := ROUND_HUD_SCENE.instantiate() as RoundHud
+	add_child(other_hud)
+	other_hud.set_round_manager(second)
+	var other_screen := MATCH_END_SCENE.instantiate() as MatchEndScreen
+	add_child(other_screen)
+	other_screen.set_round_manager(second)
+	var other_bots := second.get_participants().filter(func(member: Character) -> bool: return member != _player)
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	for bot: Character in other_bots:
+		bot.frozen = true
+	var victor: Character = other_bots[0]
+	var other_title := other_hud.get_node("Center/Title") as Label
+	var other_line := other_hud.get_node("Center/Line1") as Label
+	var other_banner := []
+	second.round_ended.connect(func(_team: int, _reason: RoundManager.EndReason) -> void: other_banner.append([other_title.text, other_line.text, other_title.get_theme_color("font_color")]))
+	await _kill_some(victor, other_bots.slice(1), 3)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	await _settle_frames()
+	var expected_win := "%s wins" % victor.name
+	var expected_place := "You placed %s of 6" % MatchText.ordinal(second.get_standings().find(_player) + 1)
+	_check("When a bot wins the banner says '<name> wins' in the enemy's colour over 'First to 3 kills', and the match-end screen says the same with the defeat colour and your place",
+			other_banner == [[expected_win, "First to 3 kills", Teams.ui_color_of(victor)]]
+					and other_screen.get_result_label().text == expected_win and other_screen.get_result_label().theme_type_variation == &"DefeatLabel"
+					and other_screen.get_your_score_label().text == expected_place and second.get_winner() == victor,
+			"banner %s, result '%s', place '%s' (want '%s')" % [other_banner, other_screen.get_result_label().text, other_screen.get_your_score_label().text, expected_place])
+	_check("The words: ordinals (1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, 22nd, 103rd), the mode in the header and the loading screen's lines",
+			[1, 2, 3, 4, 11, 12, 13, 21, 22, 103].map(func(place: int) -> String: return MatchText.ordinal(place))
+					== ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "103rd"]
+					and MatchText.mode_line(second) == "Free-for-all · Test Map"
+					and MatchText.loading_mode_line(GameLaunch.match_settings_from(_ffa_settings()), false) == "Free-for-all · first to 20"
+					and MatchText.loading_kicker(GameLaunch.match_settings_from(_ffa_settings()), false) == "Free-for-all",
+			"mode line '%s'" % MatchText.mode_line(second))
+	remove_child(other_screen)
+	other_screen.queue_free()
+	remove_child(other_hud)
+	other_hud.queue_free()
+	Teams.free_for_all = false
+
+
+## [param killer] kills [param count] living characters of [param pool], one after another (a dead one
+## comes back after the respawn delay, so there is always one to kill).
+func _kill_some(killer: Character, pool: Array, count: int) -> void:
+	var killed := 0
+	var ticks := 0
+	while killed < count and ticks < 128 * 20:
+		for victim: Character in pool:
+			if victim != killer and victim.is_alive():
+				victim.take_damage(500.0, Hitbox.Zone.CHEST, killer)
+				killed += 1
+				break
+		await get_tree().physics_frame
+		ticks += 1
+	await get_tree().physics_frame
+
+
+## Two physics frames and a process frame: the HUD and the tables have read the numbers.
+func _settle_frames() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await get_tree().process_frame
+
+
+## A stored setup for a free-for-all of six with a kill limit of 20, for the words of the loading screen.
+func _ffa_settings() -> Settings:
+	var stored := Settings.new()
+	stored.match_mode = "ffa"
+	stored.match_kill_limit = 20
+	return stored
 
 
 ## The match-end screen as the mockup draws it (M10 task 11, D-137, "16 Match end"): a full ink page, the
@@ -2610,8 +2791,8 @@ func _test_match_setup() -> void:
 	var fire_buttons := setup.get_segment_buttons(&"match_friendly_fire")
 	var map_buttons := setup.get_segment_buttons(&"match_map")
 	var card_names: Array = cards.map(func(card: Button) -> String: return (card.get_parent().find_children("Title", "Label", true, false)[0] as Label).text)
-	_check("The Play screen is hidden until opened; it offers the three mode cards (Team Deathmatch, marked Default, then Bomb and Practice), and segments: the map (Depot, Square, Spillway, Rotation), kill limit 25 / 50 / 75 / 100, rounds 5 / 10 / 15, 5 / 10 / 15 min, Easy / Normal / Hard, friendly fire Off / On, five chips per team, Back and Play",
-			not setup.visible and card_names == ["Team\nDeathmatch", "Bomb", "Practice"]
+	_check("The Play screen is hidden until opened; it offers the four mode cards (Team Deathmatch, marked Default, then Free-for-all, Bomb and Practice), and segments: the map (Depot, Square, Spillway, Rotation), kill limit 25 / 50 / 75 / 100, rounds 5 / 10 / 15, 5 / 10 / 15 min, Easy / Normal / Hard, friendly fire Off / On, five chips per team, Back and Play",
+			not setup.visible and card_names == ["Team\nDeathmatch", "Free-for-\nall", "Bomb", "Practice"]
 					and cards[0].get_parent().find_children("Default", "Label", true, false).size() == 1
 					and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"] and _texts(kill_buttons) == ["25", "50", "75", "100"]
 					and _texts(length_buttons) == ["5", "10", "15"] and _texts(time_buttons) == ["5 min", "10 min", "15 min"]
@@ -2641,7 +2822,7 @@ func _test_match_setup() -> void:
 	var summary_before := setup.get_summary()
 
 	# Picking Bomb: its rows, and changing them changes the match and what is stored.
-	cards[1].pressed.emit()
+	cards[2].pressed.emit()
 	var bomb_rows := setup.is_row_shown(&"match_rounds_to_win") and not setup.is_row_shown(&"match_kill_limit") and not setup.is_row_shown(&"match_time_limit")
 	(team_buttons[1] as Button).button_pressed = true
 	(enemy_buttons[4] as Button).button_pressed = true
@@ -2650,7 +2831,7 @@ func _test_match_setup() -> void:
 	(fire_buttons[1] as Button).button_pressed = true
 	rules = setup.build_match_settings()
 	_check("A click on Bomb picks it (framed, its rows: rounds, no kill limit or time); pressing chip 2, chip 5, Hard, 15 and On gives 2 against 5, hard bots, first to 15, friendly fire on (the round timings stay at their defaults), each row with exactly one choice",
-			setup.get_picked_mode() == "rounds" and stored.match_mode == "rounds" and cards[1].theme_type_variation == &"ModeButtonPicked" and bomb_rows
+			setup.get_picked_mode() == "rounds" and stored.match_mode == "rounds" and cards[2].theme_type_variation == &"ModeButtonPicked" and bomb_rows
 					and rules.game_mode == MatchSettings.GameMode.ROUNDS
 					and rules.team_size == 2 and rules.enemy_team_size == 5 and rules.bot_difficulty.display_name == "hard" and rules.rounds_to_win == 15 and rules.friendly_fire
 					and rules.freeze_time == defaults.freeze_time and rules.round_end_time == defaults.round_end_time
@@ -2675,13 +2856,13 @@ func _test_match_setup() -> void:
 	stored.match_team_size = 2
 	stored.match_difficulty = "hard"
 	# Practice: only the bots' row; picking it doesn't change the stored match mode.
-	cards[2].pressed.emit()
+	cards[3].pressed.emit()
 	var practice_rows := setup.is_row_shown(&"match_difficulty") and not setup.is_row_shown(&"match_map") and not setup.is_row_shown(&"match_team_size")
 	_check("A click on Practice picks it: only the bots' row shows, the stored match mode stays Bomb, and its summary names the Shooting Range",
 			setup.get_picked_mode() == "practice" and practice_rows and stored.match_mode == "rounds" and setup.get_summary().begins_with("Practice: ")
 					and setup.get_summary().contains("Shooting Range"),
 			"picked %s, stored %s, summary '%s'" % [setup.get_picked_mode(), stored.match_mode, setup.get_summary()])
-	cards[1].pressed.emit()
+	cards[2].pressed.emit()
 
 	# The choices survive a restart: written to a file and read by another instance, they come back.
 	_remove_temp_file()
@@ -2729,9 +2910,9 @@ func _test_match_setup() -> void:
 	setup.closed.connect(func() -> void: signals.append("closed"))
 	MenuState.reset()
 	setup.open()
-	var opened := setup.visible and MenuState.is_top(setup) and MenuState.blocks_gameplay() and cards[1].has_focus()
+	var opened := setup.visible and MenuState.is_top(setup) and MenuState.blocks_gameplay() and cards[2].has_focus()
 	setup.get_start_button().pressed.emit()
-	cards[1].pressed.emit()
+	cards[2].pressed.emit()
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	var by_esc := not setup.visible and not MenuState.is_any_open()
@@ -2758,6 +2939,136 @@ func _test_match_setup() -> void:
 	setup.queue_free()
 	await get_tree().process_frame
 	MenuState.reset()
+
+
+## The Free-for-all card on the Play screen (M17, D-240): it sits next to Team Deathmatch, shows the map, kill limit (its own
+## steps, one stored setting with Team Deathmatch's), Players (2 to 10, split over the two team sizes), match length and bots rows
+## (no teams, no friendly fire), and Play leaves a game description with the free-for-all rules; the choices survive a restart.
+func _test_free_for_all_setup() -> void:
+	var stored := Settings.new()
+	var setup := MATCH_SETUP_SCENE.instantiate() as MatchSetup
+	setup.settings = stored
+	add_child(setup)
+	await get_tree().process_frame
+	var cards := setup.get_mode_cards()
+	var line_before := setup.get_card_line("ffa")
+	cards[1].pressed.emit()
+	var kill_buttons := setup.get_segment_buttons(MatchSetup.FFA_KILL_ROW)
+	var player_buttons := setup.get_segment_buttons(MatchSetup.PLAYERS_ROW)
+	var rules := setup.build_match_settings()
+	var shown := setup.is_row_shown(&"match_map") and setup.is_row_shown(MatchSetup.FFA_KILL_ROW) and setup.is_row_shown(MatchSetup.PLAYERS_ROW) \
+			and setup.is_row_shown(&"match_time_limit") and setup.is_row_shown(&"match_difficulty")
+	var hidden := not setup.is_row_shown(&"match_kill_limit") and not setup.is_row_shown(&"match_team_size") and not setup.is_row_shown(&"match_rounds_to_win") \
+			and not setup.is_row_shown(&"match_friendly_fire")
+	_check("The Free-for-all card is picked by a click (framed, stored as 'ffa'): its rows are the map, a kill limit of 10 / 15 / 20 / 30, Players 2 to 10, the match length and the bots, no teams, rounds or friendly fire; the stored 50 kills is not one of its steps, so it takes 20 (the default), and 6 players are chosen (3 and 3)",
+			setup.get_picked_mode() == "ffa" and stored.match_mode == "ffa" and cards[1].theme_type_variation == &"ModeButtonPicked" and cards[0].theme_type_variation == &"ModeButton"
+					and shown and hidden and _texts(kill_buttons) == ["10", "15", "20", "30"] and _texts(player_buttons) == ["2", "3", "4", "5", "6", "7", "8", "9", "10"]
+					and stored.match_kill_limit == 20 and _pressed(kill_buttons) == 2 and _pressed(player_buttons) == 4
+					and rules.game_mode == MatchSettings.GameMode.FREE_FOR_ALL and rules.kill_limit == 20 and rules.time_limit == 600.0
+					and rules.team_size == 3 and rules.enemy_team_size == 3 and line_before == "First to 20 · 10 min",
+			"picked %s, stored %s / %d, rows shown %s, hidden %s, kills %s, players %d, card line before '%s'" % [setup.get_picked_mode(), stored.match_mode, stored.match_kill_limit,
+					shown, hidden, _texts(kill_buttons), _pressed(player_buttons), line_before])
+
+	# Players: n is split into ceil(n / 2) and the rest.
+	var splits := []
+	for count in [2, 7, 10]:
+		(player_buttons[count - 2] as Button).button_pressed = true
+		rules = setup.build_match_settings()
+		splits.append([rules.team_size, rules.enemy_team_size, stored.match_team_size, stored.match_enemy_team_size, _pressed(player_buttons), _pressed_count(player_buttons)])
+	_check("Players 2, 7 and 10 give 1 and 1, 4 and 3, 5 and 5 (your team ceil(n / 2), the rest the other), stored as the two team sizes; one button is pressed each time",
+			splits == [[1, 1, 1, 1, 0, 1], [4, 3, 4, 3, 5, 1], [5, 5, 5, 5, 8, 1]],
+			"splits %s" % [splits])
+	(player_buttons[5] as Button).button_pressed = true
+	(kill_buttons[3] as Button).button_pressed = true
+	(setup.get_segment_buttons(&"match_difficulty")[2] as Button).button_pressed = true
+	rules = setup.build_match_settings()
+	var summary := setup.get_summary()
+	_check("Seven players, first to 30 and Hard bots make a free-for-all of 4 and 3 with 30 kills and hard bots, no friendly fire; the summary names the mode, 6 bots, the kill limit and the maps",
+			rules.game_mode == MatchSettings.GameMode.FREE_FOR_ALL and rules.team_size == 4 and rules.enemy_team_size == 3 and rules.kill_limit == 30 and not rules.friendly_fire
+					and rules.bot_difficulty.display_name == "hard" and stored.match_kill_limit == 30
+					and summary.begins_with("Free-for-all: You and 6 bots, everyone for themselves.") and summary.contains("first to 30 kills or 10 minutes")
+					and summary.contains("Hard") and not summary.contains("friendly fire") and summary.contains("Maps in rotation"),
+			"%d v %d, kills %d, summary '%s'" % [rules.team_size, rules.enemy_team_size, rules.kill_limit, summary])
+
+	# Start leaves the free-for-all for main.gd.
+	stored.match_friendly_fire = true
+	GameLaunch.start_match(setup.get_map_path(), setup.build_match_settings(), setup.get_rotation_maps())
+	var launched := GameLaunch.is_pending() and GameLaunch.match_settings.game_mode == MatchSettings.GameMode.FREE_FOR_ALL \
+			and GameLaunch.match_settings.team_size == 4 and GameLaunch.match_settings.enemy_team_size == 3 and GameLaunch.match_settings.kill_limit == 30 \
+			and not GameLaunch.match_settings.friendly_fire
+	GameLaunch.clear()
+	var odd := Settings.new()
+	odd.match_mode = "ffa"
+	odd.match_team_size = 5
+	odd.match_enemy_team_size = 1
+	var odd_rules := GameLaunch.match_settings_from(odd)
+	_check("GameLaunch makes a FREE_FOR_ALL of them (also from two stored team sizes that are not a split, 5 and 1: six players, 3 and 3); friendly fire stays off, and the split helper gives (4, 3) for 7, (5, 4) for 9",
+			launched and odd_rules.game_mode == MatchSettings.GameMode.FREE_FOR_ALL and odd_rules.team_size == 3 and odd_rules.enemy_team_size == 3
+					and GameLaunch.ffa_team_sizes(7) == Vector2i(4, 3) and GameLaunch.ffa_team_sizes(9) == Vector2i(5, 4) and GameLaunch.ffa_team_sizes(2) == Vector2i(1, 1),
+			"launched %s, odd %d v %d" % [launched, odd_rules.team_size, odd_rules.enemy_team_size])
+	stored.match_friendly_fire = false
+
+	# Back to Team Deathmatch: its own kill limit steps, and the seven players read as 4 against 3.
+	cards[0].pressed.emit()
+	var team_buttons := setup.get_segment_buttons(&"match_team_size")
+	var enemy_buttons := setup.get_segment_buttons(&"match_enemy_team_size")
+	var tdm_rules := setup.build_match_settings()
+	_check("Back on Team Deathmatch the stored 30 kills is not one of its steps, so it takes 50 again, and the team chips show the 4 against 3 of the seven players",
+			setup.get_picked_mode() == "respawn" and stored.match_kill_limit == 50 and _pressed(setup.get_segment_buttons(&"match_kill_limit")) == 1
+					and tdm_rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and _pressed(team_buttons) == 3 and _pressed(enemy_buttons) == 2
+					and setup.get_card_line("ffa") == "First to 20 · 10 min" and setup.get_card_line("respawn") == "Click to play",
+			"mode %s, kills %d, chips %d / %d" % [setup.get_picked_mode(), stored.match_kill_limit, _pressed(team_buttons), _pressed(enemy_buttons)])
+
+	# Online: the picked card says "Picked", and a click on Free-for-all only picks it.
+	setup.set_online(true)
+	var started_clicks := [0]
+	setup.started.connect(func() -> void: started_clicks[0] += 1)
+	cards[1].pressed.emit()
+	cards[1].pressed.emit()
+	_check("In the lobby's setup (set_online) a click on Free-for-all picks it and a second click starts nothing; its card says 'Picked'",
+			setup.get_picked_mode() == "ffa" and stored.match_mode == "ffa" and started_clicks[0] == 0 and setup.get_card_line("ffa") == MatchSetup.PICKED_HINT,
+			"mode %s, starts %d, line '%s'" % [setup.get_picked_mode(), started_clicks[0], setup.get_card_line("ffa")])
+	remove_child(setup)
+	setup.queue_free()
+
+	# The choices survive a restart; a file of an older version (no free-for-all) still loads; an unknown mode falls back.
+	_remove_temp_file()
+	stored.match_mode = "ffa"
+	stored.match_kill_limit = 15
+	stored.match_team_size = 4
+	stored.match_enemy_team_size = 4
+	var saved := stored.save_to_disk(TEMP_PATH)
+	var restarted := Settings.new()
+	var loaded := restarted.load_from_disk(TEMP_PATH)
+	var second := MATCH_SETUP_SCENE.instantiate() as MatchSetup
+	second.settings = restarted
+	add_child(second)
+	await get_tree().process_frame
+	var again := second.build_match_settings()
+	_remove_temp_file()
+	var old_file := ConfigFile.new()
+	old_file.set_value("match", "setup_version", Settings.MATCH_SETUP_VERSION)
+	old_file.set_value("match", "mode", "respawn")
+	old_file.set_value("match", "kill_limit", 75)
+	old_file.save(TEMP_PATH)
+	var from_old := Settings.new()
+	var old_loaded := from_old.load_from_disk(TEMP_PATH)
+	_remove_temp_file()
+	var odd_file := ConfigFile.new()
+	odd_file.set_value("match", "setup_version", Settings.MATCH_SETUP_VERSION)
+	odd_file.set_value("match", "mode", "battle_royale")
+	odd_file.save(TEMP_PATH)
+	var from_odd := Settings.new()
+	from_odd.load_from_disk(TEMP_PATH)
+	_remove_temp_file()
+	_check("After a restart the free-for-all is still picked with its 8 players (4 and 4) and 15 kills; a file written before it existed loads as it was (Team Deathmatch, 75 kills); an unknown mode becomes the default",
+			saved == OK and loaded == OK and second.get_picked_mode() == "ffa" and again.game_mode == MatchSettings.GameMode.FREE_FOR_ALL and again.kill_limit == 15
+					and _pressed(second.get_segment_buttons(MatchSetup.PLAYERS_ROW)) == 6 and _pressed(second.get_segment_buttons(MatchSetup.FFA_KILL_ROW)) == 1
+					and old_loaded == OK and from_old.match_mode == "respawn" and from_old.match_kill_limit == 75 and from_odd.match_mode == Settings.get_default(&"match_mode")
+					and Settings.MATCH_MODES.has("ffa"),
+			"saved %s, loaded %s, picked %s, kills %d, old %s / %d, odd '%s'" % [saved, loaded, second.get_picked_mode(), again.kill_limit, from_old.match_mode, from_old.match_kill_limit, from_odd.match_mode])
+	remove_child(second)
+	second.queue_free()
 
 
 ## The launch description: what the menu leaves and what main.gd builds from it, without changing scenes.
@@ -2911,7 +3222,7 @@ func _test_scene_flow() -> void:
 	# Custom match: Bomb on the test map alone, 2v4, Easy, first to 10.
 	var setup := menu.get_match_setup()
 	menu.get_buttons()[0].pressed.emit()
-	setup.get_mode_cards()[1].pressed.emit()
+	setup.get_mode_cards()[2].pressed.emit()
 	(setup.get_segment_buttons(&"match_map")[1] as Button).button_pressed = true
 	(setup.get_segment_buttons(&"match_team_size")[1] as Button).button_pressed = true
 	(setup.get_segment_buttons(&"match_enemy_team_size")[3] as Button).button_pressed = true
@@ -3780,7 +4091,7 @@ func _test_compass() -> void:
 	var lines_after_two := feed.get_line_count()
 	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(0, 0, -20), "N")
 	var lines_after_three := feed.get_line_count()
-	manager.callout_made.emit(Teams.other(player.team), mate, player.global_position, "S")
+	manager.callout_made.emit(Teams.other(player.team), manager.get_members(Teams.other(player.team))[0], player.global_position, "S")
 	var enemy_ignored := compass.get_tag_text() == "ENEMY · N"
 	compass.advance(3.5)
 	var held := compass.get_tag_text() == "ENEMY · N"
@@ -4222,6 +4533,29 @@ func _test_lobby_menu() -> void:
 					and rotation_facts == {"Mode": "Bomb", "Map": "Rotation · Square", "Limit": "First to 5 rounds"}
 					and friend_lobby.info.get("facts", {}) == {"mode": "Bomb", "map": "Rotation · Square", "limit": "First to 5 rounds"},
 			"respawn %s, rotation %s, friend %s" % [respawn_facts, rotation_facts, friend_lobby.info.get("facts", {})])
+	# A free-for-all has no teams to show: one list of everyone under "Everyone for themselves", and no Switch team button.
+	stored.match_mode = "ffa"
+	stored.match_kill_limit = 20
+	var ffa_texts := lobby.get_team_texts(0)
+	var ffa_facts := lobby.get_footer_facts()
+	var ffa_summary := lobby.build_summary()
+	var ffa_header := lobby.get_team_header_texts(0)
+	var ffa_columns := [lobby.get_team_column(0).visible, lobby.get_team_column(1).visible, lobby.get_switch_team_button().visible]
+	var published_facts: Dictionary = lobby_node.info.get("facts", {}).duplicate()
+	var friend_sees_ffa := await harness.wait_until(func() -> bool: return friend_lobby.info.get("facts", {}).get("ffa", false) == true, 320)
+	stored.match_mode = "rounds"
+	var teams_back := [lobby.get_team_column(1).visible, lobby.get_switch_team_button().visible, lobby.get_team_header_texts(0)[0]]
+	_check("In a free-for-all the lobby shows one list, 'Everyone for themselves' 2 / 6, with both players and four open slots, and no second column or Switch team button",
+			ffa_header == ["Everyone for themselves", "2 / 6"] and ffa_texts == ["You Host", "Anna", "Empty Bot", "Empty Bot", "Empty Bot", "Empty Bot"]
+					and ffa_columns == [true, false, false],
+			"header %s, rows %s, columns %s" % [ffa_header, ffa_texts, ffa_columns])
+	_check("The footer and the summary name the mode and its kill limit, and the published facts say it is a free-for-all (the friend gets them)",
+			ffa_facts == {"Mode": "Free-for-all", "Map": "Rotation · Square", "Limit": "20 kills · 10 min"}
+					and ffa_summary.begins_with("Free-for-all · Rotation: Square") and ffa_summary.ends_with("first to 20 kills · Easy bots")
+					and published_facts.get("ffa", false) == true and friend_sees_ffa,
+			"facts %s, summary '%s', published %s, friend %s" % [ffa_facts, ffa_summary, published_facts, friend_sees_ffa])
+	_check("Back on Bomb the two team columns and the Switch team button come back, 'Your team' first, and the facts no longer say free-for-all",
+			teams_back == [true, true, "Your team"] and not lobby_node.info.get("facts", {}).has("ffa"), "back %s" % [teams_back])
 	stored.match_rotation = false
 	stored.match_map = Settings.DEFAULT_MATCH_MAP
 
@@ -4272,14 +4606,14 @@ func _test_lobby_menu() -> void:
 	var started_clicks := [0]
 	setup.started.connect(func() -> void: started_clicks[0] += 1, CONNECT_ONE_SHOT)
 	var picked_line := setup.get_card_line("rounds")
-	online_cards[1].pressed.emit()
+	online_cards[2].pressed.emit()
 	var still_picked: bool = setup.get_picked_mode() == "rounds" and started_clicks[0] == 0 and setup.is_open()
 	online_cards[0].pressed.emit()
 	var other_line := setup.get_card_line("respawn")
 	var lobby_followed: bool = stored.match_mode == "respawn" and lobby.get_footer_facts()["Mode"] == "Team Deathmatch" \
 			and lobby_node.info.get("facts", {}).get("mode", "") == "Team Deathmatch"
-	online_cards[1].pressed.emit()
-	var practice_click := setup.get_mode_cards()[2]
+	online_cards[2].pressed.emit()
+	var practice_click := setup.get_mode_cards()[3]
 	practice_click.pressed.emit()
 	setup.close()
 	var offline := MATCH_SETUP_SCENE.instantiate() as MatchSetup
@@ -4289,12 +4623,12 @@ func _test_lobby_menu() -> void:
 	var offline_started := [0]
 	offline.started.connect(func() -> void: offline_started[0] += 1)
 	offline.get_mode_cards()[0].pressed.emit()
-	var offline_ok: bool = (offline.get_mode_cards()[2].get_parent() as Control).visible and not offline.is_online() \
+	var offline_ok: bool = (offline.get_mode_cards()[3].get_parent() as Control).visible and not offline.is_online() \
 			and offline.get_card_line("respawn") == "Click to play" and offline_started[0] == 1
 	remove_child(offline)
 	offline.queue_free()
 	_check("In the lobby the match setup is the online one (set_online): the Practice card is hidden, the picked card's last line reads \"Picked\" and a click on it starts nothing and keeps it picked, a click on the other card picks it (the lobby's footer and published facts follow) and Practice cannot be picked; the Play screen's own is unchanged (Practice shown, \"Click to play\", a click on the picked card plays)",
-			setup.is_online() and not (setup.get_mode_cards()[2].get_parent() as Control).visible and picked_line == "Picked" and still_picked
+			setup.is_online() and not (setup.get_mode_cards()[3].get_parent() as Control).visible and picked_line == "Picked" and still_picked
 					and other_line == "Picked" and lobby_followed and setup.get_picked_mode() == "rounds" and stored.match_mode == "rounds" and offline_ok,
 			"picked line '%s', still picked %s, other line '%s', lobby followed %s, mode %s, offline %s" % [picked_line, still_picked, other_line, lobby_followed,
 					stored.match_mode, offline_ok])
@@ -4417,6 +4751,19 @@ func _test_lobby_menu() -> void:
 					and lobby.get_team_header(1).theme_type_variation == &"TeamTitleFriendly" and lobby.get_team_header(0).theme_type_variation == &"TeamTitleEnemy",
 			"in lobby %s, info '%s', team 1 %s, team 2 %s, facts %s" % [in_lobby, lobby.get_info_label().text, lobby.get_team_texts(0), lobby.get_team_texts(1),
 					lobby.get_footer_facts()])
+
+	# The same lobby as a client of a free-for-all: one list, the host's facts say so (a client has no settings of its own to ask).
+	var ffa_facts_remote := {"mode": "Free-for-all", "map": "Depot", "limit": "20 kills · 10 min", "ffa": true}
+	remote_lobby.publish("Free-for-all · Depot · first to 20 kills · Normal bots", [3, 3], "res://maps/depot.tscn", ffa_facts_remote)
+	await harness.wait_until(func() -> bool: return lobby.get_footer_facts()["Mode"] == "Free-for-all", 320)
+	var client_ffa := [lobby.get_team_header_texts(0), lobby.get_team_texts(0), lobby.get_team_column(1).visible, lobby.get_switch_team_button().visible]
+	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn", remote_facts)
+	await harness.wait_until(func() -> bool: return lobby.get_footer_facts()["Mode"] == "Bomb", 320)
+	_check("A client sees a free-for-all as one list too: 'Everyone for themselves' 2 / 6 with the host, you and four open slots, no second column and no Switch team; when the host's facts are a team match again the columns return",
+			client_ffa[0] == ["Everyone for themselves", "2 / 6"] and client_ffa[1] == ["Host Host", "You", "Empty Bot", "Empty Bot", "Empty Bot", "Empty Bot"]
+					and client_ffa[2] == false and client_ffa[3] == false and lobby.get_team_column(1).visible and lobby.get_switch_team_button().visible
+					and lobby.get_team_header_texts(1)[0] == "Your team",
+			"free-for-all view %s, back: second column %s, header %s" % [client_ffa, lobby.get_team_column(1).visible, lobby.get_team_header_texts(1)])
 
 	# The host goes away: back to the connect page with the reason, shown once.
 	GameLaunch.notice = ""

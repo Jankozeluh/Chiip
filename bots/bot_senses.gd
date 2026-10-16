@@ -97,7 +97,7 @@ func reset() -> void:
 ## range, inside the view cone and not hidden behind the world. (Seeing isn't
 ## noticing yet; see [member visible_enemy].)
 func can_see(other: Character) -> bool:
-	if other == null or other == _character or not other.is_alive() or other.team == _character.team:
+	if other == null or not other.is_alive() or Teams.are_allies(other, _character):
 		return false
 	# Blinded by a flashbang: nothing at all (D-097).
 	if _character.get_flash_alpha() > 0.5:
@@ -162,7 +162,7 @@ func _angle_from_view(direction: Vector3) -> float:
 
 
 func _on_noise_made(noise_position: Vector3, hearing_range: float, source: Character) -> void:
-	if source == null or source == _character or source.team == _character.team or not _character.is_alive():
+	if source == null or Teams.are_allies(source, _character) or not _character.is_alive():
 		return
 	if _character.global_position.distance_to(noise_position) <= hearing_range:
 		_remember(noise_position)
@@ -170,7 +170,7 @@ func _on_noise_made(noise_position: Vector3, hearing_range: float, source: Chara
 
 ## Getting shot tells the bot roughly where the shooter is.
 func _on_damaged(_amount: float, _zone: Hitbox.Zone, attacker: Character) -> void:
-	if attacker != null and attacker.team != _character.team:
+	if attacker != null and not Teams.are_allies(attacker, _character):
 		_remember(attacker.global_position)
 
 

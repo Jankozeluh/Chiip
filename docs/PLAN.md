@@ -635,7 +635,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 
 - [x] **First, M16's open finding:** bots that stopped fighting in online Team Deathmatch (D-239): a hunter going for a gun never took it, a bot stuck on a teammate's head, hunters searching each other's old positions. `netrespawn` 40 of 40, with a new check for 60 s without a kill
 
-- [ ] **Free-for-all deathmatch**, if it stays simple: everyone for themselves, built on the team respawn mode, first to the kill limit wins; enemy colours for everyone else
+- [x] **Free-for-all deathmatch**, if it stays simple: everyone for themselves, built on the team respawn mode, first to the kill limit wins; enemy colours for everyone else. Built (D-240): `FreeForAllMatch`, `Teams.are_allies()` for every friend-or-foe check, a Free-for-all card (one Players count, first to 10/15/**20**/30 kills), one scoreboard list, the HUD's "you / best other" score, the end screen's winner and your place, an `ffa` mode in your stats; online with nothing new on the wire. New suite `ffa` (15 checks)
 - [ ] **Game browser:** games on your LAN or tailnet show up in a list (no typing IPs), with join in one click
 - [ ] **Text chat** in the lobby and in matches: host-checked (length and rate limits, plain text only, no markup)
 - [ ] **Killcam:** after dying, the last few seconds through your killer's eyes (CoD-style); skippable, and off in Bomb mode if it reveals too much

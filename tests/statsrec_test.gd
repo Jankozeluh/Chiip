@@ -8,7 +8,9 @@ extends Node
 ## its nine pellets), take hits that must not count (a teammate with friendly fire on, the knife, a
 ## grenade), and win by two kills, the last of them a headshot; the finished match lands in the
 ## history with the right mode, map, result, score, kills, damage, headshot kills, bullets and hits by
-## zone. A bomb round match records its rounds and ADR; a match you leave and practice record
+## zone. A bomb round match records its rounds and ADR; a free-for-all (M17) records a win when you are
+## the match's winner and a loss when somebody else is (never a draw), with your kills against the best
+## other player's as the score, and the history accepts its mode; a match you leave and practice record
 ## nothing. Then online (one host and one client in this process): the host damages an enemy in the
 ## client's name with a named gun, the client's copy of the enemy learns the gun from the host's
 ## announcement, and the client's own recorder counts its real shots and the hits the host announced,
@@ -32,6 +34,7 @@ func _ready() -> void:
 	StatsBook.get_instance().clear()
 	await _test_respawn_match()
 	await _test_rounds_match()
+	await _test_ffa_matches()
 	await _test_not_recorded()
 	await _test_online()
 	StatsBook.get_instance().clear()
@@ -173,6 +176,71 @@ func _test_rounds_match() -> void:
 			"%s" % str(record.to_dict() if record != null else null))
 	_free_main()
 	book.clear()
+
+
+## Free-for-all (M17, D-240): you win by getting to the kill limit first (a win, your kills against the best
+## other's), and lose when a bot does (a loss with its kills as the "them" score, never a draw).
+func _test_ffa_matches() -> void:
+	var book := StatsBook.get_instance()
+	book.clear()
+	var settings := MatchSettings.new()
+	settings.game_mode = MatchSettings.GameMode.FREE_FOR_ALL
+	settings.team_size = 2
+	settings.enemy_team_size = 1
+	settings.freeze_time = 0.3
+	settings.round_end_time = 0.5
+	settings.respawn_delay = 0.3
+	settings.kill_limit = 2
+	await _new_main(settings)
+	var rules := _main.call("get_map").get_node("FreeForAllMatch") as FreeForAllMatch
+	var player := _main.call("get_map").get_node("Player") as Character
+	await _go_live(rules)
+	var knife := WeaponData.find(&"knife")
+	var bots := rules.get_participants().filter(func(member: Character) -> bool: return member != player)
+	bots[0].take_damage(500.0, Hitbox.Zone.CHEST, player, 1.0, knife)
+	await _wait_seconds(0.6)
+	bots[1].take_damage(500.0, Hitbox.Zone.HEAD, player, 1.0, knife)
+	var done := await _wait_for(func() -> bool: return book.history.size() > 0, 12.0)
+	var record := book.history[0] if not book.history.is_empty() else null
+	_check("A free-for-all you win is recorded: mode 'ffa' on Depot, a win, your 2 kills against the best other's 0, no rounds (no ADR), offline, and the scoreboard's kills",
+			done and record != null and record.mode == StatsMatch.MODE_FFA and record.map == "depot" and record.result == StatsMatch.WIN
+			and record.score_us == 2 and record.score_them == 0 and record.rounds == 0 and record.adr() < 0.0 and not record.online
+			and record.kills == 2 and rules.get_winner() == player and book.lifetime.wins == 1 and StatsTotals.won_in(book.lifetime.modes, "ffa") == 1,
+			"%s" % str(record.to_dict() if record != null else null))
+	var read_back := StatsMatch.from_dict(record.to_dict()) if record != null else null
+	_check("The history accepts the mode: a record of it survives its own dictionary, and a made-up mode is still refused",
+			read_back != null and read_back.mode == "ffa" and read_back.result == StatsMatch.WIN
+			and StatsMatch.from_dict(_with_mode(record, "battle_royale")) == null,
+			"%s" % [read_back.mode if read_back != null else null])
+	_free_main()
+	book.clear()
+
+	# A bot gets there first: you kill once, it kills you and then the other bot, 2 against your 1.
+	await _new_main(settings)
+	rules = _main.call("get_map").get_node("FreeForAllMatch") as FreeForAllMatch
+	player = _main.call("get_map").get_node("Player") as Character
+	await _go_live(rules)
+	bots = rules.get_participants().filter(func(member: Character) -> bool: return member != player)
+	var victor: Character = bots[0]
+	bots[1].take_damage(500.0, Hitbox.Zone.CHEST, player, 1.0, knife)
+	player.take_damage(500.0, Hitbox.Zone.CHEST, victor, 1.0, knife)
+	await _wait_seconds(0.7)
+	bots[1].take_damage(500.0, Hitbox.Zone.CHEST, victor, 1.0, knife)
+	done = await _wait_for(func() -> bool: return book.history.size() > 0, 12.0)
+	record = book.history[0] if not book.history.is_empty() else null
+	_check("A free-for-all a bot wins is a loss (never a draw): your 1 kill against its 2, one death",
+			done and record != null and record.mode == StatsMatch.MODE_FFA and record.result == StatsMatch.LOSS and record.score_us == 1 and record.score_them == 2
+			and record.kills == 1 and record.deaths == 1 and rules.get_winner() == victor and book.lifetime.losses == 1 and book.lifetime.draws == 0,
+			"%s, winner %s" % [str(record.to_dict() if record != null else null), rules.get_winner()])
+	_free_main()
+	book.clear()
+
+
+## [param record]'s dictionary with another mode, for the check that the history refuses a mode no game wrote.
+func _with_mode(record: StatsMatch, mode: String) -> Dictionary:
+	var data := record.to_dict()
+	data["mode"] = mode
+	return data
 
 
 func _test_not_recorded() -> void:
