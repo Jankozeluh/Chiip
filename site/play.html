@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Play Chiip with friends</title>
+	<meta name="description" content="How to play Chiip online with friends over Tailscale: install, share, host, join. Nothing to open on your router.">
+	<meta name="theme-color" content="#0b1017">
+	<meta property="og:title" content="Play Chiip with friends">
+	<meta property="og:description" content="How to play Chiip online with friends over Tailscale: install, share, host, join. Nothing to open on your router.">
+	<meta property="og:image" content="https://jankozeluh.github.io/Chiip/img/menu.png">
+	<link rel="icon" href="img/divocakos.png">
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+	<header class="site-header">
+		<div class="wrap">
+			<a class="brand" href="index.html"><img src="img/divocakos.png" alt="" width="40" height="40">Chiip</a>
+			<nav class="nav" aria-label="Main">
+			<a href="download.html">Download</a>
+			<a href="play.html" aria-current="page">Play with friends</a>
+			<a href="updates.html">Updates</a>
+			<a href="maps.html">Maps</a>
+			<a href="about.html">About</a>
+			</nav>
+		</div>
+	</header>
+	<main>
+		<div class="wrap">
+			<h1 style="margin-top:48px">Play with friends</h1>
+			<p class="lead">One player <strong>hosts</strong> and plays, friends <strong>join</strong>, and bots fill the empty slots. Chiip's online play works by address and is built for <a href="https://tailscale.com">Tailscale</a>: a private network where nothing is opened on anyone's router, nothing is exposed to the internet, and only the people you invite can connect. (It also works on a LAN, and anywhere the friends can reach the host's address on <strong>UDP port 26000</strong>.)</p>
+
+			<h2>Step by step</h2>
+			<p class="dim">Everyone does step 1. The host does 2 and 3, the friends 4.</p>
+			<ol class="steps">
+				<li><strong>Install Tailscale</strong> from <a href="https://tailscale.com/download">tailscale.com/download</a> (free for personal use; Windows, macOS and Linux) and sign in. Check that it says <em>Connected</em>.</li>
+				<li><strong>The host invites friends.</strong> The best way is to share <em>only the host's computer</em>, so friends can reach the game and nothing else of yours: open the <a href="https://login.tailscale.com/admin/machines">Tailscale admin console</a>, find the host's computer, open its <strong>&hellip;</strong> menu, choose <strong>Share&hellip;</strong> and send the invite link to each friend. A friend opens the link, signs in to Tailscale (a free account) and accepts. (You can also invite friends into your whole tailnet under <strong>Users &rarr; Invite</strong>, but then they can reach all your devices, so only do that for people you trust with that.)</li>
+				<li><strong>The host starts the game:</strong> main menu &rarr; <strong>Host</strong>. The lobby shows <strong>Friends join at</strong>, with the host's <strong>Tailscale address</strong> (it starts with <code>100.</code>) and a <strong>Copy</strong> button. Click <strong>Copy</strong> and send the address to your friends in chat.</li>
+				<li><strong>A friend joins:</strong> main menu &rarr; <strong>Join</strong>. Paste the address into <strong>Join by IP</strong> and press <strong>Join</strong>. Everyone sees the others in the lobby.</li>
+				<li><strong>In the lobby</strong>, click <strong>Switch team</strong> to pick a side (your team is blue, the other red). The host's <strong>Edit setup</strong> opens the usual match setup (mode, map or rotation, team sizes, bot difficulty, length, friendly fire); empty slots are bots. The host presses <strong>Start</strong> and everyone's game loads.</li>
+				<li>Pick your class in the first freeze time (<strong>M</strong>) as in a game alone. After the match the host chooses <strong>Next map</strong>, <strong>Play again</strong> or <strong>Lobby</strong>.</li>
+			</ol>
+			<p>Someone who leaves during a match is taken over by a bot; someone who joins a running match takes over a bot of their team. When the host quits, everyone goes back to the menu.</p>
+
+			<h2>If it doesn't connect</h2>
+			<ul>
+				<li><strong>Everyone must run the same version</strong> of Chiip: the host answers "The host runs a different version of Chiip." otherwise.</li>
+				<li>Is Tailscale <em>Connected</em> on both computers? Try <code>tailscale ping 100.x.y.z</code> (the host's address) in a terminal; the first ping may take a moment while the two computers find a direct route.</li>
+				<li>The host's firewall must let Chiip in (Windows: <em>Private networks</em>; macOS: <strong>Allow</strong> when asked). If you clicked <em>Deny</em> by mistake, allow Chiip under <em>Windows Defender Firewall &rarr; Allow an app</em>, or macOS <em>System Settings &rarr; Network &rarr; Firewall &rarr; Options</em>.</li>
+				<li>The port is <strong>26000</strong> (UDP) unless the host changed it in the lobby; a different port can be pasted with the address (<code>100.x.y.z:27000</code>).</li>
+				<li>Playing on the same Wi-Fi? The lobby also lists the host's LAN address; use that one for friends in the same house.</li>
+			</ul>
+			<p><a class="button primary" href="download.html">Download Chiip</a></p>
+		</div>
+
+	</main>
+	<footer class="site-footer">
+		<div class="wrap">
+			<div class="credit"><img src="img/divocakos.png" alt="The Divocakos logo, a laughing watermelon" width="56" height="56"><span>Created by JK · Divocakos</span></div>
+			<nav aria-label="Footer">
+				<a href="https://github.com/Jankozeluh/Chiip">Source code</a>
+				<a href="https://github.com/Jankozeluh/Chiip/issues">Report a bug</a>
+				<a href="https://github.com/Jankozeluh/Chiip/releases/latest">Latest release</a>
+				<a href="about.html">Licences</a>
+			</nav>
+			<small>&copy; Divocakos. Code GPL-3.0; art, models, maps and sounds CC BY-NC-SA 4.0; the Divocakos name and logo are all rights reserved.</small>
+		</div>
+	</footer>
+	<script src="js/site.js" defer></script>
+</body>
+</html>

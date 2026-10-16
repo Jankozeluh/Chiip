@@ -82,6 +82,10 @@ Then `bash tools/package_release.sh` makes the three zip files for the GitHub Re
 
 The builds are not signed: the README tells players how to get past the warnings (macOS Gatekeeper, Windows SmartScreen). The Windows `.exe` has Godot's default icon, because setting one needs `rcedit`, a download that has not been approved. Nothing in a preset may hold a password or a signing identity (`release_test` checks); Godot keeps those in `export_credentials.cfg`, which is git-ignored.
 
+## The website and releases
+
+The website is the folder `site/` (plain HTML, CSS and one script; see `site/README.md`). Preview it with `python3 -m http.server --directory site 8000`. It is published to GitHub Pages by `.github/workflows/pages.yml` on every push to main. Its Download and Updates pages read GitHub's releases API, so a release needs no edit to it. The routine for a release (version, changelog, checks, builds, zips, `gh release create`) is [RELEASING.md](RELEASING.md); the notes of each version are its section of [CHANGELOG.md](../CHANGELOG.md).
+
 ## Making maps with TrenchBroom
 
 Real maps are built in **TrenchBroom**, a free brush-based map editor similar to Hammer, and imported into Godot by the func_godot addon (D-032).

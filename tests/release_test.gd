@@ -11,7 +11,7 @@ extends Node
 const SETTINGS_MENU_SCENE := preload("res://ui/settings_menu.tscn")
 ## File types that are plain text and checked for personal paths.
 const TEXT_EXTENSIONS: Array[String] = [
-	"md", "gd", "tscn", "tres", "cfg", "py", "sh", "txt", "json", "map", "godot", "csv", "html", "gdshader", "import",
+	"md", "gd", "tscn", "tres", "cfg", "py", "sh", "txt", "json", "map", "godot", "csv", "html", "gdshader", "import", "css", "js", "yml",
 ]
 ## Folders that are not part of the project's sources.
 const SKIPPED_FOLDERS: Array[String] = [".git", ".godot", "builds", ".claude", "__pycache__"]
@@ -28,6 +28,8 @@ func _ready() -> void:
 	_test_tailscale_addresses()
 	await _test_tailscale_in_the_lobby()
 	await _test_join_to_nobody()
+	_test_website()
+	_test_release_routine()
 	_test_no_personal_paths()
 	_test_gitignore()
 	MenuState.reset()
@@ -271,10 +273,10 @@ func _test_contributing() -> void:
 			readme.contains("Created by JK · Divocakos") and readme.contains("all rights reserved")
 					and LicensesMenu.overview_text().contains("Created by JK · Divocakos"),
 			"")
-	var notes := FileAccess.get_file_as_string("res://docs/RELEASE_NOTES_v0.1.0.md")
+	var notes := FileAccess.get_file_as_string("res://CHANGELOG.md")
 	var checklist := FileAccess.get_file_as_string("res://docs/RELEASE_CHECKLIST.md")
 	var known := FileAccess.get_file_as_string("res://docs/KNOWN_ISSUES.md")
-	_check("The release papers exist: notes that credit \"Created by JK · Divocakos\" and name the three downloads, a checklist with every section, and the known issues",
+	_check("The release papers exist: a changelog (the release notes) that credits \"Created by JK · Divocakos\" and name the three downloads, a checklist with every section, and the known issues",
 			notes.contains("Created by JK · Divocakos") and notes.contains("windows-x86_64.zip") and notes.contains("macos-universal.zip") and notes.contains("linux-x86_64.zip")
 					and checklist.contains("## 0. Gates") and checklist.contains("## 7. The builds") and checklist.contains("## 8. Before it goes public")
 					and known.contains("## Builds") and known.contains("## Online play"),
@@ -283,6 +285,116 @@ func _test_contributing() -> void:
 	var launch := FileAccess.get_file_as_string("res://systems/game_launch.gd")
 	_check("The two lists CONTRIBUTING.md tells map authors to extend still exist (GameLaunch.ROTATION_MAPS and the maps test's MAPS)",
 			launch.contains("const ROTATION_MAPS") and maps_test.contains("const MAPS"), "")
+
+
+# --- The website ---
+
+
+const SITE_PAGES: Array[String] = ["index.html", "download.html", "updates.html", "play.html", "maps.html", "about.html"]
+
+
+## The website in site/ (M12, D-179): its pages and files, its links, its look (the game's tokens),
+## the script's repository name and the workflow that publishes it.
+func _test_website() -> void:
+	var files_ok := true
+	var missing := ""
+	for path in SITE_PAGES + ["css/style.css", "js/site.js", "fonts/Silkscreen-Regular.ttf", "fonts/Silkscreen-Bold.ttf", "fonts/Silkscreen-OFL.txt",
+			"img/menu.png", "img/bomb.png", "img/classes.png", "img/buy.png", "img/lobby.png", "img/divocakos.png", ".gdignore"]:
+		if not FileAccess.file_exists("res://site/" + path):
+			files_ok = false
+			missing += " " + path
+	_check("The site has its six pages, the stylesheet, the script, Silkscreen with its licence, five screenshots and the logo, and a .gdignore (Godot would import every picture otherwise)", files_ok, "missing:%s" % missing)
+
+	var pages_ok := true
+	var problems := ""
+	var regex_link := RegEx.create_from_string("(?:href|src)=\"([^\"#]+)(?:#[^\"]*)?\"")
+	var regex_image := RegEx.create_from_string("<img [^>]*>")
+	for page in SITE_PAGES:
+		var html := FileAccess.get_file_as_string("res://site/" + page)
+		if not (html.contains("<title>") and html.contains("css/style.css") and html.contains("js/site.js") and html.contains("Created by JK · Divocakos")):
+			pages_ok = false
+			problems += " %s-basics" % page
+		for other in SITE_PAGES.slice(1):
+			if not html.contains('href="%s"' % other):
+				pages_ok = false
+				problems += " %s-nav-%s" % [page, other]
+		for match in regex_link.search_all(html):
+			var target := match.get_string(1)
+			if target.begins_with("http://") or target.begins_with("https://") or target.begins_with("mailto:"):
+				if target.contains("github.com/") and not target.contains("github.com/Jankozeluh/Chiip"):
+					pages_ok = false
+					problems += " %s-repo-%s" % [page, target]
+				continue
+			if not FileAccess.file_exists("res://site/" + target):
+				pages_ok = false
+				problems += " %s-broken-%s" % [page, target]
+		for tag in regex_image.search_all(html):
+			if not tag.get_string().contains("alt="):
+				pages_ok = false
+				problems += " %s-image-without-alt" % page
+		# Nothing is loaded from elsewhere: no CDN scripts, styles, fonts or pictures.
+		if html.contains('<script src="http') or html.contains('<link rel="stylesheet" href="http') or html.contains('<img src="http'):
+			pages_ok = false
+			problems += " %s-external" % page
+	_check("Every page carries the credit, the stylesheet and the script and links to all the others; every link and picture exists; every picture has alt text; the repository links all name the one repository; nothing loads from another site",
+			pages_ok, "problems:%s" % problems)
+
+	var css := FileAccess.get_file_as_string("res://site/css/style.css")
+	var palette := FileAccess.get_file_as_string("res://tools/ui_palette.gd")
+	var tokens: Dictionary = {"--void": "VOID", "--ink": "INK", "--panel": "PANEL", "--raised": "PANEL_RAISED", "--line": "LINE_COLOR", "--mute": "MUTE",
+			"--text-dim": "TEXT_DIM", "--text": "TEXT", "--white": "TEXT_BRIGHT", "--accent": "ACCENT", "--accent-bright": "ACCENT_BRIGHT",
+			"--friendly": "FRIENDLY", "--enemy": "ENEMY", "--alert": "ALERT"}
+	var same := true
+	var differing := ""
+	for variable: String in tokens:
+		var game := RegEx.create_from_string("const %s := Color\\(\"([0-9a-fA-F]{6})\"" % tokens[variable]).search(palette)
+		var site := RegEx.create_from_string("%s:\\s*#([0-9a-fA-F]{6});" % variable).search(css)
+		if game == null or site == null or game.get_string(1).to_lower() != site.get_string(1).to_lower():
+			same = false
+			differing += " %s" % variable
+	_check("The site's colours are the game's own UI tokens (tools/ui_palette.gd): %d of them, same hex values, Silkscreen as the font" % tokens.size(),
+			same and css.contains('font-family: "Silkscreen"') and css.contains("Silkscreen-Bold.ttf"), "differing:%s" % differing)
+
+	var script := FileAccess.get_file_as_string("res://site/js/site.js")
+	var readme := FileAccess.get_file_as_string("res://README.md")
+	_check("The script reads the releases API of the one repository (the REPO line matches the README and the Licences screen), falls back to the plain latest-release link, picks the files by system, and its braces balance",
+			script.contains('const REPO = "Jankozeluh/Chiip"') and readme.contains("github.com/Jankozeluh/Chiip") and LicensesMenu.SOURCE_URL.ends_with("Jankozeluh/Chiip")
+					and script.contains("/releases/latest") and script.contains("/releases?per_page") and script.contains("windows") and script.contains("linux")
+					and script.count("{") == script.count("}") and css.count("{") == css.count("}"),
+			"")
+
+	var workflow := FileAccess.get_file_as_string("res://.github/workflows/pages.yml")
+	var uses_ok := workflow.contains("uses: actions/checkout@v4.2.2") and workflow.contains("uses: actions/upload-pages-artifact@v3.0.1") and workflow.contains("uses: actions/deploy-pages@v4.0.5")
+	for line in workflow.split("\n"):
+		var trimmed := line.strip_edges()
+		if trimmed.contains("uses:") and not trimmed.begins_with("#"):
+			var action := trimmed.substr(trimmed.find("uses:") + 5).strip_edges()
+			if not action.begins_with("actions/") or not RegEx.create_from_string("@v[0-9]+\\.[0-9]+\\.[0-9]+$").search(action):
+				uses_ok = false
+	_check("The Pages workflow publishes site/ on every push to main with only GitHub's own actions (checkout, upload-pages-artifact, deploy-pages), each pinned to an exact version",
+			uses_ok and workflow.contains("branches: [main]") and workflow.contains("path: site") and workflow.contains("pages: write") and workflow.contains("id-token: write"),
+			"%d characters" % workflow.length())
+
+
+## The update routine: the changelog holds a section for the project's version that tools/release_notes.sh can extract,
+## and docs/RELEASING.md names the steps.
+func _test_release_routine() -> void:
+	var version := str(ProjectSettings.get_setting("application/config/version", ""))
+	var changelog := FileAccess.get_file_as_string("res://CHANGELOG.md")
+	var releasing := FileAccess.get_file_as_string("res://docs/RELEASING.md")
+	var output: Array = []
+	var exit_code := OS.execute("bash", [ProjectSettings.globalize_path("res://tools/release_notes.sh"), version], output)
+	var notes := "" if output.is_empty() else str(output[0])
+	var missing: Array = []
+	var missing_exit := OS.execute("bash", [ProjectSettings.globalize_path("res://tools/release_notes.sh"), "99.99.99"], missing)
+	_check("CHANGELOG.md has a section \"## [%s]\" for the project's version and tools/release_notes.sh prints its text (no heading) and refuses a version it doesn't have" % version,
+			changelog.contains("## [%s] - " % version) and exit_code == 0 and notes.length() > 500 and not notes.contains("## [") and notes.contains("Created by JK · Divocakos")
+					and missing_exit == 1,
+			"exit %d, %d characters, missing version exit %d" % [exit_code, notes.length(), missing_exit])
+	_check("docs/RELEASING.md gives the routine: bump version and changelog, run the suite, export, zip, gh release create; the site follows by itself",
+			releasing.contains("project.godot") and releasing.contains("CHANGELOG.md") and releasing.contains("tools/run_tests.sh") and releasing.contains("--export-release")
+					and releasing.contains("tools/package_release.sh") and releasing.contains("gh release create") and releasing.contains("site"),
+			"%d characters" % releasing.length())
 
 
 # --- Tailscale ---

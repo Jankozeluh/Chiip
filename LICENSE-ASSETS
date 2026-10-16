@@ -26,8 +26,10 @@ What this licence covers
   docs/mapping/      screenshots and pictures of the maps
   docs/maps/         the same
   icon.svg           the game's icon
+  site/img/          the screenshots on the website (the Divocakos logo in it, divocakos.png,
+                     is the exception below)
 
-(The studio logo in assets/ui/ is the one exception, see below.)
+(The studio logo, in assets/ui/ and as site/img/divocakos.png, is the one exception, see below.)
 
 The generated files are the output of tools under tools/ (the model and
 texture generators, the sound generator). The tools are code and are under
@@ -37,8 +39,8 @@ What it does not cover
 ----------------------
 
   The studio's name and logo.
-    The name "Divocakos" and the studio logo (assets/ui/studio_logo.png)
-    are Copyright (c) 2026 Divocakos, ALL RIGHTS RESERVED. They are not
+    The name "Divocakos" and the studio logo (assets/ui/studio_logo.png and
+    its copy site/img/divocakos.png) are Copyright (c) 2026 Divocakos, ALL RIGHTS RESERVED. They are not
     licensed under CC BY-NC-SA or any other licence: you may not copy, adapt
     or redistribute them, and you may not use the name or the logo for your own
     work. If you make something from Chiip, leave the logo out. (The file is in
@@ -52,6 +54,7 @@ What it does not cover
   Third-party material keeps its own licence, listed in
   THIRD_PARTY_NOTICES.md:
     assets/fonts/Silkscreen-*.ttf     SIL Open Font License 1.1
+    site/fonts/Silkscreen-*           the same font, copied for the website
     addons/func_godot/                MIT
     Godot Engine (in the builds)      MIT
 

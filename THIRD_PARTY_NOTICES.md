@@ -55,11 +55,11 @@ Godot licence above, with this copyright line).
 Copyright 2001 The Silkscreen Project Authors.
 
 The full licence is in `assets/fonts/Silkscreen-OFL.txt`. The font is used and
-shipped as it is, under its own licence, and is not sold on its own.
+shipped as it is, under its own licence, and is not sold on its own. The website (`site/`) carries a copy of the font with the same licence file (`site/fonts/`).
 
 ## The studio's name and logo (all rights reserved)
 
-"Divocakos" and the studio logo (`assets/ui/studio_logo.png`, shown on the boot screen) are
+"Divocakos" and the studio logo (`assets/ui/studio_logo.png`, shown on the boot screen, and its copy `site/img/divocakos.png`) are
 © 2026 Divocakos, **all rights reserved**. They are not part of the open licences above and
 are excluded from `LICENSE-ASSETS`: they may not be reused.
 

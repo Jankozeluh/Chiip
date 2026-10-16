@@ -1,4 +1,10 @@
-# Chiip v0.1.0: the first public playtest
+# Changelog
+
+Every release of Chiip, newest first. The section of a version is the text of its GitHub Release (`docs/RELEASING.md`), and the website's Updates page shows it. Versions follow `config/version` in `project.godot`.
+
+## [0.1.0] - 2026-10-16
+
+**The first public playtest.**
 
 **Created by JK · Divocakos.** © Divocakos.
 
@@ -6,7 +12,7 @@ A tactical shooter in the spirit of Counter-Strike, in the look of a 1990s Quake
 
 This is the first release that friends can download and play together, so expect rough edges: what we know about is in [KNOWN_ISSUES.md](https://github.com/Jankozeluh/Chiip/blob/main/docs/KNOWN_ISSUES.md). Please tell us what you find.
 
-## Download
+### Download
 
 | System | File |
 |---|---|
@@ -16,7 +22,7 @@ This is the first release that friends can download and play together, so expect
 
 Unzip it anywhere and start Chiip. The builds are **not signed**, so your system warns you the first time; the [README](https://github.com/Jankozeluh/Chiip#download-and-run) says how to get past it in a few clicks (Windows: *More info → Run anyway*; macOS: right-click → *Open*, or *System Settings → Privacy & Security → Open Anyway*; Linux: `chmod +x Chiip.x86_64`).
 
-## What is in it
+### What is in it
 
 - **Two modes, on three maps:** **Bomb** (CS-style rounds: buy in the freeze time, plant or defuse, first to 5 rounds with a side swap) and **Team Deathmatch** (respawning, first to the kill limit), on **Depot**, **Square** and **Spillway**, alone or in a rotation. **Practice** on the **Shooting Range**, with targets at every distance, a stand for every gun and bots on demand.
 - **Teams of 1 to 5 a side**, you included, with bot teammates and bot enemies on three difficulties (Easy, Normal, Hard).
@@ -28,7 +34,7 @@ Unzip it anywhere and start Chiip. The builds are **not signed**, so your system
 - **Any window size and fullscreen:** the UI scales to fit.
 - **Maps from the community** will ship in later releases: they are curated in the repository, see [CONTRIBUTING.md](https://github.com/Jankozeluh/Chiip/blob/main/CONTRIBUTING.md).
 
-## Playing with friends in a minute
+### Playing with friends in a minute
 
 1. Everyone installs [Tailscale](https://tailscale.com/download); the host shares their computer with each friend from the Tailscale admin console (*Machines → ⋯ → Share…*).
 2. The host starts Chiip → **Host**, clicks **Copy** next to the Tailscale address and sends it to the friends.
@@ -36,15 +42,15 @@ Unzip it anywhere and start Chiip. The builds are **not signed**, so your system
 
 Everyone must run the same version of the game. If it won't connect, the README has a short list of things to check.
 
-## Known issues
+### Known issues
 
 See [KNOWN_ISSUES.md](https://github.com/Jankozeluh/Chiip/blob/main/docs/KNOWN_ISSUES.md). In short: the builds are unsigned; the Windows and Linux builds were made on a Mac and have not been tried on real Windows or Linux computers yet; the sounds are simple; the bots are not smart in team tactics.
 
-## Licences and credits
+### Licences and credits
 
 - Code: **GPL-3.0**. Art, models, maps and sounds: **CC BY-NC-SA 4.0**. The studio's name, "Divocakos", and its logo are **all rights reserved** and not part of those licences. Made with the Godot Engine (MIT), the Silkscreen font (OFL 1.1) and FuncGodot (MIT).
 - Every download has `LICENSE`, `LICENSE-ASSETS` and `THIRD_PARTY_NOTICES.md` next to the game, and the game shows them under **Settings → Licences**.
 
-## How it was made
+### How it was made
 
 Chiip is written in GDScript for Godot 4.7.2, milestone by milestone, with automated tests for the rules, the bots, the maps, the menus and the network code (35 test suites, over 1,100 checks, all passing for this release), plus a script that plays an online match between real game processes. The design, the decisions behind it and the roadmap (sound design, stats and training, accessibility) are in the repository's `docs/` folder.

@@ -38,6 +38,9 @@ Chiip/
 ├── LICENSE-ASSETS     CC BY-NC-SA 4.0, art, models, maps and sounds, with the folders it covers
 ├── THIRD_PARTY_NOTICES.md  Godot, FuncGodot, Silkscreen: shipped inside every build
 ├── CONTRIBUTING.md    How to submit a map or code, and under which licence (D-176)
+├── CHANGELOG.md       Every release's notes, newest first (the GitHub Releases' text, D-179)
+├── site/              The website, plain HTML/CSS/JS, published to GitHub Pages (D-179); .gdignore keeps Godot out
+├── .github/workflows/ pages.yml: publishes site/ on every push to main
 ├── CLAUDE.md          Working rules for Claude, including documentation rules
 ├── docs/              All documentation
 ├── addons/            Third-party Godot plugins only (func_godot)
@@ -532,7 +535,7 @@ bash tools/run_tests.sh
 | `netrespawn_test` | 5 | An online team respawn match to 15 kills: kills with the score, respawns of puppets and of your own player, the end (D-082 online) | ~20 s |
 | `netstress_test` | 11 | A 5v5 with two clients, one at 100 ms with 5% loss and jitter: four bomb rounds the same everywhere, few small corrections, gliding puppets, traffic per client (M9 task 11) | ~30 s |
 | `qa_test` | 20 | Every mode on every map as a player starts it (M12, D-178): Bomb and Team Deathmatch on Depot, Square and Spillway, Practice on the Shooting Range, the kit gallery and the test map, 70 s of game time each; the console's `bot_add` and `bot_kick` | ~35 s |
-| `release_test` | 37 | Ready to share (M12, D-170): the licence files, the Licences screen and its button in the settings menu, the three export presets, CONTRIBUTING.md and the credit line, Tailscale addresses in the lobby (the address ranges, Copy, "address:port" in Join by IP), a join to nobody ending after `NetSession.JOIN_TIMEOUT`, no personal path in the project's text files, the ignore file | ~1 s |
+| `release_test` | 44 | Ready to share (M12, D-170): the licence files, the Licences screen and its button in the settings menu, the three export presets, CONTRIBUTING.md and the credit line, Tailscale addresses in the lobby (the address ranges, Copy, "address:port" in Join by IP), a join to nobody ending after `NetSession.JOIN_TIMEOUT`, the website (files, links, tokens, workflow) and the changelog routine, no personal path in the project's text files, the ignore file | ~1 s |
 
 That is about 830 checks in about four minutes on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 
@@ -577,7 +580,7 @@ That is about 830 checks in about four minutes on the development Mac. A change 
 ## Exporting (D-086, D-172)
 
 - `export_presets.cfg` holds three presets (M12): **macOS** (a universal `.app`, ad-hoc signed, `builds/macos/Chiip.app`), **Windows** (x86_64, `builds/windows/Chiip.exe`) and **Linux** (x86_64, `builds/linux/Chiip.x86_64`); the last two embed the data in the one file. `builds/` is gitignored and has a `.gdignore`, so Godot never imports a build. `tests/*` and `tools/*` are excluded from every export, and each preset's include filter lists the licence files (`LICENSE`, `LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`, the font's and the addon's licence): they are not resources, so without the filter the Licences screen would find nothing. `tests/release_test.gd` checks the presets (platforms, architectures, filters, versions, no secrets).
-- `tools/package_release.sh` zips the three builds for a GitHub Release (a folder per system with the game and the three notices).
+- `tools/package_release.sh` zips the three builds for a GitHub Release (a folder per system with the game and the three notices); `tools/release_notes.sh <version>` prints a version's notes from CHANGELOG.md; the whole routine is docs/RELEASING.md. The website (`site/`, D-179) reads GitHub's releases API in `js/site.js` and is published by `.github/workflows/pages.yml`.
 - Exports need the export templates of the exact engine version (`~/Library/Application Support/Godot/export_templates/4.7.2.stable/`) and, for Apple Silicon, `rendering/textures/vram_compression/import_etc2_astc`.
 - In an exported game text scenes and resources are converted to binary and reached through `.remap` files: code that lists `res://` folders must use `ResourceLoader.list_directory()` (the console's `map` list does).
 - `tools/frame_timing.gd` measures frame times of a real match (in the editor build). See "Performance" below.

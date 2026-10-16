@@ -67,3 +67,12 @@ Maps come in as pull requests (CONTRIBUTING.md, D-176); each one is CC BY-NC-SA 
 | Map | Author | Added in |
 |---|---|---|
 | (none yet) | | |
+
+## The website (`site/`, D-179)
+
+| What | Source | Licence |
+|---|---|---|
+| `site/fonts/Silkscreen-*`: a copy of the game's font | See Fonts above | SIL OFL 1.1 (`site/fonts/Silkscreen-OFL.txt`) |
+| `site/img/*.png` (five screenshots) | Taken from Chiip itself by `tools/ui_screenshots.gd` | CC BY-NC-SA 4.0, like the game's art |
+| `site/img/divocakos.png` | The studio logo (a copy of `assets/ui/studio_logo.png`) | All rights reserved (D-174) |
+| The pages, the stylesheet and the script | Written for Chiip | GPL-3.0 |

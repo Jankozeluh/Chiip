@@ -136,11 +136,12 @@ Make the builds only when asked (CLAUDE.md): export, then `bash tools/package_re
 
 | # | Check | Expect |
 |---|---|---|
-| 8.1 | `release_test` | Licence files, presets, no personal path, `.gitignore` entries, CONTRIBUTING, credits: all PASS |
+| 8.1 | `release_test` | Licence files, presets, no personal path, `.gitignore` entries, CONTRIBUTING, credits, the website and the changelog: all PASS |
 | 8.2 | README | Its links work (the release page, the docs, CONTRIBUTING, KNOWN_ISSUES); the download and warning steps match what 7.2 showed |
-| 8.3 | `docs/KNOWN_ISSUES.md` and the release notes | Up to date; the notes credit "Created by JK · Divocakos" |
+| 8.3 | `docs/KNOWN_ISSUES.md` and the version's section of `CHANGELOG.md` (the release notes: `bash tools/release_notes.sh <version>`) | Up to date; the notes credit "Created by JK · Divocakos" |
 | 8.4 | `git log` and a look at the tree on GitHub after the push | No secrets, no stray files, `builds/` and `.godot/` absent |
 | 8.5 | The GitHub Release | v0.1.0 with the three zips and the notes; the download links work from a signed-out browser |
+| 8.6 | The website (`site/`, published by the Pages workflow) | Its Download page offers the new version and each system's file (the three buttons end in the right zip), its Updates page lists the notes, its Play and Maps pages read right, and the pages look right on a phone and a wide screen. Routine: [RELEASING.md](RELEASING.md) |
 
 ## Results log
 

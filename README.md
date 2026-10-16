@@ -2,11 +2,11 @@
 
 A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game: you and your bot teammates against a team of bots, bomb rounds or team deathmatch, on three small maps. Play it alone against bots, or with friends online (they take the bots' places). Free, for Windows, macOS and Linux. **Created by JK · Divocakos.** Built with [Godot](https://godotengine.org) 4.7.2.
 
-> **Version 0.1.0, the first public playtest.** Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
+> **Version 0.1.0, the first public playtest.** Website: <https://jankozeluh.github.io/Chiip/>. Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
 
 ## Download and run
 
-Get the file for your system from the **[latest release](https://github.com/Jankozeluh/Chiip/releases/latest)**, unzip it anywhere and start Chiip. You need a computer that runs Vulkan games (any graphics card from the last eight years or so) on Windows 10 or newer, a Linux desktop (64-bit), or macOS 11 or newer (Apple silicon or Intel). The game is small and the look is retro, so it runs fast on modest machines.
+Get the file for your system from the **[latest release](https://github.com/Jankozeluh/Chiip/releases/latest)** (the [website](https://jankozeluh.github.io/Chiip/download.html) offers the same buttons, and the [changelog](CHANGELOG.md) lists what is new), unzip it anywhere and start Chiip. You need a computer that runs Vulkan games (any graphics card from the last eight years or so) on Windows 10 or newer, a Linux desktop (64-bit), or macOS 11 or newer (Apple silicon or Intel). The game is small and the look is retro, so it runs fast on modest machines.
 
 The builds are **not signed** (a signing certificate costs money every year), so your system shows a warning the first time. That is expected, and this is how to get past it:
 
