@@ -100,6 +100,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M14 | Stats & training | ✅ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
 | M15 | Accessibility & polish | 🟨 in progress | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | M16 | Maintainability & debugging | ⬜ | Release-build tests, logs and bug reports, debug commands, a cleaner architecture, one short branch at a time |
+| M17 | Playing with friends | ⬜ | Free-for-all deathmatch, a LAN/Tailscale game browser and text chat, a killcam, map voting and new maps |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -623,6 +624,16 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 - [ ] **Architecture review:** after 15 milestones, map the systems, remove dead code, make the patterns consistent, give each folder a clear owner, and keep ARCHITECTURE.md as the single source of truth
 - [ ] **One short branch at a time:** no more three or four parallel branches. One focused branch, merged soon after; fewer merges and conflicts, and a clear cause when something breaks
 - [ ] **No flaky tests:** a check that fails at random is fixed or quarantined at once, so a red result always means a real bug
+
+## M17 — Playing with friends ⬜
+
+**Goal:** make sessions with friends easier and more fun (D-221). Starts after M16 and v0.2.0, one short branch at a time.
+
+- [ ] **Free-for-all deathmatch**, if it stays simple: everyone for themselves, built on the team respawn mode, first to the kill limit wins; enemy colours for everyone else
+- [ ] **Game browser:** games on your LAN or tailnet show up in a list (no typing IPs), with join in one click
+- [ ] **Text chat** in the lobby and in matches: host-checked (length and rate limits, plain text only, no markup)
+- [ ] **Killcam:** after dying, the last few seconds through your killer's eyes (CoD-style); skippable, and off in Bomb mode if it reveals too much
+- [ ] **Map voting** at the end of a match, and **1–2 new maps** (or the first community maps through pull requests)
 
 ## Backlog (ideas, not scheduled)
 

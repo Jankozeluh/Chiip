@@ -2246,6 +2246,18 @@ The new way of working starts once the work in progress (the v0.1.1 hotfix and M
 
 **Alternatives:** Keep working in parallel branches (2–3× faster, but more tokens, the usage limit runs out sooner, and each merge mixes many changes, so it's harder to tell which one broke something).
 
+## D-221 — M17: features for playing with friends (2026-10-16)
+
+**Decision:** After M16 and v0.2.0, M17 adds:
+- a free-for-all deathmatch (only if it stays simple)
+- a LAN/Tailscale game browser and text chat
+- a killcam
+- map voting and 1–2 new maps
+
+Not now: first-launch tips, crosshair share codes, replays.
+
+**Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) and v0.2.0 come first.
+
 ## Open questions
 
 | Question | Decide in |
