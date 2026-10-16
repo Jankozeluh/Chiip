@@ -51,6 +51,7 @@ func _ready() -> void:
 	await _test_game_respawn()
 	await _test_loading_then_draft()
 	await _test_boot_screen()
+	await _test_studio_mark()
 	await _test_resize_relays_out()
 	_resize(Vector2i(64, 64))
 	Settings.get_instance().reset_to_defaults()
@@ -282,16 +283,39 @@ func _layers_above(root: Node, layer: int) -> Array[String]:
 func _test_boot_screen() -> void:
 	var screen := BOOT_SCENE.instantiate() as BootScreen
 	add_child(screen)
+	# The studio's own logo (112 × 112) is in the project, with its half-size copy.
+	var big := BootScreen.load_logo()
+	var small := BootScreen.load_small_logo()
+	_check("The studio's logo files are in the project: studio_logo.png 112 × 112 and its half-size copy 56 × 56",
+			big != null and small != null and big.get_size() == Vector2(112, 112) and small.get_size() == Vector2(56, 56),
+			"big %s, small %s" % [big, small])
 	var failures := {}
-	BootScreen.logo_path = "res://assets/ui/no_such_logo.png"
 	screen.show_screen()
-	var wordmark_without_logo := screen.get_wordmark().visible and not screen.get_logo().visible
+	var shows_logo := screen.get_logo().visible and not screen.get_wordmark().visible and screen.get_studio_name_label().text == "Divocakos"
+	var whole_steps: Array[String] = []
 	for size in SIZES:
 		_resize(size)
 		screen.set_ui_scale(PixelView.ui_scale_for(Vector2(size)))
 		await _settle(size)
 		_collect(failures, "boot screen at %s" % [size], [screen], size)
-	_check("The boot screen lies inside the window at all %d sizes; without the logo file it shows the game's name instead (D-153)" % SIZES.size(),
+		# The picture is a whole multiple of its 112 pixels at every UI scale of the half steps: 224 design pixels × scale.
+		var multiple := screen.get_logo().get_global_rect().size.x / 112.0
+		if not is_equal_approx(multiple, roundf(multiple)):
+			whole_steps.append("%s: %.2f×" % [size, multiple])
+	_check("The boot screen (the logo with \"Divocakos\" under it) lies inside the window at all %d sizes, and the logo is a whole multiple of its pixels at each" % SIZES.size(),
+			failures.is_empty() and shows_logo and whole_steps.is_empty(), "logo shown %s, uneven: %s, %s" % [shows_logo, whole_steps, _describe(failures)])
+	screen.finish()
+	# Without the logo file the game's name stands in.
+	BootScreen.logo_path = "res://assets/ui/no_such_logo.png"
+	screen.show_screen()
+	var wordmark_without_logo := screen.get_wordmark().visible and not screen.get_logo().visible
+	failures = {}
+	for size in SIZES:
+		_resize(size)
+		screen.set_ui_scale(PixelView.ui_scale_for(Vector2(size)))
+		await _settle(size)
+		_collect(failures, "boot screen without a logo at %s" % [size], [screen], size)
+	_check("Without the logo file the boot screen shows the game's name instead and still lies inside the window at all %d sizes (D-153)" % SIZES.size(),
 			failures.is_empty() and wordmark_without_logo, "wordmark shown without a logo: %s, %s" % [wordmark_without_logo, _describe(failures)])
 	screen.finish()
 	BootScreen.logo_path = "res://icon.svg"
@@ -315,6 +339,36 @@ func _test_boot_screen() -> void:
 	BootScreen.logo_path = "res://assets/ui/studio_logo.png"
 	remove_child(screen)
 	screen.queue_free()
+
+
+## The main menu's corner mark: 56 pixels times the whole part of the UI scale, from the half-size logo at odd
+## steps and the full logo at even ones (so the picture is drawn at a whole multiple), the map's name beside it,
+## both inside the window.
+func _test_studio_mark() -> void:
+	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
+	menu.load_settings = false
+	add_child(menu)
+	await _settle(SIZES[0])
+	var mark := menu.get_node("Page/StudioMark") as TextureRect
+	var name_label := menu.get_node("Page/MapName") as Label
+	var wrong: Array[String] = []
+	for size in SIZES:
+		_resize(size)
+		await _settle(size)
+		var steps := maxi(1, floori(PixelView.ui_scale_for(Vector2(size))))
+		var rect := mark.get_global_rect()
+		var texture := mark.texture
+		var multiple := rect.size.x / texture.get_size().x if texture != null else 0.0
+		var beside := name_label.get_global_rect().end.x <= rect.position.x and name_label.get_global_rect().end.y <= rect.end.y
+		if not mark.visible or rect.size != Vector2(56 * steps, 56 * steps) or not is_equal_approx(multiple, roundf(multiple)) or not beside:
+			wrong.append("%s: visible %s, %s, %.2f×, name beside %s" % [size, mark.visible, rect.size, multiple, beside])
+	var credit := menu.get_node("Page/Build") as Label
+	_check("The main menu's corner mark is the studio logo at a whole multiple of its picture (56 px × the UI scale's whole part), with the map's name beside it, and the footer names \"Divocakos\"",
+			wrong.is_empty() and credit.text.contains("Divocakos"), "wrong: %s, footer '%s'" % [wrong, credit.text])
+	remove_child(menu)
+	menu.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
 
 
 # --- A resize at runtime ---
