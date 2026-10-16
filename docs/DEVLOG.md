@@ -23,7 +23,9 @@
 
 - **Task 11, the buy menu** (D-098): freeze time is 15 s and that's buy time; **B** opens the buy menu (five columns with icons and prices, CS's number keys or clicks, greyed items say why). The round manager decides every purchase (`request_buy()`), the items live in `Shop`; practice buys everything free, team respawn has none. A Sonnet subagent built the menu and its 11 checks.
 
-**Next:** task 12 (defuse kits).
+- **Task 12, defuse kits** (D-098): defenders buy a kit for $300 and defuse in 5 s (the bomb's `kit_check` hook); a kit icon on the HUD and "· kit" on your team's scoreboard rows; it lasts one round.
+
+**Next:** task 13 (class perks).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

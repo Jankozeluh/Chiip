@@ -1116,6 +1116,8 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Checked (buy menu):** 11 new economy checks: B opens it in freeze time, every item with its price in five columns, the Verdict bought with keys (the Sparrow on the floor), "Not enough money" for the Ram with a greyed button, a vest, the menu closing itself when the round goes live and B doing nothing then, Esc, the message clearing, B closing it, nothing in team respawn, everything free in practice. Rendered at 1280 × 720 and 1920 × 1080 in the real game.
 
+**Defuse kits** (task 12): defenders buy one for $300 on a map with the bomb (attackers are refused: "Only defenders need a kit"); the round manager fills the bomb's `kit_check` hook (D-080) with `Character.has_defuse_kit`, so a kit defuses in 5 s instead of 10. A white kit icon after your armor on the HUD, "· kit" after the name on your team's Tab scoreboard rows (CS shows teammates' kits). Like everything bought, it lasts one round, and it's lost on death. Checked: 3 economy checks (the purchase and the halved defuse, the attacker's refusal; the HUD and scoreboard; gone next round).
+
 **Alternatives:** Pickups anywhere on a timer like old arena shooters (more chaos, less CS); armor and grenade spots too (could come later); spots only in team respawn (rounds would lose the eco-round fight for a power weapon); a weapon icon over the spot instead of the name (the name reads in the font we have).
 
 ## Open questions

@@ -41,6 +41,7 @@ func _run_all() -> void:
 	await _test_hud_and_scoreboard()
 	await _test_console()
 	await _test_buy_menu()
+	await _test_kits()
 
 
 func _test_round_money() -> void:
@@ -334,6 +335,53 @@ func _test_buy_menu() -> void:
 	await _wait_ticks(2)
 
 
+## M7 task 12 (D-098): defenders buy a defuse kit for $300 on a map with the bomb; it halves the
+## defuse, shows on the HUD and on your team's scoreboard row, and is gone next round.
+func _test_kits() -> void:
+	var settings := _settings()
+	settings.freeze_time = 5.0
+	await _new_match(settings, null, load("res://maps/depot.tscn"))
+	var defender := _player if _rounds.get_side(_player.team) == Teams.Side.DEFENDING else null
+	var attacker: Character = _rounds.get_members(_rounds.attacking_team)[0]
+	if defender == null:
+		defender = _rounds.get_members(_rounds.get_defending_team())[0]
+	var bomb := _rounds.bomb
+	var without := bomb.get_defuse_time(defender)
+	var bought := _rounds.request_buy(defender, Shop.KIT)
+	var refused := _rounds.request_buy(attacker, Shop.KIT)
+	_check("A defender buys a kit for $300 and defuses in 5 s instead of 10; an attacker can't buy one",
+			bought == "" and defender.has_defuse_kit and _rounds.get_money(defender) == 700 and without == 10.0
+					and bomb.get_defuse_time(defender) == 5.0 and refused == "Only defenders need a kit",
+			"bought '%s', attacker '%s', defuse %.0f → %.0f s" % [bought, refused, without, bomb.get_defuse_time(defender)])
+	var hud := HUD_SCENE.instantiate()
+	add_child(hud)
+	hud.set_round_manager(_rounds)
+	hud.set_player(defender)
+	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
+	add_child(board)
+	board.set_round_manager(_rounds)
+	Teams.set_viewer_team(defender.team)
+	Input.action_press("scoreboard")
+	await _wait_ticks(3)
+	Input.action_release("scoreboard")
+	var row := (board.find_child("Table", true, false) as ScoreboardTable).get_row(defender)
+	var marked := _cells(row)[0].contains("kit")
+	_check("The kit shows on the HUD and on your team's scoreboard row", (hud.get_node("KitIcon") as Control).visible and marked,
+			"row %s" % [_cells(row)])
+	await _wait_for_live()
+	for loser in _rounds.get_members(_rounds.attacking_team):
+		loser.take_damage(500.0, Hitbox.Zone.CHEST, null)
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	_check("A kit lasts one round (a fresh loadout next round)", not defender.has_defuse_kit and not (hud.get_node("KitIcon") as Control).visible,
+			"kit %s" % defender.has_defuse_kit)
+	Teams.set_viewer_team(0)
+	hud.queue_free()
+	board.queue_free()
+	_remove_map()
+	await _wait_ticks(2)
+
+
 # --- Helpers ---
 
 
@@ -346,9 +394,9 @@ func _settings() -> MatchSettings:
 	return settings
 
 
-func _new_match(settings: MatchSettings, rules: RoundManager = null) -> void:
+func _new_match(settings: MatchSettings, rules: RoundManager = null, map_scene: PackedScene = null) -> void:
 	_remove_map()
-	_map = MAP_SCENE.instantiate()
+	_map = (map_scene if map_scene != null else MAP_SCENE).instantiate()
 	add_child(_map)
 	_player = _map.get_node("Player") as Character
 	_player.footstep_sound = null

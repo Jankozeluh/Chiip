@@ -417,6 +417,8 @@ func _add_bomb() -> void:
 	bomb.planted.connect(_on_bomb_planted)
 	bomb.exploded.connect(_on_bomb_exploded)
 	bomb.defused.connect(_on_bomb_defused)
+	# A defuse kit halves the defuse (D-080's hook, filled in M7: D-098).
+	bomb.kit_check = func(defuser: Character) -> bool: return defuser.has_defuse_kit
 
 
 ## A random attacker, as in CS (seeded, so tests can repeat it).

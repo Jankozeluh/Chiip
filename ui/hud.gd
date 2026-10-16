@@ -55,6 +55,7 @@ var _ring_audio: AudioStreamPlayer
 @onready var _smoke_overlay: ColorRect = $SmokeOverlay
 @onready var _flash_overlay: ColorRect = $FlashOverlay
 @onready var _armor_label: Label = $ArmorLabel
+@onready var _kit_icon: TextureRect = $KitIcon
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
 @onready var _round_hud: RoundHud = $RoundHud
@@ -123,6 +124,7 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_health_label, factor)
 	UiScale.apply(_armor_icon, factor)
 	UiScale.apply(_armor_label, factor)
+	UiScale.apply(_kit_icon, factor)
 	UiScale.apply(_slots_label, factor)
 	UiScale.apply(_money_label, factor)
 	UiScale.apply(_reward_label, factor)
@@ -261,6 +263,8 @@ func _update_armor() -> void:
 	_armor_label.modulate = Color(1, 1, 1, 1.0 if shown.armor > 0.0 else ArmorIcon.EMPTY_ALPHA)
 	_armor_icon.points = shown.armor
 	_armor_icon.helmet = shown.has_helmet
+	# A defuse kit (defenders, D-098): its white icon after the armor.
+	_kit_icon.visible = shown.has_defuse_kit
 
 
 ## Shows your money (D-098) in a match with an economy; hidden otherwise.

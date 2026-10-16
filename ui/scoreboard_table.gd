@@ -75,7 +75,7 @@ func refresh() -> void:
 		for member in members:
 			var stats := _manager.get_stats(member)
 			signature.append([member, String(member.name), stats.kills, stats.deaths, stats.assists,
-					roundi(stats.damage), member.is_alive(), member.is_local_player(), _money_text(member)])
+					roundi(stats.damage), member.is_alive(), member.is_local_player(), _money_text(member), member.has_defuse_kit])
 	signature.append(order)
 	if signature == _signature:
 		return
@@ -151,8 +151,12 @@ func _add_team(team: int, members: Array[Character]) -> void:
 	for member in members:
 		var stats := _manager.get_stats(member)
 		var is_you := member.is_local_player()
+		var shown_name := "%s (you)" % member.name if is_you else String(member.name)
+		# Your team's defuse kits show, as in CS (D-098).
+		if member.has_defuse_kit and team == Teams.viewer_team:
+			shown_name += "  · kit"
 		var cells: Array[String] = [
-				"%s (you)" % member.name if is_you else String(member.name),
+				shown_name,
 				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))]
 		if _shows_money():
 			cells.append(_money_text(member))
