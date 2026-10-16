@@ -147,15 +147,19 @@ func _test_main_menu(pixelated: bool) -> void:
 		var stats_menu := menu.get_stats_menu()
 		stats_menu.book = _sample_book()
 		stats_menu.open()
-		for tab in stats_menu.get_tabs().get_tab_count():
-			stats_menu.get_tabs().current_tab = tab
+		for filter in ["all", "rounds", "training"]:
+			stats_menu.set_filter(filter)
 			await _settle(size)
-			_collect(failures, "stats tab %d at %s" % [tab, size], [menu], size)
+			_collect(failures, "stats (%s) at %s" % [filter, size], [menu], size)
+		stats_menu.set_filter("all")
+		stats_menu.open_match(stats_menu.book.history.size() - 1)
+		await _settle(size)
+		_collect(failures, "stats match detail at %s" % [size], [menu], size)
 		stats_menu.close()
 		stats_menu.book = null
 		menu.get_match_setup().close()
 	var label := "pixelated HUD, " if pixelated else ""
-	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen, the Stats tabs) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
+	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen, the Stats page, detail and training) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(menu)
 	menu.queue_free()
@@ -593,7 +597,11 @@ func _sample_book() -> StatsBook:
 			weapon.add_shots(100 + index)
 			for hit in 30 + index:
 				weapon.add_hit(Hitbox.Zone.values()[hit % Hitbox.Zone.size()])
+			weapon.kills = 4 + index
+			weapon.damage = 600.0
 			record.weapons[gun] = weapon
+		record.kills_per_minute = [3, 2, 4, 1, 3, 2, 3, 2, 2, 2, 3, 1, 2, 4, 2] as Array[int]
+		record.deaths_per_minute = [1, 2, 1, 2, 2, 1, 2, 1, 2, 1, 2, 2, 1, 2, 1] as Array[int]
 		book.add_match(record)
 	book.submit_best("aim_flick_rifle", 4200.0, {"hits": 31, "accuracy": 62.5})
 	book.submit_best("aim_flick_smg", 3900.0, {"hits": 28})

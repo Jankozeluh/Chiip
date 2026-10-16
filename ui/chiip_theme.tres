@@ -680,6 +680,111 @@ bg_color = Color(0.2, 0.2509804, 0.3529412, 1)
 border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="history_item_disabled"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_focus"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_hover"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.37254903, 0.42352942, 0.5019608, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_hover_pressed"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_normal"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_pressed"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_picked_hover"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_picked"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="hud_alert_plate"]
 content_margin_left = 12.0
 content_margin_top = 0.0
@@ -1520,6 +1625,37 @@ content_margin_bottom = 11.0
 base_font = ExtResource("21_hur4u")
 spacing_glyph = 4
 
+[sub_resource type="StyleBoxFlat" id="stat_bar_fill"]
+bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_line"]
+bg_color = Color(0.2, 0.2509804, 0.3529412, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_mute"]
+bg_color = Color(0.37254903, 0.42352942, 0.5019608, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_track"]
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="stat_result_loss"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="stat_result_win"]
+bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="strong_button_disabled"]
 content_margin_left = 24.0
 content_margin_top = 8.0
@@ -2122,6 +2258,8 @@ BigPrimaryButton/styles/hover = SubResource("big_primary_button_hover")
 BigPrimaryButton/styles/hover_pressed = SubResource("big_primary_button_hover_pressed")
 BigPrimaryButton/styles/normal = SubResource("big_primary_button_normal")
 BigPrimaryButton/styles/pressed = SubResource("big_primary_button_pressed")
+BrightInkLabel/base_type = &"Label"
+BrightInkLabel/colors/font_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
 BrightLabel/base_type = &"Label"
 BrightLabel/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 Button/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
@@ -2402,6 +2540,21 @@ HeroLabel/fonts/font = ExtResource("13_5klhh")
 HeroTrim/base_type = &"MarginContainer"
 HeroTrim/constants/margin_bottom = -13
 HeroTrim/constants/margin_top = -14
+HistoryItem/base_type = &"Button"
+HistoryItem/styles/disabled = SubResource("history_item_disabled")
+HistoryItem/styles/focus = SubResource("history_item_focus")
+HistoryItem/styles/hover = SubResource("history_item_hover")
+HistoryItem/styles/hover_pressed = SubResource("history_item_hover_pressed")
+HistoryItem/styles/normal = SubResource("history_item_normal")
+HistoryItem/styles/pressed = SubResource("history_item_pressed")
+HistoryItemPicked/base_type = &"HistoryItem"
+HistoryItemPicked/styles/hover = SubResource("history_item_picked_hover")
+HistoryItemPicked/styles/normal = SubResource("history_item_picked")
+HistoryMargin/base_type = &"MarginContainer"
+HistoryMargin/constants/margin_bottom = 0
+HistoryMargin/constants/margin_left = 12
+HistoryMargin/constants/margin_right = 12
+HistoryMargin/constants/margin_top = 0
 Hud/colors/alert = Color(1, 0.6901961, 0.18039216, 1)
 Hud/colors/notice = Color(1, 0.6901961, 0.18039216, 1)
 Hud/constants/alert_plate_height = 32
@@ -3023,6 +3176,22 @@ SpacedLabel/font_sizes/font_size = 32
 SpacedLabel/fonts/font = SubResource("spaced_font")
 StackBox/base_type = &"VBoxContainer"
 StackBox/constants/separation = 0
+StatBarFill/base_type = &"Panel"
+StatBarFill/styles/panel = SubResource("stat_bar_fill")
+StatBarLine/base_type = &"Panel"
+StatBarLine/styles/panel = SubResource("stat_bar_line")
+StatBarMute/base_type = &"Panel"
+StatBarMute/styles/panel = SubResource("stat_bar_mute")
+StatBarTrack/base_type = &"Panel"
+StatBarTrack/styles/panel = SubResource("stat_bar_track")
+StatColumns/base_type = &"HBoxContainer"
+StatColumns/constants/separation = 48
+StatResultLoss/base_type = &"PanelContainer"
+StatResultLoss/styles/panel = SubResource("stat_result_loss")
+StatResultWin/base_type = &"PanelContainer"
+StatResultWin/styles/panel = SubResource("stat_result_win")
+StatStack/base_type = &"VBoxContainer"
+StatStack/constants/separation = 16
 StrongButton/base_type = &"Button"
 StrongButton/styles/disabled = SubResource("strong_button_disabled")
 StrongButton/styles/focus = SubResource("strong_button_focus")

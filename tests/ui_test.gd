@@ -5133,22 +5133,15 @@ func _test_stats_menu() -> void:
 	var stats := menu.get_stats_menu()
 	var empty := StatsBook.new()
 	stats.book = empty
-	_check("The Stats button sits between Practice and Settings and opens the Stats screen over the menu: four tabs (Overview, Weapons, History, Training), the screen on top",
+	_check("The Stats button sits between Practice and Settings, and the Stats screen is closed at the start",
 			menu.get_buttons()[2] == menu.get_stats_button() and menu.get_stats_button().text == "Stats" and not stats.is_open(), "closed at the start")
 	menu.get_stats_button().pressed.emit()
 	await get_tree().process_frame
-	var tabs := stats.get_tabs()
-	var names: Array[String] = []
-	for index in tabs.get_tab_count():
-		names.append(tabs.get_tab_title(index))
-	_check("It opens with the four tabs and the Back button focused",
-			stats.is_open() and MenuState.is_top(stats) and names == StatsMenu.TAB_NAMES and stats.get_back_button().has_focus(),
-			"open %s, tabs %s" % [stats.is_open(), names])
-	var notes := 0
-	for index in 4:
-		var column := tabs.get_child(index).get_child(0)
-		notes += 1 if column.get_child_count() == 1 and column.get_child(0).theme_type_variation == &"DimLabel" else 0
-	_check("With no matches every tab shows one note saying what will appear there", notes == 4, "%d of 4 tabs" % notes)
+	_check("It opens over the menu, on top, on the page with the filter All and the Back button focused",
+			stats.is_open() and MenuState.is_top(stats) and not stats.is_detail_open() and stats.get_filter() == "all" and stats.get_back_button().has_focus(),
+			"open %s, filter %s" % [stats.is_open(), stats.get_filter()])
+	var note_only: bool = stats.get_overview().get_child_count() == 1 and stats.get_overview().get_child(0).theme_type_variation == &"DimLabel"
+	_check("With no matches the page shows one note saying what will appear there", note_only, "%d children" % stats.get_overview().get_child_count())
 	# Three matches: a bomb win and a loss on Depot, a Team Deathmatch win on Square.
 	var populated := StatsBook.new()
 	for sample: Array in [["rounds", "depot", "win", 14, 9, 1800.0, 20, 300, 90, 5], ["rounds", "depot", "loss", 9, 14, 1200.0, 18, 250, 60, 2], ["respawn", "square", "win", 25, 20, 3300.0, 0, 500, 130, 7]]:
@@ -5163,39 +5156,69 @@ func _test_stats_menu() -> void:
 		record.rounds = sample[6]
 		record.duration = 600.0
 		record.headshot_kills = sample[9]
+		record.kills_per_minute = [2, 1, 3] as Array[int]
+		record.deaths_per_minute = [1, 2, 0] as Array[int]
 		var gun := StatsWeapon.new()
 		gun.add_shots(sample[7])
 		for hit in sample[8]:
 			gun.add_hit(Hitbox.Zone.HEAD if hit < 10 else Hitbox.Zone.CHEST)
+		gun.kills = sample[3]
+		gun.damage = sample[5]
 		record.weapons["rifle"] = gun
 		populated.add_match(record)
 	populated.submit_best("aim_flick_rifle", 4200.0, {"hits": 31})
 	stats.book = populated
 	stats.refresh()
 	await get_tree().process_frame
-	var overview := tabs.get_child(0).get_child(0)
-	var tiles := overview.find_children("*", "PanelContainer", true, false).filter(func(node: Node) -> bool: return node.theme_type_variation == &"InsetPanel")
-	var tile_texts: Array = tiles.map(func(tile: Node) -> String: return "%s %s" % [tile.find_child("Caption", true, false).text, tile.find_child("Value", true, false).text])
-	var bars := overview.find_children("*", "ProgressBar", true, false)
-	_check("The Overview has ten tiles from the lifetime numbers and a bar for each mode and map won (2 modes, 2 maps)",
-			tiles.size() == 10 and tile_texts[0] == "K/D 1.12" and tile_texts[1] == "ADR 79" and tile_texts[5] == "Matches 3" and tile_texts[6] == "Kills 48"
-			and bars.size() == 4, "tiles %s, %d bars" % [tile_texts, bars.size()])
-	var weapons := tabs.get_child(1).get_child(0)
-	var history := tabs.get_child(2).get_child(0)
-	var training := tabs.get_child(3).get_child(0)
-	var first_row := (history.get_child(2).find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text))
-	_check("Weapons has the title, the header and a row for the one gun; History a title, a header and a row per match with the newest first; Training a title, a header and one best",
-			weapons.get_child_count() >= 3 and history.get_child_count() == 5 and training.get_child_count() == 3
-			and first_row[1] == "Team Deathmatch · Square" and first_row[2] == "Win" and first_row[4] == "25" and first_row[7] == "-",
-			"weapons %d, history %d (first row %s), training %d" % [weapons.get_child_count(), history.get_child_count(), first_row, training.get_child_count()])
+	var lifetime: Array = StatsMenu.lifetime_values(populated.lifetime)
+	var entries: Array = StatsMenu.history_entries(populated.history, populated.history)
+	_check("The page has the lifetime row (K/D 1.12, ADR 79, wins 2, losses 1), a history of three matches newest first (Square, TDM, a win, 25-20) and a bar block each for the K/D, the weapons and the wins",
+			lifetime[0] == ["K/D", "1.12"] and lifetime[1] == ["ADR", "79"] and lifetime[4] == ["WINS", "2"] and lifetime[5] == ["LOSSES", "1"]
+					and entries.size() == 3 and entries[0]["map"] == "SQUARE" and entries[0]["line"].begins_with("TDM") and entries[0]["result"] == "W" and entries[0]["kd"] == "25-20"
+					and stats.get_overview().get_child_count() == 2 and stats.get_overview().find_children("*", "Button", true, false).filter(func(b: Node) -> bool: return String(b.theme_type_variation).begins_with("HistoryItem")).size() == 3,
+			"lifetime %s, entries %d (first %s)" % [lifetime.slice(0, 2), entries.size(), entries[0]])
+	var wins := StatsMenu.win_lines(populated.lifetime, populated.history)
+	var accuracy := StatsMenu.accuracy_rows(populated.lifetime)
+	_check("The wins list is TDM, Bomb, then the maps (a rule above them) and Vs bots (a rule above); the accuracy list has the one gun with its accuracy and head share",
+			wins[0][0] == "TDM" and wins[0][1] == 1 and wins[1][0] == "BOMB" and wins[1][1] == 1 and wins[1][2] == 1 and wins[2][3] and wins[wins.size() - 1][0] == "VS BOTS" and wins[wins.size() - 1][3]
+					and accuracy.size() == 1 and accuracy[0][1] == "Ram" and accuracy[0][3] == "27%",
+			"wins %s, accuracy %s" % [wins.map(func(w: Array) -> String: return str(w[0])), accuracy])
+	# The filter narrows the numbers to the mode's matches.
+	stats.set_filter("rounds")
+	await get_tree().process_frame
+	var bomb_entries: Array = StatsMenu.history_entries(stats.call("_filtered", populated), populated.history)
+	var bomb_kd: Array = StatsMenu.lifetime_values(stats.call("_filtered_totals", populated, stats.call("_filtered", populated)))
+	_check("The Bomb filter keeps the two bomb matches: their history rows and their K/D (23 kills over 23 deaths: 1.00)",
+			bomb_entries.size() == 2 and bomb_kd[0] == ["K/D", "1.00"] and stats.get_filter() == "rounds" and stats.get_filter_buttons()["rounds"].button_pressed,
+			"%d rows, %s" % [bomb_entries.size(), bomb_kd[0]])
+	# A match opens its detail and Back returns to the page.
+	stats.set_filter("all")
+	stats.open_match(2)
+	await get_tree().process_frame
+	var detail := StatsMenu.match_values(populated.history[2])
+	_check("A match opens its detail: the map (SQUARE), VICTORY, your line of seven numbers, the rifle's row (25 kills) and the minutes' chart",
+			stats.is_detail_open() and stats.get_detail().visible and not stats.get_overview().visible and detail["title"] == "SQUARE" and detail["word"] == "VICTORY"
+					and detail["line"].size() == 7 and detail["guns"].size() == 1 and detail["guns"][0][2] == "25" and detail["kills"] == ([2, 1, 3] as Array[int]),
+			"detail %s" % [detail["title"]])
+	stats.get_back_button().pressed.emit()
+	await get_tree().process_frame
+	var back_to_page := not stats.is_detail_open() and stats.is_open() and stats.get_overview().visible
+	stats.set_filter("training")
+	await get_tree().process_frame
+	var best_rows := stats.get_training_page().find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text)
+	_check("Back from the detail returns to the page (and stays open); the Training filter shows the best (Aim trainer · Ram, 4200)",
+			back_to_page and stats.get_training_page().visible and best_rows.has("Aim trainer · Ram") and best_rows.has("4200"), "back %s, labels %s" % [back_to_page, best_rows.slice(0, 5)])
+	stats.set_filter("all")
+	await get_tree().process_frame
 	var overrides := _overrides_below(stats)
 	_check("Nothing on the Stats screen, the rows built in code included, carries a theme override", overrides.is_empty(), "%s" % [overrides])
-	# Scaled to 2x the rows are twice as high.
+	# Scaled to 2x the history rows are twice as high.
 	stats.set_ui_scale(2.0)
 	await get_tree().process_frame
-	var scaled_row := (tabs.get_child(2).get_child(0).get_child(2) as Control).custom_minimum_size.y
+	var item := stats.get_overview().find_children("*", "MarginContainer", true, false).filter(func(m: Node) -> bool: return (m as Control).custom_minimum_size.y > 0.0 and m.get_child_count() == 2)
+	var scaled_row: float = (item[0] as Control).custom_minimum_size.y if not item.is_empty() else 0.0
 	stats.set_ui_scale(1.0)
-	_check("Scaled by 2 the History rows are twice as high (64 instead of 32)", is_equal_approx(scaled_row, 64.0), "%.0f" % scaled_row)
+	_check("Scaled by 2 the history rows are twice as high (96 instead of 48)", is_equal_approx(scaled_row, 96.0), "%.0f" % scaled_row)
 	# Export CSV.
 	stats.export_csv()
 	var csv_lines := FileAccess.get_file_as_string(StatsMenu.EXPORT_PATH).strip_edges().split("\n")

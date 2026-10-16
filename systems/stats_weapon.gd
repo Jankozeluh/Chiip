@@ -17,6 +17,9 @@ var shots: int = 0
 var hits: int = 0
 ## Hits by zone: zone name from [constant ZONES] → count.
 var zones: Dictionary = {}
+## Enemies killed with this weapon, and the damage it did to enemies (v0.2, D-235: the match detail's weapon table).
+var kills: int = 0
+var damage: float = 0.0
 
 
 ## The name of a [enum Hitbox.Zone] as the stats file spells it. Takes an [int], not the enum
@@ -43,6 +46,8 @@ func add_hit(zone: int) -> void:
 func add(other: StatsWeapon) -> void:
 	shots += other.shots
 	hits += other.hits
+	kills += other.kills
+	damage += other.damage
 	for key: String in other.zones:
 		zones[key] = int(zones.get(key, 0)) + int(other.zones[key])
 
@@ -68,7 +73,7 @@ func head_share() -> float:
 
 
 func to_dict() -> Dictionary:
-	return {"shots": shots, "hits": hits, "zones": zones.duplicate()}
+	return {"shots": shots, "hits": hits, "zones": zones.duplicate(), "kills": kills, "damage": snappedf(damage, 0.1)}
 
 
 ## A weapon's numbers read from a dictionary of the stats file. Anything that isn't a dictionary
@@ -80,6 +85,8 @@ static func from_dict(data: Variant) -> StatsWeapon:
 	var weapon := StatsWeapon.new()
 	weapon.shots = StatsMath.clean_count(source.get("shots"))
 	weapon.hits = mini(StatsMath.clean_count(source.get("hits")), weapon.shots)
+	weapon.kills = StatsMath.clean_count(source.get("kills"))
+	weapon.damage = StatsMath.clean_number(source.get("damage"))
 	var source_zones: Variant = source.get("zones")
 	if source_zones is Dictionary:
 		for key: String in ZONES:

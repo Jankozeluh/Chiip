@@ -224,6 +224,44 @@ func _panels() -> void:
 	_styles("PureChip", {"panel": _box("pure_chip", Palette.PURE)})
 	_variation("PureChipFrame", "Panel")
 	_styles("PureChipFrame", {"panel": _box("pure_chip_frame", Color.TRANSPARENT, Palette.PURE, Palette.BORDER)})
+	# The Stats screen's bars (v0.2, D-235): a RAISED track, a TEXT fill, a MUTE fill (deaths, a K/D below 1), a LINE rule.
+	_variation("StatBarTrack", "Panel")
+	_styles("StatBarTrack", {"panel": _box("stat_bar_track", Palette.PANEL_RAISED)})
+	_variation("StatBarFill", "Panel")
+	_styles("StatBarFill", {"panel": _box("stat_bar_fill", Palette.TEXT)})
+	_variation("StatBarMute", "Panel")
+	_styles("StatBarMute", {"panel": _box("stat_bar_mute", Palette.MUTE)})
+	_variation("StatBarLine", "Panel")
+	_styles("StatBarLine", {"panel": _box("stat_bar_line", Palette.LINE_COLOR)})
+	# A result chip of the match history: W is a TEXT square, L only its letter.
+	_variation("StatResultWin", "PanelContainer")
+	_styles("StatResultWin", {"panel": _box("stat_result_win", Palette.TEXT)})
+	_variation("StatResultLoss", "PanelContainer")
+	_styles("StatResultLoss", {"panel": _empty("stat_result_loss", Vector4.ZERO)})
+	# A match history row: nothing at rest, a MUTE frame under the mouse, the picked one RAISED with an accent frame.
+	_variation("HistoryItem", "Button")
+	var history_pad := _even(Palette.STAT_ROW_PAD)
+	_styles("HistoryItem", {
+		"normal": _box("history_item_normal", Color.TRANSPARENT, Color.TRANSPARENT, Palette.BORDER, history_pad),
+		"hover": _box("history_item_hover", Color.TRANSPARENT, Palette.MUTE, Palette.BORDER, history_pad),
+		"pressed": _box("history_item_pressed", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+		"hover_pressed": _box("history_item_hover_pressed", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+		"disabled": _box("history_item_disabled", Color.TRANSPARENT, Color.TRANSPARENT, Palette.BORDER, history_pad),
+		"focus": _ring("history_item_focus", Palette.ACCENT, history_pad),
+	})
+	_variation("HistoryItemPicked", "HistoryItem")
+	_styles("HistoryItemPicked", {
+		"normal": _box("history_item_picked", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+		"hover": _box("history_item_picked_hover", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+	})
+	_variation("HistoryMargin", "MarginContainer")
+	_margins("HistoryMargin", Palette.STAT_ROW_PAD, 0)
+	_variation("BrightInkLabel", "Label")
+	_colors("BrightInkLabel", {"font_color": Palette.TEXT_ON_FILL})
+	_variation("StatStack", "VBoxContainer")
+	_constants("StatStack", {"separation": Palette.STAT_SECTION_GAP})
+	_variation("StatColumns", "HBoxContainer")
+	_constants("StatColumns", {"separation": Palette.STAT_COLUMN_GAP})
 	# The boot screen's background: the deepest dark (VOID, opaque).
 	_variation("VoidPanel", "Panel")
 	_styles("VoidPanel", {"panel": _box("void_panel", Palette.VOID)})

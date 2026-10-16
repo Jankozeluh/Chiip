@@ -15,7 +15,9 @@
 
 - Settings to the designer's pages (D-234): Interface and Controller tabs, UI scale in steps of ten with a "now" line, the team colour preview, invert X, button prompts (Auto/Xbox/PS/Generic) and the pad bindings table with the new glyphs, the Audio note; the colour-blind UI colours are the designer's.
 
-**Next:** Stats, training, credits, the pad prompts.
+- Stats screen as the designer's two pages (D-235): the lifetime row, K/D bars, accuracy and wins blocks, the history, a match detail; new recorded data (kills and damage per gun, kills and deaths per minute); the Training bests behind a fifth filter.
+
+**Next:** the aim trainer and spray practice panels, credits, the pad prompts.
 
 ## 2026-10-16 — M15 accessibility & polish
 

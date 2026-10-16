@@ -290,6 +290,13 @@ const SETTINGS_GAP := 24
 const INTERFACE_GAP := 32
 ## The padding inside a card of the team colour preview.
 const PREVIEW_PAD := 16
+## The Stats screen's bars (v0.2, D-235): the thickness of a bar track and of the lines that rule the lists.
+const STAT_BAR := 8
+## The padding of a match history row, and the space between the screen's columns.
+const STAT_ROW_PAD := 12
+const STAT_COLUMN_GAP := 48
+## The space between the Stats page's blocks one under another.
+const STAT_SECTION_GAP := 16
 ## White, for text that is tinted with a colour at runtime (the team colour preview).
 const PURE := Color.WHITE
 ## Edge to edge: the parts of a settings row (a 400 px label, then the control) and of a table row.

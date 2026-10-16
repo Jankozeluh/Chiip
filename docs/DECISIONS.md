@@ -2311,6 +2311,18 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Why:** The designer's pages 24 to 26 (D-230). **Alternatives:** the pad rows staying in Game (the page has a tab for them); building the aim sensitivity slider as a second pad multiplier (more settings than the pad has behaviour for).
 
+## D-235 — The Stats screen is one page with a match detail (2026-10-16) — *replaces the four tabs of D-204*
+
+**Decision:**
+- **One page**, as the designer drew it (18): the lifetime row (K/D, ADR, HS %, accuracy, wins, losses), the K/D of the last 20 matches as bars (TEXT at 1.00 and over, MUTE under) with the 1.00 line, the accuracy and head-shot share per gun, the wins per mode, map and against bots (W-L bars) and the match history on the right (a result chip, map, mode and day, kills-deaths). A click opens the match (19): the map, the result in the team's colour and the score, a row of seven numbers (kills, deaths, assists, ADR, HS %, accuracy and **damage**: the page's "score" has no source), a table per gun and a chart of the kills and deaths of each minute. Esc or Back returns to the page; Esc on the page closes the screen.
+- **The filter** (All, TDM, Bomb, Vs bots) narrows the numbers: All uses the lifetime totals, the others are counted from the history (the last 300 matches) by mode, or by matches not played online for Vs bots. **A fifth segment, Training,** shows the aim trainer's and spray practice's bests, which the page has no place for (it was a tab before); **Export CSV** and **Reset stats** stay in the footer.
+- **New data:** every gun's **kills and damage** (`StatsWeapon`) and your **kills and deaths per minute** (`StatsMatch`), recorded from this build on; a match from before has no minutes and shows "Not recorded for this match." in the chart and zeros in the gun table's kills and damage. The file format only gains keys (`kills`, `damage` per gun; `kpm`, `dpm` per match); older files read as before and junk in them is cleaned.
+- Differences from the page: the text is the game's (a gun's name: Ram, Warden...); the weapon table lists the guns you fired; no "score" cell.
+
+**Why:** The handoff asked for "a lifetime overview ... accuracy per weapon, wins per mode and per map, a match history list, and a match detail view". The tabs split what the page shows together.
+
+**Alternatives:** keeping the four tabs and restyling them (the page puts the lifetime row, the bars and the history on one screen); a fixed Training block on the page (no room at 1280 × 720).
+
 ## Open questions
 
 | Question | Decide in |
