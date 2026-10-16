@@ -50,6 +50,8 @@ const DEFAULTS := {
 	&"match_time_limit": 10,
 	# M9 (D-108): online name, the last host joined, Quake's port.
 	&"online_name": "Player", &"online_address": "127.0.0.1", &"online_port": 26000,
+	# M17 (D-242): the hosts joined lately (RecentHosts), none to begin with.
+	&"online_recent": "",
 }
 
 var _failures: int = 0
@@ -456,6 +458,7 @@ func _test_saving() -> void:
 	writer.online_name = "Jan"
 	writer.online_address = "192.168.1.20"
 	writer.online_port = 27015
+	writer.online_recent = "192.168.1.20:27015|Anna"
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
@@ -477,9 +480,9 @@ func _test_saving() -> void:
 					and saved.get_value("match", "setup_version", 0) == Settings.MATCH_SETUP_VERSION
 					and saved.get_section_keys("match").size() == 11,
 			"keys %s" % [saved.get_section_keys("match")])
-	_check("Your online name and the last host are the [online] section: name, address and port (M9)",
+	_check("Your online name and the last host are the [online] section: name, address and port (M9), and the recent hosts' text (M17)",
 			saved.get_value("online", "name", "") == "Jan" and saved.get_value("online", "address", "") == "192.168.1.20"
-					and saved.get_value("online", "port", 0) == 27015 and saved.get_section_keys("online").size() == 3,
+					and saved.get_value("online", "port", 0) == 27015 and saved.get_value("online", "recent", "?") == "192.168.1.20:27015|Anna" and saved.get_section_keys("online").size() == 4,
 			"keys %s" % [saved.get_section_keys("online")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)

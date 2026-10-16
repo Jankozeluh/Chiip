@@ -46,6 +46,8 @@ var _cases: Array = []
 func _ready() -> void:
 	# The shared settings: never read or write the player's file (nothing here calls load_from_disk).
 	Settings.get_instance().reset_to_defaults()
+	# The Join page listens for LAN games (M17): on this suite's port block, not on a real game's.
+	NetHarness.use_test_discovery_port()
 	for size in SIZES:
 		# Auto, the smallest and the biggest scale (the steps between are the same code).
 		for percent in [0, Settings.UI_SCALES[1], Settings.UI_SCALES[-1]]:
@@ -105,6 +107,10 @@ func _test_main_menu(pixelated: bool) -> void:
 	var settings := Settings.get_instance()
 	settings.reset_to_defaults()
 	settings.pixelate_hud = pixelated
+	var recent := ""
+	for i in RecentHosts.MAX_ENTRIES:
+		recent = RecentHosts.remember(recent, "100.64.%d.%d" % [i, 200 + i], 26000 + i, "A friend with a long name" if i % 2 == 0 else "")
+	settings.online_recent = recent
 	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
 	menu.load_settings = false
 	add_child(menu)
@@ -116,7 +122,9 @@ func _test_main_menu(pixelated: bool) -> void:
 		"Play, Free-for-all": func() -> void: menu.get_match_setup().pick("ffa"),
 		"Play, Bomb": func() -> void: menu.get_match_setup().pick("rounds"),
 		"Play, Practice": func() -> void: menu.get_match_setup().pick("practice"),
-		"lobby": func() -> void: menu.get_match_setup().close(); menu.open_lobby(),
+		# M17 (D-242): the Join page with the game browser as full as it gets: games of every kind (the longest names and
+		# maps, another version, a match running) and eight recent hosts.
+		"lobby": func() -> void: menu.get_match_setup().close(); menu.open_lobby(); menu.get_lobby_menu().show_games(_sample_games()),
 	}
 	for case in _cases:
 		var size: Vector2i = case[0]
@@ -127,6 +135,8 @@ func _test_main_menu(pixelated: bool) -> void:
 			screens[screen_name].call()
 			await _settle(size)
 			_collect(failures, "%s at %s" % [screen_name, size], [menu], size)
+			if screen_name == "lobby":
+				_collect_browser_width(failures, "%s's game browser at %s" % [screen_name, size], menu.get_lobby_menu())
 		menu.get_lobby_menu().close()
 		# Every settings tab.
 		menu.open_settings()
@@ -175,6 +185,18 @@ func _test_main_menu(pixelated: bool) -> void:
 	await get_tree().process_frame
 	settings.reset_to_defaults()
 	MenuState.reset()
+
+
+## Games for the Join page's browser: the longest texts the page must cope with.
+func _sample_games() -> Array[Dictionary]:
+	var games: Array[Dictionary] = []
+	for i in 8:
+		games.append({
+			"address": "192.168.1.%d" % (10 + i), "port": 26000, "name": "N".repeat(NetSession.MAX_NAME_LENGTH),
+			"mode": ["tdm", "ffa", "rounds"][i % 3], "map": "M".repeat(LanDiscovery.MAX_MAP_LENGTH), "players": 10, "max_players": 10,
+			"in_game": i % 2 == 1, "version": NetProtocol.VERSION + (1 if i == 3 else 0),
+		})
+	return games
 
 
 # --- The game ---
@@ -546,6 +568,26 @@ func _collect(failures: Dictionary, label: String, roots: Array, size: Vector2i)
 		_scan(root, bounds.grow(TOLERANCE), offenders)
 	if get_tree().root.size != size:
 		offenders.append("the window is %s, not %s" % [get_tree().root.size, size])
+	if not offenders.is_empty():
+		failures[label] = offenders
+
+
+## The Join page's game browser scrolls up and down but not sideways (M17): every row and label in it
+## must lie inside the scroll box's width, or the page would cut it off ([method _scan] leaves the contents of scroll boxes alone).
+func _collect_browser_width(failures: Dictionary, label: String, lobby: LobbyMenu) -> void:
+	var box := lobby.get_browser()
+	var offenders: Array[String] = []
+	var left := box.get_global_rect().position.x - TOLERANCE
+	var right := box.get_global_rect().end.x + TOLERANCE
+	if box.size.x <= 0.0:
+		offenders.append("the browser has no width")
+	for node in box.find_children("*", "Control", true, false):
+		var control := node as Control
+		if not control.is_visible_in_tree():
+			continue
+		var rect := control.get_global_rect()
+		if rect.size.x > 0.0 and (rect.position.x < left or rect.end.x > right):
+			offenders.append("%s %s outside %s to %s" % [_short_path(control), rect, left, right])
 	if not offenders.is_empty():
 		failures[label] = offenders
 

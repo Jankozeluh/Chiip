@@ -23,6 +23,8 @@ var _failures: int = 0
 
 
 func _ready() -> void:
+	# The Join page listens for LAN games (M17): on this suite's port block, not on a real game's.
+	NetHarness.use_test_discovery_port()
 	_test_licence_files()
 	await _test_licences_screen()
 	await _test_licences_from_settings()

@@ -181,6 +181,8 @@ var _real_file_md5: String = ""
 
 func _ready() -> void:
 	_real_file_md5 = FileAccess.get_md5(Settings.SETTINGS_PATH) if FileAccess.file_exists(Settings.SETTINGS_PATH) else ""
+	# The Join page listens for LAN games (M17): on this suite's port block, not on a real game's.
+	NetHarness.use_test_discovery_port()
 	_theme = load(THEME_PATH) as Theme
 	_test_project_theme()
 	_test_styles_in_the_tree()
@@ -4392,6 +4394,28 @@ func _test_lobby_menu() -> void:
 					and lobby.get_host_button().theme_type_variation == &"" and lobby.get_join_button().theme_type_variation == &"" and lobby_overrides.is_empty(),
 			"background %s (filter %d), page %s, layer %d, overrides %s" % [background.theme_type_variation, background.mouse_filter, page.theme_type_variation, lobby.layer, lobby_overrides])
 
+	# M17 (D-242): the game browser fills the right of the connect page; its rows are theme variations only.
+	var sample_games: Array[Dictionary] = [
+		{"address": "10.0.0.5", "port": 26000, "name": "Anna", "mode": "tdm", "map": "Depot", "players": 2, "max_players": 6, "in_game": false, "version": NetProtocol.VERSION},
+		{"address": "10.0.0.6", "port": 26000, "name": "Tom", "mode": "ffa", "map": "Square", "players": 4, "max_players": 4, "in_game": true, "version": NetProtocol.VERSION + 1},
+	]
+	lobby.show_games(sample_games)
+	await tree.process_frame
+	await tree.process_frame
+	var browser := lobby.get_browser()
+	var games_list := lobby.get_node("%GamesList") as Control
+	var game_row := games_list.get_child(0) as PanelContainer
+	var browser_overrides := _overrides_below(lobby)
+	var side_node := lobby.get_node("Page/Column/Body/Side") as Control
+	_check("The connect page's right side is the game browser (a scrolling column next to the left one, with \"Games on your network\" and \"Recent\" in the dimmed header text): a game's row is a RowPanel 40 high with its labels and a Join button, in a TightBox, with no theme override anywhere on the page",
+			browser.visible and browser.get_global_rect().position.x >= side_node.get_global_rect().end.x and games_list.get_child_count() == 2 and game_row.theme_type_variation == &"RowPanel"
+					and is_equal_approx(game_row.custom_minimum_size.y, LobbyMenu.ROW_HEIGHT) and lobby.get_game_join_buttons().size() == 2
+					and lobby.get_node("Page/Column/Body/BrowserScroll/BrowserBox/GamesGroup/GamesLabel").theme_type_variation == &"DimLabel" and lobby.get_node("Page/Column/Body/BrowserScroll/BrowserBox/RecentGroup/RecentLabel").theme_type_variation == &"DimLabel"
+					and (lobby.get_node("%GamesList") as VBoxContainer).theme_type_variation == &"TightBox" and browser_overrides.is_empty()
+					and not lobby.get_games_note().visible,
+			"browser at %s (left column ends at %s), rows %d, overrides %s" % [browser.get_global_rect(), side_node.get_global_rect().end.x, games_list.get_child_count(), browser_overrides])
+	lobby.show_games([] as Array[Dictionary])
+
 	# Esc closes the connect page and gives the menu back its focus.
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
@@ -4448,7 +4472,7 @@ func _test_lobby_menu() -> void:
 					and lobby.get_leave_button().visible and lobby.get_leave_button().text == "Leave" and not lobby.get_back_button().visible
 					and not lobby.get_name_field().editable and lobby.get_name_field().text == "Jan"
 					and lobby.get_address_texts() == address_lines and lobby.get_friends_box().visible == (not address_lines.is_empty() or not tailscale.is_empty())
-					and not lobby.get_connect_box().visible and lobby.get_teams_box().visible and lobby.get_footer().visible
+					and not lobby.get_connect_box().visible and not lobby.get_browser().visible and lobby.get_teams_box().visible and lobby.get_footer().visible
 					and team_0 == ["You Host", "Empty Bot", "Empty Bot"] and team_1 == ["Empty Bot", "Empty Bot", "Empty Bot"]
 					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MATCH_MAP
 					and lobby.build_summary() == default_summary and lobby_node.info.get("summary", "") == default_summary

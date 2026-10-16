@@ -108,6 +108,8 @@ var role: Role = Role.HOST
 var local_peer_id: int = 0
 ## The name this computer plays under (as the host made it unique).
 var local_name: String = ""
+## The UDP port this session hosts on, or joined at (M17, D-242: the LAN beacon advertises it).
+var game_port: int = 0
 ## Fake lag: every received packet waits this many milliseconds longer (0 = off).
 ## Counted in physics ticks at [member Engine.physics_ticks_per_second].
 var fake_lag_ms: float = 0.0
@@ -198,6 +200,7 @@ func host_game(player_name: String, port: int = DEFAULT_PORT) -> Error:
 	if result != OK:
 		return result
 	role = Role.HOST
+	game_port = port
 	_peer = transport.peer
 	multiplayer.multiplayer_peer = _peer
 	# Clients never talk to each other through the host, so Godot needn't relay anything.
@@ -218,6 +221,7 @@ func join_game(address: String, player_name: String, port: int = DEFAULT_PORT) -
 	if result != OK:
 		return result
 	role = Role.CLIENT
+	game_port = port
 	_peer = transport.peer
 	multiplayer.multiplayer_peer = _peer
 	local_name = _clean_name(player_name)
@@ -657,15 +661,7 @@ static func _clean_name(text: String) -> String:
 ## [param text] without control characters and the invisible ones that change how text reads
 ## (zero-width characters, the marks that reverse its direction): a name can't hide or spoof anything.
 static func _printable(text: String) -> String:
-	var result := ""
-	for character in text:
-		var code := character.unicode_at(0)
-		if code < 32 or code == 127 or (code >= 0x80 and code < 0xA0) or (code >= 0x200B and code <= 0x200F) \
-				or (code >= 0x202A and code <= 0x202E) or (code >= 0x2060 and code <= 0x2069) or code == 0xFEFF:
-			result += " "
-		else:
-			result += character
-	return result
+	return PlainText.printable(text)
 
 
 ## [param wanted], or with a number after it when someone has that name already ("Jan 2").

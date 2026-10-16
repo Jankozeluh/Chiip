@@ -21,8 +21,9 @@ var _sides: Array[Node] = []
 
 
 func _init() -> void:
-	var block := OS.get_environment("CHIIP_TEST_PORT")
-	port = int(block) if block.is_valid_int() else 27600 + randi() % 300
+	port = test_port()
+	# The LAN beacons (M17, D-242) go to the port next to the game's, in this suite's block, never to a real game's.
+	LanDiscovery.default_port = port + 1
 	# Headless runs have no audio device: every weapon stays silent (M7's switch).
 	Weapon.silent = true
 
@@ -32,6 +33,20 @@ func _exit_tree() -> void:
 	for side in _sides:
 		if is_instance_valid(side) and side.is_inside_tree():
 			get_tree().set_multiplayer(null, side.get_path())
+
+
+## The port block of this suite: [code]CHIIP_TEST_PORT[/code] (set by tools/run_tests.sh), or a random one
+## in a range no real game uses when a suite runs by hand.
+static func test_port() -> int:
+	var block := OS.get_environment("CHIIP_TEST_PORT")
+	return int(block) if block.is_valid_int() else 27600 + randi() % 300
+
+
+## Points every new [LanDiscovery] at the port after this suite's game port, so a test that hosts or
+## opens the Join page never sends beacons to, or listens at, the real discovery port (M17).
+## Suites that open a lobby without the harness call it themselves.
+static func use_test_discovery_port() -> void:
+	LanDiscovery.default_port = test_port() + 1
 
 
 ## Makes a side called [param side_name] with its own multiplayer API and returns its branch.

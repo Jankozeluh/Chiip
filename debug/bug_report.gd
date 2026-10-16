@@ -73,10 +73,12 @@ static func info_text(context: PackedStringArray = PackedStringArray()) -> Strin
 	return "\n".join(lines) + "\n"
 
 
-## The settings the game uses now, as the settings file holds them, without the online address.
+## The settings the game uses now, as the settings file holds them, without the online address and the recent hosts.
 static func settings_text() -> String:
 	var config := Settings.get_instance().to_config()
 	config.set_value("online", "address", REMOVED)
+	# The hosts joined lately are friends' addresses too (M17, D-242).
+	config.set_value("online", "recent", REMOVED)
 	return config.encode_to_text()
 
 

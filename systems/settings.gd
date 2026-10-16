@@ -198,6 +198,8 @@ const SCHEMA := {
 	&"online_name": {"section": "online", "default": "Player"},
 	&"online_address": {"section": "online", "default": "127.0.0.1"},
 	&"online_port": {"section": "online", "default": 26000, "min": 1024, "max": 65535},
+	# M17 (D-242): the hosts joined lately, one text ("address:port|name;..."), kept by RecentHosts.
+	&"online_recent": {"section": "online", "default": ""},
 }
 
 ## The names of the mouse buttons a binding can use, by button index (for menus).
@@ -445,6 +447,13 @@ var online_address: String:
 var online_port: int:
 	get: return _values[&"online_port"]
 	set(value): set_value(&"online_port", value)
+## The hosts you joined lately, newest first, for the Join page's Recent list (M17, D-242): one text,
+## [code]address:port|name;address:port|name[/code], at most [constant RecentHosts.MAX_ENTRIES]
+## entries. Read and change it with [RecentHosts] ([method RecentHosts.parse], [method RecentHosts.remember]);
+## whatever is set is cleaned entry by entry, so a damaged file can't break the page.
+var online_recent: String:
+	get: return _values[&"online_recent"]
+	set(value): set_value(&"online_recent", value)
 
 
 func _init() -> void:
@@ -1008,6 +1017,8 @@ static func _sanitize(key: StringName, value: Variant) -> Variant:
 				return fallback
 			if entry.has("choices") and not (entry["choices"] as Array).has(value):
 				return fallback
+			if key == &"online_recent":
+				return RecentHosts.clean(value)
 			return value
 		TYPE_COLOR:
 			if typeof(value) != TYPE_COLOR:

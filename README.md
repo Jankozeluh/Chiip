@@ -123,7 +123,7 @@ The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 
 
 ## Playing with friends
 
-One player **hosts** and plays, friends **join**, and bots fill the empty slots. Chiip's online play works by IP address and is built for the private network that **[Tailscale](https://tailscale.com)** gives you: nothing is opened on anyone's router, nothing is exposed to the internet, and only the people you invite can connect. (It also works on a LAN, and over any other network where the friends can reach the host's address and **UDP port 26000**.)
+One player **hosts** and plays, friends **join**, and bots fill the empty slots. Chiip's online play works by IP address and is built for the private network that **[Tailscale](https://tailscale.com)** gives you: nothing is opened on anyone's router, nothing is exposed to the internet, and only the people you invite can connect. (It also works on a LAN, and over any other network where the friends can reach the host's address and **UDP port 26000**.) **On a LAN you don't need the address:** the Join page lists the games on your network (the host announces itself on **UDP port 26001**); click **Join** on one. Tailscale doesn't carry those announcements, so there you type the address once and use **Recent** after that.
 
 ### Step by step with Tailscale
 
@@ -132,7 +132,7 @@ Everyone who plays, host and friends, does step 1. The host does 2 and 3, the fr
 1. **Install Tailscale** from <https://tailscale.com/download> (free for personal use; Windows, macOS and Linux) and sign in. Check that it says *Connected*.
 2. **The host invites friends.** The best way is to share *only the host's computer*, so friends can reach the game and nothing else of yours: open the Tailscale admin console at <https://login.tailscale.com/admin/machines>, find the host's computer, open its **⋯** menu, choose **Share…** and send the invite link to each friend. A friend opens the link, signs in to Tailscale (a free account) and accepts. (You can also invite friends into your whole tailnet under **Users → Invite**, but then they can reach all your devices, so only do that for people you trust with that.)
 3. **The host starts the game:** main menu → **Host**. The lobby shows **Friends join at**, with the host's **Tailscale address** (it starts with `100.`) and a **Copy** button. Click **Copy** and send the address to your friends in chat.
-4. **A friend joins:** main menu → **Join**. Paste the address into **Join by IP** and press **Join**. Everyone sees the others in the lobby.
+4. **A friend joins:** main menu → **Join**. Paste the address into **Join by IP** and press **Join**. Everyone sees the others in the lobby. Next time the host is under **Recent** on the Join page: one click joins (the last 8 hosts you joined).
 5. **In the lobby**, click **Switch team** to pick a side (your team is blue, the other red). The host's **Edit setup** opens the usual match setup (mode, map or rotation, team sizes, bot difficulty, length, friendly fire); empty slots are bots. The host presses **Start** and everyone's game loads.
 6. Pick your class in the first freeze time (**M**) as in a game alone. After the match the host chooses **Next map**, **Play again** or **Lobby**; the others can only **Leave**.
 

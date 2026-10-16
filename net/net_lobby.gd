@@ -17,6 +17,12 @@ extends Node
 ## ([member GameLaunch.notice]). Someone who joins while a match is being played is sent that
 ## match at once and takes over a bot when they have loaded it (D-110, [NetHost]).
 ##
+## [b]The host advertises the game on the local network[/b] (M17, D-242): while it hosts, a
+## [LanDiscovery] beacon tells everyone on the network the host's name, port, mode, map, how many
+## are in and whether a match is running, so a friend's Join page lists the game. It starts when the
+## lobby is first published ([method publish]), follows the roster, the lobby's settings and the
+## match's start and end, and stops when the session closes ([member discovery]).
+##
 ## The match travels as a Dictionary ([method settings_to_dict]): every stored property of the
 ## [MatchSettings], with the bot difficulty by its file. The class each player plays is not in
 ## it: every player picks their own in the game (D-078).
@@ -39,8 +45,17 @@ var in_game: bool = false
 ## see where the lobby would go without leaving the test.
 var change_scene: Callable
 
+## The host's LAN beacon (M17, D-242), made when the lobby is first published, or null.
+var discovery: LanDiscovery
+
 ## The host: the start message of the match being played, for latecomers.
 var _current_start: Dictionary = {}
+## The host: what the beacon says besides the roster: the mode id ([method LanDiscovery.mode_id]),
+## the map's title and the match's slots in all. [member _published] once [method publish] was called.
+var _advert_mode: String = "tdm"
+var _advert_map: String = ""
+var _advert_slots: int = LanDiscovery.MAX_PLAYERS
+var _published: bool = false
 
 
 ## The lobby of [param game_session], made on first use.
@@ -69,16 +84,24 @@ func _ready() -> void:
 	session.match_message.connect(_on_match_message)
 	session.closed.connect(_on_closed)
 	session.player_joined.connect(_on_player_joined)
+	session.roster_changed.connect(_refresh_advertisement)
 
 
 ## The host only: tells everyone what the coming match is: [param summary] (a line for the lobby
 ## screen), [param slots] per team ([team 0, team 1]), the [param map] and the [param facts] the
 ## lobby footer shows (ready-made texts, may be empty). The slots also limit who can join which team.
-func publish(summary: String, slots: Array, map: String, facts: Dictionary = {}) -> void:
+## [param mode] is the match's mode in the settings' words ("respawn", "ffa", "rounds"); it, the
+## map's title and the slots go into the LAN beacon, which starts with the first call (see the class description).
+func publish(summary: String, slots: Array, map: String, facts: Dictionary = {}, mode: String = "respawn") -> void:
 	if not session.is_host():
 		return
 	session.team_limits = [int(slots[0]), int(slots[1])]
 	session.send_to_all({"lobby": {"summary": summary, "slots": [int(slots[0]), int(slots[1])], "map": map, "facts": facts}})
+	_published = true
+	_advert_mode = LanDiscovery.mode_id(mode)
+	_advert_map = GameLaunch.map_title(map)
+	_advert_slots = clampi(int(slots[0]) + int(slots[1]), 1, LanDiscovery.MAX_PLAYERS)
+	_refresh_advertisement()
 
 
 ## The host only: starts a match on [param map] by [param rules] on every computer (and the
@@ -108,11 +131,13 @@ func _on_match_message(data: Dictionary) -> void:
 		GameLaunch.start_match(String(start["map"]), settings_from_dict(start["rules"]), maps)
 		GameLaunch.net_session = session
 		in_game = true
+		_refresh_advertisement()
 		match_starting.emit()
 		change_scene.call(GameLaunch.GAME_SCENE)
 	elif data.has("to_lobby"):
 		in_game = false
 		_current_start = {}
+		_refresh_advertisement()
 		GameLaunch.clear()
 		change_scene.call(GameLaunch.MENU_SCENE)
 
@@ -125,6 +150,8 @@ func _on_player_joined(peer_id: int) -> void:
 
 
 func _on_closed(reason: String) -> void:
+	if discovery != null:
+		discovery.stop_advertising()
 	GameLaunch.notice = reason
 	var was_in_game := in_game
 	in_game = false
@@ -132,6 +159,32 @@ func _on_closed(reason: String) -> void:
 		GameLaunch.clear()
 		get_tree().paused = false
 		change_scene.call(GameLaunch.MENU_SCENE)
+
+
+## The host: starts the LAN beacon on the first call after [method publish] and keeps it current:
+## the players in the roster, the match's slots, the mode and map, and whether a match is running.
+## Does nothing before the first publish, or once the session is over.
+func _refresh_advertisement() -> void:
+	if not _published or session == null or not session.is_host() or not session.is_active() or not is_inside_tree():
+		return
+	var players := session.get_players().size()
+	var beacon := {
+		"name": session.local_name,
+		"port": session.game_port,
+		"mode": _advert_mode,
+		"map": _advert_map,
+		"players": players,
+		"max_players": maxi(_advert_slots, players),
+		"in_game": in_game,
+	}
+	if discovery == null:
+		discovery = LanDiscovery.new()
+		discovery.name = "LanDiscovery"
+		add_child(discovery)
+	if discovery.is_advertising():
+		discovery.update(beacon)
+	else:
+		discovery.advertise(beacon)
 
 
 # --- The match as a Dictionary ---

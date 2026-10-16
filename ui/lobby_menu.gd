@@ -24,6 +24,17 @@ extends CanvasLayer
 ## "Everyone for themselves" holds every player and every open slot, and the Switch team button is
 ## hidden (the teams still exist underneath; the host publishes the mode as the fact [code]ffa[/code]).
 ##
+## [b]The game browser[/b] (M17, D-242): the connect page's right half lists the games on your network
+## ("Games on your network": the host's name, map, mode, players out of slots, whether a match is
+## running, and a Join button per game; "Looking for games…" while there are none) and the hosts you
+## joined lately ("Recent", newest first, each with Join and a small X that forgets it). The games come
+## from a [LanDiscovery] that listens while this page shows (it starts when the page shows and stops
+## when it hides or the lobby takes over); when its port is taken a line says so. Join on a row fills
+## the address and port fields and joins through [method join_game] (so does everything else); a host
+## that runs another version of the game is listed with Join off. Every successful join puts its address
+## and port at the front of [member Settings.online_recent] ([RecentHosts]; Tailscale hosts are found
+## there, since a broadcast doesn't cross it). The right half scrolls when the lists are long.
+##
 ## The panel only drives a [NetSession] and its [NetLobby]: [method host_game] and
 ## [method join_game] open the session at the root of the tree ([method NetSession.open]), the
 ## host publishes the lobby's info (summary, slots, map, footer facts) whenever the lobby opens,
@@ -59,6 +70,23 @@ const EVERYONE_TEXT := "Everyone for themselves"
 const COPY_TEXT := "Copy"
 const COPIED_TEXT := "Copied"
 const COPIED_MILLISECONDS := 1500
+## The game browser's text (M17, D-242).
+const LOOKING_TEXT := "Looking for games…"
+const RECENT_EMPTY_TEXT := "Hosts you join are kept here."
+const OTHER_VERSION_TEXT := "Other version"
+const IN_GAME_TEXT := "In game"
+const LOBBY_STATE_TEXT := "Lobby"
+## A game row's columns, as [width at 720p, share of the spare room] (0 = a fixed width): the widths are the least a
+## column gets (its text is cut to it), the shares divide what is left over, so the rows line up and the page
+## still fits a window, or a UI scale, that leaves less room than 1280 × 720 does.
+const GAME_NAME_COLUMN := [96.0, 3.0]
+const GAME_MAP_COLUMN := [72.0, 2.0]
+const GAME_MODE_COLUMN := [120.0, 4.0]
+const GAME_PLAYERS_COLUMN := [64.0, 0.0]
+const GAME_STATE_COLUMN := [110.0, 3.0]
+## The width of a recent host's name and address columns.
+const RECENT_NAME_WIDTH := 96.0
+const RECENT_ADDRESS_WIDTH := 200.0
 
 ## Where the choices are stored. The shared [Settings] when null (set before the panel is in the tree).
 var settings: Settings
@@ -93,6 +121,16 @@ var _copy_presses: int = 0
 var _closing_session: NetSession
 ## The host's team when the lobby info was last published (-1: not yet); the slots depend on it.
 var _published_host_team: int = -1
+## The LAN game browser (M17, D-242): made when the connect page first shows, listening while it does.
+var _discovery: LanDiscovery
+## What [method LanDiscovery.listen] answered the last time the page started it ([constant OK] or why not).
+var _listen_error: int = OK
+## False while a join is under way (or the last session is closing): the Join buttons of the lists are off too.
+var _join_enabled: bool = true
+## The Join buttons of the games and of the recent hosts, and the X buttons of the recent ones.
+var _game_join_buttons: Array[Button] = []
+var _recent_join_buttons: Array[Button] = []
+var _recent_remove_buttons: Array[Button] = []
 
 @onready var _title: Label = %Title
 @onready var _info_label: Label = %Info
@@ -105,6 +143,11 @@ var _published_host_team: int = -1
 @onready var _join_button: Button = %JoinButton
 @onready var _status: Label = %Status
 @onready var _host_button: Button = %HostButton
+@onready var _browser: ScrollContainer = %BrowserScroll
+@onready var _games_empty: Label = %GamesEmpty
+@onready var _games_list: VBoxContainer = %GamesList
+@onready var _recent_empty: Label = %RecentEmpty
+@onready var _recent_list: VBoxContainer = %RecentList
 @onready var _friends_box: Control = %FriendsBox
 @onready var _addresses_box: VBoxContainer = %Addresses
 @onready var _tailscale_box: Control = %TailscaleBox
@@ -182,6 +225,7 @@ func open() -> void:
 		if not GameLaunch.notice.is_empty():
 			_set_status(GameLaunch.notice)
 			GameLaunch.notice = ""
+	_update_browsing()
 
 
 ## Hides the panel, hands the mouse back (if it was the last menu open) and emits [signal closed].
@@ -192,6 +236,7 @@ func close() -> void:
 		return
 	leave()
 	visible = false
+	_update_browsing()
 	MenuState.close(self)
 	closed.emit()
 
@@ -220,6 +265,7 @@ func set_settings(new_settings: Settings) -> void:
 			_setup.queue_free()
 			_setup = null
 		_refresh_fields()
+		_refresh_recent()
 
 
 ## Starts hosting on the port in the port field as the name in the name field, and shows the
@@ -274,6 +320,32 @@ func join_game() -> Error:
 	# The buttons are off; Back cancels.
 	_back_button.grab_focus()
 	return OK
+
+
+## The Join button of a row in the browser: puts [param address] and [param port] in the fields and
+## joins them, as a click on Join would. Returns what [method join_game] returns.
+func join_listed(address: String, port: int) -> Error:
+	if _session != null:
+		return ERR_ALREADY_IN_USE
+	_address_field.text = address
+	_port_field.text = str(port)
+	return join_game()
+
+
+## Shows [param games] in the "Games on your network" list, as [method LanDiscovery.get_games] lists
+## them (the browser calls it whenever the discovery's list changes; tests call it with games of
+## their own).
+func show_games(games: Array[Dictionary]) -> void:
+	_game_join_buttons.clear()
+	_clear_list(_games_list)
+	for game in games:
+		_add_game_row(game)
+	_games_empty.visible = games.is_empty()
+	_games_empty.text = LOOKING_TEXT if _listen_error == OK else _listen_failure_text()
+	_games_empty.theme_type_variation = &"MuteLabel"
+	UiTheme.apply_sizes(_games_list, _ui_scale)
+	UiSounds.attach(_games_list)
+	_refresh_join_buttons()
 
 
 ## Leaves the session (the host ends it for everyone) and returns to the connect page at once;
@@ -461,6 +533,7 @@ func _show_connect_page() -> void:
 	_back_button.visible = true
 	_leave_button.visible = false
 	_connect_box.visible = true
+	_browser.visible = true
 	_friends_box.visible = false
 	_teams_box.visible = false
 	_footer.visible = false
@@ -468,6 +541,8 @@ func _show_connect_page() -> void:
 	_name_field.editable = not _connecting
 	_set_connect_enabled(not _connecting)
 	_set_status("")
+	_refresh_recent()
+	_update_browsing()
 	if visible:
 		_host_button.grab_focus()
 
@@ -479,10 +554,12 @@ func _show_lobby_page() -> void:
 	_back_button.visible = false
 	_leave_button.visible = true
 	_connect_box.visible = false
+	_browser.visible = false
 	_teams_box.visible = true
 	_footer.visible = true
 	_name_field.editable = false
 	_set_status("")
+	_update_browsing()
 	var host := _session.is_host()
 	_edit_button.visible = host
 	_start_button.visible = host
@@ -709,11 +786,12 @@ func _publish() -> void:
 	var slots: Array = [0, 0]
 	slots[host_team] = settings.match_team_size
 	slots[Teams.other(host_team)] = settings.match_enemy_team_size
-	NetLobby.of(_session).publish(build_summary(), slots, _chosen_map(), build_facts())
+	NetLobby.of(_session).publish(build_summary(), slots, _chosen_map(), build_facts(), settings.match_mode)
 
 
 func _on_joined() -> void:
 	_connecting = false
+	_remember_host()
 	_show_lobby_page()
 
 
@@ -754,8 +832,145 @@ func _on_session_closed(reason: String) -> void:
 
 
 func _on_setting_changed(key: StringName) -> void:
+	if key == &"online_recent":
+		_refresh_recent()
 	if String(key).begins_with("match_") and _page == Page.LOBBY and _session != null and _session.is_host():
 		_publish()
+
+
+# --- The game browser (M17, D-242) ---
+
+
+## Listens for games while the connect page shows, and stops when it doesn't (the page hides, or the lobby
+## takes over). A port that can't be bound is remembered and the list says so.
+func _update_browsing() -> void:
+	var wanted := visible and _page == Page.CONNECT
+	if wanted:
+		if _discovery == null:
+			_discovery = LanDiscovery.new()
+			_discovery.name = "LanDiscovery"
+			_discovery.games_changed.connect(_refresh_games)
+			add_child(_discovery)
+		if not _discovery.is_listening():
+			_listen_error = _discovery.listen()
+			_refresh_games()
+	elif _discovery != null and _discovery.is_listening():
+		_discovery.stop_listening()
+
+
+func _refresh_games() -> void:
+	var games: Array[Dictionary] = []
+	if _discovery != null:
+		games = _discovery.get_games()
+	show_games(games)
+
+
+## What the list says when the discovery couldn't listen.
+func _listen_failure_text() -> String:
+	var port := _discovery.port if _discovery != null else LanDiscovery.default_port
+	return "Can't look for games: UDP port %d is busy (another Chiip on this computer?). Recent and Join by IP still work." % port
+
+
+## A game's row: the host's name, the map, the mode, the players out of the slots, "Lobby" or
+## "In game", and Join.
+func _add_game_row(game: Dictionary) -> void:
+	var parts := _add_row(_games_list, &"RowPanel")
+	var match_mode := LanDiscovery.match_mode_of(String(game["mode"]))
+	var mode_text := String(MatchSetup.MODES[match_mode]["title"]) if match_mode != "" else String(game["mode"])
+	_add_column(parts, String(game["name"]), &"", GAME_NAME_COLUMN)
+	_add_column(parts, String(game["map"]), &"DimLabel", GAME_MAP_COLUMN)
+	_add_column(parts, mode_text, &"DimLabel", GAME_MODE_COLUMN)
+	_add_column(parts, "%d/%d" % [game["players"], game["max_players"]], &"", GAME_PLAYERS_COLUMN)
+	var compatible := int(game["version"]) == NetProtocol.VERSION
+	var state_text := OTHER_VERSION_TEXT if not compatible else IN_GAME_TEXT if bool(game["in_game"]) else LOBBY_STATE_TEXT
+	_add_column(parts, state_text, &"AlertLabel" if not compatible else &"MuteLabel", GAME_STATE_COLUMN)
+	var join := Button.new()
+	join.text = "Join"
+	join.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	join.tooltip_text = "Join %s's game at %s:%d." % [game["name"], game["address"], game["port"]] if compatible \
+			else "This host runs another version of Chiip (%d, yours is %d)." % [game["version"], NetProtocol.VERSION]
+	join.set_meta("blocked", not compatible)
+	join.pressed.connect(join_listed.bind(String(game["address"]), int(game["port"])))
+	parts.add_child(join)
+	_game_join_buttons.append(join)
+
+
+## A label for a browser row: [param text] cut to its column ([param column]: see [constant GAME_NAME_COLUMN]).
+func _add_column(parts: Control, text: String, variation: StringName, column: Array) -> Label:
+	var label := _add_label(parts, text, variation)
+	label.clip_text = true
+	label.custom_minimum_size.x = column[0]
+	if column[1] > 0.0:
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.size_flags_stretch_ratio = column[1]
+	return label
+
+
+## Shows the recent hosts ([member Settings.online_recent]) in the "Recent" list.
+func _refresh_recent() -> void:
+	if _recent_list == null or settings == null:
+		return
+	_recent_join_buttons.clear()
+	_recent_remove_buttons.clear()
+	_clear_list(_recent_list)
+	var recent := RecentHosts.parse(settings.online_recent)
+	for entry in recent:
+		_add_recent_row(entry)
+	_recent_empty.visible = recent.is_empty()
+	_recent_empty.text = RECENT_EMPTY_TEXT
+	UiTheme.apply_sizes(_recent_list, _ui_scale)
+	UiSounds.attach(_recent_list)
+	_refresh_join_buttons()
+
+
+## A recent host's row: its name (or its address when no name is known), the address and port, Join and X (forget).
+func _add_recent_row(entry: Dictionary) -> void:
+	var address := "%s:%d" % [entry["address"], entry["port"]]
+	var parts := _add_row(_recent_list, &"RowPanel")
+	var has_name := not String(entry["name"]).is_empty()
+	_add_column(parts, String(entry["name"]) if has_name else address, &"", [RECENT_NAME_WIDTH, 1.0])
+	if has_name:
+		_add_column(parts, address, &"DimLabel", [RECENT_ADDRESS_WIDTH, 0.0])
+	var join := Button.new()
+	join.text = "Join"
+	join.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	join.tooltip_text = "Join %s." % address
+	join.pressed.connect(join_listed.bind(String(entry["address"]), int(entry["port"])))
+	parts.add_child(join)
+	_recent_join_buttons.append(join)
+	var remove := Button.new()
+	remove.text = "X"
+	remove.theme_type_variation = &"DimButton"
+	remove.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	remove.tooltip_text = "Forget %s." % address
+	remove.pressed.connect(forget_recent.bind(String(entry["address"]), int(entry["port"])))
+	parts.add_child(remove)
+	_recent_remove_buttons.append(remove)
+
+
+## Takes the host [param address]:[param port] off the recent list (the X button).
+func forget_recent(address: String, port: int) -> void:
+	settings.online_recent = RecentHosts.forget(settings.online_recent, address, port)
+
+
+## Puts the host this panel just joined at the front of the recent list, with its name.
+func _remember_host() -> void:
+	var host_name := String(_session.get_player(1).get("name", "")) if _session != null else ""
+	settings.online_recent = RecentHosts.remember(settings.online_recent, settings.online_address, settings.online_port, host_name)
+
+
+## The Join buttons are off while a join is under way, and one that is blocked for good (a host of
+## another version) stays off.
+func _refresh_join_buttons() -> void:
+	for button in _game_join_buttons + _recent_join_buttons:
+		button.disabled = not _join_enabled or bool(button.get_meta("blocked", false))
+
+
+## Removes every row of [param list].
+func _clear_list(list: Control) -> void:
+	for row in list.get_children():
+		list.remove_child(row)
+		row.queue_free()
 
 
 # --- The match settings (host only) ---
@@ -850,6 +1065,8 @@ func _set_status(text: String, alert: bool = true) -> void:
 func _set_connect_enabled(enabled: bool) -> void:
 	_host_button.disabled = not enabled or _is_closing_session()
 	_join_button.disabled = not enabled or _is_closing_session()
+	_join_enabled = not _host_button.disabled
+	_refresh_join_buttons()
 
 
 ## True while the session [method leave] closed is still in the tree.
@@ -1043,3 +1260,61 @@ func get_lan_label() -> Label:
 ## True while the session [method leave] closed is still going away (Host game and Join wait for it).
 func is_closing_session() -> bool:
 	return _is_closing_session()
+
+
+## The game browser's scrolling right half (the connect page only).
+func get_browser() -> ScrollContainer:
+	return _browser
+
+
+## The LAN game browser's [LanDiscovery], or null before the connect page first showed.
+func get_discovery() -> LanDiscovery:
+	return _discovery
+
+
+## The line over the games list: "Looking for games…" while there are none, or why it can't look. Hidden when games are listed.
+func get_games_note() -> Label:
+	return _games_empty
+
+
+## Each listed game's row as its texts joined with " | " (name, map, mode, players, state).
+func get_game_texts() -> Array[String]:
+	return _row_texts(_games_list)
+
+
+## The Join buttons of the listed games, in row order.
+func get_game_join_buttons() -> Array[Button]:
+	return _game_join_buttons
+
+
+## Each recent host's row as its texts joined with " | " (name, address, when a name is known).
+func get_recent_texts() -> Array[String]:
+	return _row_texts(_recent_list)
+
+
+## The Join buttons of the recent hosts, in row order.
+func get_recent_join_buttons() -> Array[Button]:
+	return _recent_join_buttons
+
+
+## The X buttons of the recent hosts, in row order.
+func get_recent_remove_buttons() -> Array[Button]:
+	return _recent_remove_buttons
+
+
+## The line under "Recent" when nothing is remembered yet.
+func get_recent_note() -> Label:
+	return _recent_empty
+
+
+## The texts of every label in each row of [param list], joined with " | ".
+func _row_texts(list: Control) -> Array[String]:
+	var rows: Array[String] = []
+	for row in list.get_children():
+		if row.is_queued_for_deletion():
+			continue
+		var texts := PackedStringArray()
+		for label in row.find_children("*", "Label", true, false):
+			texts.append((label as Label).text)
+		rows.append(" | ".join(texts))
+	return rows

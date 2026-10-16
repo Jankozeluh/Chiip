@@ -836,6 +836,8 @@
 
 **Switching cameras** (D-241; Unity: enabling another `Camera` or raising its depth): a viewport draws through one `Camera3D`, the one whose `current` is true. The killcam adds its own camera, sets `current = true` (the player's camera stops drawing), and on the way out sets the old one's `current` back. `get_viewport().get_camera_3d()` tells which one draws now.
 
+**UDP broadcast with `PacketPeerUDP`** (D-242; Unity: `UdpClient` with `EnableBroadcast`, or the old `NetworkDiscovery`): a `PacketPeerUDP` can `bind(port)` to receive datagrams and `set_dest_address()` + `put_packet()` to send them; `set_broadcast_enabled(true)` allows sending to a broadcast address, which every computer on the network segment receives. `get_packet_ip()` tells who sent the last packet read. Nothing about a datagram can be trusted: the browser parses it as JSON and checks every field.
+
 **Hiding without stopping** (D-241): `visible = false` on a `Node3D` hides it and its children from every camera, but its scripts, animations and physics bodies go on. The killcam hides the real characters' bodies that way while their hit zones (areas under the bones) keep working for the game.
 
 ## M16: maintainability and debugging

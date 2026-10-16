@@ -2454,6 +2454,14 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** The host sends its buffer to the victim (about 20 KB per death); a third-person replay over the killer's shoulder (CS's freezecam is just a still); the killcam inside the plain 3 s delay (too short for 4 s before the kill); the killcam in rounds too (it reveals positions to a dead teammate).
 
+## D-242 — M17: LAN games announce themselves; Tailscale gets a "Recent" list (2026-10-16)
+
+**Decision:** While someone hosts (the lobby and its matches), the game sends a **beacon** every second by UDP broadcast to port **26001** (the game's own port is 26000): a JSON object of at most 512 bytes with the magic word, the protocol version, the host's name, the game's port, the mode, the map, the players and whether a match is on. The Join page listens while it is open and lists what it hears ("Games on your network", a Join button each; a game of another version is listed with Join off; entries go 3.5 s after the last beacon). The beacon goes to 255.255.255.255 and to each local address's x.y.z.255, because macOS refused the first ("No route to host"). **Recent:** every successful join puts the host's address, port and name at the top of a list of 8 (no duplicates), saved in the settings file (`online_recent`, left out of bug reports), shown with Join buttons. Every beacon is untrusted input: size, JSON object, magic, types, printable text cut to length, port 1024–65535, at most 32 games (4 per sender) and 64 packets read a frame.
+
+**Why:** No typing IPs on a LAN. Tailscale doesn't carry broadcasts between devices, so for the primary way to play (D-173) the next best is remembering the hosts you joined; the first time you still paste the address the host's lobby shows. A broadcast beacon needs no server and no port on the joiner's router; JSON keeps the parsing safe (no objects, unlike `bytes_to_var`).
+
+**Alternatives:** Clients broadcasting a query that hosts answer (two ports to manage and a host that must listen); mDNS/Bonjour (no Godot API); asking Tailscale for the tailnet's peers (`tailscale status --json` is a shell command, not available to an exported game, and would list every device); a master server (out of scope: no servers, D-100).
+
 ## Open questions
 
 | Question | Decide in |

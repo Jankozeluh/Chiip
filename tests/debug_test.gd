@@ -83,6 +83,8 @@ func _test_bug_report() -> void:
 	var settings := Settings.get_instance()
 	var address := settings.online_address
 	settings.online_address = "100.101.102.103"
+	var recent := settings.online_recent
+	settings.online_recent = RecentHosts.remember("", "100.101.102.104", 26000, "Anna")
 	print("A line that names the address 100.101.102.103 and the folder %s" % OS.get_environment("HOME"))
 	var path := BugReport.create(PackedStringArray(["Game: a test at 100.101.102.103"]))
 	var files := _zip_files(path)
@@ -97,17 +99,18 @@ func _test_bug_report() -> void:
 			info.replace("\n", " | "))
 	var config := ConfigFile.new()
 	var parsed := config.parse(files.get("settings.cfg", ""))
-	_check("settings.cfg is the settings the game uses, as the settings file holds them, without the online address",
-			parsed == OK and config.get_value("online", "address", "") == BugReport.REMOVED
+	_check("settings.cfg is the settings the game uses, as the settings file holds them, without the online address and the recent hosts",
+			parsed == OK and config.get_value("online", "address", "") == BugReport.REMOVED and config.get_value("online", "recent", "") == BugReport.REMOVED
 					and config.get_value("game", "sensitivity", -1.0) == settings.sensitivity and config.has_section("controls"),
 			"parse %d, address %s" % [parsed, config.get_value("online", "address", "?")])
 	var everything := "".join(files.values())
 	var home := OS.get_environment("HOME")
 	_check("Nothing in the report names the online address or the home folder (an issue is public)",
-			not everything.contains("100.101.102.103") and (home.length() < 2 or not everything.contains(home))
+			not everything.contains("100.101.102.103") and not everything.contains("100.101.102.104") and (home.length() < 2 or not everything.contains(home))
 					and String(files.get("logs/godot.log", "")).contains("names the address (removed) and the folder ~"),
 			"")
 	settings.online_address = address
+	settings.online_recent = recent
 	# Old reports are pruned: the oldest go first.
 	for i in BugReport.KEEP + 2:
 		var old := FileAccess.open(REPORT_FOLDER.path_join("chiip-bug-0.0.0-2000-01-%02d-000000.zip" % (i + 1)), FileAccess.WRITE)

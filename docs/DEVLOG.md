@@ -14,7 +14,9 @@ Branch `m17` (D-220). Decisions from D-239. One commit per task.
 
 - Killcam (D-241): `KillcamRecorder` notes everyone's pose 64 times a second (7 s kept) on each computer, so a client replays its own death from the puppets it showed and nothing new goes over the wire but a skip request. `Killcam` plays the 4 s before the kill and 0.5 s after it, a second after the death: a camera at the killer's recorded eyes, the killer's gun as a viewmodel, everyone else as a ghost `CrewBody` without hit zones, the real bodies hidden. The host holds your respawn for it (5.5 s instead of 3; bots never wait); Space skips and gives the plain delay back. Only Team Deathmatch and free-for-all. The HUD overlay (KILLCAM, "Killed by" the killer and weapon, a progress bar, the skip prompt) and the Game tab's Killcam toggle by a Sonnet subagent; a windowed screenshot shows the killer's view, the gun with red arms and a ghost walking past. New `killcam` suite (22 checks, offline and online).
 
-**Next:** the game browser, chat, map voting and new maps.
+- Game browser (D-242, by a Sonnet subagent): `LanDiscovery` (the host's beacon every second while it hosts, a listener on the Join page; packets checked like everything from the network: size, JSON object, magic, types, printable text, port range, at most 32 games and 64 packets a frame), `RecentHosts` (the last 8 joins, a text setting `online_recent`, left out of bug reports), `PlainText` (shared text cleaning). The Join page's right half lists the games on your network and the recent hosts, each with Join. On this Mac a send to 255.255.255.255 failed ("No route to host"), so the beacon also goes to each local address's x.y.z.255. New `browser` suite (47 checks); a two-process check on the real port listed the host.
+
+**Next:** chat, map voting and new maps.
 
 ## 2026-10-16 — M16 maintainability & debugging
 
