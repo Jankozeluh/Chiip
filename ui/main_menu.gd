@@ -3,7 +3,7 @@ extends Node
 ## The main menu, the first thing the game shows (M5 task 11, D-064; it is the
 ## project's main scene; the mockup's "02 Main menu" since M10, D-135): a dark
 ## column on the left with the game's name and its three chips, the menu items
-## **Play** (focused), **Practice**, **Settings** and **Quit**, a line, and
+## **Play** (focused), **Practice**, **Stats**, **Settings** and **Quit**, a line, and
 ## **Host** and **Join** (the online games of M9), over a slow camera flight
 ## across the test map; the build at the bottom left and the map's name at the
 ## bottom right (the build reads the project's version, M12).
@@ -21,6 +21,7 @@ extends Node
 ##   When the menu starts with an online session still running (back from an online match)
 ##   or with a reason an online game ended ([member GameLaunch.notice]), it opens the lobby
 ##   by itself.
+## - **Stats** opens the [StatsMenu] (M14): lifetime numbers, weapons, history and training bests.
 ## - **Settings** opens the same [SettingsMenu] the game has.
 ## - **Quit** closes the game.
 ##
@@ -65,6 +66,7 @@ var _lobby_opener: Button
 @onready var _page: CanvasLayer = $Page
 @onready var _play_button: Button = %PlayButton
 @onready var _practice_button: Button = %PracticeButton
+@onready var _stats_button: Button = %StatsButton
 @onready var _settings_button: Button = %SettingsButton
 @onready var _quit_button: Button = %QuitButton
 @onready var _host_button: Button = %HostButton
@@ -76,6 +78,7 @@ var _lobby_opener: Button
 @onready var _setup: MatchSetup = $MatchSetup
 @onready var _lobby: LobbyMenu = $LobbyMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
+@onready var _stats_menu: StatsMenu = $StatsMenu
 
 
 func _ready() -> void:
@@ -85,6 +88,8 @@ func _ready() -> void:
 		var result := settings.load_from_disk()
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
+		# Your match history (M14, D-200) is read with the settings, under the same guards.
+		StatsBook.get_instance().load_from_disk()
 	if _skip_for_command_line():
 		return
 	settings.changed.connect(_on_setting_changed)
@@ -92,12 +97,14 @@ func _ready() -> void:
 	_host_button.pressed.connect(host_online)
 	_join_button.pressed.connect(join_online)
 	_practice_button.pressed.connect(start_practice)
+	_stats_button.pressed.connect(open_stats)
 	_settings_button.pressed.connect(open_settings)
 	_quit_button.pressed.connect(get_tree().quit)
 	_setup.started.connect(start_picked)
 	_setup.closed.connect(_play_button.grab_focus)
 	_lobby.closed.connect(_on_lobby_closed)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
+	_stats_menu.closed.connect(_stats_button.grab_focus)
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
 	_build_label.text = "Build %s · Divocakos" % ProjectSettings.get_setting("application/config/version", "")
 	_build_background()
@@ -157,6 +164,11 @@ func open_settings() -> void:
 	_settings_menu.open()
 
 
+## Opens the Stats screen (the Stats button, M14).
+func open_stats() -> void:
+	_stats_menu.open()
+
+
 ## Leaves the description of the chosen match for main.gd ([GameLaunch]), without
 ## changing scenes. [method start_match] does this and then changes to the game.
 func prepare_match() -> void:
@@ -214,6 +226,7 @@ func apply_pixel_settings() -> void:
 	_setup.set_ui_scale(factor)
 	_lobby.set_ui_scale(factor)
 	_settings_menu.set_ui_scale(factor)
+	_stats_menu.set_ui_scale(factor)
 	_boot.set_ui_scale(factor)
 	_place_studio_mark(factor)
 
@@ -356,9 +369,19 @@ func get_settings_menu() -> SettingsMenu:
 	return _settings_menu
 
 
-## The main page's menu items: Play, Practice, Settings, Quit.
+## The Stats screen.
+func get_stats_menu() -> StatsMenu:
+	return _stats_menu
+
+
+## The Stats button.
+func get_stats_button() -> Button:
+	return _stats_button
+
+
+## The main page's menu items: Play, Practice, Stats, Settings, Quit.
 func get_buttons() -> Array[Button]:
-	return [_play_button, _practice_button, _settings_button, _quit_button]
+	return [_play_button, _practice_button, _stats_button, _settings_button, _quit_button]
 
 
 ## Host and Join, the two small items under the line.

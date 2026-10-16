@@ -592,7 +592,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 
 1. [x] **Stats model and the history file** (D-200, D-201). `systems/stats_book.gd` (a [StatsBook] with a shared instance like Settings; match records, lifetime totals, personal bests), the maths in `systems/stats_math.gd` (K/D, ADR, HS %, accuracy per weapon, hits by zone, wins per mode and map), saved as JSON in `user://stats.json`; a damaged file is kept aside and replaced by an empty book. New suite `stats`
 2. [x] **Recording from matches** (D-202, D-203). `systems/stats_recorder.gd` follows your own shots and hits and RoundManager's numbers; saves one record when a match ends; online it reads what the host announces (its `DAMAGED` event now names the weapon). `RoundManager.get_rounds_played()` and an ADR column on the scoreboards of round matches
-3. [ ] **The Stats screen** (D-204). `ui/stats_menu.tscn`, opened by a Stats button in the main menu, in the theme and the mockups' style: Overview, Weapons, History, Training
+3. [x] **The Stats screen** (D-204). `ui/stats_menu.tscn`, opened by a Stats button in the main menu, in the theme and the mockups' style: Overview, Weapons, History, Training
 4. [ ] **Aim trainer** (D-205 to D-207). Flick targets pop up at random spots within reach for a timed run, a score and personal bests (kept in the stats file); a `range_trainer` entity on the Shooting Range; the scoring is a pure class with its own checks
 5. [ ] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
 6. [ ] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once

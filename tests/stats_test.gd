@@ -34,6 +34,7 @@ func _ready() -> void:
 	_test_history_cap()
 	_test_bests()
 	_test_csv()
+	_test_screen_text()
 	_test_real_file_untouched()
 	_cleanup()
 	if _failures == 0:
@@ -293,6 +294,45 @@ func _test_csv() -> void:
 			and respawn[12] == "" and respawn[14] == "25.0", "%d lines" % lines.size())
 	DirAccess.remove_absolute(CSV_PATH)
 
+
+# --- What the Stats screen says ---
+
+
+func _test_screen_text() -> void:
+	var totals := StatsTotals.new()
+	totals.add_match(_make_match(StatsMatch.MODE_ROUNDS, "depot", StatsMatch.WIN, 12, 8, 1500.0, 20, 200, 60, 4))
+	totals.add_match(_make_match(StatsMatch.MODE_RESPAWN, "square", StatsMatch.LOSS, 20, 25, 3000.0, 0, 400, 100, 5, "smg"))
+	var tiles: Array = StatsMenu.tile_values(totals)
+	var texts: Array = tiles.map(func(pair: Array) -> String: return "%s=%s" % [pair[0], pair[1]])
+	_check("The Overview's tiles say K/D, ADR (round matches only), HS %, accuracy, wins, matches, kills, deaths, damage and time",
+			texts == ["K/D=0.97", "ADR=75", "HS %=28 %", "Accuracy=27 %", "Wins=50 %", "Matches=2", "Kills=32", "Deaths=33", "Damage=4500", "Played=20 min"],
+			"%s" % [texts])
+	_check("Without a round match the ADR tile shows a dash, not a made-up 0", StatsMenu.tile_values(StatsTotals.new())[1][1] == "-", "-")
+	var weapons: Array = StatsMenu.weapon_rows(totals)
+	_check("The Weapons rows list the most fired gun first, with its name, shots, hits, accuracy and the share of hits by zone",
+			weapons.size() == 2 and weapons[0][0] == "smg" and weapons[0][1] == "Hornet" and weapons[0][2] == "400" and weapons[0][3] == "100" and weapons[0][4] == "25 %"
+			and weapons[1][1] == "Ram" and weapons[1][5] == "7 %" and weapons[1][6] == "93 %", "%s" % [weapons])
+	var wins: Array = StatsMenu.win_rows(totals.maps, StatsMenu.map_name)
+	_check("Wins per map are listed by matches played, with their names: [Depot 1 of 1], [Square 0 of 1]", wins == [["Depot", 1, 1], ["Square", 0, 1]], "%s" % [wins])
+	var matches: Array[StatsMatch] = []
+	for index in 3:
+		var record := _make_match(StatsMatch.MODE_ROUNDS if index != 1 else StatsMatch.MODE_RESPAWN, "depot", StatsMatch.WIN, index, 1, 100.0, 5 if index != 1 else 0, 10, 5)
+		record.date = DATE + index * 100
+		matches.append(record)
+	var history: Array = StatsMenu.history_rows(matches)
+	_check("The History rows are newest first, and a Team Deathmatch has no ADR",
+			history.size() == 3 and history[0][4] == "2" and history[2][4] == "0" and history[1][1] == "Team Deathmatch · Depot" and history[1][7] == "-"
+			and history[0][7] == "20" and history[0][3] == "0 : 0", "%s" % [history[0]])
+	_check("The History lists at most the limit, newest first", StatsMenu.history_rows(matches, 2).size() == 2 and StatsMenu.history_rows(matches, 2)[1][4] == "1", "2 of 3")
+	_check("Durations read as minutes under an hour and h:mm over it",
+			StatsMenu.format_duration(0.0) == "0 min" and StatsMenu.format_duration(2700.0) == "45 min" and StatsMenu.format_duration(3600.0) == "1:00 h"
+			and StatsMenu.format_duration(14580.0) == "4:03 h", "")
+	_check("A date is shown in the local time zone as year-month-day hour:minute, none as a dash",
+			StatsMenu.format_date(0) == "-" and StatsMenu.format_date(DATE).length() == 16 and StatsMenu.format_date(DATE)[4] == "-", StatsMenu.format_date(DATE))
+	var training: Array = StatsMenu.training_rows({"aim_flick_rifle": {"score": 4200.0, "date": DATE, "hits": 31}, "mystery_run": {"score": 7.5, "date": 0}})
+	_check("Training bests are named after their training and gun (a key nobody knows is made readable), whole scores without .0",
+			training[0][0] == "Aim trainer · Ram" and training[0][1] == "4200" and training[0][3] == "Hits 31" and training[1][0] == "Mystery Run" and training[1][1] == "7.5",
+			"%s" % [training])
 
 func _test_real_file_untouched() -> void:
 	var now := _real_md5()

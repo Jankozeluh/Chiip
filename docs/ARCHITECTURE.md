@@ -602,6 +602,23 @@ That is about 830 checks in about four minutes on the development Mac. A change 
 - Never `load()` or list resources there. `WeaponData.all()` reloads every weapon file whenever nothing holds them, so keep what you need in a `static var` (as `Shop` and `NetProtocol` do).
 - Don't search children for the same node every tick: keep it (`LagCompensation` keeps each zone's box as metadata).
 
+## Stats and training (M14, D-200 to D-209)
+
+```
+Match ends ──► StatsRecorder (under the match's RoundManager, one per match) ──► StatsBook (user://stats.json)
+                 ▲ Weapon.fired (your bullets)                                    ├─ history: Array[StatsMatch]  (last 300)
+                 ▲ Character.damaged of everyone else (your hits, by zone)        ├─ lifetime: StatsTotals
+                 ▲ RoundManager.character_killed (your headshot kills)            └─ training: bests of the Shooting Range
+                 ▲ RoundManager.get_stats (kills, deaths, assists, damage)      StatsMenu (main menu → Stats) reads it
+```
+
+- **Files** (`systems/stats_*.gd`, all `RefCounted` data classes that read and write themselves as plain dictionaries): `StatsMath` (the definitions: K/D, ADR, HS %, ratio, and the `clean_*` readers that make anything read from a file safe), `StatsWeapon` (bullets, hits, hits by zone), `StatsMatch` (one finished match), `StatsTotals` (everything added up, with wins per mode and map), `StatsBook` (the file: the shared `get_instance()`, `load_from_disk()`, `save_to_disk()`, `add_match()`, `submit_best()`, `export_csv()`), `StatsRecorder` (a `Node`, added by `main.gd` under the rules of every match; `set_book()` is for tests that run two games in one process).
+- **The file** is `user://stats.json` (D-200): `{"version": 1, "history": [...], "lifetime": {...}, "training": {...}}`. A book saves only after `load_from_disk()` has run, which `main.gd` and the main menu do together with the settings and under the same guards (`load_settings`, `--no-settings`, `Settings.is_loaded()`); an unreadable file is kept as `stats.json.bad` and an empty book starts.
+- **Online** (D-203) the recorder is the same code fed by what the host announces; the `DAMAGED` event carries the weapon's index as a seventh value (read only when present), `NetClient` sets `last_damage_source` from it.
+- **`RoundManager`** got `participant_joined(character)` (so the recorder follows bots and friends joining, on the host and on a client) and `get_rounds_played()` (the rounds' score sum; 0 in Team respawn); the round matches' scoreboards (`ScoreboardTable`) have an ADR column after DMG.
+- **`StatsMenu`** (`ui/stats_menu.tscn` + `.gd`, D-204): `CanvasLayer` layer 7, `process_mode = Always`, in the main menu's scene (`get_stats_menu()`, `get_stats_button()`); tabs Overview, Weapons, History, Training; the text of every tab comes from static functions (`tile_values`, `weapon_rows`, `history_rows`, `win_rows`, `training_rows`, `format_date`, `format_duration`). `tools/ui_screenshots.gd --stats-only` pictures the four tabs.
+- **Tests:** `stats` (the maths, the file, damaged files, the screen's text), `statsrec` (real shots in real matches offline and online; leaving a match and practice record nothing), plus the Stats screen in `ui` and `layout`.
+
 ## Naming conventions
 
 These follow the official Godot style guide.

@@ -72,3 +72,4 @@
 | 14 | Loading / map change | doesn't exist yet | new scene when the mockup arrives |
 | 15 | Toasts and alerts | `ui/round_hud.tscn` (centre messages), `ui/bomb_hud.tscn` | HUD roles |
 | 16 | Icons | `assets/ui/icons/` | the slots above |
+| — (M14) | Stats | `ui/stats_menu.tscn` (+ `.gd`, tabs and rows built in code), opened by the main menu's Stats item (D-204) | `InkPanel`, `PageMargin`, `SettingsColumn`, `TitleLabel`, `TabContainer`, `ContentBox`, `FlowBox`, `HeaderLabel`, `MuteLabel`, `DimLabel`, `BrightLabel`, `ScoreLabel`, `InsetPanel` (the Overview's tiles), `PanelMargin`, `StackBox`, `RowBox`, `ProgressBar`, `RowPanel` + `CellMargin` + `FlushRow` (the tables, as the scoreboard's), `DimButton`, `StrongButton`. Not one of your mockups: built from the same roles |

@@ -5,6 +5,7 @@
 [ext_resource type="Shader" path="res://shaders/palette_limit.gdshader" id="palette_shader"]
 [ext_resource type="PackedScene" path="res://ui/match_setup.tscn" id="setup_scene"]
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
+[ext_resource type="PackedScene" path="res://ui/stats_menu.tscn" id="stats_menu_scene"]
 [ext_resource type="Texture2D" path="res://assets/ui/chip.png" id="chip"]
 [ext_resource type="PackedScene" path="res://ui/lobby_menu.tscn" id="lobby_scene"]
 [ext_resource type="PackedScene" path="res://ui/boot_screen.tscn" id="boot_scene"]
@@ -124,6 +125,14 @@ text = "Practice"
 icon = ExtResource("chip")
 alignment = 0
 
+[node name="StatsButton" type="Button" parent="Page/Items"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Stats"
+icon = ExtResource("chip")
+alignment = 0
+
 [node name="SettingsButton" type="Button" parent="Page/Items"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -215,6 +224,8 @@ stretch_mode = 5
 [node name="LobbyMenu" parent="." instance=ExtResource("lobby_scene")]
 
 [node name="SettingsMenu" parent="." instance=ExtResource("settings_menu_scene")]
+
+[node name="StatsMenu" parent="." instance=ExtResource("stats_menu_scene")]
 
 [node name="BootScreen" parent="." instance=ExtResource("boot_scene")]
 unique_name_in_owner = true

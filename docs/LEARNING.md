@@ -777,3 +777,17 @@
 
 **Time in a test that runs at a fixed frame rate** (`Time.get_ticks_msec()` against `SceneTreeTimer`)
 - `--fixed-fps 128` makes every frame exactly 1/128 s of *game* time however fast it really runs, so `create_timer(1.5)` fires after 192 frames in a fraction of a second of wall-clock time. `Time.get_ticks_msec()` is the wall clock: a "Copied" label that reset itself by comparing ticks never reset in the test. The Copy button counts presses instead. (This is also why CLAUDE.md says to count time in deltas.)
+
+## M14: stats and training
+
+**Data classes and a file that reads and writes them** (`RefCounted`, `JSON`, `FileAccess`, typed `Dictionary`)
+- A class that only holds data extends `RefCounted` (Unity: a plain C# class, no `MonoBehaviour`, no `ScriptableObject`): it is counted and freed by itself and never enters the scene tree. `StatsMatch`, `StatsWeapon` and `StatsTotals` are such classes; each has `to_dict()` and a static `from_dict()` (Unity: `JsonUtility.ToJson` / `FromJson`, but written by hand, because a damaged file must give a safe value instead of throwing).
+- `JSON.stringify(data, "\t")` writes a dictionary or array as text; `JSON.new().parse(text)` reads it back and returns an error code instead of printing one (the static `JSON.parse_string()` just returns `null`). **JSON has no integers: every number comes back as a `float`**, so `from_dict()` turns counts back with `int()` (`StatsMath.clean_count()`), and a test that compares must too.
+- `Dictionary[String, StatsWeapon]` is a typed dictionary (Godot 4.4+; Unity: `Dictionary<string, StatsWeapon>`): the editor and the compiler know what comes out of it.
+- A file is never trusted: any value read from it is cleaned (the right type, in a range, finite: `is_finite()` catches NaN and infinity), a list entry that isn't one is skipped, and a file that can't be read at all is moved aside (`DirAccess.rename_absolute()`) rather than overwritten, so the player's data is never lost to a bug.
+- Saving writes `stats.json.tmp` and then renames it over the real file (`DirAccess.rename_absolute()`): a rename is one step, so a crash in the middle leaves the old file or the new one, never half of either.
+
+**Building a table in code** (`HFlowContainer`, `ProgressBar`, `Label.clip_text`)
+- `HFlowContainer` lays its children out in a row and wraps to a new line when the row is full (CSS flex-wrap; Unity: a `GridLayoutGroup` with a flexible column count): the Overview's tiles fill the width at any window size.
+- `ProgressBar` with `show_percentage = false` is a bar for any 0–100 value (here the share of matches won). Its look comes from the theme like every control's.
+- A table is a column of rows, each an `HBoxContainer` of `Label`s with a fixed `custom_minimum_size.x`, one expanding (`SIZE_EXPAND_FILL`) and `clip_text` so a long text can't push the others around. Dynamic rows are built after the UI scale is known and sized with `UiTheme.apply_sizes()`.

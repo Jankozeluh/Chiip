@@ -2059,6 +2059,22 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** The client counting its own predicted hits (it would see hits the host later rejects, and its accuracy would differ from the host's view of the same match); a new "stats" message at the match end (more protocol, and a place to cheat); guessing the weapon from the one in hand (wrong for grenades and anything after a quick switch).
 
+## D-204 — The Stats screen: a main-menu item with four tabs (2026-10-16)
+
+**Decision:** **Stats** is a menu item between Practice and Settings (the main menu's items are now Play, Practice, Stats, Settings, Quit) and opens `StatsMenu` (`ui/stats_menu.tscn`), a full-screen menu in the mockups' style: the `InkPanel` page with the `TitleLabel`, a `TabContainer` and a footer, no colour, size or style of its own (theme type variations only; `ui_test` and `layout_test` check it).
+- **Overview:** ten tiles (K/D, ADR, HS %, accuracy, wins, matches, kills, deaths, damage, time played) and bars for the wins per mode and per map ("6 of 9 · 67 %").
+- **Weapons:** per gun its icon and name, the bullets, the hits, the accuracy and the share of hits by zone, the most fired first.
+- **History:** the last 100 matches, newest first: when (your time zone), mode · map, result, score, K, D, K/D, ADR (a dash in Team Deathmatch), HS %, accuracy.
+- **Training:** the personal bests (D-205, D-208).
+- **Footer:** **Export CSV** writes the history to `user://stats_history.csv` and says the real path (for a spreadsheet; you are a data analyst), **Reset stats** asks twice (the first press says "Press again to delete" and is forgotten after 4 s or when the screen closes) and Back; Esc closes it like every menu (`MenuState`).
+- **Tables are rows of labels like the scoreboard's** (`RowPanel`, `CellMargin`, `FlushRow`), not a `GridContainer`: the scoreboard's rows scale with the UI theme and a grid's default gaps would not.
+- **What the tabs say is made by static functions of plain numbers** (`tile_values`, `weapon_rows`, `history_rows`, `win_rows`, `training_rows`), checked in the `stats` suite without a window; the menu only puts it on screen.
+- The book is read when the main menu (or the game, `-- --match`) loads the settings, under the same guards, so a test that gave the settings a file of its own, or none, can never make the game read or write your real stats (found the hard way: `ui_test`'s real-flow check does exactly that, and wrote to the real file until the guard was the settings' own).
+
+**Why:** Stats are for looking at between matches, so they belong in the main menu next to Practice and Settings, not behind the pause menu; four tabs keep each table narrow enough for 1280 × 720 and keep K/D and ADR (the numbers you check first) on the first one. A CSV button costs nothing and makes the analysis your own.
+
+**Alternatives:** Stats in the match-end screen only (no way to look at the lifetime numbers); a link in the small "Host / Join" row (hidden away); one long page (the history would push everything else off the screen); charts of K/D over time (a good later idea; a table and a CSV come first); a `GridContainer` for tables (no theme scaling).
+
 ## Open questions
 
 | Question | Decide in |
