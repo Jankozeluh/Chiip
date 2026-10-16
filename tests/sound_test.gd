@@ -17,7 +17,10 @@ extends Node
 ## differ), its far variant (duller, longer) and its three reload sounds, and a bot's shot
 ## crossfading into the far one with distance. Muffling (D-192) behind walls built by the test,
 ## a box and a trimesh: none in the open, light round a corner, more for one wall, heavy for two,
-## the bomb's beep only half and never heavy, and a real shot behind a wall played muffled.
+## the bomb's beep only half and never heavy, and a real shot behind a wall played muffled. The
+## listener's zone (D-193): a room, a hall, a walled yard and the open, built by the test, and
+## Depot's own rooms and yards; the Effects reverb set to the zone at once, gliding to the next
+## and put back when the game ends.
 ## Quits with the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
@@ -42,6 +45,7 @@ func _ready() -> void:
 	_test_footsteps()
 	await _test_impacts()
 	await _test_occlusion()
+	await _test_zones()
 	_test_ui_sounds()
 	# Let every sound end before quitting: the map and its impacts go first.
 	remove_child(_map)
@@ -257,6 +261,80 @@ func _test_occlusion() -> void:
 		node.queue_free()
 	(_player.get_node("Head/Camera3D") as Camera3D).make_current()
 	await _wait_ticks(2)
+
+
+## The listener's zone (M13, D-193): rooms the test builds high above the map (a 4 × 3 × 4 m room,
+## a 20 × 8 × 20 m hall, a 16 m yard walled 3 m high, nothing at all), Depot's markers (rooms and
+## yards both found), and an [Acoustics] node setting the Effects reverb from them.
+func _test_zones() -> void:
+	var space := _map.get_world_3d().direct_space_state
+	var built: Array[Node] = []
+	built.append_array(_add_room(Vector3(40.0, 300.0, 0.0), Vector3(4.0, 3.0, 4.0), true))
+	built.append_array(_add_room(Vector3(100.0, 300.0, 0.0), Vector3(20.0, 8.0, 20.0), true))
+	built.append_array(_add_room(Vector3(200.0, 300.0, 0.0), Vector3(16.0, 3.0, 16.0), false))
+	await _wait_ticks(2)
+	var ear := Vector3.UP * 1.6
+	var zones := []
+	for center in [Vector3(40.0, 300.0, 0.0), Vector3(100.0, 300.0, 0.0), Vector3(200.0, 300.0, 0.0), Vector3(400.0, 300.0, 0.0)]:
+		zones.append(SoundMix.Zone.keys()[Acoustics.probe(space, center + ear).zone])
+	_check("Zones from rays: a small room, a hall, a walled yard and the open", zones == ["ROOM", "HALL", "YARD", "OPEN"], str(zones))
+	var counts := {}
+	for marker in _map.find_children("*", "Marker3D", true, false):
+		var zone: String = SoundMix.Zone.keys()[Acoustics.probe(space, (marker as Node3D).global_position + ear).zone]
+		counts[zone] = counts.get(zone, 0) + 1
+	_check("Depot's rooms and yards are found at run time (its markers: at least 3 indoors, 30 outdoors)",
+			counts.get("ROOM", 0) + counts.get("HALL", 0) >= 3 and counts.get("YARD", 0) + counts.get("OPEN", 0) >= 30, str(counts))
+	# The node: in the room the reverb is the room's at once, in the yard it glides to the yard's.
+	var effects := AudioServer.get_bus_index(SoundMix.BUS_EFFECTS)
+	var reverb := AudioServer.get_bus_effect(effects, 0) as AudioEffectReverb
+	var dry_wet := reverb.wet
+	var camera := Camera3D.new()
+	add_child(camera)
+	camera.global_position = Vector3(40.0, 300.0, 0.0) + ear
+	camera.make_current()
+	var acoustics := Acoustics.new()
+	add_child(acoustics)
+	await _wait_ticks(3)
+	var room_zone := acoustics.zone
+	var room_wet := reverb.wet
+	camera.global_position = Vector3(200.0, 300.0, 0.0) + ear
+	await _wait_ticks(64)
+	var gliding := reverb.wet
+	await _wait_ticks(320)
+	var yard_zone := acoustics.zone
+	var yard_wet := reverb.wet
+	var room_size := reverb.room_size
+	acoustics.queue_free()
+	await _wait_ticks(1)
+	var wet_after := reverb.wet
+	var room: Dictionary = SoundMix.REVERB[SoundMix.Zone.ROOM]
+	var yard: Dictionary = SoundMix.REVERB[SoundMix.Zone.YARD]
+	_check("The reverb follows the listener: the room's at once, gliding to the yard's, dry again when the game ends",
+			room_zone == SoundMix.Zone.ROOM and is_equal_approx(room_wet, room.wet) and yard_zone == SoundMix.Zone.YARD
+			and gliding < room_wet and gliding > yard_wet and absf(yard_wet - yard.wet) < 0.005 and absf(room_size - yard.room_size) < 0.01
+			and is_equal_approx(wet_after, dry_wet),
+			"room %s wet %.3f, 0.5 s later %.3f, yard %s wet %.3f size %.2f, after %.3f (layout %.3f)" % [
+				SoundMix.Zone.keys()[room_zone], room_wet, gliding, SoundMix.Zone.keys()[yard_zone], yard_wet, room_size, wet_after, dry_wet])
+	camera.queue_free()
+	for node in built:
+		node.queue_free()
+	(_player.get_node("Head/Camera3D") as Camera3D).make_current()
+	await _wait_ticks(2)
+
+
+## A box room of 0.3 m walls around [param center] (its floor's middle), [param inside] its
+## inner size, with a roof when [param roofed] and no floor (the probe looks up and sideways).
+func _add_room(center: Vector3, inside: Vector3, roofed: bool) -> Array[Node]:
+	var walls: Array[Node] = []
+	var half := inside / 2.0
+	var middle := center + Vector3.UP * half.y
+	walls.append(_add_wall(middle + Vector3(half.x + 0.15, 0.0, 0.0), Vector3(0.3, inside.y, inside.z + 0.6), false))
+	walls.append(_add_wall(middle - Vector3(half.x + 0.15, 0.0, 0.0), Vector3(0.3, inside.y, inside.z + 0.6), false))
+	walls.append(_add_wall(middle + Vector3(0.0, 0.0, half.z + 0.15), Vector3(inside.x + 0.6, inside.y, 0.3), false))
+	walls.append(_add_wall(middle - Vector3(0.0, 0.0, half.z + 0.15), Vector3(inside.x + 0.6, inside.y, 0.3), false))
+	if roofed:
+		walls.append(_add_wall(center + Vector3.UP * (inside.y + 0.15), Vector3(inside.x + 0.6, 0.3, inside.z + 0.6), false))
+	return walls
 
 
 ## A wall of the map's layer at [param center], [param size] big: a box, or a trimesh (as a

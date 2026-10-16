@@ -13,7 +13,9 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 
 - **Task 3, muffling through walls** (D-192): rays from the sound to the camera count walls and metres of wall (from both ends), a bent path finds corners; three low-pass buses (MuffledLight, Muffled, MuffledHeavy) and a loss in dB, shared out per category. 15–17 µs per sound on the quick maps. `sound_test` +2 checks on walls it builds (a box and a trimesh).
 
-**Next:** reverb indoors and outdoors (task 4).
+- **Task 4, reverb by zone** (D-193): an `Acoustics` node in the game scene probes the camera's surroundings with 13 rays four times a second, names the zone (open, yard, room, hall) and glides the Effects reverb to its preset; no map edits. The quick maps come out as yards with some rooms. `sound_test` +3 checks.
+
+**Next:** the mix pass (task 5).
 
 ## 2026-10-16 — M12 share
 

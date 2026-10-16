@@ -119,6 +119,8 @@ func _ready() -> void:
 	# The class menu and the buy menu show only the dimmed world (mockups 08 and 14): the HUD steps aside while one is open.
 	_class_menu.visibility_changed.connect(_update_hud_visibility)
 	_buy_menu.visibility_changed.connect(_update_hud_visibility)
+	# The reverb follows the listener's place: open yard, walled yard, room or hall (M13, D-193).
+	_viewport.add_child(Acoustics.new())
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()

@@ -93,6 +93,18 @@ const FAR_FROM := 15.0
 const FAR_TO := 40.0
 const CLOSE_AT_FAR_DB := -9.0
 
+## The listener's zones (D-193) and the Effects bus's reverb in each: an open yard (almost dry,
+## a faint late slap), a yard between walls (a short slap echo), a small room (short and close)
+## and a hall (bigger and longer). Kept light: you must still hear every step (D-038). The keys
+## are [AudioEffectReverb]'s properties; dry stays 1.
+enum Zone { OPEN, YARD, ROOM, HALL }
+const REVERB := {
+	Zone.OPEN: {"room_size": 0.15, "damping": 0.8, "wet": 0.03, "predelay_msec": 70.0, "predelay_feedback": 0.1, "hipass": 0.35},
+	Zone.YARD: {"room_size": 0.35, "damping": 0.6, "wet": 0.09, "predelay_msec": 45.0, "predelay_feedback": 0.3, "hipass": 0.3},
+	Zone.ROOM: {"room_size": 0.3, "damping": 0.5, "wet": 0.15, "predelay_msec": 12.0, "predelay_feedback": 0.0, "hipass": 0.2},
+	Zone.HALL: {"room_size": 0.7, "damping": 0.35, "wet": 0.2, "predelay_msec": 25.0, "predelay_feedback": 0.1, "hipass": 0.2},
+}
+
 ## How strongly 3D sounds pan between the ears: this times the project's
 ## [code]audio/general/3d_panning_strength[/code] (0.5), so 0.8. Godot's 0.5 leaves a sound
 ## at your side only 6 dB louder in the near ear; 0.8 makes it 14 dB, so you hear which side
