@@ -30,9 +30,13 @@ extends Node
 ## only while the key is held in a match, follows the match, hides while the
 ## console is open or the match is over, never takes the mouse, scales, copes
 ## with a replaced or missing round manager), and the match-end screen that uses
-## the same table. Quits with the number of failed checks as the exit code (0
-## means everything passed).
+## the same table. The HUD's look (M10, D-133) is checked against the design
+## tokens: every label's size, outline and colour, the spacing, the boxes, the
+## squares and the timer's state colours, at scale 1.0 and exactly 1.5. Quits
+## with the number of failed checks as the exit code (0 means everything passed).
 
+## The design tokens the theme is built from; the HUD checks compare with them, not with numbers.
+const Tokens := preload("res://tools/ui_palette.gd")
 const MAP_SCENE := preload("res://maps/test_map.tscn")
 const HUD_SCENE := preload("res://ui/hud.tscn")
 const TABLE_SCENE := preload("res://ui/scoreboard_table.tscn")
@@ -428,6 +432,8 @@ func _test_round_hud() -> void:
 	await _test_hud_banners()
 	await _test_hud_match_point()
 	await _test_hud_wiring()
+	_test_hud_look()
+	await _test_hud_states()
 
 
 ## Timer, countdown, side line, score, players alive and the kill feed's lines,
@@ -672,6 +678,165 @@ func _test_hud_wiring() -> void:
 					KillFeed.LINE_LIFETIME * 0.5, early, KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME * 0.5, fading,
 					KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME + 0.2, feed.get_line_count()])
 	_free_hud(hud)
+
+## The HUD's look comes from the theme (M10, D-133): a HUD with no match has, for
+## every label, the size, outline and colour of its role's tokens, the spacing and
+## boxes of the top bar, the bomb's bar and the state colours; scaled by 1.5 every
+## size and spacing is exactly 1.5 times as big (UiScale), and back at 1.0 it is
+## the same again.
+func _test_hud_look() -> void:
+	var hud := HUD_SCENE.instantiate()
+	add_child(hud)
+	var labels := {
+		"WeaponLabel": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_TEXT],
+		"AmmoLabel": [Tokens.HUD_SIZE_VALUE, Tokens.HUD_OUTLINE_VALUE, Tokens.HUD_TEXT],
+		"HealthLabel": [Tokens.HUD_SIZE_VALUE, Tokens.HUD_OUTLINE_VALUE, Tokens.HUD_TEXT],
+		"DeathLabel": [Tokens.HUD_SIZE_HEADLINE, Tokens.HUD_OUTLINE_HEADLINE, Tokens.HUD_ALERT],
+		"SpectateLabel": [Tokens.HUD_SIZE_SPECTATE, Tokens.HUD_OUTLINE_SPECTATE, Tokens.HUD_TEXT],
+		"RoundHud/TopBar/YourBox/Margin/Content/Score": [Tokens.HUD_SIZE_SCORE, Tokens.HUD_OUTLINE_SCORE, Tokens.HUD_TEXT],
+		"RoundHud/TopBar/EnemyBox/Margin/Content/Score": [Tokens.HUD_SIZE_SCORE, Tokens.HUD_OUTLINE_SCORE, Tokens.HUD_TEXT],
+		"RoundHud/TopBar/TimerBox/Margin/Content/Timer": [Tokens.HUD_SIZE_SCORE, Tokens.HUD_OUTLINE_SCORE, Tokens.HUD_TEXT_BRIGHT],
+		"RoundHud/TopBar/TimerBox/Margin/Content/RoundLabel": [Tokens.HUD_SIZE_SMALL, Tokens.HUD_OUTLINE_SCORE, Tokens.HUD_TEXT_DIM],
+		"RoundHud/Center/Title": [Tokens.HUD_SIZE_TITLE, Tokens.HUD_OUTLINE_TITLE, Tokens.HUD_TEXT_BRIGHT],
+		"RoundHud/Center/Line1": [Tokens.HUD_SIZE_HEADLINE, Tokens.HUD_OUTLINE_HEADLINE, Tokens.HUD_TEXT_BRIGHT],
+		"RoundHud/Center/Line2": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_TEXT_BRIGHT],
+		"RoundHud/Center/Line3": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_TEXT_BRIGHT],
+		"RoundHud/Respawn": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_TEXT_BRIGHT],
+		"BombHud/CarryLabel": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_GOLD],
+		"BombHud/Prompt": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_TEXT],
+		"BombHud/Message": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_OUTLINE_TEXT, Tokens.HUD_GOLD],
+	}
+	var wrong_at_1: Array[String] = []
+	var wrong_at_1_5: Array[String] = []
+	var wrong_back: Array[String] = []
+	for path: String in labels:
+		var want: Array = labels[path]
+		var label := hud.get_node(path) as Label
+		if not _label_looks_like(label, want[0], want[1], want[2], 1.0):
+			wrong_at_1.append(path)
+	hud.call("set_ui_scale", 1.5)
+	for path: String in labels:
+		var want: Array = labels[path]
+		if not _label_looks_like(hud.get_node(path) as Label, want[0], want[1], want[2], 1.5):
+			wrong_at_1_5.append(path)
+	hud.call("set_ui_scale", 1.0)
+	for path: String in labels:
+		var want: Array = labels[path]
+		if not _label_looks_like(hud.get_node(path) as Label, want[0], want[1], want[2], 1.0):
+			wrong_back.append(path)
+	_check("Every one of the HUD's %d labels takes its size, outline and colour from its role's tokens at 1.0, sizes and outlines are exactly 1.5 times as big after set_ui_scale(1.5), and the same again at 1.0" % labels.size(),
+			wrong_at_1.is_empty() and wrong_at_1_5.is_empty() and wrong_back.is_empty(),
+			"wrong at 1.0: %s, at 1.5: %s, back at 1.0: %s" % [wrong_at_1, wrong_at_1_5, wrong_back])
+
+	# Spacing: the top bar, its boxes and the centre messages, scaled the same way.
+	var spacing := {
+		"RoundHud/TopBar": [&"separation", Tokens.HUD_BAR_GAP],
+		"RoundHud/TopBar/YourBox/Margin": [&"margin_left", Tokens.HUD_BOX_PAD_X],
+		"RoundHud/TopBar/TimerBox/Margin": [&"margin_top", Tokens.HUD_BOX_PAD_TOP],
+		"RoundHud/TopBar/EnemyBox/Margin": [&"margin_bottom", Tokens.HUD_BOX_PAD_BOTTOM],
+		"RoundHud/TopBar/YourBox/Margin/Content": [&"separation", Tokens.HUD_BOX_GAP],
+		"RoundHud/TopBar/EnemyBox/Margin/Content/Pips": [&"separation", Tokens.HUD_PIP_GAP],
+		"RoundHud/Center": [&"separation", Tokens.HUD_MESSAGE_GAP],
+		"RoundHud/KillFeed": [&"separation", Tokens.HUD_FEED_GAP],
+	}
+	var wrong_spacing: Array[String] = []
+	for factor: float in [1.0, 1.5]:
+		hud.call("set_ui_scale", factor)
+		for path: String in spacing:
+			var control := hud.get_node(path) as Control
+			var item: Array = spacing[path]
+			if control.get_theme_constant(item[0]) != roundi(int(item[1]) * factor):
+				wrong_spacing.append("%s at %s: %d" % [path, factor, control.get_theme_constant(item[0])])
+	hud.call("set_ui_scale", 1.0)
+	_check("The top bar, its boxes, the centre messages and the kill feed take their spacing from the tokens, exactly 1.5 times as big at scale 1.5",
+			wrong_spacing.is_empty(), "wrong: %s" % [wrong_spacing])
+
+	# The boxes: each team's colour from Teams, darkened and a little see-through; the timer's own.
+	var your_box := (hud.get_node("RoundHud/TopBar/YourBox") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	var enemy_box := (hud.get_node("RoundHud/TopBar/EnemyBox") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	var timer_box := (hud.get_node("RoundHud/TopBar/TimerBox") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The top bar's boxes: your box is the friendly colour and the enemy's the enemy colour (from Teams), darkened by the token and at its opacity, the timer's box its own colour, none with a border",
+			your_box.bg_color == Color(Teams.FRIENDLY_COLOR.darkened(Tokens.HUD_SCORE_BOX_DARKEN), Tokens.HUD_SCORE_BOX_ALPHA)
+					and enemy_box.bg_color == Color(Teams.ENEMY_COLOR.darkened(Tokens.HUD_SCORE_BOX_DARKEN), Tokens.HUD_SCORE_BOX_ALPHA)
+					and timer_box.bg_color == Tokens.HUD_TIMER_BOX
+					and your_box.border_width_left == 0 and enemy_box.border_width_top == 0 and timer_box.border_width_right == 0,
+			"yours %s, theirs %s, timer %s" % [your_box.bg_color, enemy_box.bg_color, timer_box.bg_color])
+
+	# The bomb's progress bar and the state colours code reads from the theme.
+	var back := (hud.get_node("BombHud/Bar/Back") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	var fill := (hud.get_node("BombHud/Bar/Fill") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	var round_hud := _round_hud(hud)
+	_check("The bomb's progress bar takes its colours from the theme (the strip behind, the gold fill), and the theme's Hud type holds the state colours and the square's size",
+			back.bg_color == Tokens.HUD_BAR_BACK and fill.bg_color == Tokens.HUD_BAR_FILL
+					and round_hud.get_theme_color("freeze_timer", "Hud") == Tokens.HUD_FREEZE_TIMER and round_hud.get_theme_color("alert", "Hud") == Tokens.HUD_ALERT
+					and round_hud.get_theme_color("notice", "Hud") == Tokens.HUD_NOTICE and round_hud.get_theme_color("gold", "Hud") == Tokens.HUD_GOLD
+					and round_hud.get_theme_color("pip_dead", "Hud") == Tokens.HUD_PIP_DEAD and round_hud.get_theme_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE,
+			"strip %s, fill %s, pip size %d" % [back.bg_color, fill.bg_color, round_hud.get_theme_constant("pip_size", "Hud")])
+	_free_hud(hud)
+
+
+## True if [param label] has the size [param size] and outline [param outline] (both
+## times [param factor], rounded as UiScale rounds), a black outline colour and [param color].
+func _label_looks_like(label: Label, size: int, outline: int, color: Color, factor: float) -> bool:
+	return label.get_theme_font_size("font_size") == roundi(size * factor) \
+			and label.get_theme_constant("outline_size") == roundi(outline * factor) \
+			and label.get_theme_color("font_color") == color \
+			and label.get_theme_color("font_outline_color") == Tokens.HUD_OUTLINE
+
+
+## The HUD's game-state colours and squares in a real match: the timer is the
+## freeze colour in freeze time, its usual colour in the live round, the alert
+## colour in the last 10 seconds; a team's squares are its colour while alive and
+## the dead colour after; the squares have the token's size, 1.5 times as big
+## at scale 1.5; the notices ("Switching sides") use the notice colour.
+func _test_hud_states() -> void:
+	await _new_match(2, HUD_ROUND_TIME)
+	_hold_bots()
+	var hud := _new_hud()
+	await _wait_ticks(2)
+	var timer := hud.get_node("RoundHud/TopBar/TimerBox/Margin/Content/Timer") as Label
+	var freeze_color := timer.get_theme_color("font_color")
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	await _wait_ticks(2)
+	var live_color := timer.get_theme_color("font_color")
+	_rounds.time_left = RoundHud.LOW_TIME - 1.0
+	await _wait_ticks(2)
+	var low_color := timer.get_theme_color("font_color")
+	_check("The timer's colour is a game state read from the theme: the freeze colour in freeze time, its usual bright text in the live round, the alert colour in the last %d seconds" % roundi(RoundHud.LOW_TIME),
+			freeze_color == Tokens.HUD_FREEZE_TIMER and live_color == Tokens.HUD_TEXT_BRIGHT and low_color == Tokens.HUD_ALERT,
+			"freeze %s, live %s, low time %s" % [freeze_color, live_color, low_color])
+	var enemies := _rounds.get_members(1)
+	enemies[0].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(2)
+	var pips := hud.get_node("RoundHud/TopBar/EnemyBox/Margin/Content/Pips")
+	var yours := hud.get_node("RoundHud/TopBar/YourBox/Margin/Content/Pips")
+	var enemy_pips: Array[Color] = []
+	for pip in pips.get_children():
+		enemy_pips.append((pip as ColorRect).color)
+	var lit_enemy := Teams.text_color_for(Teams.other(Teams.viewer_team))
+	var lit_yours := Teams.text_color_for(Teams.viewer_team)
+	_check("The squares: a living player's is the team's colour (relative to you), a dead player's the theme's dead colour; one square per player",
+			pips.get_child_count() == 3 and enemy_pips.count(Tokens.HUD_PIP_DEAD) == 1 and enemy_pips.count(lit_enemy) == 2
+					and yours.get_children().all(func(pip: Node) -> bool: return (pip as ColorRect).color == lit_yours),
+			"enemy squares %s" % [enemy_pips])
+	var size_at_1 := (pips.get_child(0) as Control).custom_minimum_size
+	hud.call("set_ui_scale", 1.5)
+	var size_at_1_5 := (pips.get_child(0) as Control).custom_minimum_size
+	hud.call("set_ui_scale", 1.0)
+	_check("A square has the token's size (HUD_PIP_SIZE), exactly 1.5 times as big at scale 1.5",
+			size_at_1 == Vector2(Tokens.HUD_PIP_SIZE, Tokens.HUD_PIP_SIZE) and size_at_1_5 == Vector2(Tokens.HUD_PIP_SIZE, Tokens.HUD_PIP_SIZE) * 1.5,
+			"%s at 1.0, %s at 1.5" % [size_at_1, size_at_1_5])
+	# Half time: the "Switching sides" title is in the notice colour (round 1 won by killing the rest).
+	enemies[1].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	enemies[2].take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_for_phase(RoundManager.Phase.ROUND_END)
+	await _wait_for_phase(RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	_check("'Switching sides' (the notice at half time) is drawn in the theme's notice colour",
+			_center(hud)[0] == "Switching sides" and _center_color(hud, "Title") == Tokens.HUD_NOTICE,
+			"center %s, title colour %s" % [_center(hud), _center_color(hud, "Title")])
+	_free_hud(hud)
+
 
 ## The scoreboard (task 7): the input action, the table of both teams, the
 ## hold-Tab overlay, and the match-end screen that now uses the same table.

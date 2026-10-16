@@ -11,7 +11,11 @@ extends Node
 ## with full health at a respawn point, the choice of respawn point (away from
 ## the enemies and out of their sight), the kill limit, the time limit with a
 ## leader, overtime on a tie, the HUD's texts, and that the main scene runs the
-## mode from the match settings with spectating off. Then bots-only matches
+## mode from the match settings with spectating off. The respawn countdown (M10,
+## D-133) is checked through the real main scene: after you die in a team respawn
+## match the round HUD says "Respawning in 3" and counts down to your return,
+## and hides it when the round ends; practice still says "Respawning..." in the
+## death message, and a rounds match has no countdown. Then bots-only matches
 ## check the bots' hunting (D-083): groups of about two, followers staying with
 ## their leader, sightings answered by the groups near them only, and groups
 ## coming back together after a respawn. Quits with the number of failed checks
@@ -21,6 +25,8 @@ const MAP_SCENE := preload("res://maps/depot.tscn")
 const HUD_SCENE := preload("res://ui/hud.tscn")
 const SCOREBOARD_SCENE := preload("res://ui/scoreboard.tscn")
 const MAIN_SCENE := preload("res://main.tscn")
+## The practice check plays the test map's bot arena.
+const PRACTICE_MAP_SCENE := preload("res://maps/test_map.tscn")
 const KILL_LIMIT := 5
 const TIME_LIMIT := 20.0
 const RESPAWN_DELAY := 1.0
@@ -43,6 +49,7 @@ func _ready() -> void:
 	await _test_time_limit()
 	await _test_overtime()
 	await _test_main_scene()
+	await _test_respawn_countdown()
 	await _test_hunting_groups()
 	await _test_sightings()
 	_free_match()
@@ -171,7 +178,8 @@ func _test_overtime() -> void:
 
 
 ## The main scene plays a team respawn match when the match settings say so,
-## without spectating and with the "Respawning..." hint.
+## without spectating, and without the practice mode's "Respawning..." hint
+## (the round HUD counts the seconds instead).
 func _test_main_scene() -> void:
 	_free_match()
 	var main := MAIN_SCENE.instantiate()
@@ -190,12 +198,102 @@ func _test_main_scene() -> void:
 			_silence(member)
 	var controller := map.get_node("Player/PlayerController") as PlayerController
 	var hud := main.get_node("HUD")
-	_check("The main scene runs team respawn from the match settings, with no spectating and the respawn hint",
+	_check("The main scene runs team respawn from the match settings, with no spectating and without the practice hint (the countdown is in the round HUD)",
 			rules != null and map.get_node_or_null("RoundManager") == null and not controller.spectating_enabled
-			and hud.get("respawn_hint") == true,
+			and hud.get("respawn_hint") == false,
 			"rules %s, spectating %s, respawn hint %s" % [rules, controller.spectating_enabled, hud.get("respawn_hint")])
 	remove_child(main)
 	main.queue_free()
+
+
+## The respawn countdown (M10, D-133) in the real main scene: team respawn says
+## "Respawning in 3" (the default delay) under "Killed by ...", counts down to 2
+## and 1 and is gone after the respawn; it is hidden at the round end and the match
+## end while you are still dead; practice keeps "Respawning..." in the death
+## message and shows no countdown; a rounds match has none either.
+func _test_respawn_countdown() -> void:
+	var settings := MatchSettings.new()
+	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	settings.freeze_time = 0.3
+	settings.round_end_time = 0.5
+	settings.kill_limit = 2
+	var main := await _new_main(settings)
+	var rules := main.call("get_map").get_node("RespawnMatch") as RespawnMatch
+	var player := main.call("get_map").get_node("Player") as Character
+	var round_hud := main.get_node("HUD/RoundHud") as RoundHud
+	var death := main.get_node("HUD/DeathLabel") as Label
+	await _go_live_in(rules)
+	var enemies := rules.get_members(1)
+	var mate := rules.get_members(0).filter(func(member: Character) -> bool: return member != player)[0] as Character
+	_check("Alive in a live team respawn match: no countdown", round_hud.get_respawn_text() == "" and _is_default_delay(rules),
+			"text '%s', delay %.1f s" % [round_hud.get_respawn_text(), rules.settings.respawn_delay])
+	player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[0])
+	await _wait_ticks(2)
+	_check("You die in a team respawn match: the death message says who killed you, and under it the round HUD says 'Respawning in 3'",
+			round_hud.get_respawn_text() == "Respawning in 3" and death.visible and death.text == "Killed by %s" % enemies[0].name,
+			"countdown '%s', death message '%s' (visible %s)" % [round_hud.get_respawn_text(), death.text, death.visible])
+	await _wait_seconds(1.0)
+	var after_one := round_hud.get_respawn_text()
+	await _wait_seconds(1.0)
+	var after_two := round_hud.get_respawn_text()
+	_check("The countdown follows the manager's clock, the seconds rounded up: 3, then 2 a second later, then 1",
+			after_one == "Respawning in 2" and after_two == "Respawning in 1",
+			"after 1 s '%s', after 2 s '%s' (manager says %.2f s left)" % [after_one, after_two, rules.get_respawn_time_left(player)])
+	await _wait_seconds(1.2)
+	_check("After the respawn the countdown and the death message are gone, and you are alive again",
+			player.is_alive() and round_hud.get_respawn_text() == "" and not death.visible,
+			"alive %s, countdown '%s', death message visible %s" % [player.is_alive(), round_hud.get_respawn_text(), death.visible])
+	# The deciding kill while you are dead: first to 2 kills. You die with no killer (no point for
+	# anyone), then your teammate kills two enemies (2 for your team).
+	player.take_damage(500.0, Hitbox.Zone.CHEST, null)
+	await _wait_ticks(2)
+	var counting := round_hud.get_respawn_text() == "Respawning in 3"
+	enemies[0].take_damage(500.0, Hitbox.Zone.CHEST, mate)
+	enemies[1].take_damage(500.0, Hitbox.Zone.CHEST, mate)
+	await _wait_ticks(3)
+	_check("The round end hides the countdown at once, although the manager still has you waiting",
+			counting and rules.phase == RoundManager.Phase.ROUND_END and rules.get_respawn_time_left(player) > 0.0
+			and round_hud.get_respawn_text() == "",
+			"counting before %s, phase %s, manager %.2f s, countdown '%s'" % [counting, RoundManager.Phase.keys()[rules.phase],
+					rules.get_respawn_time_left(player), round_hud.get_respawn_text()])
+	await _wait_seconds(0.7)
+	_check("At the match end there is no countdown either",
+			rules.phase == RoundManager.Phase.MATCH_END and round_hud.get_respawn_text() == "",
+			"phase %s, countdown '%s'" % [RoundManager.Phase.keys()[rules.phase], round_hud.get_respawn_text()])
+	_remove_main(main)
+
+	# Practice: the arena brings you back, and the death message still says so; the round HUD is not shown.
+	var practice_settings := MatchSettings.new()
+	main = await _new_main(practice_settings, true, PRACTICE_MAP_SCENE)
+	var arena := main.call("get_map").get_node("ArenaRules") as ArenaRules
+	player = main.call("get_map").get_node("Player") as Character
+	for bot in arena.get_bots():
+		bot.frozen = true
+	round_hud = main.get_node("HUD/RoundHud") as RoundHud
+	death = main.get_node("HUD/DeathLabel") as Label
+	player.take_damage(500.0, Hitbox.Zone.CHEST, arena.get_bots()[0])
+	await _wait_ticks(3)
+	_check("Practice: the death message still says 'Respawning...' under who killed you, and there is no countdown",
+			death.visible and death.text == "Killed by %s\nRespawning..." % arena.get_bots()[0].name and round_hud.get_respawn_text() == ""
+			and not round_hud.visible and main.get_node("HUD").get("respawn_hint") == true,
+			"death message '%s', countdown '%s', round HUD visible %s" % [death.text, round_hud.get_respawn_text(), round_hud.visible])
+	_remove_main(main)
+
+	# A rounds match: the dead wait for the next round, so no countdown and no "Respawning" anywhere.
+	var rounds_settings := MatchSettings.new()
+	rounds_settings.freeze_time = 0.3
+	main = await _new_main(rounds_settings)
+	var round_rules := main.call("get_map").get_node("RoundManager") as RoundManager
+	player = main.call("get_map").get_node("Player") as Character
+	round_hud = main.get_node("HUD/RoundHud") as RoundHud
+	death = main.get_node("HUD/DeathLabel") as Label
+	await _go_live_in(round_rules)
+	player.take_damage(500.0, Hitbox.Zone.CHEST, round_rules.get_members(1)[0])
+	await _wait_ticks(3)
+	_check("A rounds match: no countdown and no 'Respawning' text after you die (the dead wait for the next round)",
+			round_hud.get_respawn_text() == "" and not death.text.contains("Respawning") and main.get_node("HUD").get("respawn_hint") == false,
+			"countdown '%s', death message '%s', hint %s" % [round_hud.get_respawn_text(), death.text, main.get_node("HUD").get("respawn_hint")])
+	_remove_main(main)
 
 
 # --- Bots hunting ---
@@ -261,6 +359,48 @@ func _test_sightings() -> void:
 
 
 # --- Helpers ---
+
+
+## The real main scene with [param settings] on Depot (or [param map_scene]), in practice with
+## [param practice]; the class menu is closed and everyone is silenced, so only the test acts.
+func _new_main(settings: MatchSettings, practice: bool = false, map_scene: PackedScene = MAP_SCENE) -> Node:
+	_free_match()
+	var main := MAIN_SCENE.instantiate()
+	# Never read or write the player's settings file.
+	main.set("load_settings", false)
+	main.set("map_scene", map_scene)
+	main.set("match_settings", settings)
+	if practice:
+		main.set("mode", 1)
+	add_child(main)
+	await _wait_ticks(3)
+	(main.get_node("ClassMenu") as ClassMenu).close()
+	for character: Character in main.call("get_map").find_children("*", "Character", true, false):
+		_silence(character)
+	return main
+
+
+func _remove_main(main: Node) -> void:
+	remove_child(main)
+	main.queue_free()
+	MenuState.reset()
+
+
+## Waits for the live phase of [param rules], then freezes every bot so none moves or shoots.
+func _go_live_in(rules: RoundManager) -> void:
+	var ticks := 0
+	while rules.phase != RoundManager.Phase.LIVE and ticks < 128 * 5:
+		await get_tree().physics_frame
+		ticks += 1
+	for member in rules.get_participants():
+		if not member.is_local_player():
+			member.frozen = true
+	await _wait_ticks(2)
+
+
+## True while the match uses MatchSettings' own respawn delay (3 s), not a test value.
+func _is_default_delay(rules: RoundManager) -> bool:
+	return is_equal_approx(rules.settings.respawn_delay, MatchSettings.new().respawn_delay)
 
 
 ## A fresh team respawn match on Depot with the short test rules, a HUD, and

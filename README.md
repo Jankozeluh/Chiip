@@ -77,7 +77,7 @@ To play a different map (also straight into the game, as a match where the map a
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
 | Class menu (opens by itself at the start of a match; during freeze time, any time in practice mode; then click a card or press 1 to 4) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
-| Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
+| Debug overlay (speed, jump peak, inaccuracy, recoil, last hit; hidden at start) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 

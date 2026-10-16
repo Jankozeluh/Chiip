@@ -47,6 +47,7 @@ func _init() -> void:
 	_labels()
 	_panels()
 	_containers()
+	_hud()
 	_console()
 	_buttons()
 	_toggles()
@@ -206,6 +207,84 @@ func _containers() -> void:
 	_constants("SwatchRow", {"separation": Palette.SWATCH_GAP})
 	_variation("SwatchMargin", "MarginContainer")
 	_margins("SwatchMargin", Palette.SWATCH_MARGIN, Palette.SWATCH_MARGIN)
+
+
+## The HUD's roles (D-133): the labels of the weapon, health and ammo, the death
+## and spectate messages, the top bar and the centre messages, the bomb's text,
+## the top bar's boxes and spacing, and the bomb's progress bar. The HUD is scaled
+## by [UiScale], which reads the sizes and spacing these roles give a control and
+## scales them, so a role's numbers are for a 720-pixel-tall window like the rest.
+## The custom type "Hud" holds what code reads: the colours of game states (the
+## timer in freeze time and in the last seconds, a notice, the bomb's gold, a dead
+## player's square) and the size of a player's square, so a screen asks
+## get_theme_color("alert", "Hud") instead of keeping a colour of its own.
+func _hud() -> void:
+	_colors("Hud", {
+		"freeze_timer": Palette.HUD_FREEZE_TIMER, "alert": Palette.HUD_ALERT, "notice": Palette.HUD_NOTICE,
+		"gold": Palette.HUD_GOLD, "pip_dead": Palette.HUD_PIP_DEAD,
+	})
+	_constants("Hud", {"pip_size": Palette.HUD_PIP_SIZE})
+	# Bottom corners: the weapon name, and health and ammo. The death and spectate lines.
+	_hud_label("HudWeaponLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT)
+	_hud_label("HudValueLabel", Palette.HUD_SIZE_VALUE, Palette.HUD_OUTLINE_VALUE, Palette.HUD_TEXT)
+	_hud_label("HudDeathLabel", Palette.HUD_SIZE_HEADLINE, Palette.HUD_OUTLINE_HEADLINE, Palette.HUD_ALERT)
+	_hud_label("HudSpectateLabel", Palette.HUD_SIZE_SPECTATE, Palette.HUD_OUTLINE_SPECTATE, Palette.HUD_TEXT)
+	# Under the death message in a respawning match: "Respawning in 3".
+	_hud_label("HudRespawnLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT_BRIGHT)
+	# The top bar: scores, the timer (game states recolour it) and the line under it.
+	_hud_label("HudScoreLabel", Palette.HUD_SIZE_SCORE, Palette.HUD_OUTLINE_SCORE, Palette.HUD_TEXT)
+	_hud_label("HudTimerLabel", Palette.HUD_SIZE_SCORE, Palette.HUD_OUTLINE_SCORE, Palette.HUD_TEXT_BRIGHT)
+	_hud_label("HudRoundLabel", Palette.HUD_SIZE_SMALL, Palette.HUD_OUTLINE_SCORE, Palette.HUD_TEXT_DIM)
+	# The centre messages: the title, the main line, and the lower lines.
+	_hud_label("HudTitleLabel", Palette.HUD_SIZE_TITLE, Palette.HUD_OUTLINE_TITLE, Palette.HUD_TEXT_BRIGHT)
+	_hud_label("HudLineLabel", Palette.HUD_SIZE_HEADLINE, Palette.HUD_OUTLINE_HEADLINE, Palette.HUD_TEXT_BRIGHT)
+	_hud_label("HudNoteLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT_BRIGHT)
+	# The bomb: its tag, the prompt under the crosshair and the message under the top bar.
+	_hud_label("HudBombTagLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_GOLD)
+	_hud_label("HudPromptLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT)
+	_hud_label("HudBombMessageLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_GOLD)
+	# The top bar: its spacing, the boxes (each team's colour comes from Teams, darkened) and what is inside them.
+	_variation("HudTopBar", "HBoxContainer")
+	_constants("HudTopBar", {"separation": Palette.HUD_BAR_GAP})
+	_variation("HudFriendlyBox", "PanelContainer")
+	_styles("HudFriendlyBox", {"panel": _box("hud_friendly_box", _team_box(Teams.FRIENDLY_COLOR))})
+	_variation("HudEnemyBox", "PanelContainer")
+	_styles("HudEnemyBox", {"panel": _box("hud_enemy_box", _team_box(Teams.ENEMY_COLOR))})
+	_variation("HudTimerBox", "PanelContainer")
+	_styles("HudTimerBox", {"panel": _box("hud_timer_box", Palette.HUD_TIMER_BOX)})
+	_variation("HudBoxMargin", "MarginContainer")
+	_constants("HudBoxMargin", {
+		"margin_left": Palette.HUD_BOX_PAD_X, "margin_top": Palette.HUD_BOX_PAD_TOP,
+		"margin_right": Palette.HUD_BOX_PAD_X, "margin_bottom": Palette.HUD_BOX_PAD_BOTTOM,
+	})
+	_variation("HudBoxContent", "VBoxContainer")
+	_constants("HudBoxContent", {"separation": Palette.HUD_BOX_GAP})
+	_variation("HudPips", "HBoxContainer")
+	_constants("HudPips", {"separation": Palette.HUD_PIP_GAP})
+	# The centre messages' lines, and the kill feed's.
+	_variation("HudMessages", "VBoxContainer")
+	_constants("HudMessages", {"separation": Palette.HUD_MESSAGE_GAP})
+	_variation("HudKillFeed", "VBoxContainer")
+	_constants("HudKillFeed", {"separation": Palette.HUD_FEED_GAP})
+	# The bomb's progress bar: a strip and the fill on it (both plain Panels with one flat colour).
+	_variation("HudBarBack", "Panel")
+	_styles("HudBarBack", {"panel": _box("hud_bar_back", Palette.HUD_BAR_BACK)})
+	_variation("HudBarFill", "Panel")
+	_styles("HudBarFill", {"panel": _box("hud_bar_fill", Palette.HUD_BAR_FILL)})
+
+
+## A HUD text role: a [Label] with a size, an outline width (the outline is
+## [constant Palette.HUD_OUTLINE]) and a colour.
+func _hud_label(role: String, size: int, outline: int, color: Color) -> void:
+	_variation(role, "Label")
+	_font_sizes(role, {"font_size": size})
+	_colors(role, {"font_color": color, "font_outline_color": Palette.HUD_OUTLINE})
+	_constants(role, {"outline_size": outline})
+
+
+## A team's colour as the top bar's score box shows it: darkened, a little see-through.
+func _team_box(color: Color) -> Color:
+	return Color(color.darkened(Palette.HUD_SCORE_BOX_DARKEN), Palette.HUD_SCORE_BOX_ALPHA)
 
 
 ## The developer console's text is monospace, so its columns line up. A system

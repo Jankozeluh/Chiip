@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## On-screen readout of the player's movement and weapon, like CS's cl_showpos.
-## Toggle it with F3 (the toggle_debug action).
+## It starts hidden (a first look at the game shows the game, D-133); F3 (the
+## toggle_debug action) shows and hides it. While hidden it does no work.
 
 ## The player to show information about. Set by the main scene.
 var player: Character

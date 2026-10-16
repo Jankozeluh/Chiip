@@ -3,7 +3,8 @@ extends SceneTree
 ## (the main menu over its flight, match setup, the settings menu, and a real
 ## match on Depot: class menu, HUD in freeze time and in a live round with kills,
 ## the Tab scoreboard, the pause menu, the console and the match-end screen, then
-## a Team Deathmatch HUD on Square), for judging the look before and after a
+## a Team Deathmatch HUD on Square and the same after you die, with the respawn
+## countdown), for judging the look before and after a
 ## change (M10). Run with a window (rendering needs one):
 ##
 ##     Godot --path . --resolution 1280x720 --quit-after 20000 --script res://tools/ui_screenshots.gd -- --out <folder>
@@ -157,6 +158,10 @@ func _respawn_shots() -> void:
 	enemies[0].take_damage(500.0, Hitbox.Zone.HEAD, player)
 	await _frames(30)
 	await _shot("hud_team_deathmatch")
+	# You die: "Killed by ..." with the respawn countdown under it.
+	player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[1])
+	await _frames(30)
+	await _shot("hud_respawn_countdown")
 	await _stop_game(main)
 
 

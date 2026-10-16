@@ -214,7 +214,9 @@ func _spawn_map(scene: PackedScene) -> void:
 	_hud.set_player(player)
 	# Practice and team respawn bring you back; in rounds the dead watch a teammate instead.
 	var respawning := rules is ArenaRules or rules is RespawnMatch
-	_hud.respawn_hint = respawning
+	# Only practice says "Respawning..." in the death message: a team respawn match counts
+	# the seconds in the round HUD ("Respawning in 3"), and in rounds the dead wait for the next one.
+	_hud.respawn_hint = rules is ArenaRules
 	_pause_menu.set_leave_text("Leave match" if rules is RoundManager else ("Leave practice" if rules is ArenaRules else "Leave"))
 	_set_up_spectating(player, rules is RoundManager and not respawning)
 	_debug_overlay.player = player

@@ -24,6 +24,9 @@ extends Node
 ## D-065) adds checks for the `pause` action on Esc, Esc opening and closing the
 ## menu (and who else takes Esc), the whole game standing still while it is
 ## open, Resume, Settings over it, Leave, and its look and scaling.
+## The HUD (task 6, D-133) takes its look from the theme: the HUD roles exist and
+## carry the tokens, the HUD scenes have no theme override and its scripts no colour
+## literal, and the F3 overlay starts hidden and F3 shows it.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -69,6 +72,21 @@ const VARIATIONS := {
 	"ConsoleLabel": "Label", "ConsoleLineEdit": "LineEdit", "SwatchRow": "HBoxContainer", "SwatchMargin": "MarginContainer",
 	"BackdropPanel": "Panel",
 }
+## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
+const HUD_VARIATIONS := {
+	"HudWeaponLabel": "Label", "HudValueLabel": "Label", "HudDeathLabel": "Label", "HudSpectateLabel": "Label",
+	"HudRespawnLabel": "Label", "HudScoreLabel": "Label", "HudTimerLabel": "Label", "HudRoundLabel": "Label",
+	"HudTitleLabel": "Label", "HudLineLabel": "Label", "HudNoteLabel": "Label", "HudBombTagLabel": "Label",
+	"HudPromptLabel": "Label", "HudBombMessageLabel": "Label",
+	"HudTopBar": "HBoxContainer", "HudPips": "HBoxContainer", "HudBoxContent": "VBoxContainer",
+	"HudMessages": "VBoxContainer", "HudKillFeed": "VBoxContainer", "HudBoxMargin": "MarginContainer",
+	"HudFriendlyBox": "PanelContainer", "HudEnemyBox": "PanelContainer", "HudTimerBox": "PanelContainer",
+	"HudBarBack": "Panel", "HudBarFill": "Panel",
+}
+## The HUD's scenes and scripts that must take everything from the theme (hud.gd and kill_feed.gd
+## are not in the list: they still carry their own colours until the HUD work on the M7 branch lands).
+const HUD_SCENES: Array[String] = ["res://ui/hud.tscn", "res://ui/round_hud.tscn", "res://ui/bomb_hud.tscn"]
+const HUD_SCRIPTS: Array[String] = ["res://ui/round_hud.gd", "res://ui/bomb_hud.gd"]
 ## The theme overrides a menu must not carry (see [method _override_names]): the names a control's
 ## properties don't list because the built-in theme has no such item for its class, asked for one by one.
 ## Kind (the part Godot puts after "theme_override_") → item names.
@@ -109,6 +127,9 @@ func _ready() -> void:
 	await _test_scoreboard()
 	await _test_match_end_screen()
 	await _test_menus_have_no_overrides()
+	_test_hud_roles()
+	_test_hud_scenes_use_the_theme()
+	await _test_debug_overlay()
 	_test_menu_state()
 	await _test_settings_menu_building()
 	await _test_settings_menu_controls()
@@ -855,6 +876,118 @@ func _test_menus_have_no_overrides() -> void:
 			offenders[screen_name] = found[screen_name]
 	_check("No menu or overlay carries a theme override of its own (colour, font, size, spacing, style or icon): the settings, pause and class menus, the console, the main menu with match setup, the Tab scoreboard and the match-end screen all take their whole look from the theme",
 			offenders.is_empty(), "screens checked: %d, overrides found: %s" % [found.size(), offenders])
+
+
+# --- The HUD (M10 task 6, D-133) ---
+
+
+## The HUD's roles exist on the right base types and carry the tokens: sizes and
+## outlines of the labels, the top bar's boxes (the team colours from Teams, darkened),
+## the spacing, and the custom "Hud" type that code reads the game-state colours from.
+func _test_hud_roles() -> void:
+	var missing: Array[String] = []
+	for variation: String in HUD_VARIATIONS:
+		if _theme.get_type_variation_base(variation) != StringName(HUD_VARIATIONS[variation]):
+			missing.append(variation)
+	_check("All %d HUD roles exist, each on the right base type" % HUD_VARIATIONS.size(), missing.is_empty(),
+			"missing or on another base: %s" % [missing])
+	var holder := Control.new()
+	add_child(holder)
+	var value := _variation_node(Label.new(), "HudValueLabel", holder)
+	var title := _variation_node(Label.new(), "HudTitleLabel", holder)
+	var timer := _variation_node(Label.new(), "HudTimerLabel", holder)
+	var tag := _variation_node(Label.new(), "HudBombTagLabel", holder)
+	_check("The HUD's label roles take their tokens: the health and ammo number is HUD_SIZE_VALUE with its outline, the centre title HUD_SIZE_TITLE, the timer HUD_SIZE_SCORE with no outline, the bomb tag the gold; all outlined in the HUD's outline colour",
+			value.get_theme_font_size("font_size") == Tokens.HUD_SIZE_VALUE and value.get_theme_constant("outline_size") == Tokens.HUD_OUTLINE_VALUE
+					and title.get_theme_font_size("font_size") == Tokens.HUD_SIZE_TITLE and title.get_theme_constant("outline_size") == Tokens.HUD_OUTLINE_TITLE
+					and timer.get_theme_font_size("font_size") == Tokens.HUD_SIZE_SCORE and timer.get_theme_constant("outline_size") == Tokens.HUD_OUTLINE_SCORE
+					and tag.get_theme_color("font_color") == Tokens.HUD_GOLD and value.get_theme_color("font_outline_color") == Tokens.HUD_OUTLINE
+					and value.get_theme_font("font").resource_path == FONT_PATH,
+			"value %d px / %d, title %d px / %d, timer %d px, tag %s" % [value.get_theme_font_size("font_size"), value.get_theme_constant("outline_size"),
+					title.get_theme_font_size("font_size"), title.get_theme_constant("outline_size"), timer.get_theme_font_size("font_size"), tag.get_theme_color("font_color")])
+	var friendly := _variation_node(PanelContainer.new(), "HudFriendlyBox", holder)
+	var enemy := _variation_node(PanelContainer.new(), "HudEnemyBox", holder)
+	var friendly_box := friendly.get_theme_stylebox("panel") as StyleBoxFlat
+	var enemy_box := enemy.get_theme_stylebox("panel") as StyleBoxFlat
+	var margin := _variation_node(MarginContainer.new(), "HudBoxMargin", holder)
+	var bar := _variation_node(HBoxContainer.new(), "HudTopBar", holder)
+	_check("The top bar's roles: the team boxes are Teams' friendly and enemy colours darkened by the token at the token's opacity, the box margin has its four paddings, the bar its spacing",
+			friendly_box.bg_color == Color(Teams.FRIENDLY_COLOR.darkened(Tokens.HUD_SCORE_BOX_DARKEN), Tokens.HUD_SCORE_BOX_ALPHA)
+					and enemy_box.bg_color == Color(Teams.ENEMY_COLOR.darkened(Tokens.HUD_SCORE_BOX_DARKEN), Tokens.HUD_SCORE_BOX_ALPHA)
+					and margin.get_theme_constant("margin_left") == Tokens.HUD_BOX_PAD_X and margin.get_theme_constant("margin_top") == Tokens.HUD_BOX_PAD_TOP
+					and margin.get_theme_constant("margin_right") == Tokens.HUD_BOX_PAD_X and margin.get_theme_constant("margin_bottom") == Tokens.HUD_BOX_PAD_BOTTOM
+					and bar.get_theme_constant("separation") == Tokens.HUD_BAR_GAP,
+			"friendly %s, enemy %s, margin %d / %d, gap %d" % [friendly_box.bg_color, enemy_box.bg_color, margin.get_theme_constant("margin_left"),
+					margin.get_theme_constant("margin_top"), bar.get_theme_constant("separation")])
+	_check("The custom 'Hud' type holds what code reads: the freeze-time timer, the alert, the notice, the bomb's gold, the dead square and the square's size",
+			_theme.get_color("freeze_timer", "Hud") == Tokens.HUD_FREEZE_TIMER and _theme.get_color("alert", "Hud") == Tokens.HUD_ALERT
+					and _theme.get_color("notice", "Hud") == Tokens.HUD_NOTICE and _theme.get_color("gold", "Hud") == Tokens.HUD_GOLD
+					and _theme.get_color("pip_dead", "Hud") == Tokens.HUD_PIP_DEAD and _theme.get_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE,
+			"freeze %s, alert %s, pip size %d" % [_theme.get_color("freeze_timer", "Hud"), _theme.get_color("alert", "Hud"), _theme.get_constant("pip_size", "Hud")])
+	remove_child(holder)
+	holder.queue_free()
+
+
+## The HUD's scenes carry no theme override (their looks are roles) and the two
+## scripts that colour game states hold no colour literal: whatever colour they use
+## comes from the theme or from Teams.
+func _test_hud_scenes_use_the_theme() -> void:
+	var overrides: Array[String] = []
+	for path in HUD_SCENES:
+		var count := _theme_override_count(FileAccess.get_file_as_string(path))
+		if count > 0:
+			overrides.append("%s (%d)" % [path, count])
+	_check("The HUD scenes (hud, round HUD, bomb HUD) have no theme_override_ line: sizes, outlines, colours and spacing are roles",
+			overrides.is_empty(), "scenes with overrides: %s" % [overrides])
+	var literals: Array[String] = []
+	for path in HUD_SCRIPTS:
+		for line in _color_literal_lines(FileAccess.get_file_as_string(path)):
+			literals.append("%s: %s" % [path, line])
+	_check("The round HUD and bomb HUD scripts have no Color( literal: every colour comes from the theme or from Teams",
+			literals.is_empty(), "literals: %s" % [literals])
+	# The scans must see what they look for, or a clean result would mean nothing.
+	var made_up := "[node name=\"A\"]\ntheme_override_font_sizes/font_size = 24\nvar c := Color(1, 0, 0)\n# Color(0, 0, 0) in a comment\nvar d := Color.WHITE"
+	_check("The two scans do find an override line and a colour literal in a made-up source, and skip comments and named colours",
+			_theme_override_count(made_up) == 1 and _color_literal_lines(made_up) == ["var c := Color(1, 0, 0)"],
+			"overrides %d, literals %s" % [_theme_override_count(made_up), _color_literal_lines(made_up)])
+
+
+## How many lines of the scene text [param source] set a theme override.
+func _theme_override_count(source: String) -> int:
+	return source.count("theme_override_")
+
+
+## The lines of the GDScript [param source] that write a colour literal, `Color(...)` (comments and
+## named colours such as `Color.WHITE` don't count).
+func _color_literal_lines(source: String) -> Array[String]:
+	var found: Array[String] = []
+	for line in source.split("\n"):
+		var code := line.strip_edges()
+		if not code.begins_with("#") and code.contains("Color("):
+			found.append(code)
+	return found
+
+
+## The F3 overlay starts hidden (a first look at the game shows the game, D-133); F3
+## (the toggle_debug action) shows it and hides it again.
+func _test_debug_overlay() -> void:
+	MenuState.reset()
+	var main: Node = await _new_game()
+	var overlay := main.get_node("DebugOverlay") as CanvasLayer
+	var hidden_at_first := not overlay.visible
+	_send(_action_event("toggle_debug"))
+	var shown := overlay.visible
+	_send(_action_event("toggle_debug"))
+	var hidden_again := not overlay.visible
+	_check("The F3 overlay starts hidden, F3 shows it and F3 hides it again",
+			hidden_at_first and shown and hidden_again,
+			"hidden at first %s, shown after F3 %s, hidden after F3 again %s" % [hidden_at_first, shown, hidden_again])
+	main.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	Settings.get_instance().reset_to_defaults()
 
 
 # --- The settings menu (D-059) ---

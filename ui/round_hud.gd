@@ -17,24 +17,20 @@ extends Control
 ## A team respawn match ([RespawnMatch], D-082) is one long round: the scores
 ## are kills, "First to 30" replaces the round number, the freeze time says
 ## what wins, the timer shows "OT" in overtime, and the banner after the
-## deciding kill says which team won and why.
+## deciding kill says which team won and why. While you are dead and waiting
+## to come back, "Respawning in 3" counts the seconds under the death message.
+##
+## The look comes from the UI theme (D-133): the scene's controls pick roles
+## (type variations such as [code]HudTimerLabel[/code] and [code]HudFriendlyBox[/code])
+## for sizes, outlines, boxes and spacing, and the colours of game states (the
+## timer in freeze time and in the last seconds, a notice, a dead player's
+## square) and the size of a player's square are read from the theme's custom
+## type "Hud". Nothing here is a colour or a size of its own.
 
-## The timer's color during freeze time.
-const FREEZE_TIMER_COLOR := Color(1.0, 0.85, 0.4)
-## The timer's color in the last [constant LOW_TIME] seconds of a round.
-const LOW_TIME_COLOR := Color(1.0, 0.4, 0.3)
 ## Seconds left at or below which the round timer turns red.
 const LOW_TIME := 10.0
-## A square of a player who is dead.
-const PIP_DEAD_COLOR := Color(0.22, 0.23, 0.26)
-## Side of a player square (at the 720-pixel design height).
-const PIP_SIZE := 12
-## Background of the timer box.
-const TIMER_BOX_COLOR := Color(0.06, 0.07, 0.09, 0.85)
-## Opacity of a score box, and how much its team color is darkened.
-const SCORE_BOX_ALPHA := 0.9
-const SCORE_BOX_DARKEN := 0.55
-const SWITCHING_COLOR := Color(1.0, 0.85, 0.4)
+## The theme type that holds the HUD's state colours and sizes (see tools/make_ui_theme.gd).
+const THEME_TYPE := &"Hud"
 const ATTACK_TEXT := "You attack: push to the far end"
 const DEFEND_TEXT := "You defend: hold your end"
 ## The side lines in bomb rounds; %s is the sites, e.g. "A or B".
@@ -44,34 +40,37 @@ const DEFEND_BOMB_TEXT := "You defend: guard %s"
 const BOMB_TIMER_TEXT := "BOMB"
 ## What the timer shows in a team respawn match's overtime.
 const OVERTIME_TIMER_TEXT := "OT"
+## What the countdown under the death message says; %d is the seconds left.
+const RESPAWN_TEXT := "Respawning in %d"
 
 var _manager: RoundManager
 var _ui_scale: float = 1.0
 ## True from the half-time swap until the next round goes live.
 var _just_swapped: bool = false
-var _timer_color := Color.WHITE
+## The theme colour the timer shows now ("freeze_timer", "alert"), or "" for its usual one.
+var _timer_state: StringName = &""
+## A dead player's square, from the theme (read once; the theme doesn't change while playing).
+var _pip_dead: Color
+## The player at this computer, found among the manager's participants (null until then).
+var _player: Character
 
 @onready var _top_bar: HBoxContainer = $TopBar
-@onready var _your_box: PanelContainer = $TopBar/YourBox
 @onready var _your_score: Label = $TopBar/YourBox/Margin/Content/Score
 @onready var _your_pips: HBoxContainer = $TopBar/YourBox/Margin/Content/Pips
-@onready var _timer_box: PanelContainer = $TopBar/TimerBox
 @onready var _timer: Label = $TopBar/TimerBox/Margin/Content/Timer
 @onready var _round_label: Label = $TopBar/TimerBox/Margin/Content/RoundLabel
-@onready var _enemy_box: PanelContainer = $TopBar/EnemyBox
 @onready var _enemy_score: Label = $TopBar/EnemyBox/Margin/Content/Score
 @onready var _enemy_pips: HBoxContainer = $TopBar/EnemyBox/Margin/Content/Pips
 @onready var _title: Label = $Center/Title
 @onready var _line1: Label = $Center/Line1
 @onready var _line2: Label = $Center/Line2
 @onready var _line3: Label = $Center/Line3
+@onready var _respawn: Label = $Respawn
 @onready var _kill_feed: KillFeed = $KillFeed
 
 
 func _ready() -> void:
-	_your_box.add_theme_stylebox_override("panel", _box_style(Color(Teams.FRIENDLY_COLOR.darkened(SCORE_BOX_DARKEN), SCORE_BOX_ALPHA)))
-	_timer_box.add_theme_stylebox_override("panel", _box_style(TIMER_BOX_COLOR))
-	_enemy_box.add_theme_stylebox_override("panel", _box_style(Color(Teams.ENEMY_COLOR.darkened(SCORE_BOX_DARKEN), SCORE_BOX_ALPHA)))
+	_pip_dead = _theme_color(&"pip_dead")
 	_clear_messages()
 	_top_bar.visible = false
 	visible = false
@@ -89,6 +88,7 @@ func set_round_manager(manager: RoundManager) -> void:
 			if signal_to_drop.is_connected(pair[1]):
 				signal_to_drop.disconnect(pair[1])
 	_manager = manager
+	_player = null
 	_kill_feed.clear()
 	_just_swapped = false
 	_clear_messages()
@@ -124,9 +124,14 @@ func get_alive_shown(team: int) -> int:
 	var pips := _your_pips if team == Teams.viewer_team else _enemy_pips
 	var lit := 0
 	for pip in pips.get_children():
-		if (pip as ColorRect).color != PIP_DEAD_COLOR:
+		if (pip as ColorRect).color != _pip_dead:
 			lit += 1
 	return lit
+
+
+## The text of the respawn countdown, or "" while it is hidden. For tests.
+func get_respawn_text() -> String:
+	return _respawn.text if _respawn.visible else ""
 
 
 func _process(_delta: float) -> void:
@@ -137,6 +142,7 @@ func _process(_delta: float) -> void:
 	_refresh()
 	if _manager.phase == RoundManager.Phase.FREEZE:
 		_line1.text = _countdown_text()
+	_refresh_respawn()
 
 
 func _manager_connections() -> Array[Array]:
@@ -167,27 +173,32 @@ func _refresh() -> void:
 	_round_label.text = _round_text()
 	match _manager.phase:
 		RoundManager.Phase.FREEZE:
-			_set_timer(_manager.time_left, FREEZE_TIMER_COLOR)
+			_set_timer(_manager.time_left, &"freeze_timer")
 		RoundManager.Phase.LIVE:
 			if _is_overtime():
-				_set_timer_text(OVERTIME_TIMER_TEXT, LOW_TIME_COLOR)
+				_set_timer_text(OVERTIME_TIMER_TEXT, &"alert")
 				_show_overtime()
 			elif _manager.is_bomb_planted():
-				_set_timer_text(BOMB_TIMER_TEXT, LOW_TIME_COLOR)
+				_set_timer_text(BOMB_TIMER_TEXT, &"alert")
 			else:
-				_set_timer(_manager.time_left, LOW_TIME_COLOR if _manager.time_left <= LOW_TIME else Color.WHITE)
+				_set_timer(_manager.time_left, &"alert" if _manager.time_left <= LOW_TIME else &"")
 		# At the round end and the match end the timer keeps what it showed.
 
 
-func _set_timer(seconds: float, color: Color) -> void:
-	_set_timer_text(format_time(seconds), color)
+## Shows [param seconds] on the timer, in the theme colour named [param state] ("" for the usual one).
+func _set_timer(seconds: float, state: StringName) -> void:
+	_set_timer_text(format_time(seconds), state)
 
 
-func _set_timer_text(text: String, color: Color) -> void:
+func _set_timer_text(text: String, state: StringName) -> void:
 	_timer.text = text
-	if _timer_color != color:
-		_timer_color = color
-		_timer.add_theme_color_override("font_color", color)
+	if _timer_state == state:
+		return
+	_timer_state = state
+	if state.is_empty():
+		_timer.remove_theme_color_override("font_color")
+	else:
+		_timer.add_theme_color_override("font_color", _theme_color(state))
 
 
 ## One square per player of [param team]: lit (in the team's color) for each one alive.
@@ -196,7 +207,8 @@ func _refresh_pips(pips: HBoxContainer, team: int) -> void:
 	while pips.get_child_count() < members:
 		var pip := ColorRect.new()
 		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		pip.custom_minimum_size = Vector2(PIP_SIZE, PIP_SIZE)
+		var pip_size := get_theme_constant(&"pip_size", THEME_TYPE)
+		pip.custom_minimum_size = Vector2(pip_size, pip_size)
 		pips.add_child(pip)
 		UiScale.apply_tree(pip, _ui_scale)
 	while pips.get_child_count() > members:
@@ -207,15 +219,14 @@ func _refresh_pips(pips: HBoxContainer, team: int) -> void:
 	var lit_color := Teams.text_color_for(team)
 	for i in pips.get_child_count():
 		var pip := pips.get_child(i) as ColorRect
-		var color := lit_color if i < alive else PIP_DEAD_COLOR
+		var color := lit_color if i < alive else _pip_dead
 		if pip.color != color:
 			pip.color = color
 
 
-func _box_style(color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	return style
+## A colour of the HUD's theme type (game states; see [constant THEME_TYPE]).
+func _theme_color(color_name: StringName) -> Color:
+	return get_theme_color(color_name, THEME_TYPE)
 
 
 # --- Messages in the middle: freeze time, round end, half time ---
@@ -244,13 +255,13 @@ func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 	UiSounds.play(UiSounds.ROUND_WON if won else UiSounds.ROUND_LOST)
 	_clear_messages()
 	if _manager.is_team_respawn():
-		_set_message(_title, "Your team wins" if won else "The enemy team wins", Teams.text_color_for(winner))
-		_set_message(_line1, _reason_text(won, reason), Color.WHITE)
+		_set_tinted_message(_title, "Your team wins" if won else "The enemy team wins", Teams.text_color_for(winner))
+		_set_message(_line1, _reason_text(won, reason))
 		return
-	_set_message(_title, "Round won" if won else "Round lost", Teams.text_color_for(winner))
-	_set_message(_line1, _reason_text(won, reason), Color.WHITE)
+	_set_tinted_message(_title, "Round won" if won else "Round lost", Teams.text_color_for(winner))
+	_set_message(_line1, _reason_text(won, reason))
 	if reason == RoundManager.EndReason.TIME:
-		_set_timer(0.0, Color.WHITE)
+		_set_timer(0.0, &"")
 
 
 func _on_character_killed(victim: Character, killer: Character, headshot: bool) -> void:
@@ -267,14 +278,14 @@ func _show_phase_message() -> void:
 	if _manager.round_number == 0 or _manager.phase != RoundManager.Phase.FREEZE:
 		return
 	if _manager.is_team_respawn():
-		_set_message(_line1, _countdown_text(), Color.WHITE)
-		_set_message(_line2, "First team to %d kills wins" % _manager.settings.kill_limit, Color.WHITE)
+		_set_message(_line1, _countdown_text())
+		_set_message(_line2, "First team to %d kills wins" % _manager.settings.kill_limit)
 		return
 	if _just_swapped:
-		_set_message(_title, "Switching sides", SWITCHING_COLOR)
-	_set_message(_line1, _countdown_text(), Color.WHITE)
+		_set_tinted_message(_title, "Switching sides", _theme_color(&"notice"))
+	_set_message(_line1, _countdown_text())
 	var attacking := _manager.get_side(Teams.viewer_team) == Teams.Side.ATTACKING
-	_set_message(_line2, _side_text(attacking), Color.WHITE)
+	_set_message(_line2, _side_text(attacking))
 	_show_match_point()
 
 
@@ -299,8 +310,8 @@ func _is_overtime() -> bool:
 ## The overtime notice in the middle, for as long as overtime lasts.
 func _show_overtime() -> void:
 	if _title.text != "Overtime":
-		_set_message(_title, "Overtime", SWITCHING_COLOR)
-		_set_message(_line1, "Next kill wins", Color.WHITE)
+		_set_tinted_message(_title, "Overtime", _theme_color(&"notice"))
+		_set_message(_line1, "Next kill wins")
 
 
 ## A third line when a team is one round from winning the match.
@@ -313,11 +324,11 @@ func _show_match_point() -> void:
 	var you_on_point := _manager.score[you] == to_win - 1
 	var them_on_point := _manager.score[them] == to_win - 1
 	if you_on_point and them_on_point:
-		_set_message(_line3, "Match point for both teams", Color.WHITE)
+		_set_message(_line3, "Match point for both teams")
 	elif you_on_point:
-		_set_message(_line3, "Match point", Teams.text_color_for(you))
+		_set_tinted_message(_line3, "Match point", Teams.text_color_for(you))
 	elif them_on_point:
-		_set_message(_line3, "Enemy match point", Teams.text_color_for(them))
+		_set_tinted_message(_line3, "Enemy match point", Teams.text_color_for(them))
 
 
 ## What your side has to do this half: push or hold, or in bomb rounds plant or guard the sites.
@@ -351,12 +362,53 @@ func _reason_text(won: bool, reason: RoundManager.EndReason) -> String:
 
 func _clear_messages() -> void:
 	for label in [_title, _line1, _line2, _line3]:
-		_set_message(label, "", Color.WHITE)
+		_set_message(label, "")
+	_respawn.visible = false
 
 
-## Sets a message line and shows it, or hides it when the text is empty so the
-## lines below close the gap.
-func _set_message(label: Label, text: String, color: Color) -> void:
+## Sets a message line in its role's usual colour and shows it, or hides it when
+## the text is empty so the lines below close the gap.
+func _set_message(label: Label, text: String) -> void:
 	label.text = text
-	label.add_theme_color_override("font_color", color)
+	label.remove_theme_color_override("font_color")
 	label.visible = not text.is_empty()
+
+
+## Like [method _set_message], in [param color] (a team's colour or a theme colour).
+func _set_tinted_message(label: Label, text: String, color: Color) -> void:
+	_set_message(label, text)
+	label.add_theme_color_override("font_color", color)
+
+
+# --- The respawn countdown ---
+
+
+## Shows "Respawning in 3" while the local player is dead in a live team respawn
+## match and waiting to come back; hides it otherwise (also in rounds, practice,
+## the round end and the match end). The seconds come from the manager every
+## frame and are rounded up, so the last second says 1 and never 0.
+func _refresh_respawn() -> void:
+	var left := _respawn_time_left()
+	_respawn.visible = left > 0.0
+	if _respawn.visible:
+		_respawn.text = RESPAWN_TEXT % ceili(left)
+
+
+## Seconds until the local player comes back, or -1 when they aren't waiting to.
+func _respawn_time_left() -> float:
+	var respawn_match := _manager as RespawnMatch
+	if respawn_match == null or _manager.phase != RoundManager.Phase.LIVE:
+		return -1.0
+	if not is_instance_valid(_player):
+		_player = _find_player()
+	if _player == null or _player.is_alive():
+		return -1.0
+	return respawn_match.get_respawn_time_left(_player)
+
+
+## The character of the player at this computer among the match's participants, or null.
+func _find_player() -> Character:
+	for character in _manager.get_participants():
+		if character.is_local_player():
+			return character
+	return null

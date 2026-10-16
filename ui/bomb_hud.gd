@@ -12,14 +12,18 @@ extends Control
 ## its signals, and never changes it. [method set_round_manager] hands it the
 ## manager (null hides everything); [method set_view_target] the character on
 ## show (you, or the teammate you spectate). Nothing here takes mouse clicks.
+##
+## The look comes from the UI theme (D-133): the labels pick roles ([code]HudBombTagLabel[/code],
+## [code]HudPromptLabel[/code], [code]HudBombMessageLabel[/code]), the progress bar's two
+## panels [code]HudBarBack[/code] and [code]HudBarFill[/code], and the gold of the
+## messages is read from the theme's custom type "Hud".
 
 ## Seconds a message stays before it fades.
 const MESSAGE_TIME := 4.0
 ## Seconds the fade takes.
 const MESSAGE_FADE := 0.5
-const GOLD := Color(1.0, 0.82, 0.35)
-const BAR_BACK := Color(0.05, 0.06, 0.08, 0.8)
-const BAR_FILL := Color(1.0, 0.82, 0.35)
+## The theme type that holds the HUD's state colours (see tools/make_ui_theme.gd).
+const THEME_TYPE := &"Hud"
 
 var _manager: RoundManager
 var _bomb: Bomb
@@ -30,14 +34,11 @@ var _message_left: float = 0.0
 @onready var _carry_label: Label = $CarryLabel
 @onready var _prompt: Label = $Prompt
 @onready var _bar: Control = $Bar
-@onready var _bar_fill: ColorRect = $Bar/Fill
+@onready var _bar_fill: Panel = $Bar/Fill
 @onready var _message: Label = $Message
 
 
 func _ready() -> void:
-	($Bar/Back as ColorRect).color = BAR_BACK
-	_bar_fill.color = BAR_FILL
-	_carry_label.add_theme_color_override("font_color", GOLD)
 	_hide_all()
 
 
@@ -161,19 +162,24 @@ func _on_picked_up(carrier: Character) -> void:
 	if not is_instance_valid(_viewer):
 		return
 	if carrier == _viewer and _viewer.is_local_player():
-		_show_message("You have the bomb", GOLD)
+		_show_message("You have the bomb", _gold())
 	elif Teams.viewer_team == _bomb.attacking_team and _manager.phase == RoundManager.Phase.LIVE:
-		_show_message("%s picked up the bomb" % carrier.name, GOLD)
+		_show_message("%s picked up the bomb" % carrier.name, _gold())
 
 
 func _on_dropped(_at: Vector3) -> void:
 	if Teams.viewer_team == _bomb.attacking_team:
-		_show_message("The bomb was dropped", GOLD)
+		_show_message("The bomb was dropped", _gold())
 
 
 func _on_planted(site: Area3D, _planter: Character) -> void:
 	_show_message("Bomb planted at %s" % Bomb.site_letter(site), Teams.text_color_for(_bomb.attacking_team))
 	UiSounds.play(UiSounds.BOMB_PLANTED)
+
+
+## The gold of the bomb's messages, from the theme.
+func _gold() -> Color:
+	return get_theme_color(&"gold", THEME_TYPE)
 
 
 func _show_message(text: String, color: Color) -> void:

@@ -33,9 +33,7 @@ offset_right = -32.0
 offset_bottom = -80.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"HudWeaponLabel"
 horizontal_alignment = 2
 
 [node name="AmmoLabel" type="Label" parent="."]
@@ -50,9 +48,7 @@ offset_right = -32.0
 offset_bottom = -24.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 40
+theme_type_variation = &"HudValueLabel"
 horizontal_alignment = 2
 
 [node name="HealthLabel" type="Label" parent="."]
@@ -64,9 +60,7 @@ offset_top = -80.0
 offset_right = 352.0
 offset_bottom = -24.0
 grow_vertical = 0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 40
+theme_type_variation = &"HudValueLabel"
 text = "+ 100"
 
 [node name="DeathLabel" type="Label" parent="."]
@@ -82,10 +76,7 @@ offset_right = 320.0
 offset_bottom = 120.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 32
+theme_type_variation = &"HudDeathLabel"
 horizontal_alignment = 1
 
 [node name="SpectateLabel" type="Label" parent="."]
@@ -101,8 +92,6 @@ offset_right = 320.0
 offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 28
+theme_type_variation = &"HudSpectateLabel"
 horizontal_alignment = 1
 vertical_alignment = 2

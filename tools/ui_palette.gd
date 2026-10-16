@@ -195,3 +195,73 @@ const MODE_LINE_GAP := 4
 ## the margin around the colour inside each swatch button (SwatchRow, SwatchMargin).
 const SWATCH_GAP := 6
 const SWATCH_MARGIN := 6
+
+# --- HUD (the overlay of a running game; D-133) ---
+#
+# The HUD takes its look from the same theme as the menus, through the roles
+# (type variations) that tools/make_ui_theme.gd builds from these tokens. It is
+# scaled by [UiScale] rather than [UiTheme], and it was laid out before the menus'
+# 16 px grid, so its text sizes are today's numbers (40, 28, 24...) until a
+# mockup replaces them. The tokens are the HUD's own, so changing a menu token
+# never moves the HUD.
+
+## The outline of all HUD text (black, so it reads over any scenery).
+const HUD_OUTLINE := Color(0, 0, 0)
+
+## HUD text: the weapon name, health, ammo, the top bar's scores and the bomb prompt.
+const HUD_TEXT := Color("e6ecf5")
+## Brighter HUD text: the round timer, the centre messages and the respawn count.
+const HUD_TEXT_BRIGHT := Color("ffffff")
+## The small line under the round timer ("Round 3", "First to 50").
+const HUD_TEXT_DIM := Color(0.75, 0.77, 0.8)
+## Something wrong: the timer in the last seconds, bomb planted and overtime, the "Killed by" message.
+const HUD_ALERT := Color(1.0, 0.4, 0.3)
+## The timer during freeze time.
+const HUD_FREEZE_TIMER := Color(1.0, 0.85, 0.4)
+## The title notices in the middle of the screen ("Switching sides", "Overtime").
+const HUD_NOTICE := Color(1.0, 0.85, 0.4)
+## The bomb: its tag, its messages and the progress bar's fill.
+const HUD_GOLD := Color(1.0, 0.82, 0.35)
+## The bomb's progress bar: the strip behind the fill, and the fill.
+const HUD_BAR_BACK := Color(0.05, 0.06, 0.08, 0.8)
+const HUD_BAR_FILL := Color(1.0, 0.82, 0.35)
+## A player's square in the top bar once they are dead (a living player's is their team's colour).
+const HUD_PIP_DEAD := Color(0.22, 0.23, 0.26)
+## The round timer's box.
+const HUD_TIMER_BOX := Color(0.06, 0.07, 0.09, 0.85)
+## A team's score box is the team's colour (from [Teams]) darkened by this much, at this opacity.
+const HUD_SCORE_BOX_DARKEN := 0.55
+const HUD_SCORE_BOX_ALPHA := 0.9
+
+## Text sizes, each with the width of its outline: health and ammo; the "Killed by"
+## message and the main line of the centre messages; the "Spectating" line; the
+## weapon name, bomb tag and prompts and the lower lines of the centre messages;
+## the centre messages' title; the top bar's scores and timer (no outline) and
+## the small line under the timer.
+const HUD_SIZE_VALUE := 40
+const HUD_OUTLINE_VALUE := 8
+const HUD_SIZE_HEADLINE := 32
+const HUD_OUTLINE_HEADLINE := 8
+const HUD_SIZE_SPECTATE := 28
+const HUD_OUTLINE_SPECTATE := 6
+const HUD_SIZE_TEXT := 24
+const HUD_OUTLINE_TEXT := 6
+const HUD_SIZE_TITLE := 48
+const HUD_OUTLINE_TITLE := 10
+const HUD_SIZE_SCORE := 32
+const HUD_OUTLINE_SCORE := 0
+const HUD_SIZE_SMALL := 16
+
+## Side of a player's square in the top bar.
+const HUD_PIP_SIZE := 12
+## Between the three boxes of the top bar, between a box's score and its squares, and between the squares.
+const HUD_BAR_GAP := 4
+const HUD_BOX_GAP := 2
+const HUD_PIP_GAP := 3
+## Inside a top bar box: left and right, top, bottom.
+const HUD_BOX_PAD_X := 12
+const HUD_BOX_PAD_TOP := 4
+const HUD_BOX_PAD_BOTTOM := 8
+## Between the lines of the centre messages, and between the lines of the kill feed.
+const HUD_MESSAGE_GAP := 4
+const HUD_FEED_GAP := 3
