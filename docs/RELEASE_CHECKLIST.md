@@ -8,11 +8,11 @@ How to read it: **Auto** lines are commands that exit with the number of failure
 
 `$GODOT` and `$PROJECT` are explained at the top of [DEVELOPING.md](DEVELOPING.md).
 
-## 0. Gates (all automatic, about 8 minutes)
+## 0. Gates (all automatic, about 5 minutes)
 
 | # | Command | Must show |
 |---|---|---|
-| 0.1 | `cd "$PROJECT" && bash tools/run_tests.sh` | every suite PASS (35 suites). `qa` plays every mode on every map, `release` checks the licences, the export presets, the paths, the Tailscale lobby and CONTRIBUTING |
+| 0.1 | `cd "$PROJECT" && bash tools/run_tests.sh` | every suite PASS (44 suites, about 2.3 minutes). `qa` plays every mode on every map, `release` checks the licences, the export presets, the paths, the Tailscale lobby and CONTRIBUTING |
 | 0.2 | `bash tools/lan_check.sh` | 4 PASS: a host, a friend who joins and leaves, a second friend who joins the running match, over this computer's LAN address, in three real processes |
 | 0.3 | `"$GODOT" --headless --path "$PROJECT" --quit-after 400 -- --no-settings --match` (and `--practice`, `--match --respawn`, `--map res://maps/depot.tscn`, `--match --rotation`) | no `SCRIPT ERROR` line |
 | 0.4 | `git status` is clean and `git grep -n -i "<your home folder>"` finds nothing | `release_test` does the second part |

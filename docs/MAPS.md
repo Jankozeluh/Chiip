@@ -16,7 +16,7 @@
 |---|---|---|
 | Size | 46–48 m wide, 56 m long inside the outer walls | D-049: 40–60 m across |
 | Lanes | Three (west, mid, east), each with its own character, plus connectors between them | D-049 |
-| First contact | 5–10 s after the round goes live, measured with bots (median of 4 rounds) | D-049; measured by `tests/maps_test.tscn` (D-061) |
+| First contact | 5–10 s after the round goes live, measured with bots (median of 4 rounds; the test allows ±2 s, since four bot rounds vary from run to run) | D-049; measured by `tests/maps_test.tscn` (D-061, M16) |
 | Sightlines | No spot sees the other spawn; the longest views stay around 40 m or less | D-049: short sightlines (D-061) |
 | Spawns | 5 per side, 3 m apart: defenders at the north end (−z, facing south), attackers at the south end (+z, facing north), 49–51 m apart | D-042 |
 | Bomb sites | A in the west half, B in the east half, both at the defenders' end | M8 bomb rounds |

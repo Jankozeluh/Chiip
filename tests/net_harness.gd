@@ -11,8 +11,9 @@ extends Node
 ## The game scene every side plays in.
 const MAIN_SCENE := preload("res://main.tscn")
 
-## The port the host listens on: random in a range no real game uses, so a running game or
-## another test run on the same computer doesn't get in the way.
+## The port the host listens on: the block tools/run_tests.sh gives the suite
+## ([code]CHIIP_TEST_PORT[/code], so suites running at the same time never share one; M16), or
+## random in a range no real game uses when a suite runs by hand.
 var port: int = 0
 
 ## The side branches, in the order they were made.
@@ -20,7 +21,8 @@ var _sides: Array[Node] = []
 
 
 func _init() -> void:
-	port = 27600 + randi() % 300
+	var block := OS.get_environment("CHIIP_TEST_PORT")
+	port = int(block) if block.is_valid_int() else 27600 + randi() % 300
 	# Headless runs have no audio device: every weapon stays silent (M7's switch).
 	Weapon.silent = true
 

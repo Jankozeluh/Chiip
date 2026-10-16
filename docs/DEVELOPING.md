@@ -189,7 +189,7 @@ Run all the automated checks with one command (no window, about a minute and a q
 cd "$PROJECT" && bash tools/run_tests.sh
 ```
 
-It runs every suite one after another (each with an empty user folder of its own; which suite guards which folder is in [ARCHITECTURE.md](ARCHITECTURE.md), "Systems map") and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the suites five at a time, about 2.3 minutes in all (`JOBS=1` runs them one after another; each has an empty user folder and network ports of its own; which suite guards which folder is in [ARCHITECTURE.md](ARCHITECTURE.md), "Systems map") and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
