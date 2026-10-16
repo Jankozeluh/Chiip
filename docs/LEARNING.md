@@ -751,6 +751,13 @@
 
 ## M12: sharing the game
 
+**Never trust the other side of a network** (`@rpc("any_peer")`, `get_remote_sender_id()`, `bytes_to_var`)
+- `@rpc("authority")` means only the node's authority (the host, peer 1) may call it, and Godot drops a call from anyone else; `"any_peer"` lets every connected computer call it, so the body must check who is calling (`multiplayer.get_remote_sender_id()`) and whether it should be listening at all (`is_host()`). Chiip has three any_peer functions and every one starts with that check. Unity's Netcode has the same split (`ServerRpc` with or without `RequireOwnership`).
+- A packet is just bytes: `bytes_to_var()` turns them into numbers, text, arrays and dictionaries and never into objects, while `bytes_to_var_with_objects()` can create objects (and run their scripts' setters): never use it, or `str_to_var()`, on network data. `SceneMultiplayer.allow_object_decoding` must stay false for the same reason.
+- A value can have the right type and still be hostile: a `float` can be NaN or infinite, an `int` negative or huge, a `String` megabytes long. Check the shape, then the type, then the range, then the size, and drop what doesn't fit, as `NetProtocol.unpack_commands()` and `NetHost._on_request()` do.
+- Limits count something per second (here: per second of physics ticks, `NetSession.allow()`), so a flood costs the sender and nobody else.
+
+
 **Files that are not resources in an export** (`include_filter` of an export preset, `FileAccess` on `res://`)
 - An export packs the project's *resources* (scenes, scripts, textures, imported assets) into one `.pck` file. A plain file such as `LICENSE`, which has no importer, is left out unless the preset's **Resources → Filters to export non-resource files** lists it (`LICENSE, LICENSE-ASSETS, ...`, comma separated, glob patterns). Once listed it sits in the pck and `FileAccess.get_file_as_string("res://LICENSE")` reads it exactly as in the editor. Unity's counterpart is the `StreamingAssets` folder, whose files are copied untouched into the build and read with normal file calls.
 - Checking for it: `FileAccess.file_exists()` is false for a file the export left out, so the Licences screen shows "not in this build" instead of an empty page (`LicensesMenu.read_file()`), and a test can catch it.

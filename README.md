@@ -29,6 +29,8 @@ chmod +x Chiip.x86_64
 
 If it doesn't start, run it from a terminal to see why; a missing Vulkan driver (Mesa's `mesa-vulkan-drivers`, or your graphics card's) is the usual reason.
 
+**Check your download.** Each release has a file `SHA256SUMS.txt` with the SHA-256 checksum of every zip. In the folder with the zip and that file, on macOS or Linux, run `shasum -a 256 -c SHA256SUMS.txt --ignore-missing` (it should say *OK* for your zip); on Windows, `Get-FileHash .\Chiip-*-windows-x86_64.zip -Algorithm SHA256` in PowerShell and compare the hash with the line for your file.
+
 Every download has the licences next to the game (`LICENSE`, `LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`), and the game shows them under **Settings → Licences**.
 
 ## Playing
@@ -148,6 +150,7 @@ To try online play on one computer, start the game twice: host in one window and
 - The game's **code** is under the **GNU General Public License, version 3** ([LICENSE](LICENSE)).
 - The **art, models, maps and sounds** are under **Creative Commons BY-NC-SA 4.0** ([LICENSE-ASSETS](LICENSE-ASSETS)): free to share and adapt for non-commercial use with credit, under the same licence.
 - The studio's name, **Divocakos**, and its logo are © Divocakos, **all rights reserved**: they are not covered by the licences above and may not be reused.
+- Found a security problem? [SECURITY.md](SECURITY.md) says how to report it privately.
 - Made with the [Godot Engine](https://godotengine.org) (MIT), the Silkscreen font (SIL Open Font License) and FuncGodot (MIT); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The game shows all of it under **Settings → Licences**.
 
 ## For developers

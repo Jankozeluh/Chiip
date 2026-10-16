@@ -15,6 +15,10 @@ By opening a pull request you say that you made the work (or that its licence al
 
 Because contributions come in under the non-commercial licence, Chiip stays a free, non-commercial game. If that isn't acceptable to you, please don't submit.
 
+## Reporting a security problem
+
+Please don't open a public issue for it: see [SECURITY.md](SECURITY.md) (GitHub's private vulnerability reporting).
+
 ## Reporting a bug
 
 Open a GitHub issue with:

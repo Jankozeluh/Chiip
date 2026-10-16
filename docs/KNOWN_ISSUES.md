@@ -15,6 +15,8 @@
 - Games are joined by typing (or pasting) the host's IP address; there is no server list and no automatic discovery of games on the LAN.
 - The host plays too: there is no dedicated server, so the match ends for everyone when the host quits, and the host's connection decides how good it is for the others.
 - Everyone must run the same version of the game.
+- **A friend is trusted only so far.** The host checks and limits everything a friend's computer sends (a broken one can't crash or flood it), but it can't tell an aim bot or a lag switch from a good player: play with people you invited.
+- **The game does not encrypt its traffic.** Tailscale does (WireGuard); on a LAN or through a forwarded port the packets are readable by others on the path. Another reason to use Tailscale.
 - Internet play is meant to go through Tailscale (see the README). Other ways to reach the host (a forwarded port on the router) work but aren't supported.
 - **Joining through a real Tailscale address has been tested only in its parts** (the address list, the copy button, joining through a LAN address between real game processes). The first real join between two computers on a tailnet is part of the playtest.
 - A join to an address where no game runs now ends with a message after 10 seconds (it used to wait for half a minute).

@@ -136,15 +136,33 @@ Make the builds only when asked (CLAUDE.md): export, then `bash tools/package_re
 
 | # | Check | Expect |
 |---|---|---|
-| 8.1 | `release_test` | Licence files, presets, no personal path, `.gitignore` entries, CONTRIBUTING, credits, the website and the changelog: all PASS |
+| 8.1 | `release_test` and `netsec_test` | Licence files, presets, no personal path, `.gitignore` entries, CONTRIBUTING, credits, the website and the changelog: all PASS |
 | 8.2 | README | Its links work (the release page, the docs, CONTRIBUTING, KNOWN_ISSUES); the download and warning steps match what 7.2 showed |
 | 8.3 | `docs/KNOWN_ISSUES.md` and the version's section of `CHANGELOG.md` (the release notes: `bash tools/release_notes.sh <version>`) | Up to date; the notes credit "Created by JK · Divocakos" |
 | 8.4 | `git log` and a look at the tree on GitHub after the push | No secrets, no stray files, `builds/` and `.godot/` absent |
 | 8.5 | The GitHub Release | v0.1.0 with the three zips and the notes; the download links work from a signed-out browser |
 | 8.6 | The website (`site/`, published by the Pages workflow) | Its Download page offers the new version and each system's file (the three buttons end in the right zip), its Updates page lists the notes, its Play and Maps pages read right, and the pages look right on a phone and a wide screen. Routine: [RELEASING.md](RELEASING.md) |
 
+## 9. Security review
+
+Run before every release; the first run was on 2026-10-16 (D-180). Auto lines are in `release_test` and `netsec_test`.
+
+| # | Check | How | Result of 2026-10-16 |
+|---|---|---|---|
+| 9.1 | **The whole history**, not only the files: no key, token, secret, private e-mail address, sensitive file name or stray big file in any commit that will be public | `python3 -I tools/scan_history.py HEAD` (the branch you publish; `--all` for every branch). Read the notes it prints | **Clean.** No finding in 224 commits. Notes: the old home-folder path of the owner's Mac in about 27 commits and one commit's message-like lines that only mention the word "token" (design tokens); `/home/djrm` is inside FuncGodot's own icon SVG (third-party metadata); every commit has the owner's name and GitHub's no-reply address (accepted, D-176); the biggest file ever stored is a 1.15 MB crew model; the packed repository is 14.7 MiB. Only `main` is pushed: the other branches and the stash stay local |
+| 9.2 | **Every RPC has the narrowest mode** and the host checks who sent it | `netsec_test` reads `net/*.gd`: 7 RPCs, the 3 `any_peer` ones (hello, team request, message to the host) each open with `is_host()` and use `get_remote_sender_id()`; the other 4 are `authority` (only the host may call them on a client) | Pass. A message claiming to come from someone else is overwritten with the real sender |
+| 9.3 | **The host validates and clamps everything a client sends** | `netsec_test`: commands (finite angles, no impossible yaw or pitch, a slot that exists, and the existing speed budget and queue cap), requests (types, ranges, item id length), session messages (a few short plain entries), names (printable, cut to 16, no direction marks), team requests | Pass: 60 broken, cut, random, oversized, NaN, infinite, nested and wrongly typed packets, requests and messages later the host still runs, the friend's character is whole and nobody was added |
+| 9.4 | **Limits and a player cap** | Packets over 8 KB dropped; 400 packets a second, a flood for 3 seconds removes the sender; messages, team requests, requests and hellos limited; a computer that connects and never says hello is removed after 5 s; at most 9 clients plus the host; only introduced players are heard | Pass (a flood of 450 packets a tick: removed after 2.6 s, 1,382 of 147,150 handed on) |
+| 9.5 | **No decoding of objects, nothing run from the network** | `netsec_test`: `allow_object_decoding` is false on both sides; no `bytes_to_var_with_objects`, `str_to_var`, `instance_from_id`, `inst_to_dict`, `Expression`, `OS.execute`, spawners or synchronizers in `net/`. Packets use `bytes_to_var` (no objects) | Pass |
+| 9.6 | **What stays open** (a friend's computer is trusted only so far) | The host decides hits and checks speed, but a cheating friend can still use an aim bot or a lag switch; the game does not encrypt its traffic: **Tailscale does (WireGuard)**, a LAN or a forwarded port does not, which is one more reason the README sends players to Tailscale; a malformed packet makes the engine print a decode error in the host's log (noise, not a crash); friends should still only play with people they invited | Listed in KNOWN_ISSUES |
+| 9.7 | **The website** | The release notes become HTML in one place, after the text is escaped; links only for http(s); the API read is in try / catch and the pages work without it; no inline script, style, handler, frame or form; a content security policy on every page (scripts, styles, pictures and fonts from the site itself, the one connection GitHub's API); nothing from another site. `release_test` and a browser check with a pretend API | Pass |
+| 9.8 | **The Actions workflow** | Only `actions/checkout`, `upload-pages-artifact` and `deploy-pages`, each pinned to the full commit SHA of its release (the version in a comment); `permissions:` contents read, pages write, id-token write; no secrets; no `pull_request` or `pull_request_target`; Dependabot proposes updates | Pass |
+| 9.9 | **The public repository's settings** | After creating it: `bash tools/harden_repo.sh <owner>/<repo>` (read-only workflow permissions, approval for first-time contributors' workflows, Dependabot alerts and updates, secret scanning with push protection, private vulnerability reporting, no wiki or projects). Add `--protect-main` when friends start sending pull requests (main then takes pull requests only). Read the settings back on GitHub afterwards | Script written and dry-run tested; to run with the owner's OK |
+| 9.10 | **The release files** | `bash tools/package_release.sh` writes `SHA256SUMS.txt`; the release includes it; the README tells players how to check; the zips hold only the game and the three notices | Pass (checksums verified with `shasum -a 256 -c`) |
+| 9.11 | **The owner's account** | Two-factor authentication on the GitHub account (a passkey or a security key is best): a public repository with releases is only as safe as the account that can publish to it. `gh auth login` in the browser; pushing `.github/workflows/` needs the `workflow` scope (`gh auth refresh -s workflow` if the push is refused) | For the owner |
+
 ## Results log
 
-| Release | Date | Done by | Gates 0 | Modes 1 | Menus 2 | Settings 3 | Window 4 | Gameplay 5 | Online 6 | Builds 7 | Public 8 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| v0.1.0 | | | | | | | | | | | |
+| Release | Date | Done by | Gates 0 | Modes 1 | Menus 2 | Settings 3 | Window 4 | Gameplay 5 | Online 6 | Builds 7 | Public 8 | Security 9 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| v0.1.0 | | | | | | | | | | | | | |

@@ -127,6 +127,12 @@ const ENTITY_FLOATING := 1
 const ENTITY_RESTING := 2
 ## Bytes per command and per entity in a packet.
 const COMMAND_BYTES := 21
+## Limits of what a command may say (a view turns a few times at most; looking straight up or down is
+## +-PI/2): more is a broken or hostile computer (D-180).
+const MAX_YAW := 100000.0
+const MAX_PITCH := 3.2
+## The highest weapon slot a command may ask for ([enum WeaponData.Slot] has four).
+const MAX_WEAPON_SLOT := 3
 const ENTITY_BYTES := 19
 
 ## One character in a snapshot.
@@ -317,8 +323,14 @@ static func unpack_commands(packet: PackedByteArray) -> Array[CharacterInput]:
 		command.drop = buttons & BUTTON_DROP != 0
 		command.weapon_slot = buffer.get_8()
 		command.view_tick = buffer.get_float()
+		# A friend's computer may send anything (D-180): angles that are not numbers, or that no real
+		# view can have, drop the command; a weapon slot that doesn't exist means "no change".
 		if not is_finite(command.yaw) or not is_finite(command.pitch) or not is_finite(command.view_tick):
 			continue
+		if absf(command.yaw) > MAX_YAW or absf(command.pitch) > MAX_PITCH:
+			continue
+		if command.weapon_slot < -1 or command.weapon_slot > MAX_WEAPON_SLOT:
+			command.weapon_slot = -1
 		commands.append(command)
 	return commands
 

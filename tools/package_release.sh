@@ -11,6 +11,7 @@
 #     $BUILDS/release/Chiip-<version>-windows-x86_64.zip
 #     $BUILDS/release/Chiip-<version>-linux-x86_64.zip
 #     $BUILDS/release/Chiip-<version>-macos-universal.zip
+#     $BUILDS/release/SHA256SUMS.txt        (the SHA-256 checksum of each zip, D-180)
 #
 # Each zip holds one folder with the game and, next to it, the licences (LICENSE, LICENSE-ASSETS,
 # THIRD_PARTY_NOTICES.md), so they ship with every download besides being inside the game's data.
@@ -64,4 +65,8 @@ macos="$(stage_folder macos-universal "$BUILDS/macos/Chiip.app")"
 ditto -c -k --keepParent --norsrc --noextattr "$STAGE/$macos" "$OUT/$macos.zip"
 
 rm -rf "$STAGE"
+
+# The checksums go with the release, so a download can be checked (README, "Check your download").
+(cd "$OUT" && shasum -a 256 Chiip-"$VERSION"-*.zip > SHA256SUMS.txt)
 ls -l "$OUT"
+cat "$OUT/SHA256SUMS.txt"

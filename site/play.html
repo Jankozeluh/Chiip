@@ -5,6 +5,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Play Chiip with friends</title>
 	<meta name="description" content="How to play Chiip online with friends over Tailscale: install, share, host, join. Nothing to open on your router.">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+	<meta name="referrer" content="strict-origin-when-cross-origin">
 	<meta name="theme-color" content="#0b1017">
 	<meta property="og:title" content="Play Chiip with friends">
 	<meta property="og:description" content="How to play Chiip online with friends over Tailscale: install, share, host, join. Nothing to open on your router.">
@@ -27,7 +29,7 @@
 	</header>
 	<main>
 		<div class="wrap">
-			<h1 style="margin-top:48px">Play with friends</h1>
+			<h1 class="page-title">Play with friends</h1>
 			<p class="lead">One player <strong>hosts</strong> and plays, friends <strong>join</strong>, and bots fill the empty slots. Chiip's online play works by address and is built for <a href="https://tailscale.com">Tailscale</a>: a private network where nothing is opened on anyone's router, nothing is exposed to the internet, and only the people you invite can connect. (It also works on a LAN, and anywhere the friends can reach the host's address on <strong>UDP port 26000</strong>.)</p>
 
 			<h2>Step by step</h2>

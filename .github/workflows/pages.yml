@@ -1,5 +1,7 @@
 # Publishes the website (site/) to GitHub Pages on every push to main (M12, D-179).
-# Only GitHub's own actions, each pinned to an exact version. One-time setup, in the repository's
+# Only GitHub's own actions, each pinned to the full commit SHA of its release (a tag can be moved,
+# a SHA can't; Dependabot, .github/dependabot.yml, proposes the updates). No secrets, no
+# pull_request_target, the least permissions the deployment needs. One-time setup, in the repository's
 # settings: Pages -> Build and deployment -> Source: GitHub Actions (docs/RELEASING.md).
 name: Pages
 
@@ -26,11 +28,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Package the site
-        uses: actions/upload-pages-artifact@v3.0.1
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: site
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4.0.5
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

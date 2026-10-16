@@ -1,0 +1,9 @@
+# Keeps the pinned GitHub Actions of .github/workflows up to date: Dependabot opens a pull request
+# when an action has a new release, with the new commit SHA and the version in a comment (M12, D-180).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3

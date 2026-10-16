@@ -39,6 +39,8 @@ extends Node
 
 ## Seconds to wait for every client to load the map before starting without them.
 const LOAD_TIMEOUT := 15.0
+## The longest item id a buy request may carry (the real ones are shorter than 20 characters).
+const MAX_ITEM_ID_LENGTH := 48
 ## A snapshot every this many ticks (2: 64 a second at 128 Hz).
 const SNAPSHOT_INTERVAL := 2
 ## Ticks between scoreboard updates (32: 4 a second).
@@ -449,17 +451,22 @@ func _on_packet(peer_id: int, packet: PackedByteArray) -> void:
 			_on_request(peer_id, NetProtocol.unpack_values(packet))
 
 
+## A request from a friend's computer (D-180): shaped like [code][kind, argument][/code], with the
+## types and sizes checked before anything is used, and at most a few a second. Whatever doesn't fit
+## is dropped without a word.
 func _on_request(peer_id: int, values: Array) -> void:
-	if values.is_empty():
+	if values.size() < 1 or values.size() > 2 or not (values[0] is int) or not session.allow(peer_id, "requests", NetSession.MAX_REQUESTS_PER_SECOND):
 		return
 	var character: Character = _characters_by_peer.get(peer_id)
+	if character == null:
+		return
 	match int(values[0]):
 		NetProtocol.Request.CLASS:
 			var classes := ClassData.all()
-			if character != null and values.size() >= 2 and int(values[1]) >= 0 and int(values[1]) < classes.size():
+			if values.size() == 2 and values[1] is int and int(values[1]) >= 0 and int(values[1]) < classes.size():
 				rules.request_class(character, classes[int(values[1])])
 		NetProtocol.Request.BUY:
-			if character != null and values.size() >= 2 and (values[1] is StringName or values[1] is String):
+			if values.size() == 2 and (values[1] is StringName or values[1] is String) and String(values[1]).length() <= MAX_ITEM_ID_LENGTH:
 				rules.request_buy(character, StringName(values[1]))
 
 

@@ -20,7 +20,7 @@ This is the first release that friends can download and play together, so expect
 | macOS 11 or newer, Apple silicon and Intel | `Chiip-0.1.0-macos-universal.zip` |
 | Linux, 64-bit, with a Vulkan driver | `Chiip-0.1.0-linux-x86_64.zip` |
 
-Unzip it anywhere and start Chiip. The builds are **not signed**, so your system warns you the first time; the [README](https://github.com/Jankozeluh/Chiip#download-and-run) says how to get past it in a few clicks (Windows: *More info → Run anyway*; macOS: right-click → *Open*, or *System Settings → Privacy & Security → Open Anyway*; Linux: `chmod +x Chiip.x86_64`).
+Unzip it anywhere and start Chiip. Each release has a `SHA256SUMS.txt` with the checksum of every zip (the README says how to check yours). The builds are **not signed**, so your system warns you the first time; the [README](https://github.com/Jankozeluh/Chiip#download-and-run) says how to get past it in a few clicks (Windows: *More info → Run anyway*; macOS: right-click → *Open*, or *System Settings → Privacy & Security → Open Anyway*; Linux: `chmod +x Chiip.x86_64`).
 
 ### What is in it
 

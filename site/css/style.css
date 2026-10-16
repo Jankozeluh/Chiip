@@ -72,6 +72,11 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 .nav a:hover { color: var(--white); }
 .nav a[aria-current="page"] { color: var(--white); border-bottom-color: var(--accent); }
 
+/* --- Spacing helpers (no inline styles: the pages' security policy forbids them) --- */
+.page-title { margin-top: 48px; }
+.spaced { margin-top: 16px; }
+.spaced-block { margin: 18px 0; }
+
 /* --- Type -------------------------------------------------------------------- */
 
 h1, h2, h3 { font-family: var(--pixel); font-weight: 700; line-height: 1.2; color: var(--white); letter-spacing: 1px; margin: 0 0 16px; text-transform: uppercase; }

@@ -5,6 +5,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Download Chiip</title>
 	<meta name="description" content="Download Chiip for Windows, macOS or Linux. The buttons always point to the latest release.">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+	<meta name="referrer" content="strict-origin-when-cross-origin">
 	<meta name="theme-color" content="#0b1017">
 	<meta property="og:title" content="Download Chiip">
 	<meta property="og:description" content="Download Chiip for Windows, macOS or Linux. The buttons always point to the latest release.">
@@ -27,7 +29,7 @@
 	</header>
 	<main>
 		<div class="wrap">
-			<h1 style="margin-top:48px">Download</h1>
+			<h1 class="page-title">Download</h1>
 			<p class="lead">Pick your system. The buttons always lead to the <strong>latest release</strong>; a new release shows up here by itself.</p>
 			<p class="latest"><span data-version data-fallback="The latest release is on GitHub">The latest release is on GitHub</span></p>
 
@@ -37,6 +39,15 @@
 				<div class="download" data-system="linux"><span class="badge" hidden>Your system</span><h3>Linux</h3><p class="meta">64-bit, with a Vulkan driver</p><a class="button primary" href="https://github.com/Jankozeluh/Chiip/releases/latest">Download for Linux</a></div>
 			</div>
 			<p class="dim">If a button leads to the release page instead of a file, pick the zip for your system there. <a href="https://github.com/Jankozeluh/Chiip/releases">All releases</a>.</p>
+
+			<h2>Check your download</h2>
+			<p>Every release has a file <code>SHA256SUMS.txt</code> with the SHA-256 checksum of each zip. Compare yours with it to be sure the file is the one that was published and arrived whole:</p>
+<pre><code># macOS or Linux, in the folder with the zip and SHA256SUMS.txt
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing
+
+# Windows PowerShell
+Get-FileHash .\Chiip-*-windows-x86_64.zip -Algorithm SHA256</code></pre>
+			<p class="dim">On Windows, compare the printed hash with the line for your file in <code>SHA256SUMS.txt</code>.</p>
 
 			<div class="note"><strong>The downloads are not signed</strong> (a signing certificate costs money every year), so your system warns you the first time. That is expected; here is how to get past it.</div>
 

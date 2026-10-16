@@ -32,7 +32,7 @@ mkdir -p builds/windows builds/linux builds/macos && touch builds/.gdignore
 
 Smoke-test the Mac build: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`. Start it once with a window and look at **Settings → Licences** (every document must show its text).
 
-**4. Zip them:** `bash tools/package_release.sh` (`BUILDS=<folder>` if you exported somewhere else) writes `builds/release/Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each with the licences next to the game. (The site finds the right file by the words `windows`, `mac` and `linux` in the file names: keep them.)
+**4. Zip them:** `bash tools/package_release.sh` (`BUILDS=<folder>` if you exported somewhere else) writes `builds/release/Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each with the licences next to the game, and `SHA256SUMS.txt` with each zip's SHA-256 checksum. (The site finds the right file by the words `windows`, `mac` and `linux` in the file names: keep them.)
 
 **5. Tag, push, publish.**
 
@@ -40,11 +40,11 @@ Smoke-test the Mac build: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headles
 git tag -a v0.2.0 -m "Chiip 0.2.0"
 git push origin main --tags
 bash tools/release_notes.sh 0.2.0 > builds/release/notes.md
-gh release create v0.2.0 builds/release/Chiip-0.2.0-*.zip --title "Chiip v0.2.0" --notes-file builds/release/notes.md
+gh release create v0.2.0 builds/release/Chiip-0.2.0-*.zip builds/release/SHA256SUMS.txt --title "Chiip v0.2.0" --notes-file builds/release/notes.md
 ```
 
 Add `--prerelease` for a test version (the site's Download buttons follow the latest *full* release; the Updates page lists both). Then check, from a browser that isn't signed in to GitHub:
-- the release page shows the three files and the notes;
+- the release page shows the three zips, `SHA256SUMS.txt` and the notes, and the checksums match what you download (`shasum -a 256 -c SHA256SUMS.txt --ignore-missing`);
 - the website's **Download** page offers the new version (it can take up to ten minutes to show for someone who opened the site earlier: the page remembers GitHub's answer that long) and its **Updates** page lists the notes;
 - a download starts and the unzipped game runs.
 
@@ -61,3 +61,4 @@ Add `--prerelease` for a test version (the site's Download buttons follow the la
 2. Turn on Pages with the Actions source: `gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow`, or in the repository's *Settings → Pages → Build and deployment → Source: GitHub Actions*. The workflow then publishes `site/` on every push to main; the address is `https://<owner>.github.io/<repo>/`.
 3. If the repository's name or owner is not `Jankozeluh/Chiip`, change it in `site/js/site.js` (the line `const REPO`), in the links of `site/*.html` (search for `github.com/`), in `ui/licenses_menu.gd` (`SOURCE_URL`) and in the README.
 4. Fill in the repository's description and topics, and put the website's address in its *About* box.
+5. Harden the repository's settings: `bash tools/harden_repo.sh <owner>/<repo>` (read-only workflow permissions, approval for first-time contributors' workflows, Dependabot alerts and updates, secret scanning with push protection, private vulnerability reporting; add `--protect-main` once friends send pull requests: main then takes pull requests only). `--dry-run` shows the commands without running them. Needs `gh auth login` as the owner.

@@ -30,6 +30,7 @@ func _ready() -> void:
 	await _test_join_to_nobody()
 	_test_website()
 	_test_release_routine()
+	_test_security_papers()
 	_test_no_personal_paths()
 	_test_gitignore()
 	MenuState.reset()
@@ -336,7 +337,20 @@ func _test_website() -> void:
 		if html.contains('<script src="http') or html.contains('<link rel="stylesheet" href="http') or html.contains('<img src="http'):
 			pages_ok = false
 			problems += " %s-external" % page
-	_check("Every page carries the credit, the stylesheet and the script and links to all the others; every link and picture exists; every picture has alt text; the repository links all name the one repository; nothing loads from another site",
+		# The page's own security policy: scripts, styles, pictures and fonts only from the site itself, the
+		# one outside connection is GitHub's API, and so no inline script, style or handler may exist.
+		if not (html.contains("Content-Security-Policy") and html.contains("default-src 'none'") and html.contains("script-src 'self'") and html.contains("style-src 'self'")
+				and html.contains("connect-src https://api.github.com") and html.contains("base-uri 'none'")):
+			pages_ok = false
+			problems += " %s-no-policy" % page
+		if html.contains(" style=") or RegEx.create_from_string("<[^>]+ on[a-z]+=").search(html) != null or html.contains("javascript:") \
+				or RegEx.create_from_string("<script(?![^>]* src=)").search(html) != null or html.contains("<iframe") or html.contains("<form") or html.contains("<object"):
+			pages_ok = false
+			problems += " %s-inline-code" % page
+		if html.contains('target="_blank"') and not html.contains("noopener"):
+			pages_ok = false
+			problems += " %s-blank-without-noopener" % page
+	_check("Every page carries the credit, the stylesheet and the script and links to all the others; every link and picture exists; every picture has alt text; the repository links all name the one repository; nothing loads from another site; every page has a content security policy and no inline script, style, handler, form or frame",
 			pages_ok, "problems:%s" % problems)
 
 	var css := FileAccess.get_file_as_string("res://site/css/style.css")
@@ -363,17 +377,40 @@ func _test_website() -> void:
 					and script.count("{") == script.count("}") and css.count("{") == css.count("}"),
 			"")
 
+	_check("The site's script is safe with what GitHub sends: no eval, no Function, no document.write, release notes become HTML in one place only (the markdown renderer, which escapes the text first and makes links only for http and https), the API answer is read inside try / catch, and nothing but the API is fetched",
+			not script.contains("eval(") and not script.contains("new Function") and not script.contains("document.write") and not script.contains("insertAdjacentHTML")
+					and not script.contains("outerHTML") and script.count("innerHTML") == 1 and script.contains("function escapeHtml") and script.contains("(https?:\\/\\/")
+					and script.count("fetch(") == 1 and script.contains("API + path") and script.contains("try {") and script.contains("catch (error)"),
+			"innerHTML used %d times, fetch %d times" % [script.count("innerHTML"), script.count("fetch(")])
+
 	var workflow := FileAccess.get_file_as_string("res://.github/workflows/pages.yml")
-	var uses_ok := workflow.contains("uses: actions/checkout@v4.2.2") and workflow.contains("uses: actions/upload-pages-artifact@v3.0.1") and workflow.contains("uses: actions/deploy-pages@v4.0.5")
+	var pinned := {"actions/checkout": "11bd71901bbe5b1630ceea73d27597364c9af683", "actions/upload-pages-artifact": "56afc609e74202658d3ffba0e8f6dda462b719fa",
+			"actions/deploy-pages": "d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e"}
+	var uses_ok := true
+	var uses_count := 0
+	var sha_line := RegEx.create_from_string("^uses: (actions/[a-z-]+)@([0-9a-f]{40}) # v[0-9]+\\.[0-9]+\\.[0-9]+$")
 	for line in workflow.split("\n"):
-		var trimmed := line.strip_edges()
-		if trimmed.contains("uses:") and not trimmed.begins_with("#"):
-			var action := trimmed.substr(trimmed.find("uses:") + 5).strip_edges()
-			if not action.begins_with("actions/") or not RegEx.create_from_string("@v[0-9]+\\.[0-9]+\\.[0-9]+$").search(action):
+		var trimmed := line.strip_edges().trim_prefix("- ")
+		if trimmed.begins_with("uses:"):
+			uses_count += 1
+			var found := sha_line.search(trimmed)
+			if found == null or pinned.get(found.get_string(1), "") != found.get_string(2):
 				uses_ok = false
-	_check("The Pages workflow publishes site/ on every push to main with only GitHub's own actions (checkout, upload-pages-artifact, deploy-pages), each pinned to an exact version",
-			uses_ok and workflow.contains("branches: [main]") and workflow.contains("path: site") and workflow.contains("pages: write") and workflow.contains("id-token: write"),
-			"%d characters" % workflow.length())
+	_check("The Pages workflow publishes site/ on every push to main with only GitHub's own actions (checkout, upload-pages-artifact, deploy-pages), each pinned to the full commit SHA of its release with the version in a comment",
+			uses_ok and uses_count == 3 and workflow.contains("branches: [main]") and workflow.contains("path: site"),
+			"%d actions, %d characters" % [uses_count, workflow.length()])
+	var dependabot := FileAccess.get_file_as_string("res://.github/dependabot.yml")
+	# Without its comment lines (which say what the workflow doesn't do).
+	var code_lines: Array[String] = []
+	for line in workflow.split("\n"):
+		if not line.strip_edges().begins_with("#"):
+			code_lines.append(line)
+	workflow = "\n".join(code_lines)
+	_check("The workflow asks for the least it needs (read the repository, write Pages, the deploy token), uses no secrets, never runs for pull requests from forks (no pull_request_target, no pull_request), and Dependabot keeps the pins up to date",
+			workflow.contains("contents: read") and workflow.contains("pages: write") and workflow.contains("id-token: write") and not workflow.contains("write-all")
+					and not workflow.contains("secrets.") and not workflow.contains("pull_request") and not workflow.contains("contents: write")
+					and dependabot.contains('package-ecosystem: "github-actions"'),
+			"")
 
 
 ## The update routine: the changelog holds a section for the project's version that tools/release_notes.sh can extract,
@@ -395,6 +432,44 @@ func _test_release_routine() -> void:
 			releasing.contains("project.godot") and releasing.contains("CHANGELOG.md") and releasing.contains("tools/run_tests.sh") and releasing.contains("--export-release")
 					and releasing.contains("tools/package_release.sh") and releasing.contains("gh release create") and releasing.contains("site"),
 			"%d characters" % releasing.length())
+
+
+# --- Security ---
+
+
+## The security papers and tools (M12, D-180): SECURITY.md, the checksums of a release, the script that hardens the
+## repository's settings, and the scan of the whole history for keys, tokens, secrets and e-mail addresses (run for
+## real on this checkout's history; skipped without git or Python).
+func _test_security_papers() -> void:
+	var security := FileAccess.get_file_as_string("res://SECURITY.md")
+	var package := FileAccess.get_file_as_string("res://tools/package_release.sh")
+	var readme := FileAccess.get_file_as_string("res://README.md")
+	var releasing := FileAccess.get_file_as_string("res://docs/RELEASING.md")
+	var checklist := FileAccess.get_file_as_string("res://docs/RELEASE_CHECKLIST.md")
+	_check("SECURITY.md says how to report a problem privately and what the game does; a release carries SHA256SUMS.txt (made by the packaging script, checked in the README, published by the release routine); the checklist has its security review",
+			security.contains("Report a vulnerability") and security.contains("netsec_test") and package.contains("SHA256SUMS.txt") and package.contains("shasum -a 256")
+					and readme.contains("SHA256SUMS.txt") and readme.contains("Get-FileHash") and releasing.contains("SHA256SUMS.txt") and releasing.contains("tools/harden_repo.sh")
+					and checklist.contains("## 9. Security review"),
+			"")
+	var harden := FileAccess.get_file_as_string("res://tools/harden_repo.sh")
+	var output: Array = []
+	var exit_code := OS.execute("bash", [ProjectSettings.globalize_path("res://tools/harden_repo.sh"), "Owner/Repo", "--protect-main", "--dry-run"], output)
+	var dry := "" if output.is_empty() else str(output[0])
+	_check("The script that hardens the repository's settings sets read-only workflow permissions, approval for first-time contributors, Dependabot, secret scanning with push protection, private vulnerability reporting and (on request) pull-request-only main; its dry run prints those commands and changes nothing",
+			harden.contains("default_workflow_permissions=read") and harden.contains("fork-pr-contributor-approval") and harden.contains("vulnerability-alerts")
+					and harden.contains("secret_scanning_push_protection") and harden.contains("private-vulnerability-reporting") and harden.contains("branches/main/protection")
+					and exit_code == 0 and dry.contains("would: workflows: read-only") and dry.contains("would: protect main") and not dry.contains("done:"),
+			"exit %d, %d characters" % [exit_code, dry.length()])
+	var has_git := FileAccess.file_exists("res://.git") or DirAccess.dir_exists_absolute(ProjectSettings.globalize_path("res://.git"))
+	if has_git:
+		var scan_output: Array = []
+		var scan_exit := OS.execute("python3", ["-I", ProjectSettings.globalize_path("res://tools/scan_history.py"), "HEAD"], scan_output)
+		var text := "" if scan_output.is_empty() else str(scan_output[0])
+		if scan_exit == -1:
+			print("SKIP  the history scan: python3 could not be started")
+		else:
+			_check("The whole history of this branch has no key, token, secret assignment, e-mail address or sensitive file name (tools/scan_history.py, every line ever added)",
+					scan_exit == 0 and text.contains("0 kind(s) of finding need a look."), "exit %d: %s" % [scan_exit, text.substr(maxi(text.length() - 90, 0)).replace("\n", " ")])
 
 
 # --- Tailscale ---
