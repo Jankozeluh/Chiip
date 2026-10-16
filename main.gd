@@ -122,6 +122,9 @@ func _ready() -> void:
 	# The class menu and the buy menu show only the dimmed world (mockups 08 and 14): the HUD steps aside while one is open.
 	_class_menu.visibility_changed.connect(_update_hud_visibility)
 	_buy_menu.visibility_changed.connect(_update_hud_visibility)
+	# The reverb follows the listener's place: open yard, walled yard, room or hall (M13, D-193).
+	_viewport.add_child(Acoustics.new())
+	Music.stop()
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -270,7 +273,10 @@ func _load_map() -> void:
 	var map_arg := args.find("--map")
 	if map_arg >= 0 and map_arg + 1 < args.size():
 		scene = load(args[map_arg + 1])
-	if args.has("--practice"):
+	if args.has(HitCheck.FLAG):
+		# The shooting self-check (v0.1.1, D-159): practice on the range, with the check running.
+		add_child(HitCheck.new())
+	if args.has("--practice") or args.has(HitCheck.FLAG):
 		mode = Mode.PRACTICE
 		# Practice plays the Shooting Range unless --map says otherwise (D-141).
 		if map_arg < 0:

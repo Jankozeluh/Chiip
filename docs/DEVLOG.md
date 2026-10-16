@@ -21,6 +21,39 @@ Branch `claude/m14-stats-f32137` (Sonnet), in parallel with the M13 and M15 sess
 - Possible later: a tracking run for the aim trainer (a moving ball with its own score), a magnified chart next to the spray wall (a spray's pattern is only about 60 px tall on a 720p screen), charts of K/D over time on the Stats screen, the stats and training in the next release's notes (`CHANGELOG.md` is the release routine's, left alone).
 - Left alone as asked: audio (M13), bots, colour options and gamepad (M15).
 
+## 2026-10-16 — v0.1.1 hotfix: bullets hit again
+
+**Done**
+- Your report from the v0.1.0 build: bullets fly through enemies to the wall, nobody takes damage. Reproduced in a release export (the editor build hits). The cause: the hit-zone files lost their boxes in the export (an Array-literal default on their packed arrays, D-159), so the bodies had no hit zones.
+- Fixed with typed defaults; the hit-zone files name themselves, so a stale export cache converts them again.
+- New `--check-hits` self-check in the game (`systems/hit_check.gd`), `tools/check_export.sh` (exports a release build into a temporary folder and runs it), and `tools/package_release.sh` refuses to pack a build that fails it. The `release` suite runs the self-check and forbids the pattern. Version 0.1.1, CHANGELOG section.
+
+**Next:** your OK to release v0.1.1 (export, package, GitHub Release).
+
+## 2026-10-16 — M13 sound
+
+Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the sound generators, Haiku for test runs), in parallel with M14 and M15. Decisions D-190 to D-199.
+
+**Done**
+- **Task 1, the sound routing and the mix table** (D-190): every game sound plays through `Acoustics.play()` / `play_2d()` from one table (`SoundMix`); new buses Muffled, MuffledHeavy and Music, a hard limiter on Master; stronger panning (measured with the real audio driver). `tools/sound_report.gd` measures every sound file. `sound_test` has 4 new checks (13 in all).
+
+- **Task 2, gun signatures** (D-191): every gun has a close and a far shot (crossfaded from 15 to 40 m), its own three reload sounds and a loudness of its own; the SMG and hand cannon shots were redone so all seven differ; far explosions for the frag and the bomb. 27 new or redesigned sounds (Sonnet subagent), all at their target loudness. `sound_test` +4 checks.
+
+- **Task 3, muffling through walls** (D-192): rays from the sound to the camera count walls and metres of wall (from both ends), a bent path finds corners; three low-pass buses (MuffledLight, Muffled, MuffledHeavy) and a loss in dB, shared out per category. 15–17 µs per sound on the quick maps. `sound_test` +2 checks on walls it builds (a box and a trimesh).
+
+- **Task 4, reverb by zone** (D-193): an `Acoustics` node in the game scene probes the camera's surroundings with 13 rays four times a second, names the zone (open, yard, room, hall) and glides the Effects reverb to its preset; no map edits. The quick maps come out as yards with some rooms. `sound_test` +3 checks.
+
+- **Task 5, the mix pass** (D-194): every file the game plays levelled to its category's short-term loudness (34 files, Sonnet; footsteps now equally loud on every floor), the table set from a model of Godot's falloff (no near boost, half the distance filter), and `sound_test`'s mix rules: loudness per category, no gain over 0 dB, own shot against near and far ones, steps in a fight, the beep, nothing louder farther away (+7 checks).
+
+- **Task 6, music and stingers** (D-195): a 35 s menu loop and six stingers (round start, won, lost, bomb defused, match won, lost) from `tools/generate_music.gd` (Sonnet); `Music` plays them on the Music bus, with a Music volume in Settings → Audio; M8's three interface stingers are gone, the bomb-planted alert is levelled. `sound_test` +4 checks.
+
+- **Task 7, tests and docs:** `sound_test` has 32 checks (it had 8); GAME_DESIGN, CREDITS, ARCHITECTURE, LEARNING, README and CLAUDE.md follow; main merged in (the M16 plan); the full run below.
+
+**Not heard yet:** nobody has listened; the sounds, the mix and the music are checked by numbers only. Your listen is in "Your open checks" (PLAN.md).
+
+**Next:** your listen, then tuning `systems/sound_mix.gd` from what you hear. Possible later steps: sound through doorways (path-based, D-192), a front/back cue, a first-person mechanical layer on your own shots (D-191).
+
+
 ## 2026-10-16 — M12 share
 
 Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessions. Decisions D-170 to D-179.

@@ -803,3 +803,31 @@
 - A `MultiMesh` draws one mesh many times with a transform (and a colour) for each copy, in one draw call (Unity: `Graphics.DrawMeshInstanced`). The spray wall's 150 holes and 64 ghost dots are two of them: `instance_count` is how many it can hold, `visible_instance_count` how many it shows, and `set_instance_transform(i, ...)` / `set_instance_color(i, ...)` place and tint copy `i`. `use_colors = true` plus a material with `vertex_color_use_as_albedo` makes the per-copy colour show. Each copy's size is in its transform's basis (`Basis.scaled(...)`), so one metre-wide quad can be any size.
 - A `QuadMesh` faces +Z of its node; a node that looks along -Z (as the entities of a TrenchBroom map do) needs its marks turned half a round about Y (`Basis.from_euler(Vector3(0, PI, 0))`) to face the shooter. The wall's frame was the fiddly part: its `-basis.z` is the direction it faces, `Vector3.UP.cross(normal)` is the viewer's right, and the node's own +X is the viewer's left.
 
+### v0.1.1 hotfix
+
+**What an export does to your resources** (D-159)
+- An exported game doesn't read your `.tres` files: the export converts text resources to binary (`.res`, reached through `.remap` files) and caches each conversion by the file's content in `.godot/exported/`. Godot 4.7 dropped the values of an exported packed array whose default was an Array literal (`= []`) on the way, while the editor build, which reads the text, worked. Give packed arrays typed defaults (`PackedStringArray()`). Unity's counterpart is a build-only bug from serialization (a field Unity can't serialize, or code stripping): in both engines, test the built game, not only the editor.
+- An exported game ignores `--script`, so a check that has to run inside a build is part of the game (Chiip's `-- --check-hits`), like a Unity development build's test hooks.
+
+## M13: sound design
+
+**Audio buses and their effects** (`AudioBusLayout`, `AudioEffect*`, `AudioServer`)
+- Godot's buses are Unity's **AudioMixer groups**: each bus has a volume, a chain of effects (a reverb, a low-pass, a limiter…) and sends its output to one other bus, ending at Master. `default_bus_layout.tres` is the mixer asset; the editor's Audio panel at the bottom edits it (and saves it, so never save it with a bus muted).
+- A bus can only send to a bus *above* it in the list, so Muffled sits below Effects to feed it.
+- Effects are resources: `AudioServer.get_bus_effect(bus, index)` returns the live one, and changing its properties (the reverb's `wet`, a filter's `cutoff_hz`) is heard at once, like Unity's exposed mixer parameters.
+- There are no effects on a single player (Unity can't either, apart from the AudioSource's own filters); to filter one sound you play it on another bus. That's how sounds behind walls are muffled.
+- `AudioEffectHardLimiter` (Godot 4.3+) is a brick-wall limiter: last on Master, the mix never goes over its ceiling.
+
+**How a 3D sound gets quieter with distance** (`AudioStreamPlayer3D`)
+- Unity's AudioSource has a rolloff curve between Min and Max Distance; Godot's default model (`ATTENUATION_INVERSE_DISTANCE`) is full volume within `unit_size` metres and −6 dB for every doubling beyond, capped at `max_db` (+3 dB by default, which is why close sounds can get *louder* than their `volume_db`). `max_distance` then fades the result linearly to silence, which acts like Unity's Max Distance.
+- `panning_strength` (times the project setting `audio/general/3d_panning_strength`, 0.5) is how hard a sound pans between the ears: Unity's Spread and Stereo Pan in one number.
+- A centred 3D sound is 3 dB quieter than the same sound on a plain `AudioStreamPlayer` (equal-power panning), measured with an `AudioEffectCapture` on Master. A headless run (`--headless`) uses a dummy audio driver that mixes nothing; `--display-driver headless --audio-driver CoreAudio` mixes for real without a window.
+
+**Asking the physics world questions from code** (`PhysicsDirectSpaceState3D.intersect_ray()`)
+- `get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, mask))` is Unity's `Physics.Raycast` / `Linecast`: it returns a dictionary (`position`, `normal`, `collider`, …), empty when nothing is hit. Only the first hit: to find every wall along a line, cast again from just past the last hit (Unity has `RaycastAll`).
+- `hit_back_faces` (default on) decides whether a trimesh's faces count from behind, and `hit_from_inside` (default off) whether a convex shape you start inside counts. With both off, a ray only reports a surface it *enters*: cast from each end and the entries from one side are the exits for the other, which gives the wall's thickness.
+
+**A looping WAV and a fade** (`.import` loop settings, `Tween` on `volume_db`)
+- A WAV loops when its import settings say so (`edit/loop_mode=2`, forward, in its `.import` file; the Import dock in the editor), like Unity's AudioClip "Loop" on the AudioSource instead. Re-importing keeps it, so the setting lives next to the generated file.
+- A fade is a tween on the player's `volume_db` (`player.create_tween().tween_property(player, "volume_db", -60.0, 1.2)`), like a coroutine lerping `AudioSource.volume`. A tween made from a node stops while that node is paused, so the music's players are `PROCESS_MODE_ALWAYS`.
+- A static class can't add a node to the root from inside another node's `_ready()` (the root is busy adding children): `add_child.call_deferred()` and act on the node's `ready` signal.

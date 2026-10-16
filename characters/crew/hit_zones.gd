@@ -8,15 +8,19 @@ extends Resource
 ## [code]i[/code] of every array describes box [code]i[/code]: [CrewBody] puts a [Hitbox]
 ## of zone [code]zones[i][/code] with a box of [code]sizes[i][/code] at [code]centers[i][/code]
 ## on bone [code]bones[i][/code], so the hit zones follow the animated body.
+##
+## The arrays' defaults are typed ([code]PackedStringArray()[/code], not [code][][/code]): with an
+## Array literal as the default, exporting the game dropped the stored boxes, and bullets went
+## through everyone in the v0.1.0 build (D-159).
 
 ## The bone each box follows (a bone name of the class's Skeleton3D).
-@export var bones: PackedStringArray = []
+@export var bones: PackedStringArray = PackedStringArray()
 ## The zone of each box, as a [enum Hitbox.Zone] value.
-@export var zones: PackedInt32Array = []
+@export var zones: PackedInt32Array = PackedInt32Array()
 ## The centre of each box in its bone's frame, in metres.
-@export var centers: PackedVector3Array = []
+@export var centers: PackedVector3Array = PackedVector3Array()
 ## The full size of each box, in metres.
-@export var sizes: PackedVector3Array = []
+@export var sizes: PackedVector3Array = PackedVector3Array()
 
 
 ## How many boxes there are.

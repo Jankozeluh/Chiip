@@ -1,7 +1,7 @@
 class_name UiSounds
 extends RefCounted
 ## Interface sounds (D-084): a soft tick when the mouse moves onto a button, a
-## click when it is pressed, and the round stingers the HUD plays. Everything
+## click when it is pressed, and the bomb-planted alert the HUD plays. Everything
 ## plays without position on the *Interface* audio bus.
 ##
 ## Menus call [method attach] in their [code]_ready()[/code]: it gives every
@@ -12,9 +12,7 @@ extends RefCounted
 
 const HOVER := preload("res://assets/sounds/ui_hover.wav")
 const CLICK := preload("res://assets/sounds/ui_click.wav")
-const ROUND_START := preload("res://assets/sounds/round_start.wav")
-const ROUND_WON := preload("res://assets/sounds/round_won.wav")
-const ROUND_LOST := preload("res://assets/sounds/round_lost.wav")
+## The round stingers are [Music]'s since M13 (D-195); the bomb's alert stays here.
 const BOMB_PLANTED := preload("res://assets/sounds/bomb_planted_alert.wav")
 ## The audio bus interface sounds play on (set up by the settings, M5).
 const BUS := &"Interface"

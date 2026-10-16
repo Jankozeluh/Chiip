@@ -70,12 +70,10 @@ const BOB_CYCLE_DISTANCE := 3.6
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
-## A bullet hitting a body, and a head (as recognisable as CS's headshot sound, D-084).
+## A bullet hitting a body, and a head (as recognisable as CS's headshot sound, D-084; how much
+## louder and farther the head's is, is [SoundMix]'s).
 const HIT_BODY_SOUND := preload("res://assets/sounds/hit_body.wav")
 const HIT_HEAD_SOUND := preload("res://assets/sounds/hit_head.wav")
-## How much louder a headshot sounds than other hits, in dB, and how far it carries (unit size, metres).
-const HEADSHOT_VOLUME_DB := 6.0
-const HEADSHOT_UNIT_SIZE := 8.0
 
 ## Plays no sounds at all, for every weapon (tests: headless runs have no audio device, and
 ## sounds that never finish "playing" would be reported as leaks at exit).
@@ -181,6 +179,7 @@ var _cycle_sound_left: float = -1.0
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
 @onready var _shot_audio_3d: AudioStreamPlayer3D = $ShotAudio3D
+@onready var _shot_far_audio_3d: AudioStreamPlayer3D = $ShotFarAudio3D
 @onready var _handling_audio_3d: AudioStreamPlayer3D = $HandlingAudio3D
 @onready var _viewmodel: Node3D = $Viewmodel
 @onready var _muzzle_flash: Node3D = $Viewmodel/MuzzleFlash
@@ -697,13 +696,9 @@ func _play_impact_sound(hit: Dictionary) -> void:
 	var hitbox := hit.collider as Hitbox
 	if hitbox != null:
 		var head := hitbox.zone == Hitbox.Zone.HEAD
-		audio.stream = HIT_HEAD_SOUND if head else HIT_BODY_SOUND
-		if head:
-			audio.volume_db += HEADSHOT_VOLUME_DB
-			audio.unit_size = HEADSHOT_UNIT_SIZE
+		Acoustics.play(audio, HIT_HEAD_SOUND if head else HIT_BODY_SOUND, SoundMix.HEADSHOT if head else SoundMix.HIT)
 	else:
-		audio.stream = Surfaces.impact_sound(Surfaces.kind_of(hit.collider, hit.shape, hit.normal))
-	audio.play()
+		Acoustics.play(audio, Surfaces.impact_sound(Surfaces.kind_of(hit.collider, hit.shape, hit.normal)), SoundMix.IMPACT)
 
 
 ## Turns a yaw/pitch pair (radians) into a direction. Yaw 0, pitch 0 looks along −Z.
@@ -819,7 +814,8 @@ func _play_reload_cues(before: float, after: float) -> void:
 	var cues := GunModel.SHELL_SOUNDS if data.reload_per_shell else GunModel.MAGAZINE_SOUNDS
 	for step in cues.size():
 		if before < cues[step] and after >= cues[step]:
-			_play(data.reload_sound, true)
+			var own_sound := not data.reload_per_shell and step < data.reload_sounds.size() and data.reload_sounds[step] != null
+			_play(data.reload_sounds[step] if own_sound else data.reload_sound, true)
 			reload_cue.emit(step)
 
 
@@ -1062,19 +1058,17 @@ func _is_behind(victim: Character) -> bool:
 
 ## Plays a weapon sound. The player hears their own gun without position;
 ## other characters' guns sound from where they are. [param handling] is for
-## clicks and reloads, otherwise it's a shot.
+## clicks, reloads, pins and throws (their own player, so a reload doesn't cut a
+## shot short), otherwise it's a shot or a knife swing. Levels: [SoundMix] (M13, D-190).
 func _play(stream: AudioStream, handling: bool) -> void:
 	if stream == null or silent:
 		return
-	# Changing the stream stops sounds that are still playing (e.g. the previous
-	# shot), so only change it when it's a different sound.
+	var category := SoundMix.HANDLING if handling else (SoundMix.MELEE if data.is_melee() else SoundMix.SHOT)
+	var offset := data.shot_volume_db if category == SoundMix.SHOT else 0.0
 	if _wielder == null or _wielder.is_local_player():
-		var audio := _handling_audio if handling else _shot_audio
-		if audio.stream != stream:
-			audio.stream = stream
-		audio.play()
+		Acoustics.play_2d(_handling_audio if handling else _shot_audio, stream, category, offset)
+	elif category == SoundMix.SHOT and stream == data.shot_sound:
+		# Far away the shot turns into its distant variant (D-191).
+		Acoustics.play_with_far(_shot_audio_3d, _shot_far_audio_3d, stream, data.shot_far_sound, category, SoundMix.SHOT_FAR, offset)
 	else:
-		var audio_3d := _handling_audio_3d if handling else _shot_audio_3d
-		if audio_3d.stream != stream:
-			audio_3d.stream = stream
-		audio_3d.play()
+		Acoustics.play(_handling_audio_3d if handling else _shot_audio_3d, stream, category, offset)

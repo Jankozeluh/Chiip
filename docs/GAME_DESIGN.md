@@ -264,16 +264,22 @@ Bomb rounds are the round mode on every map with bomb sites (the three quick map
 
 In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots must be directional and easy to read. They are retro-styled but clear.
 
-- **Your own footsteps** are clearly audible (−12 dB), so you always know when you're making noise, but quieter than enemy steps.
-- **Enemy footsteps** are loud and directional and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
+- **Your own footsteps** are clearly audible, so you always know when you're making noise, but quieter than an enemy's steps 5 m away.
+- **The mix** (M13, D-194): every sound of a kind is equally loud, so loudness tells distance and nothing else. Your own rifle shot sounds like an enemy's 10 m away; an enemy's shot at 40 m is 14 dB quieter. In a fight an enemy's step 8 m away stays within 8 dB of your own shot. The bomb's beep is clearly above the steps around it. Nothing plays louder than its file, and a limiter keeps a big fight from clipping.
+- **Enemy footsteps** are loud and directional (a step at your side is 14 dB louder in the near ear, D-190) and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
 - **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
 - Walking (Shift) and crouch-walking are silent for everyone.
 - While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.
-- Three volumes (D-058): **master**, **effects** (footsteps, shots, reloads) and **interface** (menus), so the menu or the effects can be turned down on their own.
+- Four volumes (D-058, D-195): **master**, **effects** (everything in the game), **interface** (menu clicks, the bomb-planted alert) and **music** (the menu track and the stingers), so each can be turned down on its own.
 - **Footsteps sound like the floor** (D-084): hard (concrete, stone, plaster), gravel (a crunch), metal (a ring) and wood (a hollow knock). Same range and loudness on every floor.
 - **Bullets** make a sound where they land, heard within 35 m: a crack on hard surfaces, a thud in gravel, a ping on metal, a thock in wood, a thwack on a body, and a bright "dink" on a head, louder and heard farther, like CS's headshot sound.
+- **Every gun sounds like itself** (M13, D-191): seven shot signatures (the pistol's snap, the hand cannon's cracking boom, the SMG's papery rattle, the carbine's tight crack, the rifle's heavy thump, the shotgun's blast, the sniper rifle's crack and roll). Farther than 15 m another player's shot starts turning into its **far variant** (duller, with a long echo), all far by 40 m, so you hear how far away a fight is. The frag and the bomb have far variants too. The sniper rifle carries 2 dB more than the rifle, the hand cannon and shotgun 1 dB more, the SMG 1 dB less and the pistols 2 dB less.
+- **Walls muffle sound** (M13, D-192): a sound whose straight path to you is blocked is duller and quieter, 4 dB per wall and 1.5 dB per metre of wall (at most 18 dB); round a corner (a pillar, a crate, a door frame next to you) it is only 3 dB quieter and a little dull. Steps and reloads get all of it, shots and explosions three quarters (a fight across the map stays audible), the bomb's beep half.
+- **The place sounds like itself** (M13, D-193): in a small room the sound is short and close, in a hall bigger and longer, in a yard between walls it has a short slap echo, and in the open it is almost dry. It is the place *you* stand in, found from the map around you, and it changes smoothly as you walk through a door. Kept light, so every step stays clear.
+- **Reloads** have three sounds per gun (magazine out, magazine in, bolt or slide), different for each gun, and others hear them within 15 m.
 - **The bomb** beeps faster and faster once planted, and planting (key presses) and defusing (wire clicks) can be heard 20 m away. Everyone hears a two-tone alert when it's planted, and the explosion.
-- **Interface:** menu buttons tick on hover and click when pressed; a two-beep "go" starts each round, and short stingers mark a round won (rising) or lost (falling). Game sounds play on the *Effects* bus, interface sounds on *Interface*.
+- **Interface:** menu buttons tick on hover and click when pressed. Game sounds play on the *Effects* bus, interface sounds on *Interface*.
+- **Music** (M13, D-195): a dark, driving 35 s loop in the main menu that fades out when a game starts, and short stingers in the same key: a punchy "go" when a round goes live, a rising phrase for a round won, a falling one for a round lost, a phrase of relief when the bomb is defused (for both teams), and longer cadences for a match won or lost. Made for Chiip, on the *Music* bus.
 - All sounds are generated by code (D-020), retro and short.
 
 ### 4.9 Classes

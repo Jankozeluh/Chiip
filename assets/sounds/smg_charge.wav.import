@@ -2,13 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://baly43bgyng87"
-path="res://.godot/imported/round_won.wav-5793f0183e27980279660597b3a25b98.sample"
+uid="uid://d4pu17f2y6ad"
+path="res://.godot/imported/smg_charge.wav-f177bb91970ce29a26644cf54381346f.sample"
 
 [deps]
 
-source_file="res://assets/sounds/round_won.wav"
-dest_files=["res://.godot/imported/round_won.wav-5793f0183e27980279660597b3a25b98.sample"]
+source_file="res://assets/sounds/smg_charge.wav"
+dest_files=["res://.godot/imported/smg_charge.wav-f177bb91970ce29a26644cf54381346f.sample"]
 
 [params]
 

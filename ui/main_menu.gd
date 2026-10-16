@@ -105,6 +105,8 @@ func _ready() -> void:
 	_lobby.closed.connect(_on_lobby_closed)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
 	_stats_menu.closed.connect(_stats_button.grab_focus)
+	# The menu track (M13, D-195); a game fades it out.
+	Music.play_menu()
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
 	_build_label.text = "Build %s · Divocakos" % ProjectSettings.get_setting("application/config/version", "")
 	_build_background()
@@ -127,9 +129,10 @@ func _exit_tree() -> void:
 
 
 ## True when the command line [param args] (the arguments after [code]--[/code])
-## ask for the game directly: [code]--match[/code], [code]--practice[/code] or [code]--map[/code].
+## ask for the game directly: [code]--match[/code], [code]--practice[/code], [code]--map[/code] or
+## [code]--check-hits[/code] ([HitCheck]).
 static func wants_game(args: PackedStringArray) -> bool:
-	return args.has("--match") or args.has("--practice") or args.has("--map")
+	return args.has("--match") or args.has("--practice") or args.has("--map") or args.has(HitCheck.FLAG)
 
 
 ## Opens the Play screen (the Play button).
