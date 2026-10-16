@@ -638,3 +638,8 @@
 **ENet's throttle**
 - ENet slows down unreliable traffic on its own when it thinks the connection is congested: it drops a share of unreliable packets when the round-trip time rises. That suits bulk data, not a game stream that already repeats what matters, so Chiip switches it off per connection with `ENetPacketPeer.throttle_configure(interval, acceleration, 0)`.
 
+**Client-side prediction, in Godot terms** (`net/net_client.gd`)
+- Unity's Netcode for GameObjects has no built-in prediction either (Netcode for Entities does); in both engines you write it yourself. The trick that makes it work here is that a `CharacterBody3D`'s `move_and_slide()` can be called several times in one physics tick: replaying ten commands is ten calls in a row, each starting where the last one ended. The physics engine only learns the body's final position at the next physics step, which doesn't matter for the body's own moves (`move_and_slide()` starts from the node's transform).
+- `is_on_floor()` is the result of the last `move_and_slide()`, so after putting a body somewhere by hand it is stale; Chiip tells the next tick explicitly (`Character.set_floor_contact()`).
+- GDScript's `float` is 64 bits, but `Vector3` and the packets use 32. A value that travels must be cut to 32 bits *before* both sides use it (`PackedFloat32Array([value])[0]`), or the two simulations drift apart a hair per tick.
+

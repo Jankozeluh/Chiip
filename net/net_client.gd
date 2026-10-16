@@ -24,6 +24,15 @@ extends Node
 ## - **Commands** (D-103). Every tick your controller's command is numbered and sent to the
 ##   host with every earlier one the host hasn't confirmed yet (at most
 ##   [constant MAX_SENT]); a snapshot's ack confirms them.
+## - **Prediction** (D-106). Your character doesn't wait for the host: every command is
+##   simulated here at once ([method Character.step]), shots, recoil and ammo included, and the
+##   state it leaves is kept with it. When a snapshot says where the host's simulation of the
+##   same command left you, the two are compared; if they differ by more than
+##   [constant POSITION_TOLERANCE] or [constant VELOCITY_TOLERANCE] (or in crouching or ground
+##   contact), you are put where the host says and every newer command is replayed at once
+##   (movement only), so you end up where the host will have you. The camera hides the jump of a
+##   small correction, letting it fade over [constant SMOOTHING_TIME] (CS's [code]cl_smooth[/code]).
+##   Ammo is corrected by the difference between the host's count and the predicted one.
 ##
 ## [code]main.gd[/code] adds it to the map of an online match on a client, after the replica
 ## rules, and calls [method setup].
@@ -45,6 +54,13 @@ const INTERPOLATION_TICKS := 6.0
 const EXTRAPOLATION_TICKS := 13.0
 ## Snapshots kept per puppet (half a second).
 const MAX_SAMPLES := 32
+## Prediction: differences from the host this small are left alone (metres, metres a second).
+const POSITION_TOLERANCE := 0.01
+const VELOCITY_TOLERANCE := 0.05
+## Seconds over which the camera catches up with a corrected position.
+const SMOOTHING_TIME := 0.1
+## Corrections larger than this (metres) aren't smoothed: a respawn or a teleport.
+const SMOOTHING_LIMIT := 1.0
 ## How quickly the clock follows the snapshots' ticks (a share of the difference per tick), and
 ## the difference at which it jumps instead.
 const CLOCK_CORRECTION := 0.05
@@ -69,6 +85,12 @@ var command_tick: int = 0
 var acked_tick: int = 0
 ## The host tick this computer thinks it is (it follows the snapshots' ticks smoothly).
 var clock: float = -1.0
+## Prediction can be switched off (tests compare): your character then stands where the
+## host's snapshots put it, a round trip late.
+var predict: bool = true
+## How often the host disagreed with the prediction, and the largest difference (metres).
+var corrections: int = 0
+var largest_correction: float = 0.0
 
 ## Commands sent but not confirmed yet, oldest first.
 var _unconfirmed: Array[CharacterInput] = []
@@ -79,6 +101,30 @@ var _respawn_ticks: Dictionary = {}
 ## Numbers of the cosmetic effects already played (the newest few hundred).
 var _played: Dictionary = {}
 var _played_order: Array[int] = []
+## Every command predicted but not confirmed yet with the state it left: [command, PredictedState].
+var _history: Array = []
+
+
+## What prediction compares: the state a command left the character in.
+class PredictedState:
+	var position: Vector3
+	var velocity: Vector3
+	var crouching: bool
+	var eye_height: float
+	var on_floor: bool
+	var magazine: int
+	var reserve: int
+
+	static func of(character: Character) -> PredictedState:
+		var state := PredictedState.new()
+		state.position = character.global_position
+		state.velocity = character.velocity
+		state.crouching = character.is_crouching
+		state.eye_height = character.get_eye_height()
+		state.on_floor = character.is_on_floor()
+		state.magazine = character.weapon.magazine if character.weapon != null else 0
+		state.reserve = character.weapon.reserve if character.weapon != null else 0
+		return state
 
 ## Net id → character, for everyone in the match (you included).
 var _characters: Dictionary = {}
@@ -130,6 +176,14 @@ func _physics_process(delta: float) -> void:
 	_advance_clock()
 	_show_puppets()
 	_send_command(delta)
+
+
+func _process(delta: float) -> void:
+	# The camera's share of a correction fades out (cl_smooth).
+	if player != null and player.view_offset != Vector3.ZERO:
+		player.view_offset *= exp(-delta / SMOOTHING_TIME)
+		if player.view_offset.length() < 0.0005:
+			player.view_offset = Vector3.ZERO
 
 
 ## The host tick the puppets are shown at now: [constant INTERPOLATION_TICKS] behind the clock.
@@ -197,14 +251,22 @@ func _send_command(delta: float) -> void:
 		command = player.get_controller().get_input(delta)
 	else:
 		command = CharacterInput.new()
-	command = NetProtocol.quantize(command)
 	command_tick += 1
 	command.tick = command_tick
 	command.view_tick = get_render_tick()
+	command = NetProtocol.quantize(command)
 	_unconfirmed.append(command)
 	while _unconfirmed.size() > MAX_UNCONFIRMED:
 		_unconfirmed.pop_front()
 	session.send_packet(1, NetProtocol.pack_commands(_unconfirmed.slice(maxi(_unconfirmed.size() - MAX_SENT, 0))), false)
+	if predict:
+		# Simulate it now, exactly as the host will (D-106), and remember where it left you.
+		# A copy: the simulation clears the movement of a frozen command, and the command itself
+		# must reach the host (in later packets too) as it was made.
+		player.step(command.copy(), delta)
+		_history.append([command, PredictedState.of(player)])
+		while _history.size() > MAX_UNCONFIRMED:
+			_history.pop_front()
 
 
 func _request_class(_character: Character, data: ClassData) -> void:
@@ -447,7 +509,58 @@ func _on_ack(ack: int) -> void:
 func _apply_own(own: NetProtocol.OwnState) -> void:
 	player.frozen = own.has(NetProtocol.FLAG_FROZEN)
 	player.busy = own.has(NetProtocol.FLAG_BUSY)
-	player.set_predicted_state(own.position, own.velocity, own.has(NetProtocol.FLAG_CROUCHING), own.eye_height, own.has(NetProtocol.FLAG_ON_FLOOR))
+	if not predict:
+		player.set_predicted_state(own.position, own.velocity, own.has(NetProtocol.FLAG_CROUCHING), own.eye_height, own.has(NetProtocol.FLAG_ON_FLOOR))
+		return
+	_reconcile(own)
+
+
+## Compares the host's state after command [member NetProtocol.OwnState.ack] with what was
+## predicted for it, and corrects the prediction when they differ (D-106).
+func _reconcile(own: NetProtocol.OwnState) -> void:
+	# Forget what the host has confirmed, up to the acked command itself.
+	var predicted: PredictedState = null
+	while not _history.is_empty() and (_history[0][0] as CharacterInput).tick <= own.ack:
+		var entry: Array = _history.pop_front()
+		if (entry[0] as CharacterInput).tick == own.ack:
+			predicted = entry[1]
+	if predicted == null:
+		if own.ack > 0 and _history.is_empty():
+			# Nothing predicted after it (prediction just started): take the host's state.
+			player.set_predicted_state(own.position, own.velocity, own.has(NetProtocol.FLAG_CROUCHING), own.eye_height, own.has(NetProtocol.FLAG_ON_FLOOR))
+		return
+	var crouching := own.has(NetProtocol.FLAG_CROUCHING)
+	var on_floor := own.has(NetProtocol.FLAG_ON_FLOOR)
+	# Ammo: what the host counted that this computer didn't (or the other way round) is added.
+	var magazine_difference := own.magazine - predicted.magazine
+	var reserve_difference := own.reserve - predicted.reserve
+	if magazine_difference != 0 or reserve_difference != 0:
+		player.weapon.correct_ammo(magazine_difference, reserve_difference)
+		for entry: Array in _history:
+			(entry[1] as PredictedState).magazine += magazine_difference
+			(entry[1] as PredictedState).reserve += reserve_difference
+	var error := predicted.position.distance_to(own.position)
+	if error <= POSITION_TOLERANCE and predicted.velocity.distance_to(own.velocity) <= VELOCITY_TOLERANCE \
+			and predicted.crouching == crouching and predicted.on_floor == on_floor:
+		return
+	# The host disagrees: start from its state and replay every newer command, movement only.
+	corrections += 1
+	largest_correction = maxf(largest_correction, error)
+	var shown_before := player.global_position
+	player.set_predicted_state(own.position, own.velocity, crouching, own.eye_height, on_floor)
+	var delta := 1.0 / Engine.physics_ticks_per_second
+	for entry: Array in _history:
+		player.step((entry[0] as CharacterInput).copy(), delta, false)
+		var state := PredictedState.of(player)
+		state.magazine = (entry[1] as PredictedState).magazine
+		state.reserve = (entry[1] as PredictedState).reserve
+		entry[1] = state
+	var jump := shown_before - player.global_position
+	if jump.length() <= SMOOTHING_LIMIT:
+		player.view_offset += jump
+	else:
+		player.view_offset = Vector3.ZERO
+	player.reset_physics_interpolation()
 
 
 func _apply_bomb(state: NetProtocol.BombState) -> void:

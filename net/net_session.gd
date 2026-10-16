@@ -150,9 +150,12 @@ func _exit_tree() -> void:
 ## example [constant ERR_CANT_CREATE] when the port is taken).
 func host_game(player_name: String, port: int = DEFAULT_PORT) -> Error:
 	var peer := ENetMultiplayerPeer.new()
-	var result := peer.create_server(port, MAX_CLIENTS, 2)
+	var result := peer.create_server(port, MAX_CLIENTS, 2, 0, 0)
 	if result != OK:
 		return result
+	# No bandwidth limit, said out loud: without this call ENet's bandwidth throttle cut the
+	# unreliable packets to 1 in 32 in the tests (D-103).
+	peer.host.bandwidth_limit(0, 0)
 	role = Role.HOST
 	multiplayer.multiplayer_peer = peer
 	local_peer_id = 1
@@ -168,9 +171,10 @@ func host_game(player_name: String, port: int = DEFAULT_PORT) -> Error:
 ## Returns OK when the attempt started; [signal joined] or [signal join_failed] follows.
 func join_game(address: String, player_name: String, port: int = DEFAULT_PORT) -> Error:
 	var peer := ENetMultiplayerPeer.new()
-	var result := peer.create_client(address, port, 2)
+	var result := peer.create_client(address, port, 2, 0, 0)
 	if result != OK:
 		return result
+	peer.host.bandwidth_limit(0, 0)
 	role = Role.CLIENT
 	multiplayer.multiplayer_peer = peer
 	local_name = _clean_name(player_name)
@@ -424,8 +428,9 @@ func _rpc_message_to_host(data: Dictionary) -> void:
 
 ## Sets up the ENet connection to [param peer_id]: a dropped connection is noticed within
 ## seconds instead of ENet's default half a minute, and ENet never drops unreliable packets on
-## its own. Its *throttle* would drop some whenever the round trip time wobbles; the game stream
-## repeats what matters itself (D-103), so a dropped command packet only costs, never helps.
+## its own. Its *throttle* would drop some whenever the round trip time wobbles (together with
+## [method ENetConnection.bandwidth_limit] at creation, D-103); the game stream repeats what
+## matters itself, so a dropped command packet only costs, never helps.
 func _configure_peer(peer_id: int) -> void:
 	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	if peer == null or peer.get_peer(peer_id) == null:

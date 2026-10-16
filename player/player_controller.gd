@@ -225,8 +225,9 @@ func _process(_delta: float) -> void:
 	_was_blocked = blocked
 	var source := get_view_target()
 	var head := source.head.get_global_transform_interpolated()
-	# Position: where the head is drawn this frame (smoothed between physics ticks).
-	camera.global_position = head.origin
+	# Position: where the head is drawn this frame (smoothed between physics ticks), and online
+	# the fading share of a prediction correction (zero offline).
+	camera.global_position = head.origin + source.view_offset
 	# Rotation: your own view comes straight from the mouse, so looking around is
 	# instant. A teammate's is the way their head is drawn this frame, which is
 	# their aim smoothed between physics ticks like the position (the head turns

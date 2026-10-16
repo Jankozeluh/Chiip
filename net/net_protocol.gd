@@ -184,11 +184,17 @@ static func unpack_values(packet: PackedByteArray) -> Array:
 
 
 ## [param command] as it will arrive at the host: the movement keys in whole steps of 1/127
-## (a byte each). The client simulates this copy, so both computers run the same numbers (D-103).
+## (a byte each), and the angles and the view tick as 32-bit floats (GDScript's own floats have
+## 64 bits; the packet carries 32). The client simulates this copy, so both computers run exactly
+## the same numbers (D-103).
 static func quantize(command: CharacterInput) -> CharacterInput:
 	var copy := command.copy()
 	copy.move = Vector2(roundi(clampf(command.move.x, -1.0, 1.0) * 127.0) / 127.0,
 			roundi(clampf(command.move.y, -1.0, 1.0) * 127.0) / 127.0)
+	var angles := PackedFloat32Array([command.yaw, command.pitch, command.view_tick])
+	copy.yaw = angles[0]
+	copy.pitch = angles[1]
+	copy.view_tick = angles[2]
 	return copy
 
 

@@ -14,8 +14,10 @@ extends Node
 ## spread is rolled from its command's number. Snapshots (task 5): a puppet is shown 6 ticks
 ## behind the newest snapshot, exactly between the host's positions around that moment and
 ## without jumps; its shots, reloads and footsteps play on the client (also with 5% of the
-## snapshots lost); a dead client spectates a teammate's puppet. Quits with the number of failed
-## checks as the exit code.
+## snapshots lost); a dead client spectates a teammate's puppet. Prediction (task 6), at 100 ms
+## of round trip: the client's player moves at once, runs, jumps and crouches without a single
+## correction, ends up exactly where the host has it, recovers from a disagreement (smoothed),
+## and predicts and corrects its ammo. Quits with the number of failed checks as the exit code.
 
 const MAP := preload("res://maps/depot.tscn")
 ## Seconds of each phase, short so the test plays a few rounds quickly.
@@ -71,6 +73,7 @@ func _ready() -> void:
 		await _harness.wait_ticks(10)
 		_test_same_match()
 		await _test_commands()
+		await _test_prediction()
 		await _test_puppets()
 		await _test_spectating()
 		await _test_rounds()
@@ -239,6 +242,83 @@ func _test_commands() -> void:
 	_client.set_physics_process(true)
 	_client.command_source = Callable()
 	_hold_bots(false)
+
+
+## Prediction at 100 ms of round trip (D-106): 50 ms of fake lag each way.
+func _test_prediction() -> void:
+	_hold_bots(true)
+	_host_session.fake_lag_ms = 50.0
+	_client_session.fake_lag_ms = 50.0
+	var friend := _host.get_character_of(_client_session.local_peer_id)
+	var own: Character = _client_main.get_player()
+	var yaw := own.get_aim_angles().x
+	await _harness.wait_ticks(40)
+	var host_start := friend.global_position
+	var corrections_before := _client.corrections
+	var count := [0]
+	_client.command_source = func(_delta: float) -> CharacterInput:
+		count[0] += 1
+		var command := _walk(yaw + sin(count[0] * 0.01), false)
+		if count[0] > 128:
+			command.move = Vector2(1.0 if (count[0] / 64) % 2 == 0 else -1.0, -1.0).normalized()
+		command.jump = count[0] % 90 == 30
+		command.crouch = count[0] % 200 > 160
+		return command
+	await _harness.wait_ticks(3)
+	var own_speed := Vector2(own.velocity.x, own.velocity.z).length()
+	var host_moved := friend.global_position.distance_to(host_start)
+	_check("With prediction your character moves at once, without waiting for the host's answer",
+			own_speed > 0.5 and host_moved < 0.001, "%.2f m/s here, host moved %.3f m" % [own_speed, host_moved])
+	await _harness.wait_ticks(380)
+	_client.command_source = func(_delta: float) -> CharacterInput: return _walk(yaw, true)
+	await _harness.wait_ticks(60)
+	_check("Running, strafing, jumping and crouching for 3 s at 100 ms: not a single correction",
+			_client.corrections == corrections_before, "%d corrections, largest %.3f m" % [_client.corrections - corrections_before, _client.largest_correction])
+	_check("The prediction ends exactly where the host has the character", own.global_position.distance_to(friend.global_position) < 0.001,
+			"%.4f m apart" % own.global_position.distance_to(friend.global_position))
+
+	# A disagreement: the host moves the character half a metre (as a push would).
+	count[0] = 0
+	_client.command_source = func(_delta: float) -> CharacterInput:
+		count[0] += 1
+		return _walk(yaw, count[0] > 60)
+	await _harness.wait_ticks(20)
+	corrections_before = _client.corrections
+	friend.global_position += Vector3(0.5, 0.0, 0.0)
+	await _harness.wait_until(func() -> bool: return _client.corrections > corrections_before, 60)
+	var corrected := _client.corrections > corrections_before
+	var offset := own.view_offset.length()
+	await _harness.wait_ticks(100)
+	_check("When the host disagrees, the client corrects and replays: it ends where the host has it",
+			corrected and own.global_position.distance_to(friend.global_position) < 0.001,
+			"corrected %s, %.4f m apart" % [corrected, own.global_position.distance_to(friend.global_position)])
+	_check("The camera hides the correction, then catches up (an offset of the jump that fades)",
+			offset > 0.3 and offset < 0.6 and own.view_offset.length() < 0.01, "%.3f m at first, %.4f m later" % [offset, own.view_offset.length()])
+
+	# Ammo: shots are predicted; the host's count wins when they differ.
+	var magazine_before := own.weapon.magazine
+	count[0] = 0
+	_client.command_source = func(_delta: float) -> CharacterInput:
+		count[0] += 1
+		var command := _walk(yaw, true)
+		command.shoot = count[0] <= 60
+		return command
+	await _harness.wait_ticks(3)
+	var shot_here := magazine_before - own.weapon.magazine
+	var shot_there := magazine_before - friend.weapon.magazine
+	await _harness.wait_ticks(97)
+	_check("Shots are predicted: your magazine drops at once, the host's count follows a round trip later and agrees",
+			shot_here >= 1 and shot_there < shot_here and own.weapon.magazine == friend.weapon.magazine,
+			"after 3 ticks %d shot here, %d on the host; then %d / %d" % [shot_here, shot_there, own.weapon.magazine, friend.weapon.magazine])
+	friend.weapon.refill()
+	await _harness.wait_ticks(40)
+	_check("When the host's ammo differs (a refill), the client takes the host's count",
+			own.weapon.magazine == friend.weapon.magazine and own.weapon.reserve == friend.weapon.reserve,
+			"%d / %d here, %d / %d on the host" % [own.weapon.magazine, own.weapon.reserve, friend.weapon.magazine, friend.weapon.reserve])
+	_client.command_source = Callable()
+	_host_session.fake_lag_ms = 0.0
+	_client_session.fake_lag_ms = 0.0
+	await _harness.wait_ticks(30)
 
 
 ## The host's player strafes and shoots; its puppet on the client must follow (D-104).

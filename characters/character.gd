@@ -149,6 +149,9 @@ var replica: bool = false
 ## Online, on the host (M9, D-107): checks this character's shots against the hit zones where
 ## the shooter saw them. Set for the friends' characters; null for the host's own and for bots.
 var lag_compensation: LagCompensation
+## Online, on a client (M9, D-106): how far the camera is drawn from the eyes, to hide the jump
+## of a prediction correction while it fades out. Zero offline.
+var view_offset: Vector3 = Vector3.ZERO
 
 ## The command being simulated this tick, from the controller.
 var _input := CharacterInput.new()

@@ -998,7 +998,7 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 
 **Alternatives:** one command per host tick with a jitter buffer (Overwatch's way; needs careful buffer tuning and adds delay); sending each command once (a lost packet loses a jump or a shot).
 
-**Added while building (task 4):** ENet has a *throttle* that drops a share of unreliable packets by itself when the round-trip time wobbles. On localhost it dropped the odd command packet with no fake loss at all. Chiip's stream repeats what matters (commands until confirmed, effects in three snapshots, a newer snapshot replaces a lost one), so the throttle is switched off for every connection (`throttle_configure(5000, 2, 0)`); our streams are small (tens of KB/s), so there is no congestion for it to prevent.
+**Added while building (task 4):** ENet has a *throttle* that drops a share of unreliable packets by itself when the round-trip time wobbles. On localhost it dropped the odd command packet with no fake loss at all. Chiip's stream repeats what matters (commands until confirmed, effects in three snapshots, a newer snapshot replaces a lost one), so the throttle is switched off for every connection (`throttle_configure(5000, 2, 0)`); our streams are small (tens of KB/s), so there is no congestion for it to prevent. Later (task 6) ENet's *bandwidth* throttle cut the unreliable packets to 1 in 32 in the middle of a test, although no bandwidth limit had been set; calling `ENetConnection.bandwidth_limit(0, 0)` right after creating the host or client stops it. The redundancy had hidden it until prediction showed the host skipping commands.
 
 ## D-104 — Snapshots at 64 Hz; others shown about 50 ms in the past; reliable events for what must not get lost (2026-10-16) — *provisional*
 
@@ -1027,6 +1027,8 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 **Why:** without prediction every step would wait a round trip (100 ms at a typical online ping), which feels like moving through mud. Replaying instead of blending keeps the client exactly on the host's path.
 
 **Alternatives:** no prediction (simple, laggy); blending toward the host's position (cheap, but drifts and rubber-bands); also predicting other players (overshoots, and Source doesn't either).
+
+**Added while building (task 6):** the client must simulate exactly the numbers the host gets. GDScript's floats have 64 bits but the packet carries the angles in 32, so the command is cut to the packet's precision (`NetProtocol.quantize()`) *before* the client simulates it; with that, 3 s of running, strafing, jumping and crouching at 100 ms of round trip needs not a single correction.
 
 ## D-107 — Lag compensation: the host checks shots against hit zones rewound to what the shooter saw (2026-10-16) — *provisional*
 

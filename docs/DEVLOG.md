@@ -19,7 +19,9 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 
 - **Snapshots** (task 5): puppets are shown 6 ticks (47 ms) behind the newest snapshot, interpolated between the two around that moment, with a clock that follows the snapshots smoothly; they keep going along their velocity for 100 ms when snapshots stop. Shots and reloads ride in four snapshots each and play once; a respawned puppet doesn't glide from where it died. 6 new checks in `netplay_test` (27): within 2 cm of the host's path with 5% of the snapshots lost, no jumps, every shot and reload once, footsteps, spectating a teammate's puppet.
 
-**Next:** task 6, client-side prediction.
+- **Client-side prediction** (task 6): your character is simulated at once from every command; each snapshot's ack is compared with the prediction, and a difference puts you where the host says and replays the newer commands, the camera smoothing the jump over 0.1 s. Ammo is predicted and corrected by the difference. The first runs drifted: the client simulated 64-bit angles while the host got 32-bit ones (now cut before simulating), and ENet's bandwidth throttle had been dropping 31 of 32 unreliable packets in the middle of a test (now `bandwidth_limit(0, 0)` explicitly; the redundancy had hidden it). 7 new checks in `netplay_test` (34), among them 3 s of running, strafing, jumping and crouching at 100 ms of round trip with not a single correction.
+
+**Next:** task 7, lag compensation.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 
