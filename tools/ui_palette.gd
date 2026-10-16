@@ -83,6 +83,8 @@ const BUTTON_PRESSED := ACCENT
 const TEXT_DISABLED := Color("5f6c80")
 ## Text on the accent or on a TEXT fill (a focused menu item, the chosen segment, the primary button).
 const TEXT_ON_FILL := Color("0b1017")
+## How much lighter a team chip gets when hovered.
+const CHIP_HOVER_LIGHTEN := 0.25
 ## A faint band behind a hovered check box or check button.
 const TOGGLE_HOVER := Color(1, 1, 1, 0.06)
 
@@ -118,6 +120,8 @@ const TEXT_SIZE_LARGE := 32
 const TEXT_SIZE_TITLE := 48
 ## The biggest text (Bold): the game's name, the match result, a map's name.
 const TEXT_SIZE_HERO := 96
+## Space between the lines of a two-line 32 px title (the mockup's line height 32 = Silkscreen's 41 px line - 9).
+const LARGE_LINE_SPACING := -9
 ## Extra space between the letters of the game's name on the main menu (the mockup's letter-spacing 4).
 const HERO_LETTER_SPACING := 4
 
@@ -148,6 +152,10 @@ const BIG_BUTTON_PAD_TOP := 1
 const BIG_BUTTON_PAD_BOTTOM := 6
 ## A small menu item (40 high, 16 px: Host and Join).
 const SMALL_ITEM_PAD_X := 16
+## The big Play button of the Play screen (56 high, 32 px text).
+const BIG_PRIMARY_PAD_X := 32
+const BIG_PRIMARY_PAD_TOP := 5
+const BIG_PRIMARY_PAD_BOTTOM := 10
 ## The Play screen's mode cards (24 all round).
 const MODE_BUTTON_PAD_X := 24
 const MODE_BUTTON_PAD_Y := 24
@@ -232,6 +240,19 @@ const SEGMENT_GAP := 0
 const MODE_GAP := 4
 const MODE_LINE_GAP := 8
 const CARD_GAP := 24
+## The main menu's line under its items: 16 in from the sides, 12 above and below.
+const DIVIDER_MARGIN_X := 16
+const DIVIDER_MARGIN_Y := 12
+## A full-screen page's sections (the Play screen: header, cards, custom rows, footer).
+const PAGE_GAP := 32
+## The Play screen's custom rows: two columns 64 apart, rows 16 apart.
+const FORM_GRID_H := 64
+const FORM_GRID_V := 16
+## Inside a row: between its parts (Foundations: "inside a row: 16").
+const ROW_GAP := 16
+## The three brand chips under the game's name, and a team's size chips.
+const CHIP_GAP := 6
+const TEAM_CHIP_GAP := 4
 ## The crosshair colour swatches: space between them, and the frame around the chosen one.
 const SWATCH_GAP := 8
 const SWATCH_MARGIN := 2

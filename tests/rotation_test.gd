@@ -4,9 +4,9 @@ extends Node
 ##
 ##     Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/rotation_test.tscn
 ##
-## Match setup with a Settings instance of its own (it never saves): the Mode row
-## (Team Deathmatch or Bomb, D-132), the match length switching between rounds and kills,
-## the Maps row (one map or the rotation) and the rotation's order and summary,
+## The Play screen with a Settings instance of its own (it never saves): the mode
+## cards (Team Deathmatch or Bomb, D-135), the match length switching between rounds and kills,
+## the map row (a quick map or the rotation) and the rotation's order and summary,
 ## and what Start leaves for the game. Then the game itself (main.tscn, started
 ## the way Start does, never touching the real settings file): a rotation starts
 ## on its first map, the match-end screen offers "Next map: Square", the next map
@@ -52,53 +52,45 @@ func _test_setup() -> void:
 	setup.settings = stored
 	add_child(setup)
 	await get_tree().process_frame
-	var mode_buttons := setup.get_segment_buttons(&"match_mode")
+	var cards := setup.get_mode_cards()
 	var rounds_buttons := setup.get_segment_buttons(&"match_rounds_to_win")
 	var kill_buttons := setup.get_segment_buttons(&"match_kill_limit")
-	var maps_buttons := setup.get_segment_buttons(&"match_rotation")
+	var map_buttons := setup.get_segment_buttons(&"match_map")
 	var rules := setup.build_match_settings()
-	_check("Match setup (Custom match) offers Mode (Team Deathmatch / Bomb, D-132) and Maps (One map / Rotation); by default Team Deathmatch on the rotation from Depot, the length in kills",
-			_texts(mode_buttons) == ["Team Deathmatch", "Bomb"] and _texts(maps_buttons) == ["One map", "Rotation"]
-					and _texts(kill_buttons) == ["30 kills", "50 kills", "75 kills"]
-					and (mode_buttons[0] as Button).button_pressed and (maps_buttons[1] as Button).button_pressed
-					and not _row_visible(rounds_buttons) and _row_visible(kill_buttons)
+	_check("The Play screen (D-135) offers Team Deathmatch, Bomb and Practice cards and a map row (Depot, Square, Spillway, Rotation); by default Team Deathmatch on the rotation from Depot, the length in kills",
+			cards.size() == 3 and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"]
+					and _texts(kill_buttons) == ["25", "50", "75", "100"]
+					and setup.get_picked_mode() == "respawn" and (map_buttons[3] as Button).button_pressed
+					and not setup.is_row_shown(&"match_rounds_to_win") and setup.is_row_shown(&"match_kill_limit")
 					and rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and setup.get_rotation_maps() == [DEPOT, SQUARE, SPILLWAY]
 					and setup.get_summary().begins_with("Team Deathmatch: ") and setup.get_summary().ends_with("Maps in rotation: Depot, Square, Spillway."),
-			"mode %s, maps %s, kills %s, summary '%s'" % [_texts(mode_buttons), _texts(maps_buttons), _texts(kill_buttons), setup.get_summary()])
+			"maps %s, kills %s, summary '%s'" % [_texts(map_buttons), _texts(kill_buttons), setup.get_summary()])
 
-	(mode_buttons[1] as Button).button_pressed = true
+	cards[1].pressed.emit()
 	var bomb_rules := setup.build_match_settings()
 	var bomb_summary := setup.get_summary()
-	var bomb_rows := _row_visible(rounds_buttons) and not _row_visible(kill_buttons)
-	(mode_buttons[0] as Button).button_pressed = true
+	var bomb_rows := setup.is_row_shown(&"match_rounds_to_win") and not setup.is_row_shown(&"match_kill_limit")
+	cards[0].pressed.emit()
 	rules = setup.build_match_settings()
 	var at_fifty := rules.kill_limit
 	(kill_buttons[2] as Button).button_pressed = true
 	rules = setup.build_match_settings()
-	_check("Bomb counts rounds (rounds mode, \"Bomb: \" in the summary); Team Deathmatch counts kills (50 by default, 75 when picked), the summary says so, and Start plays a team respawn match",
+	_check("Bomb counts rounds (rounds mode, \"Bomb: \" in the summary); Team Deathmatch counts kills (50 by default, 75 when picked), the summary says so, and Play plays a team respawn match",
 			bomb_rules.game_mode == MatchSettings.GameMode.ROUNDS and bomb_rows and bomb_summary.begins_with("Bomb: ") and bomb_summary.contains("first to 5 rounds")
 					and stored.match_mode == "respawn" and rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and at_fifty == 50
 					and rules.kill_limit == 75 and stored.match_kill_limit == 75
-					and not _row_visible(rounds_buttons) and _row_visible(kill_buttons)
+					and not setup.is_row_shown(&"match_rounds_to_win") and setup.is_row_shown(&"match_kill_limit")
 					and setup.get_summary().begins_with("Team Deathmatch: ") and setup.get_summary().contains("first to 75 kills"),
 			"bomb summary '%s'; stored %s / %d, kill limit %d, summary '%s'" % [bomb_summary, stored.match_mode, stored.match_kill_limit, rules.kill_limit, setup.get_summary()])
 
-	(maps_buttons[0] as Button).button_pressed = true
+	(map_buttons[1] as Button).button_pressed = true
 	var one_map := setup.get_rotation_maps()
-	(maps_buttons[1] as Button).button_pressed = true
-	var option := setup.get_map_option()
-	var test_map_index := setup.get_map_paths().find("res://maps/test_map.tscn")
-	option.select(test_map_index)
-	option.item_selected.emit(test_map_index)
-	var from_test_map := setup.get_rotation_maps()
-	var square_index := setup.get_map_paths().find(SQUARE)
-	option.select(square_index)
-	option.item_selected.emit(square_index)
+	(map_buttons[3] as Button).button_pressed = true
 	var from_square := setup.get_rotation_maps()
-	_check("One map plays no rotation; Rotation: Depot, Square, Spillway, starting on the chosen map when it's one of them; the summary lists them",
-			one_map.is_empty() and stored.match_rotation and from_test_map == [DEPOT, SQUARE, SPILLWAY] and from_square == [SQUARE, SPILLWAY, DEPOT]
+	_check("A map plays alone; Rotation plays Depot, Square, Spillway, starting on the chosen map (Square here); the summary lists them",
+			one_map.is_empty() and stored.match_rotation and from_square == [SQUARE, SPILLWAY, DEPOT]
 					and setup.get_summary().ends_with("Maps in rotation: Square, Spillway, Depot."),
-			"from the test map %s, from Square %s, summary '%s'" % [from_test_map, from_square, setup.get_summary()])
+			"from Square %s, summary '%s'" % [from_square, setup.get_summary()])
 
 	# What Start leaves for the game.
 	GameLaunch.start_match(setup.get_map_path(), setup.build_match_settings(), setup.get_rotation_maps())
@@ -107,8 +99,8 @@ func _test_setup() -> void:
 					and GameLaunch.match_settings.game_mode == MatchSettings.GameMode.TEAM_RESPAWN,
 			"map %s, rotation %s" % [GameLaunch.map_path, GameLaunch.rotation])
 	GameLaunch.clear()
-	(maps_buttons[0] as Button).button_pressed = true
-	(mode_buttons[1] as Button).button_pressed = true
+	(map_buttons[1] as Button).button_pressed = true
+	cards[1].pressed.emit()
 	GameLaunch.start_match(setup.get_map_path(), setup.build_match_settings(), setup.get_rotation_maps())
 	_check("Back to one map and Bomb: Start leaves just that map and the rounds rules", GameLaunch.map_path == SQUARE and GameLaunch.rotation.is_empty()
 			and GameLaunch.match_settings.game_mode == MatchSettings.GameMode.ROUNDS, "map %s, rotation %s" % [GameLaunch.map_path, GameLaunch.rotation])

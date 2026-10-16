@@ -86,7 +86,8 @@ static func clear() -> void:
 
 ## The [MatchSettings] for the choices stored in [param settings]: team sizes,
 ## bot difficulty, match length and friendly fire, the mode and team respawn's
-## kill limit. The timings stay at their defaults. Used by match setup's Start.
+## kill limit and time limit (minutes in the settings, seconds in the rules). The
+## round timings stay at their defaults. Used by the Play screen.
 static func match_settings_from(settings: Settings) -> MatchSettings:
 	var rules := MatchSettings.new()
 	rules.team_size = settings.match_team_size
@@ -96,6 +97,7 @@ static func match_settings_from(settings: Settings) -> MatchSettings:
 	rules.friendly_fire = settings.match_friendly_fire
 	rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN if settings.match_mode == "respawn" else MatchSettings.GameMode.ROUNDS
 	rules.kill_limit = settings.match_kill_limit
+	rules.time_limit = settings.match_time_limit * 60.0
 	return rules
 
 

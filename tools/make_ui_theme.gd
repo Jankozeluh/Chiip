@@ -123,6 +123,7 @@ func _labels() -> void:
 	_variation("ModeTitleLabel", "Label")
 	_font_sizes("ModeTitleLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
 	_colors("ModeTitleLabel", {"font_color": Palette.TEXT})
+	_constants("ModeTitleLabel", {"line_spacing": Palette.LARGE_LINE_SPACING})
 	_variation("ModeDetailLabel", "Label")
 	_colors("ModeDetailLabel", {"font_color": Palette.TEXT_DIM})
 	# Text in the UI's team colours (D-134). Colours are relative to the viewer, so
@@ -154,6 +155,17 @@ func _labels() -> void:
 	_variation("DimKeyCapLabel", "Label")
 	_styles("DimKeyCapLabel", {"normal": _box("dim_key_cap", Color.TRANSPARENT, Palette.TEXT_DIM, Palette.BORDER, margins)})
 	_colors("DimKeyCapLabel", {"font_color": Palette.TEXT_DIM})
+	# The game's name on the main menu: 96 px Bold with the mockup's letter spacing.
+	var logo := FontVariation.new()
+	logo.resource_scene_unique_id = "logo_font"
+	logo.base_font = bold
+	logo.spacing_glyph = Palette.HERO_LETTER_SPACING
+	_variation("LogoLabel", "Label")
+	_font_sizes("LogoLabel", {"font_size": Palette.TEXT_SIZE_HERO})
+	_fonts("LogoLabel", {"font": logo})
+	# Text over the game world with a hard shadow (the main menu's map name).
+	_variation("ShadowLabel", "Label")
+	_constants("ShadowLabel", {"shadow_offset_x": Palette.SHADOW_OFFSET, "shadow_offset_y": Palette.SHADOW_OFFSET, "shadow_outline_size": 0})
 	# A tag on the accent ("DEFAULT").
 	_variation("TagLabel", "Label")
 	var tag := Vector4(Palette.TAG_PAD_X, Palette.TAG_PAD_Y, Palette.TAG_PAD_X, Palette.TAG_PAD_Y)
@@ -205,6 +217,13 @@ func _panels() -> void:
 	_styles("TeamHeaderFriendly", {"panel": _underline("team_header_friendly", Palette.FRIENDLY)})
 	_variation("TeamHeaderEnemy", "PanelContainer")
 	_styles("TeamHeaderEnemy", {"panel": _underline("team_header_enemy", Palette.ENEMY)})
+	# The chips (Foundations: "one square pixel is the whole brand"): flat squares in a team colour or the accent.
+	_variation("FriendlyChip", "Panel")
+	_styles("FriendlyChip", {"panel": _box("friendly_chip", Palette.FRIENDLY)})
+	_variation("EnemyChip", "Panel")
+	_styles("EnemyChip", {"panel": _box("enemy_chip", Palette.ENEMY)})
+	_variation("AccentChip", "Panel")
+	_styles("AccentChip", {"panel": _box("accent_chip", Palette.ACCENT)})
 	# A segmented choice's frame: 2 px LINE around the choices, nothing inside.
 	_variation("SegmentFrame", "PanelContainer")
 	_styles("SegmentFrame", {"panel": _box("segment_frame", Color.TRANSPARENT, Palette.LINE_COLOR, Palette.BORDER)})
@@ -246,6 +265,24 @@ func _containers() -> void:
 	_constants("ModeText", {"separation": Palette.MODE_LINE_GAP})
 	_variation("CardRow", "HBoxContainer")
 	_constants("CardRow", {"separation": Palette.CARD_GAP})
+	# A full-screen page's column of sections, and a row's parts.
+	_variation("PageColumn", "VBoxContainer")
+	_constants("PageColumn", {"separation": Palette.PAGE_GAP})
+	_variation("RowBox", "HBoxContainer")
+	_constants("RowBox", {"separation": Palette.ROW_GAP})
+	# The Play screen's custom rows: two columns.
+	_variation("FormGrid", "GridContainer")
+	_constants("FormGrid", {"h_separation": Palette.FORM_GRID_H, "v_separation": Palette.FORM_GRID_V})
+	# The main menu's line between its items and Host / Join (16 in from the sides, 12 above and below), and the line itself.
+	_variation("DividerMargin", "MarginContainer")
+	_margins("DividerMargin", Palette.DIVIDER_MARGIN_X, Palette.DIVIDER_MARGIN_Y)
+	_variation("LineSeparator", "HSeparator")
+	_constants("LineSeparator", {"separation": Palette.LINE})
+	# The brand chips under the game's name, and a team's size chips.
+	_variation("ChipRow", "HBoxContainer")
+	_constants("ChipRow", {"separation": Palette.CHIP_GAP})
+	_variation("TeamChipRow", "HBoxContainer")
+	_constants("TeamChipRow", {"separation": Palette.TEAM_CHIP_GAP})
 	# The settings menu's crosshair colour swatches, and the margin that frames each colour inside its button.
 	_variation("SwatchRow", "HBoxContainer")
 	_constants("SwatchRow", {"separation": Palette.SWATCH_GAP})
@@ -385,9 +422,32 @@ func _buttons() -> void:
 		"icon_normal_color": Palette.TEXT_ON_FILL, "icon_hover_color": Palette.TEXT_ON_FILL, "icon_focus_color": Palette.TEXT_ON_FILL,
 		"icon_pressed_color": Palette.TEXT_ON_FILL, "icon_hover_pressed_color": Palette.TEXT_ON_FILL,
 	})
-	# A big primary button (the Play screen's PLAY: 32 px).
+	# A big primary button (the Play screen's PLAY: 56 high, 32 px).
 	_variation("BigPrimaryButton", "PrimaryButton")
 	_font_sizes("BigPrimaryButton", {"font_size": Palette.TEXT_SIZE_LARGE})
+	var big := Vector4(Palette.BIG_PRIMARY_PAD_X, Palette.BIG_PRIMARY_PAD_TOP, Palette.BIG_PRIMARY_PAD_X, Palette.BIG_PRIMARY_PAD_BOTTOM)
+	_styles("BigPrimaryButton", {
+		"normal": _shadowed("big_primary_button_normal", Palette.ACCENT, big),
+		"hover": _shadowed("big_primary_button_hover", Palette.ACCENT_BRIGHT, big),
+		"pressed": _shadowed("big_primary_button_pressed", Palette.ACCENT, big),
+		"hover_pressed": _shadowed("big_primary_button_hover_pressed", Palette.ACCENT_BRIGHT, big),
+		"focus": _ring("big_primary_button_focus", Palette.TEXT, big),
+	})
+	# The team-size chips of the Play screen (Foundations: TEAM SIZE): a square per player,
+	# filled in the team's colour up to the team's size, framed in LINE after it.
+	for chip in [["FriendlyChipButton", Palette.FRIENDLY], ["EnemyChipButton", Palette.ENEMY], ["EmptyChipButton", Color.TRANSPARENT]]:
+		var role: String = chip[0]
+		var fill: Color = chip[1]
+		var frame: Color = Palette.LINE_COLOR if fill == Color.TRANSPARENT else fill
+		var lit: Color = Palette.TEXT_DIM if fill == Color.TRANSPARENT else fill.lightened(Palette.CHIP_HOVER_LIGHTEN)
+		var prefix := role.to_snake_case()
+		var rest := _box("%s_rest" % prefix, fill, frame, Palette.BORDER, _even(0))
+		var hover := _box("%s_hover" % prefix, fill if fill == Color.TRANSPARENT else lit, lit, Palette.BORDER, _even(0))
+		_variation(role, "Button")
+		_styles(role, {
+			"normal": rest, "pressed": rest, "disabled": rest, "hover": hover, "hover_pressed": hover,
+			"focus": _ring("%s_focus" % prefix, Palette.ACCENT, _even(0)),
+		})
 	# A mode card of the Play screen: a panel that the accent frames on hover and focus (and when chosen).
 	_variation("ModeButton", "Button")
 	var card := _even(0)
@@ -398,6 +458,12 @@ func _buttons() -> void:
 		"hover_pressed": _box("mode_button_hover_pressed", Palette.PANEL_OPAQUE, Palette.ACCENT, Palette.BORDER, card),
 		"disabled": _box("mode_button_disabled", Palette.PANEL_OPAQUE, Palette.PANEL_OPAQUE, Palette.BORDER, card),
 		"focus": _ring("mode_button_focus", Palette.ACCENT, card),
+	})
+	# The picked mode card: framed in the accent at rest too ("click to play").
+	_variation("ModeButtonPicked", "ModeButton")
+	_styles("ModeButtonPicked", {
+		"normal": _box("mode_button_picked", Palette.PANEL_OPAQUE, Palette.ACCENT, Palette.BORDER, card),
+		"disabled": _box("mode_button_picked_disabled", Palette.PANEL_OPAQUE, Palette.ACCENT, Palette.BORDER, card),
 	})
 	# A segment of a segmented choice (Foundations: SEGMENTS): DIM text with nothing behind;
 	# the chosen one (a pressed toggle) filled with TEXT, ink text; the focus underlined in the accent.

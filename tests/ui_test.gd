@@ -1528,8 +1528,9 @@ func _test_console_and_menus() -> void:
 # --- The main menu and match setup (D-064) ---
 
 
-## The main menu: four themed buttons over a background without a player, a calm
-## camera flight, scaled with the window, and Esc.
+## The main menu (D-135): the mockup's left column (the game's name and its chips,
+## Play, Practice, Settings, Quit, Host and Join marked soon) over a background
+## without a player, a calm camera flight, scaled with the window, and Esc.
 func _test_main_menu() -> void:
 	var settings := Settings.get_instance()
 	MenuState.reset()
@@ -1538,56 +1539,43 @@ func _test_main_menu() -> void:
 	add_child(menu)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var titles: Array[String] = []
-	var details: Array[String] = []
-	var modes_ok := true
-	for button in menu.get_mode_buttons():
-		titles.append(menu.get_mode_title(button))
-		details.append(menu.get_mode_detail(button))
-		modes_ok = modes_ok and button.theme_type_variation == &"ModeButton" and button.visible
-	var links: Array[String] = []
-	for button in menu.get_buttons().slice(3):
-		links.append(button.text)
-		modes_ok = modes_ok and button.theme_type_variation == &"TextButton"
-	var title := menu.get_node("Page/Margin/Column/Panel/PanelMargin/Content/Title") as Label
-	var panel := menu.get_node("Page/Margin/Column/Panel") as PanelContainer
-	_check("The main menu shows CHIIP and the mode choice (D-132): Team Deathmatch (focused), Bomb and Practice as big buttons, each with its line, then Custom match, Settings and Quit; the mouse is free",
-			title.text == "CHIIP" and title.theme_type_variation == &"HeroLabel" and titles == ["Team Deathmatch", "Bomb", "Practice"]
-					and links == ["Custom match", "Settings", "Quit"] and modes_ok and panel.theme_type_variation == &"OverlayPanel"
-					and details.all(func(line: String) -> bool: return line != "")
-					and menu.get_mode_buttons()[0].has_focus() and MenuState.is_top(menu) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
-			"title '%s', modes %s, links %s, details %s, focus on Team Deathmatch %s" % [title.text, titles, links, details, menu.get_mode_buttons()[0].has_focus()])
-	_check("Each mode's line says what one click plays, from the custom choices: 3v3, Normal bots, first to 50 kills or 5 rounds, the rotation's maps; Practice: bots respawn on the test map",
-			details[0] == "3v3 · Normal bots · first to 50 kills\nDepot, Square, Spillway"
-					and details[1] == "3v3 · Normal bots · first to 5 rounds\nDepot, Square, Spillway"
-					and details[2] == "Bots respawn · Normal bots\nTest Map",
-			"%s" % [details])
-	settings.match_enemy_team_size = 5
-	settings.match_kill_limit = 75
-	settings.match_rotation = false
-	settings.match_map = "res://maps/square.tscn"
-	settings.match_friendly_fire = true
-	settings.match_difficulty = "hard"
-	var changed_details: Array[String] = []
-	for button in menu.get_mode_buttons():
-		changed_details.append(menu.get_mode_detail(button))
-	_check("The lines follow the custom choices at once: 3v5, Hard bots, 75 kills, Square alone, friendly fire",
-			changed_details[0] == "3v5 · Hard bots · first to 75 kills · friendly fire\nSquare" and changed_details[1].contains("first to 5 rounds")
-					and changed_details[1].ends_with("\nSquare") and changed_details[2].contains("Hard bots"),
-			"%s" % [changed_details])
-	# One click: what each mode leaves for the game (prepare_* does what start_* does, without changing scenes).
+	var texts: Array[String] = []
+	var items_ok := true
+	for button in menu.get_buttons():
+		texts.append(button.text)
+		items_ok = items_ok and button.theme_type_variation == &"BigButton" and button.visible and not button.disabled and button.icon != null
+	var online: Array[String] = []
+	for button in menu.get_online_buttons():
+		online.append(button.text)
+		items_ok = items_ok and button.disabled and button.theme_type_variation == &"SmallItemButton" \
+				and (button.get_node("Soon") as Label).text == "Soon"
+	var title := menu.get_node("Page/Logo/Title") as Label
+	var side := menu.get_node("Page/Side") as Panel
+	var chips: Array = menu.get_node("Page/Logo/Chips").get_children().map(func(chip: Node) -> String: return String((chip as Control).theme_type_variation))
+	_check("The main menu is the mockup's column (D-135): CHIIP with a blue, a red and a lime chip; Play (focused), Practice, Settings and Quit as menu items with the focus chip; Host and Join disabled and marked soon; the mouse is free",
+			title.text == "CHIIP" and title.theme_type_variation == &"LogoLabel" and side.theme_type_variation == &"SidePanel"
+					and chips == ["FriendlyChip", "EnemyChip", "AccentChip"]
+					and texts == ["Play", "Practice", "Settings", "Quit"] and online == ["Host", "Join"] and items_ok
+					and menu.get_buttons()[0].has_focus() and MenuState.is_top(menu) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+			"title '%s', chips %s, items %s, online %s, focus on Play %s" % [title.text, chips, texts, online, menu.get_buttons()[0].has_focus()])
+	var map_name := menu.get_node("Page/MapName") as Label
+	var build := menu.get_node("Page/Build") as Label
+	_check("The bottom corners say the build and the background's map (Test Map, with a hard shadow)",
+			build.text.begins_with("Build") and map_name.text == "Test Map" and map_name.theme_type_variation == &"ShadowLabel",
+			"build '%s', map '%s'" % [build.text, map_name.text])
+	# What a match leaves for the game (prepare_* does what start_* does, without changing scenes).
 	menu.prepare_mode("rounds")
-	var bomb_launch := [GameLaunch.match_settings.game_mode, GameLaunch.map_path, GameLaunch.rotation.duplicate(), settings.match_mode]
+	var bomb_launch := [GameLaunch.match_settings.game_mode, GameLaunch.map_path, GameLaunch.rotation.size(), settings.match_mode]
 	GameLaunch.clear()
 	settings.reset_to_defaults()
 	menu.prepare_mode("respawn")
 	var deathmatch_launch := [GameLaunch.match_settings.game_mode, GameLaunch.map_path, GameLaunch.rotation.duplicate(), settings.match_mode,
-			GameLaunch.match_settings.kill_limit, GameLaunch.match_settings.team_size]
+			GameLaunch.match_settings.kill_limit, GameLaunch.match_settings.team_size, GameLaunch.match_settings.time_limit]
 	GameLaunch.clear()
-	_check("One click on Bomb plays bomb rounds with the custom choices (Square here) and remembers Bomb; on Team Deathmatch with the defaults: team respawn, first to 50, 3v3, on the rotation from Depot",
-			bomb_launch == [MatchSettings.GameMode.ROUNDS, "res://maps/square.tscn", [], "rounds"]
+	_check("Playing Bomb leaves bomb rounds and remembers Bomb; Team Deathmatch with the defaults leaves team respawn, first to 50 or 10 minutes, 3v3, on the rotation from Depot",
+			bomb_launch == [MatchSettings.GameMode.ROUNDS, "res://maps/depot.tscn", 3, "rounds"]
 					and deathmatch_launch == [MatchSettings.GameMode.TEAM_RESPAWN, "res://maps/depot.tscn",
-							["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"], "respawn", 50, 3],
+							["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"], "respawn", 50, 3, 600.0],
 			"bomb %s, deathmatch %s" % [bomb_launch, deathmatch_launch])
 	settings.reset_to_defaults()
 
@@ -1657,27 +1645,28 @@ func _test_main_menu() -> void:
 	settings.palette_effect = false
 	var effect_off := not effect.visible
 	settings.palette_effect = true
-	var mode_title := menu.get_mode_buttons()[0].get_parent().get_node("Text/Lines/Title") as Label
+	var play_item := menu.get_buttons()[0]
+	var items := menu.get_node("Page/Items") as Control
 	# A headless window is 64 pixels tall and goes back to that every frame: change it and check in the same frame.
 	window.size = Vector2i(1280, 720)
 	menu.apply_pixel_settings()
-	var at_720 := [world.stretch_shrink, panel.custom_minimum_size.x, mode_title.get_theme_font_size("font_size"),
-			menu.get_match_setup().get_node("Panel").custom_minimum_size.x, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
+	var at_720 := [world.stretch_shrink, items.offset_top, play_item.get_theme_font_size("font_size"),
+			(menu.get_match_setup().get_node("Page/Column/Cards").get_child(0) as Control).custom_minimum_size.y, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
 	window.size = Vector2i(1920, 1080)
 	menu.apply_pixel_settings()
-	var at_1080 := [world.stretch_shrink, panel.custom_minimum_size.x, mode_title.get_theme_font_size("font_size"),
-			menu.get_match_setup().get_node("Panel").custom_minimum_size.x, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
+	var at_1080 := [world.stretch_shrink, items.offset_top, play_item.get_theme_font_size("font_size"),
+			(menu.get_match_setup().get_node("Page/Column/Cards").get_child(0) as Control).custom_minimum_size.y, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
 	settings.pixel_height = 270
 	var low_res := world.stretch_shrink
 	settings.pixel_height = 480
 	_check("The background follows the video settings like the game: the palette effect switches with its setting, and in a 720-pixel window the world is 360 lines (scaled 2×), in a 1080 one 540 lines (2×), 270 lines gives 4×",
 			effect_on and effect_off and at_720[0] == 2 and at_1080[0] == 2 and low_res == 4,
 			"effect on %s, off %s; shrink %s at 720, %s at 1080, %d at 270 lines" % [effect_on, effect_off, at_720[0], at_1080[0], low_res])
-	_check("The menus scale with the window like the other menus: at 720 the page panel is 560 wide with the mode titles at the large size, match setup 780 and settings 960 wide; at 1080 exactly 1.5 times that",
-			at_720 == [2, 560.0, Tokens.TEXT_SIZE_LARGE, 780.0, 960.0] and at_1080 == [2, 840.0, _x(Tokens.TEXT_SIZE_LARGE, 1.5), 1170.0, 1440.0],
+	_check("The menus scale with the window like the other menus: at 720 the menu items sit 272 px down in 32 px text, the Play screen's cards are 192 high and the settings 960 wide; at 1080 exactly 1.5 times that",
+			at_720 == [2, 272.0, Tokens.TEXT_SIZE_LARGE, 192.0, 960.0] and at_1080 == [2, 408.0, _x(Tokens.TEXT_SIZE_LARGE, 1.5), 288.0, 1440.0],
 			"720: %s, 1080: %s" % [at_720, at_1080])
 	var overrides := _own_overrides(menu.get_node("Page")) + _own_overrides(menu.get_match_setup())
-	_check("Nothing in the main page or match setup carries a stylebox or font-size override of its own, so the theme alone decides their look",
+	_check("Nothing in the main page or the Play screen carries a stylebox or font-size override of its own, so the theme alone decides their look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
 	window.size = Vector2i(1280, 720)
 	menu.apply_pixel_settings()
@@ -1689,20 +1678,20 @@ func _test_main_menu() -> void:
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	var nothing_happened := MenuState.is_top(menu) and not setup.is_open() and not settings_menu.is_open() and menu.get_buttons().all(func(b: Button) -> bool: return b.visible)
-	menu.get_custom_button().pressed.emit()
-	var setup_opened := setup.is_open() and MenuState.is_top(setup) and setup.get_start_button().has_focus()
+	menu.get_buttons()[0].pressed.emit()
+	var setup_opened := setup.is_open() and MenuState.is_top(setup) and setup.get_mode_cards()[0].has_focus()
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
-	var setup_closed := not setup.is_open() and MenuState.is_top(menu) and menu.get_custom_button().has_focus()
+	var setup_closed := not setup.is_open() and MenuState.is_top(menu) and menu.get_buttons()[0].has_focus()
 	menu.get_settings_button().pressed.emit()
 	var settings_opened := settings_menu.is_open() and MenuState.is_top(settings_menu) and not setup.is_open()
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	var settings_closed := not settings_menu.is_open() and MenuState.is_top(menu) and menu.get_settings_button().has_focus()
-	menu.get_custom_button().pressed.emit()
+	menu.get_buttons()[0].pressed.emit()
 	setup.get_back_button().pressed.emit()
 	var by_back := not setup.is_open() and MenuState.is_top(menu)
-	_check("Esc does nothing on the main page; Custom match opens match setup (Start focused) and Esc closes it; Settings opens the settings menu and Esc closes it; Back closes match setup; the main menu stays the menu on the bottom of MenuState and the mouse stays free",
+	_check("Esc does nothing on the main page; Play opens the Play screen (Team Deathmatch's card focused) and Esc closes it; Settings opens the settings menu and Esc closes it; Back closes match setup; the main menu stays the menu on the bottom of MenuState and the mouse stays free",
 			nothing_happened and setup_opened and setup_closed and settings_opened and settings_closed and by_back and MenuState.is_any_open()
 					and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
 			"Esc on the page %s, setup opened %s, closed by Esc %s, settings opened %s, closed by Esc %s, Back %s" % [
@@ -1722,7 +1711,8 @@ func _test_main_menu() -> void:
 	settings.reset_to_defaults()
 
 
-## Match setup on its own, with a Settings instance of its own: defaults, controls, stored choices, maps.
+## The Play screen (D-135) on its own, with a Settings instance of its own: the
+## cards, each mode's rows, the defaults, the controls, stored choices, the maps.
 func _test_match_setup() -> void:
 	# A Settings.new() only holds values: it never saves and never touches the engine.
 	var stored := Settings.new()
@@ -1732,62 +1722,91 @@ func _test_match_setup() -> void:
 	await get_tree().process_frame
 	var defaults := MatchSettings.new()
 	var rules := setup.build_match_settings()
+	var cards := setup.get_mode_cards()
 	var team_buttons := setup.get_segment_buttons(&"match_team_size")
 	var enemy_buttons := setup.get_segment_buttons(&"match_enemy_team_size")
 	var difficulty_buttons := setup.get_segment_buttons(&"match_difficulty")
 	var length_buttons := setup.get_segment_buttons(&"match_rounds_to_win")
+	var kill_buttons := setup.get_segment_buttons(&"match_kill_limit")
+	var time_buttons := setup.get_segment_buttons(&"match_time_limit")
 	var fire_buttons := setup.get_segment_buttons(&"match_friendly_fire")
-	_check("Match setup is hidden until opened, and offers team sizes 1 to 5 (yours and the enemy's), Easy / Normal / Hard, First to 5 / 10 / 15, friendly fire Off / On, a map, Back and Start",
-			not setup.visible and team_buttons.size() == 5 and enemy_buttons.size() == 5 and _texts(difficulty_buttons) == ["Easy", "Normal", "Hard"]
-					and _texts(length_buttons) == ["First to 5", "First to 10", "First to 15"] and _texts(fire_buttons) == ["Off", "On"]
-					and _texts(team_buttons) == ["1", "2", "3", "4", "5"] and setup.get_map_option() != null
-					and setup.get_back_button().text == "Back" and setup.get_start_button().text == "Start",
-			"team %s, difficulty %s, length %s, friendly fire %s" % [_texts(team_buttons), _texts(difficulty_buttons), _texts(length_buttons), _texts(fire_buttons)])
-	_check("The defaults are 3v3, Normal bots, first to 5, friendly fire off, starting on Depot (D-132), and they equal MatchSettings' own defaults (D-041)",
-			_pressed(team_buttons) == 2 and _pressed(enemy_buttons) == 2 and _pressed(difficulty_buttons) == 1 and _pressed(length_buttons) == 0 and _pressed(fire_buttons) == 0
-					and setup.get_map_path() == Settings.DEFAULT_MATCH_MAP and rules.team_size == 3 and rules.enemy_team_size == 3
-					and rules.bot_difficulty.display_name == "normal" and rules.rounds_to_win == 5 and not rules.friendly_fire
+	var map_buttons := setup.get_segment_buttons(&"match_map")
+	var card_names: Array = cards.map(func(card: Button) -> String: return (card.get_parent().find_children("Title", "Label", true, false)[0] as Label).text)
+	_check("The Play screen is hidden until opened; it offers the three mode cards (Team Deathmatch, marked Default, then Bomb and Practice), and segments: the map (Depot, Square, Spillway, Rotation), kill limit 25 / 50 / 75 / 100, rounds 5 / 10 / 15, 5 / 10 / 15 min, Easy / Normal / Hard, friendly fire Off / On, five chips per team, Back and Play",
+			not setup.visible and card_names == ["Team\nDeathmatch", "Bomb", "Practice"]
+					and cards[0].get_parent().find_children("Default", "Label", true, false).size() == 1
+					and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"] and _texts(kill_buttons) == ["25", "50", "75", "100"]
+					and _texts(length_buttons) == ["5", "10", "15"] and _texts(time_buttons) == ["5 min", "10 min", "15 min"]
+					and _texts(difficulty_buttons) == ["Easy", "Normal", "Hard"] and _texts(fire_buttons) == ["Off", "On"]
+					and team_buttons.size() == 5 and enemy_buttons.size() == 5
+					and setup.get_back_button().text == "Back" and setup.get_start_button().text == "Play",
+			"cards %s, map %s, kills %s, rounds %s, time %s" % [card_names, _texts(map_buttons), _texts(kill_buttons), _texts(length_buttons), _texts(time_buttons)])
+	_check("The defaults are Team Deathmatch picked (its card framed, \"Click to play\"), 3v3, Normal bots, first to 50 kills or 10 minutes, friendly fire off, on the rotation from Depot; team sizes, difficulty, rounds and friendly fire equal MatchSettings' own (D-041)",
+			setup.get_picked_mode() == "respawn" and cards[0].theme_type_variation == &"ModeButtonPicked" and cards[1].theme_type_variation == &"ModeButton"
+					and setup.get_card_line("respawn") == "Click to play" and setup.get_card_line("rounds") == "First to 5 rounds"
+					and _pressed(team_buttons) == 2 and _pressed(enemy_buttons) == 2 and _pressed(difficulty_buttons) == 1 and _pressed(kill_buttons) == 1
+					and _pressed(time_buttons) == 1 and _pressed(fire_buttons) == 0 and _pressed(map_buttons) == 3
+					and setup.get_map_path() == Settings.DEFAULT_MATCH_MAP and rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN
+					and rules.kill_limit == 50 and rules.time_limit == 600.0
 					and rules.team_size == defaults.team_size and rules.enemy_team_size == defaults.enemy_team_size
 					and rules.bot_difficulty == defaults.bot_difficulty and rules.rounds_to_win == defaults.rounds_to_win
 					and rules.friendly_fire == defaults.friendly_fire and rules.freeze_time == defaults.freeze_time and rules.round_time == defaults.round_time,
-			"pressed: team %d, enemy %d, difficulty %d, length %d, fire %d; map %s; %d v %d, %s, first to %d" % [
-					_pressed(team_buttons), _pressed(enemy_buttons), _pressed(difficulty_buttons), _pressed(length_buttons), _pressed(fire_buttons),
-					setup.get_map_path(), rules.team_size, rules.enemy_team_size, rules.bot_difficulty.display_name, rules.rounds_to_win])
+			"picked %s, pressed: team %d, enemy %d, difficulty %d, kills %d, time %d, map %d" % [setup.get_picked_mode(),
+					_pressed(team_buttons), _pressed(enemy_buttons), _pressed(difficulty_buttons), _pressed(kill_buttons), _pressed(time_buttons), _pressed(map_buttons)])
+	var chips_filled: Array = team_buttons.map(func(chip: Button) -> String: return String(chip.theme_type_variation))
+	_check("Team Deathmatch shows its rows (map, kill limit, teams, match length, bots, friendly fire), not the rounds; the team chips are filled up to 3 in your colour, the rest empty",
+			setup.is_row_shown(&"match_map") and setup.is_row_shown(&"match_kill_limit") and setup.is_row_shown(&"match_time_limit")
+					and setup.is_row_shown(&"match_team_size") and not setup.is_row_shown(&"match_rounds_to_win")
+					and chips_filled == ["FriendlyChipButton", "FriendlyChipButton", "FriendlyChipButton", "EmptyChipButton", "EmptyChipButton"]
+					and (enemy_buttons[0] as Button).theme_type_variation == &"EnemyChipButton",
+			"chips %s" % [chips_filled])
 	var summary_before := setup.get_summary()
 
-	# Changing the controls changes the match, and what is stored (in Bomb, whose length counts rounds).
-	(setup.get_segment_buttons(&"match_mode")[1] as Button).button_pressed = true
+	# Picking Bomb: its rows, and changing them changes the match and what is stored.
+	cards[1].pressed.emit()
+	var bomb_rows := setup.is_row_shown(&"match_rounds_to_win") and not setup.is_row_shown(&"match_kill_limit") and not setup.is_row_shown(&"match_time_limit")
 	(team_buttons[1] as Button).button_pressed = true
 	(enemy_buttons[4] as Button).button_pressed = true
 	(difficulty_buttons[2] as Button).button_pressed = true
 	(length_buttons[2] as Button).button_pressed = true
 	(fire_buttons[1] as Button).button_pressed = true
 	rules = setup.build_match_settings()
-	_check("Pressing 2, 5, Hard, First to 15 and friendly fire On gives a match of 2 against 5, hard bots, first to 15, friendly fire on (the round timings stay at their defaults), and each row has exactly one button pressed",
-			rules.team_size == 2 and rules.enemy_team_size == 5 and rules.bot_difficulty.display_name == "hard" and rules.rounds_to_win == 15 and rules.friendly_fire
+	_check("A click on Bomb picks it (framed, its rows: rounds, no kill limit or time); pressing chip 2, chip 5, Hard, 15 and On gives 2 against 5, hard bots, first to 15, friendly fire on (the round timings stay at their defaults), each row with exactly one choice",
+			setup.get_picked_mode() == "rounds" and stored.match_mode == "rounds" and cards[1].theme_type_variation == &"ModeButtonPicked" and bomb_rows
+					and rules.game_mode == MatchSettings.GameMode.ROUNDS
+					and rules.team_size == 2 and rules.enemy_team_size == 5 and rules.bot_difficulty.display_name == "hard" and rules.rounds_to_win == 15 and rules.friendly_fire
 					and rules.freeze_time == defaults.freeze_time and rules.round_end_time == defaults.round_end_time
 					and _pressed(team_buttons) == 1 and _pressed(enemy_buttons) == 4 and _pressed(difficulty_buttons) == 2
 					and _pressed_count(team_buttons) == 1 and _pressed_count(enemy_buttons) == 1 and _pressed_count(difficulty_buttons) == 1
 					and _pressed_count(length_buttons) == 1 and _pressed_count(fire_buttons) == 1,
-			"%d v %d, %s, first to %d, friendly fire %s" % [rules.team_size, rules.enemy_team_size, rules.bot_difficulty.display_name, rules.rounds_to_win, rules.friendly_fire])
-	_check("The choices are stored in the Settings instance (its [match] values), and the summary line follows them",
+			"picked %s, %d v %d, %s, first to %d, friendly fire %s" % [setup.get_picked_mode(), rules.team_size, rules.enemy_team_size,
+					rules.bot_difficulty.display_name, rules.rounds_to_win, rules.friendly_fire])
+	_check("The choices are stored in the Settings instance (its [match] values), and the summary follows them",
 			stored.match_team_size == 2 and stored.match_enemy_team_size == 5 and stored.match_difficulty == "hard" and stored.match_rounds_to_win == 15
-					and stored.match_friendly_fire and setup.get_summary() != summary_before and setup.get_summary().contains("1 bot ")
-					and setup.get_summary().contains("5 bots") and setup.get_summary().contains("Hard") and setup.get_summary().contains("first to 15"),
+					and stored.match_friendly_fire and setup.get_summary() != summary_before and setup.get_summary().begins_with("Bomb: ")
+					and setup.get_summary().contains("1 bot ") and setup.get_summary().contains("5 bots") and setup.get_summary().contains("Hard")
+					and setup.get_summary().contains("first to 15"),
 			"stored %d/%d/%s/%d/%s; summary '%s'" % [stored.match_team_size, stored.match_enemy_team_size, stored.match_difficulty,
 					stored.match_rounds_to_win, stored.match_friendly_fire, setup.get_summary()])
 	# A change from outside (the console, a loaded file) moves the buttons.
 	stored.match_team_size = 5
 	stored.match_difficulty = "easy"
-	_check("A change made outside the panel moves the buttons: team size 5 and Easy are pressed now",
+	_check("A change made outside the screen moves the controls: team size 5 and Easy are chosen now",
 			_pressed(team_buttons) == 4 and _pressed(difficulty_buttons) == 0 and _pressed_count(team_buttons) == 1 and _pressed_count(difficulty_buttons) == 1,
 			"team %d, difficulty %d" % [_pressed(team_buttons), _pressed(difficulty_buttons)])
 	stored.match_team_size = 2
 	stored.match_difficulty = "hard"
+	# Practice: only the bots' row; picking it doesn't change the stored match mode.
+	cards[2].pressed.emit()
+	var practice_rows := setup.is_row_shown(&"match_difficulty") and not setup.is_row_shown(&"match_map") and not setup.is_row_shown(&"match_team_size")
+	_check("A click on Practice picks it: only the bots' row shows, the stored match mode stays Bomb, and its summary names the test map",
+			setup.get_picked_mode() == "practice" and practice_rows and stored.match_mode == "rounds" and setup.get_summary().begins_with("Practice: "),
+			"picked %s, stored %s, summary '%s'" % [setup.get_picked_mode(), stored.match_mode, setup.get_summary()])
+	cards[1].pressed.emit()
 
 	# The choices survive a restart: written to a file and read by another instance, they come back.
 	_remove_temp_file()
-	stored.match_map = "res://maps/comparison/csg_room.tscn"
+	(map_buttons[1] as Button).button_pressed = true
 	var saved := stored.save_to_disk(TEMP_PATH)
 	var restarted := Settings.new()
 	var loaded := restarted.load_from_disk(TEMP_PATH)
@@ -1796,50 +1815,40 @@ func _test_match_setup() -> void:
 	add_child(second)
 	await get_tree().process_frame
 	var again := second.build_match_settings()
-	_check("After a restart (the choices saved to a file and loaded by a new Settings) the panel offers the same match: 2 against 5, hard, first to 15, friendly fire on, with the same buttons pressed",
-			saved == OK and loaded == OK and again.team_size == 2 and again.enemy_team_size == 5 and again.bot_difficulty.display_name == "hard"
-					and again.rounds_to_win == 15 and again.friendly_fire
+	_check("After a restart (the choices saved to a file and loaded by a new Settings) the screen offers the same match: Bomb picked, 2 against 5, hard, first to 15, friendly fire on, Square alone",
+			saved == OK and loaded == OK and second.get_picked_mode() == "rounds" and again.team_size == 2 and again.enemy_team_size == 5
+					and again.bot_difficulty.display_name == "hard" and again.rounds_to_win == 15 and again.friendly_fire
 					and _pressed(second.get_segment_buttons(&"match_team_size")) == 1 and _pressed(second.get_segment_buttons(&"match_difficulty")) == 2
-					and _pressed(second.get_segment_buttons(&"match_rounds_to_win")) == 2 and _pressed(second.get_segment_buttons(&"match_friendly_fire")) == 1,
-			"save %d, load %d, %d v %d, %s, first to %d" % [saved, loaded, again.team_size, again.enemy_team_size, again.bot_difficulty.display_name, again.rounds_to_win])
+					and _pressed(second.get_segment_buttons(&"match_rounds_to_win")) == 2 and _pressed(second.get_segment_buttons(&"match_map")) == 1
+					and second.get_rotation_maps().is_empty() and second.get_map_path() == "res://maps/square.tscn",
+			"save %d, load %d, %s, %d v %d, %s, first to %d" % [saved, loaded, second.get_picked_mode(), again.team_size, again.enemy_team_size,
+					again.bot_difficulty.display_name, again.rounds_to_win])
 	_remove_temp_file()
 	remove_child(second)
 	second.queue_free()
 
-	# The map list.
-	var on_disk: Array[String] = []
-	for file in DirAccess.get_files_at("res://maps/"):
-		if file.ends_with(".tscn"):
-			on_disk.append("res://maps/" + file)
-	on_disk.sort()
-	var option := setup.get_map_option()
-	var shown: Array[String] = []
-	for index in option.item_count:
-		shown.append(option.get_item_text(index))
-	_check("The map list is every scene directly in res://maps/ (like the console's map command), test_map among them, listed by name: %s" % [shown],
-			setup.get_map_paths() == on_disk and on_disk.has("res://maps/test_map.tscn") and option.item_count == on_disk.size()
-					and GameLaunch.list_maps() == on_disk and shown.has("Test Map"),
-			"on disk %s, offered %s" % [on_disk, setup.get_map_paths()])
-	# Any map other than the one shown (Depot by default).
-	var other := (maxi(0, setup.get_map_paths().find(setup.get_map_path())) + 1) % setup.get_map_paths().size()
-	var picked_other := setup.get_map_paths().size() > 1
-	if picked_other:
-		option.select(other)
-		option.item_selected.emit(other)
-	var map_stored := not picked_other or (stored.match_map == setup.get_map_paths()[other] and setup.get_map_path() == setup.get_map_paths()[other])
+	# The map row: the quick maps (as on disk) and the rotation; a stored map that isn't one of them plays Depot.
+	(map_buttons[3] as Button).button_pressed = true
+	var rotation_from_square := setup.get_rotation_maps()
 	stored.match_map = "res://maps/gone.tscn"
-	var fell_back := setup.get_map_path() == Settings.DEFAULT_MATCH_MAP and option.selected == setup.get_map_paths().find(Settings.DEFAULT_MATCH_MAP)
-	_check("Choosing another map (when there is one) is stored, and a stored map that no longer exists falls back to Depot",
-			map_stored and fell_back, "stored %s, with a missing map the panel offers %s" % [map_stored, setup.get_map_path()])
+	var fell_back := setup.get_map_path() == Settings.DEFAULT_MATCH_MAP
+	stored.match_rotation = false
+	var none_pressed := _pressed_count(map_buttons) == 0
+	_check("The map row offers the quick maps that exist (%s) and the rotation; the rotation starts on the chosen map (Square, Spillway, Depot); a stored map that isn't a quick map plays Depot and no map is shown chosen" % [setup.get_map_paths()],
+			setup.get_map_paths() == GameLaunch.rotation_maps() and setup.get_map_paths().size() == 3
+					and rotation_from_square == ["res://maps/square.tscn", "res://maps/spillway.tscn", "res://maps/depot.tscn"]
+					and fell_back and none_pressed,
+			"rotation %s, fell back %s, none pressed %s" % [rotation_from_square, fell_back, none_pressed])
 
-	# Opening, Esc, Back, Start; scaling.
+	# Opening, Esc, Back, Play and a click on the picked card; scaling.
 	var signals: Array[String] = []
 	setup.started.connect(func() -> void: signals.append("started"))
 	setup.closed.connect(func() -> void: signals.append("closed"))
 	MenuState.reset()
 	setup.open()
-	var opened := setup.visible and MenuState.is_top(setup) and MenuState.blocks_gameplay() and setup.get_start_button().has_focus()
+	var opened := setup.visible and MenuState.is_top(setup) and MenuState.blocks_gameplay() and cards[1].has_focus()
 	setup.get_start_button().pressed.emit()
+	cards[1].pressed.emit()
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	var by_esc := not setup.visible and not MenuState.is_any_open()
@@ -1847,19 +1856,20 @@ func _test_match_setup() -> void:
 	setup.get_back_button().pressed.emit()
 	var by_back := not setup.visible and not MenuState.is_any_open()
 	setup.close()
-	_check("Opening puts match setup on top of MenuState with Start focused; Start reports `started` (and leaves the panel to the menu), Esc and Back close it and emit `closed` once each, closing it again does nothing",
-			opened and by_esc and by_back and signals == ["started", "closed", "closed"],
+	_check("Opening puts the screen on top of MenuState with the stored mode's card focused; Play and a click on the picked card report `started` (the screen stays for the menu); Esc and Back close it and emit `closed` once each; closing again does nothing",
+			opened and by_esc and by_back and signals == ["started", "started", "closed", "closed"],
 			"opened %s, Esc %s, Back %s, signals %s" % [opened, by_esc, by_back, signals])
-	var panel := setup.get_node("Panel") as PanelContainer
-	var title := setup.get_node("Panel/Margin/Content/Title") as Label
-	var segment := team_buttons[0] as Button
+	var card := cards[0].get_parent() as Control
+	var title := setup.get_node("Page/Column/Header/Title") as Label
+	var segment := length_buttons[0] as Button
 	setup.set_ui_scale(1.5)
-	var scaled := [panel.custom_minimum_size.x, title.get_theme_font_size("font_size"), segment.custom_minimum_size.x, setup.get_start_button().custom_minimum_size]
+	var scaled := [card.custom_minimum_size.y, title.get_theme_font_size("font_size"), segment.get_theme_font_size("font_size"), (team_buttons[0] as Button).custom_minimum_size]
 	setup.set_ui_scale(1.0)
-	var back_at_one := [panel.custom_minimum_size.x, title.get_theme_font_size("font_size"), segment.custom_minimum_size.x, setup.get_start_button().custom_minimum_size]
-	_check("Match setup is a themed modal panel and scales exactly: 780 / 48 px title / 56 px buttons / 200 × 40 Start at 1.0, 1170 / 72 / 84 / 300 × 60 at 1.5",
-			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel"
-					and scaled == [1170.0, 72, 84.0, Vector2(300, 60)] and back_at_one == [780.0, 48, 56.0, Vector2(200, 40)],
+	var back_at_one := [card.custom_minimum_size.y, title.get_theme_font_size("font_size"), segment.get_theme_font_size("font_size"), (team_buttons[0] as Button).custom_minimum_size]
+	_check("The Play screen is a full ink page with a Bold title and scales exactly: cards 192 high, a 48 px title, 16 px segments, 16 px chips at 1.0; 288 / 72 / 24 / 24 at 1.5",
+			(setup.get_node("Background") as Control).theme_type_variation == &"InkPanel" and title.theme_type_variation == &"TitleLabel"
+					and scaled == [288.0, _x(Tokens.TEXT_SIZE_TITLE, 1.5), _x(Tokens.TEXT_SIZE, 1.5), Vector2(24, 24)]
+					and back_at_one == [192.0, Tokens.TEXT_SIZE_TITLE, Tokens.TEXT_SIZE, Vector2(16, 16)],
 			"1.5: %s, 1.0: %s" % [scaled, back_at_one])
 	remove_child(setup)
 	setup.queue_free()
@@ -1977,7 +1987,8 @@ func _test_scene_flow() -> void:
 	await tree.process_frame
 	await tree.process_frame
 	# One click on Team Deathmatch (D-132): the game, a team respawn match on the rotation's first map, Depot.
-	menu.get_mode_buttons()[0].pressed.emit()
+	menu.get_buttons()[0].pressed.emit()
+	menu.get_match_setup().get_mode_cards()[0].pressed.emit()
 	await tree.process_frame
 	await tree.process_frame
 	await tree.process_frame
@@ -1985,7 +1996,7 @@ func _test_scene_flow() -> void:
 	var deathmatch := tree.current_scene
 	_close_class_menu(deathmatch)
 	var respawn_rules: Node = deathmatch.get_map().get_node_or_null("RespawnMatch") if deathmatch != null and deathmatch.has_method("get_map") else null
-	_check("The real flow, one click: Team Deathmatch changes the scene to the game, which plays a team respawn match on Depot, the rotation's first map, with Square next",
+	_check("The real flow: Play, then a click on the Team Deathmatch card (picked: \"click to play\") changes the scene to the game, which plays a team respawn match on Depot, the rotation's first map, with Square next",
 			deathmatch != null and deathmatch.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(menu) and respawn_rules != null
 					and deathmatch.get_map().scene_file_path == "res://maps/depot.tscn" and deathmatch.call("get_next_map") == "res://maps/square.tscn"
 					and not MenuState.is_any_open(),
@@ -2011,12 +2022,9 @@ func _test_scene_flow() -> void:
 		return
 	# Custom match: Bomb on the test map alone, 2v4, Easy, first to 10.
 	var setup := menu.get_match_setup()
-	menu.get_custom_button().pressed.emit()
-	(setup.get_segment_buttons(&"match_mode")[1] as Button).button_pressed = true
-	(setup.get_segment_buttons(&"match_rotation")[0] as Button).button_pressed = true
-	var test_map_index := setup.get_map_paths().find(Settings.DEFAULT_MAP)
-	setup.get_map_option().select(test_map_index)
-	setup.get_map_option().item_selected.emit(test_map_index)
+	menu.get_buttons()[0].pressed.emit()
+	setup.get_mode_cards()[1].pressed.emit()
+	(setup.get_segment_buttons(&"match_map")[1] as Button).button_pressed = true
 	(setup.get_segment_buttons(&"match_team_size")[1] as Button).button_pressed = true
 	(setup.get_segment_buttons(&"match_enemy_team_size")[3] as Button).button_pressed = true
 	(setup.get_segment_buttons(&"match_difficulty")[0] as Button).button_pressed = true
@@ -2030,8 +2038,9 @@ func _test_scene_flow() -> void:
 	var game := tree.current_scene
 	_close_class_menu(game)
 	var rounds: RoundManager = game.get_map().get_node_or_null("RoundManager") if game != null and game.has_method("get_map") else null
-	_check("The real flow: Custom match, the chosen Bomb on the test map, 2v4 / Easy / first to 10 and Start change the scene to the game, which plays exactly that (the menu is gone, and the choices were saved to the settings file)",
+	_check("The real flow: Play, the Bomb card, Square alone, 2v4 / Easy / first to 10 and the Play button change the scene to the game, which plays exactly that (the menu is gone, and the choices were saved to the settings file)",
 			game != null and game.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(menu) and saved_file and rounds != null
+					and game.get_map().scene_file_path == "res://maps/square.tscn"
 					and rounds.settings.team_size == 2 and rounds.settings.enemy_team_size == 4 and rounds.settings.bot_difficulty.display_name == "easy"
 					and rounds.settings.rounds_to_win == 10 and not MenuState.is_any_open(),
 			"scene '%s', menu freed %s, manager %s, settings file written %s" % [game.scene_file_path if game != null else "none", not is_instance_valid(menu), rounds != null, saved_file])
@@ -2051,7 +2060,7 @@ func _test_scene_flow() -> void:
 			"scene '%s'" % [tree.current_scene.scene_file_path if tree.current_scene != null else "none"])
 	if back != null:
 		# Practice from the menu: the arena with the difficulty chosen before (Easy), and the console's `disconnect` leads back.
-		back.get_mode_buttons()[2].pressed.emit()
+		back.get_buttons()[1].pressed.emit()
 		await tree.process_frame
 		await tree.process_frame
 		await tree.process_frame
@@ -2396,7 +2405,7 @@ func _test_pause_leaves_the_game() -> void:
 					tree.current_scene.scene_file_path if tree.current_scene != null else "none", tree.paused])
 	if back != null:
 		# Practice: the button reads "Leave practice"; the console's `disconnect` over the pause menu leads back as well.
-		back.get_mode_buttons()[2].pressed.emit()
+		back.get_buttons()[1].pressed.emit()
 		for i in 3:
 			await tree.process_frame
 		var practice := tree.current_scene

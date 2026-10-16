@@ -1059,6 +1059,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Why:** Your mockup's Menus sheet. It keeps the mode choice simple (D-120) while the main menu stays a short list.
 
+**Built** (task 9): `ui/main_menu.tscn` is the left column (a `SidePanel` 448 px wide, `LogoLabel` CHIIP with the three chips, `BigButton` menu items with the chip icon, a line, `SmallItemButton` Host and Join with "Soon", the build and the background's map name). `ui/match_setup.tscn` (still `MatchSetup`) is the Play screen: the cards are containers with a `ModeButton` behind their labels (the picked one `ModeButtonPicked`, framed lime, "Click to play"; the others say what they'd play), the rows are `SegmentButton`s in a `SegmentFrame`, the map row stands for two settings (a quick map, or `match_rotation`), the team sizes are chips (toggle buttons, filled up to the size), Practice shows only the bots' row. New setting `match_time_limit` (5, 10, 15 min; `MatchSettings.time_limit`); `Settings.KILL_LIMITS` is 25, 50, 75, 100. `UiTheme.apply()` now also scales the offsets of controls placed by anchors (the menu's column), so the layout is exactly 1.5× at 1080p. **Differences from the mockup:** the background flies over the test map, so the corner says "Test Map" (the flight was built for it); the studio logo next to it is left out (it's an image on the web); the build reads "Build M10"; the hint says "Click to choose · the setup is remembered" (segments are clicked, not cycled); a focused menu item's text doesn't shift right (D-134).
+
 **Alternatives:** Keeping D-132's one-page choice (it is not what you designed).
 
 ## D-136 — The HUD as in the mockup (2026-10-16) — *provisional*

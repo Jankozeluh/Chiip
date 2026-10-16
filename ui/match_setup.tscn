@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://ui/match_setup.gd" id="setup_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/chip.png" id="chip"]
 
 [node name="MatchSetup" type="CanvasLayer"]
 layer = 2
@@ -13,64 +14,98 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-theme_type_variation = &"BackdropPanel"
+theme_type_variation = &"InkPanel"
 
-[node name="Panel" type="PanelContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+[node name="Page" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-custom_minimum_size = Vector2(780, 0)
-mouse_filter = 0
-theme_type_variation = &"ModalPanel"
+mouse_filter = 2
+theme_type_variation = &"PageMargin"
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Column" type="VBoxContainer" parent="Page"]
 layout_mode = 2
-theme_type_variation = &"PanelMarginWide"
+mouse_filter = 2
+theme_type_variation = &"PageColumn"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+[node name="Header" type="HBoxContainer" parent="Page/Column"]
 layout_mode = 2
-theme_type_variation = &"ContentBox"
+mouse_filter = 2
+theme_type_variation = &"RowBox"
 
-[node name="Title" type="Label" parent="Panel/Margin/Content"]
+[node name="Title" type="Label" parent="Page/Column/Header"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
-text = "Custom match"
-horizontal_alignment = 1
+text = "Play"
 
-[node name="Rows" type="VBoxContainer" parent="Panel/Margin/Content"]
+[node name="Esc" type="Label" parent="Page/Column/Header"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"DimKeyCapLabel"
+text = "Esc"
+
+[node name="BackButton" type="Button" parent="Page/Column/Header"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ContentBox"
-
-[node name="Summary" type="Label" parent="Panel/Margin/Content"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"DimLabel"
-autowrap_mode = 3
-
-[node name="Spacer" type="Control" parent="Panel/Margin/Content"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-
-[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/Content"]
-layout_mode = 2
-theme_type_variation = &"ButtonRow"
-alignment = 1
-
-[node name="BackButton" type="Button" parent="Panel/Margin/Content/Buttons"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+size_flags_vertical = 4
+theme_type_variation = &"TextButton"
 text = "Back"
 
-[node name="StartButton" type="Button" parent="Panel/Margin/Content/Buttons"]
+[node name="Cards" type="HBoxContainer" parent="Page/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
-theme_type_variation = &"PrimaryButton"
-text = "Start"
+mouse_filter = 2
+theme_type_variation = &"CardRow"
+
+[node name="Divider" type="HBoxContainer" parent="Page/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Custom" type="Label" parent="Page/Column/Divider"]
+layout_mode = 2
+text = "Custom"
+
+[node name="Line" type="HSeparator" parent="Page/Column/Divider"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ModeName" type="Label" parent="Page/Column/Divider"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Team Deathmatch"
+
+[node name="Rows" type="GridContainer" parent="Page/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"FormGrid"
+columns = 2
+
+[node name="Spacer" type="Control" parent="Page/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Footer" type="HBoxContainer" parent="Page/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Hint" type="Label" parent="Page/Column/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_type_variation = &"MuteLabel"
+text = "Click to choose · the setup is remembered"
+
+[node name="StartButton" type="Button" parent="Page/Column/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigPrimaryButton"
+text = "Play"
+icon = ExtResource("chip")

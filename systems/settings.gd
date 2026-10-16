@@ -63,8 +63,11 @@ const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
 ## sites; the menus call it Bomb) and "respawn" (team respawn, D-082; the menus
 ## call it Team Deathmatch, the primary mode since D-132).
 const MATCH_MODES: Array[String] = ["rounds", "respawn"]
-## The kill limits match setup offers for team respawn (D-083: 50 is about 4 minutes with bots).
-const KILL_LIMITS: Array[int] = [30, 50, 75]
+## The kill limits the Play screen offers for Team Deathmatch (D-083: 50 is about
+## 4 minutes with bots; D-135: the mockup's 25, 50, 75 and 100).
+const KILL_LIMITS: Array[int] = [25, 50, 75, 100]
+## Team Deathmatch's time limits in minutes the Play screen offers (D-135).
+const TIME_LIMITS: Array[int] = [5, 10, 15]
 ## The practice map, the one the main menu flies over, and the map the game
 ## plays when nothing chose one (main.tscn started directly, the tests).
 const DEFAULT_MAP := "res://maps/test_map.tscn"
@@ -127,6 +130,8 @@ const SCHEMA := {
 	&"match_mode": {"section": "match", "default": "respawn", "choices": MATCH_MODES},
 	&"match_kill_limit": {"section": "match", "default": 50, "choices": KILL_LIMITS},
 	&"match_rotation": {"section": "match", "default": true},
+	# M10 (D-135): Team Deathmatch's time limit in minutes.
+	&"match_time_limit": {"section": "match", "default": 10, "choices": TIME_LIMITS},
 }
 
 ## The names of the mouse buttons a binding can use, by button index (for menus).
@@ -281,6 +286,10 @@ var match_map: String:
 var match_mode: String:
 	get: return _values[&"match_mode"]
 	set(value): set_value(&"match_mode", value)
+## Team Deathmatch's time limit in minutes: one of [constant TIME_LIMITS].
+var match_time_limit: int:
+	get: return _values[&"match_time_limit"]
+	set(value): set_value(&"match_time_limit", value)
 ## Kills a team needs to win a team respawn match: one of [constant KILL_LIMITS].
 var match_kill_limit: int:
 	get: return _values[&"match_kill_limit"]

@@ -43,6 +43,8 @@ const DEFAULTS := {
 	&"match_friendly_fire": false,
 	# M8 (D-087): team respawn's kill limit is D-083's 50. M10 (D-132): Team Deathmatch on the rotation, from Depot.
 	&"match_map": "res://maps/depot.tscn", &"match_mode": "respawn", &"match_kill_limit": 50, &"match_rotation": true,
+	# M10 (D-135): Team Deathmatch lasts 10 minutes unless chosen otherwise.
+	&"match_time_limit": 10,
 }
 
 var _failures: int = 0
@@ -418,6 +420,7 @@ func _test_saving() -> void:
 	writer.match_mode = "rounds"
 	writer.match_kill_limit = 75
 	writer.match_rotation = false
+	writer.match_time_limit = 15
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
@@ -437,7 +440,7 @@ func _test_saving() -> void:
 					and saved.get_value("match", "mode", "") == "rounds" and saved.get_value("match", "kill_limit", 0) == 75
 					and saved.get_value("match", "rotation", true) == false
 					and saved.get_value("match", "setup_version", 0) == Settings.MATCH_SETUP_VERSION
-					and saved.get_section_keys("match").size() == 10,
+					and saved.get_section_keys("match").size() == 11,
 			"keys %s" % [saved.get_section_keys("match")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)

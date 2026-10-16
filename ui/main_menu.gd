@@ -1,25 +1,21 @@
 class_name MainMenu
 extends Node
 ## The main menu, the first thing the game shows (M5 task 11, D-064; it is the
-## project's main scene): the game's title and the mode choice (D-132) over a
-## slow camera flight across the test map.
+## project's main scene; the mockup's "02 Main menu" since M10, D-135): a dark
+## column on the left with the game's name and its three chips, the menu items
+## **Play** (focused), **Practice**, **Settings** and **Quit**, a line, and
+## **Host** and **Join** (marked "soon" until M9), over a slow camera flight
+## across the test map; the build at the bottom left and the map's name at the
+## bottom right.
 ##
-## - **Team Deathmatch** (first, focused, the default), **Bomb** and **Practice**
-##   are big buttons with a line under each saying what they play; one click
-##   starts it. The two match modes play your last custom choices (team sizes,
-##   difficulty, length, friendly fire, map or rotation) in that mode: they leave
-##   a [GameLaunch] description (the map and [MatchSettings]) and change to the
-##   game scene. Practice starts the respawning bot arena ([ArenaRules]) on the
-##   test map, with the bot difficulty of the custom choices.
-## - **Custom match** opens match setup ([MatchSetup]) for those choices; its
-##   Start plays them.
+## - **Play** opens the Play screen ([MatchSetup]): three mode cards (Team
+##   Deathmatch first) and the picked mode's custom rows. Playing a match leaves a
+##   [GameLaunch] description (the map and [MatchSettings]) and changes to the
+##   game scene; playing Practice starts the respawning bot arena ([ArenaRules])
+##   on the test map, with the bot difficulty of the custom rows.
+## - **Practice** starts that arena at once.
 ## - **Settings** opens the same [SettingsMenu] the game has.
 ## - **Quit** closes the game.
-##
-## A mode button is a container holding a [Button] (the click, the focus, the
-## look) and, on top of it, two labels that ignore the mouse (the mode's name and
-## its line), because a [Button] can only draw one line of text in one size.
-## The row of text buttons ([code]Links[/code]) has room for M9's Host and Join.
 ##
 ## The background is the test map rendered like the game: a low-resolution world
 ## in a [SubViewport] with the palette effect, following the video settings
@@ -56,12 +52,13 @@ var _background: Node
 @onready var _palette_effect: CanvasLayer = $World/SubViewport/PaletteEffect
 @onready var _flight: MenuFlight = $World/SubViewport/Flight
 @onready var _page: CanvasLayer = $Page
-@onready var _deathmatch_button: Button = %DeathmatchButton
-@onready var _bomb_button: Button = %BombButton
+@onready var _play_button: Button = %PlayButton
 @onready var _practice_button: Button = %PracticeButton
-@onready var _custom_button: Button = %CustomButton
 @onready var _settings_button: Button = %SettingsButton
 @onready var _quit_button: Button = %QuitButton
+@onready var _host_button: Button = %HostButton
+@onready var _join_button: Button = %JoinButton
+@onready var _map_name: Label = %MapName
 @onready var _setup: MatchSetup = $MatchSetup
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
 
@@ -75,23 +72,19 @@ func _ready() -> void:
 	if _skip_for_command_line():
 		return
 	settings.changed.connect(_on_setting_changed)
-	_deathmatch_button.pressed.connect(start_mode.bind("respawn"))
-	_bomb_button.pressed.connect(start_mode.bind("rounds"))
+	_play_button.pressed.connect(open_match_setup)
 	_practice_button.pressed.connect(start_practice)
-	_custom_button.pressed.connect(open_match_setup)
 	_settings_button.pressed.connect(open_settings)
 	_quit_button.pressed.connect(get_tree().quit)
-	_setup.started.connect(start_match)
-	_setup.closed.connect(_custom_button.grab_focus)
+	_setup.started.connect(start_picked)
+	_setup.closed.connect(_play_button.grab_focus)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
-	if _setup.settings != settings:
-		_setup.settings.changed.connect(_on_setting_changed)
+	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
 	_build_background()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
-	_refresh_details()
 	MenuState.open(self)
-	_deathmatch_button.grab_focus()
+	_play_button.grab_focus()
 
 
 func _exit_tree() -> void:
@@ -105,7 +98,7 @@ static func wants_game(args: PackedStringArray) -> bool:
 	return args.has("--match") or args.has("--practice") or args.has("--map")
 
 
-## Opens match setup (the Custom match button).
+## Opens the Play screen (the Play button).
 func open_match_setup() -> void:
 	_setup.open()
 
@@ -142,7 +135,16 @@ func start_mode(mode: String) -> void:
 	_enter_game()
 
 
-## Starts the match chosen in match setup (its Start button).
+## Plays the mode picked on the Play screen (its Play button, or a click on the
+## picked card): practice, or a match with the custom choices.
+func start_picked() -> void:
+	if _setup.get_picked_mode() == "practice":
+		start_practice()
+	else:
+		start_match()
+
+
+## Starts the match chosen on the Play screen.
 func start_match() -> void:
 	prepare_match()
 	_enter_game()
@@ -195,25 +197,9 @@ func _build_background() -> void:
 	_viewport.add_child(_background)
 
 
-## Writes the line under each mode button from the custom choices.
-func _refresh_details() -> void:
-	var stored := _setup.settings
-	_detail_label(_deathmatch_button).text = MatchSetup.describe_mode(stored, "respawn")
-	_detail_label(_bomb_button).text = MatchSetup.describe_mode(stored, "rounds")
-	_detail_label(_practice_button).text = "%s%s%s bots\n%s" % ["Bots respawn", MatchSetup.DETAIL_SEPARATOR,
-			stored.match_difficulty.capitalize(), GameLaunch.map_title(Settings.DEFAULT_MAP)]
-
-
-## The line of detail that sits on a mode button.
-func _detail_label(button: Button) -> Label:
-	return button.get_parent().get_node("Text/Lines/Detail") as Label
-
-
 func _on_setting_changed(key: StringName) -> void:
 	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect":
 		apply_pixel_settings()
-	elif String(key).begins_with("match_"):
-		_refresh_details()
 
 
 # --- Test hooks ---
@@ -239,29 +225,14 @@ func get_settings_menu() -> SettingsMenu:
 	return _settings_menu
 
 
-## Every button of the main page: the three modes, then Custom match, Settings, Quit.
+## The main page's menu items: Play, Practice, Settings, Quit.
 func get_buttons() -> Array[Button]:
-	return [_deathmatch_button, _bomb_button, _practice_button, _custom_button, _settings_button, _quit_button]
+	return [_play_button, _practice_button, _settings_button, _quit_button]
 
 
-## The mode buttons: Team Deathmatch, Bomb, Practice.
-func get_mode_buttons() -> Array[Button]:
-	return [_deathmatch_button, _bomb_button, _practice_button]
-
-
-## The name shown on a mode button.
-func get_mode_title(button: Button) -> String:
-	return (button.get_parent().get_node("Text/Lines/Title") as Label).text
-
-
-## The line under a mode button.
-func get_mode_detail(button: Button) -> String:
-	return _detail_label(button).text
-
-
-## The Custom match button.
-func get_custom_button() -> Button:
-	return _custom_button
+## Host and Join (disabled until M9).
+func get_online_buttons() -> Array[Button]:
+	return [_host_button, _join_button]
 
 
 ## The Settings button.

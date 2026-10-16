@@ -5,6 +5,7 @@
 [ext_resource type="Shader" path="res://shaders/palette_limit.gdshader" id="palette_shader"]
 [ext_resource type="PackedScene" path="res://ui/match_setup.tscn" id="setup_scene"]
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
+[ext_resource type="Texture2D" path="res://assets/ui/chip.png" id="chip"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -53,168 +54,174 @@ fov = 70.0
 
 [node name="Page" type="CanvasLayer" parent="."]
 
-[node name="Margin" type="MarginContainer" parent="Page"]
-anchors_preset = 15
-anchor_right = 1.0
+[node name="Side" type="Panel" parent="Page"]
+anchors_preset = 9
 anchor_bottom = 1.0
-grow_horizontal = 2
+offset_right = 448.0
 grow_vertical = 2
 mouse_filter = 2
-theme_type_variation = &"PageMargin"
+theme_type_variation = &"SidePanel"
 
-[node name="Column" type="VBoxContainer" parent="Page/Margin"]
+[node name="Logo" type="VBoxContainer" parent="Page"]
+offset_left = 64.0
+offset_top = 80.0
+offset_right = 400.0
+offset_bottom = 208.0
+mouse_filter = 2
+theme_type_variation = &"ModeText"
+
+[node name="Title" type="Label" parent="Page/Logo"]
+layout_mode = 2
+theme_type_variation = &"LogoLabel"
+text = "CHIIP"
+
+[node name="Chips" type="HBoxContainer" parent="Page/Logo"]
 layout_mode = 2
 mouse_filter = 2
-alignment = 1
+theme_type_variation = &"ChipRow"
 
-[node name="Panel" type="PanelContainer" parent="Page/Margin/Column"]
+[node name="Friendly" type="Panel" parent="Page/Logo/Chips"]
+custom_minimum_size = Vector2(16, 8)
 layout_mode = 2
-size_flags_horizontal = 0
-custom_minimum_size = Vector2(560, 0)
-theme_type_variation = &"OverlayPanel"
+mouse_filter = 2
+theme_type_variation = &"FriendlyChip"
 
-[node name="PanelMargin" type="MarginContainer" parent="Page/Margin/Column/Panel"]
+[node name="Enemy" type="Panel" parent="Page/Logo/Chips"]
+custom_minimum_size = Vector2(16, 8)
 layout_mode = 2
-theme_type_variation = &"PanelMarginWide"
+mouse_filter = 2
+theme_type_variation = &"EnemyChip"
 
-[node name="Content" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin"]
+[node name="Accent" type="Panel" parent="Page/Logo/Chips"]
+custom_minimum_size = Vector2(16, 8)
 layout_mode = 2
-theme_type_variation = &"ContentBox"
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
 
-[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
-layout_mode = 2
-theme_type_variation = &"HeroLabel"
-text = "CHIIP"
-horizontal_alignment = 1
-
-[node name="Tagline" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
-layout_mode = 2
-theme_type_variation = &"DimLabel"
-text = "Tactical shooter against bots"
-horizontal_alignment = 1
-
-[node name="Spacer" type="Control" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 12)
-
-[node name="Modes" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
-layout_mode = 2
+[node name="Items" type="VBoxContainer" parent="Page"]
+offset_left = 48.0
+offset_top = 272.0
+offset_right = 400.0
+offset_bottom = 600.0
+mouse_filter = 2
 theme_type_variation = &"ModeList"
 
-[node name="Deathmatch" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="DeathmatchButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch"]
+[node name="PlayButton" type="Button" parent="Page/Items"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ModeButton"
+theme_type_variation = &"BigButton"
+text = "Play"
+icon = ExtResource("chip")
+alignment = 0
 
-[node name="Text" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ModeMargin"
-
-[node name="Lines" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch/Text"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ModeText"
-
-[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch/Text/Lines"]
-layout_mode = 2
-theme_type_variation = &"ModeTitleLabel"
-text = "Team Deathmatch"
-
-[node name="Detail" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch/Text/Lines"]
-layout_mode = 2
-theme_type_variation = &"ModeDetailLabel"
-autowrap_mode = 3
-
-[node name="Bomb" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="BombButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb"]
+[node name="PracticeButton" type="Button" parent="Page/Items"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ModeButton"
-
-[node name="Text" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ModeMargin"
-
-[node name="Lines" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb/Text"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ModeText"
-
-[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb/Text/Lines"]
-layout_mode = 2
-theme_type_variation = &"ModeTitleLabel"
-text = "Bomb"
-
-[node name="Detail" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb/Text/Lines"]
-layout_mode = 2
-theme_type_variation = &"ModeDetailLabel"
-autowrap_mode = 3
-
-[node name="Practice" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="PracticeButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"ModeButton"
-
-[node name="Text" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ModeMargin"
-
-[node name="Lines" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice/Text"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ModeText"
-
-[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice/Text/Lines"]
-layout_mode = 2
-theme_type_variation = &"ModeTitleLabel"
+theme_type_variation = &"BigButton"
 text = "Practice"
+icon = ExtResource("chip")
+alignment = 0
 
-[node name="Detail" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice/Text/Lines"]
-layout_mode = 2
-theme_type_variation = &"ModeDetailLabel"
-autowrap_mode = 3
-
-[node name="Spacer2" type="Control" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-
-[node name="Links" type="HBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+[node name="SettingsButton" type="Button" parent="Page/Items"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ButtonRow"
-alignment = 1
-
-[node name="CustomButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Links"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"TextButton"
-text = "Custom match"
-
-[node name="SettingsButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Links"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"TextButton"
+theme_type_variation = &"BigButton"
 text = "Settings"
+icon = ExtResource("chip")
+alignment = 0
 
-[node name="QuitButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Links"]
+[node name="QuitButton" type="Button" parent="Page/Items"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TextButton"
+theme_type_variation = &"BigButton"
 text = "Quit"
+icon = ExtResource("chip")
+alignment = 0
+
+[node name="Divider" type="MarginContainer" parent="Page/Items"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"DividerMargin"
+
+[node name="Line" type="HSeparator" parent="Page/Items/Divider"]
+layout_mode = 2
+theme_type_variation = &"LineSeparator"
+
+[node name="HostButton" type="Button" parent="Page/Items"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"SmallItemButton"
+disabled = true
+text = "Host"
+alignment = 0
+
+[node name="Soon" type="Label" parent="Page/Items/HostButton"]
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -96.0
+offset_top = -12.0
+offset_right = -16.0
+offset_bottom = 12.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_type_variation = &"MuteLabel"
+text = "Soon"
+horizontal_alignment = 2
+
+[node name="JoinButton" type="Button" parent="Page/Items"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"SmallItemButton"
+disabled = true
+text = "Join"
+alignment = 0
+
+[node name="Soon" type="Label" parent="Page/Items/JoinButton"]
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -96.0
+offset_top = -12.0
+offset_right = -16.0
+offset_bottom = 12.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_type_variation = &"MuteLabel"
+text = "Soon"
+horizontal_alignment = 2
+
+[node name="Build" type="Label" parent="Page"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 64.0
+offset_top = -53.0
+offset_right = 400.0
+offset_bottom = -32.0
+grow_vertical = 0
+theme_type_variation = &"MuteLabel"
+text = "Build M10"
+
+[node name="MapName" type="Label" parent="Page"]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -432.0
+offset_top = -53.0
+offset_right = -32.0
+offset_bottom = -32.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_type_variation = &"ShadowLabel"
+horizontal_alignment = 2
 
 [node name="MatchSetup" parent="." instance=ExtResource("setup_scene")]
 

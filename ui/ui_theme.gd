@@ -9,8 +9,9 @@ extends RefCounted
 ## all of these multiplied by a factor, and [method apply] hands that copy to a
 ## menu. That is the whole trick: every control below the menu looks up its
 ## style in the copy, so nothing else needs to know about scaling. What a
-## theme can't hold, a node's own [code]custom_minimum_size[/code] and any
-## per-node font-size or spacing override, [method apply] scales too, remembering
+## theme can't hold, a node's own [code]custom_minimum_size[/code], any
+## per-node font-size or spacing override, and the offsets of a control placed by
+## anchors rather than by a container, [method apply] scales too, remembering
 ## the original values so it can run again with another factor.
 ##
 ## The HUD (not a menu) is still scaled by [UiScale].
@@ -171,6 +172,10 @@ static func _scale_control(control: Control, factor: float) -> void:
 		for constant_name in SCALED_OVERRIDES:
 			if control.has_theme_constant_override(constant_name):
 				base["constants"][constant_name] = control.get_theme_constant(constant_name)
+		# A control placed by its anchors and offsets (not by a container): its
+		# offsets are pixels at 720p too (the main menu's column, D-135).
+		if not control.get_parent() is Container:
+			base["offsets"] = [control.offset_left, control.offset_top, control.offset_right, control.offset_bottom]
 		control.set_meta(BASE_META, base)
 	var original: Dictionary = control.get_meta(BASE_META)
 	var minimum_size: Vector2 = original["minimum_size"]
@@ -180,6 +185,12 @@ static func _scale_control(control: Control, factor: float) -> void:
 	var constants: Dictionary = original["constants"]
 	for constant_name: String in constants:
 		control.add_theme_constant_override(constant_name, scale_pixels(int(constants[constant_name]), factor))
+	if original.has("offsets"):
+		var offsets: Array = original["offsets"]
+		control.offset_left = roundf(offsets[0] * factor)
+		control.offset_top = roundf(offsets[1] * factor)
+		control.offset_right = roundf(offsets[2] * factor)
+		control.offset_bottom = roundf(offsets[3] * factor)
 
 
 ## A copy of [param box] with its borders, corners, margins and shadow multiplied.

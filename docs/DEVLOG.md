@@ -25,7 +25,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Your Foundations are the theme** (task 8, D-134): ink surfaces, the lime accent for focus only, the UI's own team blue and red, Silkscreen Bold titles, outlined buttons with a lime focus, menu items that fill with lime and show the chip, flat sliders with a square knob, underlined tabs. Every menu changed at once; the screens' layouts follow task by task. **The icon set** (D-139): your 21 icons are drawn from the mockup's rectangles into `assets/ui/icons/`, white, ready to tint.
 
-**Next:** the main menu and the Play screen.
+- **Main menu and Play screen** (task 9, D-135), as in your mockup: the dark column with CHIIP and its three chips, Play / Practice / Settings / Quit with the lime focus and chip, Host and Join marked soon. Play opens the Play screen: the Team Deathmatch card is picked (lime frame, "Click to play"), one click on it plays; Bomb and Practice are a click away; under them the picked mode's Custom rows (map or rotation, kill limit 25–100, team chips, 5 / 10 / 15 minutes, bots, friendly fire) and the big Play button. The menus now scale their placed-by-pixel layouts too, so 1080p is exactly 1.5×.
+
+**Next:** the settings screen.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 
