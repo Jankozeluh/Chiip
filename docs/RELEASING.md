@@ -32,7 +32,7 @@ mkdir -p builds/windows builds/linux builds/macos && touch builds/.gdignore
 
 Smoke-test the Mac build: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`. Start it once with a window and look at **Settings → Licences** (every document must show its text).
 
-**4. Zip them:** `bash tools/package_release.sh` writes `builds/release/Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each with the licences next to the game. (The site finds the right file by the words `windows`, `mac` and `linux` in the file names: keep them.)
+**4. Zip them:** `bash tools/package_release.sh` (`BUILDS=<folder>` if you exported somewhere else) writes `builds/release/Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each with the licences next to the game. (The site finds the right file by the words `windows`, `mac` and `linux` in the file names: keep them.)
 
 **5. Tag, push, publish.**
 

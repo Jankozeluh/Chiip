@@ -129,7 +129,7 @@ Make the builds only when asked (CLAUDE.md): export, then `bash tools/package_re
 | 7.5 | Practice → console → `map depot`, `map square` | The map list works in an export (it uses `ResourceLoader`) |
 | 7.6 | Settings are saved between runs; the file is at the path in the README | Yes |
 | 7.7 | Host from the build and join from the editor build (same version) | They connect (6.1) |
-| 7.8 | `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn` | No error |
+| 7.8 | `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --no-settings --match` (and `--practice`) | No error. (The test export of 2026-10-16 passed: D-172) |
 | 7.9 | File sizes and the zip names | `Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip`, `…-macos-universal.zip`; each under GitHub's 2 GB limit |
 
 ## 8. Before it goes public

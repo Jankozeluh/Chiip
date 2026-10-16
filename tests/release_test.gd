@@ -191,11 +191,11 @@ func _test_export_presets() -> void:
 			if not include.contains(file) or not FileAccess.file_exists("res://" + file):
 				filters_ok = false
 				detail += " %s-missing-%s" % [preset_name, file]
-		if not exclude.contains("tests/*") or not exclude.contains("tools/*"):
+		if not exclude.contains("tests/*") or not exclude.contains("tools/*") or not exclude.contains("docs/*"):
 			filters_ok = false
 			detail += " %s-exclude" % preset_name
 	_check("The architectures are universal (Mac) and x86_64 (Windows, Linux); the builds go to builds/<system>/Chiip.* (ignored by git)", arch_ok and path_ok, detail)
-	_check("Every preset ships the licence files (the include filter lists LICENSE, LICENSE-ASSETS, THIRD_PARTY_NOTICES.md, the font's and the addon's licence, and they exist) and leaves tests/ and tools/ out", filters_ok, detail)
+	_check("Every preset ships the licence files (the include filter lists LICENSE, LICENSE-ASSETS, THIRD_PARTY_NOTICES.md, the font's and the addon's licence, and they exist) and leaves tests/, tools/ and docs/ out", filters_ok, detail)
 	var version := str(ProjectSettings.get_setting("application/config/version", ""))
 	var mac := by_name.get("macOS", "") as String
 	_check("The Mac app's version is the project's (%s) and nothing in any preset holds a signing identity or a password" % version,

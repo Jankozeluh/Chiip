@@ -7,7 +7,7 @@
 ## Builds
 
 - **The builds are not signed.** Windows SmartScreen and macOS Gatekeeper warn the first time; the README says how to get past it.
-- **The Windows and Linux builds are exported on a Mac.** They have not been run on real Windows or Linux computers by the author yet, so graphics-driver problems are possible there. Please report them with your graphics card and driver.
+- **The Windows and Linux builds are exported on a Mac.** They have not been run on real Windows or Linux computers by the author yet (their data was checked to be complete, but nobody has played them), so graphics-driver problems are possible there. Please report them with your graphics card and driver.
 - The Windows `.exe` has Godot's default icon (a custom one needs an extra tool).
 
 ## Online play
