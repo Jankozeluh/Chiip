@@ -25,6 +25,10 @@ extends CanvasLayer
 ## ignore the keyboard and mouse and the mouse is shown, and closing it gives
 ## the mouse back.
 ##
+## **Online (M9, D-109) it doesn't pause** ([method set_online]): nobody can stop the other
+## players' game. It is an overlay then: it still registers with [MenuState], so your character
+## stands still and doesn't shoot while it is open, and the mouse is free; the game goes on.
+##
 ## It only reports button clicks: [code]main.gd[/code] opens the settings menu
 ## on [signal settings_pressed] and leaves for the main menu on
 ## [signal leave_pressed]. Its look comes from the UI theme (D-057): no colors,
@@ -38,6 +42,9 @@ signal settings_pressed
 ## Emitted when the player presses the leave button (it does not unpause: the
 ## owner leaves the scene, see [code]Main.return_to_menu()[/code]).
 signal leave_pressed
+
+## Online (M9): the menu is an overlay and never pauses the game. main.gd sets it on every map load.
+var online: bool = false
 
 @onready var _panel: PanelContainer = $Panel
 @onready var _background: ColorRect = $Background
@@ -56,7 +63,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	# Freed or removed while open (the game scene changes under it): don't leave
 	# the next scene paused, or the game waiting for a menu.
-	if MenuState.is_open(self):
+	if MenuState.is_open(self) and not online:
 		get_tree().paused = false
 	MenuState.close(self)
 
@@ -83,7 +90,8 @@ func open() -> void:
 	visible = true
 	_panel.visible = true
 	MenuState.open(self)
-	get_tree().paused = true
+	if not online:
+		get_tree().paused = true
 	_resume_button.grab_focus()
 
 
@@ -95,7 +103,19 @@ func close() -> void:
 		return
 	visible = false
 	MenuState.close(self)
-	get_tree().paused = false
+	if not online:
+		get_tree().paused = false
+
+
+## Online (M9): [param on] makes the menu an overlay that doesn't pause the game (offline it
+## pauses). The title says "Menu" instead of "Paused" then.
+func set_online(on: bool) -> void:
+	if is_open():
+		close()
+	online = on
+	var title := get_node_or_null("Panel/Margin/Content/Title") as Label
+	if title != null:
+		title.text = "Menu" if on else "Paused"
 
 
 ## True while the game is paused by this menu (also while the settings menu is

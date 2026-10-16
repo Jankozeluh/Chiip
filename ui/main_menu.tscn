@@ -5,6 +5,7 @@
 [ext_resource type="Shader" path="res://shaders/palette_limit.gdshader" id="palette_shader"]
 [ext_resource type="PackedScene" path="res://ui/match_setup.tscn" id="setup_scene"]
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
+[ext_resource type="PackedScene" path="res://ui/lobby_menu.tscn" id="lobby_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -106,6 +107,12 @@ layout_mode = 2
 theme_type_variation = &"BigButton"
 text = "Play"
 
+[node name="MultiplayerButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigButton"
+text = "Multiplayer"
+
 [node name="PracticeButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -125,5 +132,7 @@ theme_type_variation = &"BigButton"
 text = "Quit"
 
 [node name="MatchSetup" parent="." instance=ExtResource("setup_scene")]
+
+[node name="LobbyMenu" parent="." instance=ExtResource("lobby_scene")]
 
 [node name="SettingsMenu" parent="." instance=ExtResource("settings_menu_scene")]

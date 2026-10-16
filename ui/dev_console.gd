@@ -14,7 +14,7 @@ extends CanvasLayer
 
 ## How many output lines show at once. The panel is as tall as this many lines
 ## need: [code]help[/code] (one line per command, plus the echo of the command) fits.
-const VISIBLE_LINES := 18
+const VISIBLE_LINES := 22
 ## How many output lines are kept to scroll back through.
 const HISTORY_LINES := 200
 ## How many lines the mouse wheel scrolls per notch.
@@ -183,8 +183,11 @@ func _register_commands() -> void:
 	register_command("fps_max", _cmd_setting.bind(&"fps_cap", "fps_max"), "fps_max [0|30-1000]", "Frame rate limit, 0 = unlimited (no value: show)")
 	register_command("settings", _cmd_settings, "settings", "Open the settings menu (Esc closes it)")
 	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting, key and the match setup back to its default")
-	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu")
+	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu (online: leave the session)")
 	register_command("class", _cmd_class, "class [name]", "List the classes, or take one (in a match: during freeze time)")
+	register_command("status", _cmd_status, "status", "Online: the session, the players, ping, loss and corrections")
+	register_command("net_fakelag", _cmd_fake.bind("lag"), "net_fakelag [ms]", "Online: delay everything this computer receives (no value: show)")
+	register_command("net_fakeloss", _cmd_fake.bind("loss"), "net_fakeloss [percent]", "Online: drop this share of the snapshots or commands received (no value: show)")
 
 
 func _cmd_help(_args: Array) -> void:
@@ -248,6 +251,8 @@ func _cmd_friendly_fire(args: Array) -> void:
 	if args.is_empty():
 		print_line("mp_friendlyfire = %d" % (1 if Teams.friendly_fire else 0))
 		return
+	if _refuse_online("mp_friendlyfire"):
+		return
 	if args[0] != "0" and args[0] != "1":
 		print_line("Usage: mp_friendlyfire [0|1]")
 		return
@@ -256,6 +261,8 @@ func _cmd_friendly_fire(args: Array) -> void:
 
 
 func _cmd_god(_args: Array) -> void:
+	if _refuse_online("god"):
+		return
 	var player := _get_player()
 	if player != null:
 		player.god_mode = not player.god_mode
@@ -263,6 +270,8 @@ func _cmd_god(_args: Array) -> void:
 
 
 func _cmd_noclip(_args: Array) -> void:
+	if _refuse_online("noclip"):
+		return
 	var player := _get_player()
 	if player != null:
 		player.noclip = not player.noclip
@@ -272,6 +281,8 @@ func _cmd_noclip(_args: Array) -> void:
 func _cmd_map(args: Array) -> void:
 	if args.is_empty():
 		print_line("Maps: " + ", ".join(_list_maps()))
+		return
+	if _refuse_online("map"):
 		return
 	var path: String = args[0] if args[0].begins_with("res://") else MAPS_FOLDER + args[0] + ".tscn"
 	if not ResourceLoader.exists(path):
@@ -317,7 +328,55 @@ func _cmd_disconnect(_args: Array) -> void:
 	if main == null:
 		print_line("There is no game to leave.")
 		return
+	if main.get("net_session") != null:
+		# Online: leave the session (the host ends it for everyone), like CS's disconnect.
+		main.leave_online()
+		return
 	main.return_to_menu()
+
+
+## Online (M9): the session's state, from the network code of the game ([method NetHost.get_status_lines]
+## or [method NetClient.get_status_lines]).
+func _cmd_status(_args: Array) -> void:
+	var net_game: Node = main.get_net_game() if main != null and main.has_method("get_net_game") else null
+	if net_game == null:
+		print_line("Not online. Multiplayer is in the main menu.")
+		return
+	for line: String in net_game.get_status_lines():
+		print_line(line)
+
+
+## net_fakelag and net_fakeloss: make this computer's connection worse on purpose, like CS's.
+func _cmd_fake(args: Array, which: String) -> void:
+	var session: NetSession = main.get("net_session") if main != null else null
+	if session == null or not is_instance_valid(session):
+		print_line("Not online.")
+		return
+	if args.is_empty():
+		if which == "lag":
+			print_line("net_fakelag = %d ms" % roundi(session.fake_lag_ms))
+		else:
+			print_line("net_fakeloss = %d%%" % roundi(session.fake_loss * 100.0))
+		return
+	if not String(args[0]).is_valid_float():
+		print_line("Usage: net_fake%s <number>" % which)
+		return
+	var value := float(args[0])
+	if which == "lag":
+		session.fake_lag_ms = clampf(value, 0.0, 1000.0)
+		print_line("Everything this computer receives now waits %d ms longer." % roundi(session.fake_lag_ms))
+	else:
+		session.fake_loss = clampf(value / 100.0, 0.0, 0.9)
+		print_line("%d%% of the unreliable packets this computer receives are dropped." % roundi(session.fake_loss * 100.0))
+
+
+## Online, a cheat or a change to the match would be unfair or fight the host (D-109): says so
+## and returns true. Offline returns false.
+func _refuse_online(command_name: String) -> bool:
+	if main != null and main.get("net_session") != null:
+		print_line("%s only works offline." % command_name)
+		return true
+	return false
 
 
 ## class lists the classes and tells which one you are; class bulwark asks the game rules for
@@ -357,6 +416,9 @@ func _get_map() -> Node:
 
 
 func _get_player() -> Character:
+	if main != null and main.has_method("get_player") and main.get_player() != null:
+		# Online the player's node is named after them (M9).
+		return main.get_player()
 	var map := _get_map()
 	return map.get_node_or_null("Player") as Character if map != null else null
 

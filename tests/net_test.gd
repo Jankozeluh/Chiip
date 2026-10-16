@@ -11,7 +11,10 @@ extends Node
 ## order under jitter, a client leaving, and the host closing the session. And lag compensation's
 ## maths ([LagCompensation], D-107): the ray-against-box test agrees with the physics engine's own
 ## ray test, and a shot is checked against the hit zones where they were at its view tick
-## (between two records, at most 400 ms back), with walls still in the way.
+## (between two records, at most 400 ms back), with walls still in the way. The lobby
+## ([NetLobby], D-108): the host's lobby info and team limits reach everyone, a match start sends
+## every computer to the game scene with the same rules, the host takes everyone back to the
+## lobby, and a client whose host leaves during a match goes back to the menu with a notice.
 ## Quits with the number of failed checks as the exit code.
 
 var _harness: NetHarness
@@ -23,6 +26,7 @@ func _ready() -> void:
 	add_child(_harness)
 	await _test_session()
 	await _test_lag_compensation()
+	await _test_lobby()
 	remove_child(_harness)
 	_harness.queue_free()
 	await get_tree().physics_frame
@@ -61,7 +65,8 @@ func _test_session() -> void:
 	await _harness.wait_until(func() -> bool: return first.get_team(second.local_peer_id) == 1)
 	_check("A team request reaches the host and everyone's roster",
 			host.get_team(second.local_peer_id) == 1 and first.get_team(second.local_peer_id) == 1 and second.get_team(second.local_peer_id) == 1, "")
-	host.request_team(1, 2)
+	host.team_limits = [0, 2]
+	host.request_team(1)
 	await _harness.wait_ticks(20)
 	_check("A full team refuses one more player", host.get_team(1) == 0 and first.get_team(1) == 0, "host on team %d" % host.get_team(1))
 
@@ -257,6 +262,72 @@ func _test_lag_compensation() -> void:
 	for node in [target, shooter, ground]:
 		node.queue_free()
 	await _harness.wait_ticks(2)
+
+
+func _test_lobby() -> void:
+	var harness := NetHarness.new()
+	harness.port = _harness.port + 1
+	add_child(harness)
+	var host := harness.start_host("LobbyHost", "Host")
+	var client := harness.start_client("LobbyClient", "Jan")
+	await harness.wait_until(client.is_active)
+	var host_lobby := NetLobby.of(host)
+	var client_lobby := NetLobby.of(client)
+	var host_scenes: Array = []
+	var client_scenes: Array = []
+	host_lobby.change_scene = func(path: String) -> void: host_scenes.append(path)
+	client_lobby.change_scene = func(path: String) -> void: client_scenes.append(path)
+	host_lobby.publish("Rounds on Depot, first to 5", [2, 1], "res://maps/depot.tscn")
+	await harness.wait_until(func() -> bool: return not client_lobby.info.is_empty())
+	_check("The host's lobby info reaches the client; the slots become the host's team limits",
+			client_lobby.info.get("summary", "") == "Rounds on Depot, first to 5" and client_lobby.info.get("slots", []) == [2, 1]
+					and host.team_limits == [2, 1], "%s, limits %s" % [client_lobby.info, host.team_limits])
+	await harness.wait_until(func() -> bool: return client.get_team(client.local_peer_id) == 1)
+	host.request_team(1)
+	var refused := host.get_team(1) == 0
+	client.request_team(0)
+	await harness.wait_until(func() -> bool: return host.get_team(client.local_peer_id) == 0, 60)
+	_check("A team at its limit (1 slot, taken) refuses another player; one with room takes them",
+			refused and host.get_team(client.local_peer_id) == 0, "host refused %s, client on %d" % [refused, host.get_team(client.local_peer_id)])
+
+	var rules := MatchSettings.new()
+	rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	rules.kill_limit = 75
+	rules.team_size = 4
+	rules.friendly_fire = true
+	rules.bot_difficulty = load("res://bots/difficulty_hard.tres")
+	var back := NetLobby.settings_from_dict(NetLobby.settings_to_dict(rules))
+	_check("The match's rules travel as a Dictionary and come back the same (mode, limits, sizes, friendly fire, difficulty)",
+			back.game_mode == rules.game_mode and back.kill_limit == 75 and back.team_size == 4 and back.friendly_fire
+					and back.bot_difficulty.resource_path == "res://bots/difficulty_hard.tres" and back.freeze_time == rules.freeze_time,
+			"%s" % [NetLobby.settings_to_dict(rules)])
+	host_lobby.start_match("res://maps/square.tscn", rules, [] as Array[String])
+	await harness.wait_until(func() -> bool: return not client_scenes.is_empty())
+	_check("A match start sends every computer to the game scene with the session and the host's rules",
+			host_scenes == [GameLaunch.GAME_SCENE] and client_scenes == [GameLaunch.GAME_SCENE] and client_lobby.in_game
+					and GameLaunch.is_pending() and GameLaunch.map_path == "res://maps/square.tscn" and GameLaunch.net_session != null
+					and GameLaunch.match_settings.kill_limit == 75,
+			"host %s, client %s" % [host_scenes, client_scenes])
+	GameLaunch.clear()
+	host_lobby.return_to_lobby()
+	await harness.wait_until(func() -> bool: return client_scenes.size() == 2)
+	_check("The host takes everyone back to the lobby (the main menu)",
+			host_scenes.back() == GameLaunch.MENU_SCENE and client_scenes.back() == GameLaunch.MENU_SCENE and not client_lobby.in_game, "")
+	host_lobby.start_match("res://maps/square.tscn", rules, [] as Array[String])
+	await harness.wait_until(func() -> bool: return client_scenes.size() == 3)
+	GameLaunch.clear()
+	host.close()
+	await harness.wait_until(func() -> bool: return client_scenes.size() == 4, 2560)
+	_check("When the host leaves during a match, the client goes back to the menu and says why",
+			client_scenes.size() == 4 and client_scenes.back() == GameLaunch.MENU_SCENE and GameLaunch.notice != "",
+			"%s, notice \"%s\"" % [client_scenes, GameLaunch.notice])
+	GameLaunch.notice = ""
+	GameLaunch.clear()
+	if is_instance_valid(client):
+		client.close()
+	remove_child(harness)
+	harness.queue_free()
+	await get_tree().physics_frame
 
 
 func _roster(session: NetSession) -> Array:

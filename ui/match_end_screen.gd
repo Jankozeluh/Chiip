@@ -11,6 +11,10 @@ extends CanvasLayer
 ## your team (from [member Teams.viewer_team]) is blue and listed first, the
 ## enemy team red. Its look comes from the UI theme (D-057): the panel, title,
 ## scores and buttons use theme type variations.
+##
+## Online (M9, D-109) the host decides what comes next: the host's screen offers Next map,
+## Play again and "Lobby" (everyone comes along), a client's only "Leave" with a line saying the
+## host decides ([method set_online]).
 
 ## Emitted when the player clicks "Play again".
 signal play_again_pressed
@@ -20,6 +24,9 @@ signal main_menu_pressed
 signal next_map_pressed
 
 var _manager: RoundManager
+## Online on a client: only the leave button shows.
+var _client: bool = false
+var _next_map_title: String = ""
 
 @onready var _title: Label = $Panel/Margin/Content/Title
 @onready var _your_score: Label = $Panel/Margin/Content/Score/YourScore
@@ -43,12 +50,33 @@ func _ready() -> void:
 ## [param title] (no rotation). main.gd calls it whenever a map is loaded.
 func set_next_map(title: String) -> void:
 	_next_map.text = "Next map: %s" % title
-	_next_map.visible = not title.is_empty()
+	_next_map.visible = not title.is_empty() and not _client
+	_next_map_title = title
+
+
+## Online (M9): [param online] true shows the online buttons, for the host when [param host]
+## (Next map, Play again, Lobby) or for a client (only Leave, the host decides what comes next);
+## false brings back the offline ones. main.gd calls it whenever a map is loaded.
+func set_online(online: bool, host: bool) -> void:
+	_client = online and not host
+	_play_again.visible = not _client
+	_main_menu.text = ("Lobby" if host else "Leave") if online else "Main menu"
+	set_next_map(_next_map_title)
 
 
 ## The "Next map" button (hidden without a rotation). For tests.
 func get_next_map_button() -> Button:
 	return _next_map
+
+
+## The "Play again" button (hidden on an online client). For tests.
+func get_play_again_button() -> Button:
+	return _play_again
+
+
+## The "Main menu" button ("Lobby" for an online host, "Leave" for a client). For tests.
+func get_main_menu_button() -> Button:
+	return _main_menu
 
 
 func _input(event: InputEvent) -> void:

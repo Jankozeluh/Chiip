@@ -19,13 +19,17 @@ extends Node
 ## correction, ends up exactly where the host has it, recovers from a disagreement (smoothed),
 ## and predicts and corrects its ammo. Lag compensation (task 7), at 100 ms: the client taps at
 ## a target strafing 12 m away, aiming where its screen shows it; the host counts the hits with
-## lag compensation and, for comparison, without. Quits with the number of failed checks as the
-## exit code.
+## lag compensation and, for comparison, without. Menus online (task 9): the pause menu is an
+## overlay that doesn't pause either game, the console refuses cheats and shows the session's
+## status, the F3 overlay shows ping and corrections, the end screen's choices are the host's.
+## Quits with the number of failed checks as the exit code.
 
 const MAP := preload("res://maps/depot.tscn")
-## Seconds of each phase, short so the test plays a few rounds quickly.
+## Seconds of each phase.
 const FREEZE_TIME := 1.0
-const ROUND_TIME := 40.0
+## Long enough for every check that plays in the first live round (the lag-compensation taps
+## alone take 40 s); the bots end the rounds after that.
+const ROUND_TIME := 90.0
 const ROUND_END_TIME := 1.0
 
 var _harness: NetHarness
@@ -80,6 +84,7 @@ func _ready() -> void:
 		await _test_lag_compensation()
 		await _test_puppets()
 		await _test_spectating()
+		await _test_menus_online()
 		await _test_rounds()
 	_stop()
 	for i in 5:
@@ -280,6 +285,8 @@ func _test_prediction() -> void:
 			_client.corrections == corrections_before, "%d corrections, largest %.3f m" % [_client.corrections - corrections_before, _client.largest_correction])
 	_check("The prediction ends exactly where the host has the character", own.global_position.distance_to(friend.global_position) < 0.001,
 			"%.4f m apart" % own.global_position.distance_to(friend.global_position))
+	_check("The client measures the round trip it feels (50 ms of fake lag each way: about 100 ms, plus up to a snapshot interval)",
+			_client.ping_ms >= 95.0 and _client.ping_ms <= 130.0, "%.0f ms" % _client.ping_ms)
 
 	# A disagreement: the host moves the character half a metre (as a push would).
 	count[0] = 0
@@ -339,13 +346,22 @@ func _test_lag_compensation() -> void:
 	for i in 16:
 		var direction := Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 16.0)
 		var candidate := friend.global_position + direction * 12.0
-		var sight := PhysicsRayQueryParameters3D.create(friend.global_position + eye, candidate + eye, PhysicsLayers.WORLD)
 		var floor_ray := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP, candidate + Vector3.DOWN * 0.5, PhysicsLayers.WORLD)
-		var side := direction.cross(Vector3.UP) * 2.5
-		var left := PhysicsRayQueryParameters3D.create(candidate + eye, candidate + eye + side, PhysicsLayers.WORLD)
-		var right := PhysicsRayQueryParameters3D.create(candidate + eye, candidate + eye - side, PhysicsLayers.WORLD)
-		if space.intersect_ray(sight).is_empty() and not space.intersect_ray(floor_ray).is_empty() \
-				and space.intersect_ray(left).is_empty() and space.intersect_ray(right).is_empty():
+		if space.intersect_ray(floor_ray).is_empty():
+			continue
+		# The whole strip the target strafes along must be in plain view, at every height a shot may take.
+		var side := direction.cross(Vector3.UP)
+		var clear := true
+		for offset in [-2.5, -1.25, 0.0, 1.25, 2.5]:
+			for height in [0.5, 0.9, 1.3, 1.7]:
+				var point: Vector3 = candidate + side * offset + Vector3.UP * height
+				var sight := PhysicsRayQueryParameters3D.create(friend.global_position + eye, point, PhysicsLayers.WORLD)
+				if not space.intersect_ray(sight).is_empty():
+					clear = false
+			var along := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP * 0.5, candidate + side * offset + Vector3.UP * 0.5, PhysicsLayers.WORLD)
+			if not space.intersect_ray(along).is_empty():
+				clear = false
+		if clear:
 			spot = candidate
 			break
 	if spot == Vector3.INF:
@@ -503,6 +519,40 @@ func _test_spectating() -> void:
 	_hold_bots(false)
 
 
+## The pause menu, console and overlay online (D-109).
+func _test_menus_online() -> void:
+	var pause: PauseMenu = _client_main.get_pause_menu()
+	var host_pause: PauseMenu = _host_main.get_pause_menu()
+	var snapshot_before := _client.newest_snapshot
+	var host_tick := _host.tick
+	pause.open()
+	host_pause.open()
+	await _harness.wait_ticks(20)
+	_check("Online the pause menu is an overlay: neither game pauses, the snapshots keep coming, your controls are held",
+			pause.is_open() and host_pause.is_open() and not get_tree().paused and _client.newest_snapshot > snapshot_before + 5
+					and _host.tick > host_tick + 15 and MenuState.blocks_gameplay(),
+			"paused %s, snapshots %d -> %d" % [get_tree().paused, snapshot_before, _client.newest_snapshot])
+	_check("Its leave button reads \"Back to lobby\" for the host and \"Leave match\" for a client",
+			host_pause.get_leave_button().text == "Back to lobby" and pause.get_leave_button().text == "Leave match",
+			"%s / %s" % [host_pause.get_leave_button().text, pause.get_leave_button().text])
+	pause.close()
+	host_pause.close()
+	var console := _client_main.get_node("DevConsole") as DevConsole
+	console.run("god")
+	var refused: bool = String(console.get_visible_lines().back()).contains("only works offline")
+	console.run("status")
+	var status := "\n".join(console.get_visible_lines())
+	console.run("net_fakelag 30")
+	var lag := _client_session.fake_lag_ms
+	console.run("net_fakelag 0")
+	var overlay_lines: Array[String] = _client.get_status_lines()
+	_check("Online the console refuses cheats and shows the session (status, net_fakelag); the overlay has ping and corrections",
+			refused and status.contains("Ping") and status.contains("corrections") and is_equal_approx(lag, 30.0)
+					and _client_session.fake_lag_ms == 0.0 and "\n".join(overlay_lines).contains("Predicted")
+					and "\n".join(_host.get_status_lines()).contains("Jan"),
+			"refused %s, lag %s, status: %s" % [refused, lag, status.right(200)])
+
+
 ## A command looking along [param yaw], running forward unless [param still].
 func _walk(yaw: float, still: bool) -> CharacterInput:
 	var command := CharacterInput.new()
@@ -554,6 +604,13 @@ func _test_rounds() -> void:
 		if copy == null or copy.is_alive() != character.is_alive():
 			same_health = false
 	_check("Who is alive is the same on both sides", same_health, "")
+	var host_end: MatchEndScreen = _host_main.get_node("MatchEndScreen")
+	var client_end: MatchEndScreen = _client_main.get_node("MatchEndScreen")
+	_check("The end screen's choices are the host's: Play again and Lobby for the host, only Leave for a client",
+			host_end.visible and client_end.visible and host_end.get_play_again_button().visible and host_end.get_main_menu_button().text == "Lobby"
+					and not client_end.get_play_again_button().visible and not client_end.get_next_map_button().visible
+					and client_end.get_main_menu_button().text == "Leave",
+			"host %s/%s, client %s/%s" % [host_end.visible, host_end.get_main_menu_button().text, client_end.visible, client_end.get_main_menu_button().text])
 
 
 func _describe(rules: RoundManager) -> Array:

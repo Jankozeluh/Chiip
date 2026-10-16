@@ -381,6 +381,12 @@ func set_floor_contact(on_ground: bool) -> void:
 	_floor_override = 1 if on_ground else 0
 
 
+## Online, on a client (M9, D-106): a puppet blocks your predicted movement ([param on]) or lets
+## it through, while it is alive. Its hit zones are not affected.
+func set_blocking(on: bool) -> void:
+	collision_layer = _alive_collision_layer if on and is_alive() else 0
+
+
 ## True when the feet are on the ground: the physics engine's answer, or for a puppet
 ## ([member remote]) the host's. Animation and the viewmodel's bob use it.
 func is_grounded() -> bool:

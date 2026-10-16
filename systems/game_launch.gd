@@ -43,6 +43,9 @@ static var match_settings: MatchSettings = null
 static var rotation: Array[String] = []
 ## Online (M9): the session the match is played in (the lobby's), or null offline.
 static var net_session: NetSession = null
+## Online (M9): why the last online game ended ("The host ended the game"), for the main menu
+## to show once; "" when there is nothing to say.
+static var notice: String = ""
 
 ## True between [method start_match] / [method start_practice] and [method clear].
 static var _pending: bool = false

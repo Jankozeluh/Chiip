@@ -48,7 +48,7 @@ enum Event {
 	MATCH_ENDED,
 	## []: a team respawn match went into overtime.
 	OVERTIME,
-	## [victim, killer (0: none), headshot].
+	## [victim, killer (0: none), headshot, score 0, score 1] (team respawn scores every kill).
 	KILLED,
 	## [victim, amount, zone, attacker (0: none), health left].
 	DAMAGED,

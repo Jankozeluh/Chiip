@@ -8,7 +8,8 @@ extends CanvasLayer
 ## the map, then press Start, or Back to return to the menu.
 ##
 ## It only collects the choices and reports [signal started] and
-## [signal closed]; the main menu starts the game ([GameLaunch]). Every choice is
+## [signal closed]; the main menu starts the game ([GameLaunch]); the online lobby
+## ([LobbyMenu]) holds one too, for the host's match settings. Every choice is
 ## written to [Settings] (its [code][match][/code] section) the moment it
 ## changes, like the settings menu does, so the next start offers the same
 ## match; the Settings class clamps the values and saves them. The menu follows
@@ -102,6 +103,12 @@ func close() -> void:
 ## True while the panel is shown.
 func is_open() -> bool:
 	return visible
+
+
+## Changes what the Start button says. The online lobby (M9) opens this panel to edit the match
+## and calls it "Done": the panel still only reports [signal started].
+func set_start_text(text: String) -> void:
+	_start_button.text = text
 
 
 ## Scales the panel; 1.0 is the size it is designed for (a 720-pixel-tall

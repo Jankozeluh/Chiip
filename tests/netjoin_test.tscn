@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/netjoin_test.gd" id="test_script"]
+
+[node name="NetjoinTest" type="Node"]
+script = ExtResource("test_script")

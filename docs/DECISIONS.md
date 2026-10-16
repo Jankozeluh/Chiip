@@ -1028,7 +1028,7 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 
 **Alternatives:** no prediction (simple, laggy); blending toward the host's position (cheap, but drifts and rubber-bands); also predicting other players (overshoots, and Source doesn't either).
 
-**Added while building (task 6):** the client must simulate exactly the numbers the host gets. GDScript's floats have 64 bits but the packet carries the angles in 32, so the command is cut to the packet's precision (`NetProtocol.quantize()`) *before* the client simulates it; with that, 3 s of running, strafing, jumping and crouching at 100 ms of round trip needs not a single correction.
+**Added while building (task 6):** the client must simulate exactly the numbers the host gets. GDScript's floats have 64 bits but the packet carries the angles in 32, so the command is cut to the packet's precision (`NetProtocol.quantize()`) *before* the client simulates it; with that, 3 s of running, strafing, jumping and crouching at 100 ms of round trip needs not a single correction. And (task 11): a client's predicted player collides with the world only, not with the other characters. They are shown 50 to 100 ms in the past, so bumping into them on the client was bumping into where they had been, and in a crowded spawn that caused corrections of up to 0.7 m; the host still decides real bumps, which now cost corrections of a few centimetres. Refined the same day: a puppet that stands still (slower than 0.5 m/s, `NetClient.BLOCKING_SPEED`) is where the host has it, so it does block your prediction (`Character.set_blocking()`); only moving ones let you through. That took a 5v5's corrections from about 90 to under 30 in 80 s. A respawn's jump isn't counted as a correction (`NetClient.teleports`).
 
 ## D-107 — Lag compensation: the host checks shots against hit zones rewound to what the shooter saw (2026-10-16) — *provisional*
 
@@ -1046,6 +1046,8 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 
 **Alternatives:** automatic team balance; a server browser that finds LAN games by itself (a broadcast; a later addition); joining only through Steam.
 
+**Added while building (task 8):** on the lobby page Esc means Leave (as Back does on the connect page); the summary line is built from the match settings ("Rounds · Depot · first to 5 rounds · Normal bots"); the host's team gets match setup's "your team" size and the other team its "enemy team" size, so match setup needs no online version; the port is a text field that keeps digits (1024 to 65535).
+
 ## D-109 — Online, the pause menu is an overlay that doesn't pause (2026-10-16) — *provisional*
 
 **Decision:** As M5 planned (D-065): online, Esc opens the same pause menu, but it doesn't set `get_tree().paused`. It still registers with `MenuState`, so your character stops and doesn't shoot while it's open, and the mouse is free. Leave match disconnects (a client) or ends the game for everyone (the host). The console's cheats (`god`, `noclip`) and bot commands only work offline.
@@ -1061,6 +1063,8 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 **Why:** "bots fill empty slots" (D-033) shouldn't stop at the start of the match; a match among friends should survive someone's Wi-Fi dropping.
 
 **Alternatives:** the slot stays empty (CS's default); the match ends when someone leaves.
+
+**Added while building (task 10):** a latecomer takes over a bot at once, not at the next round start: if that bot is alive the newcomer plays on from where it stands (CS's "take over a bot"), if it is dead they watch a teammate until the next round. A bot's brain is put aside rather than freed while a friend plays its character (the round's tactics and the respawn mode's hunting plans keep references to it), and comes back when the friend leaves. When every slot of both teams is a player, a latecomer is refused ("The match is full").
 
 ## D-111 — Network tests run a host and clients in one process, with fake lag and loss (2026-10-16) — *provisional*
 

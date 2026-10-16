@@ -23,6 +23,11 @@ extends Node
 ##   of its last command run.
 ## - **Lag compensation** (D-107): at the end of every tick the hit zones are recorded
 ##   ([LagCompensation]), and the friends' shots are checked against them.
+## - **Coming and going** (D-110). A friend who leaves or loses the connection is taken over by
+##   a bot ([method hand_to_bot]): the character keeps its team, class and stats and plays on as
+##   "Name (bot)". A friend who joins a running match takes over a bot of their team (or of the
+##   other team when theirs has none; refused when there is no bot at all), as soon as they have
+##   loaded the map.
 ##
 ## [code]main.gd[/code] adds it to the map of an online match on the host, after the rules,
 ## and calls [method setup].
@@ -37,6 +42,12 @@ const STATS_INTERVAL := 32
 const EFFECT_TICKS := 8
 ## The scene of a friend's character: a bot without its brain (D-110: a bot can take it over).
 const PLAYER_SCENE := preload("res://bots/bot.tscn")
+## A bot's brain and senses, for a bot taking over a friend's character.
+const BOT_CONTROLLER_SCRIPT := preload("res://bots/bot_controller.gd")
+const BOT_SENSES_SCRIPT := preload("res://bots/bot_senses.gd")
+## A bot brain put aside while a friend plays its character: renamed, so the round's tactics
+## (which look for "BotController") see a player, and switched off.
+const IDLE_BRAIN_NAME := "IdleBotController"
 
 ## Emitted once the match has started (every client loaded, or the wait ran out).
 signal match_started
@@ -113,15 +124,33 @@ func setup(game_session: NetSession, game_map: Node, game_rules: RoundManager, o
 			_add_friend(peer_id, entry["name"], entry["team"])
 	session.packet_received.connect(_on_packet)
 	session.match_message.connect(_on_match_message)
+	session.player_left.connect(_on_player_left)
+	session.closed.connect(_on_session_closed)
 	_connect_rules()
 
 
+## The session ended (the host left): stop sending, and let go of it before it is freed.
+func _on_session_closed(_reason: String) -> void:
+	_disconnect_session()
+	session = null
+	set_physics_process(false)
+	_late.set_physics_process(false)
+
+
 func _exit_tree() -> void:
+	_disconnect_session()
+
+
+func _disconnect_session() -> void:
 	if session != null and is_instance_valid(session):
+		if session.closed.is_connected(_on_session_closed):
+			session.closed.disconnect(_on_session_closed)
 		if session.packet_received.is_connected(_on_packet):
 			session.packet_received.disconnect(_on_packet)
 		if session.match_message.is_connected(_on_match_message):
 			session.match_message.disconnect(_on_match_message)
+		if session.player_left.is_connected(_on_player_left):
+			session.player_left.disconnect(_on_player_left)
 
 
 ## True once the match has started.
@@ -144,6 +173,23 @@ func get_ready_peers() -> Array[int]:
 	return _ready_peers.duplicate()
 
 
+## Lines for the F3 overlay and the console's [code]status[/code]: every friend's ping and
+## waiting commands, and the traffic sent.
+func get_status_lines() -> Array[String]:
+	if session == null:
+		return ["Online     the session has ended"]
+	var lines: Array[String] = ["Online     hosting, %d friend(s) in the match" % _ready_peers.size()]
+	for peer_id: int in _characters_by_peer:
+		var character: Character = _characters_by_peer[peer_id]
+		if not is_instance_valid(character):
+			continue
+		var controller := character.get_controller() as NetworkController
+		lines.append("  %-12s ping %s ms, %d command(s) waiting" % [String(character.name), str(session.get_ping_ms(peer_id)),
+				controller.pending() if controller != null else 0])
+	lines.append("Traffic    %.1f KB sent so far" % (session.bytes_sent / 1024.0))
+	return lines
+
+
 ## Starts the match now, without waiting for the clients still loading.
 func start_now() -> void:
 	if _started:
@@ -154,6 +200,7 @@ func start_now() -> void:
 		_register(character)
 	for peer_id in _loaded_peers:
 		_welcome(peer_id)
+	print_verbose("Chiip online: the match started with %d characters, %d friend(s) loaded." % [rules.get_participants().size(), _loaded_peers.size()])
 	match_started.emit()
 
 
@@ -258,6 +305,103 @@ func _all_characters() -> Array[Character]:
 	return list
 
 
+## A bot takes over [param character], a friend's character whose player left (D-110): it keeps
+## its team, class and stats, and is called "Name (bot)" from now on.
+func hand_to_bot(character: Character) -> void:
+	var old := character.get_controller()
+	var brain := character.get_node_or_null(IDLE_BRAIN_NAME) as BotController
+	if brain != null:
+		# The character was a bot before the friend took it over: its own brain comes back.
+		brain.name = "BotController"
+		brain.process_mode = Node.PROCESS_MODE_INHERIT
+		var idle_senses := character.get_node_or_null("IdleBotSenses")
+		if idle_senses != null:
+			idle_senses.name = "BotSenses"
+			idle_senses.process_mode = Node.PROCESS_MODE_INHERIT
+	else:
+		var senses: Node = BOT_SENSES_SCRIPT.new()
+		senses.name = "BotSenses"
+		character.add_child(senses)
+		brain = BOT_CONTROLLER_SCRIPT.new()
+		brain.name = "BotController"
+		brain.difficulty = rules.settings.bot_difficulty
+		character.add_child(brain)
+	character.manual = false
+	character.lag_compensation = null
+	if character.weapon != null:
+		character.weapon.manual = false
+	character.set_controller(brain)
+	if old != null and old != brain:
+		character.remove_child(old)
+		old.queue_free()
+	_rename(character, "%s (bot)" % String(character.name).left(NetSession.MAX_NAME_LENGTH))
+
+
+## The friend with [param peer_id] takes over a bot of [param team] (or of the other team when
+## that has none) and plays it from now on under [param player_name]. False when there is no bot.
+func _take_over_bot(peer_id: int, player_name: String, team: int) -> bool:
+	var bot := _find_bot(team)
+	if bot == null:
+		bot = _find_bot(Teams.other(team))
+	if bot == null:
+		return false
+	var brain := bot.get_node_or_null("BotController") as BotController
+	var senses := bot.get_node_or_null("BotSenses")
+	if brain != null:
+		brain.name = IDLE_BRAIN_NAME
+		brain.process_mode = Node.PROCESS_MODE_DISABLED
+	if senses != null:
+		senses.name = "IdleBotSenses"
+		senses.process_mode = Node.PROCESS_MODE_DISABLED
+	var controller := NetworkController.new()
+	controller.name = "NetworkController"
+	controller.peer_id = peer_id
+	bot.add_child(controller)
+	bot.set_controller(controller)
+	bot.manual = true
+	bot.lag_compensation = lag_compensation
+	if bot.weapon != null:
+		bot.weapon.manual = true
+	_characters_by_peer[peer_id] = bot
+	_peers[bot] = peer_id
+	if session.get_team(peer_id) != bot.team:
+		session.set_player_team(peer_id, bot.team)
+	_rename(bot, player_name)
+	return true
+
+
+## The newest bot of [param team] that no friend plays, or null.
+func _find_bot(team: int) -> Character:
+	var members := rules.get_members(team)
+	for i in range(members.size() - 1, -1, -1):
+		if members[i].get_node_or_null("BotController") is BotController and not _peers.has(members[i]):
+			return members[i]
+	return null
+
+
+## Renames [param character] (its node, which the kill feed and scoreboard show) and tells everyone.
+func _rename(character: Character, new_name: String) -> void:
+	character.name = new_name
+	if character.net_id != 0:
+		_broadcast([NetProtocol.Event.RENAMED, character.net_id, String(character.name)])
+
+
+func _on_player_left(peer_id: int) -> void:
+	_ready_peers.erase(peer_id)
+	_loaded_peers.erase(peer_id)
+	var character: Character = _characters_by_peer.get(peer_id)
+	_characters_by_peer.erase(peer_id)
+	if character == null or not is_instance_valid(character):
+		return
+	_peers.erase(character)
+	if not _started:
+		# Not in the match yet: the slot simply goes to a bot when the match starts.
+		rules.extra_players.erase(character)
+		character.queue_free()
+		return
+	hand_to_bot(character)
+
+
 # --- Packets and messages ---
 
 
@@ -288,6 +432,16 @@ func _on_request(peer_id: int, values: Array) -> void:
 func _on_match_message(data: Dictionary) -> void:
 	if data.get("loaded", false) and data.has("from"):
 		var peer_id: int = data["from"]
+		var entry := session.get_player(peer_id)
+		if entry.is_empty():
+			return
+		if not _characters_by_peer.has(peer_id):
+			# Joined after the match was set up: a character of their own before the start, a bot's later.
+			if not _started:
+				_add_friend(peer_id, entry["name"], entry["team"])
+			elif not _take_over_bot(peer_id, entry["name"], entry["team"]):
+				session.kick(peer_id, "The match is full: every slot is taken by a player.")
+				return
 		if not _loaded_peers.has(peer_id):
 			_loaded_peers.append(peer_id)
 		if _started:
@@ -352,7 +506,7 @@ func _connect_rules() -> void:
 	rules.match_ended.connect(func(winner: int) -> void:
 		_broadcast([NetProtocol.Event.MATCH_ENDED, winner, rules.score[0], rules.score[1]]))
 	rules.character_killed.connect(func(victim: Character, killer: Character, headshot: bool) -> void:
-		_broadcast([NetProtocol.Event.KILLED, victim.net_id, killer.net_id if killer != null else 0, headshot]))
+		_broadcast([NetProtocol.Event.KILLED, victim.net_id, killer.net_id if killer != null else 0, headshot, rules.score[0], rules.score[1]]))
 	rules.class_changed.connect(func(character: Character, data: ClassData) -> void:
 		_broadcast([NetProtocol.Event.CLASS_CHANGED, character.net_id, ClassData.all().find(data)]))
 	if rules is RespawnMatch:

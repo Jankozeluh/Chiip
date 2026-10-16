@@ -61,6 +61,8 @@ const VELOCITY_TOLERANCE := 0.05
 const SMOOTHING_TIME := 0.1
 ## Corrections larger than this (metres) aren't smoothed: a respawn or a teleport.
 const SMOOTHING_LIMIT := 1.0
+## A puppet slower than this (m/s) blocks your predicted movement; a faster one doesn't (D-106).
+const BLOCKING_SPEED := 0.5
 ## How quickly the clock follows the snapshots' ticks (a share of the difference per tick), and
 ## the difference at which it jumps instead.
 const CLOCK_CORRECTION := 0.05
@@ -89,8 +91,20 @@ var clock: float = -1.0
 ## host's snapshots put it, a round trip late.
 var predict: bool = true
 ## How often the host disagreed with the prediction, and the largest difference (metres).
+## Jumps over [constant SMOOTHING_LIMIT] (a respawn whose snapshot came before its event, a
+## teleport) are counted apart, in [member teleports].
 var corrections: int = 0
 var largest_correction: float = 0.0
+var teleports: int = 0
+## The last second's snapshots per second and the share of them that never arrived.
+var snapshot_rate: float = 0.0
+var snapshot_loss: float = 0.0
+## The last second's traffic, in KB a second.
+var kilobytes_in: float = 0.0
+var kilobytes_out: float = 0.0
+## The round trip as the game feels it, in milliseconds: from sending a command to the snapshot
+## confirming it (fake lag included, any transport), smoothed. -1 until measured.
+var ping_ms: float = -1.0
 
 ## Commands sent but not confirmed yet, oldest first.
 var _unconfirmed: Array[CharacterInput] = []
@@ -103,6 +117,15 @@ var _played: Dictionary = {}
 var _played_order: Array[int] = []
 ## Every command predicted but not confirmed yet with the state it left: [command, PredictedState].
 var _history: Array = []
+## Command number → the physics tick (of this computer) it was sent at, for [member ping_ms].
+var _sent_at: Dictionary = {}
+## For the statistics: ticks counted, snapshots and the newest tick at the start of this second,
+## and the session's byte counters then.
+var _stat_ticks: int = 0
+var _stat_snapshots: int = 0
+var _stat_first_tick: int = -1
+var _stat_bytes_in: int = 0
+var _stat_bytes_out: int = 0
 
 
 ## What prediction compares: the state a command left the character in.
@@ -148,16 +171,35 @@ func setup(game_session: NetSession, game_map: Node, game_rules: RoundManager, o
 	player.replica = true
 	# The host simulates your player from your commands; this node steps it here (D-103, D-106).
 	player.manual = true
+	# Your prediction bumps into walls and into others standing still, which are where the host
+	# has them; others on the move are shown a little in the past, so they don't block you here
+	# (bumping into them would be bumping into where they were): the host decides those bumps
+	# ([constant BLOCKING_SPEED], D-106).
 	if player.weapon != null:
 		player.weapon.manual = true
 	rules.class_request = _request_class
 	session.packet_received.connect(_on_packet)
+	session.closed.connect(_on_session_closed)
 	session.send_to_host({"loaded": true})
 
 
 func _exit_tree() -> void:
-	if session != null and is_instance_valid(session) and session.packet_received.is_connected(_on_packet):
-		session.packet_received.disconnect(_on_packet)
+	_disconnect_session()
+
+
+## The session ended: stop, and let go of it before it is freed (the lobby takes you to the menu).
+func _on_session_closed(_reason: String) -> void:
+	_disconnect_session()
+	session = null
+	set_physics_process(false)
+
+
+func _disconnect_session() -> void:
+	if session != null and is_instance_valid(session):
+		if session.packet_received.is_connected(_on_packet):
+			session.packet_received.disconnect(_on_packet)
+		if session.closed.is_connected(_on_session_closed):
+			session.closed.disconnect(_on_session_closed)
 
 
 ## True once the host's welcome has arrived.
@@ -170,12 +212,55 @@ func get_character(net_id: int) -> Character:
 	return _characters.get(net_id)
 
 
+## Lines for the F3 overlay and the console's [code]status[/code]: ping, snapshots and their
+## loss, prediction corrections, fake lag and loss.
+func get_status_lines() -> Array[String]:
+	if session == null:
+		return ["Online     the session has ended"]
+	var lines: Array[String] = []
+	var link := session.get_ping_ms(1)
+	lines.append("Online     client of %s (you: %s)" % [String(session.get_player(1).get("name", "?")), session.local_name])
+	lines.append("Ping       %s ms%s" % [str(roundi(ping_ms)) if ping_ms >= 0.0 else "?",
+			" (the connection itself: %d ms)" % link if link >= 0 and session.fake_lag_ms > 0.0 else ""])
+	lines.append("Snapshots  %d/s, %.0f%% lost%s" % [roundi(snapshot_rate), snapshot_loss * 100.0, "  (fake loss %d%%)" % roundi(session.fake_loss * 100.0) if session.fake_loss > 0.0 else ""])
+	lines.append("Shown      %.0f ms behind the host" % ((float(newest_snapshot) - get_render_tick()) * 1000.0 / Engine.physics_ticks_per_second))
+	lines.append("Predicted  %d corrections, largest %.2f m (and %d teleports)" % [corrections, largest_correction, teleports])
+	lines.append("Traffic    %.1f KB/s in, %.1f KB/s out" % [kilobytes_in, kilobytes_out])
+	return lines
+
+
 func _physics_process(delta: float) -> void:
 	if not _welcomed:
 		return
 	_advance_clock()
 	_show_puppets()
 	_send_command(delta)
+	_count_statistics()
+
+
+## Once a second: the snapshot rate and loss, and the traffic, for the overlay and the tests.
+func _count_statistics() -> void:
+	_stat_ticks += 1
+	if _stat_first_tick < 0:
+		_stat_first_tick = newest_snapshot
+		_stat_snapshots = snapshots_received
+		_stat_bytes_in = session.bytes_received
+		_stat_bytes_out = session.bytes_sent
+		return
+	if _stat_ticks < Engine.physics_ticks_per_second:
+		return
+	var seconds := _stat_ticks / float(Engine.physics_ticks_per_second)
+	var received := snapshots_received - _stat_snapshots
+	var expected := maxf((newest_snapshot - _stat_first_tick) / float(NetHost.SNAPSHOT_INTERVAL), 1.0)
+	snapshot_rate = received / seconds
+	snapshot_loss = clampf(1.0 - received / expected, 0.0, 1.0)
+	kilobytes_in = (session.bytes_received - _stat_bytes_in) / 1024.0 / seconds
+	kilobytes_out = (session.bytes_sent - _stat_bytes_out) / 1024.0 / seconds
+	_stat_ticks = 0
+	_stat_first_tick = newest_snapshot
+	_stat_snapshots = snapshots_received
+	_stat_bytes_in = session.bytes_received
+	_stat_bytes_out = session.bytes_sent
 
 
 func _process(delta: float) -> void:
@@ -238,8 +323,10 @@ func _show_puppets() -> void:
 func _pose(character: Character, state: NetProtocol.CharacterState, at: Vector3, yaw: float, pitch: float, eye_height: float,
 		moving: Vector3 = Vector3.INF) -> void:
 	character.visible = true
-	character.set_remote_pose(at, state.velocity if moving == Vector3.INF else moving, yaw, pitch, eye_height,
+	var velocity := state.velocity if moving == Vector3.INF else moving
+	character.set_remote_pose(at, velocity, yaw, pitch, eye_height,
 			state.has(NetProtocol.FLAG_CROUCHING), state.has(NetProtocol.FLAG_ON_FLOOR))
+	character.set_blocking(Vector2(velocity.x, velocity.z).length() < BLOCKING_SPEED)
 
 
 ## Makes this tick's command, numbers it and sends it with the unconfirmed ones.
@@ -256,6 +343,7 @@ func _send_command(delta: float) -> void:
 	command.view_tick = get_render_tick()
 	command = NetProtocol.quantize(command)
 	_unconfirmed.append(command)
+	_sent_at[command_tick] = Engine.get_physics_frames()
 	while _unconfirmed.size() > MAX_UNCONFIRMED:
 		_unconfirmed.pop_front()
 	session.send_packet(1, NetProtocol.pack_commands(_unconfirmed.slice(maxi(_unconfirmed.size() - MAX_SENT, 0))), false)
@@ -270,6 +358,8 @@ func _send_command(delta: float) -> void:
 
 
 func _request_class(_character: Character, data: ClassData) -> void:
+	if session == null:
+		return
 	session.send_packet(1, NetProtocol.pack_values(NetProtocol.Message.REQUEST,
 			[NetProtocol.Request.CLASS, ClassData.all().find(data)]), true)
 
@@ -327,6 +417,8 @@ func _on_event(values: Array) -> void:
 		NetProtocol.Event.KILLED:
 			var victim := get_character(values[1])
 			if victim != null:
+				# In team respawn every kill is a point: the score comes with it.
+				rules.score.assign([values[4], values[5]])
 				rules.replica_killed(victim, get_character(values[2]), values[3])
 		NetProtocol.Event.DAMAGED:
 			var hurt := get_character(values[1])
@@ -361,10 +453,16 @@ func _on_welcome(values: Array) -> void:
 	_apply_stats(values[4])
 	for item: Array in values[5]:
 		var character := get_character(item[0])
-		if character != null:
+		if character == null:
+			continue
+		if float(item[1]) <= 0.0:
+			# Dead already (you joined mid-round): it lies where it fell, and you watch a teammate.
+			character.apply_remote_damage(0.0, Hitbox.Zone.CHEST, null, 0.0)
+		else:
 			character.health = item[1]
 	_welcomed = true
 	Teams.set_viewer_team(player.team)
+	print_verbose("Chiip online: welcomed as %s (network id %d, team %d) with %d characters." % [player.name, player.net_id, player.team, rules.get_participants().size()])
 	welcomed.emit()
 
 
@@ -417,7 +515,12 @@ func _on_respawned(character: Character, at: Vector3, yaw: float, host_tick: int
 		return
 	character.respawn(at, yaw)
 	character.visible = true
-	if character != player:
+	if character == player:
+		# Everything predicted so far started from where you were before: the host's next
+		# snapshots will say where you are now (no correction to smooth or count).
+		_history.clear()
+		player.view_offset = Vector3.ZERO
+	else:
 		# From its spawn on: no gliding from where it died, and older snapshots of it don't count.
 		_respawn_ticks[character.net_id] = host_tick
 		var samples: Array = _samples.get(character.net_id, [])
@@ -501,6 +604,12 @@ func _play_effects(effects: Array) -> void:
 func _on_ack(ack: int) -> void:
 	if ack <= acked_tick:
 		return
+	if _sent_at.has(ack):
+		var round_trip := (Engine.get_physics_frames() - int(_sent_at[ack])) * 1000.0 / Engine.physics_ticks_per_second
+		ping_ms = round_trip if ping_ms < 0.0 else lerpf(ping_ms, round_trip, 0.1)
+	for tick: int in _sent_at.keys():
+		if tick <= ack:
+			_sent_at.erase(tick)
 	acked_tick = ack
 	while not _unconfirmed.is_empty() and _unconfirmed[0].tick <= ack:
 		_unconfirmed.pop_front()
@@ -544,8 +653,11 @@ func _reconcile(own: NetProtocol.OwnState) -> void:
 			and predicted.crouching == crouching and predicted.on_floor == on_floor:
 		return
 	# The host disagrees: start from its state and replay every newer command, movement only.
-	corrections += 1
-	largest_correction = maxf(largest_correction, error)
+	if error > SMOOTHING_LIMIT:
+		teleports += 1
+	else:
+		corrections += 1
+		largest_correction = maxf(largest_correction, error)
 	var shown_before := player.global_position
 	player.set_predicted_state(own.position, own.velocity, crouching, own.eye_height, on_floor)
 	var delta := 1.0 / Engine.physics_ticks_per_second

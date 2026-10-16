@@ -43,6 +43,8 @@ const DEFAULTS := {
 	&"match_friendly_fire": false, &"match_map": "res://maps/test_map.tscn",
 	# M8 (D-087): rounds on one map; team respawn's kill limit is D-083's 50.
 	&"match_mode": "rounds", &"match_kill_limit": 50, &"match_rotation": false,
+	# M9 (D-108): online name, the last host joined, Quake's port.
+	&"online_name": "Player", &"online_address": "127.0.0.1", &"online_port": 26000,
 }
 
 var _failures: int = 0
@@ -418,14 +420,17 @@ func _test_saving() -> void:
 	writer.match_mode = "respawn"
 	writer.match_kill_limit = 75
 	writer.match_rotation = true
+	writer.online_name = "Jan"
+	writer.online_address = "192.168.1.20"
+	writer.online_port = 27015
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
 	writer.set_binding(&"shoot", _key(KEY_F), 1)
 	saved = _read_cfg(TEMP_PATH)
 	var sections := saved.get_sections() if saved != null else PackedStringArray()
-	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match and controls (the crosshair's keys without their prefix)",
-			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "controls"]) and saved.has_section_key("crosshair", "gap")
+	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online and controls (the crosshair's keys without their prefix)",
+			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls"]) and saved.has_section_key("crosshair", "gap")
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
@@ -438,6 +443,10 @@ func _test_saving() -> void:
 					and saved.get_value("match", "rotation", false) == true
 					and saved.get_section_keys("match").size() == 9,
 			"keys %s" % [saved.get_section_keys("match")])
+	_check("Your online name and the last host are the [online] section: name, address and port (M9)",
+			saved.get_value("online", "name", "") == "Jan" and saved.get_value("online", "address", "") == "192.168.1.20"
+					and saved.get_value("online", "port", 0) == 27015 and saved.get_section_keys("online").size() == 3,
+			"keys %s" % [saved.get_section_keys("online")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)
 	var differing: Array[String] = []

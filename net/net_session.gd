@@ -73,6 +73,8 @@ const TIMEOUT_MIN_MS := 3000
 const TIMEOUT_MAX_MS := 8000
 ## The node's name at the tree root.
 const NODE_NAME := "NetSession"
+## Seconds the host waits after telling the clients it is leaving, before it closes the connections.
+const GOODBYE_TIME := 0.2
 
 ## Host or client. Read-only for other scripts.
 var role: Role = Role.HOST
@@ -90,6 +92,9 @@ var fake_jitter_ms: float = 0.0
 var fake_loss: float = 0.0
 ## Randomness for fake loss and jitter. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
+## The host's limit of players per team ([team 0, team 1]; 0 = no limit): a full team refuses
+## one more. The lobby sets it from the match's team sizes ([method NetLobby.publish]).
+var team_limits: Array[int] = [0, 0]
 
 ## Peer id → {"name": String, "team": int}. The host's copy decides; clients get copies.
 var _players: Dictionary = {}
@@ -107,6 +112,13 @@ var _last_reliable_due: int = 0
 var _closed: bool = false
 ## True on a client between connecting and the host's roster.
 var _waiting_for_roster: bool = false
+## True once [method close] was called.
+var _closing: bool = false
+## The connection this session made (the tree's multiplayer may have a newer one by the time this
+## session finishes closing).
+var _peer: MultiplayerPeer
+## Why the host is ending the session, once it said so.
+var _closing_reason: String = ""
 ## Packets sent and received, and their bytes, for the status line and the tests.
 var packets_sent: int = 0
 var packets_received: int = 0
@@ -157,7 +169,10 @@ func host_game(player_name: String, port: int = DEFAULT_PORT) -> Error:
 	# unreliable packets to 1 in 32 in the tests (D-103).
 	peer.host.bandwidth_limit(0, 0)
 	role = Role.HOST
+	_peer = peer
 	multiplayer.multiplayer_peer = peer
+	# Clients never talk to each other through the host, so Godot needn't relay anything.
+	(multiplayer as SceneMultiplayer).server_relay = false
 	local_peer_id = 1
 	local_name = _clean_name(player_name)
 	_players.clear()
@@ -176,17 +191,52 @@ func join_game(address: String, player_name: String, port: int = DEFAULT_PORT) -
 		return result
 	peer.host.bandwidth_limit(0, 0)
 	role = Role.CLIENT
+	_peer = peer
 	multiplayer.multiplayer_peer = peer
 	local_name = _clean_name(player_name)
 	_waiting_for_roster = true
 	return OK
 
 
-## Leaves the session (a client) or ends it for everyone (the host), and frees this node.
+## Leaves the session (a client) or ends it for everyone (the host), and frees this node. The
+## host tells the clients first and gives the message [constant GOODBYE_TIME] seconds to get
+## out before it closes the connections, so they can say "The host ended the game" instead of a
+## lost connection. [method is_active] is false from the call on.
 func close() -> void:
+	if _closing:
+		return
+	_closing = true
+	if not _closed and is_host() and _order.size() > 1 and is_inside_tree():
+		_rpc_closing.rpc("The host ended the game.")
+		_flush()
+		# The name is free at once: a new session can be opened while this one says goodbye.
+		name = NODE_NAME + "Closing"
+		await get_tree().create_timer(GOODBYE_TIME, true, false, true).timeout
 	if not _closed:
 		_shut_down("")
 	queue_free()
+
+
+## The host only: sends [param data] to the client [param peer_id] alone (it arrives as
+## [signal match_message] there). Used to send a late joiner the match that is being played.
+func send_to(peer_id: int, data: Dictionary) -> void:
+	if is_host() and _players.has(peer_id):
+		_rpc_match_message.rpc_id(peer_id, data)
+
+
+## The host only: refuses [param peer_id] with [param reason] (it goes back to the menu and
+## shows it) and drops the connection.
+func kick(peer_id: int, reason: String) -> void:
+	if not is_host() or peer_id == 1:
+		return
+	_rpc_refused.rpc_id(peer_id, reason)
+	_flush()
+	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if peer != null and peer.get_peer(peer_id) != null:
+		# ENet sends what is queued (the refusal) before it disconnects.
+		peer.get_peer(peer_id).peer_disconnect_later()
+	elif multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.disconnect_peer(peer_id)
 
 
 ## True on the host.
@@ -196,7 +246,7 @@ func is_host() -> bool:
 
 ## True while the session is up: hosting, or connected and accepted.
 func is_active() -> bool:
-	return not _closed and local_peer_id != 0 and not _waiting_for_roster
+	return not _closed and not _closing and local_peer_id != 0 and not _waiting_for_roster
 
 
 ## The players in join order (the host first): each a Dictionary with
@@ -224,19 +274,19 @@ func get_team(peer_id: int) -> int:
 	return _players[peer_id]["team"] if _players.has(peer_id) else -1
 
 
-## Asks to play on [param team]. The host decides (it may refuse a team that is
-## [param team_limit] players full; 0 means no limit) and sends everyone the new roster.
-func request_team(team: int, team_limit: int = 0) -> void:
+## Asks to play on [param team]. The host decides (it refuses a team that is full, see
+## [member team_limits]) and sends everyone the new roster.
+func request_team(team: int) -> void:
 	if is_host():
-		_set_team(1, team, team_limit)
+		_set_team(1, team, true)
 	else:
-		_rpc_request_team.rpc_id(1, team, team_limit)
+		_rpc_request_team.rpc_id(1, team)
 
 
-## The host only: puts [param peer_id] on [param team] and tells everyone.
+## The host only: puts [param peer_id] on [param team] and tells everyone (even when full).
 func set_player_team(peer_id: int, team: int) -> void:
 	if is_host():
-		_set_team(peer_id, team, 0)
+		_set_team(peer_id, team, false)
 
 
 ## The host only: sends [param data] to every client (and emits [signal match_message] here
@@ -271,7 +321,7 @@ func send_packet(peer_id: int, packet: PackedByteArray, reliable: bool) -> void:
 
 
 ## The round-trip time to [param peer_id] (the host, from a client) in milliseconds, as ENet
-## measures it, without fake lag. -1 when unknown.
+## measures it, without fake lag. -1 when unknown (another transport: [NetClient] measures its own).
 func get_ping_ms(peer_id: int = 1) -> int:
 	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	if peer == null:
@@ -314,7 +364,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
-	if not is_host() or not _players.has(peer_id):
+	if not is_host() or not _players.has(peer_id) or _closed or _closing:
 		return
 	_players.erase(peer_id)
 	_order.erase(peer_id)
@@ -337,8 +387,8 @@ func _on_connection_failed() -> void:
 func _on_server_disconnected() -> void:
 	if _waiting_for_roster:
 		_waiting_for_roster = false
-		join_failed.emit("The host closed the connection.")
-	_shut_down("The connection to the host was lost.")
+		join_failed.emit(_closing_reason if _closing_reason != "" else "The host closed the connection.")
+	_shut_down(_closing_reason if _closing_reason != "" else "The connection to the host was lost.")
 
 
 func _on_peer_packet(peer_id: int, packet: PackedByteArray) -> void:
@@ -383,9 +433,16 @@ func _rpc_hello(player_name: String, version: int) -> void:
 ## The host refuses a client (another version, a full game). The client gives up.
 @rpc("authority", "call_remote", "reliable")
 func _rpc_refused(reason: String) -> void:
-	_waiting_for_roster = false
-	join_failed.emit(reason)
+	if _waiting_for_roster:
+		_waiting_for_roster = false
+		join_failed.emit(reason)
 	_shut_down(reason)
+
+
+## The host is about to end the session: the reason replaces "the connection was lost".
+@rpc("authority", "call_remote", "reliable")
+func _rpc_closing(reason: String) -> void:
+	_closing_reason = reason
 
 
 ## The host's whole roster: [peer_id, name, team] for each player, in join order.
@@ -404,9 +461,9 @@ func _rpc_roster(entries: Array) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_request_team(team: int, team_limit: int) -> void:
+func _rpc_request_team(team: int) -> void:
 	if is_host():
-		_set_team(multiplayer.get_remote_sender_id(), team, team_limit)
+		_set_team(multiplayer.get_remote_sender_id(), team, true)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -431,6 +488,13 @@ func _rpc_message_to_host(data: Dictionary) -> void:
 ## its own. Its *throttle* would drop some whenever the round trip time wobbles (together with
 ## [method ENetConnection.bandwidth_limit] at creation, D-103); the game stream repeats what
 ## matters itself, so a dropped command packet only costs, never helps.
+## Sends what is queued now, before closing a connection (so a last message gets out first).
+func _flush() -> void:
+	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if peer != null and peer.host != null:
+		peer.host.flush()
+
+
 func _configure_peer(peer_id: int) -> void:
 	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	if peer == null or peer.get_peer(peer_id) == null:
@@ -454,10 +518,10 @@ func _send_roster() -> void:
 	roster_changed.emit()
 
 
-func _set_team(peer_id: int, team: int, team_limit: int) -> void:
+func _set_team(peer_id: int, team: int, limited: bool) -> void:
 	if not _players.has(peer_id) or team < 0 or team >= Teams.COUNT or _players[peer_id]["team"] == team:
 		return
-	if team_limit > 0 and _team_count(team) >= team_limit:
+	if limited and team_limits[team] > 0 and _team_count(team) >= team_limits[team]:
 		return
 	_players[peer_id]["team"] = team
 	_send_roster()
@@ -467,9 +531,14 @@ func _team_count(team: int) -> int:
 	return _order.filter(func(peer_id: int) -> bool: return _players[peer_id]["team"] == team).size()
 
 
-## The team with fewer players (team 0 on a tie): where a newcomer goes first.
+## The team with fewer players (team 0 on a tie): where a newcomer goes first, unless it is full
+## and the other one isn't.
 func _smaller_team() -> int:
-	return 1 if _team_count(1) < _team_count(0) else 0
+	var team := 1 if _team_count(1) < _team_count(0) else 0
+	var other := Teams.other(team)
+	if team_limits[team] > 0 and _team_count(team) >= team_limits[team] and (team_limits[other] == 0 or _team_count(other) < team_limits[other]):
+		return other
+	return team
 
 
 ## A name for people and for a node: trimmed, at most [constant MAX_NAME_LENGTH] characters,
@@ -502,7 +571,10 @@ func _shut_down(reason: String) -> void:
 		return
 	_closed = true
 	_inbox.clear()
-	if multiplayer != null and multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		multiplayer.multiplayer_peer.close()
+	if _peer != null:
+		_peer.close()
+	# Only this session's own connection: a newer session may already have put its own in place.
+	if multiplayer != null and _peer != null and multiplayer.multiplayer_peer == _peer:
 		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	_peer = null
 	closed.emit(reason)

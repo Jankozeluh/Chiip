@@ -24,6 +24,13 @@ extends Node
 ## D-065) adds checks for the `pause` action on Esc, Esc opening and closing the
 ## menu (and who else takes Esc), the whole game standing still while it is
 ## open, Resume, Settings over it, Leave, and its look and scaling.
+## The multiplayer lobby (M9, D-108) adds checks for the main menu's Multiplayer button and the
+## connect page (fields from and to the settings, Esc, look and scaling), hosting (the lobby page with
+## you as "(you)" and "(host)", bot rows from the published slots, headers colored relative to you,
+## the summary line, Join Team and full teams, the match settings panel over it, Start match,
+## Leave and Esc), a real friend joining the host, joining a port where nothing listens, a port in
+## use, a client's view of a host's lobby and its host leaving, and the main menu opening the lobby
+## by itself with a running session or with the reason an online game ended.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -96,6 +103,7 @@ func _ready() -> void:
 	await _test_pause_esc_rules()
 	await _test_pause_menu_look()
 	await _test_pause_leaves_the_game()
+	await _test_lobby_menu()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -585,8 +593,8 @@ func _test_settings_menu_building() -> void:
 	var uncovered: Array[StringName] = []
 	for key: StringName in Settings.SCHEMA:
 		var has_control := menu.get_slider(key) != null or menu.get_check(key) != null or menu.get_option(key) != null
-		# The [match] section is match setup's, not the settings menu's.
-		if not has_control and key != &"crosshair_color" and Settings.SCHEMA[key]["section"] != "match":
+		# The [match] section is match setup's and the [online] one the multiplayer lobby's (M9), not the settings menu's.
+		if not has_control and key != &"crosshair_color" and not ["match", "online"].has(Settings.SCHEMA[key]["section"]):
 			uncovered.append(key)
 	var panel := menu.get_node("Panel") as PanelContainer
 	var title := menu.get_node("Panel/Margin/Content/Title") as Label
@@ -1095,8 +1103,8 @@ func _test_main_menu() -> void:
 		big = big and button.theme_type_variation == &"BigButton" and button.visible
 	var title := menu.get_node("Page/Margin/Column/Panel/PanelMargin/Content/Title") as Label
 	var panel := menu.get_node("Page/Margin/Column/Panel") as PanelContainer
-	_check("The main menu shows the title CHIIP and the buttons Play, Practice, Settings and Quit (big themed buttons on an overlay panel), with Play focused, and the mouse is free",
-			title.text == "CHIIP" and texts == ["Play", "Practice", "Settings", "Quit"] and big and panel.theme_type_variation == &"OverlayPanel"
+	_check("The main menu shows the title CHIIP and the buttons Play, Multiplayer, Practice, Settings and Quit (big themed buttons on an overlay panel), with Play focused, and the mouse is free",
+			title.text == "CHIIP" and texts == ["Play", "Multiplayer", "Practice", "Settings", "Quit"] and big and panel.theme_type_variation == &"OverlayPanel"
 					and menu.get_buttons()[0].has_focus() and MenuState.is_top(menu) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
 			"title '%s', buttons %s, focus on Play %s, on top %s" % [title.text, texts, menu.get_buttons()[0].has_focus(), MenuState.is_top(menu)])
 
@@ -1202,11 +1210,11 @@ func _test_main_menu() -> void:
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	var setup_closed := not setup.is_open() and MenuState.is_top(menu) and menu.get_buttons()[0].has_focus()
-	menu.get_buttons()[2].pressed.emit()
+	menu.get_buttons()[3].pressed.emit()
 	var settings_opened := settings_menu.is_open() and MenuState.is_top(settings_menu) and not setup.is_open()
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
-	var settings_closed := not settings_menu.is_open() and MenuState.is_top(menu) and menu.get_buttons()[2].has_focus()
+	var settings_closed := not settings_menu.is_open() and MenuState.is_top(menu) and menu.get_buttons()[3].has_focus()
 	menu.get_buttons()[0].pressed.emit()
 	setup.get_back_button().pressed.emit()
 	var by_back := not setup.is_open() and MenuState.is_top(menu)
@@ -1516,7 +1524,7 @@ func _test_scene_flow() -> void:
 			"scene '%s'" % [tree.current_scene.scene_file_path if tree.current_scene != null else "none"])
 	if back != null:
 		# Practice from the menu: the arena with the difficulty chosen before (Easy), and the console's `disconnect` leads back.
-		back.get_buttons()[1].pressed.emit()
+		back.get_buttons()[2].pressed.emit()
 		await tree.process_frame
 		await tree.process_frame
 		await tree.process_frame
@@ -1861,7 +1869,7 @@ func _test_pause_leaves_the_game() -> void:
 					tree.current_scene.scene_file_path if tree.current_scene != null else "none", tree.paused])
 	if back != null:
 		# Practice: the button reads "Leave practice"; the console's `disconnect` over the pause menu leads back as well.
-		back.get_buttons()[1].pressed.emit()
+		back.get_buttons()[2].pressed.emit()
 		for i in 3:
 			await tree.process_frame
 		var practice := tree.current_scene
@@ -1900,6 +1908,363 @@ func _test_pause_leaves_the_game() -> void:
 	shared.reset_to_defaults()
 	shared.save_path = ""
 	_remove_temp_file()
+
+
+# --- The multiplayer lobby (M9, D-108) ---
+
+
+## The multiplayer lobby: opened from the main menu on its own [Settings], hosting on a random port
+## with a real friend (a second session in the same process, [NetHarness]) joining it, and a
+## client's view of a host's lobby. Every session is closed again at the end.
+func _test_lobby_menu() -> void:
+	var tree := get_tree()
+	MenuState.reset()
+	GameLaunch.clear()
+	GameLaunch.notice = ""
+	var shared := Settings.get_instance()
+	shared.reset_to_defaults()
+	var stored := Settings.new()
+	stored.online_name = "Jan"
+	stored.online_address = "10.1.2.3"
+	stored.online_port = 27123
+	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
+	menu.load_settings = false
+	add_child(menu)
+	await tree.process_frame
+	await tree.process_frame
+	var lobby := menu.get_lobby_menu()
+	lobby.set_settings(stored)
+	# A headless window is tiny, so the menu was scaled to it: lay the lobby out at 720 pixels.
+	lobby.set_ui_scale(1.0)
+	var closed_count := [0]
+	lobby.closed.connect(func() -> void: closed_count[0] += 1)
+	var harness := NetHarness.new()
+	add_child(harness)
+
+	# The button, the connect page, the fields.
+	var multiplayer_button := menu.get_buttons()[1]
+	var hidden_before := not lobby.is_open() and not lobby.visible
+	multiplayer_button.pressed.emit()
+	var fields := [lobby.get_name_field().text, lobby.get_address_field().text, lobby.get_port_field().text]
+	var connect_buttons := [lobby.get_host_button().text, lobby.get_join_button().text, lobby.get_back_button().text]
+	_check("The main menu's Multiplayer button (second, between Play and Practice) opens the lobby on its connect page: titled Multiplayer, over the menu with the mouse free, the name (at most 16 characters), host's address and port filled in from the settings, the buttons Host game, Join and Back, and no status text",
+			multiplayer_button.text == "Multiplayer" and multiplayer_button.theme_type_variation == &"BigButton" and hidden_before and lobby.is_open()
+					and MenuState.is_top(lobby) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and lobby.get_page() == LobbyMenu.Page.CONNECT
+					and (lobby.get_node("Panel/Margin/Content/Title") as Label).text == "Multiplayer"
+					and fields == ["Jan", "10.1.2.3", "27123"] and lobby.get_name_field().max_length == 16
+					and connect_buttons == ["Host game", "Join", "Back"] and lobby.get_status_label().text == ""
+					and not lobby.get_node("Panel/Margin/Content/LobbyPage").visible and lobby.get_session() == null,
+			"fields %s, buttons %s, page %d, top %s" % [fields, connect_buttons, lobby.get_page(), MenuState.is_top(lobby)])
+
+	# Editing a field writes to the settings; the port takes digits only.
+	lobby.get_name_field().text = "Anna"
+	lobby.get_name_field().text_changed.emit("Anna")
+	lobby.get_address_field().text = "192.168.0.7"
+	lobby.get_address_field().text_changed.emit("192.168.0.7")
+	lobby.get_port_field().text = "28x1y2z"
+	lobby.get_port_field().text_changed.emit("28x1y2z")
+	_check("Every edit goes to the settings at once: the name, the address, and the port field keeps only the digits (28x1y2z becomes 2812)",
+			stored.online_name == "Anna" and stored.online_address == "192.168.0.7" and stored.online_port == 2812
+					and lobby.get_port_field().text == "2812" and shared.online_name == "Player" and shared.online_port == 26000,
+			"name '%s', address '%s', port %d, field '%s', shared name '%s'" % [stored.online_name, stored.online_address, stored.online_port,
+					lobby.get_port_field().text, shared.online_name])
+
+	# Looks: modal, themed, no overrides, scales by 1.5, the background blocks clicks.
+	var panel := lobby.get_node("Panel") as PanelContainer
+	var background := lobby.get_node("Background") as ColorRect
+	lobby.set_ui_scale(1.5)
+	var scaled_width := panel.custom_minimum_size.x
+	lobby.set_ui_scale(1.0)
+	var lobby_overrides := _own_overrides(lobby)
+	_check("The lobby is a themed modal panel (780 wide, 1170 at 1.5×) over a click-blocking background, with no stylebox or font-size override of its own",
+			panel.theme_type_variation == &"ModalPanel" and panel.custom_minimum_size.x == 780.0 and scaled_width == 1170.0
+					and background.mouse_filter == Control.MOUSE_FILTER_STOP and lobby.layer == 2 and lobby_overrides.is_empty(),
+			"variation %s, width %s then %s, background filter %d, layer %d, overrides %s" % [panel.theme_type_variation, panel.custom_minimum_size.x,
+					scaled_width, background.mouse_filter, lobby.layer, lobby_overrides])
+
+	# Esc closes the connect page and gives the menu back its focus.
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_check("Esc closes the lobby while it is on the connect page: it registers with MenuState, closes, the main menu is on top again with the Multiplayer button focused and the mouse still free",
+			not lobby.is_open() and closed_count[0] == 1 and MenuState.is_top(menu) and multiplayer_button.has_focus()
+					and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+			"open %s, closed signals %d, menu on top %s, focus %s" % [lobby.is_open(), closed_count[0], MenuState.is_top(menu), multiplayer_button.has_focus()])
+
+	# Hosting: the lobby page with you in a team, the bot rows from the published slots.
+	multiplayer_button.pressed.emit()
+	var port := 28000 + randi() % 900
+	lobby.get_name_field().text = "Jan"
+	lobby.get_address_field().text = "127.0.0.1"
+	lobby.get_port_field().text = str(port)
+	var result := lobby.host_game()
+	var session := lobby.get_session()
+	var lobby_node := NetLobby.of(session) if session != null else null
+	var default_summary := "Rounds · Test Map · first to 5 rounds · Normal bots"
+	var team_0 := lobby.get_team_texts(0)
+	var team_1 := lobby.get_team_texts(1)
+	_check("Host game opens a session as the host on the port in the field and shows the lobby page: titled Lobby, one line saying where friends join, you in Team 1 as \"(you) (host)\" and \"Bot\" rows for the other slots of both teams, the match's summary line, Match settings and Start match (no waiting line)",
+			result == OK and session != null and session.is_host() and session.is_active() and NetLobby.find_session(tree) == session
+					and lobby.get_page() == LobbyMenu.Page.LOBBY and (lobby.get_node("Panel/Margin/Content/Title") as Label).text == "Lobby"
+					and lobby.get_info_label().text.begins_with("Hosting on port %d" % port) and stored.online_port == port
+					and team_0 == ["Jan (you) (host)", "Bot", "Bot"] and team_1 == ["Bot", "Bot", "Bot"]
+					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MAP
+					and lobby.get_summary_label().text == default_summary and lobby_node.info.get("summary", "") == default_summary
+					and lobby.get_settings_button().visible and lobby.get_start_button().visible and lobby.get_start_button().text == "Start match"
+					and not lobby.get_waiting_label().visible and not lobby.get_node("Panel/Margin/Content/ConnectPage").visible,
+			"result %d, team 1 %s, team 2 %s, info '%s', summary '%s', info line '%s'" % [result, team_0, team_1, lobby_node.info if lobby_node != null else "none",
+					lobby.get_summary_label().text, lobby.get_info_label().text])
+	_check("Colors are relative to you: your team's header is the blue (friendly) bar and the other the red one, each titled Team 1 and Team 2; your Join Team button is off, the other one on",
+			lobby.get_team_header(0).theme_type_variation == &"TeamHeaderFriendly" and lobby.get_team_header(1).theme_type_variation == &"TeamHeaderEnemy"
+					and (lobby.get_team_header(0).find_children("*", "Label", true, false)[0] as Label).text == "Team 1"
+					and (lobby.get_team_header(1).find_children("*", "Label", true, false)[0] as Label).text == "Team 2"
+					and lobby.get_join_team_button(0).text == "Join Team 1" and lobby.get_join_team_button(1).text == "Join Team 2"
+					and lobby.get_join_team_button(0).disabled and not lobby.get_join_team_button(1).disabled,
+			"headers %s / %s, buttons disabled %s / %s" % [lobby.get_team_header(0).theme_type_variation, lobby.get_team_header(1).theme_type_variation,
+					lobby.get_join_team_button(0).disabled, lobby.get_join_team_button(1).disabled])
+
+	# A real friend joins: they take a slot of the smaller team and get the host's info.
+	harness.port = port
+	var friend := harness.start_client("Friend", "Anna")
+	var friend_lobby := NetLobby.of(friend)
+	# Without this the friend's lobby would really change this test's scene when the match starts.
+	friend_lobby.change_scene = func(_path: String) -> void: pass
+	await harness.wait_until(func() -> bool: return session.get_players().size() == 2 and not friend_lobby.info.is_empty(), 640)
+	_check("A friend joining takes a bot's slot in the smaller team (their name replaces one \"Bot\" row there) and receives the host's lobby info and the team limits",
+			lobby.get_team_texts(0) == ["Jan (you) (host)", "Bot", "Bot"] and lobby.get_team_texts(1) == ["Anna", "Bot", "Bot"]
+					and friend_lobby.info.get("summary", "") == default_summary and session.team_limits == [3, 3],
+			"team 1 %s, team 2 %s, friend's summary '%s'" % [lobby.get_team_texts(0), lobby.get_team_texts(1), friend_lobby.info.get("summary", "")])
+
+	# The summary and the slots follow the match settings; the host's team gets "your team"'s size.
+	stored.match_team_size = 2
+	stored.match_enemy_team_size = 4
+	var sized := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), session.team_limits.duplicate()]
+	_check("Changing the team sizes republishes at once: the host's team has \"your team\"'s slots (2) and the other the enemy team's (4), the rows follow, and the slots become the limits",
+			sized[0] == ["Jan (you) (host)", "Bot"] and sized[1] == ["Anna", "Bot", "Bot", "Bot"] and sized[2] == [2, 4] and sized[3] == [2, 4],
+			"team 1 %s, team 2 %s, slots %s, limits %s" % sized)
+	stored.match_mode = "respawn"
+	stored.match_kill_limit = 75
+	stored.match_friendly_fire = true
+	stored.match_difficulty = "hard"
+	var respawn_summary := lobby.get_summary_label().text
+	stored.match_mode = "rounds"
+	stored.match_friendly_fire = false
+	stored.match_difficulty = "easy"
+	stored.match_rotation = true
+	stored.match_map = "res://maps/square.tscn"
+	var rotation_summary := lobby.get_summary_label().text
+	await harness.wait_until(func() -> bool: return friend_lobby.info.get("summary", "") == rotation_summary, 320)
+	_check("The summary line is built from the choices: mode, map or rotation (starting at the chosen map), length, bot difficulty and friendly fire, and the friend sees the same line",
+			respawn_summary == "Team respawn · Test Map · first to 75 kills · Hard bots · friendly fire"
+					and rotation_summary == "Rounds · Rotation: Square, Spillway, Depot · first to 5 rounds · Easy bots"
+					and friend_lobby.info.get("summary", "") == rotation_summary and lobby_node.info.get("map", "") == "res://maps/square.tscn",
+			"respawn '%s', rotation '%s', friend sees '%s'" % [respawn_summary, rotation_summary, friend_lobby.info.get("summary", "")])
+	stored.match_rotation = false
+	stored.match_map = Settings.DEFAULT_MAP
+
+	# Join Team moves you (the host) and swaps the slots and the colors.
+	lobby.get_join_team_button(1).pressed.emit()
+	var moved := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), session.get_team(1)]
+	_check("Join Team 2 moves the host to Team 2: the rows follow, the slots swap with the host (4 and 2), your team's header is the blue one now and the Join buttons flip",
+			moved[3] == 1 and moved[0] == ["Bot", "Bot", "Bot", "Bot"] and moved[1] == ["Jan (you) (host)", "Anna"] and moved[2] == [4, 2]
+					and lobby.get_team_header(1).theme_type_variation == &"TeamHeaderFriendly" and lobby.get_team_header(0).theme_type_variation == &"TeamHeaderEnemy"
+					and not lobby.get_join_team_button(0).disabled and lobby.get_join_team_button(1).disabled,
+			"team 1 %s, team 2 %s, slots %s, host team %d" % [moved[0], moved[1], moved[2], moved[3]])
+
+	# A full team: the Join Team button is off.
+	stored.match_team_size = 1
+	stored.match_enemy_team_size = 1
+	session.set_player_team(friend.local_peer_id, 0)
+	var full := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), lobby.get_join_team_button(0).disabled]
+	_check("A team with all its slots taken has its Join Team button off (1 slot, Anna in it; you are on the other team)",
+			full[0] == ["Anna"] and full[1] == ["Jan (you) (host)"] and full[2] == [1, 1] and full[3],
+			"team 1 %s, team 2 %s, slots %s, button off %s" % full)
+	stored.match_team_size = 2
+	stored.match_enemy_team_size = 4
+
+	# The match settings over the lobby: Done instead of Start, Esc closes only that panel.
+	lobby.get_settings_button().pressed.emit()
+	var setup := lobby.get_match_setup()
+	var setup_open := setup.is_open() and MenuState.is_top(setup) and setup.get_start_button().text == "Done"
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var esc_closed_setup := not setup.is_open() and lobby.is_open() and MenuState.is_top(lobby) and lobby.get_page() == LobbyMenu.Page.LOBBY and session.is_active()
+	lobby.get_settings_button().pressed.emit()
+	setup.get_start_button().pressed.emit()
+	var done_closed_setup := not setup.is_open() and lobby.is_open() and MenuState.is_top(lobby) and lobby.get_settings_button().has_focus()
+	_check("Match settings opens the same match setup panel over the lobby with its Start button reading Done; Esc closes just that panel, Done closes it as well, and the lobby stays open with the session running",
+			setup_open and esc_closed_setup and done_closed_setup and setup.get_start_button().text == "Done",
+			"open with Done %s, Esc %s, Done %s" % [setup_open, esc_closed_setup, done_closed_setup])
+
+	# Start match: the host's choices become the game description on this computer (the scene change is faked).
+	var scenes := []
+	lobby_node.change_scene = func(path: String) -> void: scenes.append(path)
+	stored.match_mode = "respawn"
+	stored.match_kill_limit = 30
+	lobby.get_start_button().pressed.emit()
+	var started_rules := GameLaunch.match_settings
+	var started := GameLaunch.is_pending() and GameLaunch.map_path == Settings.DEFAULT_MAP and GameLaunch.net_session == session and scenes == [GameLaunch.GAME_SCENE] \
+			and started_rules != null and started_rules.team_size == 2 and started_rules.enemy_team_size == 4 \
+			and started_rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and started_rules.kill_limit == 30 and lobby_node.in_game
+	var friend_started := await harness.wait_until(func() -> bool: return friend_lobby.in_game, 320)
+	_check("Start match asks the lobby to start the match: this computer's game description has the stored map and rules and the session, the game scene is the next scene, and the friend's lobby starts too",
+			started and friend_started,
+			"pending %s, map %s, scenes %s, rules %s, friend started %s" % [GameLaunch.is_pending(), GameLaunch.map_path, scenes,
+					started_rules.team_size if started_rules != null else "none", friend_started])
+	lobby_node.in_game = false
+	friend_lobby.in_game = false
+	GameLaunch.clear()
+	stored.match_mode = "rounds"
+
+	# Leave: the connect page is back at once; the session ends for everyone a moment later.
+	lobby.get_leave_button().pressed.emit()
+	var left_at_once := lobby.get_page() == LobbyMenu.Page.CONNECT and lobby.is_open() and lobby.get_session() == null
+	# The host gives its friend a moment to hear it, and hosting again meanwhile would be torn down by the closing.
+	var waits := lobby.get_host_button().disabled and lobby.get_join_button().disabled and lobby.host_game() == ERR_BUSY and lobby.get_session() == null
+	await harness.wait_until(func() -> bool: return not friend.is_active(), 640)
+	await tree.process_frame
+	await tree.process_frame
+	_check("Leave returns to the connect page at once, with the fields kept; Host game and Join wait while the host's session finishes closing (its friend's connection ends with it) and are on again, with nothing of the session left at the root of the tree",
+			left_at_once and waits and NetLobby.find_session(tree) == null and not friend.is_active() and lobby.get_port_field().text == str(port)
+					and lobby.get_name_field().text == "Jan" and not lobby.get_host_button().disabled and not lobby.get_join_button().disabled,
+			"at once %s, waits %s, session at root %s, friend active %s, port '%s', buttons off %s" % [left_at_once, waits, NetLobby.find_session(tree), friend.is_active(),
+					lobby.get_port_field().text, lobby.get_host_button().disabled])
+	friend.close()
+	await tree.process_frame
+	# The friend's lobby kept the host's leaving as the notice the main menu shows; this test isn't that.
+	GameLaunch.notice = ""
+
+	# Esc on the lobby page leaves the session; Esc on the connect page closes the menu.
+	port = 28000 + randi() % 900
+	lobby.get_port_field().text = str(port)
+	lobby.host_game()
+	var hosting_again := lobby.get_page() == LobbyMenu.Page.LOBBY and lobby.get_session() != null
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	var left_by_esc := lobby.get_page() == LobbyMenu.Page.CONNECT and lobby.is_open() and lobby.get_session() == null and NetLobby.find_session(tree) == null
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_check("Esc on the lobby page is Leave (back to the connect page, the session gone) and a second Esc closes the menu",
+			hosting_again and left_by_esc and not lobby.is_open() and MenuState.is_top(menu),
+			"hosting %s, left by Esc %s, open %s" % [hosting_again, left_by_esc, lobby.is_open()])
+
+	# A port that is in use, an empty address, an unknown host.
+	multiplayer_button.pressed.emit()
+	harness.port = 28000 + randi() % 900
+	var other_host := harness.start_host("OtherHost", "Other")
+	lobby.get_port_field().text = str(harness.port)
+	var busy := lobby.host_game()
+	var busy_status := lobby.get_status_label().text
+	var busy_ok := busy == ERR_CANT_CREATE and lobby.get_session() == null and NetLobby.find_session(tree) == null \
+			and busy_status == "Port %d is in use." % harness.port and lobby.get_page() == LobbyMenu.Page.CONNECT
+	lobby.get_address_field().text = "   "
+	var empty := lobby.join_game()
+	var empty_ok := empty != OK and lobby.get_session() == null and lobby.get_status_label().text != "" and lobby.get_page() == LobbyMenu.Page.CONNECT
+	_check("Hosting on a port that is in use fails with \"Port N is in use.\" on the connect page and leaves no session; joining without an address says so",
+			busy_ok and empty_ok, "host error %d, status '%s', empty join error %d, status '%s'" % [busy, busy_status, empty, lobby.get_status_label().text])
+	other_host.close()
+
+	# Joining a port where nothing listens: Connecting..., the buttons off, Back cancels.
+	var silent_port := 28000 + randi() % 900
+	while silent_port == harness.port:
+		silent_port = 28000 + randi() % 900
+	lobby.get_address_field().text = "127.0.0.1"
+	lobby.get_port_field().text = str(silent_port)
+	var joined_result := lobby.join_game()
+	var connecting_text := lobby.get_status_label().text
+	var connecting_ok := joined_result == OK and connecting_text == "Connecting to 127.0.0.1:%d…" % silent_port and lobby.get_host_button().disabled \
+			and lobby.get_join_button().disabled and not lobby.get_back_button().disabled and lobby.get_page() == LobbyMenu.Page.CONNECT \
+			and lobby.get_session() != null and not lobby.get_session().is_active() and stored.online_address == "127.0.0.1"
+	var connecting_session := lobby.get_session()
+	lobby.get_back_button().pressed.emit()
+	await tree.process_frame
+	_check("Joining a port nobody listens on shows \"Connecting to 127.0.0.1:N…\" with Host game and Join off; Back cancels the attempt, closes the lobby and frees the session",
+			connecting_ok and not lobby.is_open() and lobby.get_session() == null and NetLobby.find_session(tree) == null
+					and (not is_instance_valid(connecting_session) or connecting_session.is_queued_for_deletion()),
+			"result %d, status '%s', open %s, session %s" % [joined_result, connecting_text, lobby.is_open(), lobby.get_session()])
+
+	# A client's view: joins a host the lobby doesn't run (a plain session on a side).
+	multiplayer_button.pressed.emit()
+	harness.port = 28000 + randi() % 900
+	var remote := harness.start_host("RemoteHost", "Host")
+	var remote_lobby := NetLobby.of(remote)
+	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn")
+	lobby.get_address_field().text = "127.0.0.1"
+	lobby.get_port_field().text = str(harness.port)
+	lobby.get_name_field().text = "Jan"
+	lobby.join_game()
+	var in_lobby := await harness.wait_until(func() -> bool: return lobby.get_page() == LobbyMenu.Page.LOBBY, 640)
+	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn")
+	await harness.wait_until(func() -> bool: return lobby.get_summary_label().text != "", 320)
+	var client_session := lobby.get_session()
+	_check("Joining a host shows the lobby page as a client: \"Connected to\" the address, you as \"(you)\" and the host as \"(host)\", Bot rows for the free slots of the host's info, its summary, the line \"Waiting for the host to start the match…\" and neither Match settings nor Start match; a full team's Join button is off",
+			in_lobby and client_session != null and not client_session.is_host() and lobby.get_info_label().text == "Connected to 127.0.0.1"
+					and lobby.get_team_texts(0) == ["Host (host)"] and lobby.get_team_texts(1) == ["Jan (you)", "Bot"]
+					and lobby.get_summary_label().text == "Rounds · Depot · first to 5 rounds · Normal bots"
+					and lobby.get_waiting_label().visible and lobby.get_waiting_label().text == "Waiting for the host to start the match…"
+					and not lobby.get_settings_button().visible and not lobby.get_start_button().visible
+					and lobby.get_join_team_button(0).disabled and lobby.get_join_team_button(1).disabled
+					and lobby.get_team_header(1).theme_type_variation == &"TeamHeaderFriendly",
+			"in lobby %s, info '%s', team 1 %s, team 2 %s, summary '%s'" % [in_lobby, lobby.get_info_label().text, lobby.get_team_texts(0), lobby.get_team_texts(1),
+					lobby.get_summary_label().text])
+
+	# The host goes away: back to the connect page with the reason, shown once.
+	GameLaunch.notice = ""
+	remote.close()
+	var dropped := await harness.wait_until(func() -> bool: return lobby.get_page() == LobbyMenu.Page.CONNECT, 1500)
+	_check("When the host leaves, the client's lobby goes back to the connect page and says why (the reason is also taken off the notice the main menu would show again), with no session left",
+			dropped and lobby.get_status_label().text != "" and GameLaunch.notice == "" and lobby.get_session() == null and NetLobby.find_session(tree) == null,
+			"dropped %s, status '%s', notice '%s'" % [dropped, lobby.get_status_label().text, GameLaunch.notice])
+	lobby.close()
+
+	# Back in the main menu after an online game: a running session reopens the lobby, a reason shows up on the connect page.
+	remove_child(menu)
+	menu.queue_free()
+	await tree.process_frame
+	MenuState.reset()
+	var kept_session := NetSession.open(tree)
+	NetLobby.of(kept_session)
+	kept_session.host_game("Jan", port)
+	var back := MAIN_MENU_SCENE.instantiate() as MainMenu
+	back.load_settings = false
+	add_child(back)
+	await tree.process_frame
+	await tree.process_frame
+	var back_lobby := back.get_lobby_menu()
+	var reopened := back_lobby.is_open() and back_lobby.get_page() == LobbyMenu.Page.LOBBY and back_lobby.get_session() == kept_session \
+			and back_lobby.get_team_texts(0).has("Jan (you) (host)") and MenuState.is_top(back_lobby)
+	kept_session.close()
+	await tree.process_frame
+	remove_child(back)
+	back.queue_free()
+	await tree.process_frame
+	MenuState.reset()
+	GameLaunch.notice = "The host ended the game."
+	var noticed := MAIN_MENU_SCENE.instantiate() as MainMenu
+	noticed.load_settings = false
+	add_child(noticed)
+	await tree.process_frame
+	await tree.process_frame
+	var noticed_lobby := noticed.get_lobby_menu()
+	var shows_notice := noticed_lobby.is_open() and noticed_lobby.get_page() == LobbyMenu.Page.CONNECT \
+			and noticed_lobby.get_status_label().text == "The host ended the game." and GameLaunch.notice == ""
+	_check("Coming back to the main menu with an online session still running opens the lobby on the lobby page, and with a reason an online game ended (GameLaunch.notice) it opens the connect page showing it once",
+			reopened and shows_notice,
+			"reopened %s, notice shown %s (status '%s', notice '%s')" % [reopened, shows_notice, noticed_lobby.get_status_label().text, GameLaunch.notice])
+
+	# Clean up: every session closed, nothing paused, no menu left registered.
+	remove_child(noticed)
+	noticed.queue_free()
+	remove_child(harness)
+	harness.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+	_check("The lobby leaves nothing behind: no session at the root of the tree, no open menu, the tree not paused, the shared settings still the defaults",
+			NetLobby.find_session(tree) == null and not MenuState.is_any_open() and not tree.paused and shared.online_name == "Player" and shared.online_port == 26000 and GameLaunch.notice == "",
+			"session %s, menus open %s, paused %s, shared name '%s'" % [NetLobby.find_session(tree), MenuState.is_any_open(), tree.paused, shared.online_name])
+	MenuState.reset()
+	GameLaunch.clear()
+	GameLaunch.notice = ""
+	shared.reset_to_defaults()
 
 
 ## The real settings file is exactly as it was when the test started.
