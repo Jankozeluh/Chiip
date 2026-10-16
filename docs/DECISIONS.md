@@ -1813,6 +1813,25 @@ It also prints its five slowest ticks with the round's phase and time, so a fail
 - A limit of 25 ms on the worst tick: the round start is 17–20 ms, which leaves too little margin.
 
 
+## D-169 — What was measured and left as it is (2026-10-16)
+
+**Decision:** These stay as they are. Each was measured on an Apple M5, 5v5, and costs too little to be worth a change to how the game plays or looks:
+- **Animation trees at 128 Hz for every character:** about 0.15 ms of a 0.8 ms tick for ten characters. Thinning them out for far or unseen characters would make their hit zones lag the bots' shots by a tick.
+- **The sun's four shadow cascades:** two cascades, or no shadows at all, changed the GPU's busy time by nothing measurable (30–32 % at 60 Hz). No lamp on the quick maps casts shadows.
+- **Bot vision every 0.1 s:** about 0.01 ms per tick on average (ten bots, two rays per enemy in view).
+- **The client's 128 commands a second:** 23 KB/s up for a 5v5 client and 30 KB/s down. That's fine for LAN and the internet. Sending two ticks per packet would halve the packets but delay every input by a tick (M12 can decide for Tailscale).
+- **Draw calls:** 120–300 per frame, depending on the map. The props aren't worth merging into MultiMeshes yet.
+
+**Reported to the sessions that own the code:**
+- The round start is now the slowest moment of a match, 14–20 ms in one tick on every map in rounds mode. Every character gets a new loadout, and `Weapon.create()` builds the whole weapon scene (17 nodes, the first-person model and four sound players) for bots too, about 0.45 ms per weapon.
+- A respawn costs 4–6 ms and a frag's explosion 4–7 ms (`weapons/explosion.gd`).
+- `WeaponData.all()` reloads the weapon files when nothing holds them (D-166).
+- These are in `weapons/` (the M11 weapons session's files) and in the shared notes.
+
+**Why:** The game holds a 120 Hz display with room to spare. Physics and scripts take 0.4–0.6 ms of a frame with a window and 0.6–0.8 ms headless. Uncapped, it draws 340–410 fps at 1080p and at the 3440 × 1440 world size. What players could feel were hitches, and the big one was D-166's.
+
+**Alternatives:** Spreading the round start over several ticks: the loadouts and the bots' purchases would come during the freeze time instead of at its start. That's a change to the rules' order that the round and economy tests check, for about 15 ms once a round.
+
 ## Open questions
 
 | Question | Decide in |
