@@ -2,12 +2,13 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK).
+> **Current milestone:** M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK). **M13 Sound design is built** on its branch (gun signatures with far variants, muffling through walls, reverb by place, a measured mix, menu music and stingers), waiting for your listen.
 
 ## Your open checks
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M13 sound** (D-190 to D-195; headphones help). (1) **Menu:** does the menu track fit Chiip and loop without a bump (35 s)? Settings → Audio has a **Music** slider. (2) **Guns:** practice (B buys everything): fire every gun; then have a bot shoot from near and far (`bot_add`, walk away): can you tell the guns apart, and does a far shot sound far (duller, echoing, from about 15 m on)? The reloads (magazine out, in, bolt or slide) per gun. (3) **Walls:** a bot's steps and shots through one wall, through several, and round a corner: dull but readable? (4) **Places:** shoot inside a room and in a yard: a short room sound indoors, a slap outdoors; is it too much or too little? (5) **The mix in a fight:** can you hear steps while you and others shoot? Your own gun too loud or too quiet? The bomb's beep always there? (6) **Stingers:** round start, won, lost, bomb defused, match won and lost: fitting, too long, too loud? Numbers to tune are in `systems/sound_mix.gd`.
 - [ ] **M11 weapons & models.** (1) Walk into a wall with every gun (and turn your FOV to 70 and 110): the gun stays whole in front of the wall, lit like the room, and looks the same size at every FOV. (2) Watch bots (or spectate a teammate) aim up and down, run and crouch: the left hand stays on the handguard or the pump. (3) Reload every gun: the magazine leaves with the left hand and goes back in, the Breaker's shell is in the hand before it goes in, and the clicks come when the hand does it; does a reload feel right in length? (4) Fire during a Breaker reload: it stops at once, in your view and on the body.
 - [ ] **M11 optimization.** With your 3440 × 1440 monitor plugged in (and the Mac on its charger), play a round on each quick map with V-Sync on: does anything stutter? A round start costs one 15–20 ms frame (known, D-169). For numbers, run the frame timing command in CLAUDE.md with `--resolution 3440x1440`, with the window in front.
 - [ ] **M11 UI fit and the studio logo.** (1) Open the game in the editor's game view at your 2920 × 1753 (and drag the window narrow, tall and fullscreen): the Play screen, class draft and HUD stay whole; the text is 2× there, crisp. (2) Start a match: the loading band goes first, and then the class draft opens (nothing covers its cards). (3) The boot screen shows your Divocakos logo and name once when the game starts (any key skips); the small mark and the name are in the main menu's corner and footer (D-153).
@@ -93,7 +94,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | M11 | Polish | 🟨 built, waiting for your checks | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
 | M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
-| M13 | Sound design | 🟨 in progress | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
+| M13 | Sound design | 🟨 built, waiting for your listen | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
 | M14 | Stats & training | ⬜ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
 | M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | M16 | Maintainability & debugging | ⬜ | Release-build tests, logs and bug reports, debug commands, a cleaner architecture, one short branch at a time |
@@ -568,7 +569,7 @@ The class draft (two random classes offered each match) and the random map weapo
 - [x] **Contributing and credits:** `CONTRIBUTING.md` (how to submit a map as a pull request, how code and art contributions work, under which licence; maps are curated in the repo and ship with the next release) and the credit line "Created by JK · Divocakos" (D-176)
 - [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
 
-## M13 — Sound design 🟨
+## M13 — Sound design 🟨 built, waiting for your listen
 
 **Goal:** Chiip sounds like a shooter, and its sound tells you things: where a shot came from, how far, and whether a wall is in between (D-177, after v0.1). Readability beats atmosphere (D-038). Every sound stays generated by our own tools (D-020): no downloads, nothing new to license. One commit per task.
 
@@ -578,7 +579,7 @@ The class draft (two random classes offered each match) and the random map weapo
 4. [x] **Reverb indoors and outdoors** (D-193): the listener's zone (an open yard, a yard between walls, a small room, a hall) is worked out at run time from rays around the camera, no map edits; the Effects bus's reverb follows it
 5. [x] **A mix pass** (D-194): every sound file at its category's loudness (all footsteps equally loud, whatever the floor), the table's levels set from measured numbers (your shots against distant ones, footsteps readable in a fight, the bomb always audible); `tools/sound_report.gd` measures, `sound_test` keeps it so
 6. [x] **Menu music and round stingers** (D-195): a short looping menu track and stingers for round start, round won and lost, bomb defused and match won or lost, made for Chiip (licence D-170), on a new Music volume in Settings
-7. [ ] **Tests and docs:** `sound_test` checks loudness ranges per category, no clipping, the far variants, the muffling and the zones; GAME_DESIGN and CREDITS updated; a full test run
+7. [x] **Tests and docs:** `sound_test` checks loudness ranges per category, no clipping, the far variants, the muffling and the zones; GAME_DESIGN and CREDITS updated; a full test run
 
 ## M14 — Stats & training ⬜
 

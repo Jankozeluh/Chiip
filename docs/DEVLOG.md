@@ -19,7 +19,11 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 
 - **Task 6, music and stingers** (D-195): a 35 s menu loop and six stingers (round start, won, lost, bomb defused, match won, lost) from `tools/generate_music.gd` (Sonnet); `Music` plays them on the Music bus, with a Music volume in Settings → Audio; M8's three interface stingers are gone, the bomb-planted alert is levelled. `sound_test` +4 checks.
 
-**Next:** tests and docs, the full run, merging main (task 7).
+- **Task 7, tests and docs:** `sound_test` has 32 checks (it had 8); GAME_DESIGN, CREDITS, ARCHITECTURE, LEARNING, README and CLAUDE.md follow; main merged in (the M16 plan); the full run below.
+
+**Not heard yet:** nobody has listened; the sounds, the mix and the music are checked by numbers only. Your listen is in "Your open checks" (PLAN.md).
+
+**Next:** your listen, then tuning `systems/sound_mix.gd` from what you hear. Possible later steps: sound through doorways (path-based, D-192), a front/back cue, a first-person mechanical layer on your own shots (D-191).
 
 ## 2026-10-16 — M12 share
 

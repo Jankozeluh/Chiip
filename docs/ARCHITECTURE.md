@@ -518,7 +518,7 @@ bash tools/run_tests.sh
 | `match_test` | 13 | One whole seeded 3v3 match through the real game scene, start to match-end screen (D-066) | ~20 s |
 | `bomb_test` | 32 | Bomb rounds on Depot: carrying, planting, the fuse and explosion, dropping and picking up, defusing (D-080) | ~4 s |
 | `respawn_test` | 19 | The team respawn mode: kills, respawns, spawn choice away from enemies, kill limit, time limit, overtime (D-082) | ~3 s |
-| `sound_test` | 8 | Footsteps per floor, bullet impacts and headshots, menu sounds (D-084) | ~1 s |
+| `sound_test` | 32 | Footsteps per floor, bullet impacts and headshots, menu sounds (D-084); M13: the bus layout and the mix table, guns playing by it, every gun's signature, far variant and reloads, the far crossfade, muffling behind walls the test builds, the zones (built rooms and Depot's) and the reverb following them, every file at its category's loudness, no gain over 0 dB, the readability rules, the music and stingers, the Music volume (D-190 to D-195) | ~2 s |
 | `maps_test` | 28 | The three quick maps: markers, navmesh, paths between spawns and sites, random map weapons (twenty rounds of draws: reachable, away from spawns, respawn points and sites, spread out, varied), seeded bot rounds with first contact in 5–10 s (D-061) | ~45 s |
 | `crew_test` | 49 | The generated crew models: import, skeleton, team-colour shader, animations (D-072 to D-076) | ~1 s |
 | `class_test` | 67 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078), the perks, the class draft (D-099) | ~3 s |
