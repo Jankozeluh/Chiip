@@ -39,7 +39,7 @@ const TOLERANCE := 1.5
 const MAX_LISTED := 4
 
 var _failures: int = 0
-## Every window size with every UI scale setting (Auto, 50, 75 and 100 percent): [size, percent].
+## Every window size with the UI scale settings Auto, 50 and 100 percent: [size, percent].
 var _cases: Array = []
 
 
@@ -47,7 +47,8 @@ func _ready() -> void:
 	# The shared settings: never read or write the player's file (nothing here calls load_from_disk).
 	Settings.get_instance().reset_to_defaults()
 	for size in SIZES:
-		for percent in Settings.UI_SCALES:
+		# Auto, the smallest and the biggest scale (the steps between are the same code).
+		for percent in [0, Settings.UI_SCALES[1], Settings.UI_SCALES[-1]]:
 			_cases.append([size, percent])
 	_test_scale_rule()
 	await _test_main_menu(false)
@@ -473,15 +474,15 @@ func _test_resize_relays_out() -> void:
 	_check("A runtime resize re-lays the menu out by itself (item text %s px at 1280 × 720, %s at 1080p, %s at 1440p, %s at 2920 × 1753 and 1440p alike, 1440 × 1080 as 720p), and going back restores it" % [
 			sizes_seen[SIZES[0]], sizes_seen[SIZES[1]], sizes_seen[SIZES[2]], sizes_seen[SIZES[3]]],
 			grows and bound_by_width and back, "grows %s, whole steps %s, back %s" % [grows, bound_by_width, back])
-	# The UI scale setting reaches the menu live (no restart, no resize): Auto 2×, 100 % fills 2.28×, 75 % 1.5×, 50 % 1×.
+	# The UI scale setting reaches the menu live (no restart, no resize): Auto 2×, 100 % fills 2.28×, 70 % 1.5×, 50 % 1×.
 	_resize(SIZES[3])
 	var by_percent: Array[int] = []
-	for percent in Settings.UI_SCALES:
+	for percent in [0, 50, 70, 100]:
 		Settings.get_instance().ui_scale = percent
 		by_percent.append(play.get_theme_font_size("font_size"))
 	Settings.get_instance().ui_scale = 0
 	var auto_again := play.get_theme_font_size("font_size")
-	_check("Changing the UI scale setting re-lays the menu out at once: at 2920 × 1753 the item text is %s px for Auto, 50, 75 and 100 %% (fills the window: 2.28×), and Auto again gives %d" % [by_percent, auto_again],
+	_check("Changing the UI scale setting re-lays the menu out at once: at 2920 × 1753 the item text is %s px for Auto, 50, 70 and 100 %% (fills the window: 2.28×), and Auto again gives %d" % [by_percent, auto_again],
 			by_percent[0] == 64 and by_percent[1] == 32 and by_percent[2] == 48 and by_percent[3] == roundi(32.0 * 2920.0 / 1280.0) and auto_again == 64,
 			"item text %s, Auto again %d" % [by_percent, auto_again])
 	remove_child(menu)

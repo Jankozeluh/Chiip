@@ -12,7 +12,7 @@ extends RefCounted
 ## The pad styles, in the order of the Controller tab's "Button prompts" row (after "auto").
 const STYLES: Array[String] = ["xbox", "ps", "generic"]
 ## The setting's choices: "auto" picks the style of the pad plugged in.
-const CHOICES: Array[String] = ["auto", "xbox", "ps", "generic"]
+const CHOICES: Array[String] = Settings.PAD_PROMPTS
 ## Where the pictures are.
 const FOLDER := "res://assets/ui/glyphs/"
 ## Words in a controller's name that mean it is a PlayStation or an Xbox pad.

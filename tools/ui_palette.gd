@@ -286,6 +286,12 @@ const SWATCH_MARGIN := 4
 
 ## Between the settings screen's title, its tabs and its footer.
 const SETTINGS_GAP := 24
+## The space between the Interface and Controller tabs' two columns (the rows and the preview or table).
+const INTERFACE_GAP := 32
+## The padding inside a card of the team colour preview.
+const PREVIEW_PAD := 16
+## White, for text that is tinted with a colour at runtime (the team colour preview).
+const PURE := Color.WHITE
 ## Edge to edge: the parts of a settings row (a 400 px label, then the control) and of a table row.
 const FLUSH_GAP := 0
 ## Rows that touch (the crosshair tab's rows are 48 high and have no gap).

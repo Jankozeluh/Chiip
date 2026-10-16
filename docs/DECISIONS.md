@@ -2300,6 +2300,17 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** a separate key for each level (F3 stays the one key CS players know); drawing the overlay as one multi-line label (the page has sections and a graph).
 
+## D-234 — The Interface and Controller tabs, the UI scale in steps of ten, button prompts (2026-10-16)
+
+**Decision:**
+- **Settings has seven tabs** as the designer drew them: Game, Video, Audio, **Interface**, **Controller**, Crosshair, Controls. The pad's look (sensitivity, dead zone, curve, invert Y) moved from Game to Controller; the label column of both new tabs is 240 pixels like the Crosshair tab.
+- **Interface:** UI scale, Team colours, FPS counter (D-233), Net stats and Compass (D-232), with the hint lines the page has ("Auto fits the HUD to the window · now 150 %", "F3 steps off, player, developer in a match") and the colour-blind note. **The UI scale choices are Auto, 50, 60, 70, 80, 90 and 100** (the page's), not Auto/50/75/100 of D-181; the rule is the same (a share of the biggest scale that fits, half steps from 1.0 up, 100 = exact). **Team colours** are named Normal and Colour-blind, with a live preview of both: the picked one framed.
+- **The colour-blind UI colours are the designer's:** a dark blue **3466E8** against a light orange **FFA45C** (they were 66B3FF and FF7A1A, D-210). The 3D world's team colours are unchanged. The page's warning applies: light orange sits close to the alert amber, so alerts always carry their icon and the bomb timer turns to the text colour with amber only in its last 10 seconds (the timer itself is the next check in the open list).
+- **Controller:** Look sensitivity, Dead zone (with the 80 × 80 box: the dead zone as a dim square, the right stick live as a dot), Look curve (kept: not on the page, but M15 built it), **Invert Y and Invert X** (`Settings.pad_invert_x`, new), **Button prompts** Auto / Xbox / PS / Generic (`Settings.pad_prompts`, new; `PadGlyphs.style_for()` resolves Auto from the plugged-in pad's name) and the bindings table: Move, Look and nine actions with their pad glyph and key. **Not built: Aim sensitivity** (the page's second slider): the stick is already slower through a scope (D-212), and a separate number has nothing to do yet.
+- **Audio** keeps its rows (Music exists since M13) and gets the page's note, worded for what the music does: it plays in the menus and as short stingers at the start and end of rounds and matches, never during a round.
+
+**Why:** The designer's pages 24 to 26 (D-230). **Alternatives:** the pad rows staying in Game (the page has a tab for them); building the aim sensitivity slider as a second pad multiplier (more settings than the pad has behaviour for).
+
 ## Open questions
 
 | Question | Decide in |

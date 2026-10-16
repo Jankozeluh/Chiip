@@ -13,7 +13,9 @@
 
 - FPS counter and developer overlay (D-233): F3 steps off, player, developer; the Interface tab has the FPS counter and Net stats rows.
 
-**Next:** the settings tabs, Stats, training, credits, the pad prompts.
+- Settings to the designer's pages (D-234): Interface and Controller tabs, UI scale in steps of ten with a "now" line, the team colour preview, invert X, button prompts (Auto/Xbox/PS/Generic) and the pad bindings table with the new glyphs, the Audio note; the colour-blind UI colours are the designer's.
+
+**Next:** Stats, training, credits, the pad prompts.
 
 ## 2026-10-16 — M15 accessibility & polish
 

@@ -57,6 +57,7 @@ var pad_sensitivity: float = 1.0
 var pad_deadzone: float = 0.15
 var pad_curve: float = 1.5
 var pad_invert_y: bool = false
+var pad_invert_x: bool = false
 
 ## Horizontal look angle (left/right) in radians.
 var _yaw: float = 0.0
@@ -295,6 +296,7 @@ func _apply_settings() -> void:
 	pad_deadzone = settings.pad_deadzone
 	pad_curve = settings.pad_curve
 	pad_invert_y = settings.pad_invert_y
+	pad_invert_x = settings.pad_invert_x
 	camera.fov = Settings.vertical_fov(fov_setting)
 
 
@@ -331,7 +333,8 @@ func _look_with_stick(delta: float) -> void:
 		return
 	var radians := deg_to_rad(PAD_DEGREES_PER_SECOND * pad_sensitivity) * _scope_ratio() * delta
 	var vertical_sign := -1.0 if pad_invert_y else 1.0
-	_yaw -= stick.x * radians
+	var horizontal_sign := -1.0 if pad_invert_x else 1.0
+	_yaw -= stick.x * radians * horizontal_sign
 	_pitch -= stick.y * radians * vertical_sign
 	_pitch = clampf(_pitch, deg_to_rad(-MAX_PITCH_DEGREES), deg_to_rad(MAX_PITCH_DEGREES))
 

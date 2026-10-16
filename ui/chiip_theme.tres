@@ -1290,6 +1290,32 @@ border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="preview_card"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="preview_card_picked"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="primary_button_disabled"]
 content_margin_left = 16.0
 content_margin_top = 8.0
@@ -1385,6 +1411,20 @@ content_margin_right = 4.0
 content_margin_bottom = 4.0
 bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="pure_chip"]
+bg_color = Color(1, 1, 1, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="pure_chip_frame"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="raised_panel"]
@@ -2682,6 +2722,8 @@ InkPanel/base_type = &"Panel"
 InkPanel/styles/panel = SubResource("ink_panel")
 InsetPanel/base_type = &"PanelContainer"
 InsetPanel/styles/panel = SubResource("inset_panel")
+InterfaceColumns/base_type = &"HBoxContainer"
+InterfaceColumns/constants/separation = 32
 KeyCapButton/base_type = &"Button"
 KeyCapButton/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 KeyCapButton/colors/font_hover_pressed_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
@@ -2866,6 +2908,10 @@ PopupMenu/styles/labeled_separator_right = SubResource("popup_menu_separator_rig
 PopupMenu/styles/panel = SubResource("popup_menu_panel")
 PopupMenu/styles/separator = SubResource("popup_menu_separator")
 PopupPanel/styles/panel = SubResource("popup_panel")
+PreviewCard/base_type = &"PanelContainer"
+PreviewCard/styles/panel = SubResource("preview_card")
+PreviewCardPicked/base_type = &"PanelContainer"
+PreviewCardPicked/styles/panel = SubResource("preview_card_picked")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
 PrimaryButton/colors/font_focus_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
@@ -2887,6 +2933,15 @@ ProgressBar/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 ProgressBar/colors/font_outline_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
 ProgressBar/styles/background = SubResource("progress_background")
 ProgressBar/styles/fill = SubResource("progress_fill")
+PureChip/base_type = &"Panel"
+PureChip/styles/panel = SubResource("pure_chip")
+PureChipFrame/base_type = &"Panel"
+PureChipFrame/styles/panel = SubResource("pure_chip_frame")
+PureLabel/base_type = &"Label"
+PureLabel/colors/font_color = Color(1, 1, 1, 1)
+PureLargeLabel/base_type = &"Label"
+PureLargeLabel/colors/font_color = Color(1, 1, 1, 1)
+PureLargeLabel/font_sizes/font_size = 32
 RaisedPanel/base_type = &"PanelContainer"
 RaisedPanel/styles/panel = SubResource("raised_panel")
 RichTextLabel/colors/default_color = Color(0.9019608, 0.9254902, 0.9607843, 1)

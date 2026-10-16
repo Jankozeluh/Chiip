@@ -183,6 +183,12 @@ func _labels() -> void:
 	_variation("LogoLabel", "Label")
 	_font_sizes("LogoLabel", {"font_size": Palette.TEXT_SIZE_HERO})
 	_fonts("LogoLabel", {"font": logo})
+	# White text to tint with a team's colour (the Interface tab's preview, which shows both colour schemes at once).
+	_variation("PureLabel", "Label")
+	_colors("PureLabel", {"font_color": Palette.PURE})
+	_variation("PureLargeLabel", "Label")
+	_font_sizes("PureLargeLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("PureLargeLabel", {"font_color": Palette.PURE})
 	# The studio's name on the boot screen: 32 px with the same letter spacing (v0.2 screen 30).
 	var spaced := FontVariation.new()
 	spaced.resource_scene_unique_id = "spaced_font"
@@ -208,6 +214,16 @@ func _panels() -> void:
 	# The dimming behind a modal menu: a full-screen Panel that keeps the clicks from the game.
 	_variation("BackdropPanel", "Panel")
 	_styles("BackdropPanel", {"panel": _box("backdrop_panel", Palette.BACKDROP)})
+	# A card of the Interface tab's team colour preview: a quiet frame, and the picked scheme's in the text colour.
+	_variation("PreviewCard", "PanelContainer")
+	_styles("PreviewCard", {"panel": _box("preview_card", Palette.PANEL, Palette.PANEL, Palette.BORDER, _even(Palette.PREVIEW_PAD))})
+	_variation("PreviewCardPicked", "PanelContainer")
+	_styles("PreviewCardPicked", {"panel": _box("preview_card_picked", Palette.PANEL, Palette.TEXT, Palette.BORDER, _even(Palette.PREVIEW_PAD))})
+	# A square in white, to tint (the team colour preview's score chips): full or just a frame.
+	_variation("PureChip", "Panel")
+	_styles("PureChip", {"panel": _box("pure_chip", Palette.PURE)})
+	_variation("PureChipFrame", "Panel")
+	_styles("PureChipFrame", {"panel": _box("pure_chip_frame", Color.TRANSPARENT, Palette.PURE, Palette.BORDER)})
 	# The boot screen's background: the deepest dark (VOID, opaque).
 	_variation("VoidPanel", "Panel")
 	_styles("VoidPanel", {"panel": _box("void_panel", Palette.VOID)})
@@ -410,6 +426,8 @@ func _containers() -> void:
 	_constants("TeamChipRow", {"separation": Palette.TEAM_CHIP_GAP})
 	# The settings screen: the gaps between its title, tabs and footer, rows whose parts sit edge to edge
 	# (a 400 px label, then the control), rows that touch, and a small group (preview squares and caption).
+	_variation("InterfaceColumns", "HBoxContainer")
+	_constants("InterfaceColumns", {"separation": Palette.INTERFACE_GAP})
 	_variation("SettingsColumn", "VBoxContainer")
 	_constants("SettingsColumn", {"separation": Palette.SETTINGS_GAP})
 	_variation("FlushRow", "HBoxContainer")

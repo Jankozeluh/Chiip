@@ -53,7 +53,7 @@ const SCHEMES: Array[Dictionary] = [
 	},
 	{
 		&"friendly": Color(0.10, 0.36, 0.76), &"enemy": Color(0.97, 0.55, 0.10),
-		&"friendly_text": Color("66b3ff"), &"enemy_text": Color("ff7a1a"),
+		&"friendly_text": Color("3466e8"), &"enemy_text": Color("ffa45c"),
 		&"friendly_fill": Color("0a3d6b"), &"enemy_fill": Color("b86a00"),
 	},
 ]

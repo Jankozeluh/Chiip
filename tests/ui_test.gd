@@ -1787,8 +1787,8 @@ func _test_settings_menu_building() -> void:
 	var background := menu.get_node("Background") as Panel
 	var page := menu.get_node("Page") as MarginContainer
 	var title := menu.get_node("Page/Column/TitleBox/Title") as Label
-	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Interface, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
-			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Interface", "Crosshair", "Controls"]
+	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Interface, Controller, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
+			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Interface", "Controller", "Crosshair", "Controls"]
 					and background.theme_type_variation == &"InkPanel" and background.mouse_filter == Control.MOUSE_FILTER_STOP
 					and page.theme_type_variation == &"PageMargin" and page.get_theme_constant("margin_left") == Tokens.PAGE_MARGIN_X
 					and title.theme_type_variation == &"TitleLabel" and title.text == "Settings"
