@@ -45,6 +45,13 @@ size_flags_horizontal = 4
 theme_type_variation = &"HeroLabel"
 text = "Chiip"
 
+[node name="StudioName" type="Label" parent="Center/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"TitleLabel"
+text = "Divocakos"
+
 [node name="Chips" type="HBoxContainer" parent="Center/Column"]
 unique_name_in_owner = true
 layout_mode = 2

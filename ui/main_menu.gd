@@ -99,8 +99,7 @@ func _ready() -> void:
 	_lobby.closed.connect(_on_lobby_closed)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
-	_build_label.text = "Build %s" % ProjectSettings.get_setting("application/config/version", "")
-	_show_studio_mark()
+	_build_label.text = "Build %s · Divocakos" % ProjectSettings.get_setting("application/config/version", "")
 	_build_background()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -216,18 +215,33 @@ func apply_pixel_settings() -> void:
 	_lobby.set_ui_scale(factor)
 	_settings_menu.set_ui_scale(factor)
 	_boot.set_ui_scale(factor)
+	_place_studio_mark(factor)
 
 
-## Puts the studio logo in the corner next to the map's name (the mockup's 56 × 56 mark). Without the
-## logo file the mark stays hidden and the name moves to the corner (the scene leaves room for the mark,
-## and the offsets are read at the first [method apply_pixel_settings]).
-func _show_studio_mark() -> void:
-	var logo := BootScreen.load_logo()
+## Puts the studio's mark in the bottom right corner with the map's name to its left (the mockup's
+## 56 × 56 mark, D-153), at a whole multiple of its picture so the pixels stay even: 56 px on the
+## half-size logo at UI scales 1 and 1.5, 112 px on the full logo at 2 and 2.5, and so on. Without the logo
+## files the mark stays hidden and the name sits in the corner. Runs after every [method UiTheme.apply], which
+## puts the scene's own offsets back.
+func _place_studio_mark(factor: float) -> void:
+	var steps := maxi(1, floori(factor))
+	var logo := BootScreen.load_logo() if steps % 2 == 0 else BootScreen.load_small_logo()
 	_studio_mark.texture = logo
 	_studio_mark.visible = logo != null
-	if logo == null:
-		_map_name.offset_left += 72.0
-		_map_name.offset_right += 72.0
+	var side := 56.0 * steps
+	var edge := roundf(32.0 * factor)
+	_studio_mark.offset_right = -edge
+	_studio_mark.offset_bottom = -edge
+	_studio_mark.offset_left = -edge - side
+	_studio_mark.offset_top = -edge - side
+	# The name is centred on the mark and 16 px (at 720p) from it.
+	var height := roundf(21.0 * factor)
+	var right := -edge - ((side + roundf(16.0 * factor)) if logo != null else 0.0)
+	var bottom := -edge - (roundf((side - height) / 2.0) if logo != null else 0.0)
+	_map_name.offset_right = right
+	_map_name.offset_left = right - roundf(400.0 * factor)
+	_map_name.offset_bottom = bottom
+	_map_name.offset_top = bottom - height
 
 
 ## The boot screen (D-153) shows once per run, over the menu, when the game starts on the menu.

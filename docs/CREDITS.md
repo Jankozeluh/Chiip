@@ -41,9 +41,15 @@ Until 2026-10-16 the textures were CC0 photo textures from ambientCG (https://am
 | NumPy | https://numpy.org | BSD-3-Clause |
 | Pillow | https://python-pillow.org | MIT-CMU (HPND) |
 
-## The studio
+## Studio logo and name (not under the game's open licences)
 
-- **Divocakos** is the studio's name; its name and logo (`assets/ui/studio_logo.png`) are © 2026 Divocakos, **all rights reserved**, and excluded from the CC BY-NC-SA licence of the other art (D-174). The game credits "© Divocakos" in the README, the release notes and the Licences screen.
+| What | Source | Rights |
+|---|---|---|
+| The Divocakos logo (the laughing watermelon): `assets/ui/studio_logo.png` (112 × 112, the studio's own picture) and `assets/ui/studio_logo_small.png` (56 × 56, made from it by `tools/make_studio_logo.py`) | The studio itself. Handed over by the project's owner on 2026-10-16, who confirmed it is theirs and approved the download | **All rights reserved.** The logo and the name "Divocakos" belong to the studio. They are **not** covered by the game's licences: the planned CC BY-NC-SA 4.0 for art (D-150) excludes them, so anyone who reuses the game's art or builds a fork must take them out |
+
+They show on the boot screen (the logo with the name under it) and in the main menu's corner and footer (D-153).
+
+- **Credit line:** "Created by JK · Divocakos" (D-176). The name Divocakos and the logo are all rights reserved (D-174); the game credits "© Divocakos" in the README, the release notes and the Licences screen.
 
 ## Made for Chiip
 
