@@ -2,7 +2,7 @@
 
 > How the project is organized and which rules the code follows. Updated whenever a folder, system or convention is added.
 >
-> Last updated: 2026-10-15. The Godot project exists; the folders below are created, systems are added milestone by milestone.
+> Last updated: 2026-10-16. The Godot project exists; the folders below are created, systems are added milestone by milestone.
 
 ## Engine
 
@@ -457,7 +457,7 @@ bash tools/run_tests.sh
 | `guns_test` | 16 | How each weapon works (D-095): the semi-automatic pistol, the shotgun's pellets and shell reloads, the reload perk, the sniper scope (zoom steps, camera, mouse, accuracy, the Marksman's perk, dropping out after a shot, speed, the HUD's scope view), the knife (flat damage, armor, backstabs, reach) | ~1 s |
 | `arsenal_test` | 30 | The arsenal's data files, CS's armor results, and that `docs/weapons.csv` matches the data (D-091) | under 1 s |
 
-That is 555 checks in about 75 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
+That is 705 checks in about two minutes on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 
 ```
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn

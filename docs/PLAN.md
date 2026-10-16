@@ -1,13 +1,23 @@
 # Chiip — Plan & Roadmap
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
-> **Current milestone:** M7 — Arsenal, perks & economy, in progress (the task list is in the M7 section). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built and wait for your playtest in "Your open checks".
+> **Current milestone:** M7 — Arsenal, perks & economy is built (all 15 tasks) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest too. Next: M9 — Multiplayer.
 
 ## Your open checks
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M7 playtest (arsenal, perks & economy).** Start a match from the menu (Depot, Square or Spillway for the bomb, power weapons and kits). Then:
+  1. **Buying:** the freeze time is 15 s. **B** opens the buy menu (from the class menu too): the category's number then the item's, or click; greyed items say why. Round 1 is a pistol round ($1,000). Is it quick to use under time pressure? Are the light economy's numbers right: $3,000 a win, $1,500 → $3,000 for losses, $200 a kill ($500 knife), prices $500 / $1,000 / $2,500 / $4,000 (D-090)? Do saves and force buys feel worth it?
+  2. **The guns** (practice: B buys everything free): the Ram as before; the Warden (more accurate, no one-tap through a helmet); the Hornet; the Breaker (9 pellets, a shell at a time, fire to stop the reload); the Heron (right mouse: two zoom steps, a moment to settle, out of the scope after each shot, no crosshair unscoped); the Sparrow and the Verdict (one shot per click); the knife (left slash, right stab, harder from behind). Tell me what feels off.
+  3. **Slots and pickups:** 1–4, Q, G; walk over a gun to take it, E to swap; the dead drop their best gun; the gold rings with a Heron and a Breaker (in team respawn back after 30 s).
+  4. **Grenades:** left click throws, right click lobs. The Frag (walls stop it), the Flashbang (look away!), the Smoke (18 s; bots can't see through it).
+  5. **Armor:** the shield and number on the HUD; a helmet saves you from a Warden headshot, not a Ram one.
+  6. **Perks:** Quick Hands (faster reloads and switches), Plated (the Bulwark with armor), Steady (the Marksman's scope), Light Step (the Scout's quieter running).
+  7. **Bots:** do they buy sensibly as a team, pick up better guns, scope with the Heron, use the shotgun up close, throw grenades at you? Fair or annoying?
+  8. **Looks and sounds:** each gun in your hands and in the bots' (pistols two-handed, the knife, grenades), the reloads; can you tell the guns apart by sound (the Ram, Verdict and Breaker are the closest)? The icons in the buy menu and the kill feed.
+  9. **Team respawn:** you spawn with your class's loadout; M changes class any time (for your next respawn).
 - [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
 - [ ] **Confirm weapon names** (M7, D-090): Ram (AK-style rifle), Warden (carbine), Hornet (SMG), Breaker (pump shotgun), Heron (sniper rifle), Sparrow (service pistol), Verdict (hand cannon), Knife, Frag, Flashbang, Smoke. Keep them, or tell me the ones you'd rather have: only the data files change.
@@ -57,7 +67,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M4 | Bots | ✅ | Bots hunt you and shoot back |
 | M5 | Rounds & game flow | ✅ | Full matches against bots, with teammates, menus and settings |
 | M6 | Crew & animation | 🟨 built, waiting for your playtest | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
-| M7 | Arsenal, perks & economy | 🟨 in progress | Pick up and buy from the full arsenal with a light economy, fight over power weapons, and play each class a little differently |
+| M7 | Arsenal, perks & economy | 🟨 built, waiting for your playtest | Pick up and buy from the full arsenal with a light economy, fight over power weapons, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
 | — | Backlog | — | Ideas for later |
@@ -273,7 +283,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 | Class choice | At match start, changeable during freeze time |
 | Class names | Rifleman, Bulwark, Marksman, Scout: final (D-070) |
 
-## M7 — Arsenal, perks & economy 🟨
+## M7 — Arsenal, perks & economy 🟨 *(built, waiting for your playtest)*
 
 **Goal:** a mix of CS and Call of Duty, built around picking weapons up: a light economy where money still matters (spend or save every round), a fresh loadout every round like CoD's Search & Destroy, guns taken from the fallen and power weapons on the maps worth fighting for, and classes that each play a little differently.
 
@@ -297,7 +307,9 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 12. [x] **Defuse kits.** Defenders can buy a kit for $300; it halves the defuse time through the bomb's `kit_check` hook (D-080). A kit icon on the HUD and in the Tab scoreboard. *(Sonnet)* Built (D-098): `kit_check` filled by the round manager, the HUD's kit icon, the scoreboard's "· kit"; 3 economy checks. Small enough that the main session did it.
 13. [x] **Class perks switch on.** The Scout's *Light Step* (running steps carry 70% as far, for bots and for your ears alike) completes the four perks; the class menu and docs describe them as working, and the class menu shows each class's loadout. *(Sonnet)* Built (D-099): `Character.get_footstep_range()`, loadouts on the class cards, class changes any time in team respawn; 3 class checks. Small, so done in the main session.
 14. [x] **Bots buy, pick up and use the arsenal.** Bots pick their class at the match start and at half time (still a mix per team), then buy every round from their money, decided together like a CS team: save, a cheap buy, or a full buy, with each class's favourite guns, armor, grenades and kits. They pick up better guns lying near them and go for a power weapon when they pass close by. They use what they have: tap with pistols, close in with the shotgun and SMG, scope with the sniper rifle, switch to the pistol when the magazine runs dry, and throw grenades at enemies they know about. *(Opus: AI)* Built (D-099): `BotBuyer`, the brain's `_use_arsenal()` (weapon choice, scope, shotgun range, pickups, grenades with a solved arc), class changes at half time; new `tests/botgear_test.tscn` (8 checks).
-15. [ ] **Names, checks and the playtest list.** The weapon names (provisional until you confirm them) everywhere, the balancing table refreshed, all suites passing, and the M7 playtest list in "Your open checks". *(Sonnet writes, Haiku runs and reports)*
+15. [x] **Names, checks and the playtest list.** The weapon names (provisional until you confirm them) everywhere, the balancing table refreshed, all suites passing, and the M7 playtest list in "Your open checks". *(Sonnet writes, Haiku runs and reports)* Done: screenshots of every weapon in first person and the new holds in third person (they found the knife's blade pointing down: a transposed hold offset, fixed, and the knife and grenades raised into view), the balancing table up to date, all 23 suites passing (a Haiku subagent ran them), and the playtest list below. The main session wrote the docs, which needed the whole milestone's context.
+
+**Built:** all 15 tasks on 2026-10-16, decisions D-090 to D-099. Your playtest is in "Your open checks" at the top.
 
 **Done when:** you play several rounds where money matters (you save for a rifle, or take one off the floor), the power weapons are worth fighting for, and each class plays a little differently.
 

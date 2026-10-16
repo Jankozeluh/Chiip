@@ -29,7 +29,11 @@
 
 - **Task 14, bots and the arsenal** (D-099): bots buy as a team (pistol rounds, full buys, force buys, saves) by class taste, change class at half time, keep a gun in hand (the pistol when the rifle runs dry), scope the Heron and wait to be steady, close in with the shotgun, go for better guns and power weapons near them, and throw frags and flashbangs at enemies they heard. A bots-only 5v5 on Depot shows the whole economy cycle and about five grenades a round. New `tests/botgear_test.tscn` (8 checks).
 
-**Next:** task 15 (names, checks and the playtest list).
+- **Task 15, checks and the playtest list:** screenshots of every weapon in first person and the new holds in third person, which found the knife's blade pointing down (Godot's text format writes a transform's basis row by row: a CLAUDE.md gotcha now) and the knife and grenades too low; fixed. The balancing table is up to date, all 23 suites pass, and the M7 playtest list is in PLAN.md's "Your open checks".
+
+**M7 is built** (15 tasks, D-090 to D-099) and waits for your playtest. Main isn't merged: the coordinating session merges `m7-arsenal`.
+
+**Next:** M9 — Multiplayer.
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

@@ -203,11 +203,11 @@ def clips(rig):
 # ---------------------------------------------------------------- M7: the other weapons (D-096)
 # Rest placements per style: grip position in camera space, yaw (degrees, barrel inward), pitch.
 PISTOL_GRIP = (np.array([0.11, -0.15, -0.40]), 2.0, 1.0)
-KNIFE_GRIP = (np.array([0.17, -0.22, -0.36]), 8.0, -50.0)
-GRENADE_GRIP = (np.array([0.16, -0.18, -0.34]), 4.0, 0.0)
+KNIFE_GRIP = (np.array([0.15, -0.15, -0.38]), 10.0, -38.0)
+GRENADE_GRIP = (np.array([0.15, -0.14, -0.36]), 4.0, 0.0)
 # A left hand that isn't on the gun: out of view below the camera, or near the grenade.
 LEFT_AWAY = np.array([-0.20, -0.62, -0.05])
-LEFT_NEAR_GRENADE = np.array([0.02, -0.26, -0.33])
+LEFT_NEAR_GRENADE = np.array([0.02, -0.22, -0.35])
 
 
 def _relaxed_left(rig, wrist, pole=(-0.9, -0.8, 0.1)):

@@ -4,7 +4,7 @@
 >
 > Decisions can be revisited. When one changes, add a new entry that replaces the old one instead of rewriting history, and mark the old one as *Replaced by D-xxx*.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## D-001 — Engine: Godot 4.7.2 with GDScript (2026-10-15)
 
@@ -1070,6 +1070,8 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 **Why:** The M6 solver already places hands on any gun from its points (D-075), so a new weapon costs a part list and a set entry, not keyframes; per-gun sets keep the left hand on each gun's own foregrip. One shared graph with transitions keeps the M6 rule of one generated graph (D-076) and keeps the hit zones following the same skeleton. Stretching every reload to the weapon's time keeps the animation in step with the rules whatever the numbers become.
 
 **Checked:** stick-figure renders of the new poses (side and front): pistols out in front with the left hand on the support point (0 cm off), the knife low with the blade up, the slash crossing, the throw going back and over, the long guns' left hands on their own foregrips. Five new crew checks: the pistol's hold, kick and reload on the body and arms (stretched to the reload time), the knife's hold, slash, stab and hold offset in both views, the grenade hold, the Breaker's first shell and following shells, and every class's 38 arm clips; the class check now counts 93 body clips. All 20 suites pass.
+
+*Fixed in task 15:* the knife's `hold_offset` had been written as columns, which Godot's text format reads as rows, so the blade pointed down; the knife and grenades also sat too low in first person (now at (0.15, −0.15, −0.38) and (0.15, −0.14, −0.36)). Found on screenshots.
 
 **Alternatives:** One rifle hold for everything (pistols and knives held like rifles); keyframing clips by hand per weapon (a lot of work, and they'd drift from the solver's); a separate AnimationTree per hold (nine graphs to keep in step); detaching the gun from the right hand for bolt and pump actions, as real viewmodels do (the gun hangs on the hand bone here, so the left hand works them).
 
