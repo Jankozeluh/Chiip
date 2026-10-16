@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://ui/crosshair.gd" id="crosshair_script"]
 [ext_resource type="PackedScene" path="res://ui/round_hud.tscn" id="round_hud_scene"]
 [ext_resource type="PackedScene" path="res://ui/bomb_hud.tscn" id="bomb_hud_scene"]
+[ext_resource type="Script" path="res://ui/armor_icon.gd" id="armor_icon_script"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
@@ -68,6 +69,32 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 40
 text = "+ 100"
+
+[node name="ArmorIcon" type="Control" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 200.0
+offset_top = -70.0
+offset_right = 232.0
+offset_bottom = -34.0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("armor_icon_script")
+
+[node name="ArmorLabel" type="Label" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 244.0
+offset_top = -80.0
+offset_right = 404.0
+offset_bottom = -24.0
+grow_vertical = 0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 40
+text = "0"
 
 [node name="DeathLabel" type="Label" parent="."]
 visible = false

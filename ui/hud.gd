@@ -1,5 +1,5 @@
 extends CanvasLayer
-## The in-game HUD: crosshair, health, ammo counter and weapon name.
+## The in-game HUD: crosshair, health, armor, ammo counter and weapon name.
 ## Listens to the player's weapon through its signals. While you spectate a
 ## teammate (see [PlayerController]), health, ammo and weapon are theirs and a
 ## "Spectating" line shows whose view you are in. In a match the [RoundHud]
@@ -25,6 +25,8 @@ var respawn_hint: bool = true
 @onready var _ammo_label: Label = $AmmoLabel
 @onready var _weapon_label: Label = $WeaponLabel
 @onready var _health_label: Label = $HealthLabel
+@onready var _armor_icon: ArmorIcon = $ArmorIcon
+@onready var _armor_label: Label = $ArmorLabel
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
 @onready var _round_hud: RoundHud = $RoundHud
@@ -57,18 +59,21 @@ func set_view_target(target: Character) -> void:
 		shown.weapon.reload_started.disconnect(_update_weapon_label)
 		shown.weapon.reload_finished.disconnect(_update_weapon_label)
 		shown.damaged.disconnect(_on_shown_damaged)
+		shown.gear_changed.disconnect(_update_armor)
 	shown = target
 	_bomb_hud.set_view_target(target)
 	shown.weapon.ammo_changed.connect(_on_ammo_changed)
 	shown.weapon.reload_started.connect(_update_weapon_label)
 	shown.weapon.reload_finished.connect(_update_weapon_label)
 	shown.damaged.connect(_on_shown_damaged)
+	shown.gear_changed.connect(_update_armor)
 	var spectating := shown != player
 	_spectate_label.visible = spectating
 	if spectating:
 		# Their view replaces the "Killed by …" message.
 		_death_label.visible = false
 	_update_health()
+	_update_armor()
 	_on_ammo_changed(shown.weapon.magazine, shown.weapon.reserve)
 	_update_weapon_label()
 
@@ -78,6 +83,8 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_ammo_label, factor)
 	UiScale.apply(_weapon_label, factor)
 	UiScale.apply(_health_label, factor)
+	UiScale.apply(_armor_icon, factor)
+	UiScale.apply(_armor_label, factor)
 	UiScale.apply(_death_label, factor)
 	UiScale.apply(_spectate_label, factor)
 	_crosshair.set_ui_scale(factor)
@@ -113,6 +120,15 @@ func _update_health() -> void:
 	_health_label.modulate = LOW_AMMO_COLOR if shown.health <= LOW_HEALTH else Color.WHITE
 	if shown != player:
 		_spectate_label.text = "Spectating %s  ·  %s" % [shown.name, "click for next" if shown.is_alive() else "dead"]
+
+
+## Shows the armor of the character on show: its points (rounded up, like health) and the
+## shield, with the helmet's mark when it has one (D-093).
+func _update_armor() -> void:
+	_armor_label.text = "%d" % ceili(shown.armor)
+	_armor_label.modulate = Color(1, 1, 1, 1.0 if shown.armor > 0.0 else ArmorIcon.EMPTY_ALPHA)
+	_armor_icon.points = shown.armor
+	_armor_icon.helmet = shown.has_helmet
 
 
 func _on_player_died(killer: Character) -> void:

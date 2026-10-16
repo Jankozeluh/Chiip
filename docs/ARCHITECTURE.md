@@ -113,6 +113,7 @@ Chiip/
 | `weapons/weapon_data.gd` | `WeaponData` resource: every number of a weapon (damage, fire rate, ammo, accuracy, spray pattern, recoil, sounds), and from M7 (D-091) its id, slot, category, hold, draw time, price, kill reward, armor penetration, pellets, scope, melee and grenade values, model and icons. `WeaponData.PATHS` lists the arsenal in buy-menu order (`all()`, `find(id)`) |
 | `weapons/rifle.tres` | The Ram's data (the AK-style rifle; the M2 rifle's numbers) |
 | `weapons/carbine.tres`, `smg.tres`, `shotgun.tres`, `sniper.tres`, `pistol.tres`, `hand_cannon.tres`, `knife.tres`, `frag.tres`, `flashbang.tres`, `smoke.tres` | The rest of the arsenal (D-091), one data file per weapon, named after its role; only `display_name` holds its (provisional) name |
+| `ui/armor_icon.gd` | `ArmorIcon`: the HUD's pixel-art shield drawn in code (an "H" on it with a helmet, dimmed at 0 armor), next to the HUD's `ArmorLabel` (D-093) |
 | `characters/armor.gd` | `Armor` (static, D-093): CS:GO's armor rule, `apply()` (health damage and armor left for one hit), `covers()`, `hits_to_kill()`. Used by `Character.take_damage()` and the balancing table |
 | `tools/weapon_table.gd`, `tools/export_weapon_table.gd` | `WeaponTable` builds the balancing table from the data files (stats plus shots to kill, damage per second and helmet headshots at 10 and 30 m, through `Armor`); the tool writes it to `docs/weapons.csv` (D-091) |
 | `docs/weapons.csv` (+ `.import`) | The exported balancing table (open it in a spreadsheet). The `.import` file (importer "keep") stops Godot from importing it as a translation |
@@ -140,7 +141,7 @@ Chiip/
 | `tools/ui_palette.gd` | The UI colors as constants (D-057), shared by the two tools below |
 | `tools/generate_ui_icons.gd` | Draws the UI theme's icons (check boxes, radio buttons, switches, slider knob, arrows, the list marker) from letter grids with 2 × 2 px cells and saves them as PNG files into `assets/ui/`. Run it, then the import, then `make_ui_theme.gd` |
 | `tools/make_ui_theme.gd` | Builds the UI theme from the palette and the icons and saves `ui/chiip_theme.tres`. All sizes and styles are in this one script |
-| `tools/run_tests.sh` | Runs all eighteen test suites one after another (headless, each with its own `--quit-after`), counts their PASS and FAIL lines and prints a summary table; exits with the number of failed suites (D-066, see "Testing"). A shell script, not a Godot script |
+| `tools/run_tests.sh` | Runs all nineteen test suites one after another (headless, each with its own `--quit-after`), counts their PASS and FAIL lines and prints a summary table; exits with the number of failed suites (D-066, see "Testing"). A shell script, not a Godot script |
 | `tools/modelgen/` | The model generator in Python (D-054, D-072), with a `.gdignore`: `modelgen.py <class>|all` writes `assets/models/crew/<class>.glb`, `<class>_albedo.png` and `<class>_mask.png`. `crew.py` holds the part lists (looks and kits come from the concept tool's class table), `rig.py` the 17-bone skeleton, `geometry.py` the low-poly pieces and the atlas, `paint.py` the palette texture and team mask, `gltf.py` the `.glb` writer. Runs in the `chiip` conda environment |
 | `tools/modelgen/fparms.py` | The first-person arms (D-079): each class's arm pieces on a 7-bone camera-space skeleton (`view` root = the camera), solved around the gun with two-bone IK, and the clips `fp_idle`, `fp_draw`, `fp_fire`, `fp_reload`. `modelgen.py` writes them as `<class>_arms.glb`, sharing the class's albedo |
 | `tools/modelgen/anims.py`, `weapons.py` | The animation solver and clips (D-075): poses described by intent, solved per class with two-bone IK, written as 41 clips into each `.glb`; and the gun models in weapon space (the AK-style rifle) |
@@ -407,7 +408,7 @@ Run **all** the checks with one command from the project folder (the standard wa
 bash tools/run_tests.sh
 ```
 
-`tools/run_tests.sh` runs the eighteen suites one at a time, each as its own headless Godot run with its own `--quit-after`, counts the PASS and FAIL lines of each and prints a summary table (suite, pass, fail, status, seconds). It exits with the number of failed suites, so 0 means everything passed. A suite counts as failed when it prints a FAIL line, **no PASS line at all** (a parse error makes a suite exit with code 0 and print nothing, which looks like a pass), a `SCRIPT ERROR`, never reaches its final "All checks passed." line (the `--quit-after` safety net ended it) or exits with a non-zero code. A plain `ERROR:` line is not a failure: the settings suite prints one expected "ConfigFile parse error" from its unreadable-file check. `bash tools/run_tests.sh round ui` runs only the named suites, and each suite's full output stays in `$TMPDIR/chiip-tests/<name>.log` until the next run. The script needs only bash 3.2 and the Godot binary (no `timeout` command, which macOS lacks), and it never runs `--import` or touches git.
+`tools/run_tests.sh` runs the nineteen suites one at a time, each as its own headless Godot run with its own `--quit-after`, counts the PASS and FAIL lines of each and prints a summary table (suite, pass, fail, status, seconds). It exits with the number of failed suites, so 0 means everything passed. A suite counts as failed when it prints a FAIL line, **no PASS line at all** (a parse error makes a suite exit with code 0 and print nothing, which looks like a pass), a `SCRIPT ERROR`, never reaches its final "All checks passed." line (the `--quit-after` safety net ended it) or exits with a non-zero code. A plain `ERROR:` line is not a failure: the settings suite prints one expected "ConfigFile parse error" from its unreadable-file check. `bash tools/run_tests.sh round ui` runs only the named suites, and each suite's full output stays in `$TMPDIR/chiip-tests/<name>.log` until the next run. The script needs only bash 3.2 and the Godot binary (no `timeout` command, which macOS lacks), and it never runs `--import` or touches git.
 
 | Suite | Checks | What it covers | Run time |
 |---|---|---|---|
@@ -427,6 +428,7 @@ bash tools/run_tests.sh
 | `class_test` | 57 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078) | ~1 s |
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
+| `gear_test` | 13 | Armor on real characters: hits with and without a helmet, legs, worn-out armor, the Bulwark's Plated, the bomb ignoring armor, death taking the gear, the HUD's armor, the console's `armor` (D-093) | ~1 s |
 | `arsenal_test` | 28 | The arsenal's data files, CS's armor results, and that `docs/weapons.csv` matches the data (D-091) | under 1 s |
 
 That is 555 checks in about 75 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
@@ -449,6 +451,7 @@ That is 555 checks in about 75 s on the development Mac. A change to one system 
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/zone_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/arsenal_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/gear_test.tscn
 ```
 
 `perf_test` times every physics tick of a seeded bots-only 5v5 (the CPU side: physics, bots, animation, skeletons); with `-- --window` after it (and without `--headless`), it also prints the frame rate from a camera over the map. `zone_test` checks that every class's hit zones follow its animated bones.

@@ -990,6 +990,22 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Keeping the stats in one big table resource or a spreadsheet the game reads (one file to edit, but a spreadsheet can't hold models, sounds and patterns, and Godot imports CSVs as translations); a hand-kept spreadsheet (drifts); CS's exact deploy times (not all known, and our quick maps favour fast switches); new spray patterns from scratch (the rifle's is approved and learnable).
 
+## D-093 — Armor: CS:GO's rule in one place, the helmet only with armor, the bomb ignores it (2026-10-16) — *provisional*
+
+**Decision:**
+- **CS:GO's rule** (`Armor`, `characters/armor.gd`, static so tools and tests use it too): Kevlar covers the chest, stomach and arms, the helmet the head, the legs never; on a covered hit `armor_penetration` of the damage reaches health and the armor loses half of the rest (`WEAR_PER_DAMAGE` 0.5); when the armor left can't stop that much, each point stops two and the rest goes through. Armor at 0 protects nothing and the helmet is lost with it.
+- **Applied in `Character.take_damage()`**, after friendly fire and before health: new parameters `armor_penetration` (default 1.0: armor doesn't help) and `source` (the `WeaponData` that hit). `Character.armor`, `has_helmet`, `has_defuse_kit`, `set_armor()`, `set_defuse_kit()`, signal `gear_changed`, and `last_damage_source` (set before `damaged` and `died` are emitted, so the round manager and the kill feed can read which weapon got a kill). Dying clears armor, helmet and kit.
+- **Hit zones pass the weapon on:** `Hitbox.receive_hit()` takes the weapon's data and its `hit` signal carries the penetration and the weapon (the target dummy's listener takes them too).
+- **The bomb's blast ignores armor** (it hits with penetration 1.0, so D-080's lethal distances stay true for everyone); the Bulwark's 10% still applies while it wears armor.
+- **The Bulwark's Plated perk is on:** `ClassData.armor_damage_factor` (0.9) scales the health damage of every hit while armor lasts, `armor_wear_factor` (0.7) the wear (D-090).
+- **HUD:** the armor number right of the health, with a pixel-art shield drawn in code (`ArmorIcon`, an "H" on it with a helmet, dimmed at 0), scaled with the HUD like the labels. Console: `armor [0-100] [helmet]`.
+
+**Why:** The rule is CS's, so the AK-vs-M4 helmet trade and armor's value carry over as you know them. One static function used by the game and the balancing table keeps the spreadsheet honest. Passing the weapon with the hit, rather than through new signal arguments on `Character`, kept every existing listener of `damaged` and `died` working. A shield drawn in code needs no font glyph (Silkscreen has none) and stays crisp at every scale.
+
+**Checked:** a new `tests/gear_test.tscn` (13 checks): the chest, legs, head with and without a helmet (Warden vs. Ram), armor giving out, the Bulwark with and without armor, the bomb's blast, death clearing the gear, a real bullet passing its weapon on, the HUD (dimmed at 0, helmet mark, wearing down, scaling) and the console command in the real game scene. All other suites pass.
+
+**Alternatives:** CS 1.6's armor values (the same idea with different ratios); armor that also reduces the bomb's blast (CS does, but then D-080's distances would depend on gear); the helmet staying after the armor is gone; a text label ("ARMOR 100") instead of an icon.
+
 ## Open questions
 
 | Question | Decide in |

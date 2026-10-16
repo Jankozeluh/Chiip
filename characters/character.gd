@@ -26,6 +26,9 @@ signal died(killer: Character)
 signal footstep(loud: bool)
 ## Emitted after [method respawn] brings the character back.
 signal respawned
+## Emitted when [member armor], [member has_helmet] or [member has_defuse_kit] change (bought,
+## worn down by a hit, lost on death).
+signal gear_changed
 
 ## CS/Source distance units to metres (1 unit ≈ 1 inch).
 const UNITS_TO_METRES := 0.0254
@@ -123,6 +126,19 @@ var frozen: bool = false
 ## Set by the bomb while this character plants or defuses it (D-080): like
 ## [member frozen], it can look around and crouch but not move, jump or shoot.
 var busy: bool = false
+
+## Armor points, 0 to [constant Armor.MAX_ARMOR] (D-093). Covered hits lose part of their damage
+## to it and wear it down ([Armor]). Bought in the buy menu; lost on death. Set it with
+## [method set_armor].
+var armor: float = 0.0
+## Wears a helmet: head hits count as armored while [member armor] lasts.
+var has_helmet: bool = false
+## Carries a defuse kit (defenders: the bomb defuses in half the time).
+var has_defuse_kit: bool = false
+## The weapon of the last hit this character took (null for the bomb or a hit without a gun).
+## Set before [signal damaged] and [signal died] are emitted, so their listeners can read it
+## (kill rewards and the kill feed's icon).
+var last_damage_source: WeaponData
 
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
@@ -252,19 +268,47 @@ func is_alive() -> bool:
 
 ## Lowers health and reports it; at 0 the character dies. [param attacker] may be null.
 ## Damage from a teammate is scaled by [method Teams.damage_factor] (nothing
-## unless friendly fire is on). The rule lives here, in the code that owns the
-## health, so a network client can't skip it.
-func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
+## unless friendly fire is on). Then armor takes its share (CS:GO's rule, [Armor]):
+## [param armor_penetration] is the share of a covered hit that reaches health (1.0: armor
+## doesn't help, as for the bomb), and the class's perk can soften it (the Bulwark's Plated).
+## [param source] is the weapon that hit, if any. The rules live here, in the code that owns
+## the health, so a network client can't skip them.
+func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character, armor_penetration: float = 1.0,
+		source: WeaponData = null) -> void:
 	if not is_alive() or god_mode:
 		return
 	var factor := Teams.damage_factor(self, attacker)
 	if factor <= 0.0:
 		return
-	var lost := minf(amount * factor, health)
+	amount *= factor
+	if armor > 0.0:
+		var damage_factor := class_data.armor_damage_factor if class_data != null else 1.0
+		var wear_factor := class_data.armor_wear_factor if class_data != null else 1.0
+		var result := Armor.apply(amount, armor_penetration, armor, has_helmet, zone, damage_factor, wear_factor)
+		amount = result.health
+		_set_armor_points(result.armor)
+	last_damage_source = source
+	var lost := minf(amount, health)
 	health -= lost
 	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## Gives the character [param points] of armor (clamped to 0–100) and, with [param helmet], a
+## helmet. Armor at 0 loses the helmet too. The buy menu, the respawn mode and the console use it.
+func set_armor(points: float, helmet: bool) -> void:
+	armor = clampf(points, 0.0, Armor.MAX_ARMOR)
+	has_helmet = helmet and armor > 0.0
+	gear_changed.emit()
+
+
+## Gives or takes away a defuse kit.
+func set_defuse_kit(on: bool) -> void:
+	if has_defuse_kit == on:
+		return
+	has_defuse_kit = on
+	gear_changed.emit()
 
 
 ## True while this tick's command holds Use (plant or defuse the bomb) and the
@@ -434,6 +478,11 @@ func respawn(at: Vector3, yaw: float) -> void:
 func _die(killer: Character) -> void:
 	if weapon != null:
 		weapon.trigger_held = false
+	# The dead lose their armor, helmet and kit (CS): they start the next round without them.
+	armor = 0.0
+	has_helmet = false
+	has_defuse_kit = false
+	gear_changed.emit()
 	# Dead bodies can't be hit again, and don't block anyone.
 	for hitbox in _hitboxes:
 		hitbox.set_deferred("collision_layer", 0)
@@ -490,8 +539,19 @@ func _set_up_arms() -> void:
 	weapon.set_arms_team_color(Teams.color_for(team))
 
 
-func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:
-	take_damage(damage, zone, attacker as Character)
+func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node,
+		armor_penetration: float, source: WeaponData) -> void:
+	take_damage(damage, zone, attacker as Character, armor_penetration, source)
+
+
+## Sets the armor points; at 0 the helmet goes too (it only protects while there is armor).
+func _set_armor_points(points: float) -> void:
+	var before := armor
+	armor = clampf(points, 0.0, Armor.MAX_ARMOR)
+	if armor <= 0.0:
+		has_helmet = false
+	if not is_equal_approx(before, armor):
+		gear_changed.emit()
 
 
 ## Returns the horizontal direction the movement keys point to, relative to where you look.

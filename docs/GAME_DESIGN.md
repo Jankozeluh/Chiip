@@ -98,7 +98,7 @@ Starting physics values, CS:GO-like *(tune)*:
   | Legs | 26.8 | 25.3 |
 
   A headshot kills an unarmored player (100 HP) at any distance on the range. Damage is shown rounded down, as in CS.
-- **Armor** reduces body damage, and a **helmet** reduces headshot damage. Bought from M7 on; until then nobody has armor (D-041).
+- **Armor** reduces body damage, and a **helmet** reduces headshot damage (CS:GO's rule, D-093): see 4.10.
 - Later (backlog): wallbangs (shooting through thin surfaces) and tagging (getting hit slows you down).
 
 ### 4.3 Weapons
@@ -258,6 +258,17 @@ Four classes, each with its own look and **one passive perk** (D-052). Classes d
 - **Silhouette first** (D-053): height, build, posture and headgear make each class recognisable at a glance, even as a dark shape.
 - **Team colour** is painted at runtime: every class wears a neutral kit (olive-grey, charcoal, stone grey, moss; never desert tones, D-031) with team-colour parts: **sleeves on every class**, plus the class's own marks (shirt or jacket, helmet stripe, plate edges, scarf, back panel). They show blue on your team and red on the enemy team (D-041), and cover 11–23% of the body from every side (D-070). The names are final.
 - **Hit zones follow each body** (D-055, D-074, D-077): the Bulwark is the biggest target and the Scout the smallest (total zone volume Scout 132 L, Marksman 173 L, Rifleman 223 L, Bulwark 484 L, since the Bulwark's shoulder plates and ammo pack count as chest). Perks balance the difference. The zones are boxes on the body's bones (15 per class: head, chest, stomach, and one box per arm and leg bone), measured from the model's own parts, so they move with the animation. **Eye height stays the same for every class** (CS's 64 units standing, 46 crouched), and so does the collision hull, so cover and peeking work the same for everyone; a taller class shows its head above cover a little before it can see over it, and the Scout a little after.
+
+### 4.10 Armor
+
+CS:GO's rule (D-093), the same for every hit, in `Armor`:
+
+- **Kevlar** (100 points) covers the chest, stomach and arms; the **helmet** covers the head while there is armor; the legs are never covered.
+- On a covered hit only the weapon's **armor penetration** of the damage reaches health (the Ram 77.5%, the Warden 70%, the Heron 97.5%, see 4.3); the armor loses **half of what it stopped**. When the armor left can't stop that much, each remaining point stops two points of damage and the rest goes through. At 0 armor the helmet is gone too.
+- So an armored player hit in the chest by the Ram loses 27.9 health and 4 armor; a Ram headshot does 111.6 through a helmet (a kill), a Warden headshot 92.4 (not a kill).
+- The bomb's blast ignores armor (D-080's distances stay true), and dying loses armor, helmet and kit.
+- The **Bulwark's Plated** perk works: while it wears armor, every hit does 10% less to its health and wears the armor 30% less.
+- **HUD:** the armor number next to your health, behind a pixel shield (an "H" on it with a helmet; dimmed at 0). Console: `armor [0-100] [helmet]`.
 
 ## 5. Look and feel
 

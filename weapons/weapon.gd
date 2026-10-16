@@ -369,7 +369,7 @@ func _shoot_bullet(direction: Vector3) -> void:
 	var damage := 0.0
 	if result.collider is Hitbox:
 		var hitbox := result.collider as Hitbox
-		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance), hit_position, _wielder)
+		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance), hit_position, _wielder, data)
 		zone = hitbox.get_zone_name()
 	last_hit = {
 		"position": hit_position,

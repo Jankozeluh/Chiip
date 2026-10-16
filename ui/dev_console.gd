@@ -185,6 +185,7 @@ func _register_commands() -> void:
 	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting, key and the match setup back to its default")
 	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu")
 	register_command("class", _cmd_class, "class [name]", "List the classes, or take one (in a match: during freeze time)")
+	register_command("armor", _cmd_armor, "armor [0-100] [helmet]", "Set your armor, with or without a helmet (no value: show)")
 
 
 func _cmd_help(_args: Array) -> void:
@@ -260,6 +261,15 @@ func _cmd_god(_args: Array) -> void:
 	if player != null:
 		player.god_mode = not player.god_mode
 		print_line("God mode %s." % ("on" if player.god_mode else "off"))
+
+
+func _cmd_armor(args: Array) -> void:
+	var player := _get_player()
+	if player == null:
+		return
+	if not args.is_empty():
+		player.set_armor(float(args[0]), args.size() > 1 and String(args[1]) == "helmet")
+	print_line("Armor %d%s." % [ceili(player.armor), " with a helmet" if player.has_helmet else ""])
 
 
 func _cmd_noclip(_args: Array) -> void:
