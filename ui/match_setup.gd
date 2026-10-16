@@ -39,7 +39,7 @@ signal closed
 const MODES := {
 	"respawn": {"name": "Team\nDeathmatch", "title": "Team Deathmatch", "text": "Respawn in 3 s. Most kills wins."},
 	"rounds": {"name": "Bomb", "title": "Bomb", "text": "One life a round. Plant or defuse."},
-	"practice": {"name": "Practice", "title": "Practice", "text": "Bot arena. No rounds, no clock."},
+	"practice": {"name": "Practice", "title": "Practice", "text": "Shooting range. No rounds, no clock."},
 }
 ## What the picked card's last line says (offline: a click on it plays; online, in the lobby, it is only picked).
 const PLAY_HINT := "Click to play"
@@ -441,7 +441,7 @@ func _card_line(mode: String) -> String:
 
 func _summary_text() -> String:
 	if _picked == "practice":
-		return "Practice: bots respawn on the %s. %s bots." % [GameLaunch.map_title(Settings.DEFAULT_MAP), settings.match_difficulty.capitalize()]
+		return "Practice: the %s. No rounds, no clock; bots added from the console are %s." % [GameLaunch.map_title(Settings.DEFAULT_MAP), settings.match_difficulty.capitalize()]
 	var respawn := _picked == "respawn"
 	var goal := "first to %d kills or %d minutes" % [settings.match_kill_limit, settings.match_time_limit] if respawn \
 			else "first to %d rounds" % settings.match_rounds_to_win

@@ -50,6 +50,8 @@ extends Node
 ## with the number of failed checks as the exit code (0 means everything passed).
 
 const MAP_SCENE := preload("res://maps/test_map.tscn")
+## The hidden test map (D-141) by path: the map these tests start their matches on. Settings.DEFAULT_MAP is the Shooting Range now.
+const TEST_MAP := "res://maps/test_map.tscn"
 const SCOREBOARD_SCENE := preload("res://ui/scoreboard.tscn")
 const MATCH_END_SCENE := preload("res://ui/match_end_screen.tscn")
 const CONSOLE_SCENE := preload("res://ui/dev_console.tscn")
@@ -2636,8 +2638,9 @@ func _test_match_setup() -> void:
 	# Practice: only the bots' row; picking it doesn't change the stored match mode.
 	cards[2].pressed.emit()
 	var practice_rows := setup.is_row_shown(&"match_difficulty") and not setup.is_row_shown(&"match_map") and not setup.is_row_shown(&"match_team_size")
-	_check("A click on Practice picks it: only the bots' row shows, the stored match mode stays Bomb, and its summary names the test map",
-			setup.get_picked_mode() == "practice" and practice_rows and stored.match_mode == "rounds" and setup.get_summary().begins_with("Practice: "),
+	_check("A click on Practice picks it: only the bots' row shows, the stored match mode stays Bomb, and its summary names the Shooting Range",
+			setup.get_picked_mode() == "practice" and practice_rows and stored.match_mode == "rounds" and setup.get_summary().begins_with("Practice: ")
+					and setup.get_summary().contains("Shooting Range"),
 			"picked %s, stored %s, summary '%s'" % [setup.get_picked_mode(), stored.match_mode, setup.get_summary()])
 	cards[1].pressed.emit()
 
@@ -2671,8 +2674,12 @@ func _test_match_setup() -> void:
 	var fell_back := setup.get_map_path() == Settings.DEFAULT_MATCH_MAP
 	stored.match_rotation = false
 	var none_pressed := _pressed_count(map_buttons) == 0
-	_check("The map row offers the quick maps that exist (%s) and the rotation; the rotation starts on the chosen map (Square, Spillway, Depot); a stored map that isn't a quick map plays Depot and no map is shown chosen" % [setup.get_map_paths()],
+	_check("The map row offers the quick maps that exist (%s) and the rotation, never the hidden test map or the practice-only Shooting Range (D-141); the rotation starts on the chosen map (Square, Spillway, Depot); a stored map that isn't a quick map plays Depot and no map is shown chosen" % [setup.get_map_paths()],
 			setup.get_map_paths() == GameLaunch.rotation_maps() and setup.get_map_paths().size() == 3
+					and not setup.get_map_paths().has("res://maps/test_map.tscn") and not setup.get_map_paths().has(Settings.DEFAULT_MAP)
+					and not _texts(map_buttons).has("Test Map") and not _texts(map_buttons).has("Shooting Range")
+					and GameLaunch.list_maps().size() == setup.get_map_paths().size() and GameLaunch.is_hidden_map("res://maps/test_map.tscn")
+					and not GameLaunch.is_hidden_map(Settings.DEFAULT_MATCH_MAP)
 					and rotation_from_square == ["res://maps/square.tscn", "res://maps/spillway.tscn", "res://maps/depot.tscn"]
 					and fell_back and none_pressed,
 			"rotation %s, fell back %s, none pressed %s" % [rotation_from_square, fell_back, none_pressed])
@@ -2908,7 +2915,7 @@ func _test_scene_flow() -> void:
 		await tree.process_frame
 		var practice := tree.current_scene
 		var arena: ArenaRules = practice.get_map().get_node_or_null("ArenaRules") if practice != null and practice.has_method("get_map") else null
-		_check("The Practice button changes to the game scene in practice mode: the respawning arena (no rounds) on the test map, with the difficulty last chosen in match setup (Easy here)",
+		_check("The Practice button changes to the game scene in practice mode: the respawning arena (no rounds) on the Shooting Range, with the difficulty last chosen in match setup (Easy here) for the bots the console adds",
 				practice != null and practice.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(back) and arena != null
 						and arena.bot_difficulty.display_name == "easy" and practice.get_map().scene_file_path == Settings.DEFAULT_MAP
 						and practice.get_map().get_node_or_null("RoundManager") == null,
@@ -3276,7 +3283,7 @@ func _test_pause_leaves_the_game() -> void:
 	tree.current_scene = holder
 	var rules := MatchSettings.new()
 	rules.freeze_time = 0.3
-	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	GameLaunch.start_match(MAP_SCENE.resource_path, rules)
 	tree.change_scene_to_file(GameLaunch.GAME_SCENE)
 	for i in 3:
 		await tree.process_frame
@@ -3534,7 +3541,7 @@ func _test_loading_screen_in_the_game() -> void:
 	# Bomb on the test map: the lines, and the keys that do nothing while it shows.
 	var bomb := MatchSettings.new()
 	bomb.rounds_to_win = 7
-	GameLaunch.start_match(Settings.DEFAULT_MAP, bomb)
+	GameLaunch.start_match(TEST_MAP, bomb)
 	var bomb_main := MAIN_SCENE.instantiate()
 	bomb_main.load_settings = false
 	var bomb_screen := bomb_main.get_node("LoadingScreen") as LoadingScreen
@@ -3580,7 +3587,7 @@ func _test_loading_screen_in_the_game() -> void:
 	tree.paused = false
 
 	# Practice, and a game that has the switch off.
-	GameLaunch.start_practice(Settings.DEFAULT_MAP, GameLaunch.difficulty_named("easy"))
+	GameLaunch.start_practice(TEST_MAP, GameLaunch.difficulty_named("easy"))
 	var practice_main := MAIN_SCENE.instantiate()
 	practice_main.load_settings = false
 	add_child(practice_main)
@@ -3592,7 +3599,7 @@ func _test_loading_screen_in_the_game() -> void:
 	remove_child(practice_main)
 	practice_main.queue_free()
 	await tree.process_frame
-	GameLaunch.start_match(Settings.DEFAULT_MAP, MatchSettings.new())
+	GameLaunch.start_match(TEST_MAP, MatchSettings.new())
 	var quiet := MAIN_SCENE.instantiate()
 	quiet.load_settings = false
 	quiet.loading_screen = false
@@ -3655,7 +3662,7 @@ func _test_lobby_menu() -> void:
 	stored.online_port = 27123
 	# These checks are about a plain Bomb match on one map (M9's defaults); M10's defaults are Team Deathmatch on the rotation.
 	stored.match_mode = "rounds"
-	stored.match_map = Settings.DEFAULT_MAP
+	stored.match_map = Settings.DEFAULT_MATCH_MAP
 	stored.match_rotation = false
 	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
 	menu.load_settings = false
@@ -3751,7 +3758,7 @@ func _test_lobby_menu() -> void:
 	var result := lobby.host_game()
 	var session := lobby.get_session()
 	var lobby_node := NetLobby.of(session) if session != null else null
-	var default_summary := "Rounds · Test Map · first to 5 rounds · Normal bots"
+	var default_summary := "Rounds · Depot · first to 5 rounds · Normal bots"
 	var team_0 := lobby.get_team_texts(0)
 	var team_1 := lobby.get_team_texts(1)
 	var addresses := LobbyMenu.local_addresses()
@@ -3759,7 +3766,7 @@ func _test_lobby_menu() -> void:
 	for address in addresses:
 		address_lines.append("%s:%d" % [address, port])
 	var hosted_text := "Hosted by you · %s" % address_lines[0] if not address_lines.is_empty() else "Hosted by you · port %d" % port
-	var default_facts := {"Mode": "Bomb", "Map": "Test Map", "Limit": "First to 5 rounds"}
+	var default_facts := {"Mode": "Bomb", "Map": "Depot", "Limit": "First to 5 rounds"}
 	_check("Host game opens a session as the host on the port in the field and shows the lobby page: titled Lobby, \"Hosted by you · address:port\" in the header with Leave in place of Back, your name fixed, the addresses friends join at (with the port) under Friends join at, you as \"You\" with the Host mark and \"Empty / Bot\" rows for the other slots of both teams, the match's mode, map and limit in the footer, Edit setup and Start (no waiting line)",
 			result == OK and session != null and session.is_host() and session.is_active() and NetLobby.find_session(tree) == session
 					and lobby.get_page() == LobbyMenu.Page.LOBBY and lobby.get_title_label().text == "Lobby"
@@ -3769,7 +3776,7 @@ func _test_lobby_menu() -> void:
 					and lobby.get_address_texts() == address_lines and lobby.get_friends_box().visible == not address_lines.is_empty()
 					and not lobby.get_connect_box().visible and lobby.get_teams_box().visible and lobby.get_footer().visible
 					and team_0 == ["You Host", "Empty Bot", "Empty Bot"] and team_1 == ["Empty Bot", "Empty Bot", "Empty Bot"]
-					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MAP
+					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MATCH_MAP
 					and lobby.build_summary() == default_summary and lobby_node.info.get("summary", "") == default_summary
 					and lobby.get_footer_facts() == default_facts and lobby_node.info.get("facts", {}) == lobby.build_facts()
 					and lobby.get_settings_button().visible and lobby.get_settings_button().text == "Edit setup" and lobby.get_settings_button().theme_type_variation == &"DimButton"
@@ -3853,17 +3860,17 @@ func _test_lobby_menu() -> void:
 	var rotation_facts := lobby.get_footer_facts()
 	await harness.wait_until(func() -> bool: return friend_lobby.info.get("summary", "") == rotation_summary, 320)
 	_check("The summary line is built from the choices: mode, map or rotation (starting at the chosen map), length, bot difficulty and friendly fire, and the friend sees the same line",
-			respawn_summary == "Team respawn · Test Map · first to 75 kills · Hard bots · friendly fire" and respawn_published == respawn_summary
+			respawn_summary == "Team respawn · Depot · first to 75 kills · Hard bots · friendly fire" and respawn_published == respawn_summary
 					and rotation_summary == "Rounds · Rotation: Square, Spillway, Depot · first to 5 rounds · Easy bots"
 					and friend_lobby.info.get("summary", "") == rotation_summary and lobby_node.info.get("map", "") == "res://maps/square.tscn",
 			"respawn '%s', rotation '%s', friend sees '%s'" % [respawn_summary, rotation_summary, friend_lobby.info.get("summary", "")])
 	_check("The footer follows the same choices, mode over its name, map (\"Rotation · \" and the map it starts at for the rotation) and limit (kills and minutes, or the rounds to win), and the friend gets the same facts",
-			respawn_facts == {"Mode": "Team Deathmatch", "Map": "Test Map", "Limit": "75 kills · 10 min"}
+			respawn_facts == {"Mode": "Team Deathmatch", "Map": "Depot", "Limit": "75 kills · 10 min"}
 					and rotation_facts == {"Mode": "Bomb", "Map": "Rotation · Square", "Limit": "First to 5 rounds"}
 					and friend_lobby.info.get("facts", {}) == {"mode": "Bomb", "map": "Rotation · Square", "limit": "First to 5 rounds"},
 			"respawn %s, rotation %s, friend %s" % [respawn_facts, rotation_facts, friend_lobby.info.get("facts", {})])
 	stored.match_rotation = false
-	stored.match_map = Settings.DEFAULT_MAP
+	stored.match_map = Settings.DEFAULT_MATCH_MAP
 
 	# Switch team moves you (the host) to the other team and swaps the slots and the colors; Join Team is still there for code.
 	lobby.get_switch_team_button().pressed.emit()
@@ -3946,7 +3953,7 @@ func _test_lobby_menu() -> void:
 	stored.match_kill_limit = 25
 	lobby.get_start_button().pressed.emit()
 	var started_rules := GameLaunch.match_settings
-	var started := GameLaunch.is_pending() and GameLaunch.map_path == Settings.DEFAULT_MAP and GameLaunch.net_session == session and scenes == [GameLaunch.GAME_SCENE] \
+	var started := GameLaunch.is_pending() and GameLaunch.map_path == Settings.DEFAULT_MATCH_MAP and GameLaunch.net_session == session and scenes == [GameLaunch.GAME_SCENE] \
 			and started_rules != null and started_rules.team_size == 2 and started_rules.enemy_team_size == 4 \
 			and started_rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and started_rules.kill_limit == 25 and lobby_node.in_game
 	var friend_started := await harness.wait_until(func() -> bool: return friend_lobby.in_game, 320)
@@ -4170,7 +4177,7 @@ func _class_draft_game(draft: bool) -> Node:
 	var rules := MatchSettings.new()
 	rules.freeze_time = 60.0
 	rules.class_draft = draft
-	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	GameLaunch.start_match(TEST_MAP, rules)
 	var main := MAIN_SCENE.instantiate()
 	main.load_settings = false
 	main.loading_screen = false
@@ -4649,7 +4656,7 @@ func _new_game(rounds_to_win: int = 5) -> Node:
 	rules.round_time = 30.0
 	rules.round_end_time = 0.3
 	rules.rounds_to_win = rounds_to_win
-	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	GameLaunch.start_match(MAP_SCENE.resource_path, rules)
 	var main := MAIN_SCENE.instantiate()
 	main.load_settings = false
 	main.loading_screen = false

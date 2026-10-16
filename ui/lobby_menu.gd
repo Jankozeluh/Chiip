@@ -333,7 +333,7 @@ func _chosen_map() -> String:
 	var maps := GameLaunch.list_maps()
 	if maps.has(settings.match_map):
 		return settings.match_map
-	return Settings.DEFAULT_MAP if maps.has(Settings.DEFAULT_MAP) else maps[0]
+	return Settings.DEFAULT_MATCH_MAP if maps.has(Settings.DEFAULT_MATCH_MAP) else maps[0]
 
 
 ## The maps played one after the other, starting at the chosen one; empty for a single map.

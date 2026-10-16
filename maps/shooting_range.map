@@ -1,0 +1,529 @@
+// Game: Chiip
+// Format: Valve
+// Shooting Range (D-141, D-142): the practice map. One yard: lanes to 40 m, gun stands, a small open area for bots.
+// Generated once by a layout script, then a normal map to edit in TrenchBroom.
+// Godot x = TrenchBroom Y, Godot z = TrenchBroom X, Godot up = TrenchBroom Z (1 m = 39.37 units).
+// entity 0
+{
+"classname" "worldspawn"
+"mapversion" "220"
+// brush 0
+{
+( -1732 -551 0 ) ( -1732 551 0 ) ( -1580 551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1732 -551 -20 ) ( -1580 551 -20 ) ( -1732 551 -20 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1732 -551 -20 ) ( -1732 -551 0 ) ( -1580 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 551 -20 ) ( -1580 551 0 ) ( -1732 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 -551 -20 ) ( -1732 551 -20 ) ( -1732 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1580 -551 -20 ) ( -1580 551 0 ) ( -1580 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 1
+{
+( -1580 -551 0 ) ( -1580 551 0 ) ( -1570 551 0 ) interior/tiles_white [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1580 -551 -20 ) ( -1570 551 -20 ) ( -1580 551 -20 ) interior/tiles_white [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1580 -551 -20 ) ( -1580 -551 0 ) ( -1570 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1580 551 -20 ) ( -1570 551 0 ) ( -1580 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1580 -551 -20 ) ( -1580 551 -20 ) ( -1580 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1570 -551 -20 ) ( -1570 551 0 ) ( -1570 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 2
+{
+( -1570 -551 0 ) ( -1570 551 0 ) ( -792 551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1570 -551 -20 ) ( -792 551 -20 ) ( -1570 551 -20 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1570 -551 -20 ) ( -1570 -551 0 ) ( -792 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1570 551 -20 ) ( -792 551 0 ) ( -1570 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1570 -551 -20 ) ( -1570 551 -20 ) ( -1570 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -792 -551 -20 ) ( -792 551 0 ) ( -792 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 3
+{
+( -792 -551 0 ) ( -792 551 0 ) ( -782 551 0 ) interior/tiles_white [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -792 -551 -20 ) ( -782 551 -20 ) ( -792 551 -20 ) interior/tiles_white [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -792 -551 -20 ) ( -792 -551 0 ) ( -782 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -792 551 -20 ) ( -782 551 0 ) ( -792 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -792 -551 -20 ) ( -792 551 -20 ) ( -792 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -782 -551 -20 ) ( -782 551 0 ) ( -782 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 4
+{
+( -782 -551 0 ) ( -782 551 0 ) ( -399 551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -782 -551 -20 ) ( -399 551 -20 ) ( -782 551 -20 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -782 -551 -20 ) ( -782 -551 0 ) ( -399 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -782 551 -20 ) ( -399 551 0 ) ( -782 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -782 -551 -20 ) ( -782 551 -20 ) ( -782 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -399 -551 -20 ) ( -399 551 0 ) ( -399 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 5
+{
+( -399 -551 0 ) ( -399 551 0 ) ( -389 551 0 ) interior/tiles_white [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -399 -551 -20 ) ( -389 551 -20 ) ( -399 551 -20 ) interior/tiles_white [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -399 -551 -20 ) ( -399 -551 0 ) ( -389 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -399 551 -20 ) ( -389 551 0 ) ( -399 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -399 -551 -20 ) ( -399 551 -20 ) ( -399 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -389 -551 -20 ) ( -389 551 0 ) ( -389 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 6
+{
+( -389 -551 0 ) ( -389 551 0 ) ( -202 551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -389 -551 -20 ) ( -202 551 -20 ) ( -389 551 -20 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -389 -551 -20 ) ( -389 -551 0 ) ( -202 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -389 551 -20 ) ( -202 551 0 ) ( -389 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -389 -551 -20 ) ( -389 551 -20 ) ( -389 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -202 -551 -20 ) ( -202 551 0 ) ( -202 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 7
+{
+( -202 -551 0 ) ( -202 551 0 ) ( -192 551 0 ) interior/tiles_white [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -202 -551 -20 ) ( -192 551 -20 ) ( -202 551 -20 ) interior/tiles_white [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -202 -551 -20 ) ( -202 -551 0 ) ( -192 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -202 551 -20 ) ( -192 551 0 ) ( -202 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -202 -551 -20 ) ( -202 551 -20 ) ( -202 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -192 -551 -20 ) ( -192 551 0 ) ( -192 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 8
+{
+( -192 -551 0 ) ( -192 551 0 ) ( -6 551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -192 -551 -20 ) ( -6 551 -20 ) ( -192 551 -20 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -192 -551 -20 ) ( -192 -551 0 ) ( -6 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -192 551 -20 ) ( -6 551 0 ) ( -192 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -192 -551 -20 ) ( -192 551 -20 ) ( -192 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -6 -551 -20 ) ( -6 551 0 ) ( -6 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 9
+{
+( -6 -551 0 ) ( -6 551 0 ) ( 6 551 0 ) industrial/hazard_stripes [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -6 -551 -20 ) ( 6 551 -20 ) ( -6 551 -20 ) industrial/hazard_stripes [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -6 -551 -20 ) ( -6 -551 0 ) ( 6 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -6 551 -20 ) ( 6 551 0 ) ( -6 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -6 -551 -20 ) ( -6 551 -20 ) ( -6 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 6 -551 -20 ) ( 6 551 0 ) ( 6 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 10
+{
+( 6 -551 0 ) ( 6 551 0 ) ( 315 551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 6 -551 -20 ) ( 315 551 -20 ) ( 6 551 -20 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 6 -551 -20 ) ( 6 -551 0 ) ( 315 -551 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 6 551 -20 ) ( 315 551 0 ) ( 6 551 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 6 -551 -20 ) ( 6 551 -20 ) ( 6 551 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 315 -551 -20 ) ( 315 551 0 ) ( 315 551 -20 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 11
+{
+( 315 -551 0 ) ( 315 551 0 ) ( 945 551 0 ) urban/asphalt [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 315 -551 -20 ) ( 945 551 -20 ) ( 315 551 -20 ) urban/asphalt [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 315 -551 -20 ) ( 315 -551 0 ) ( 945 -551 0 ) urban/asphalt [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 315 551 -20 ) ( 945 551 0 ) ( 315 551 0 ) urban/asphalt [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 315 -551 -20 ) ( 315 551 -20 ) ( 315 551 0 ) urban/asphalt [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 945 -551 -20 ) ( 945 551 0 ) ( 945 551 -20 ) urban/asphalt [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 12
+{
+( -1732 -571 157 ) ( -1732 -551 157 ) ( 965 -551 157 ) urban/blocks_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1732 -571 -20 ) ( 965 -551 -20 ) ( -1732 -551 -20 ) urban/blocks_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1732 -571 -20 ) ( -1732 -571 157 ) ( 965 -571 157 ) urban/blocks_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 -551 -20 ) ( 965 -551 157 ) ( -1732 -551 157 ) urban/blocks_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 -571 -20 ) ( -1732 -551 -20 ) ( -1732 -551 157 ) urban/blocks_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 965 -571 -20 ) ( 965 -551 157 ) ( 965 -551 -20 ) urban/blocks_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 13
+{
+( -1732 551 157 ) ( -1732 571 157 ) ( 965 571 157 ) urban/blocks_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1732 551 -20 ) ( 965 571 -20 ) ( -1732 571 -20 ) urban/blocks_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1732 551 -20 ) ( -1732 551 157 ) ( 965 551 157 ) urban/blocks_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 571 -20 ) ( 965 571 157 ) ( -1732 571 157 ) urban/blocks_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 551 -20 ) ( -1732 571 -20 ) ( -1732 571 157 ) urban/blocks_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 965 551 -20 ) ( 965 571 157 ) ( 965 571 -20 ) urban/blocks_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 14
+{
+( 945 -551 157 ) ( 945 551 157 ) ( 965 551 157 ) urban/blocks_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 945 -551 -20 ) ( 965 551 -20 ) ( 945 551 -20 ) urban/blocks_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 945 -551 -20 ) ( 945 -551 157 ) ( 965 -551 157 ) urban/blocks_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 945 551 -20 ) ( 965 551 157 ) ( 945 551 157 ) urban/blocks_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 945 -551 -20 ) ( 945 551 -20 ) ( 945 551 157 ) urban/blocks_grey [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 965 -551 -20 ) ( 965 551 157 ) ( 965 551 -20 ) urban/blocks_grey [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 15
+{
+( -1811 -571 157 ) ( -1811 571 157 ) ( -1732 571 157 ) nature/dirt [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1811 -571 -20 ) ( -1732 571 -20 ) ( -1811 571 -20 ) nature/dirt [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1811 -571 -20 ) ( -1811 -571 157 ) ( -1732 -571 157 ) nature/dirt [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1811 571 -20 ) ( -1732 571 157 ) ( -1811 571 157 ) nature/dirt [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1811 -571 -20 ) ( -1811 571 -20 ) ( -1811 571 157 ) nature/dirt [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -1732 -571 -20 ) ( -1732 571 157 ) ( -1732 571 -20 ) nature/dirt [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 16
+{
+( -24 -398 47 ) ( -24 -390 47 ) ( 55 -390 47 ) wood_planks [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 -398 0 ) ( 55 -390 0 ) ( -24 -390 0 ) wood_planks [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 -398 0 ) ( -24 -398 47 ) ( 55 -398 47 ) wood_planks [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 -390 0 ) ( 55 -390 47 ) ( -24 -390 47 ) wood_planks [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 -398 0 ) ( -24 -390 0 ) ( -24 -390 47 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 55 -398 0 ) ( 55 -390 47 ) ( 55 -390 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 17
+{
+( -24 -240 47 ) ( -24 -232 47 ) ( 55 -232 47 ) wood_planks [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 -240 0 ) ( 55 -232 0 ) ( -24 -232 0 ) wood_planks [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 -240 0 ) ( -24 -240 47 ) ( 55 -240 47 ) wood_planks [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 -232 0 ) ( 55 -232 47 ) ( -24 -232 47 ) wood_planks [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 -240 0 ) ( -24 -232 0 ) ( -24 -232 47 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 55 -240 0 ) ( 55 -232 47 ) ( 55 -232 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 18
+{
+( -24 -83 47 ) ( -24 -75 47 ) ( 55 -75 47 ) wood_planks [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 -83 0 ) ( 55 -75 0 ) ( -24 -75 0 ) wood_planks [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 -83 0 ) ( -24 -83 47 ) ( 55 -83 47 ) wood_planks [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 -75 0 ) ( 55 -75 47 ) ( -24 -75 47 ) wood_planks [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 -83 0 ) ( -24 -75 0 ) ( -24 -75 47 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 55 -83 0 ) ( 55 -75 47 ) ( 55 -75 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 19
+{
+( -24 75 47 ) ( -24 83 47 ) ( 55 83 47 ) wood_planks [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 75 0 ) ( 55 83 0 ) ( -24 83 0 ) wood_planks [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 75 0 ) ( -24 75 47 ) ( 55 75 47 ) wood_planks [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 83 0 ) ( 55 83 47 ) ( -24 83 47 ) wood_planks [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 75 0 ) ( -24 83 0 ) ( -24 83 47 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 55 75 0 ) ( 55 83 47 ) ( 55 83 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 20
+{
+( -24 232 47 ) ( -24 240 47 ) ( 55 240 47 ) wood_planks [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 232 0 ) ( 55 240 0 ) ( -24 240 0 ) wood_planks [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -24 232 0 ) ( -24 232 47 ) ( 55 232 47 ) wood_planks [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 240 0 ) ( 55 240 47 ) ( -24 240 47 ) wood_planks [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -24 232 0 ) ( -24 240 0 ) ( -24 240 47 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 55 232 0 ) ( 55 240 47 ) ( 55 240 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 21
+{
+( -409 -535 118 ) ( -409 -409 118 ) ( -394 -409 118 ) industrial/concrete_worn [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -409 -535 0 ) ( -394 -409 0 ) ( -409 -409 0 ) industrial/concrete_worn [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -409 -535 0 ) ( -409 -535 118 ) ( -394 -535 118 ) industrial/concrete_worn [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -409 -409 0 ) ( -394 -409 118 ) ( -409 -409 118 ) industrial/concrete_worn [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -409 -535 0 ) ( -409 -409 0 ) ( -409 -409 118 ) industrial/concrete_worn [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -394 -535 0 ) ( -394 -409 118 ) ( -394 -409 0 ) industrial/concrete_worn [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 22
+{
+( -394 -477 66 ) ( -394 -468 66 ) ( -393 -468 66 ) industrial/hazard_stripes [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -394 -477 56 ) ( -393 -468 56 ) ( -394 -468 56 ) industrial/hazard_stripes [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -394 -477 56 ) ( -394 -477 66 ) ( -393 -477 66 ) industrial/hazard_stripes [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -394 -468 56 ) ( -393 -468 66 ) ( -394 -468 66 ) industrial/hazard_stripes [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -394 -477 56 ) ( -394 -468 56 ) ( -394 -468 66 ) industrial/hazard_stripes [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -393 -477 56 ) ( -393 -468 66 ) ( -393 -468 56 ) industrial/hazard_stripes [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+// brush 23
+{
+( 614 -118 47 ) ( 614 118 47 ) ( 646 118 47 ) industrial/concrete_worn [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 614 -118 0 ) ( 646 118 0 ) ( 614 118 0 ) industrial/concrete_worn [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 614 -118 0 ) ( 614 -118 47 ) ( 646 -118 47 ) industrial/concrete_worn [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 614 118 0 ) ( 646 118 47 ) ( 614 118 47 ) industrial/concrete_worn [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 614 -118 0 ) ( 614 118 0 ) ( 614 118 47 ) industrial/concrete_worn [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 646 -118 0 ) ( 646 118 47 ) ( 646 118 0 ) industrial/concrete_worn [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}
+// entity 1
+{
+"classname" "prop_crate_stack"
+"origin" "748 -315 0"
+"angle" "0"
+}
+// entity 2
+{
+"classname" "prop_crate_stack"
+"origin" "512 315 0"
+"angle" "0"
+}
+// entity 3
+{
+"classname" "prop_barrier_concrete"
+"origin" "492 -315 0"
+"angle" "0"
+}
+// entity 4
+{
+"classname" "prop_barrier_concrete"
+"origin" "768 315 0"
+"angle" "0"
+}
+// entity 5
+{
+"classname" "range_target"
+"origin" "-197 -315 0"
+"angle" "0"
+"title" "5 m"
+"move_distance" "0"
+"move_speed" "2.5"
+}
+// entity 6
+{
+"classname" "range_target"
+"origin" "-394 -157 0"
+"angle" "0"
+"title" "10 m"
+"move_distance" "0"
+"move_speed" "2.5"
+}
+// entity 7
+{
+"classname" "range_target"
+"origin" "-787 0 0"
+"angle" "0"
+"title" "20 m"
+"move_distance" "0"
+"move_speed" "2.5"
+}
+// entity 8
+{
+"classname" "range_target"
+"origin" "-1575 157 0"
+"angle" "0"
+"title" "40 m"
+"move_distance" "0"
+"move_speed" "2.5"
+}
+// entity 9
+{
+"classname" "range_target"
+"origin" "-591 374 0"
+"angle" "0"
+"title" "15 m"
+"move_distance" "5"
+"move_speed" "2.5"
+}
+// entity 10
+{
+"classname" "sign_text"
+"origin" "-197 -549 102"
+"angle" "90"
+"text" "5 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 11
+{
+"classname" "sign_text"
+"origin" "-197 549 102"
+"angle" "270"
+"text" "5 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 12
+{
+"classname" "sign_text"
+"origin" "-394 -549 102"
+"angle" "90"
+"text" "10 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 13
+{
+"classname" "sign_text"
+"origin" "-394 549 102"
+"angle" "270"
+"text" "10 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 14
+{
+"classname" "sign_text"
+"origin" "-787 -549 102"
+"angle" "90"
+"text" "20 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 15
+{
+"classname" "sign_text"
+"origin" "-787 549 102"
+"angle" "270"
+"text" "20 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 16
+{
+"classname" "sign_text"
+"origin" "-1575 -549 102"
+"angle" "90"
+"text" "40 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 17
+{
+"classname" "sign_text"
+"origin" "-1575 549 102"
+"angle" "270"
+"text" "40 m"
+"letter_height" "0.5"
+"billboard" "0"
+}
+// entity 18
+{
+"classname" "sign_text"
+"origin" "-591 549 79"
+"angle" "270"
+"text" "15 m · moving"
+"letter_height" "0.35"
+"billboard" "0"
+}
+// entity 19
+{
+"classname" "sign_text"
+"origin" "217 0 106"
+"text" "GUNS: WALK OVER ONE TO TAKE IT · E SWAPS"
+"letter_height" "0.18"
+"billboard" "1"
+}
+// entity 20
+{
+"classname" "sign_text"
+"origin" "157 -549 79"
+"angle" "90"
+"text" "BOTS: CONSOLE = KEY UNDER ESC\nbot_add easy|normal|hard ally|enemy\nbot_kick · bot_difficulty easy|normal|hard"
+"letter_height" "0.13"
+"billboard" "0"
+}
+// entity 21
+{
+"classname" "range_weapon"
+"origin" "217 -390 0"
+"weapon" "pistol"
+}
+// entity 22
+{
+"classname" "range_weapon"
+"origin" "217 -303 0"
+"weapon" "hand_cannon"
+}
+// entity 23
+{
+"classname" "range_weapon"
+"origin" "217 -217 0"
+"weapon" "smg"
+}
+// entity 24
+{
+"classname" "range_weapon"
+"origin" "217 -130 0"
+"weapon" "shotgun"
+}
+// entity 25
+{
+"classname" "range_weapon"
+"origin" "217 -43 0"
+"weapon" "carbine"
+}
+// entity 26
+{
+"classname" "range_weapon"
+"origin" "217 43 0"
+"weapon" "rifle"
+}
+// entity 27
+{
+"classname" "range_weapon"
+"origin" "217 130 0"
+"weapon" "sniper"
+}
+// entity 28
+{
+"classname" "range_weapon"
+"origin" "217 217 0"
+"weapon" "frag"
+}
+// entity 29
+{
+"classname" "range_weapon"
+"origin" "217 303 0"
+"weapon" "flashbang"
+}
+// entity 30
+{
+"classname" "range_weapon"
+"origin" "217 390 0"
+"weapon" "smoke"
+}
+// entity 31
+{
+"classname" "info_bot_spawn"
+"origin" "846 -433 0"
+"angle" "131"
+}
+// entity 32
+{
+"classname" "info_bot_spawn"
+"origin" "846 433 0"
+"angle" "229"
+}
+// entity 33
+{
+"classname" "info_bot_spawn"
+"origin" "846 -197 0"
+"angle" "152"
+}
+// entity 34
+{
+"classname" "info_bot_spawn"
+"origin" "846 197 0"
+"angle" "208"
+}
+// entity 35
+{
+"classname" "info_bot_spawn"
+"origin" "669 -453 0"
+"angle" "113"
+}
+// entity 36
+{
+"classname" "info_bot_spawn"
+"origin" "669 453 0"
+"angle" "247"
+}
+// entity 37
+{
+"classname" "info_patrol"
+"origin" "433 -433 0"
+}
+// entity 38
+{
+"classname" "info_patrol"
+"origin" "433 433 0"
+}
+// entity 39
+{
+"classname" "info_patrol"
+"origin" "492 -157 0"
+}
+// entity 40
+{
+"classname" "info_patrol"
+"origin" "768 157 0"
+}
+// entity 41
+{
+"classname" "info_patrol"
+"origin" "433 0 0"
+}
+// entity 42
+{
+"classname" "info_patrol"
+"origin" "827 0 0"
+}
+// entity 43
+{
+"classname" "info_patrol"
+"origin" "591 -433 0"
+}
+// entity 44
+{
+"classname" "info_patrol"
+"origin" "591 433 0"
+}

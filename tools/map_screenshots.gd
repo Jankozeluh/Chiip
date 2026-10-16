@@ -14,6 +14,12 @@ extends SceneTree
 ## attackers' end, each spawn, each bomb site and the middle of each lane's route.
 ## Each is saved as a PNG scaled up 2× with sharp pixels.
 ##
+## A practice map (the Shooting Range: no team spawns, no bomb sites) gets other shots, from its
+## Player node and its bot spawns: [code]player_forward[/code] (the Player's own facing),
+## [code]player_back[/code] (turned 180°), [code]shooter_area[/code] (6 m ahead of the Player,
+## looking back at it), [code]overview[/code] and [code]arena_overview[/code] (from above) and
+## [code]bot_spawn_1[/code] / [code]bot_spawn_2[/code] (from two bot spawns, facing the middle of them all).
+##
 ## [code]--lighting ssao[/code] or [code]--lighting sdfgi[/code] renders the same shots with
 ## real-time lighting extras switched on in a copy of the map's environment, to
 ## compare lighting options (D-085): screen-space ambient occlusion (darker
@@ -143,6 +149,8 @@ func _keep_input_away() -> void:
 
 ## [name, camera position, point to look at, field of view] for each shot.
 func _plan_shots(map: Node3D) -> Array:
+	if _in_map(map, "attack_spawns").is_empty():
+		return _plan_practice_shots(map)
 	var shots: Array = []
 	var attack := _marker(map, "attack_spawns", 2)
 	var defend := _marker(map, "defend_spawns", 2)
@@ -164,6 +172,35 @@ func _plan_shots(map: Node3D) -> Array:
 			var from := (route.get_child(middle - 1) as Node3D).global_position + Vector3.UP * EYE_HEIGHT
 			var to := (route.get_child(middle) as Node3D).global_position + Vector3.UP * EYE_HEIGHT
 			shots.append(["mid" if lane == "mid" else "lane_" + lane, from, to, 73.74])
+	return shots
+
+
+## The shots of a practice map, which has no team spawns or bomb sites: from the Player node (as it
+## faces, turned around, and looking back at it from 6 m ahead), from above, and from two bot spawns
+## looking at the middle of all the bot spawns.
+func _plan_practice_shots(map: Node3D) -> Array:
+	var shots: Array = []
+	var spawns := _in_map(map, "bot_spawns")
+	var middle := Vector3.ZERO
+	for spawn in spawns:
+		middle += (spawn as Node3D).global_position
+	if not spawns.is_empty():
+		middle /= spawns.size()
+	var player := map.get_node_or_null("Player") as Node3D
+	if player != null:
+		var eye := player.global_position + Vector3.UP * EYE_HEIGHT
+		var forward := -player.global_basis.z
+		forward.y = 0.0
+		forward = forward.normalized()
+		shots.append(["player_forward", eye, eye + forward * 20.0, 73.74])
+		shots.append(["player_back", eye, eye - forward * 20.0, 73.74])
+		shots.append(["shooter_area", eye + forward * 6.0, eye - forward * 20.0, 73.74])
+		shots.append(["overview", player.global_position + Vector3(0, 75, 18), player.global_position + Vector3(0, 0, -2), 70.0])
+	if not spawns.is_empty():
+		shots.append(["arena_overview", middle + Vector3(0, 40, 22), middle + Vector3(0, 0, -4), 62.0])
+		for i in mini(2, spawns.size()):
+			var from := (spawns[i] as Node3D).global_position + Vector3.UP * EYE_HEIGHT
+			shots.append(["bot_spawn_%d" % (i + 1), from, Vector3(middle.x, EYE_HEIGHT * 0.8, middle.z), 73.74])
 	return shots
 
 

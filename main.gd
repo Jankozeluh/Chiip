@@ -254,8 +254,9 @@ func leave_online() -> void:
 ## unless the main menu left a [GameLaunch] description: that one wins (the
 ## command line is ignored then, so a game started with [code]-- --map[/code]
 ## and left for the menu plays what the menu says). [code]-- --practice[/code]
-## picks practice; [code]-- --match[/code] needs no code here (a match is the
-## default of [member mode]), it only tells the main menu to skip itself.
+## picks practice, on the Shooting Range without [code]--map[/code];
+## [code]-- --match[/code] needs no code here (a match is the default of
+## [member mode]), it only tells the main menu to skip itself.
 func _load_map() -> void:
 	if GameLaunch.is_pending():
 		_spawn_map(_take_launch())
@@ -269,6 +270,9 @@ func _load_map() -> void:
 		scene = load(args[map_arg + 1])
 	if args.has("--practice"):
 		mode = Mode.PRACTICE
+		# Practice plays the Shooting Range unless --map says otherwise (D-141).
+		if map_arg < 0:
+			scene = load(Settings.DEFAULT_MAP)
 	if args.has("--respawn"):
 		match_settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
 	if args.has("--rotation"):
@@ -391,6 +395,8 @@ func _add_game_rules() -> Node:
 		var arena := ArenaRules.new()
 		# The difficulty chosen in the menu (Normal, like ArenaRules' own default, otherwise).
 		arena.bot_difficulty = match_settings.bot_difficulty
+		# A map can start with another number of bots (the Shooting Range: none, D-141).
+		arena.bot_count = int(_map.get_meta(ArenaRules.START_BOTS_META, arena.bot_count))
 		rules = arena
 	if rules != null:
 		# Named like the class, so the console finds it ("ArenaRules").

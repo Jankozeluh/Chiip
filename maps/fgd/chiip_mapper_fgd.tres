@@ -1,10 +1,13 @@
-[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=17 format=3]
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="solid_class"]
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="point_class"]
 [ext_resource type="Script" path="res://maps/kit/kit_bomb_site.gd" id="bomb_site_script"]
 [ext_resource type="Script" path="res://maps/kit/kit_route_point.gd" id="route_point_script"]
+[ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="target_dummy_scene"]
+[ext_resource type="Script" path="res://maps/kit/kit_weapon_stand.gd" id="weapon_stand_script"]
+[ext_resource type="Script" path="res://maps/kit/kit_text_sign.gd" id="text_sign_script"]
 
 [sub_resource type="Resource" id="func_glass"]
 script = ExtResource("solid_class")
@@ -134,7 +137,91 @@ meta_properties = Dictionary[String, Variant]({
 })
 node_class = "Marker3D"
 
+[sub_resource type="Resource" id="info_bot_spawn"]
+script = ExtResource("point_class")
+classname = "info_bot_spawn"
+description = "Where practice bots appear, and come back after dying (D-142). Not a team spawn and not a player spawn: on a training map the player starts at the scene's Player node. Put 6 or more, away from where the player stands."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.4, 1),
+"size": AABB(-16, -16, 0, 16, 16, 72)
+})
+node_class = "Marker3D"
+node_groups = Array[String](["bot_spawns"])
+
+[sub_resource type="Resource" id="range_target"]
+script = ExtResource("point_class")
+classname = "range_target"
+description = "Training dummy for ranges (D-142): CS hit zones, a floating number for every hit and a running total. Origin on the floor; it faces the entity's angle. With a move_distance it walks from side to side, across its angle."
+class_properties = Dictionary[String, Variant]({
+"title": "",
+"move_distance": 0.0,
+"move_speed": 2.5
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"title": "Shown over the dummy, e.g. its distance (20 m)",
+"move_distance": "How far it walks from side to side, in metres (0 = stands still)",
+"move_speed": "Walking speed in m/s (a rifle running: 5.5, walking: 2.5)"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.85, 0.6, 0.3, 1),
+"size": AABB(-12, -12, 0, 12, 12, 72)
+})
+scene_file = ExtResource("target_dummy_scene")
+
+[sub_resource type="Resource" id="range_weapon"]
+script = ExtResource("point_class")
+script_class = ExtResource("weapon_stand_script")
+classname = "range_weapon"
+description = "A gun stand for training maps only (D-142): the chosen gun floats over a gold ring and comes back a moment after it's taken. Walk over it, or press E to swap. Matches never use it: their guns come from the buy menu and the random map weapons."
+class_properties = Dictionary[String, Variant]({
+"weapon": {
+"Sparrow (pistol)": "pistol",
+"Verdict (hand cannon)": "hand_cannon",
+"Hornet (SMG)": "smg",
+"Breaker (shotgun)": "shotgun",
+"Warden (carbine)": "carbine",
+"Ram (rifle)": "rifle",
+"Heron (sniper)": "sniper",
+"Frag": "frag",
+"Flashbang": "flashbang",
+"Smoke": "smoke"
+},
+"refill_time": 2.0
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"weapon": ["Which gun", "rifle"],
+"refill_time": "Seconds before a taken gun comes back"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.78, 0.25, 1),
+"size": AABB(-16, -16, 0, 16, 16, 40)
+})
+node_class = "Node3D"
+
+[sub_resource type="Resource" id="sign_text"]
+script = ExtResource("point_class")
+script_class = ExtResource("text_sign_script")
+classname = "sign_text"
+description = "Text in the world, in the pixel font (D-142): distance markers, hints, names. Read from the side the angle points to, or always facing the player with billboard. Write \\n for a new line."
+class_properties = Dictionary[String, Variant]({
+"text": "TEXT",
+"letter_height": 0.3,
+"color": Color(0.92, 0.9, 0.82, 1),
+"billboard": 0
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"text": "The words on the sign",
+"letter_height": "Height of a capital letter, in metres",
+"color": "Colour of the letters. Light and plain: no team red or blue",
+"billboard": "1: always turns to the player; 0: faces the angle like a sign on a wall"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.8, 1),
+"size": AABB(-8, -8, -8, 8, 8, 8)
+})
+node_class = "Label3D"
+
 [resource]
 script = ExtResource("fgd_file")
 fgd_name = "ChiipMapper"
-entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route")])
+entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route"), SubResource("info_bot_spawn"), SubResource("range_target"), SubResource("range_weapon"), SubResource("sign_text")])

@@ -6,8 +6,8 @@
 
 ## Playing them
 
-- In the game: open the console (the key left of 1) and type `map depot`, `map square` or `map spillway`. `map` alone lists all maps.
-- From the terminal: add `-- --map res://maps/depot.tscn` to the run command (see README). Add `--practice` for the bot arena where everyone respawns.
+- In the game: open the console (the key left of 1) and type `map depot`, `map square` or `map spillway`. `map` alone lists the maps. The old test map isn't listed or offered anywhere (D-141): it is the automated tests' map, and `map test_map` still loads it.
+- From the terminal: add `-- --map res://maps/depot.tscn` to the run command (see README). `-- --practice` alone opens the Shooting Range (below); with `--map` it is practice on that map, with two bots, where everyone respawns.
 - A match (the default) puts the defenders at the north end and the attackers at the south end; sides swap at half time.
 
 ## Rules every map follows
@@ -112,6 +112,19 @@ A dry concrete water works. **Sunken mid, high sides.**
 - **West, site A:** a pump house you can go through (offset doors with a pump in between) or around (two corridors with overlapping blockers). A is in front of its north door.
 - **East, site B:** a tank yard split by a pipe wall with two gaps, each with a tank right behind it, so no view runs through. B is on a 1.5 m terrace with ramps up from the south and the west; a control house blocks the view from the yard up onto the terrace.
 - **Look (6 main materials, dressed with the map kit in M10):** concrete ground, channel walls and terrace, plaster walls and pump house, ribbed metal in grey, teal and green (tanks, the pipe wall, the bridge's walls, the blockers), dirt on the dry channel's bottom, gravel, and a few wooden crates; a grated deck on the footbridge and hazard stripes along the terrace's edge. Props and lamps (67 entities in `spillway.map`): a caged bulb in the culvert, pendants in the pump house, floodlights on the walls, lanterns on the pump and control houses, pipes along the pipe wall and the walls, drain pipes under the channel's rim, valves, windows and a door, signs to A and B on the channel fences' south ends and at each site, cabinets and cylinders in the yards' corners, debris and grass in the channel and along the walls. An overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
+
+## Practice map: Shooting Range
+
+The map Practice plays (D-141), from the main menu or `-- --practice`. Made in TrenchBroom format (`maps/shooting_range.map`, written once by a layout script like the quick maps' blockouts, then edited as a normal map) only from kit entities, including the range entities of D-142 (MAPPING.md, "Training maps"). No rounds and no team spawns, so match setup doesn't offer it; the console's `map shooting_range` does.
+
+![The Shooting Range](mapping/shooting_range.jpg)
+
+- **Simple on purpose** (your words: *"neco jednoducheho"*): one walled yard, 28 m wide and 68 m long.
+- **The lanes:** you start on the firing line, in the middle lane, looking downrange. Lanes 4 m wide with low wooden dividers at the line. Targets at **5, 10, 20 and 40 m** and **one moving target** at 15 m (walking pace, 2.5 m/s). Every hit shows its damage, a headshot in red, and the target keeps a total. A **spray wall** at 10 m with an aim mark at head height. Pale lines across the floor and signs on both walls at 5, 10, 20 and 40 m; an earth berm at the end. Target titles stay short: a title keeps its size on screen, so far away a long one is metres wide and runs into a wall.
+- **The guns:** right behind the line, **a stand for every gun and grenade** (Sparrow, Verdict, Hornet, Breaker, Warden, Ram, Heron, Frag, Flashbang, Smoke), refilled 2 s after you take one. The buy menu (B) gives everything for free too. A sign on the west wall lists the console's bot commands.
+- **The open area** behind the stands (28 × 16 m, asphalt): a low wall, two crate stacks and two concrete barriers, for fights with the bots you add. Bots appear only here (6 bot spawns, all at least 20 m from you) and wander between its 8 patrol points.
+- **No bots until you add them:** `bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick [all]`, `bot_difficulty <level>` (the scene's root has `practice_bots = 0`). You come back at the firing line 3 s after dying.
+- **Look (5 main materials):** concrete floor, grey block walls, the earth berm, asphalt in the open area, and wood for the dividers; hazard stripes on the firing line, pale tile lines, worn concrete on the spray wall and the low wall. Open sky, no lamps.
 
 ## Measurements
 

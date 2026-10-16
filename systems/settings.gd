@@ -68,9 +68,10 @@ const MATCH_MODES: Array[String] = ["rounds", "respawn"]
 const KILL_LIMITS: Array[int] = [25, 50, 75, 100]
 ## Team Deathmatch's time limits in minutes the Play screen offers (D-135).
 const TIME_LIMITS: Array[int] = [5, 10, 15]
-## The practice map, the one the main menu flies over, and the map the game
-## plays when nothing chose one (main.tscn started directly, the tests).
-const DEFAULT_MAP := "res://maps/test_map.tscn"
+## The practice map (D-141: the Shooting Range), and the map the game falls back to when
+## nothing chose one. The test map is hidden; main.gd's own fallback (no menu, no --map) and the
+## main menu's background still use it.
+const DEFAULT_MAP := "res://maps/shooting_range.tscn"
 ## The map a match starts on until you choose another: the first of the rotation (D-132).
 const DEFAULT_MATCH_MAP := "res://maps/depot.tscn"
 ## What the [code][match][/code] section's values mean. Files written before M10

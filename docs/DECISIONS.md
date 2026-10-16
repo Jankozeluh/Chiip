@@ -1457,24 +1457,6 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Pictures only (no check); checking props inside the maps test (slower, and mixes kit and maps).
 
-## D-140 — Map textures are drawn like the crew, not made from photos (2026-10-16) — *provisional; replaces D-024 and the photo sources of D-121*
-
-**Decision:**
-- **Every map texture is drawn by `tools/make_world_textures.py`**, the way the crew is painted (D-054, `tools/modelgen/paint.py`): a base shade on one of the crew's 16-shade ramps (or the props' ramps), a pattern that says what the surface is (boards, blocks, bricks, stones, panels, tiles, ribs, gravel, grass blades) with one-texel joints, and only ±1-shade grain. Big wooden and green surfaces are muted toward grey, like the crew's kit. Same names, folders, sizes (64 × 64 for 1.63 m) and sound words as before (D-121), so no map had to be rebuilt.
-- **No photo texture ships any more:** the 36 ambientCG-based textures (the M3 eight and the kit's 28) and the five recoloured or drawn ones are replaced by 41 generated ones, the chain-link and the glass included. `tools/texture_prep.py` and `tools/make_kit_textures.py` are gone (their work is in the new tool); `tools/make_retro_texture.gd` stays for a mapper who wants a photo texture on a map of their own.
-- **A new texture is a painter function** in the tool's table (a ramp, a base shade, a pattern), not a download.
-
-**Why:** Your feedback: *"I dont like the texturing of maps, it doesnt match the players design, that should be fixed"*. The crew is flat, low-poly and palette-limited, with clean shapes and little noise; photo textures, even shrunk to 64 × 64, kept their blotches (the plaster's camouflage pattern, mottled concrete, photo wood grain) and looked busier and more realistic next to the players.
-
-**Compared** in the real game with two bots of each team standing in every shot (new `--lineup` option of `tools/map_screenshots.gd`), on Depot, Square and Spillway:
-1. **Generated like the crew** (chosen): clean boards, blocks, ribs and stones that read as the same world as the players; the players still stand out.
-2. **The photo textures quantized onto the crew's ramps** (blurred, about five shades): flatter, but the photo blotches became mush at 480 lines.
-3. **A mix** (generated walls, floors and metal, quantized photos for stones, rock, bark, grass, dirt, gravel): the natural surfaces kept the mush.
-
-**Checked:** all 41 pass `tools/texture_report.gd` (no team red or blue; average saturation at most 0.45, wood the warmest); in the screenshots below the horizon, team red at most 0.9 % and team blue at most 0.4 % of a shot (the photo textures: 1.3 % and 0.5 %). The rusty ribbed metal had to be muted further: its darkest shades turned reddish in shade after lighting and the palette effect (3 % of a shot on Depot's boxcar).
-
-**Alternatives:** the two other directions above; hand-drawn pixel art (better ceiling, but no artist and nothing to regenerate); keeping photos for a "realistic" look (what you asked to fix).
-
 ## D-130 — The UI's look comes from your mockups; until then, build what holds whatever the look (2026-10-16) — *provisional*
 
 **Decision:**
@@ -1601,6 +1583,61 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 **Why:** One source for the drawings (the mockup), crisp at every scale, and one PNG per slot so the theme picks them up as designed in D-131.
 
 **Built** (task 8): all 21 slots are filled (the headshot mark's eye is cut out even-odd, as in the mockup). At 1080p the UI is 1.5×, so a one-pixel cell becomes 1–2 screen pixels; whole-number scaling where a screen shows an icon large (the class cards) keeps those crisp.
+## D-140 — Map textures are drawn like the crew, not made from photos (2026-10-16) — *provisional; replaces D-024 and the photo sources of D-121*
+
+**Decision:**
+- **Every map texture is drawn by `tools/make_world_textures.py`**, the way the crew is painted (D-054, `tools/modelgen/paint.py`): a base shade on one of the crew's 16-shade ramps (or the props' ramps), a pattern that says what the surface is (boards, blocks, bricks, stones, panels, tiles, ribs, gravel, grass blades) with one-texel joints, and only ±1-shade grain. Big wooden and green surfaces are muted toward grey, like the crew's kit. Same names, folders, sizes (64 × 64 for 1.63 m) and sound words as before (D-121), so no map had to be rebuilt.
+- **No photo texture ships any more:** the 36 ambientCG-based textures (the M3 eight and the kit's 28) and the five recoloured or drawn ones are replaced by 41 generated ones, the chain-link and the glass included. `tools/texture_prep.py` and `tools/make_kit_textures.py` are gone (their work is in the new tool); `tools/make_retro_texture.gd` stays for a mapper who wants a photo texture on a map of their own.
+- **A new texture is a painter function** in the tool's table (a ramp, a base shade, a pattern), not a download.
+
+**Why:** Your feedback: *"I dont like the texturing of maps, it doesnt match the players design, that should be fixed"*. The crew is flat, low-poly and palette-limited, with clean shapes and little noise; photo textures, even shrunk to 64 × 64, kept their blotches (the plaster's camouflage pattern, mottled concrete, photo wood grain) and looked busier and more realistic next to the players.
+
+**Compared** in the real game with two bots of each team standing in every shot (new `--lineup` option of `tools/map_screenshots.gd`), on Depot, Square and Spillway:
+1. **Generated like the crew** (chosen): clean boards, blocks, ribs and stones that read as the same world as the players; the players still stand out.
+2. **The photo textures quantized onto the crew's ramps** (blurred, about five shades): flatter, but the photo blotches became mush at 480 lines.
+3. **A mix** (generated walls, floors and metal, quantized photos for stones, rock, bark, grass, dirt, gravel): the natural surfaces kept the mush.
+
+**Checked:** all 41 pass `tools/texture_report.gd` (no team red or blue; average saturation at most 0.45, wood the warmest); in the screenshots below the horizon, team red at most 0.9 % and team blue at most 0.4 % of a shot (the photo textures: 1.3 % and 0.5 %). The rusty ribbed metal had to be muted further: its darkest shades turned reddish in shade after lighting and the palette effect (3 % of a shot on Depot's boxcar).
+
+**Alternatives:** the two other directions above; hand-drawn pixel art (better ceiling, but no artist and nothing to regenerate); keeping photos for a "realistic" look (what you asked to fix).
+
+## D-141 — Practice is a Shooting Range; the test map is hidden (2026-10-16) — *provisional*
+
+**Decision:**
+- **A new practice map, `maps/shooting_range`** (a TrenchBroom map built with the kit, in the crew-matched look of D-140): kept simple, as you asked (*"neco jednoducheho"*): one walled yard with lanes, targets at 5, 10, 20 and 40 m and one moving at 15 m, a spray wall, a stand for every gun and grenade, distance lines and signs, and a small open area behind the stands where bots can fight. Layout in MAPS.md. (A first, bigger version, with a separate 44 × 36 m arena, a second moving target and a head-only target, was cut down to this the same day.)
+- **Practice plays it:** the main menu's Practice button and `-- --practice` without `--map` (both through `Settings.DEFAULT_MAP`).
+- **It starts with no bots.** The console adds them (`bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick [all]`, `bot_difficulty`); they appear at the arena's bot spawns, at least 20 m from you. A map tells practice how many bots to start with by metadata on its scene's root, `practice_bots` (`ArenaRules.START_BOTS_META`), which main.gd reads; without it practice starts with ArenaRules' two, as before.
+- **The test map is hidden** from everything the player is offered: `GameLaunch.HIDDEN_MAPS` lists it, and `GameLaunch.list_maps()` (match setup and the lobby) and the console's map list leave it out. The rotation never had it. It stays for the automated tests and still loads by name: `map test_map`, `-- --map res://maps/test_map.tscn`.
+- **Match setup doesn't offer the range** (it has no team spawns, so it can't host a match); the console's map list does. `map shooting_range` from a match plays it as practice (main.gd picks practice rules on a map without team spawns).
+- **The default match map is Depot** (`Settings.DEFAULT_MATCH_MAP`, the constant the UI refresh introduces too, D-132): the map match setup starts with and falls back to must be one it offers. **`Settings.DEFAULT_MAP` is the practice map**, the Shooting Range (until now the test map, which was both).
+- **What stays on the test map:** main.gd's own fallback (`map_scene`, for a game scene started with no menu description and no `--map`: the tests and `-- --match`), the match test (now explicitly), and the main menu's background flight, whose camera path in `ui/main_menu.tscn` is drawn for the test map. That scene belongs to the menu restyle, so the background is left for it.
+
+**Why:** Your words: *"jeste vec k testovaci mape, radeji postav sample shooting range s optional pridanim botum skrze konzoli, tady ten test co tam je nyni bych nechal neviditelny"* (about the test map: rather build a sample shooting range with optional bots added through the console, and keep the current test map invisible).
+
+**Alternatives:**
+- **Deleting the test map:** about fifteen suites rely on its small layout and quick rounds.
+- **Moving it to `tests/`:** breaks the path in every suite and in the menu, when hiding it by data is enough.
+- **A range room added to the test map:** you want that map out of sight.
+- **Practice on Depot with no bots:** no targets and no guns to try.
+- **The starting bot count as a worldspawn property:** the worldspawn node is buried under `Map`, while metadata on the root is one line.
+- **An ArenaRules export saved in the map:** main.gd adds ArenaRules at runtime; maps don't contain it.
+- **Practice always starting empty:** practice on another map (the console's `map`) keeps its two bots, and tests rely on that.
+
+## D-142 — Range entities for training maps (2026-10-16) — *provisional*
+
+**Decision:** four entities in `maps/fgd/chiip_mapper_fgd.tres`, so a training map is made in TrenchBroom alone:
+- **`range_target`**: the training dummy (`maps/props/target_dummy.tscn`: CS hit zones, a floating number per hit, a running total), with `title`, `move_distance` and `move_speed`; a moving one walks across its angle.
+- **`range_weapon`** (`KitWeaponStand`): one gun, chosen from a list, floating over the gold ring of the map weapons (D-098). It comes back 2 s after it's taken (`refill_time`). For training maps only: in a match, guns still come from the buy menu and the random map weapons.
+- **`sign_text`** (`KitTextSign`, a `Label3D`): text in the pixel font, read from the side the angle points to, or always facing you (`billboard`); `\n` makes a new line.
+- **`info_bot_spawn`**: where practice bots appear and come back (group `bot_spawns` only). You come back where you started.
+
+**Why:** the range is built only from TrenchBroom entities, like the kit gallery (D-129), so a mapper can change it or make another training map without touching Godot.
+
+**Alternatives:**
+- **Hand-placing dummies and guns in the scene:** invisible in TrenchBroom, so not reusable.
+- **`info_respawn` for the bots:** it is a player spawn too, so you would come back in the open area among the bots.
+- **`MapWeapons` with a fixed pool:** it puts guns at random places and is made for rounds.
+- **Leaving grenades to the buy menu:** the stands let you throw one after another without opening a menu.
 
 ## Open questions
 

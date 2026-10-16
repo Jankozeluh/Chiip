@@ -20,7 +20,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
    At the start of the match a class menu opens with **your two drafted classes** for this match (each match offers two of Rifleman, Bulwark, Marksman and Scout at random): click a card or press 1 or 2; Esc closes it. **M** opens it again during freeze time (any time in Team Deathmatch). Each class has its own perk and loadout. Bots draft too, and each team gets a mix of classes.
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Main menu** buttons.
    **Esc** during a game opens the **pause menu**, which pauses everything (the round timer, the bots, the sounds): **Resume**, **Settings** and **Leave match** (back to the main menu). Esc again resumes.
-3. **Practice** in the main menu (or running with `-- --practice`, see below) is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
+3. **Practice** in the main menu (or running with `-- --practice`, see below) opens the **Shooting Range**: one simple yard with lanes, targets at 5, 10, 20 and 40 m (each hit shows its damage), one moving target, a spray wall, and a stand for every gun and grenade (walk over one to take it, **E** swaps; it comes back after 2 s). Behind the stands is a small open area for fights with bots. It starts with no bots: open the console (the key under Esc) and type `bot_add [easy|normal|hard] [ally|enemy]` to add one, `bot_kick` (or `bot_kick all`) to remove them, `bot_difficulty <level>` to change them all. Bots and you come back 3 s after dying; there are no rounds. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
 
 **From the terminal**, without opening the editor (this opens the main menu):
 
@@ -46,13 +46,13 @@ For the **team respawn** mode (like Call of Duty's Team Deathmatch: respawn afte
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --map res://maps/depot.tscn --respawn
 ```
 
-For practice mode (also straight into the game), add `-- --practice`:
+For practice on the Shooting Range (also straight into the game), add `-- --practice` (with `--map`, practice on that map instead, with two bots):
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 layouts, dressed with the map kit in M10, see [docs/MAPS.md](docs/MAPS.md)), the test map (the default) and the kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`, everything in the map kit). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
+**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 layouts, dressed with the map kit in M10, see [docs/MAPS.md](docs/MAPS.md)), the **Shooting Range** (practice) and the kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`, everything in the map kit). The old test map is hidden from match setup and the console's map list: it is the automated tests' map, and still loads with `map test_map`. In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
 
 To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:
 

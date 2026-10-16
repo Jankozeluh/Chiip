@@ -658,6 +658,23 @@ Make **three routes** (west, mid, east) of 4–6 points each, from the attackers
 
 Every marker must stand on the navmesh (within 0.8 m), so bake the navmesh before running the maps test.
 
+## Training maps (range entities)
+
+Four more entities make a training map like the **Shooting Range** (`maps/shooting_range.map`, the map Practice plays, D-141), built from nothing else. They are for practice only: a match on a map with them works, but the gun stands would hand out guns the economy doesn't know about (D-142).
+
+| Entity | What it is | Properties |
+|---|---|---|
+| `range_target` | The training dummy: CS hit zones (head, chest, stomach, arms, legs), a floating number for every hit (red for a headshot) and a running total over its head that resets after 3 s without hits. Origin on the floor; it faces the entity's `angle`. | `title` (shown over it, e.g. `20 m`), `move_distance` (metres it walks from side to side, across its angle; 0 stands still), `move_speed` (m/s: walking 2.5, a rifle running 5.5) |
+| `range_weapon` | A gun stand: the gun floats and turns over a gold ring, with its name, like the random map weapons. Walk over it to take the gun (when that slot is free), or press E to swap. It comes back `refill_time` seconds after it's taken. | `weapon` (a list: Sparrow, Verdict, Hornet, Breaker, Warden, Ram, Heron, Frag, Flashbang, Smoke), `refill_time` (2 s) |
+| `sign_text` | Text in the pixel font: distance markers, hints, names. It reads from the side its `angle` points to (put it 5 cm off a wall, angle pointing away from the wall), or always turns to the player. | `text` (`\n` makes a new line), `letter_height` (metres, 0.3), `color` (light and plain, no team red or blue), `billboard` (1 turns to the player) |
+| `info_bot_spawn` | Where practice bots appear and come back after dying. Not a player spawn: you start at the scene's `Player` node and come back there. Put 6 or more, away from where the player stands (the range's are at least 20 m). | — |
+
+**No bots at the start.** Practice starts with two bots on a map, unless the map's scene root has the metadata `practice_bots` (in Godot: select the root node, Inspector, *Add Metadata*, an `int`). The Shooting Range has 0: you add bots with the console (`bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick [all]`, `bot_difficulty <level>`).
+
+**Bots need patrol points** (`info_patrol`) and a navmesh where they should fight. On the range they wander only in the open area behind the gun stands, so the lanes stay quiet until an enemy sees you.
+
+**Lay out lanes like the range:** the player's start at the origin facing −Z (downrange), so the `Player` node of the template needs no moving; lanes 4 m wide; distances measured from the firing line to the target's feet; a berm or a tall wall behind the last target.
+
 ## Sky, sun and lighting
 
 The scene `new_map.gd` makes from the template has a `WorldEnvironment` node with `clear_noon.tres` and a `Sun` (a `DirectionalLight3D`). `WorldEnvironment` holds the sky, ambient light and fog, like Unity's Lighting settings. The sun is a directional light like Unity's. The template's sun is a neutral white (energy 1.2) about 38° above the horizon, with shadows out to 80 m: the same as Depot.

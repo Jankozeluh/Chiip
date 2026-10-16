@@ -15,6 +15,11 @@ const MIN_SPAWN_DISTANCE := 20.0
 ## A spawn marker counts as taken if someone stands closer than this, in metres.
 const SPAWN_CLEARANCE := 3.0
 
+## Metadata on a map scene's root: how many bots practice starts with there, instead of
+## [member bot_count] (main.gd reads it; the Shooting Range has 0, D-141). The console's
+## bot_add adds more.
+const START_BOTS_META := &"practice_bots"
+
 ## How many bots to put on the map at the start.
 @export var bot_count: int = 2
 ## How well new bots fight.

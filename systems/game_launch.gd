@@ -25,14 +25,18 @@ const GAME_SCENE := "res://main.tscn"
 const MENU_SCENE := "res://ui/main_menu.tscn"
 ## Where the maps are: every [code].tscn[/code] directly in this folder is offered
 ## by match setup (and by the console's [code]map[/code] command, which also lists
-## subfolders).
+## subfolders), except [constant HIDDEN_MAPS] and the practice map ([constant Settings.DEFAULT_MAP]).
 const MAPS_FOLDER := "res://maps/"
+## Maps nobody is offered (D-141): not in match setup, the lobby, the rotation or the console's
+## map list. The old test map stays for the automated tests and still loads by name
+## ([code]map test_map[/code], [code]-- --map res://maps/test_map.tscn[/code]).
+const HIDDEN_MAPS: Array[String] = ["res://maps/test_map.tscn"]
 ## Where the bot difficulties are; [code]%s[/code] is easy, normal or hard.
 const DIFFICULTY_PATH := "res://bots/difficulty_%s.tres"
 ## The maps of the rotation, in order (D-049, D-087): the three quick maps.
 const ROTATION_MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"]
 
-## The map scene to play, e.g. [code]res://maps/test_map.tscn[/code].
+## The map scene to play, e.g. [code]res://maps/depot.tscn[/code] (by default the practice map).
 static var map_path: String = Settings.DEFAULT_MAP
 ## True for practice (the respawning bot arena), false for a match.
 static var practice: bool = false
@@ -136,15 +140,22 @@ static func difficulty_named(level: String) -> BotDifficulty:
 	return load(path) as BotDifficulty
 
 
+## True for a map that isn't offered anywhere ([constant HIDDEN_MAPS]).
+static func is_hidden_map(path: String) -> bool:
+	return HIDDEN_MAPS.has(path)
+
+
 ## The map scenes match setup offers: every [code].tscn[/code] directly in
-## [constant MAPS_FOLDER], as paths, sorted by name; never empty.
+## [constant MAPS_FOLDER] but the hidden maps and the practice map (the Shooting Range: no team
+## spawns, so no match; the console's map list offers it), as paths, sorted by name; never empty.
 static func list_maps() -> Array[String]:
 	var maps: Array[String] = []
 	for file in DirAccess.get_files_at(MAPS_FOLDER):
 		# An exported game lists scenes as "name.tscn.remap".
 		var scene := file.trim_suffix(".remap")
-		if scene.ends_with(".tscn"):
-			maps.append(MAPS_FOLDER + scene)
+		var path := MAPS_FOLDER + scene
+		if scene.ends_with(".tscn") and not is_hidden_map(path) and path != Settings.DEFAULT_MAP:
+			maps.append(path)
 	maps.sort()
 	if maps.is_empty():
 		maps.append(Settings.DEFAULT_MAP)
