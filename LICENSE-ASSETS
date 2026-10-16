@@ -1,6 +1,6 @@
 Chiip: art, models, maps and sounds
 
-Copyright (c) 2026 Jan Koželuh
+Copyright (c) 2026 Divocakos
 
 The art, models, maps and sounds of Chiip are licensed under the
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
@@ -10,7 +10,7 @@ licence (CC BY-NC-SA 4.0).
     Full text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
 You may share and adapt this material for non-commercial purposes if you give
-credit ("Chiip by Jan Koželuh", with a link to the licence and a note of any
+credit ("Chiip by Divocakos", with a link to the licence and a note of any
 changes) and release what you make from it under the same licence. You may not
 use it commercially. For any other use, ask the author.
 
@@ -27,12 +27,23 @@ What this licence covers
   docs/maps/         the same
   icon.svg           the game's icon
 
+(The studio logo in assets/ui/ is the one exception, see below.)
+
 The generated files are the output of tools under tools/ (the model and
 texture generators, the sound generator). The tools are code and are under
 the GPL (see below); what they make is covered by this licence.
 
 What it does not cover
 ----------------------
+
+  The studio's name and logo.
+    The name "Divocakos" and the studio logo (assets/ui/studio_logo.png)
+    are Copyright (c) 2026 Divocakos, ALL RIGHTS RESERVED. They are not
+    licensed under CC BY-NC-SA or any other licence: you may not copy, adapt
+    or redistribute them, and you may not use the name or the logo for your own
+    work. If you make something from Chiip, leave the logo out. (The file is in
+    the repository because the game shows it; this notice, not the file's
+    location, decides what you may do with it.)
 
   Everything else in this repository is code, scenes, data and
   documentation, licensed under the GNU General Public License,

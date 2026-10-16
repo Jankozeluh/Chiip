@@ -1,6 +1,6 @@
 # Chiip
 
-A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game: you and your bot teammates against a team of bots, bomb rounds or team deathmatch, on three small maps. Play it alone against bots, or with friends online (they take the bots' places). Free, for Windows, macOS and Linux. Built with [Godot](https://godotengine.org) 4.7.2.
+A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game: you and your bot teammates against a team of bots, bomb rounds or team deathmatch, on three small maps. Play it alone against bots, or with friends online (they take the bots' places). Free, for Windows, macOS and Linux. © Divocakos. Built with [Godot](https://godotengine.org) 4.7.2.
 
 > **Version 0.1.0, the first public playtest.** Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
 
@@ -147,8 +147,9 @@ To try online play on one computer, start the game twice: host in one window and
 
 - The game's **code** is under the **GNU General Public License, version 3** ([LICENSE](LICENSE)).
 - The **art, models, maps and sounds** are under **Creative Commons BY-NC-SA 4.0** ([LICENSE-ASSETS](LICENSE-ASSETS)): free to share and adapt for non-commercial use with credit, under the same licence.
+- The studio's name, **Divocakos**, and its logo are © Divocakos, **all rights reserved**: they are not covered by the licences above and may not be reused.
 - Made with the [Godot Engine](https://godotengine.org) (MIT), the Silkscreen font (SIL Open Font License) and FuncGodot (MIT); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The game shows all of it under **Settings → Licences**.
 
 ## For developers
 
-Chiip is written in GDScript for Godot 4.7.2 and built milestone by milestone. [docs/DEVELOPING.md](docs/DEVELOPING.md) has how to run it from the editor, run the thirty-two test suites, build maps with TrenchBroom, regenerate the models and textures, and export the builds. The design, the decisions behind it and the roadmap are in [`docs/`](docs/) ([PLAN.md](docs/PLAN.md), [GAME_DESIGN.md](docs/GAME_DESIGN.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DECISIONS.md](docs/DECISIONS.md)). Contributions and bug reports are welcome as GitHub issues.
+Chiip is written in GDScript for Godot 4.7.2 and built milestone by milestone. [docs/DEVELOPING.md](docs/DEVELOPING.md) has how to run it from the editor, run the thirty-three test suites, build maps with TrenchBroom, regenerate the models and textures, and export the builds. The design, the decisions behind it and the roadmap are in [`docs/`](docs/) ([PLAN.md](docs/PLAN.md), [GAME_DESIGN.md](docs/GAME_DESIGN.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DECISIONS.md](docs/DECISIONS.md)). Contributions and bug reports are welcome as GitHub issues.

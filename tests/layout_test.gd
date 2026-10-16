@@ -13,7 +13,7 @@ extends Node
 ## - The UI scale is the tighter of width / 1280 and height / 720 ([method PixelView.ui_scale_for]),
 ##   so a window narrower than 16:9 still gets the whole 1280-wide layout.
 ## - Every visible control of every menu and of the HUD lies inside the window. Menus are opened one
-##   at a time (main page, Play with each mode, every settings tab, the lobby; class draft, buy menu,
+##   at a time (main page, Play with each mode, every settings tab, the Licences screen, the lobby; class draft, buy menu,
 ##   pause, scoreboard, match end, console, loading, boot); a scroll box's contents may run past its
 ##   edge, the box itself may not.
 ## - After loading nothing covers the class draft: the loading screen is gone (and the game
@@ -112,10 +112,18 @@ func _test_main_menu(pixelated: bool) -> void:
 			settings_menu.get_tabs().current_tab = tab
 			await _settle(size)
 			_collect(failures, "settings tab %d at %s" % [tab, size], [menu], size)
+		# The Licences screen over the settings (M12): the longest document, the GPL, and the engine's.
+		var licences := settings_menu.get_licenses_menu()
+		licences.open()
+		for document in [&"code", &"godot"]:
+			licences.show_document(document)
+			await _settle(size)
+			_collect(failures, "licences (%s) at %s" % [document, size], [menu], size)
+		licences.close()
 		settings_menu.close()
 		menu.get_match_setup().close()
 	var label := "pixelated HUD, " if pixelated else ""
-	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs) lies inside the window at all %d sizes" % [label, SIZES.size()],
+	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen) lies inside the window at all %d sizes" % [label, SIZES.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(menu)
 	menu.queue_free()

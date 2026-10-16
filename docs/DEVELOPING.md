@@ -167,7 +167,7 @@ Run all the automated checks with one command (no window, about a minute and a q
 cd "$PROJECT" && bash tools/run_tests.sh
 ```
 
-It runs the thirty-two suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the thirty-three suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 

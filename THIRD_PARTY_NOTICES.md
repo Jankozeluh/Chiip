@@ -57,6 +57,12 @@ Copyright 2001 The Silkscreen Project Authors.
 The full licence is in `assets/fonts/Silkscreen-OFL.txt`. The font is used and
 shipped as it is, under its own licence, and is not sold on its own.
 
+## The studio's name and logo (all rights reserved)
+
+"Divocakos" and the studio logo (`assets/ui/studio_logo.png`, shown on the boot screen) are
+© 2026 Divocakos, **all rights reserved**. They are not part of the open licences above and
+are excluded from `LICENSE-ASSETS`: they may not be reused.
+
 ## Made for Chiip (not third-party)
 
 Every texture, model, sound and map in Chiip is drawn, generated or built for

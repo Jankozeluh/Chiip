@@ -960,7 +960,7 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 ## D-090 — The M7 plan: pickups first, a light economy, a fresh loadout every round (2026-10-15, revised 2026-10-16) — *provisional*
 
 **Decision** (the open choices of the M7 plan; the PLAN.md table has them side by side). Revised on 2026-10-16 after your answers: "I would build it around picking up weapons pretty much, more like combination of cs and call of duty", "light economy + pickups", "fresh loadout every round", "but economy has to be there".
-- **Weapon names**, provisional: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. Files, ids and code use the weapon's role (`rifle`, `carbine`, `smg`, `shotgun`, `sniper`, `pistol`, `hand_cannon`, `knife`, `frag`, `flashbang`, `smoke`); only `display_name` in the data files carries the name. "Confirm weapon names" is in your open checks.
+- **Weapon names**, final since D-175: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. Files, ids and code use the weapon's role (`rifle`, `carbine`, `smg`, `shotgun`, `sniper`, `pistol`, `hand_cannon`, `knife`, `frag`, `flashbang`, `smoke`); only `display_name` in the data files carries the name. Confirmed as final in D-175.
 - **A fresh loadout every round** (bomb rounds), like CoD's Search & Destroy: at each round start everyone has the knife and the Sparrow and nothing else. Bought and picked-up guns, armor, grenades and kits last one round. Money carries over.
 - **A light economy, round numbers:** $1,000 at the start of each half, $10,000 at most. Win $3,000. Loss $1,500, then $2,000, $2,500 and $3,000 for losses in a row; a win starts the count again. $200 a kill, $500 with the knife, −$200 for a teamkill. A plant gives every attacker $200, win or lose; a defuse gives the defuser $200.
 - **Round prices by tier:** Verdict $500; Hornet and Breaker $1,000; Ram and Warden $2,500; Heron $4,000; Sparrow $200 (only if you lost yours); vest $500, vest and helmet $800; defuse kit $300 (defenders only); Frag $300, Flashbang $200, Smoke $300.
@@ -1712,7 +1712,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Decision:**
 - **Code:** GNU GPL version 3, "version 3 only" (`LICENSE`, the standard 35 KB text). It covers everything that is not listed below: scripts, scenes, resources, tools, tests, docs.
-- **Art, models, maps and sounds:** CC BY-NC-SA 4.0 (`LICENSE-ASSETS`). It covers `assets/` (except the font files), `maps/`, `docs/mapping/`, `docs/maps/` and `icon.svg`. The generated models, textures and sounds are the *output* of GPL tools and are CC BY-NC-SA.
+- **Art, models, maps and sounds:** CC BY-NC-SA 4.0 (`LICENSE-ASSETS`). It covers `assets/` (except the font files and the studio logo, D-174), `maps/`, `docs/mapping/`, `docs/maps/` and `icon.svg`. The generated models, textures and sounds are the *output* of GPL tools and are CC BY-NC-SA.
 - **Third-party material** keeps its own licence: Godot (MIT), FuncGodot (MIT, `addons/func_godot/LICENSE`), Silkscreen (OFL 1.1, `assets/fonts/Silkscreen-OFL.txt`). `THIRD_PARTY_NOTICES.md` lists them, built from `docs/CREDITS.md`.
 - **Every build ships the licences**, in two ways: the three files and the font's and addon's licence are listed in the export presets' include filter (so they sit inside the game's data), and the game's **Settings → Licences** screen (`ui/licenses_menu.*`) shows them, plus "Godot Engine", which the engine writes itself (`Engine.get_license_text()`, `get_license_info()`, `get_copyright_info()`) so the notice of every library inside the engine is always right for the engine in the build.
 - **No per-file licence headers.** The licence is chosen by folder (`LICENSE-ASSETS` lists them) and `tests/release_test.gd` checks the files and the screen. A header on 160 scripts and 100 scenes would say the same as one line in `LICENSE-ASSETS`, and the generated files could not carry one.
@@ -1762,11 +1762,29 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Detect Tailscale through its local API or CLI (`tailscale ip`; needs the CLI installed, and the address list already has it); a Tailscale-only mode that refuses other addresses; UPnP (opens the router, ruled out in D-150); a relay server or Steam lobbies (D-114).
 
+## D-174 — The studio is Divocakos; its name and logo are all rights reserved (2026-10-16)
+
+**Decision:**
+- **The studio's name is Divocakos.** The game, the README, the release notes and the Licences screen credit "© Divocakos"; `LICENSE-ASSETS`, the Mac app's copyright line and `docs/CREDITS.md` name it as the copyright holder of the art (instead of a person's name).
+- **The name "Divocakos" and the studio logo (`assets/ui/studio_logo.png`, D-153) are all rights reserved.** They are explicitly excluded from the CC BY-NC-SA licence of the other art (`LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`, `docs/CREDITS.md`): nobody may copy, adapt or redistribute them or use the name or logo for their own work. The logo file stays in the repository because the game shows it (the notice, not the file's place, decides what is allowed).
+- `release_test` checks that the licence files carry this exclusion and that the Licences screen names the studio.
+
+**Why:** Your decision (via the coordinating session): a studio name and mark you keep to yourself, while the game's art stays free to remix non-commercially. A trademark-like name and logo are the usual exception in an open-licensed project.
+
+**Alternatives:** Licence the logo under CC BY-NC-SA with the rest (anyone could reuse your mark); leave the logo out of the public repository (the boot screen would show a placeholder in a fresh clone); credit a person instead of the studio.
+
+## D-175 — The weapon names are final (2026-10-16)
+
+**Decision:** The M7 weapon names are final: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke** (D-090). "Confirm weapon names" in "Your open checks" is done and the open question is closed.
+
+**Why:** Your words: "Keep them forever, they are good."
+
+**Alternatives:** Plain descriptions ("Rifle", "Carbine"...) or other names (D-090 weighed both; files and code use role ids, so renaming would only have touched the data files).
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
-| Weapon names: proposed and applied provisionally (D-090) | Your check |
 | Team names and the game's setting/theme | Any time |
 | Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |

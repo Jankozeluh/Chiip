@@ -138,10 +138,12 @@ static func overview_text() -> String:
 	var version := str(ProjectSettings.get_setting("application/config/version", ""))
 	var lines: Array[String] = []
 	lines.append("Chiip%s" % ((" " + version) if not version.is_empty() else ""))
+	lines.append("© 2026 Divocakos")
 	lines.append("A tactical shooter against bots with a retro Quake look. Online games run by IP address over a LAN or Tailscale.")
 	lines.append("")
 	lines.append("Game code: GNU General Public License, version 3 (the file LICENSE).")
 	lines.append("Art, models, maps and sounds: Creative Commons BY-NC-SA 4.0 (the file LICENSE-ASSETS).")
+	lines.append("The studio's name and logo: all rights reserved.")
 	lines.append("Made with the Godot Engine (MIT), the Silkscreen font (SIL Open Font License 1.1) and FuncGodot (MIT).")
 	lines.append("")
 	lines.append("Source code and downloads: %s" % SOURCE_URL)

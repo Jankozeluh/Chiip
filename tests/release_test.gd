@@ -49,13 +49,15 @@ func _test_licence_files() -> void:
 	_check("LICENSE is the GNU GPL version 3 in full (the standard 35 KB text)",
 			code.contains("GNU GENERAL PUBLIC LICENSE") and code.contains("Version 3, 29 June 2007") and code.length() > 30000,
 			"%d characters" % code.length())
-	_check("LICENSE-ASSETS names CC BY-NC-SA 4.0 and the folders it covers (assets, maps, docs/mapping) and what it leaves out",
+	_check("LICENSE-ASSETS names CC BY-NC-SA 4.0 and the folders it covers (assets, maps, docs/mapping) and what it leaves out: third-party files and the studio's name and logo (all rights reserved, D-174)",
 			assets.contains("CC BY-NC-SA 4.0") and assets.contains("assets/") and assets.contains("maps/") and assets.contains("docs/mapping/")
-					and assets.contains("legalcode") and assets.contains("Silkscreen") and assets.contains("LICENSE"),
+					and assets.contains("legalcode") and assets.contains("Silkscreen") and assets.contains("LICENSE")
+					and assets.contains("Divocakos") and assets.contains("ALL RIGHTS RESERVED") and assets.contains("studio_logo.png"),
 			"%d characters" % assets.length())
 	_check("THIRD_PARTY_NOTICES.md lists Godot (MIT, with its copyright line), FuncGodot and the Silkscreen font",
 			notices.contains("Godot Engine") and notices.contains("Juan Linietsky") and notices.contains("FuncGodot")
-					and notices.contains("Silkscreen") and notices.contains("MIT") and notices.contains("SIL Open Font License"),
+					and notices.contains("Silkscreen") and notices.contains("MIT") and notices.contains("SIL Open Font License")
+					and notices.contains("Divocakos") and notices.contains("all rights reserved"),
 			"%d characters" % notices.length())
 	_check("The font's and the addon's own licence files are in the project, as their licences ask",
 			font.contains("SIL Open Font License") and addon.contains("MIT License"),
@@ -76,7 +78,7 @@ func _test_licences_screen() -> void:
 			menu.is_open() and MenuState.is_top(menu) and menu.get_current() == &"overview"
 					and not str(ProjectSettings.get_setting("application/config/version", "")).is_empty()
 					and menu.get_text_label().text.contains(str(ProjectSettings.get_setting("application/config/version", "")))
-					and menu.get_text_label().text.contains(LicensesMenu.SOURCE_URL)
+					and menu.get_text_label().text.contains(LicensesMenu.SOURCE_URL) and menu.get_text_label().text.contains("© 2026 Divocakos")
 					and get_viewport().gui_get_focus_owner() == menu.get_back_button(),
 			"current %s" % menu.get_current())
 	var all_read := true

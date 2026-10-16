@@ -15,6 +15,8 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 
 - **Tailscale in the lobby** (D-173): the host's lobby shows its Tailscale address (100.64.0.0/10) first, with its port and a Copy button, then the same-network address; Join by IP takes a pasted "address:port". Two game processes joined through the Mac's LAN address and started a match (the stand-in for a Tailscale address, since none is installed here); the lobby row was looked at in a screenshot.
 
+- **Main merged** (M11 UI fit, boot screen, layout suite: 33 suites now).
+- **Studio and names** (D-174, D-175): the studio is Divocakos; its name and logo are all rights reserved and excluded from CC BY-NC-SA in `LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md` and CREDITS, with "© Divocakos" in the README and the Licences screen. The weapon names are final ("Keep them forever, they are good").
 - **Full run:** 32 suites, 1088 checks pass. The `match` suite failed once on "the real settings file was not touched": another session wrote the shared `settings.cfg` during that run; the suite passes alone (13 checks).
 
 **Phase 1 done. Next (phase 2, once main has the M11 fixes):** merge main, write docs/RELEASE_CHECKLIST.md, automate bot matches on every mode and map and a two-instance LAN run, fix small bugs, write KNOWN_ISSUES and the v0.1.0 release notes.
