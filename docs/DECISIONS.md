@@ -2010,6 +2010,20 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Rewriting the history to remove the old path and the name (you decided against it); trusting the friends because they are invited (one broken client could still hang the host); encrypting the game's own traffic (Tailscale already does, and DTLS would add certificates to a hobby game); pinning actions to tags only (a moved tag would run new code unseen); signing the builds (costs money every year; checksums are the cheap part of it).
 
+## D-220 — M16: maintainability and debugging; one branch at a time after M15 (2026-10-16)
+
+**Decision:** After M15 comes M16:
+- tests on exported release builds
+- logs, a version display and bug-report bundles, plus a GitHub Issue template
+- debug commands in the console
+- an architecture review
+- a rule against flaky tests
+From then on, development runs one short branch at a time instead of several parallel ones.
+
+**Why:** v0.1.0 shipped with a bug that existed only in the exported build: shots didn't hit characters. The 1181 checks all run in the editor, so none could catch it. You asked whether the project will stay easy to debug as it grows ("po tomto pridavani po m15 by ses mel zamyslet nad tim, jestli se to takto bude dobre debugovat").
+
+**Alternatives:** Keep working in parallel branches (faster, but each merge mixes many changes, so it's harder to tell which one broke something).
+
 ## Open questions
 
 | Question | Decide in |
