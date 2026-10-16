@@ -176,6 +176,10 @@ func _test_same_match() -> void:
 					and client_bomb.carrier.net_id == host_bomb.carrier.net_id,
 			"host carrier %s, client carrier %s" % [host_bomb.carrier.name if host_bomb != null else "-",
 					client_bomb.carrier.name if client_bomb != null and client_bomb.carrier != null else "-"])
+	var host_map := _map_layout(_host_main.get_map())
+	var client_map := _map_layout(_client_main.get_map())
+	_check("The map is the same on both: every prop, lamp and wall of the map's scene in the same place (nothing random outside the host)",
+			host_map.size() > 50 and client_map == host_map, "%d nodes on the host, %d on the client" % [host_map.size(), client_map.size()])
 
 
 ## The client's commands drive its character on the host (D-103). The bots are held still
@@ -620,6 +624,22 @@ func _test_rounds() -> void:
 					and not client_end.get_play_again_button().visible and not client_end.get_next_map_button().visible
 					and client_end.get_main_menu_button().text == "Leave",
 			"host %s/%s, client %s/%s" % [host_end.visible, host_end.get_main_menu_button().text, client_end.visible, client_end.get_main_menu_button().text])
+
+
+## The map's own nodes (from its scene and the props' scenes, not the ones the game adds while
+## it runs: characters, guns, effects), each with its place, in tree order.
+func _map_layout(map: Node) -> Array:
+	var layout := []
+	var queue: Array[Node] = [map]
+	while not queue.is_empty():
+		var node: Node = queue.pop_front()
+		if node != map and (node.owner == null or node is Character):
+			continue
+		var node_3d := node as Node3D
+		if node_3d != null and (node_3d is VisualInstance3D or node_3d is CollisionObject3D):
+			layout.append([String(map.get_path_to(node_3d)), node_3d.global_position.snapped(Vector3.ONE * 0.001)])
+		queue.append_array(node.get_children())
+	return layout
 
 
 func _describe(rules: RoundManager) -> Array:

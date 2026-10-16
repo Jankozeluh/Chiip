@@ -375,11 +375,11 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 *Planned on 2026-10-16 in its own branch, in parallel with M7. You asked for the whole roadmap to be built and will playtest at the end, so the decisions below (D-100 to D-112) are my recommendations, applied until you say otherwise.*
 
-**Goal:** play Chiip with friends. One player hosts, others join over the LAN or through a Steam lobby, and bots fill the empty slots (D-033). Shooting feels fair at normal pings.
+**Goal:** play Chiip with friends. One player hosts, others join over the LAN, and bots fill the empty slots (D-033). Shooting feels fair at normal pings. Steam lobbies are deferred (D-114): LAN only for now.
 
 **The key idea:** the host's computer runs the real game, exactly the single-player game of M5 to M8: the round manager, the bomb, every bot, every hit. A friend's computer runs a copy that only *shows* the host's game, plus one thing it simulates itself: its own player, so moving and shooting stay as instant as offline. That is CS's model (a *listen server*: the host plays on the server). It works because M4 made every character follow per-tick input commands (D-034): a friend's keyboard and mouse produce `CharacterInput`s on their computer, the commands travel to the host, and the host's `Character` simulates them by the same rules as everyone else's. In the other direction the host sends *snapshots* (where everyone is, 64 times a second) and *events* (kills, round results, the bomb). The three hard parts are the ones CS is famous for: **prediction** (your own movement doesn't wait for the host), **interpolation** (everyone else moves smoothly between snapshots) and **lag compensation** (the host checks your shot against where you saw your target).
 
-**Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"). Phase A works without M7; phase B follows once M7 is merged into main; phase C adds Steam.
+**Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"). Phase A works without M7; phase B follows once M7 is merged into main; phase C (Steam) is deferred (D-114).
 
 *Phase A: LAN multiplayer*
 
@@ -403,13 +403,13 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 New `tests/netarsenal_test.tscn` (17 checks for tasks 12 to 14): inventory, predicted switching, puppets' weapons, a gun given, dropped and picked up again, armor, map weapons, a frag thrown by a client, a flash, a smoke, money and its reward lines, a purchase, the draft, the kill feed's weapon. It found that the client added the host's weapons before removing its own, so a gun whose slot was still taken was refused (now removed first).
 
-*Phase C: Steam*
+*Phase C: Steam (deferred, D-114: LAN only for now; in the Backlog until you approve the GodotSteam download)*
 
-15. [ ] **GodotSteam.** The GodotSteam addon (GDExtension for Godot 4.7, with Valve's Steamworks runtime) from its official GitHub releases, installed under `addons/`, in CREDITS.md with its licence. Valve's public test app ID 480 while developing. The game still starts and plays everything without Steam. *(Sonnet, Opus checks)*
-16. [ ] **Steam lobbies and invites.** Host on Steam opens a friends-only lobby; **Invite friends** opens Steam's overlay; accepting an invite (or Join game in Steam's friends list) joins it. The game stream runs over Steam's networking through the same `NetSession`, so everything from phase A works unchanged. *(Opus)*
-17. [ ] **Checks and the playtest list.** All suites passing, the docs complete, and the M9 playtest list (LAN with a second Mac, Steam with a friend) in "Your open checks". *(Sonnet writes, Haiku runs and reports)*
+15. [-] **GodotSteam.** *Deferred (D-114).* The GodotSteam addon (GDExtension for Godot 4.7, with Valve's Steamworks runtime) from its official GitHub releases, installed under `addons/`, in CREDITS.md with its licence. Valve's public test app ID 480 while developing. The game still starts and plays everything without Steam. *(Sonnet, Opus checks)*
+16. [-] **Steam lobbies and invites.** *Deferred (D-114). Prepared: the session makes its connection through a transport (`NetTransport`, `EnetTransport` for LAN), so Steam is one more transport and a lobby button.* Host on Steam opens a friends-only lobby; **Invite friends** opens Steam's overlay; accepting an invite (or Join game in Steam's friends list) joins it. The game stream runs over Steam's networking through the same `NetSession`, so everything from phase A works unchanged. *(Opus)*
+17. [ ] **Checks and the playtest list.** All suites passing, the docs complete, and the M9 playtest list (LAN with a second Mac) in "Your open checks". *(Sonnet writes, Haiku runs and reports)*
 
-**Done when:** you and a friend can play a full bomb-defusal match together against bots, over LAN and through a Steam lobby, and shooting feels fair at normal pings.
+**Done when:** you and a friend can play a full match together against bots over the LAN (Team Deathmatch first, bomb defusal too), and shooting feels fair at normal pings.
 
 **You learn:** Godot's high-level multiplayer API (`MultiplayerPeer`, `SceneMultiplayer`, `ENetMultiplayerPeer`, RPCs and authority), why `MultiplayerSynchronizer` and `MultiplayerSpawner` are great for many games and why a CS-style shooter writes its own snapshots, packing data into bytes, client-side prediction and reconciliation, entity interpolation, lag compensation, testing networked code in one process, GDExtension addons, Steamworks basics (lobbies, invites, the overlay).
 
@@ -422,7 +422,7 @@ New `tests/netarsenal_test.tscn` (17 checks for tasks 12 to 14): inventory, pred
 | Tick and snapshot rate | **(a)** Simulation at 128 Hz as now, snapshots at 64 Hz, others shown ~50 ms in the past. **(b)** Snapshots at 128 Hz. **(c)** 32 Hz. | **(a)** (D-104): smooth and still small (about 25 KB/s per friend for a 5v5) |
 | Lobby and teams | **(a)** Host or join by IP; two teams with slots; you pick a team; bots fill the empty slots; the host's match setup. **(b)** Teams balanced automatically. | **(a)** (D-108): playing with friends means choosing sides |
 | Players leaving | **(a)** A bot takes over their character; a newcomer takes over a bot. **(b)** The slot stays empty. | **(a)** (D-110): bots fill empty slots, at any time |
-| Steam | **(a)** GodotSteam, lobbies and invites, the same game stream over Steam's networking. **(b)** LAN only. | **(a)** (D-112): what you asked for; app ID 480 until Chiip has its own |
+| Steam | **(a)** GodotSteam, lobbies and invites, the same game stream over Steam's networking. **(b)** LAN only. | **(b) for now** (D-114, your answer; D-112's plan for **(a)** waits in the Backlog) |
 
 ## M10 — Look & feel: map kit and a modern UI 🟨
 
@@ -491,3 +491,4 @@ The class draft (two random classes offered each match) and the random map weapo
 - A dedicated server: a host without a player of its own (`--server`, headless), for a match that runs on a spare computer (D-100)
 - Finding LAN games by themselves (a broadcast) instead of typing the host's IP (D-108)
 - A tactical pause for the host in online games (D-109)
+- Steam lobbies (GodotSteam), needs a download approval: M9's deferred tasks 15 and 16 (D-112, D-114). A `SteamTransport` next to `EnetTransport`, Host on Steam and Steam's invite overlay in the lobby menu

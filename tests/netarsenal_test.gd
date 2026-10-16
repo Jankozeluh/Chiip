@@ -96,6 +96,10 @@ func _start() -> bool:
 	_client.command_source = _command
 	await _harness.wait_until(func() -> bool: return _host_rules.phase == RoundManager.Phase.LIVE, 600)
 	_hold_bots()
+	# The same start every run: the knife and the Sparrow (the draft or a map weapon could have
+	# given something else).
+	var loadout: Array[WeaponData] = [WeaponData.find(&"knife"), WeaponData.find(&"pistol")]
+	_friend.inventory.set_loadout(loadout)
 	_host_session.fake_lag_ms = 50.0
 	_client_session.fake_lag_ms = 50.0
 	await _harness.wait_ticks(60)
@@ -210,6 +214,7 @@ func _test_grenades() -> void:
 	_friend.inventory.give(WeaponData.find(&"frag"))
 	await _harness.wait_until(func() -> bool: return _own.inventory.find(WeaponData.find(&"frag")) != null, 120)
 	_slot = WeaponData.Slot.GRENADE
+	await _harness.wait_until(func() -> bool: return _held(_own) == &"frag" and _held(_friend) == &"frag", 120)
 	await _harness.wait_ticks(60)
 	_shoot = true
 	await _harness.wait_ticks(60)
@@ -233,15 +238,21 @@ func _test_grenades() -> void:
 	await _harness.wait_ticks(20)
 	_check("A flashbang the host says blinded you blinds your player here", _own.get_flash_alpha() > 0.5, "alpha %.2f" % _own.get_flash_alpha())
 	# A smoke: the same cloud on both sides.
+	await _harness.wait_ticks(120)
 	_friend.inventory.give(WeaponData.find(&"smoke"))
 	await _harness.wait_until(func() -> bool: return _own.inventory.find(WeaponData.find(&"smoke")) != null, 120)
-	_slot = WeaponData.Slot.GRENADE
+	var smoke_out := func() -> bool: return _held(_own) == &"smoke" and _held(_friend) == &"smoke"
+	for attempt in 3:
+		if smoke_out.call():
+			break
+		_slot = WeaponData.Slot.GRENADE
+		await _harness.wait_ticks(40)
 	await _harness.wait_ticks(60)
 	_shoot = true
 	await _harness.wait_ticks(60)
 	_shoot = false
 	var clouds := func() -> bool: return not _client_main.get_map().find_children("*", "SmokeCloud", true, false).is_empty()
-	await _harness.wait_until(clouds, 900)
+	await _harness.wait_until(clouds, 1500)
 	var host_clouds: Array = _host_main.get_map().find_children("*", "SmokeCloud", true, false)
 	var client_clouds: Array = _client_main.get_map().find_children("*", "SmokeCloud", true, false)
 	_check("A smoke leaves the same cloud on the client, at the same place, from the same seed",

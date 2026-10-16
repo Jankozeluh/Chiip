@@ -1296,13 +1296,14 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 
 **Alternatives:** two processes talking to each other (closer to real life, but hard to check both sides at once and slower); a fake in-memory peer (fast, but then ENet is never tested).
 
-## D-112 — Steam through GodotSteam, test app 480, the same game stream (2026-10-16) — *provisional*
+## D-112 — Steam through GodotSteam, test app 480, the same game stream (2026-10-16) — *provisional; deferred by D-114*
 
 **Decision:** Steam lobbies and invites come from **GodotSteam**, the open-source Steamworks addon for Godot (a GDExtension, installed under `addons/`, MIT licence, with Valve's Steamworks runtime library). Until Chiip has its own Steam app, it uses Valve's public test app **ID 480** ("Spacewar"), which every Steam developer uses for this. Hosting on Steam creates a friends-only lobby; Steam's overlay invites friends; joining from an invite or the friends list connects through Steam's networking (relayed, so no ports to open). The game stream (D-101) runs over Steam the same way as over ENet, through a Steam `MultiplayerPeer`. Without Steam running the game works as before, and LAN stays.
 
 **Why:** your choice (D-033: LAN first, then Steam lobbies). Steam's relays solve what makes playing over the internet hard (NAT, firewalls, IP addresses).
 
 **Alternatives:** IP only over the internet (players open ports on their routers); a Godot-specific relay service; Epic's Online Services.
+
 ## D-113 — The arsenal online: inventories by weapon id, world objects in the snapshots (2026-10-16) — *provisional*
 
 **Decision:** M7's systems stay authority code on the host (its interface table in ARCHITECTURE.md, "Weapons, money and buying"), and clients learn of them like this:
@@ -1315,6 +1316,14 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 **Why:** one stream (snapshots and events) for everything keeps prediction, the tests in one process and the bandwidth under our control; ids instead of nodes let each computer build its own weapon nodes, as M7's note asked.
 
 **Alternatives:** `MultiplayerSpawner` for pickups and grenades, as M7's note suggested (it would replicate node creation by path, a second mechanism next to the snapshots, and two games in one test process share node paths); sending every client every inventory (more traffic for nothing they show); predicting pickups (the gun would sometimes jump back into the floor when the host disagreed).
+
+## D-114 — M9 is LAN only for now; connections go through a transport, so Steam is one more later (2026-10-16) — *provisional*
+
+**Decision:** M9 ships without Steam: you host on your computer and friends join by IP over the LAN (or over the internet with a forwarded UDP port, 26000). GodotSteam isn't downloaded; Steam lobbies and invites (D-112, M9's tasks 15 and 16) wait in the Backlog until you approve the download. So that adding them stays small, the session no longer makes its ENet connection itself: a **transport** does (`NetTransport`, `net/net_transport.gd`), the one place that knows which kind of connection is used. It makes the `MultiplayerPeer` and does the four things the session needs from the connection: set up a new connection, measure the ping, send what is queued at once, and drop a connection politely. `EnetTransport` is the LAN one (ENet's timeouts, its bandwidth limit and throttle off, D-103). Everything above (the roster's RPCs, the game stream, the host, the client, the tests) only sees the `MultiplayerPeer`, which GodotSteam's `SteamMultiplayerPeer` also is. A Steam transport would make that peer from a Steam lobby instead of an address, and the lobby menu would get a Host on Steam button and Steam's invite overlay.
+
+**Why:** your answer: "No, don't download GodotSteam; M9 stays LAN-only for now." The transport costs two small files now and keeps the later change to one new class and a button, without touching the netcode.
+
+**Alternatives:** keep ENet in the session and change it when Steam comes (simplest today, but the Steam work would then touch the session's connection code everywhere it calls ENet: kicking, the ping, flushing); a list of transports chosen in the settings (nothing to choose from yet).
 
 ## D-120 — M10: a map kit, a modern UI, Team Deathmatch first; random weapons and a class draft in M7 (2026-10-16)
 

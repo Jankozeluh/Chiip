@@ -4,7 +4,10 @@ extends Node
 ## roster of who is in it, and the packets of the game stream.
 ##
 ## [b]Hosting and joining.[/b] [method host_game] opens a UDP port (26000 by default, Quake's)
-## with Godot's ENet peer; [method join_game] connects to a host by IP. Godot's high-level
+## with Godot's ENet peer; [method join_game] connects to a host by IP. The connection itself is
+## made by the session's [member transport] ([EnetTransport] for LAN play, D-114): the session
+## and everything above it only see Godot's [MultiplayerPeer], so another kind of connection
+## (Steam, deferred) is another [NetTransport] and nothing else changes. Godot's high-level
 ## multiplayer gives every computer in the session a *peer id*: the host is always 1, every
 ## client gets a random number. This node talks through its own [member Node.multiplayer]
 ## (the [SceneMultiplayer] of its branch of the tree): the game's single one in a real game, or
@@ -64,13 +67,10 @@ const DEFAULT_PORT := 26000
 const MAX_CLIENTS := 9
 ## Names are cut to this many characters.
 const MAX_NAME_LENGTH := 16
-## Reliable game-stream packets and session messages travel on this ENet channel, unreliable
-## ones on the next, so a lost snapshot never holds up a kill event behind it.
+## Reliable game-stream packets and session messages travel on this channel of the connection,
+## unreliable ones on the next, so a lost snapshot never holds up a kill event behind it.
 const RELIABLE_CHANNEL := 0
 const UNRELIABLE_CHANNEL := 1
-## Seconds without an answer before ENet drops a connection (between these bounds).
-const TIMEOUT_MIN_MS := 3000
-const TIMEOUT_MAX_MS := 8000
 ## The node's name at the tree root.
 const NODE_NAME := "NetSession"
 ## Seconds the host waits after telling the clients it is leaving, before it closes the connections.
@@ -116,6 +116,10 @@ var _waiting_for_roster: bool = false
 var _closing: bool = false
 ## The connection this session made (the tree's multiplayer may have a newer one by the time this
 ## session finishes closing).
+## Makes the connection (D-114). Set it before [method host_game] or [method join_game] to
+## use another kind; the default is the LAN one.
+var transport: NetTransport = EnetTransport.new()
+
 var _peer: MultiplayerPeer
 ## Why the host is ending the session, once it said so.
 var _closing_reason: String = ""
@@ -161,16 +165,12 @@ func _exit_tree() -> void:
 ## Starts hosting on [param port] as [param player_name]. Returns OK, or the error (for
 ## example [constant ERR_CANT_CREATE] when the port is taken).
 func host_game(player_name: String, port: int = DEFAULT_PORT) -> Error:
-	var peer := ENetMultiplayerPeer.new()
-	var result := peer.create_server(port, MAX_CLIENTS, 2, 0, 0)
+	var result := transport.host(port, MAX_CLIENTS)
 	if result != OK:
 		return result
-	# No bandwidth limit, said out loud: without this call ENet's bandwidth throttle cut the
-	# unreliable packets to 1 in 32 in the tests (D-103).
-	peer.host.bandwidth_limit(0, 0)
 	role = Role.HOST
-	_peer = peer
-	multiplayer.multiplayer_peer = peer
+	_peer = transport.peer
+	multiplayer.multiplayer_peer = _peer
 	# Clients never talk to each other through the host, so Godot needn't relay anything.
 	(multiplayer as SceneMultiplayer).server_relay = false
 	local_peer_id = 1
@@ -185,14 +185,12 @@ func host_game(player_name: String, port: int = DEFAULT_PORT) -> Error:
 ## Connects to the host at [param address] (an IP or a host name) as [param player_name].
 ## Returns OK when the attempt started; [signal joined] or [signal join_failed] follows.
 func join_game(address: String, player_name: String, port: int = DEFAULT_PORT) -> Error:
-	var peer := ENetMultiplayerPeer.new()
-	var result := peer.create_client(address, port, 2, 0, 0)
+	var result := transport.join(address, port)
 	if result != OK:
 		return result
-	peer.host.bandwidth_limit(0, 0)
 	role = Role.CLIENT
-	_peer = peer
-	multiplayer.multiplayer_peer = peer
+	_peer = transport.peer
+	multiplayer.multiplayer_peer = _peer
 	local_name = _clean_name(player_name)
 	_waiting_for_roster = true
 	return OK
@@ -231,12 +229,8 @@ func kick(peer_id: int, reason: String) -> void:
 		return
 	_rpc_refused.rpc_id(peer_id, reason)
 	_flush()
-	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	if peer != null and peer.get_peer(peer_id) != null:
-		# ENet sends what is queued (the refusal) before it disconnects.
-		peer.get_peer(peer_id).peer_disconnect_later()
-	elif multiplayer.multiplayer_peer != null:
-		multiplayer.multiplayer_peer.disconnect_peer(peer_id)
+	if _peer != null:
+		transport.disconnect_later(peer_id)
 
 
 ## True on the host.
@@ -320,16 +314,13 @@ func send_packet(peer_id: int, packet: PackedByteArray, reliable: bool) -> void:
 		bytes_sent += packet.size() * copies
 
 
-## The round-trip time to [param peer_id] (the host, from a client) in milliseconds, as ENet
-## measures it, without fake lag. -1 when unknown (another transport: [NetClient] measures its own).
+## The round-trip time to [param peer_id] (the host, from a client) in milliseconds, as the
+## connection measures it, without fake lag. -1 when unknown (a transport that doesn't measure
+## it: [NetClient] measures its own).
 func get_ping_ms(peer_id: int = 1) -> int:
-	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	if peer == null:
+	if _peer == null or _closed:
 		return -1
-	var packet_peer := peer.get_peer(peer_id)
-	if packet_peer == null:
-		return -1
-	return int(packet_peer.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME))
+	return transport.get_ping_ms(peer_id)
 
 
 ## The physics ticks the fake lag adds to a packet.
@@ -483,25 +474,17 @@ func _rpc_message_to_host(data: Dictionary) -> void:
 # --- Helpers ---
 
 
-## Sets up the ENet connection to [param peer_id]: a dropped connection is noticed within
-## seconds instead of ENet's default half a minute, and ENet never drops unreliable packets on
-## its own. Its *throttle* would drop some whenever the round trip time wobbles (together with
-## [method ENetConnection.bandwidth_limit] at creation, D-103); the game stream repeats what
-## matters itself, so a dropped command packet only costs, never helps.
 ## Sends what is queued now, before closing a connection (so a last message gets out first).
 func _flush() -> void:
-	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	if peer != null and peer.host != null:
-		peer.host.flush()
+	if _peer != null:
+		transport.flush()
 
 
+## Sets up the connection to [param peer_id] (the transport's settings: ENet's timeouts and no
+## throttle, D-103).
 func _configure_peer(peer_id: int) -> void:
-	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	if peer == null or peer.get_peer(peer_id) == null:
-		return
-	var packet_peer := peer.get_peer(peer_id)
-	packet_peer.set_timeout(32, TIMEOUT_MIN_MS, TIMEOUT_MAX_MS)
-	packet_peer.throttle_configure(5000, 2, 0)
+	if _peer != null and not _closed:
+		transport.configure_connection(peer_id)
 
 
 func _add_player(peer_id: int, player_name: String, team: int) -> void:
@@ -572,7 +555,7 @@ func _shut_down(reason: String) -> void:
 	_closed = true
 	_inbox.clear()
 	if _peer != null:
-		_peer.close()
+		transport.close()
 	# Only this session's own connection: a newer session may already have put its own in place.
 	if multiplayer != null and _peer != null and multiplayer.multiplayer_peer == _peer:
 		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
