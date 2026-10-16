@@ -52,6 +52,7 @@ func _ready() -> void:
 	await _test_respawn_countdown()
 	await _test_hunting_groups()
 	await _test_sightings()
+	await _test_hunter_takes_gun()
 	_free_match()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -393,6 +394,35 @@ func _test_sightings() -> void:
 	_check("The group runs to the sighting", after < before - 5.0, "%.1f m → %.1f m" % [before, after])
 
 
+## M17 (D-239): a hunting bot that goes for a better gun on the floor takes it. Its hunt orders used to steer
+## too, every tick, so it never faced the gun to press Use, gave up after 4 s and went for it again, forever
+## (online Team Deathmatch had matches without a kill because of it).
+func _test_hunter_takes_gun() -> void:
+	await _new_match(false)
+	_rounds.map_weapons.clear()
+	_rounds.map_weapons.count = 0
+	await _go_live(false)
+	_remove_team(1)
+	var plan := _rounds.get_hunt_plan(0)
+	var bot := plan.get_leader((plan.groups.filter(func(group: Array) -> bool: return group.size() == 2)[0] as Array)[0])
+	var inventory := bot.character.inventory
+	var primary := inventory.get_in_slot(WeaponData.Slot.PRIMARY)
+	if primary != null:
+		inventory.remove(primary)
+	inventory.hold(inventory.give(WeaponData.find(&"smg")))
+	var rifle := WeaponData.find(&"rifle")
+	var navigation_map := _map.get_world_3d().navigation_map
+	var at := NavigationServer3D.map_get_closest_point(navigation_map, bot.character.global_position + bot.character.global_basis * Vector3(0.0, 0.0, -4.0))
+	WeaponPickup.spawn(_map, rifle, 30, 90, at + Vector3.UP * 0.3, 0.0)
+	var taken := func() -> bool:
+		var held := inventory.get_in_slot(WeaponData.Slot.PRIMARY)
+		return held != null and held.data == rifle
+	var took := await _wait_until(taken, 8.0)
+	_check("A hunting bot takes a better gun on the floor by its way (with Use, its own slot taken)", took,
+			"its primary is %s, the gun %.1f m away" % [inventory.get_in_slot(WeaponData.Slot.PRIMARY).data.id if inventory.get_in_slot(WeaponData.Slot.PRIMARY) != null else &"none",
+					_flat(bot.character.global_position, at)])
+
+
 # --- Helpers ---
 
 
@@ -578,6 +608,15 @@ func _wait_seconds(seconds: float) -> void:
 func _wait_ticks(count: int) -> void:
 	for i in count:
 		await get_tree().physics_frame
+
+
+## Waits until [param condition] is true, at most [param seconds]. Returns whether it came true.
+func _wait_until(condition: Callable, seconds: float) -> bool:
+	for i in roundi(seconds * Engine.physics_ticks_per_second):
+		if condition.call():
+			return true
+		await get_tree().physics_frame
+	return condition.call()
 
 
 func _check(check_name: String, passed: bool, detail: String) -> void:

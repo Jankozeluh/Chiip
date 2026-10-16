@@ -70,6 +70,9 @@ const PICKUP_REACH := 10.0
 const SPOT_REACH := 15.0
 const PICKUP_TIME := 4.0
 const PICKUP_CHECK := 0.5
+## A gun the bot gave up on (it couldn't reach or take it in [constant PICKUP_TIME]) is left alone this long
+## (seconds), so it doesn't try again and again (M17: a bot looped on a gun a teammate stood on).
+const PICKUP_RETRY_WAIT := 20.0
 ## Only a gun worth at least this much more (by price) than its own is worth the detour.
 const PICKUP_MIN_GAIN := 500
 ## Beyond this distance (metres) a shotgun doesn't shoot: it closes in.
@@ -150,12 +153,21 @@ const WAIT_DISTANCE := 6.0
 ## A group answers a teammate's sighting only within this distance (metres);
 ## farther groups keep roaming, so the whole team doesn't pile into one fight.
 const LEAD_REACH := 25.0
+## A hunting bot that hears or sees the enemy this far (metres) from the place it's searching goes to the new
+## place instead (M17): two hunters searching each other's old positions passed on opposite sides of a wall
+## and swapped ends, again and again, with no fight for minutes.
+const SEARCH_FOLLOW_DISTANCE := 4.0
+## Only a lead this fresh (seconds) moves the search.
+const SEARCH_FOLLOW_AGE := 0.25
 ## How far off the leader's view a follower looks, to cover a flank (degrees).
 const FLANK_DEGREES := 50.0
 ## Seconds a hunting leader looks around at a roam point before moving on.
 const ROAM_LOOK_TIME := 1.2
-## A bot walking slower than this (m/s) isn't getting anywhere.
+## A bot walking slower than this (m/s) isn't getting anywhere. Measured by where it really gets to over
+## [constant STUCK_SAMPLE] seconds, not by its velocity: sliding against a body or standing on someone's head,
+## the velocity stays high while the bot goes nowhere (M17).
 const STUCK_SPEED := 0.6
+const STUCK_SAMPLE := 0.25
 ## Seconds of getting nowhere before a stuck bot jumps, and before it backs off
 ## to the side and asks for a new path (like a CS bot that's stuck).
 const STUCK_JUMP_TIME := 0.5
@@ -236,6 +248,10 @@ var _plant_deadline: float = INF
 var _stuck_time: float = 0.0
 var _backup_left: float = 0.0
 var _backup_direction: Vector3 = Vector3.ZERO
+## How fast the bot really got anywhere over the last [constant STUCK_SAMPLE] (m/s), and where that sample began.
+var _progress_speed: float = INF
+var _progress_from: Vector3 = Vector3.INF
+var _progress_left: float = 0.0
 ## Team respawn: the team's shared plan, and how long the bot has looked around at its roam point.
 var _hunt_plan: HuntPlan
 var _roam_look_left: float = 0.0
@@ -251,6 +267,10 @@ var _aim_pressed_last: bool = false
 var _pickup_target: WeaponPickup
 var _pickup_left: float = 0.0
 var _pickup_check_left: float = 0.0
+## Guns the bot gave up on → the [member _clock] time until which it leaves them alone.
+var _skipped_pickups: Dictionary = {}
+## Seconds this bot has run (for [member _skipped_pickups]).
+var _clock: float = 0.0
 ## A grenade throw in progress: where to (INF: none), how long the pin has been pulled, and the
 ## time until the next throw it may start.
 var _throw_at: Vector3 = Vector3.INF
@@ -373,6 +393,7 @@ func get_hunt_plan() -> HuntPlan:
 
 
 func get_input(delta: float) -> CharacterInput:
+	_clock += delta
 	_close_in_left = maxf(_close_in_left - delta, 0.0)
 	_callout_wait = maxf(_callout_wait - delta, 0.0)
 	if not character.frozen:
@@ -579,6 +600,13 @@ func _flat_distance(a: Vector3, b: Vector3) -> float:
 func _search(input: CharacterInput, delta: float) -> void:
 	if _wallbang(input, delta):
 		return
+	if role == Role.HUNT and _approach == Vector3.INF and _senses.get_lead_age() < SEARCH_FOLLOW_AGE \
+			and _flat_distance(_senses.last_known_position, _agent.target_position) > SEARCH_FOLLOW_DISTANCE \
+			and _wants_to_check(_senses.last_known_position):
+		# The enemy is somewhere else now: follow the freshest lead, not the first one.
+		move_to(_senses.last_known_position)
+		_look_around_left = LOOK_AROUND_TIME
+		_look_around_yaw = NAN
 	if _approach != Vector3.INF and has_arrived():
 		# Came in from the side (answering a call): now on to the place itself.
 		_approach = Vector3.INF
@@ -802,6 +830,8 @@ func _go_for_pickup(input: CharacterInput, delta: float) -> void:
 	if _pickup_target != null:
 		_pickup_left -= delta
 		if not is_instance_valid(_pickup_target) or not _pickup_target.is_in_group(WeaponPickup.GROUP) or _pickup_left <= 0.0:
+			if is_instance_valid(_pickup_target) and _pickup_left <= 0.0:
+				_skipped_pickups[_pickup_target] = _clock + PICKUP_RETRY_WAIT
 			_pickup_target = null
 			_resume_orders()
 			return
@@ -820,8 +850,11 @@ func _go_for_pickup(input: CharacterInput, delta: float) -> void:
 	_pickup_check_left = PICKUP_CHECK
 	var best: WeaponPickup = null
 	var best_gain := 0
+	for skipped: Variant in _skipped_pickups.keys():
+		if not is_instance_valid(skipped) or _skipped_pickups[skipped] <= _clock:
+			_skipped_pickups.erase(skipped)
 	for pickup in WeaponPickup.all_in_world(character):
-		if pickup.data.is_grenade() or not pickup.can_be_taken_by(character):
+		if pickup.data.is_grenade() or not pickup.can_be_taken_by(character) or _skipped_pickups.has(pickup):
 			continue
 		var reach := SPOT_REACH if pickup.spot != null else PICKUP_REACH
 		if character.global_position.distance_to(pickup.global_position) > reach:
@@ -914,6 +947,10 @@ static func throw_aim(from: Vector3, to: Vector3, speed: float) -> Vector2:
 
 func _hunt(input: CharacterInput, delta: float) -> void:
 	if _hunt_plan == null:
+		return
+	if is_instance_valid(_pickup_target):
+		# Taking a gun on the way: [method _go_for_pickup] steers. (When the hunt steered too, the two pulled the
+		# bot's path and view each way every tick, so it never faced the gun to take it; M17.)
 		return
 	var leader := _hunt_plan.get_leader(self)
 	if leader != null and leader != self:
@@ -1194,6 +1231,8 @@ func _walk(input: CharacterInput, delta: float, face_path: bool) -> void:
 	var direction := _get_walk_direction()
 	if direction == Vector3.ZERO:
 		_stuck_time = 0.0
+		_progress_from = Vector3.INF
+		_progress_speed = INF
 		return
 	if face_path:
 		_turn_toward(atan2(-direction.x, -direction.z), 0.0, WALK_TURN_SPEED, delta)
@@ -1206,8 +1245,14 @@ func _walk(input: CharacterInput, delta: float, face_path: bool) -> void:
 
 
 func _check_stuck(input: CharacterInput, direction: Vector3, delta: float) -> void:
-	var speed := Vector2(character.velocity.x, character.velocity.z).length()
-	if speed >= STUCK_SPEED or character.frozen or character.busy or not character.is_on_floor():
+	_progress_left -= delta
+	if _progress_from == Vector3.INF or _progress_left <= 0.0:
+		if _progress_from != Vector3.INF:
+			var moved := character.global_position - _progress_from
+			_progress_speed = Vector2(moved.x, moved.z).length() / (STUCK_SAMPLE - _progress_left)
+		_progress_from = character.global_position
+		_progress_left = STUCK_SAMPLE
+	if _progress_speed >= STUCK_SPEED or character.frozen or character.busy:
 		_stuck_time = 0.0
 		return
 	var before := _stuck_time

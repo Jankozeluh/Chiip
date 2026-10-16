@@ -2414,6 +2414,19 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** replacing every hint with a rich text with inline images (a larger rewrite of the hint labels); mono glyphs tinted to the HUD (the coloured face buttons help find the right button at a glance).
 
+## D-239 — M17: bots that stopped fighting in Team Deathmatch: three traps, fixed at their cause (2026-10-16)
+
+**Decision:** The open finding of D-222 (`netrespawn` playing minutes without a kill, about 3 runs in 50) was the bots, not the test. Diagnostics in the test (every bot's role, state, path, lead and weapon after 15 s without a kill; 170 runs) showed three traps, all fixed in `BotController`:
+- **A hunter going for a gun never took it** (the cause of the failed runs). In Team Deathmatch the hunt orders (`_lead_hunt`, `_follow`) ran first every tick and set the bot's path and view back to the group's goal; then `_go_for_pickup` set them to the gun. The bot jittered between the two, never faced the gun within 10° to press Use (its primary slot was taken, so walking over it wasn't enough), gave up after 4 s and chose the same gun 0.5 s later, forever, while its partner waited beside it. In the failed run both teams' leaders stood 0.5 m from a map weapon for 3½ minutes. Now the hunt doesn't steer while the bot goes for a gun, and a gun the bot gave up on is left alone for 20 s (`PICKUP_RETRY_WAIT`).
+- **Stuck on someone's head.** A bot pressed against a teammate standing still (the test's idle host) jumped, as a stuck bot does, landed on the teammate's head and stayed there: the stuck check only counted on the floor and read the velocity, which stays high while the bot slides on a body. It now measures where the bot really gets in 0.25 s (`STUCK_SAMPLE`), in the air too, so the jump and then the side-step come.
+- **Searching each other's old positions.** A hunter searching where it first heard the enemy kept that goal while new footsteps came in; two opposing hunters walked past each other on opposite sides of a wall and swapped ends, again and again. A hunter now moves its search to a fresh lead (under 0.25 s old) that is more than 4 m from where it's going (`SEARCH_FOLLOW_DISTANCE`). Bomb rounds keep their search as it was.
+
+`netrespawn` has a new check, "no stretch of 60 s without a kill" (normal play's longest was 29 s in 40 runs), and `respawn` checks that a hunting bot takes a better gun with Use (it fails without the fix).
+
+**Why:** Before: 2 runs in about 25 with stretches of 78 s and 210 s (one failed); after: 40 of 40 passed, the longest stretch 29 s. Team Deathmatch online is the primary mode. The traps are real for players too: a bot standing next to a gun or on an idle friend's head is what you'd see.
+
+**Alternatives:** Giving the test's idle host player something to do (hides the head trap, not the gun trap); a time-out that restarts a match without kills (hides all three); quarantining the checks (D-222 kept them because they looked like a real bug, and they were).
+
 ## Open questions
 
 | Question | Decide in |

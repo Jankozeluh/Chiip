@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M17 playing with friends
+
+Branch `m17` (D-220). Decisions from D-239. One commit per task.
+
+**Done**
+- M16's open finding, bots that stopped fighting in online Team Deathmatch (D-239). Diagnostics in `netrespawn` (each bot's role, state, path, lead, gun) over 170 runs found three traps: a hunter going for a better gun on the floor never took it, because its hunt orders steered its path and view back every tick, and then chose the same gun again after giving up (both teams' leaders stood beside a gun for 3½ minutes in the failed run); a bot that jumped onto an idle teammate's head stayed there (the stuck check read the velocity, on the floor only); hunters searched each other's old positions and swapped ends. Fixed in `BotController`; `netrespawn` 40 of 40 (before: stretches of 78 s and 210 s without a kill in 25 runs), with a new check for 60 s without a kill; `respawn` checks that a hunting bot takes a better gun (fails without the fix).
+
+**Next:** free-for-all, the game browser, chat, the killcam, map voting and new maps.
+
 ## 2026-10-16 — M16 maintainability & debugging
 
 Branch `m16`, one code branch at a time (D-220). Decisions from D-222. One commit per task.

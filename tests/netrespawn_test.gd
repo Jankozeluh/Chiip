@@ -14,6 +14,9 @@ extends Node
 ## failed checks as the exit code.
 
 const MAP := preload("res://maps/square.tscn")
+## Seconds of live play without a kill that count as bots that stopped fighting. Normal play has stretches
+## of up to ~25 s (two groups roaming different ends); the M17 bug had minutes (D-239).
+const QUIET_LIMIT := 60
 
 var _harness: NetHarness
 var _failures: int = 0
@@ -131,9 +134,17 @@ func _test() -> void:
 		if character.get_node_or_null("BotController") != null:
 			starts[character] = character.global_position
 	var farthest := [0.0]
+	# The longest stretch of live play without a kill, in ticks (M17: bots that stopped fighting).
+	var quiet := {"ticks": 0, "kills": 0, "longest": 0}
 	var over := func() -> bool:
 		for character: Character in starts:
 			farthest[0] = maxf(farthest[0], character.global_position.distance_to(starts[character]))
+		if _host_kills.size() != quiet["kills"]:
+			quiet["kills"] = _host_kills.size()
+			quiet["ticks"] = 0
+		elif host_rules.phase == RoundManager.Phase.LIVE:
+			quiet["ticks"] += 1
+			quiet["longest"] = maxi(quiet["longest"], quiet["ticks"])
 		return host_rules.phase == RoundManager.Phase.MATCH_END and client_rules.phase == RoundManager.Phase.MATCH_END
 	var ended := await _harness.wait_until(over, 120000)
 	await _harness.wait_ticks(30)
@@ -145,6 +156,9 @@ func _test() -> void:
 					RoundManager.Phase.keys()[host_rules.phase], host_rules.time_left, RoundManager.Phase.keys()[client_rules.phase],
 					get_tree().paused, host_rules.get_participants().filter(func(c: Character) -> bool: return c.frozen).size(),
 					host_rules.get_participants().size()])
+	var longest: float = quiet["longest"] / float(Engine.physics_ticks_per_second)
+	_check("The bots keep fighting: no stretch of %d s without a kill" % QUIET_LIMIT, longest <= QUIET_LIMIT,
+			"%.1f s without a kill" % longest)
 	var nav_map := host_rules.get_viewport().find_world_3d().navigation_map
 	_check("Every kill reaches the client in order, with the score after it", _client_kills == _host_kills and _host_kills.size() >= 15,
 			"host %d kills, client %d; the host's bots got at most %.1f m from where they stood, its navigation map has %d region(s)" % [
@@ -155,8 +169,8 @@ func _test() -> void:
 	for error in _own_respawn_errors:
 		worst = maxf(worst, error)
 	_check("Your own player comes back where the host put it", worst < 0.01, "%d respawns, worst %.3f m" % [_own_respawn_errors.size(), worst])
-	print("      (score %s, %d kills, %d respawns, your player respawned %d times, %d corrections)" % [
-			host_rules.score, _host_kills.size(), _host_respawns, _own_respawn_errors.size(), client.corrections])
+	print("      (score %s, %d kills, %d respawns, your player respawned %d times, %d corrections, longest stretch without a kill %.1f s)" % [
+			host_rules.score, _host_kills.size(), _host_respawns, _own_respawn_errors.size(), client.corrections, longest])
 
 
 ## Team Deathmatch's own rules online, with the bots held still.
