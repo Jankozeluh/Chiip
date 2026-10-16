@@ -70,7 +70,7 @@ The main menu offers **Play**, **Practice**, **Stats**, **Settings**, **Quit**, 
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
 | Class menu (opens by itself at the start of a match with your two drafted classes; during freeze time, any time in Team Deathmatch and practice mode; then click a card or press 1 or 2, 1 to 4 in practice) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
-| Debug overlay (speed, jump peak, inaccuracy, recoil, last hit; hidden at start) | F3 |
+| FPS counter, then the developer overlay (speed, jump peak, inaccuracy, recoil, last hit), then off (off at start) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 

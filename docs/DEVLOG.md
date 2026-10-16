@@ -2,6 +2,29 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — v0.2 screens
+
+**Done**
+- Merged main (M13 sound, M14 stats and training, M15 accessibility) and started the designer's v0.2 pages (D-230), one commit each: the glyph set and `PadGlyphs` first.
+
+- Boot screen to the designer's page (D-231): smooth logo, spaced "DIVOCAKOS", four squares, the credit line, a 0.3 s fade-in; the menu footer carries the credit line too.
+
+- Compass to the designer's page (D-232): under the score, 90° each side with a heading box, marks that step down over 3 s, a callout tag and a kill-feed line for the bots' callouts; a new Settings → Interface tab (UI scale, team colours, compass).
+
+- FPS counter and developer overlay (D-233): F3 steps off, player, developer; the Interface tab has the FPS counter and Net stats rows.
+
+- Settings to the designer's pages (D-234): Interface and Controller tabs, UI scale in steps of ten with a "now" line, the team colour preview, invert X, button prompts (Auto/Xbox/PS/Generic) and the pad bindings table with the new glyphs, the Audio note; the colour-blind UI colours are the designer's.
+
+- Stats screen as the designer's two pages (D-235): the lifetime row, K/D bars, accuracy and wins blocks, the history, a match detail; new recorded data (kills and damage per gun, kills and deaths per minute); the Training bests behind a fifth filter.
+
+- Training on the HUD (D-236): the aim trainer's start panel with 30/60/90 s (each length its own best), the run readout, Esc to stop, the result panel with the best streak, and the spray wall's panel.
+
+- Credits screen to the designer's page (D-237): "Created by JK", the document list with a dot and the licence's name, the text frame, the mono mark and the rights line.
+
+- Pad prompts with glyphs (D-238): the bomb prompt, the settings menu's LB/RB tabs (which now work), Y reset and B back.
+
+**Next:** the full run; the app icon, map thumbnails and portraits wait for the designer's assets file.
+
 ## 2026-10-16 — M15 accessibility & polish
 
 Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 stats. Decisions D-210 to D-219. One commit per task.

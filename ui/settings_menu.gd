@@ -73,6 +73,17 @@ const CONTROLS_HINT := "Click a key or Pad box, then press the new key or button
 const ROW_HEIGHT := 48.0
 const LABEL_WIDTH := 400.0
 const CROSSHAIR_LABEL_WIDTH := 240.0
+## The label column of the Interface and Controller tabs (the designer's 240).
+const INTERFACE_LABEL_WIDTH := 240.0
+## The Controller tab's table: the width of its Pad and Key columns, and the actions it lists after Move and Look.
+## The width of a slider and its number on the Controller tab.
+const CONTROLLER_SLIDER_WIDTH := 320.0
+const PAD_TABLE_PAD_WIDTH := 96.0
+const PAD_TABLE_KEY_WIDTH := 112.0
+const PAD_TABLE_ACTIONS := {
+	&"shoot": "Shoot", &"aim": "Aim", &"jump": "Jump", &"crouch": "Crouch", &"reload": "Reload", &"use": "Use",
+	&"slot_grenade": "Grenade", &"scoreboard": "Scoreboard", &"last_weapon": "Last weapon",
+}
 ## A slider with its number: 480 px wide, the value box 80 px (the pixel resolution's 112), and the crosshair tab's
 ## plain number 48 px. The crosshair tab's groups take what the 640 px column leaves after the label (400 px
 ## in the mockup's 1280 px window), so the column can be narrower in a narrow window.
@@ -95,6 +106,15 @@ const PREVIEW_PULSE_SECONDS := 2.4
 var _settings: Settings
 ## Setting key → Callables that bring the controls of that setting up to date.
 var _refreshers: Dictionary = {}
+## The Interface tab's hint under the UI scale row, the two team colour cards, the Controller tab's stick box and bindings rows.
+var _scale_hint: Label
+var _preview_cards: Array[PanelContainer] = []
+var _stick_preview: StickPreview
+var _pad_rows: VBoxContainer
+var _settings_scale_applied: bool = false
+## What the pad hints were last drawn for ("pad/style"), so they are redrawn only when that changes.
+var _pad_hint_key: String = ""
+var _ui_scale: float = 1.0
 ## Tab name → keys of the settings on that tab (what "Reset tab" puts back).
 var _tab_keys: Dictionary = {}
 ## The name of the tab being built.
@@ -130,12 +150,18 @@ var _previews: Array[Crosshair] = []
 @onready var _game_rows: VBoxContainer = %Game
 @onready var _video_rows: VBoxContainer = %Video
 @onready var _audio_rows: VBoxContainer = %Audio
+@onready var _interface_rows: VBoxContainer = %InterfaceRows
+@onready var _team_preview: VBoxContainer = %TeamPreview
+@onready var _controller_rows: VBoxContainer = %ControllerRows
+@onready var _pad_table: VBoxContainer = %PadTable
 @onready var _crosshair_rows: VBoxContainer = %CrosshairRows
 @onready var _controls_rows: VBoxContainer = %ControlsRows
 @onready var _dark_preview: Crosshair = %DarkCrosshair
 @onready var _light_preview: Crosshair = %LightCrosshair
 @onready var _notice: Label = %Notice
 @onready var _reset_button: Button = %ResetButton
+@onready var _pad_hints: HBoxContainer = %PadHints
+@onready var _tab_glyphs: HBoxContainer = %TabGlyphs
 @onready var _back_button: Button = %BackButton
 @onready var _licenses_button: Button = %LicensesButton
 @onready var _licenses: LicensesMenu = $LicensesMenu
@@ -148,6 +174,8 @@ func _ready() -> void:
 	_build_game_tab()
 	_build_video_tab()
 	_build_audio_tab()
+	_build_interface_tab()
+	_build_controller_tab()
 	_build_crosshair_tab()
 	_build_controls_tab()
 	_settings.changed.connect(_on_setting_changed)
@@ -170,6 +198,18 @@ func _exit_tree() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# The pad: the shoulder buttons turn the tabs and Y puts the tab's settings back (the designer's hints, D-238).
+	if event is InputEventJoypadButton and event.pressed and _listening_action == &"" and MenuState.is_top(self):
+		match (event as InputEventJoypadButton).button_index:
+			JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER:
+				var step := -1 if (event as InputEventJoypadButton).button_index == JOY_BUTTON_LEFT_SHOULDER else 1
+				_tabs.current_tab = posmod(_tabs.current_tab + step, _tabs.get_tab_count())
+				get_viewport().set_input_as_handled()
+				return
+			JOY_BUTTON_Y:
+				_on_reset_pressed()
+				get_viewport().set_input_as_handled()
+				return
 	if _listening_action != &"":
 		if listen(event):
 			get_viewport().set_input_as_handled()
@@ -179,6 +219,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_update_pad_hints()
 	# The dynamic crosshair of the preview breathes, so the setting can be judged.
 	if visible and _previews[0].dynamic:
 		_preview_time += delta
@@ -219,10 +260,38 @@ func is_open() -> bool:
 	return visible
 
 
+## The pad hints (LB and RB "Tabs" at the top, Y on Reset, B on Back) show while the pad is the device used last, in the style
+## of the pad ([member Settings.pad_prompts]); they follow the device at once.
+func _update_pad_hints() -> void:
+	var pad := LastInput.gamepad
+	var style := PadGlyphs.style_for(_settings.pad_prompts)
+	var key := "%s/%s" % [pad, style]
+	if key == _pad_hint_key:
+		return
+	_pad_hint_key = key
+	_pad_hints.visible = pad
+	for child in _tab_glyphs.get_children():
+		_tab_glyphs.remove_child(child)
+		child.queue_free()
+	var steps := maxi(1, floori(_ui_scale))
+	if pad:
+		for button in ["lb", "rb"]:
+			var rect := TextureRect.new()
+			rect.texture = PadGlyphs.get_scaled_texture(style, button, steps)
+			rect.stretch_mode = TextureRect.STRETCH_KEEP
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_tab_glyphs.add_child(rect)
+	_reset_button.icon = PadGlyphs.get_scaled_texture(style, "north", steps) if pad else null
+	_back_button.icon = PadGlyphs.get_scaled_texture(style, "east", steps) if pad else null
+
+
 ## Scales the menu; 1.0 is the size it is designed for (a 720-pixel-tall
 ## window). Hands it the theme scaled for the window ([UiTheme]); the crosshair
 ## previews are not themed and take the factor themselves.
 func set_ui_scale(factor: float) -> void:
+	_pad_hint_key = ""
+	_ui_scale = factor
+	_settings_scale_applied = true
 	UiTheme.apply(self, factor)
 	for preview in _previews:
 		preview.set_ui_scale(factor)
@@ -382,17 +451,6 @@ func _build_game_tab() -> void:
 	_add_slider_row(_game_rows, &"fov", {
 		"label": "Field of view", "step": 1.0, "format": "%d",
 		"tip": "Degrees across a 4:3 screen, like CS: 90 here is CS's 90. A wider window shows more to the sides."})
-	# M15 (D-212): the gamepad's look.
-	_add_slider_row(_game_rows, &"pad_sensitivity", {
-		"label": "Pad sensitivity", "step": 0.05, "format": "%.2f",
-		"tip": "How fast the right stick turns the view at a full push. 1.00 is a quarter turn a second."})
-	_add_slider_row(_game_rows, &"pad_deadzone", {
-		"label": "Stick dead zone", "step": 0.01, "scale": 100.0, "format": "%d",
-		"tip": "How far (in percent) a stick must be pushed before it does anything. Raise it if the view or you drift by themselves."})
-	_add_slider_row(_game_rows, &"pad_curve", {
-		"label": "Look curve", "step": 0.1, "format": "%.1f",
-		"tip": "1.0 is straight: the turn follows the push. Higher turns slowly for small pushes (fine aim) and still turns fast at a full push."})
-	_add_toggle_row(_game_rows, &"pad_invert_y", "Invert pad Y")
 
 
 func _build_video_tab() -> void:
@@ -413,14 +471,269 @@ func _build_video_tab() -> void:
 		"tip": "The height of the 3D image in lines; it is scaled up with sharp pixels. Fewer lines = chunkier."})
 	_add_toggle_row(_video_rows, &"palette_effect", "Palette effect", "Limit the world's colours, with light dithering.")
 	_add_toggle_row(_video_rows, &"pixelate_hud", "Pixelated HUD", "Draw the HUD at the low resolution too.")
-	_add_choice_row(_video_rows, &"ui_scale", "UI scale", Settings.UI_SCALES,
-			func(value: int) -> String: return "Auto" if value == 0 else "%d %%" % value,
-			"Auto: the biggest even step that fits the window. 100 % fills it exactly, 75 % and 50 % are smaller.")
+
+
+## The Interface tab (v0.2, D-232, the designer's "24 Settings interface"): how the HUD looks and what it shows, with the team
+## colours' preview on the right. UI scale (Auto, then 50 to 100 percent of the biggest that fits, D-181) with a line saying what
+## Auto gives now, Team colours, the FPS counter (F3 steps through its modes), Net stats and the Compass.
+func _build_interface_tab() -> void:
+	_tab_name = "Interface"
+	_add_choice_row(_interface_rows, &"ui_scale", "UI scale", Settings.UI_SCALES,
+			func(value: int) -> String: return "Auto" if value == 0 else str(value),
+			"Auto: the biggest even step that fits the window. 100 fills it exactly, smaller numbers are that share of it.", INTERFACE_LABEL_WIDTH)
+	_scale_hint = _add_hint(_interface_rows, "", INTERFACE_LABEL_WIDTH)
+	_add_refresher(&"ui_scale", _update_scale_hint)
 	# M15 (D-210): the two teams in blue and orange, apart for every kind of colour blindness.
-	var team_row := _add_row(_video_rows, &"team_colors", "Team colours",
-			"Standard is blue against red. Colour-blind safe is a dark blue against a light orange: it stays apart for red-green and blue-yellow colour blindness, and in greyscale.")
-	_choices[&"team_colors"] = _add_segments(team_row, &"team_colors", ["Standard", "Colour-blind safe"], Teams.SCHEME_NAMES)
+	var team_row := _add_row(_interface_rows, &"team_colors", "Team colours",
+			"Standard is blue against red. Colour-blind is a dark blue against a light orange: it stays apart for red-green and blue-yellow colour blindness, and in greyscale.",
+			INTERFACE_LABEL_WIDTH)
+	_choices[&"team_colors"] = _add_segments(team_row, &"team_colors", ["Normal", "Colour-blind"], Teams.SCHEME_NAMES)
 	_track(&"team_colors")
+	var fps_row := _add_row(_interface_rows, &"fps_counter", "FPS counter",
+			"F3 steps through off, player and developer. Player: a small block with the frame rate, frame time and, online, ping and loss. Developer: the full readout.",
+			INTERFACE_LABEL_WIDTH)
+	_choices[&"fps_counter"] = _add_segments(fps_row, &"fps_counter", ["Off", "Player", "Developer"], Settings.FPS_COUNTER_MODES)
+	_track(&"fps_counter")
+	_add_hint(_interface_rows, "F3 steps off, player, developer in a match.", INTERFACE_LABEL_WIDTH)
+	_add_toggle_row(_interface_rows, &"net_stats", "Net stats", "Ping and packet loss in the player's FPS counter, online only.", INTERFACE_LABEL_WIDTH)
+	_add_toggle_row(_interface_rows, &"compass", "Compass", "The strip under the score that shows where enemies fire.", INTERFACE_LABEL_WIDTH)
+	var note := _add_hint(_interface_rows, "Light orange sits close to the alert amber. In colour-blind mode alerts always carry their icon, and the bomb timer turns text colour with amber only in its last 10 s.", INTERFACE_LABEL_WIDTH)
+	note.theme_type_variation = &"DimLabel"
+	_build_team_preview()
+	get_tree().root.size_changed.connect(_update_scale_hint)
+
+
+## The line under the UI scale row: what the scale is now, as a percent of the 1280 × 720 layout.
+func _update_scale_hint() -> void:
+	if _scale_hint == null:
+		return
+	var factor := PixelView.ui_scale_for(Vector2(get_window().size), _settings.ui_scale)
+	_scale_hint.text = "Auto fits the HUD to the window · now %d %%" % roundi(factor * 100.0)
+
+
+## A muted line indented under a row's label, for a hint or a note.
+func _add_hint(parent: Control, text: String, label_width: float) -> Label:
+	var row := HBoxContainer.new()
+	row.theme_type_variation = &"FlushRow"
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(row)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(label_width, 0)
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(spacer)
+	var label := Label.new()
+	label.theme_type_variation = &"MuteLabel"
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
+	return label
+
+
+## The two team colour schemes side by side, the picked one framed: each card shows a score line (your side's number and
+## squares against theirs) and a kill-feed line with a sniper kill and the bomb's timer, in that scheme's colours.
+func _build_team_preview() -> void:
+	var caption := Label.new()
+	caption.theme_type_variation = &"MuteLabel"
+	caption.text = "Team colours · preview"
+	_team_preview.add_child(caption)
+	for scheme in Teams.SCHEME_NAMES.size():
+		var card := PanelContainer.new()
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_team_preview.add_child(card)
+		var column := VBoxContainer.new()
+		column.theme_type_variation = &"ContentBox"
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(column)
+		var you := Teams.scheme_color(&"friendly_text", scheme)
+		var foe := Teams.scheme_color(&"enemy_text", scheme)
+		var head := HBoxContainer.new()
+		head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(head)
+		var name_label := Label.new()
+		name_label.theme_type_variation = &"DimLabel"
+		name_label.text = "Normal" if scheme == 0 else "Colour-blind"
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(name_label)
+		var hex := Label.new()
+		hex.theme_type_variation = &"DimLabel"
+		hex.text = "%s / %s" % [you.to_html(false).to_upper(), foe.to_html(false).to_upper()]
+		head.add_child(hex)
+		var score := HBoxContainer.new()
+		score.theme_type_variation = &"FormRow"
+		score.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(score)
+		score.add_child(_tinted(&"PureLargeLabel", "39", you))
+		score.add_child(_chips(you, [true, true, false]))
+		var gap := Control.new()
+		gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		score.add_child(gap)
+		score.add_child(_chips(foe, [true, false, false]))
+		score.add_child(_tinted(&"PureLargeLabel", "41", foe))
+		var feed := PanelContainer.new()
+		feed.theme_type_variation = &"InsetPanel"
+		feed.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(feed)
+		var line := HBoxContainer.new()
+		line.theme_type_variation = &"FormRow"
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		feed.add_child(line)
+		line.add_child(_tinted(&"PureLabel", "Bot4", foe))
+		var sniper := UiIcons.get_icon(_team_preview, &"sniper")
+		if sniper != null:
+			var rect := TextureRect.new()
+			rect.texture = sniper
+			rect.custom_minimum_size = sniper.get_size()
+			rect.stretch_mode = TextureRect.STRETCH_KEEP
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			line.add_child(rect)
+		line.add_child(_tinted(&"PureLabel", "You", you))
+		var space := Control.new()
+		space.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		space.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(space)
+		line.add_child(_tinted(&"PureLabel", "0:34", _settings_alert()))
+		_preview_cards.append(card)
+	_add_refresher(&"team_colors", _update_preview_frames)
+	_update_preview_frames()
+
+
+## A label of the white roles, tinted with [param colour] (a property, not a theme override).
+func _tinted(role: StringName, text: String, colour: Color) -> Label:
+	var label := Label.new()
+	label.theme_type_variation = role
+	label.text = text
+	label.modulate = colour
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+
+## A row of small squares in [param colour]: filled for true, a frame for false.
+func _chips(colour: Color, filled: Array) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.theme_type_variation = &"TeamChipRow"
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for full: bool in filled:
+		var chip := Panel.new()
+		chip.theme_type_variation = &"PureChip" if full else &"PureChipFrame"
+		chip.custom_minimum_size = Vector2(12, 12)
+		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		chip.modulate = colour
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(chip)
+	return row
+
+
+## The ALERT colour of the theme's palette (the bomb's timer).
+func _settings_alert() -> Color:
+	return _team_preview.get_theme_color(&"alert", &"Palette")
+
+
+## Frames the card of the scheme in use.
+func _update_preview_frames() -> void:
+	for i in _preview_cards.size():
+		_preview_cards[i].theme_type_variation = &"PreviewCardPicked" if i == Teams.SCHEME_NAMES.find(_settings.team_colors) else &"PreviewCard"
+
+
+## The Controller tab (v0.2, D-234, the designer's "25 Settings controller"): the stick's look (sensitivity, dead zone with
+## its live box, response curve, inversion), which pad's buttons the prompts draw, and on the right the bindings: what each
+## action does on the pad and on the keyboard.
+func _build_controller_tab() -> void:
+	_tab_name = "Controller"
+	_add_slider_row(_controller_rows, &"pad_sensitivity", {
+		"label": "Look sensitivity", "step": 0.05, "format": "%.2f", "label_width": INTERFACE_LABEL_WIDTH, "group_width": CONTROLLER_SLIDER_WIDTH,
+		"tip": "How fast the right stick turns the view at a full push. 1.00 is a quarter turn a second."})
+	_add_slider_row(_controller_rows, &"pad_deadzone", {
+		"label": "Dead zone", "step": 0.01, "scale": 100.0, "format": "%d%%", "label_width": INTERFACE_LABEL_WIDTH, "group_width": CONTROLLER_SLIDER_WIDTH,
+		"tip": "How far (in percent) a stick must be pushed before it does anything. Raise it if the view or you drift by themselves."})
+	_stick_preview = StickPreview.new()
+	_stick_preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	(_rows[&"pad_deadzone"] as HBoxContainer).add_child(_stick_preview)
+	_add_refresher(&"pad_deadzone", func() -> void: _stick_preview.set_deadzone(_settings.pad_deadzone))
+	_add_slider_row(_controller_rows, &"pad_curve", {
+		"label": "Look curve", "step": 0.1, "format": "%.1f", "label_width": INTERFACE_LABEL_WIDTH, "group_width": CONTROLLER_SLIDER_WIDTH,
+		"tip": "1.0 is straight: the turn follows the push. Higher turns slowly for small pushes (fine aim) and still turns fast at a full push."})
+	_add_toggle_row(_controller_rows, &"pad_invert_y", "Invert Y", "", INTERFACE_LABEL_WIDTH)
+	_add_toggle_row(_controller_rows, &"pad_invert_x", "Invert X", "", INTERFACE_LABEL_WIDTH)
+	var prompts_row := _add_row(_controller_rows, &"pad_prompts", "Button prompts",
+			"Which pad's buttons the hints draw. Auto picks the pad that is plugged in.", INTERFACE_LABEL_WIDTH)
+	_choices[&"pad_prompts"] = _add_segments(prompts_row, &"pad_prompts", ["Auto", "Xbox", "PS", "Generic"], Settings.PAD_PROMPTS)
+	_track(&"pad_prompts")
+	_build_pad_table()
+	_add_refresher(&"pad_prompts", _fill_pad_table)
+	_add_refresher(&"bindings", _fill_pad_table)
+
+
+## The bindings table's frame: a header and one row per action, filled by [method _fill_pad_table].
+func _build_pad_table() -> void:
+	var header := HBoxContainer.new()
+	header.theme_type_variation = &"FlushRow"
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pad_table.add_child(header)
+	var action := Label.new()
+	action.theme_type_variation = &"MuteLabel"
+	action.text = "Action"
+	action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(action)
+	for column: Array in [["Pad", PAD_TABLE_PAD_WIDTH], ["Key", PAD_TABLE_KEY_WIDTH]]:
+		var label := Label.new()
+		label.theme_type_variation = &"MuteLabel"
+		label.text = column[0]
+		label.custom_minimum_size = Vector2(column[1], 0)
+		header.add_child(label)
+	var rows := VBoxContainer.new()
+	rows.theme_type_variation = &"TightBox"
+	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pad_table.add_child(rows)
+	_pad_rows = rows
+	_fill_pad_table()
+
+
+## What each listed action does on the pad (a glyph in the chosen style) and on the keyboard.
+func _fill_pad_table() -> void:
+	if _pad_rows == null:
+		return
+	for child in _pad_rows.get_children():
+		_pad_rows.remove_child(child)
+		child.queue_free()
+	var style := PadGlyphs.style_for(_settings.pad_prompts)
+	var entries: Array[Array] = [["Move", "ls", "WASD"], ["Look", "rs", "Mouse"]]
+	for action: StringName in PAD_TABLE_ACTIONS:
+		var key_event := _settings.get_binding(action, 0)
+		entries.append([PAD_TABLE_ACTIONS[action], PadGlyphs.button_for_event(_settings.get_pad_binding(action)), Settings.binding_text(key_event) if key_event != null else "-"])
+	for entry in entries:
+		var row := HBoxContainer.new()
+		row.theme_type_variation = &"FlushRow"
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_pad_rows.add_child(row)
+		var name_label := Label.new()
+		name_label.theme_type_variation = &"DimLabel"
+		name_label.text = entry[0]
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		var cell := Control.new()
+		cell.custom_minimum_size = Vector2(PAD_TABLE_PAD_WIDTH, 0)
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(cell)
+		var glyph := PadGlyphs.get_texture(style, String(entry[1]))
+		if glyph != null:
+			var rect := TextureRect.new()
+			rect.texture = glyph
+			rect.custom_minimum_size = Vector2(32, 32)
+			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cell.add_child(rect)
+			cell.custom_minimum_size.y = 32
+		var key_label := Label.new()
+		key_label.theme_type_variation = &"MuteLabel"
+		key_label.text = String(entry[2])
+		key_label.custom_minimum_size = Vector2(PAD_TABLE_KEY_WIDTH, 0)
+		row.add_child(key_label)
+	if _settings_scale_applied:
+		UiTheme.apply_sizes(_pad_table, _ui_scale)
 
 
 func _build_audio_tab() -> void:
@@ -433,6 +746,7 @@ func _build_audio_tab() -> void:
 	}
 	for entry: Array in [[&"master_volume", "Master"], [&"effects_volume", "Effects"], [&"interface_volume", "Interface"], [&"music_volume", "Music"]]:
 		_add_slider_row(_audio_rows, entry[0], {"label": entry[1], "step": 0.01, "scale": 100.0, "format": "%d", "tip": tips[entry[0]]})
+	_add_hint(_audio_rows, "Music plays in the menus and as short stingers at the start and end of rounds and matches. Never during a round.", LABEL_WIDTH)
 
 
 func _build_crosshair_tab() -> void:
@@ -649,8 +963,8 @@ func _add_toggle_row(parent: Control, key: StringName, label_text: String, tip: 
 ## values and [param text_of] turns one into its text. A value the file holds that isn't
 ## in the list (a hand-edited frame limit) gets a segment of its own, marked "(custom)",
 ## while it is the value.
-func _add_choice_row(parent: Control, key: StringName, label_text: String, values: Array[int], text_of: Callable, tip: String = "") -> void:
-	var row := _add_row(parent, key, label_text, tip)
+func _add_choice_row(parent: Control, key: StringName, label_text: String, values: Array[int], text_of: Callable, tip: String = "", label_width: float = LABEL_WIDTH) -> void:
+	var row := _add_row(parent, key, label_text, tip, label_width)
 	var texts: Array[String] = []
 	for value in values:
 		texts.append(text_of.call(value))

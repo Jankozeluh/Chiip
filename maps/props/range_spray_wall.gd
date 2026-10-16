@@ -165,6 +165,26 @@ func get_holes() -> Array:
 	return _holes.duplicate()
 
 
+## Seconds since the last shot with the gun in hand (the training screen's panel stays a few seconds).
+func get_idle_seconds() -> float:
+	return _idle
+
+
+## The gun in hand that the wall is following, or null.
+func get_weapon_data() -> WeaponData:
+	return _weapon.data if _weapon != null and is_instance_valid(_weapon) else null
+
+
+## How many shots the spray now on has (0 before the first) and how many its pattern has.
+func get_spray_shots() -> int:
+	return _holes.size()
+
+
+func get_pattern_size() -> int:
+	var data := get_weapon_data()
+	return data.spray_pattern.size() if data != null else 0
+
+
 ## The ghost: the pattern's points as wall points, from the first shot's place (empty without a pattern).
 func get_ghost() -> Array[Vector2]:
 	var points: Array[Vector2] = []
@@ -253,6 +273,7 @@ func _on_fired(spray_shot: int) -> void:
 	if _weapon == null or _weapon.data.pellets > 1:
 		return
 	_idle = 0.0
+	TrainingHub.wall = self
 	# Where the bullet first met something: a bullet that goes through the wall (D-214) still made its hole here.
 	var at: Variant = wall_point(hit.get("first_position", hit["position"])) if hit.has("position") else null
 	# A bullet in the reset plate clears the wall instead of leaving a hole.

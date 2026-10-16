@@ -33,10 +33,15 @@ var _map_name: String = ""
 ## Weapon id → its numbers this match.
 var _weapons: Dictionary[String, StatsWeapon] = {}
 var _headshot_kills: int = 0
+## Your kills and deaths in each minute so far.
+var _kills_per_minute: Array[int] = []
+var _deaths_per_minute: Array[int] = []
 var _seconds: float = 0.0
 var _weapon: Weapon
 ## The id of the gun that fired last: the credit for a hit whose weapon the host didn't name.
 var _last_gun: String = ""
+## The gun that did the last damage to an enemy: the kill that follows is its.
+var _last_hit_gun: String = ""
 ## Characters whose damage is already followed.
 var _watched: Dictionary = {}
 var _done: bool = false
@@ -102,6 +107,8 @@ func build_record(winner: int) -> StatsMatch:
 		record.assists = stats.assists
 		record.damage = stats.damage
 	record.headshot_kills = mini(_headshot_kills, record.kills)
+	record.kills_per_minute = _kills_per_minute.duplicate()
+	record.deaths_per_minute = _deaths_per_minute.duplicate()
 	for id in _weapons:
 		if _weapons[id].shots > 0:
 			record.weapons[id] = _weapons[id]
@@ -131,19 +138,38 @@ func _on_fired(_spray_shot: int) -> void:
 
 
 ## One bullet of someone else's damaged [param victim]; [param attacker] is who shot.
-func _on_damaged(_amount: float, zone: Hitbox.Zone, attacker: Character, victim: Character) -> void:
+func _on_damaged(amount: float, zone: Hitbox.Zone, attacker: Character, victim: Character) -> void:
 	if attacker != _player or victim.team == _player.team:
 		return
 	var source := victim.last_damage_source
 	var id := _last_gun if source == null else String(source.id)
 	if id == "" or (source != null and not _counts(source)):
 		return
-	_weapon_numbers(id).add_hit(zone)
+	var numbers := _weapon_numbers(id)
+	numbers.add_hit(zone)
+	numbers.damage += amount
+	_last_hit_gun = id
 
 
 func _on_character_killed(victim: Character, killer: Character, headshot: bool) -> void:
-	if killer == _player and victim != _player and victim.team != _player.team and headshot:
-		_headshot_kills += 1
+	if killer == _player and victim != _player and victim.team != _player.team:
+		_count_minute(_kills_per_minute)
+		if headshot:
+			_headshot_kills += 1
+		# The gun the last bullet came from (a kill by the knife or a grenade has none).
+		if _last_hit_gun != "":
+			_weapon_numbers(_last_hit_gun).kills += 1
+	elif victim == _player:
+		_count_minute(_deaths_per_minute)
+	_last_hit_gun = ""
+
+
+## Counts one more in the current minute of [param minutes] (a list of counts per minute, grown as the match goes on).
+func _count_minute(minutes: Array[int]) -> void:
+	var index := mini(int(_seconds / 60.0), StatsMatch.MAX_MINUTES - 1)
+	while minutes.size() <= index:
+		minutes.append(0)
+	minutes[index] += 1
 
 
 func _on_match_ended(winner: int) -> void:

@@ -39,7 +39,7 @@ const TOLERANCE := 1.5
 const MAX_LISTED := 4
 
 var _failures: int = 0
-## Every window size with every UI scale setting (Auto, 50, 75 and 100 percent): [size, percent].
+## Every window size with the UI scale settings Auto, 50 and 100 percent: [size, percent].
 var _cases: Array = []
 
 
@@ -47,7 +47,8 @@ func _ready() -> void:
 	# The shared settings: never read or write the player's file (nothing here calls load_from_disk).
 	Settings.get_instance().reset_to_defaults()
 	for size in SIZES:
-		for percent in Settings.UI_SCALES:
+		# Auto, the smallest and the biggest scale (the steps between are the same code).
+		for percent in [0, Settings.UI_SCALES[1], Settings.UI_SCALES[-1]]:
 			_cases.append([size, percent])
 	_test_scale_rule()
 	await _test_main_menu(false)
@@ -133,6 +134,14 @@ func _test_main_menu(pixelated: bool) -> void:
 			settings_menu.get_tabs().current_tab = tab
 			await _settle(size)
 			_collect(failures, "settings tab %d at %s" % [tab, size], [menu], size)
+		# With the pad as the device used last the title row gets the LB RB hints and the buttons their glyphs (v0.2, D-238).
+		LastInput.gamepad = true
+		for tab in [0, settings_menu.get_tab_names().find("Controller")]:
+			settings_menu.get_tabs().current_tab = tab
+			await _settle(size)
+			await get_tree().process_frame
+			_collect(failures, "settings tab %d with the pad hints at %s" % [tab, size], [menu], size)
+		LastInput.gamepad = false
 		# The Licences screen over the settings (M12): the longest document, the GPL, and the engine's.
 		var licences := settings_menu.get_licenses_menu()
 		licences.open()
@@ -146,15 +155,19 @@ func _test_main_menu(pixelated: bool) -> void:
 		var stats_menu := menu.get_stats_menu()
 		stats_menu.book = _sample_book()
 		stats_menu.open()
-		for tab in stats_menu.get_tabs().get_tab_count():
-			stats_menu.get_tabs().current_tab = tab
+		for filter in ["all", "rounds", "training"]:
+			stats_menu.set_filter(filter)
 			await _settle(size)
-			_collect(failures, "stats tab %d at %s" % [tab, size], [menu], size)
+			_collect(failures, "stats (%s) at %s" % [filter, size], [menu], size)
+		stats_menu.set_filter("all")
+		stats_menu.open_match(stats_menu.book.history.size() - 1)
+		await _settle(size)
+		_collect(failures, "stats match detail at %s" % [size], [menu], size)
 		stats_menu.close()
 		stats_menu.book = null
 		menu.get_match_setup().close()
 	var label := "pixelated HUD, " if pixelated else ""
-	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen, the Stats tabs) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
+	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen, the Stats page, detail and training) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(menu)
 	menu.queue_free()
@@ -223,6 +236,27 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 				crowded.append("%s %s over the compass %s" % [other_path, other.get_global_rect(), compass.get_global_rect()])
 		if not crowded.is_empty():
 			failures["compass at %s" % [size]] = crowded
+		# 2c. The FPS counter and the developer readout (F3), online rows included (v0.2, D-233).
+		var overlay := main.get_node("DebugOverlay") as DebugOverlay
+		for mode in ["player", "developer"]:
+			overlay.set_mode(mode)
+			overlay.get_net_row().visible = true
+			await _settle(size)
+			await get_tree().process_frame
+			_collect(failures, "%s overlay at %s" % [mode, size], [overlay], size)
+		overlay.set_mode("off")
+		# 2d. The Shooting Range's training screens: the run, the result, the spray panel and the start panel (D-236).
+		var training_hud := main.get_node("TrainingHud") as TrainingHud
+		for screen in ["run", "result", "spray"]:
+			training_hud.preview(screen)
+			await _settle(size)
+			_collect(failures, "training %s at %s" % [screen, size], [training_hud], size)
+		training_hud.follow_hub()
+		var training_menu := main.get_node("TrainingMenu") as TrainingMenu
+		training_menu.visible = true
+		await _settle(size)
+		_collect(failures, "training start panel at %s" % [size], [training_menu], size)
+		training_menu.visible = false
 		# 3. The buy menu (freeze time), in a match with rounds.
 		if buy_menu.open():
 			await _settle(size)
@@ -250,7 +284,7 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 			await _settle(size)
 			_collect(failures, "match end at %s" % [size], [end_screen], size)
 			end_screen.visible = false
-	_check("%s: the HUD (its compass clear of the top bar and the toasts), class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
+	_check("%s: the HUD (its compass clear of the top bar and the toasts), the FPS counter and developer overlay, the training screens, class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(main)
 	main.queue_free()
@@ -348,7 +382,7 @@ func _test_boot_screen() -> void:
 			"big %s, small %s" % [big, small])
 	var failures := {}
 	screen.show_screen()
-	var shows_logo := screen.get_logo().visible and not screen.get_wordmark().visible and screen.get_studio_name_label().text == "Divocakos"
+	var shows_logo := screen.get_logo().visible and not screen.get_wordmark().visible and screen.get_studio_name_label().text == "DIVOCAKOS"
 	var whole_steps: Array[String] = []
 	for case in _cases:
 		var size: Vector2i = case[0]
@@ -396,8 +430,8 @@ func _test_boot_screen() -> void:
 	key.keycode = KEY_SPACE
 	Input.parse_input_event(key)
 	await get_tree().process_frame
-	_check("With a logo file the picture shows (square, no game's name), the squares fill with time (4 of 8 at half time), and a key skips the screen",
-			picture_with_logo and square and half == 4 and finished[0] and not screen.visible and not screen.is_showing(),
+	_check("With a logo file the picture shows (square, no game's name), the squares fill with time (2 of 4 at half time), and a key skips the screen",
+			picture_with_logo and square and half == 2 and finished[0] and not screen.visible and not screen.is_showing(),
 			"picture %s, square %s, %d done at half, finished %s" % [picture_with_logo, square, half, finished[0]])
 	BootScreen.logo_path = "res://assets/ui/studio_logo.png"
 	remove_child(screen)
@@ -464,15 +498,15 @@ func _test_resize_relays_out() -> void:
 	_check("A runtime resize re-lays the menu out by itself (item text %s px at 1280 × 720, %s at 1080p, %s at 1440p, %s at 2920 × 1753 and 1440p alike, 1440 × 1080 as 720p), and going back restores it" % [
 			sizes_seen[SIZES[0]], sizes_seen[SIZES[1]], sizes_seen[SIZES[2]], sizes_seen[SIZES[3]]],
 			grows and bound_by_width and back, "grows %s, whole steps %s, back %s" % [grows, bound_by_width, back])
-	# The UI scale setting reaches the menu live (no restart, no resize): Auto 2×, 100 % fills 2.28×, 75 % 1.5×, 50 % 1×.
+	# The UI scale setting reaches the menu live (no restart, no resize): Auto 2×, 100 % fills 2.28×, 70 % 1.5×, 50 % 1×.
 	_resize(SIZES[3])
 	var by_percent: Array[int] = []
-	for percent in Settings.UI_SCALES:
+	for percent in [0, 50, 70, 100]:
 		Settings.get_instance().ui_scale = percent
 		by_percent.append(play.get_theme_font_size("font_size"))
 	Settings.get_instance().ui_scale = 0
 	var auto_again := play.get_theme_font_size("font_size")
-	_check("Changing the UI scale setting re-lays the menu out at once: at 2920 × 1753 the item text is %s px for Auto, 50, 75 and 100 %% (fills the window: 2.28×), and Auto again gives %d" % [by_percent, auto_again],
+	_check("Changing the UI scale setting re-lays the menu out at once: at 2920 × 1753 the item text is %s px for Auto, 50, 70 and 100 %% (fills the window: 2.28×), and Auto again gives %d" % [by_percent, auto_again],
 			by_percent[0] == 64 and by_percent[1] == 32 and by_percent[2] == 48 and by_percent[3] == roundi(32.0 * 2920.0 / 1280.0) and auto_again == 64,
 			"item text %s, Auto again %d" % [by_percent, auto_again])
 	remove_child(menu)
@@ -583,7 +617,11 @@ func _sample_book() -> StatsBook:
 			weapon.add_shots(100 + index)
 			for hit in 30 + index:
 				weapon.add_hit(Hitbox.Zone.values()[hit % Hitbox.Zone.size()])
+			weapon.kills = 4 + index
+			weapon.damage = 600.0
 			record.weapons[gun] = weapon
+		record.kills_per_minute = [3, 2, 4, 1, 3, 2, 3, 2, 2, 2, 3, 1, 2, 4, 2] as Array[int]
+		record.deaths_per_minute = [1, 2, 1, 2, 2, 1, 2, 1, 2, 1, 2, 2, 1, 2, 1] as Array[int]
 		book.add_match(record)
 	book.submit_best("aim_flick_rifle", 4200.0, {"hits": 31, "accuracy": 62.5})
 	book.submit_best("aim_flick_smg", 3900.0, {"hits": 28})

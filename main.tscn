@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://ui/class_menu.tscn" id="class_menu_scene"]
 [ext_resource type="PackedScene" path="res://ui/buy_menu.tscn" id="buy_menu_scene"]
 [ext_resource type="PackedScene" path="res://ui/loading_screen.tscn" id="loading_screen_scene"]
+[ext_resource type="Script" path="res://ui/training_hud.gd" id="training_hud_script"]
+[ext_resource type="PackedScene" path="res://ui/training_menu.tscn" id="training_menu_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -48,6 +50,9 @@ mouse_filter = 2
 
 [node name="HUD" parent="." instance=ExtResource("hud_scene")]
 
+[node name="TrainingHud" type="CanvasLayer" parent="."]
+script = ExtResource("training_hud_script")
+
 [node name="DebugOverlay" parent="." instance=ExtResource("overlay_scene")]
 
 [node name="Scoreboard" parent="." instance=ExtResource("scoreboard_scene")]
@@ -63,5 +68,7 @@ mouse_filter = 2
 [node name="BuyMenu" parent="." instance=ExtResource("buy_menu_scene")]
 
 [node name="DevConsole" parent="." instance=ExtResource("console_scene")]
+
+[node name="TrainingMenu" parent="." instance=ExtResource("training_menu_scene")]
 
 [node name="LoadingScreen" parent="." instance=ExtResource("loading_screen_scene")]

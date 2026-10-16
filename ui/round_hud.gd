@@ -210,15 +210,15 @@ func _manager_connections() -> Array[Array]:
 		[_manager.round_ended, _on_round_ended],
 		[_manager.sides_swapped, _on_sides_swapped],
 		[_manager.character_killed, _on_character_killed],
-		[_manager.callout, _on_callout],
+		[_manager.callout_made, _on_callout],
 	]
 
 
-## A bot on your team called out an enemy (M15, D-216): a toast says where. The same text again only keeps it
-## up longer, so callouts of one place don't stack.
-func _on_callout(team: int, text: String) -> void:
+## A bot on your team called out an enemy (M15, D-216): a line in the kill feed says where ("Bot3  ENEMY NEAR A"); the
+## compass hangs a tag on the bearing (D-232).
+func _on_callout(team: int, caller: Character, _point: Vector3, place: String) -> void:
 	if team == Teams.viewer_team:
-		_toast(ToastStack.Kind.NEUTRAL, text)
+		_kill_feed.add_callout(caller, ("ENEMY NEAR %s" if place.length() == 1 else "ENEMY %s") % place)
 
 
 func _is_tdm() -> bool:

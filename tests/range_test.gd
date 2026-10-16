@@ -131,6 +131,10 @@ func _test_practice() -> void:
 	# The loading screen (M10, D-138) pauses the game until it has shown; this test needs the clock to run.
 	_main.loading_screen = false
 	add_child(_main)
+	# These checks are about the props themselves: their in-world readouts and a shot at the pad starting a run at once
+	# (the game's 2D training screens have their own checks in ui_test and layout_test, D-236).
+	TrainingHub.hud_active = false
+	TrainingHub.menu = null
 	for i in 10:
 		await get_tree().physics_frame
 	var map := _main.get_map() as Node3D

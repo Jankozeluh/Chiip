@@ -232,6 +232,9 @@ func _ready() -> void:
 	_test_buy_menu_roles()
 	await _test_buy_menu_look()
 	await _test_compass()
+	await _test_training_ui()
+	_test_pad_glyphs()
+	await _test_pad_prompts()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -1681,20 +1684,52 @@ func _color_literal_lines(source: String) -> Array[String]:
 	return found
 
 
-## The F3 overlay starts hidden (a first look at the game shows the game, D-133); F3
-## (the toggle_debug action) shows it and hides it again.
+## The F3 overlay starts off (a first look at the game shows the game, D-133); F3 steps through the player's FPS block and
+## the developer readout and off again (v0.2, D-233); the numbers are the game's own, the alert colour shows below 60 FPS
+## and the frame graph keeps 64 frames.
 func _test_debug_overlay() -> void:
 	MenuState.reset()
+	Settings.get_instance().reset_to_defaults()
 	var main: Node = await _new_game()
-	var overlay := main.get_node("DebugOverlay") as CanvasLayer
-	var hidden_at_first := not overlay.visible
+	var overlay := main.get_node("DebugOverlay") as DebugOverlay
+	var off_at_first := not overlay.visible and overlay.get_mode() == "off"
 	_send(_action_event("toggle_debug"))
-	var shown := overlay.visible
+	var player_mode := overlay.visible and overlay.get_mode() == "player" and overlay.get_player_panel().visible and not overlay.get_developer_panel().visible
 	_send(_action_event("toggle_debug"))
-	var hidden_again := not overlay.visible
-	_check("The F3 overlay starts hidden, F3 shows it and F3 hides it again",
-			hidden_at_first and shown and hidden_again,
-			"hidden at first %s, shown after F3 %s, hidden after F3 again %s" % [hidden_at_first, shown, hidden_again])
+	var developer_mode := overlay.visible and overlay.get_mode() == "developer" and overlay.get_developer_panel().visible and not overlay.get_player_panel().visible
+	_send(_action_event("toggle_debug"))
+	var off_again := not overlay.visible and Settings.get_instance().fps_counter == "off"
+	_check("The F3 overlay starts off, F3 shows the player's FPS block, then the developer readout, then off again (and the setting follows)",
+			off_at_first and player_mode and developer_mode and off_again,
+			"off at first %s, player %s, developer %s, off again %s" % [off_at_first, player_mode, developer_mode, off_again])
+	# The player block: the frame rate and time; the alert colour below 60 FPS.
+	overlay.set_mode("player")
+	for i in 3:
+		await get_tree().process_frame
+	overlay.refresh_now()
+	var labels := overlay.get_player_labels()
+	var fps_shown := int(labels[0].text) > 0 and labels[1].text.is_valid_float()
+	overlay.get_player_labels()[0].text = "48"
+	overlay.call(&"_set_alert", labels[0], 48.0 < DebugOverlay.LOW_FPS)
+	var alert := labels[0].theme_type_variation == &"HudAlertLabel"
+	overlay.call(&"_set_alert", labels[0], 144.0 < DebugOverlay.LOW_FPS)
+	var normal := labels[0].theme_type_variation == &"HudSmallLabel"
+	_check("The player block shows the frame rate and the frame time, and a number below 60 FPS turns to the alert colour (back to normal above)",
+			fps_shown and alert and normal and not overlay.get_net_row().visible, "fps %s, ms %s, alert %s, normal %s, net row %s" % [labels[0].text, labels[1].text, alert, normal, overlay.get_net_row().visible])
+	# The developer readout: its sections, the numbers of the game, the graph.
+	overlay.set_mode("developer")
+	for i in 70:
+		await get_tree().process_frame
+	_player.global_position += Vector3(0, 0, 0)
+	_check("The developer readout has four sections, shows the player's speed, position, stance and weapon, and the graph keeps one bar per frame (64 at most)",
+			overlay.get_section_titles() == ["PERFORMANCE", "NETWORK", "MOVEMENT", "WEAPON"] and overlay.get_value_text("MOVEMENT/SPEED").contains("M/S")
+					and overlay.get_value_text("MOVEMENT/STANCE").contains("STAND") and overlay.get_value_text("WEAPON/INACCURACY").ends_with("°")
+					and overlay.get_value_text("PERFORMANCE/FPS").contains("MIN") and overlay.get_graph().get_frames().size() == Tokens.HUD_GRAPH_BARS,
+			"sections %s, speed '%s', stance '%s', frames %d" % [overlay.get_section_titles(), overlay.get_value_text("MOVEMENT/SPEED"), overlay.get_value_text("MOVEMENT/STANCE"), overlay.get_graph().get_frames().size()])
+	overlay.set_ui_scale(1.0)
+	var graph := overlay.get_graph()
+	_check("The frame graph draws a 16.7 ms frame about 22 pixels tall and never past 46",
+			is_equal_approx(graph.bar_height(16.7), 22.0) and is_equal_approx(graph.bar_height(100.0), 46.0), "16.7 ms → %.0f px, 100 ms → %.0f px" % [graph.bar_height(16.7), graph.bar_height(100.0)])
 	main.queue_free()
 	await get_tree().process_frame
 	MenuState.reset()
@@ -1754,8 +1789,8 @@ func _test_settings_menu_building() -> void:
 	var background := menu.get_node("Background") as Panel
 	var page := menu.get_node("Page") as MarginContainer
 	var title := menu.get_node("Page/Column/TitleBox/Title") as Label
-	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
-			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Crosshair", "Controls"]
+	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Interface, Controller, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
+			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Interface", "Controller", "Crosshair", "Controls"]
 					and background.theme_type_variation == &"InkPanel" and background.mouse_filter == Control.MOUSE_FILTER_STOP
 					and page.theme_type_variation == &"PageMargin" and page.get_theme_constant("margin_left") == Tokens.PAGE_MARGIN_X
 					and title.theme_type_variation == &"TitleLabel" and title.text == "Settings"
@@ -3630,19 +3665,23 @@ func _test_loading_screen_in_the_game() -> void:
 	tree.paused = false
 
 
-# --- The compass (M11, D-180) ---
+# --- The compass (M11, D-180; the designer's page since v0.2, D-232) ---
 
 
-## The HUD's compass: tokens in the theme, N/E/S/W that follow the view, and a red square where an enemy fires: only
-## enemies within gunshot range, one per shooter, moving with your view, fading out after about two seconds.
+## The HUD's compass: tokens in the theme, N/E/S/W that follow the view, and a red mark where an enemy fires: only
+## enemies within gunshot range, one per shooter, moving with your view, stepping down over three seconds, pinned
+## to the strip's end past 90 degrees; a bot's callout hangs a tag under its bearing and writes a line in the kill feed.
 func _test_compass() -> void:
-	_check("The compass's sizes are tokens in the theme's Hud type: arc, tick step and sizes, thickness, the square's size, time and fade",
-			_theme.get_constant("compass_arc", "Hud") == Tokens.HUD_COMPASS_ARC and _theme.get_constant("compass_tick_step", "Hud") == Tokens.HUD_COMPASS_TICK_STEP
-					and _theme.get_constant("compass_tick_small", "Hud") == Tokens.HUD_COMPASS_TICK_SMALL and _theme.get_constant("compass_tick_large", "Hud") == Tokens.HUD_COMPASS_TICK_LARGE
-					and _theme.get_constant("compass_thickness", "Hud") == Tokens.HUD_COMPASS_THICKNESS and _theme.get_constant("compass_marker", "Hud") == Tokens.HUD_COMPASS_MARKER
-					and _theme.get_constant("compass_marker_time_ms", "Hud") == Tokens.HUD_COMPASS_MARKER_TIME_MS and _theme.get_constant("compass_fade_ms", "Hud") == Tokens.HUD_COMPASS_FADE_MS,
-			"arc %d, step %d, square %d for %d ms" % [_theme.get_constant("compass_arc", "Hud"), _theme.get_constant("compass_tick_step", "Hud"),
-					_theme.get_constant("compass_marker", "Hud"), _theme.get_constant("compass_marker_time_ms", "Hud")])
+	var tokens_ok: bool = _theme.get_constant("compass_arc", "Hud") == Tokens.HUD_COMPASS_ARC and _theme.get_constant("compass_tick_step", "Hud") == Tokens.HUD_COMPASS_TICK_STEP \
+			and _theme.get_constant("compass_tick_small", "Hud") == Tokens.HUD_COMPASS_TICK_SMALL and _theme.get_constant("compass_tick_large", "Hud") == Tokens.HUD_COMPASS_TICK_LARGE \
+			and _theme.get_constant("compass_thickness", "Hud") == Tokens.HUD_COMPASS_THICKNESS and _theme.get_constant("compass_mark_width", "Hud") == Tokens.HUD_COMPASS_MARK.x \
+			and _theme.get_constant("compass_mark_height", "Hud") == Tokens.HUD_COMPASS_MARK.y and _theme.get_constant("compass_mark_pinned", "Hud") == Tokens.HUD_COMPASS_MARK_PINNED \
+			and _theme.get_constant("compass_box_width", "Hud") == Tokens.HUD_COMPASS_BOX.x and _theme.get_constant("compass_step_ms", "Hud") == Tokens.HUD_COMPASS_STEP_MS \
+			and _theme.get_constant("compass_alpha_2", "Hud") == Tokens.HUD_COMPASS_ALPHA_2 and _theme.get_constant("compass_tag_ms", "Hud") == Tokens.HUD_COMPASS_TAG_MS \
+			and _theme.get_color("compass_backing", "Palette") == Tokens.COMPASS_BACKING
+	_check("The compass's sizes are tokens in the theme's Hud type: arc, ticks, marks, steps, the heading box, the tag and the strip's backing",
+			tokens_ok, "arc %d, step %d ms, mark %d × %d" % [_theme.get_constant("compass_arc", "Hud"), _theme.get_constant("compass_step_ms", "Hud"),
+					_theme.get_constant("compass_mark_width", "Hud"), _theme.get_constant("compass_mark_height", "Hud")])
 	var main: Node = await _new_game()
 	var compass := main.get_node("HUD/Compass") as Compass
 	var player := _player
@@ -3660,49 +3699,55 @@ func _test_compass() -> void:
 		headings.append(snappedf(compass.get_heading(), 0.1))
 	_check("The compass heading follows the view: north 0, east 90, south 180, west 270 degrees",
 			headings == [0.0, 90.0, 180.0, 270.0], "headings %s" % [headings])
-	# An enemy's shot: a square at its bearing, relative to where you look.
+	# An enemy's shot: a mark at its bearing, relative to where you look.
 	player.aim_at(player.get_eye_position() + Vector3(0, 0, -10))
 	await get_tree().process_frame
 	var shooter := enemies[0]
-	var east := player.global_position + Vector3(20, 0, 0)
-	Noises.announce_shot(east, shooter)
+	Noises.announce_shot(player.global_position + Vector3(20, 0, 0), shooter)
 	var offsets := compass.get_marker_offsets()
 	var first := offsets[0] if not offsets.is_empty() else 999.0
-	_check("An enemy's shot puts a square at its bearing: a shot due east while you look north is 90 degrees to the right",
-			compass.get_marker_count() == 1 and is_equal_approx(first, 90.0) and is_equal_approx(compass.get_marker_alpha(), 1.0),
-			"%d squares, offsets %s, alpha %.2f" % [compass.get_marker_count(), offsets, compass.get_marker_alpha()])
-	# It moves with your view and stays on the strip's edge when it is out of the arc.
+	_check("An enemy's shot puts a mark at its bearing: a shot due east while you look north is 90 degrees to the right, at the strip's right end",
+			compass.get_marker_count() == 1 and is_equal_approx(first, 90.0) and is_equal_approx(compass.get_marker_alpha(), 1.0)
+					and absf(compass.get_marker_rects()[0].get_center().x - compass.x_for_offset(90.0)) <= 1.0,
+			"%d marks, offsets %s, alpha %.2f" % [compass.get_marker_count(), offsets, compass.get_marker_alpha()])
+	# It moves with your view; past 90 degrees it is pinned to the end as a wider mark.
 	player.aim_at(player.get_eye_position() + Vector3(10, 0, 0))
 	await get_tree().process_frame
 	var turned := compass.get_marker_offsets()
 	var in_middle := turned.size() == 1 and absf(turned[0]) < 0.001
 	var rect := compass.get_marker_rects()[0] if compass.get_marker_count() == 1 else Rect2()
+	player.aim_at(player.get_eye_position() + Vector3(0, 0, 10))
+	await get_tree().process_frame
+	var behind := compass.get_marker_rects()[0] if compass.get_marker_count() == 1 else Rect2()
 	player.aim_at(player.get_eye_position() + Vector3(0, 0, -10))
 	await get_tree().process_frame
-	var edge := compass.get_marker_rects()[0] if compass.get_marker_count() == 1 else Rect2()
-	_check("The square follows your turn: looking at the shot puts it in the middle of the strip; 90 degrees off it sits at the strip's right end (the arc is 120 degrees)",
-			in_middle and absf(rect.get_center().x - compass.size.x / 2.0) <= 1.0 and absf(edge.get_center().x - compass.x_for_offset(Tokens.HUD_COMPASS_ARC / 2.0)) <= 1.0,
-			"offsets %s, centre %.1f (strip %.0f wide), edge %.1f" % [turned, rect.get_center().x, compass.size.x, edge.get_center().x])
-	# One square per shooter: a new shot from the same enemy moves it and restarts its time.
+	_check("The mark follows your turn: looking at the shot puts it in the middle of the strip; with it behind you it is pinned to the strip's end, %d instead of %d wide" % [Tokens.HUD_COMPASS_MARK_PINNED, Tokens.HUD_COMPASS_MARK.x],
+			in_middle and absf(rect.get_center().x - compass.size.x / 2.0) <= 1.0 and rect.size.x == Tokens.HUD_COMPASS_MARK.x
+					and behind.size.x == Tokens.HUD_COMPASS_MARK_PINNED and (behind.position.x <= 1.0 or behind.end.x >= compass.size.x - 1.0),
+			"offsets %s, middle x %.1f, pinned %s" % [turned, rect.get_center().x, behind])
+	# One mark per shooter: a new shot from the same enemy moves it and starts its time over.
 	compass.advance(1.5)
 	var faded := compass.get_marker_alpha()
 	Noises.announce_shot(player.global_position + Vector3(-20, 0, 0), shooter)
 	var moved := compass.get_marker_offsets()
-	_check("An enemy has one square: a new shot from him moves it (to the west, 90 degrees to the left) and starts the time over",
-			compass.get_marker_count() == 1 and faded < 1.0 and moved.size() == 1 and is_equal_approx(moved[0], -90.0) and is_equal_approx(compass.get_marker_alpha(), 1.0),
-			"%d squares, alpha before the shot %.2f, now %s" % [compass.get_marker_count(), faded, moved])
-	# A second enemy has a second square.
+	_check("An enemy has one mark: a new shot from him moves it (to the west, 90 degrees to the left) and starts it over at full opacity",
+			compass.get_marker_count() == 1 and is_equal_approx(faded, Tokens.HUD_COMPASS_ALPHA_2 / 100.0) and moved.size() == 1 and is_equal_approx(moved[0], -90.0)
+					and is_equal_approx(compass.get_marker_alpha(), 1.0),
+			"%d marks, alpha before the shot %.2f, now %s" % [compass.get_marker_count(), faded, moved])
+	# A second enemy has a second mark.
 	Noises.announce_shot(player.global_position + Vector3(0, 0, 20), enemies[1])
 	var two := compass.get_marker_count()
-	# Fading: full for the first second, then it fades, and it is gone after the 2 seconds.
-	compass.advance(1.0)
-	var full := compass.get_marker_alpha()
+	# Steps: full for the first second, 60 % to two, 30 % to three, then gone.
 	compass.advance(0.5)
-	var half := compass.get_marker_alpha()
-	compass.advance(0.6)
-	_check("A square stays about 2 seconds: full opacity for the first second, fading over the second, gone after (%d squares with two shooters)" % two,
-			two == 2 and full > 0.99 and absf(half - 0.5) < 0.01 and compass.get_marker_count() == 0,
-			"two shooters %d, alpha %.2f after 1 s, %.2f after 1.5 s, %d squares after 2.1 s" % [two, full, half, compass.get_marker_count()])
+	var full := compass.get_marker_alpha()
+	compass.advance(1.0)
+	var sixty := compass.get_marker_alpha()
+	compass.advance(1.0)
+	var thirty := compass.get_marker_alpha()
+	compass.advance(1.0)
+	_check("A mark stays three seconds in steps: full for the first, 60 %% for the second, 30 %% for the third, then gone (%d marks with two shooters)" % two,
+			two == 2 and is_equal_approx(full, 1.0) and is_equal_approx(sixty, 0.6) and is_equal_approx(thirty, 0.3) and compass.get_marker_count() == 0,
+			"two shooters %d, alpha %.2f at 0.5 s, %.2f at 1.5 s, %.2f at 2.5 s, %d marks at 3.5 s" % [two, full, sixty, thirty, compass.get_marker_count()])
 	# Not shown: teammates, you, shots out of range.
 	Noises.announce_shot(player.global_position + Vector3(10, 0, 0), mates[0] if not mates.is_empty() else player)
 	Noises.announce_shot(player.get_eye_position(), player)
@@ -3721,11 +3766,204 @@ func _test_compass() -> void:
 	_check("The compass shows no teammates, nothing of your own and nothing out of gunshot range (%d m); a real shot from an enemy's gun does show, and so does a puppet's replayed shot (online)" % int(Noises.GUNSHOT_RANGE),
 			other_world_ignored and by_gun == 1 and by_puppet == 1,
 			"squares after the three shots that don't count: %d, after the enemy's gun: %d, after a puppet's shot: %d" % [other_world_ignored as int, by_gun, by_puppet])
+	# A bot's callout: a tag under the bearing for four seconds, one at a time, and a line in the kill feed (two at most).
+	compass.advance(10.0)
+	var manager := _rounds
+	var feed := main.get_node("HUD/RoundHud/KillFeed") as KillFeed
+	feed.clear()
+	var mate := mates[0]
+	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(20, 0, 0), "A")
+	var tag_a := compass.get_tag_text()
+	var tag_rect := compass.get_tag_rect()
+	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(0, 0, -20), "NW")
+	var tag_nw := compass.get_tag_text()
+	var lines_after_two := feed.get_line_count()
+	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(0, 0, -20), "N")
+	var lines_after_three := feed.get_line_count()
+	manager.callout_made.emit(Teams.other(player.team), mate, player.global_position, "S")
+	var enemy_ignored := compass.get_tag_text() == "ENEMY · N"
+	compass.advance(3.5)
+	var held := compass.get_tag_text() == "ENEMY · N"
+	compass.advance(1.0)
+	_check("A bot's callout hangs a tag under its bearing for 4 seconds (\"ENEMY · A\", then the next one replaces it) and the kill feed keeps two lines; the other team's callout is ignored",
+			tag_a == "ENEMY · A" and tag_nw == "ENEMY · NW" and lines_after_two == 2 and lines_after_three == 2 and enemy_ignored and held and compass.get_tag_text() == ""
+					and tag_rect.position.y >= compass.get_box_rect().position.y - 1.0 and not tag_rect.intersects(compass.get_box_rect()),
+			"tags %s, %s; feed lines %d, %d; ignored %s; after 3.5 s '%s'; tag rect %s" % [tag_a, tag_nw, lines_after_two, lines_after_three, enemy_ignored, "held" if held else "gone", tag_rect])
 	main.queue_free()
 	await get_tree().process_frame
 	MenuState.reset()
 	GameLaunch.clear()
 	Teams.friendly_fire = false
+
+
+
+# --- The Shooting Range's training screens (v0.2, D-236) ---
+
+
+## The aim trainer's start panel, run readouts, result and Esc stop, and the spray panel, on the real Shooting Range:
+## a shot at the pad opens the panel (the length picks its own best), Start counts down and runs, the HUD shows the run,
+## Esc stops it without opening the pause menu, a finished run's result shows; the props keep their world readouts quiet.
+func _test_training_ui() -> void:
+	MenuState.reset()
+	TrainingHub.reset()
+	var main := MAIN_SCENE.instantiate()
+	main.set("load_settings", false)
+	main.set("loading_screen", false)
+	main.set("mode", 1)
+	main.set("map_scene", load(Settings.DEFAULT_MAP))
+	add_child(main)
+	for i in 8:
+		await get_tree().physics_frame
+	(main.get_node("ClassMenu") as ClassMenu).close()
+	var hud := main.get_node("TrainingHud") as TrainingHud
+	var menu := main.get_node("TrainingMenu") as TrainingMenu
+	var player := main.call("get_player") as Character
+	var trainers := (main.call("get_map") as Node).find_children("*", "RangeTrainer", true, false)
+	var trainer := trainers[0] as RangeTrainer
+	trainer.book = StatsBook.new()
+	trainer.countdown_time = 0.1
+	trainer.rng.seed = 7
+	_check("The game scene has the training HUD and start panel and tells the props (D-236): the HUD is active, the panel is where a shot at the pad goes",
+			TrainingHub.hud_active and TrainingHub.menu == menu and hud.get_state() == {"run": false, "result": false, "spray": false} and not menu.is_open(),
+			"hud active %s" % TrainingHub.hud_active)
+	# A shot at the pad opens the start panel.
+	trainer.call(&"_on_pad_hit", 0.0, Hitbox.Zone.CHEST, Vector3.ZERO, player, 0.0, null)
+	var opened := menu.is_open() and MenuState.is_top(menu) and menu.get_length() == 30 and trainer.get_state() == RangeTrainer.State.IDLE
+	menu.set_length(60)
+	var best_caption := menu.get_best_texts()[0]
+	_check("A shot at the pad opens the start panel (30 s picked, no run yet); picking 60 s makes the best line say \"Best · 60 s\"",
+			opened and best_caption == "Best · 60 s", "open %s, caption '%s'" % [opened, best_caption])
+	# Start: the countdown and the run.
+	trainer.book.submit_best(RangeTrainer.best_key(player.weapon.data.id, 60.0), 4820.0, {"accuracy": 82.0})
+	menu.set_length(30)
+	menu.set_length(60)
+	var best_texts := menu.get_best_texts()
+	menu.get_start_button().pressed.emit()
+	await get_tree().process_frame
+	var started := not menu.is_open() and trainer.is_active() and is_equal_approx(trainer.get_run_seconds(), 60.0)
+	_check("The best line shows the best for the length (4 820, 82 %), Start closes the panel and starts a 60 s run",
+			best_texts[1] == "4 820" and best_texts[2].begins_with("82%") and started, "best %s, started %s" % [best_texts, started])
+	for i in 40:
+		await get_tree().physics_frame
+	await get_tree().process_frame
+	var run_texts := hud.get_run_texts()
+	_check("The run shows on the HUD: the hits, the time as m:ss and the score, and nothing in the world (no readout over the shooter)",
+			hud.get_state()["run"] and run_texts[0] == "0" and run_texts[1].begins_with("0:") and trainer.get_readout() == "", "run %s, readout '%s'" % [run_texts, trainer.get_readout()])
+	# Esc stops the run and does not pause.
+	_send(_action_event("pause"))
+	await get_tree().process_frame
+	var stopped: bool = trainer.get_state() == RangeTrainer.State.IDLE and not (main.call("get_pause_menu") as PauseMenu).is_open() and not hud.get_state()["run"]
+	_check("Esc stops the run without a score and does not open the pause menu", stopped, "state %d" % trainer.get_state())
+	# A short run to its result.
+	trainer.start(player, 1.0)
+	for i in 200:
+		await get_tree().physics_frame
+	await get_tree().process_frame
+	var result := hud.get_result_texts()
+	_check("A finished run shows the result panel: its score line and the four cells (accuracy, hits, average time, best streak)",
+			hud.get_state()["result"] and trainer.get_state() == RangeTrainer.State.RESULT and result["cells"].size() == 4, "state %s, %s" % [hud.get_state(), result])
+	trainer.stop()
+	# The spray panel mirrors the wall.
+	hud.preview("spray")
+	var spray := hud.get_spray_texts()
+	hud.follow_hub()
+	_check("The spray panel has the gun, the shots of the spray and the pattern share", spray == ["RIFLE", "18 / 30", "64%"], "%s" % [spray])
+	main.queue_free()
+	await get_tree().process_frame
+	TrainingHub.reset()
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	Settings.get_instance().reset_to_defaults()
+
+# --- The gamepad prompts with the glyphs (v0.2, D-238) ---
+
+
+## An action's glyph follows its pad binding and the chosen style; the settings menu shows its pad hints (LB RB tabs, Y reset, B back) only
+## while the pad is the device used last, LB and RB turn its tabs, Y resets the tab; the bomb prompt shows the glyph of Use.
+func _test_pad_prompts() -> void:
+	var settings := Settings.get_instance()
+	settings.reset_to_defaults()
+	var reload_xbox := PadGlyphs.for_action(&"reload", settings)
+	settings.pad_prompts = "ps"
+	var reload_ps := PadGlyphs.for_action(&"reload", settings)
+	settings.pad_prompts = "xbox"
+	var scaled := PadGlyphs.get_scaled_texture("xbox", "south", 2)
+	_check("An action's glyph follows its pad binding and the pad style: Reload (X) is the Xbox X disc or the PlayStation square, an unbound action has none, a glyph scales by whole steps (32 px at 2)",
+			reload_xbox != null and reload_ps != null and reload_xbox != reload_ps and PadGlyphs.for_action(&"move_forward", settings) == null and scaled.get_size() == Vector2(32, 32),
+			"xbox %s, ps %s, scaled %s" % [reload_xbox, reload_ps, scaled.get_size()])
+	var menu := SETTINGS_MENU_SCENE.instantiate() as SettingsMenu
+	add_child(menu)
+	menu.set_ui_scale(1.0)
+	menu.open()
+	LastInput.gamepad = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var hidden: bool = not menu.get_node("%PadHints").visible and menu.get_reset_button().icon == null and menu.get_back_button().icon == null
+	LastInput.gamepad = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var shown: bool = menu.get_node("%PadHints").visible and menu.get_node("%TabGlyphs").get_child_count() == 2 and menu.get_reset_button().icon != null and menu.get_back_button().icon != null
+	_check("The pad hints show only while the pad is the device used last: LB and RB for the tabs at the top, the Y glyph on Reset and the B glyph on Back",
+			hidden and shown, "hidden with keyboard %s, shown with the pad %s" % [hidden, shown])
+	var first_tab := menu.get_tabs().current_tab
+	var rb := InputEventJoypadButton.new()
+	rb.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	rb.pressed = true
+	_send(rb)
+	var after_rb := menu.get_tabs().current_tab
+	var lb := InputEventJoypadButton.new()
+	lb.button_index = JOY_BUTTON_LEFT_SHOULDER
+	lb.pressed = true
+	_send(lb)
+	var after_lb := menu.get_tabs().current_tab
+	settings.sensitivity = 3.0
+	menu.get_tabs().current_tab = menu.get_tab_names().find("Game")
+	var y := InputEventJoypadButton.new()
+	y.button_index = JOY_BUTTON_Y
+	y.pressed = true
+	_send(y)
+	_check("RB turns to the next tab and LB back; Y puts the settings of the tab back to their defaults",
+			after_rb == first_tab + 1 and after_lb == first_tab and is_equal_approx(settings.sensitivity, Settings.get_default(&"sensitivity")),
+			"tabs %d, %d, %d; sensitivity %.2f" % [first_tab, after_rb, after_lb, settings.sensitivity])
+	LastInput.gamepad = false
+	menu.close()
+	remove_child(menu)
+	menu.queue_free()
+	MenuState.reset()
+	settings.reset_to_defaults()
+
+
+# --- The gamepad glyphs (v0.2, D-230) ---
+
+
+## Every button of every pad style has its picture, 16 × 16, coloured and white; a binding's event names its glyph.
+func _test_pad_glyphs() -> void:
+	var missing: Array[String] = []
+	var wrong_size: Array[String] = []
+	for style in PadGlyphs.STYLES:
+		for button in PadGlyphs.all_buttons():
+			for mono in [false, true]:
+				var texture := PadGlyphs.get_texture(style, button, mono)
+				if texture == null:
+					missing.append("%s/%s%s" % [style, button, "_mono" if mono else ""])
+				elif texture.get_size() != Vector2(16, 16):
+					wrong_size.append("%s/%s" % [style, button])
+	_check("Every gamepad button has a 16 × 16 glyph on every pad style (3 styles × 19 buttons, coloured and white)",
+			missing.is_empty() and wrong_size.is_empty(), "missing %s, wrong size %s" % [missing, wrong_size])
+	var a := InputEventJoypadButton.new()
+	a.button_index = JOY_BUTTON_A
+	var trigger := InputEventJoypadMotion.new()
+	trigger.axis = JOY_AXIS_TRIGGER_RIGHT
+	var stick := InputEventJoypadMotion.new()
+	stick.axis = JOY_AXIS_LEFT_Y
+	var shoulder := InputEventJoypadButton.new()
+	shoulder.button_index = JOY_BUTTON_LEFT_SHOULDER
+	_check("A binding's event names its glyph: A is south, the right trigger rt, a left stick movement ls, the left shoulder lb, a key nothing; the explicit styles stay as chosen",
+			PadGlyphs.button_for_event(a) == "south" and PadGlyphs.button_for_event(trigger) == "rt" and PadGlyphs.button_for_event(stick) == "ls"
+					and PadGlyphs.button_for_event(shoulder) == "lb" and PadGlyphs.button_for_event(_key_event(KEY_E)) == ""
+					and PadGlyphs.style_for("ps") == "ps" and PadGlyphs.style_for("generic") == "generic",
+			"A %s, rt %s, ls %s, lb %s" % [PadGlyphs.button_for_event(a), PadGlyphs.button_for_event(trigger), PadGlyphs.button_for_event(stick), PadGlyphs.button_for_event(shoulder)])
 
 # --- The multiplayer lobby (M9, D-108) ---
 
@@ -5035,22 +5273,15 @@ func _test_stats_menu() -> void:
 	var stats := menu.get_stats_menu()
 	var empty := StatsBook.new()
 	stats.book = empty
-	_check("The Stats button sits between Practice and Settings and opens the Stats screen over the menu: four tabs (Overview, Weapons, History, Training), the screen on top",
+	_check("The Stats button sits between Practice and Settings, and the Stats screen is closed at the start",
 			menu.get_buttons()[2] == menu.get_stats_button() and menu.get_stats_button().text == "Stats" and not stats.is_open(), "closed at the start")
 	menu.get_stats_button().pressed.emit()
 	await get_tree().process_frame
-	var tabs := stats.get_tabs()
-	var names: Array[String] = []
-	for index in tabs.get_tab_count():
-		names.append(tabs.get_tab_title(index))
-	_check("It opens with the four tabs and the Back button focused",
-			stats.is_open() and MenuState.is_top(stats) and names == StatsMenu.TAB_NAMES and stats.get_back_button().has_focus(),
-			"open %s, tabs %s" % [stats.is_open(), names])
-	var notes := 0
-	for index in 4:
-		var column := tabs.get_child(index).get_child(0)
-		notes += 1 if column.get_child_count() == 1 and column.get_child(0).theme_type_variation == &"DimLabel" else 0
-	_check("With no matches every tab shows one note saying what will appear there", notes == 4, "%d of 4 tabs" % notes)
+	_check("It opens over the menu, on top, on the page with the filter All and the Back button focused",
+			stats.is_open() and MenuState.is_top(stats) and not stats.is_detail_open() and stats.get_filter() == "all" and stats.get_back_button().has_focus(),
+			"open %s, filter %s" % [stats.is_open(), stats.get_filter()])
+	var note_only: bool = stats.get_overview().get_child_count() == 1 and stats.get_overview().get_child(0).theme_type_variation == &"DimLabel"
+	_check("With no matches the page shows one note saying what will appear there", note_only, "%d children" % stats.get_overview().get_child_count())
 	# Three matches: a bomb win and a loss on Depot, a Team Deathmatch win on Square.
 	var populated := StatsBook.new()
 	for sample: Array in [["rounds", "depot", "win", 14, 9, 1800.0, 20, 300, 90, 5], ["rounds", "depot", "loss", 9, 14, 1200.0, 18, 250, 60, 2], ["respawn", "square", "win", 25, 20, 3300.0, 0, 500, 130, 7]]:
@@ -5065,39 +5296,69 @@ func _test_stats_menu() -> void:
 		record.rounds = sample[6]
 		record.duration = 600.0
 		record.headshot_kills = sample[9]
+		record.kills_per_minute = [2, 1, 3] as Array[int]
+		record.deaths_per_minute = [1, 2, 0] as Array[int]
 		var gun := StatsWeapon.new()
 		gun.add_shots(sample[7])
 		for hit in sample[8]:
 			gun.add_hit(Hitbox.Zone.HEAD if hit < 10 else Hitbox.Zone.CHEST)
+		gun.kills = sample[3]
+		gun.damage = sample[5]
 		record.weapons["rifle"] = gun
 		populated.add_match(record)
 	populated.submit_best("aim_flick_rifle", 4200.0, {"hits": 31})
 	stats.book = populated
 	stats.refresh()
 	await get_tree().process_frame
-	var overview := tabs.get_child(0).get_child(0)
-	var tiles := overview.find_children("*", "PanelContainer", true, false).filter(func(node: Node) -> bool: return node.theme_type_variation == &"InsetPanel")
-	var tile_texts: Array = tiles.map(func(tile: Node) -> String: return "%s %s" % [tile.find_child("Caption", true, false).text, tile.find_child("Value", true, false).text])
-	var bars := overview.find_children("*", "ProgressBar", true, false)
-	_check("The Overview has ten tiles from the lifetime numbers and a bar for each mode and map won (2 modes, 2 maps)",
-			tiles.size() == 10 and tile_texts[0] == "K/D 1.12" and tile_texts[1] == "ADR 79" and tile_texts[5] == "Matches 3" and tile_texts[6] == "Kills 48"
-			and bars.size() == 4, "tiles %s, %d bars" % [tile_texts, bars.size()])
-	var weapons := tabs.get_child(1).get_child(0)
-	var history := tabs.get_child(2).get_child(0)
-	var training := tabs.get_child(3).get_child(0)
-	var first_row := (history.get_child(2).find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text))
-	_check("Weapons has the title, the header and a row for the one gun; History a title, a header and a row per match with the newest first; Training a title, a header and one best",
-			weapons.get_child_count() >= 3 and history.get_child_count() == 5 and training.get_child_count() == 3
-			and first_row[1] == "Team Deathmatch · Square" and first_row[2] == "Win" and first_row[4] == "25" and first_row[7] == "-",
-			"weapons %d, history %d (first row %s), training %d" % [weapons.get_child_count(), history.get_child_count(), first_row, training.get_child_count()])
+	var lifetime: Array = StatsMenu.lifetime_values(populated.lifetime)
+	var entries: Array = StatsMenu.history_entries(populated.history, populated.history)
+	_check("The page has the lifetime row (K/D 1.12, ADR 79, wins 2, losses 1), a history of three matches newest first (Square, TDM, a win, 25-20) and a bar block each for the K/D, the weapons and the wins",
+			lifetime[0] == ["K/D", "1.12"] and lifetime[1] == ["ADR", "79"] and lifetime[4] == ["WINS", "2"] and lifetime[5] == ["LOSSES", "1"]
+					and entries.size() == 3 and entries[0]["map"] == "SQUARE" and entries[0]["line"].begins_with("TDM") and entries[0]["result"] == "W" and entries[0]["kd"] == "25-20"
+					and stats.get_overview().get_child_count() == 2 and stats.get_overview().find_children("*", "Button", true, false).filter(func(b: Node) -> bool: return String(b.theme_type_variation).begins_with("HistoryItem")).size() == 3,
+			"lifetime %s, entries %d (first %s)" % [lifetime.slice(0, 2), entries.size(), entries[0]])
+	var wins := StatsMenu.win_lines(populated.lifetime, populated.history)
+	var accuracy := StatsMenu.accuracy_rows(populated.lifetime)
+	_check("The wins list is TDM, Bomb, then the maps (a rule above them) and Vs bots (a rule above); the accuracy list has the one gun with its accuracy and head share",
+			wins[0][0] == "TDM" and wins[0][1] == 1 and wins[1][0] == "BOMB" and wins[1][1] == 1 and wins[1][2] == 1 and wins[2][3] and wins[wins.size() - 1][0] == "VS BOTS" and wins[wins.size() - 1][3]
+					and accuracy.size() == 1 and accuracy[0][1] == "Ram" and accuracy[0][3] == "27%",
+			"wins %s, accuracy %s" % [wins.map(func(w: Array) -> String: return str(w[0])), accuracy])
+	# The filter narrows the numbers to the mode's matches.
+	stats.set_filter("rounds")
+	await get_tree().process_frame
+	var bomb_entries: Array = StatsMenu.history_entries(stats.call("_filtered", populated), populated.history)
+	var bomb_kd: Array = StatsMenu.lifetime_values(stats.call("_filtered_totals", populated, stats.call("_filtered", populated)))
+	_check("The Bomb filter keeps the two bomb matches: their history rows and their K/D (23 kills over 23 deaths: 1.00)",
+			bomb_entries.size() == 2 and bomb_kd[0] == ["K/D", "1.00"] and stats.get_filter() == "rounds" and stats.get_filter_buttons()["rounds"].button_pressed,
+			"%d rows, %s" % [bomb_entries.size(), bomb_kd[0]])
+	# A match opens its detail and Back returns to the page.
+	stats.set_filter("all")
+	stats.open_match(2)
+	await get_tree().process_frame
+	var detail := StatsMenu.match_values(populated.history[2])
+	_check("A match opens its detail: the map (SQUARE), VICTORY, your line of seven numbers, the rifle's row (25 kills) and the minutes' chart",
+			stats.is_detail_open() and stats.get_detail().visible and not stats.get_overview().visible and detail["title"] == "SQUARE" and detail["word"] == "VICTORY"
+					and detail["line"].size() == 7 and detail["guns"].size() == 1 and detail["guns"][0][2] == "25" and detail["kills"] == ([2, 1, 3] as Array[int]),
+			"detail %s" % [detail["title"]])
+	stats.get_back_button().pressed.emit()
+	await get_tree().process_frame
+	var back_to_page := not stats.is_detail_open() and stats.is_open() and stats.get_overview().visible
+	stats.set_filter("training")
+	await get_tree().process_frame
+	var best_rows := stats.get_training_page().find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text)
+	_check("Back from the detail returns to the page (and stays open); the Training filter shows the best (Aim trainer · Ram, 4200)",
+			back_to_page and stats.get_training_page().visible and best_rows.has("Aim trainer · Ram") and best_rows.has("4200"), "back %s, labels %s" % [back_to_page, best_rows.slice(0, 5)])
+	stats.set_filter("all")
+	await get_tree().process_frame
 	var overrides := _overrides_below(stats)
 	_check("Nothing on the Stats screen, the rows built in code included, carries a theme override", overrides.is_empty(), "%s" % [overrides])
-	# Scaled to 2x the rows are twice as high.
+	# Scaled to 2x the history rows are twice as high.
 	stats.set_ui_scale(2.0)
 	await get_tree().process_frame
-	var scaled_row := (tabs.get_child(2).get_child(0).get_child(2) as Control).custom_minimum_size.y
+	var item := stats.get_overview().find_children("*", "MarginContainer", true, false).filter(func(m: Node) -> bool: return (m as Control).custom_minimum_size.y > 0.0 and m.get_child_count() == 2)
+	var scaled_row: float = (item[0] as Control).custom_minimum_size.y if not item.is_empty() else 0.0
 	stats.set_ui_scale(1.0)
-	_check("Scaled by 2 the History rows are twice as high (64 instead of 32)", is_equal_approx(scaled_row, 64.0), "%.0f" % scaled_row)
+	_check("Scaled by 2 the history rows are twice as high (96 instead of 48)", is_equal_approx(scaled_row, 96.0), "%.0f" % scaled_row)
 	# Export CSV.
 	stats.export_csv()
 	var csv_lines := FileAccess.get_file_as_string(StatsMenu.EXPORT_PATH).strip_edges().split("\n")

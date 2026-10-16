@@ -34,6 +34,13 @@ size_flags_vertical = 4
 theme_type_variation = &"KeyCapLabel"
 text = "E"
 
+[node name="KeyGlyph" type="TextureRect" parent="Prompt/Row"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+stretch_mode = 3
+
 [node name="Icon" type="TextureRect" parent="Prompt/Row"]
 visible = false
 layout_mode = 2

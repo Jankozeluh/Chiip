@@ -47,6 +47,7 @@ var _icon_slot: StringName = &""
 
 @onready var _prompt: Control = $Prompt
 @onready var _key: Label = $Prompt/Row/Key
+@onready var _key_glyph: TextureRect = $Prompt/Row/KeyGlyph
 @onready var _icon: TextureRect = $Prompt/Row/Icon
 @onready var _text: Label = $Prompt/Row/Text
 @onready var _seconds: Label = $Prompt/Row/Seconds
@@ -105,7 +106,7 @@ func get_seconds() -> String:
 
 ## True while the key cap shows (the prompt says what to hold; it is the icon's instead while it happens). For tests.
 func is_key_shown() -> bool:
-	return _prompt.visible and _key.visible
+	return _prompt.visible and (_key.visible or _key_glyph.visible)
 
 
 ## The icon slot of the prompt's icon ("bomb", "defuse_kit"), or "" while it is hidden. For tests.
@@ -173,10 +174,14 @@ func _update_prompt() -> void:
 	var holding := progress >= 0.0
 	_bar.visible = holding
 	_seconds.visible = holding
-	_key.visible = not holding
 	_set_icon(slot)
-	# The key cap follows the device used last (D-213): LB on a gamepad.
+	# The key cap follows the device used last (D-213): LB on a gamepad, as the pad's glyph when there is one (v0.2, D-238).
 	_key.text = LastInput.prompt_for(&"use") if LastInput.gamepad else key_name(&"use")
+	var glyph := PadGlyphs.get_scaled_texture(PadGlyphs.style_for(Settings.get_instance().pad_prompts),
+			PadGlyphs.button_for_event(Settings.get_instance().get_pad_binding(&"use")), maxi(1, floori(_ui_scale))) if LastInput.gamepad else null
+	_key_glyph.texture = glyph
+	_key_glyph.visible = glyph != null and not holding
+	_key.visible = not holding and glyph == null
 	if holding:
 		_bar_fill.set_anchor(SIDE_RIGHT, progress, true)
 		_seconds.text = "%.1f" % maxf(0.0, (1.0 - progress) * total)

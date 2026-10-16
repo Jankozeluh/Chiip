@@ -24,43 +24,43 @@ signal closed
 
 ## Where the source code lives (the overview names it).
 const SOURCE_URL := "https://github.com/Jankozeluh/Chiip"
+## The height of a row of the list, in design pixels.
+const ROW_HEIGHT := 40.0
 ## The documents in the list: [code]id[/code], the button's [code]title[/code] and the
 ## [code]path[/code] of the file in the project (empty: the text is made here).
 const DOCUMENTS: Array[Dictionary] = [
-	{"id": &"overview", "title": "Chiip", "path": ""},
-	{"id": &"code", "title": "Game code · GPL-3.0", "path": "res://LICENSE"},
-	{"id": &"assets", "title": "Art and sounds · CC BY-NC-SA", "path": "res://LICENSE-ASSETS"},
-	{"id": &"notices", "title": "Third-party notices", "path": "res://THIRD_PARTY_NOTICES.md"},
-	{"id": &"font", "title": "Silkscreen font · OFL", "path": "res://assets/fonts/Silkscreen-OFL.txt"},
-	{"id": &"func_godot", "title": "FuncGodot · MIT", "path": "res://addons/func_godot/LICENSE"},
-	{"id": &"godot", "title": "Godot Engine", "path": ""},
+	{"id": &"overview", "title": "Chiip", "kind": "Overview", "path": ""},
+	{"id": &"code", "title": "Game code", "kind": "GPL-3.0", "path": "res://LICENSE"},
+	{"id": &"assets", "title": "Art and sounds", "kind": "CC BY-NC-SA", "path": "res://LICENSE-ASSETS"},
+	{"id": &"notices", "title": "Third-party notices", "kind": "List", "path": "res://THIRD_PARTY_NOTICES.md"},
+	{"id": &"font", "title": "Silkscreen", "kind": "OFL 1.1", "path": "res://assets/fonts/Silkscreen-OFL.txt"},
+	{"id": &"func_godot", "title": "FuncGodot", "kind": "MIT", "path": "res://addons/func_godot/LICENSE"},
+	{"id": &"godot", "title": "Godot Engine", "kind": "MIT", "path": ""},
 ]
 
-## The button of each document, by id, in list order.
+## The button of each document, by id, in list order, and the dot that marks the picked one.
 var _buttons: Dictionary = {}
+var _dots: Dictionary = {}
 ## The id of the document on show.
 var _current: StringName = &""
 ## The texts already read (the engine's is long to build).
 var _cache: Dictionary = {}
 
 @onready var _docs: VBoxContainer = %Docs
+@onready var _doc_name: Label = %DocName
+@onready var _doc_kind: Label = %DocKind
+@onready var _mark: TextureRect = %Mark
 @onready var _text: RichTextLabel = %Text
 @onready var _back_button: Button = %BackButton
 
 
 func _ready() -> void:
 	visible = false
+	_mark.texture = BootScreen.load_mono_logo()
+	_mark.visible = _mark.texture != null
 	var group := ButtonGroup.new()
 	for document in DOCUMENTS:
-		var button := Button.new()
-		button.theme_type_variation = &"SmallItemButton"
-		button.text = document["title"]
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.toggle_mode = true
-		button.button_group = group
-		button.pressed.connect(show_document.bind(document["id"]))
-		_docs.add_child(button)
-		_buttons[document["id"]] = button
+		_docs.add_child(_make_row(document, group))
 	_back_button.pressed.connect(close)
 
 
@@ -73,6 +73,48 @@ func _input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("pause") and MenuState.is_top(self):
 		close()
 		get_viewport().set_input_as_handled()
+
+
+## A row of the list (the designer's "31 Credits"): a [Button] with the document's picked state over which a dot, its
+## name and its licence's name are laid; the picked row has the accent dot.
+func _make_row(document: Dictionary, group: ButtonGroup) -> Control:
+	var row := MarginContainer.new()
+	row.custom_minimum_size.y = ROW_HEIGHT
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var button := Button.new()
+	button.theme_type_variation = &"CreditItem"
+	button.toggle_mode = true
+	button.button_group = group
+	button.pressed.connect(show_document.bind(document["id"]))
+	row.add_child(button)
+	var margin := MarginContainer.new()
+	margin.theme_type_variation = &"CreditMargin"
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(margin)
+	var line := HBoxContainer.new()
+	line.theme_type_variation = &"FormRow"
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(line)
+	var dot := Panel.new()
+	dot.theme_type_variation = &"StatBarFill"
+	dot.custom_minimum_size = Vector2(8, 8)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dot.modulate = Color.TRANSPARENT
+	line.add_child(dot)
+	var name_label := Label.new()
+	name_label.text = document["title"]
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(name_label)
+	var kind := Label.new()
+	kind.theme_type_variation = &"MuteLabel"
+	kind.text = document["kind"]
+	kind.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(kind)
+	_buttons[document["id"]] = button
+	_dots[document["id"]] = dot
+	return row
 
 
 ## Shows the screen with the overview and the mouse. It stays open until the player
@@ -109,7 +151,14 @@ func show_document(id: StringName) -> void:
 	if not _buttons.has(id):
 		return
 	_current = id
-	(_buttons[id] as Button).set_pressed_no_signal(true)
+	var accent := _docs.get_theme_color(&"accent", &"Palette")
+	for key: StringName in _buttons:
+		(_buttons[key] as Button).set_pressed_no_signal(key == id)
+		(_dots[key] as Control).modulate = accent if key == id else Color.TRANSPARENT
+	for document in DOCUMENTS:
+		if document["id"] == id:
+			_doc_name.text = document["title"]
+			_doc_kind.text = document["kind"]
 	_text.text = get_document_text(id)
 	_text.scroll_to_line(0)
 
@@ -193,8 +242,8 @@ func get_current() -> StringName:
 ## The list's buttons, top to bottom.
 func get_document_buttons() -> Array[Button]:
 	var found: Array[Button] = []
-	for button in _docs.get_children():
-		found.append(button as Button)
+	for button: Button in _buttons.values():
+		found.append(button)
 	return found
 
 

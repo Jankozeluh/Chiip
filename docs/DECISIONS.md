@@ -1832,7 +1832,7 @@ It also prints its five slowest ticks with the round's phase and time, so a fail
 
 **Alternatives:** Spreading the round start over several ticks: the loadouts and the bots' purchases would come during the freeze time instead of at its start. That's a change to the rules' order that the round and economy tests check, for about 15 ms once a round.
 
-## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
+## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16) — *amended by D-232 (position, steps, tags)*
 
 **Decision:**
 - **A thin compass strip at the top centre of the HUD** (`ui/compass.gd`, `Compass`): N, E, S and W with small ticks every 15° (taller every 45°), a short pointer in the middle, turning with your view, 120° across 400 design pixels. In the HUD's look: Silkscreen 16 px, hard 2 px shadows, the TEXT, MUTE and enemy colours of the palette. Its sizes are tokens (`HUD_COMPASS_*` in `tools/ui_palette.gd`, the theme's "Hud" type).
@@ -2257,6 +2257,102 @@ The new way of working starts once the work in progress (the v0.1.1 hotfix and M
 Not now: first-launch tips, crosshair share codes, replays.
 
 **Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) comes first. You'd rather ship v0.2.0 with these features ("chtel bych v0.2.0 vydat az tam toto co jsi popsal bude") and check the optimization just before.
+
+## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
+
+**Decision:**
+- **Source:** the designer's "Chiip UI 3 - v0.2 Screens" (screens 18 to 31: Stats, the aim trainer, spray practice, the Interface, Controller and Audio settings, the FPS counter, the developer overlay, the compass with callouts, the boot screen, the credits), with its renders and the Glyph and Icon components, kept outside the repo in `Chiip-design/v0.2/`. Each screen is built into the game's existing scene for it, in the theme's roles (D-057, D-131), with a side-by-side look at the designer's render at 1280 × 720, and goes into the layout test.
+- **The gamepad glyphs** (screen 25's Controller tab uses them) are drawn by `tools/make_pad_glyphs.py`, a port of the designer's Glyph component, into `assets/ui/glyphs/<xbox|ps|generic>/<button>.png` and `<button>_mono.png`: 3 pad styles × 19 buttons, 16 × 16, one pixel per cell like the icon set, face buttons in the pad's colours. `PadGlyphs` (`ui/pad_glyphs.gd`) names a glyph by the button's place (south, east, lb, lt, ls...), so one binding shows the right picture on every pad, and picks the style of the pad plugged in for "Auto".
+- **The mono studio mark** (`assets/ui/studio_logo_mono.png`, 32 × 32) is the credits footer's; like the logo it is the studio's own, all rights reserved (docs/CREDITS.md).
+- Where the design and an earlier decision disagree, **the design wins and the decision is amended** (the compass of D-180, the boot screen of D-153); the notes say which.
+
+**Why:** The designer answered docs/DESIGN_HANDOFF.md with these pages; the first round (D-130) established that the mockups are the source of truth for the look.
+
+**Alternatives:** keeping the screens as built, in their own style (the designer asked for the reviews: the compass, the boot screen and the licences); drawing the glyphs by hand (the component is the designer's spec).
+
+## D-231 — The boot screen follows the designer's page (2026-10-16)
+
+**Decision:** The boot screen (D-153) is the designer's "30 Boot": the logo with a **smooth filter** (it is a painted mark; the nearest filter of D-153 was wrong for it), "DIVOCAKOS" in 32 px with 4 px letter spacing (a new `SpacedLabel` role) instead of the 48 px bold name, **four** squares instead of eight, the credit line "Created by JK · Divocakos" at the bottom left (the main menu's footer says it too, in place of "Build M10 · Divocakos") and "Any key to skip" at the bottom right, on the opaque deepest dark (a new `VoidPanel` role). Timing: the logo, name and squares fade in over 0.3 s, then the screen holds 1.6 s (`hold_time` 1.9 s). The logo stays at 224 design pixels, a whole multiple of its 112 pixels at every UI scale of half steps.
+
+**Why:** The designer's review (D-230). **Alternatives:** none worth it; the page is explicit about every item. The squares' gap is the theme's 6 px, the page's 8 px: left, because the loading screen's squares share the role.
+
+## D-232 — The compass follows the designer's page: a strip under the score, callout tags, an Interface tab (2026-10-16) — *amends D-180*
+
+**Decision:**
+- **The strip moves under the score** (448 × 24 design pixels at y 104, a 60 % VOID backing) and shows **90 degrees each side**: ticks every 15° (2 × 8, at the 45° points 2 × 12), N, E, S and W in the text colour, and a **heading box** hanging under the middle (the bearing in degrees). The round top bar goes back to y 24 (D-180 had pushed it down 16 px) and the toasts sit under the compass and its tag (y 192).
+- **Enemy marks last three seconds in steps:** 4 × 16, a 1 px VOID edge, full for the first second, 60 % for the second, 30 % for the third, then gone (D-180: two seconds, one fade). A shot from more than 90° to the side pins to the strip's end as an 8 px mark. One mark per shooter, as before.
+- **Bot callouts show on the compass and in the kill feed** (D-216 had only a toast): `RoundManager.callout_made(team, caller, point, place)` says where; the compass hangs a tag "ENEMY · A" (a bomb site's letter, else the direction's abbreviation, "ENEMY · NW") under that bearing for 4 seconds, one at a time (the tag steps aside for the heading box), and `KillFeed.add_callout()` writes "Bot3  ENEMY NEAR A" with a team-coloured edge, two lines at most, the older dimmed. The toast is gone. The older `callout(team, text)` signal stays, as the squad test uses it. `BotSquad.callout_place()` splits the call into the site letter, the direction and its short form.
+- **Settings has an Interface tab** (between Audio and Crosshair): UI scale and Team colours move there from Video (which had run out of room: with a Compass switch it was taller than 720 pixels), with the new **Compass** switch (`Settings.compass`, on by default). The FPS rows come next.
+
+**Why:** The designer's review of the compass (D-230, page 29) changes what D-180 built; the page wins. A single toast lost the callout once it faded, and a tag shows which way to look.
+
+**Alternatives:** keeping the compass on top and only adding the tag (the page puts everything under the score, with room for the heading box); calling out groups ("2 ENEMIES MID", on the page's third line): the bots call out one enemy at a time.
+
+## D-233 — The FPS counter and the developer overlay follow the designer's pages (2026-10-16)
+
+**Decision:**
+- **F3 steps through three states, off, player, developer**, kept in a setting (`Settings.fps_counter`, also a row in Settings → Interface; **Net stats** is another: `Settings.net_stats`, on by default). It starts off, as the old overlay did (D-133), and a choice saved in the settings stays for the next run.
+- **Player** ("27 FPS player"): a block at the top left on 72 % VOID (padded 12 × 8): the frame rate and the frame time, and online the ping and the share of snapshots lost (a host shows 0 ms and 0 %). The numbers are averaged over a quarter of a second so they don't flicker; they turn the alert colour below 60 FPS, above 100 ms of ping and above 1 % loss. It never grows wider than its text.
+- **Developer** ("28 Debug developer"): a 416 px panel on 86 % VOID with four sections: PERFORMANCE (FPS and the lowest of the last 64 frames, frame time and the longest, and a 64-bar frame-time graph: 1.3 px per millisecond up to 46, a line at 16.7 ms, frames over it in amber), NETWORK (online only), MOVEMENT (speed in m/s and Quake-style units, vertical speed, position, jump peak, stance) and WEAPON (inaccuracy, recoil built up, the last hit's zone, damage and distance). The old overlay's other lines (the shoot/aim buttons, the online status lines) are gone from it; the console's `status` still prints the session.
+- The panels and labels are theme roles (`HudFpsPanel`, `HudDebugPanel`, `HudDebugRule`) and tokens (`HUD_FPS_*`, `HUD_DEBUG_*`, `HUD_GRAPH_*`); the overlay is `class_name DebugOverlay` now.
+
+**Why:** The handoff asked for two levels, "for players (like CS's net graph) ... a small, unobtrusive corner block", and "for developers: the full readout, with speed, position, stance, weapon inaccuracy and recoil, the last hit's zone and damage, and a small frame-time graph".
+
+**Alternatives:** a separate key for each level (F3 stays the one key CS players know); drawing the overlay as one multi-line label (the page has sections and a graph).
+
+## D-234 — The Interface and Controller tabs, the UI scale in steps of ten, button prompts (2026-10-16)
+
+**Decision:**
+- **Settings has seven tabs** as the designer drew them: Game, Video, Audio, **Interface**, **Controller**, Crosshair, Controls. The pad's look (sensitivity, dead zone, curve, invert Y) moved from Game to Controller; the label column of both new tabs is 240 pixels like the Crosshair tab.
+- **Interface:** UI scale, Team colours, FPS counter (D-233), Net stats and Compass (D-232), with the hint lines the page has ("Auto fits the HUD to the window · now 150 %", "F3 steps off, player, developer in a match") and the colour-blind note. **The UI scale choices are Auto, 50, 60, 70, 80, 90 and 100** (the page's), not Auto/50/75/100 of D-181; the rule is the same (a share of the biggest scale that fits, half steps from 1.0 up, 100 = exact). **Team colours** are named Normal and Colour-blind, with a live preview of both: the picked one framed.
+- **The colour-blind UI colours are the designer's:** a dark blue **3466E8** against a light orange **FFA45C** (they were 66B3FF and FF7A1A, D-210). The 3D world's team colours are unchanged. The page's warning applies: light orange sits close to the alert amber, so alerts always carry their icon and the bomb timer turns to the text colour with amber only in its last 10 seconds (the timer itself is the next check in the open list).
+- **Controller:** Look sensitivity, Dead zone (with the 80 × 80 box: the dead zone as a dim square, the right stick live as a dot), Look curve (kept: not on the page, but M15 built it), **Invert Y and Invert X** (`Settings.pad_invert_x`, new), **Button prompts** Auto / Xbox / PS / Generic (`Settings.pad_prompts`, new; `PadGlyphs.style_for()` resolves Auto from the plugged-in pad's name) and the bindings table: Move, Look and nine actions with their pad glyph and key. **Not built: Aim sensitivity** (the page's second slider): the stick is already slower through a scope (D-212), and a separate number has nothing to do yet.
+- **Audio** keeps its rows (Music exists since M13) and gets the page's note, worded for what the music does: it plays in the menus and as short stingers at the start and end of rounds and matches, never during a round.
+
+**Why:** The designer's pages 24 to 26 (D-230). **Alternatives:** the pad rows staying in Game (the page has a tab for them); building the aim sensitivity slider as a second pad multiplier (more settings than the pad has behaviour for).
+
+## D-235 — The Stats screen is one page with a match detail (2026-10-16) — *replaces the four tabs of D-204*
+
+**Decision:**
+- **One page**, as the designer drew it (18): the lifetime row (K/D, ADR, HS %, accuracy, wins, losses), the K/D of the last 20 matches as bars (TEXT at 1.00 and over, MUTE under) with the 1.00 line, the accuracy and head-shot share per gun, the wins per mode, map and against bots (W-L bars) and the match history on the right (a result chip, map, mode and day, kills-deaths). A click opens the match (19): the map, the result in the team's colour and the score, a row of seven numbers (kills, deaths, assists, ADR, HS %, accuracy and **damage**: the page's "score" has no source), a table per gun and a chart of the kills and deaths of each minute. Esc or Back returns to the page; Esc on the page closes the screen.
+- **The filter** (All, TDM, Bomb, Vs bots) narrows the numbers: All uses the lifetime totals, the others are counted from the history (the last 300 matches) by mode, or by matches not played online for Vs bots. **A fifth segment, Training,** shows the aim trainer's and spray practice's bests, which the page has no place for (it was a tab before); **Export CSV** and **Reset stats** stay in the footer.
+- **New data:** every gun's **kills and damage** (`StatsWeapon`) and your **kills and deaths per minute** (`StatsMatch`), recorded from this build on; a match from before has no minutes and shows "Not recorded for this match." in the chart and zeros in the gun table's kills and damage. The file format only gains keys (`kills`, `damage` per gun; `kpm`, `dpm` per match); older files read as before and junk in them is cleaned.
+- Differences from the page: the text is the game's (a gun's name: Ram, Warden...); the weapon table lists the guns you fired; no "score" cell.
+
+**Why:** The handoff asked for "a lifetime overview ... accuracy per weapon, wins per mode and per map, a match history list, and a match detail view". The tabs split what the page shows together.
+
+**Alternatives:** keeping the four tabs and restyling them (the page puts the lifetime row, the bars and the history on one screen); a fixed Training block on the page (no room at 1280 × 720).
+
+## D-236 — The training screens on the HUD: a start panel, a run readout, a result, a spray panel (2026-10-16)
+
+**Decision:**
+- **Aim trainer (pages 20 to 22):** a shot at the pad opens a **start panel** (a menu: the mouse is free, Esc closes it, Enter starts) with the length 30, 60 or 90 seconds, your best for that length and gun, and Start. During the run the HUD shows **hits, the time with a bar, and the score** (the countdown's number in the time's place before), and **Esc stops the run** (it used to pause the game; shooting the pad still stops it too). A finished run shows a **result panel** for the few seconds the trainer keeps it (score and "New best" or "Best was", accuracy, hits out of the targets shown, average time, best streak; `AimScore` counts the **best streak**: targets hit in a row, an expired one starts it over). The in-world `Label3D` readouts of D-205 stay for a map on its own and the tests; with the game's HUD they are off (`TrainingHub.hud_active`).
+- **Lengths keep their own bests:** `aim_flick_<gun>` is still the 30-second run's key (so existing bests stay), a 60 or 90 s run saves under `aim_flick_<gun>_60` / `_90`; Stats' Training page names them ("Aim trainer · Ram · 60 s"). A run started without the panel (the console's `aim`, the tests) lasts the entity's `run_time` and uses the plain key.
+- **Spray practice (page 23):** a panel at the top right while you shoot the wall (for six seconds after your last shot): your gun with its icon, the shots of the spray out of the pattern's, **on pattern** (the control, from ten shots on), the legend of the wall's dots. The wall's own pattern and holes in the world are unchanged.
+- **Not built, and why:** the result panel's buttons **Again** and **Done** (the panel is a readout: shoot the pad to go again, the run is already over), the page's keys **R reset the wall**, **P hide the pattern** and **1 to 5 weapon** (R is reload: the wall resets by shooting the orange plate or the console's `spray_reset`; the weapon keys already switch guns; hiding the pattern would be a new action), and the dimmed world behind the result.
+- The pieces meet through **`TrainingHub`** (static members, like `Noises`): the trainer and the wall put themselves there, the HUD reads it, the start panel registers itself.
+
+**Why:** The handoff: "Aim trainer: the start panel (Start, best score), the HUD during a run (timer, hits, score), and the results panel (score, accuracy, a new best). Spray practice: how the weapon's spray pattern shows next to your shots on the wall."
+
+**Alternatives:** a start key instead of a panel (the page draws a panel, and the length needs a choice); making the result a menu with buttons (it would take the mouse after every run).
+
+## D-237 — The Licences screen is the designer's Credits page (2026-10-16)
+
+**Decision:** The screen the settings footer's Licences button opens (M12, D-170) is now titled **Credits** and follows the designer's page 31: on the left "Game · **Created by JK** · Divocakos" and the list of documents as rows (a dot that is the accent colour on the picked one, the name, its licence in muted text; the picked row raised); on the right the document in a frame with its name and licence above it and "Scroll · mouse wheel or right stick" under it; in the footer the **32 × 32 mono mark** at 60 % and "© Divocakos. All rights reserved.". The documents are the same seven (the overview, the game's GPL, the asset licence, the third-party notices, Silkscreen, FuncGodot, Godot), each file or the engine's own text shown unedited; the page's fourth row "Sounds" has no file: the sounds are generated for Chiip and fall under the asset licence. The Back button is still where Esc leaves.
+
+**Why:** The designer's review of "the licences / credits screen" (D-230). The list stays generated from the build's files, as the page asks ("the developers should generate the list from the build so nothing is missed").
+
+**Alternatives:** a main menu entry for it (the page doesn't draw one; the settings footer reaches it from the main menu and the pause menu).
+
+## D-238 — Pad prompts show the pad's glyphs (2026-10-16)
+
+**Decision:**
+- **A pad prompt is a glyph, not a letter,** in the style of the pad (Settings → Controller → Button prompts: Auto, Xbox, PS, Generic; D-234): `PadGlyphs.for_action(action)` gives the picture of the button an action is bound to, `get_scaled_texture()` enlarges it by whole steps (a button's icon can't follow the theme's scale). Built so far: the **bomb prompt's key cap** (the glyph of Use while the pad is the device used last, the key's letter otherwise), the **Controller tab's bindings table** (D-234) and the **settings menu**: LB and RB with "Tabs" at the top right, the Y glyph on Reset tab to defaults and the B glyph on Back, shown only while the pad is the device last used. **LB and RB turn the settings' tabs and Y puts the tab's settings back** (they did nothing before; B already backs out, D-213).
+- **Not done:** the class draft's text hint ("D-pad and A pick a class · B keeps your class") and the other hints in running text stay words (a glyph in the middle of a sentence needs a rich label); the in-game bomb timer rule of page 24 (amber only in the last 10 s in colour-blind mode) has nothing to apply to yet: the HUD's planted plate says "Bomb" with its icon and shows no countdown.
+
+**Why:** The designer's gamepad glyph set and the settings pages (D-230); the handoff's "gamepad button prompts ... used in hints and the Controls tab".
+
+**Alternatives:** replacing every hint with a rich text with inline images (a larger rewrite of the hint labels); mono glyphs tinted to the HUD (the coloured face buttons help find the right button at a glance).
 
 ## Open questions
 

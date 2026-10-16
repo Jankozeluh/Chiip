@@ -451,6 +451,72 @@ border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxEmpty" id="credit_item_disabled"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="credit_item_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 0)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="credit_item_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="credit_item_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="credit_item_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="credit_item_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="credit_text_panel"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="dim_key_cap"]
 content_margin_left = 8.0
 content_margin_top = 4.0
@@ -680,6 +746,111 @@ bg_color = Color(0.2, 0.2509804, 0.3529412, 1)
 border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="history_item_disabled"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_focus"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_hover"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.37254903, 0.42352942, 0.5019608, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_hover_pressed"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_normal"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_pressed"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_picked_hover"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="history_item_picked"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="hud_alert_plate"]
 content_margin_left = 12.0
 content_margin_top = 0.0
@@ -694,6 +865,11 @@ base_font = ExtResource("21_hur4u")
 spacing_top = -5
 spacing_bottom = -4
 
+[sub_resource type="StyleBoxFlat" id="hud_bar_fill_text"]
+bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="FontVariation" id="hud_font_hero_bold"]
 base_font = ExtResource("13_5klhh")
 spacing_top = -14
@@ -702,6 +878,22 @@ spacing_bottom = -13
 [sub_resource type="StyleBoxFlat" id="hud_dead_tint"]
 bg_color = Color(0.15686275, 0.17254902, 0.19607843, 0.55)
 border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="hud_debug_panel"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 0.86)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="hud_debug_rule"]
+content_margin_top = 0.0
+bg_color = Color(1, 1, 1, 0)
+border_width_bottom = 2
+border_color = Color(0.10980392, 0.14509805, 0.2, 1)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="hud_enemy_bar_fill"]
@@ -745,6 +937,15 @@ bg_color = Color(0.043137256, 0.0627451, 0.09019608, 0.72)
 border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="hud_feed_plate_call"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 12.0
+content_margin_bottom = 0.0
+bg_color = Color(0.043137256, 0.0627451, 0.09019608, 0.72)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="hud_feed_plate_death"]
 content_margin_left = 12.0
 content_margin_top = 0.0
@@ -769,6 +970,15 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="hud_fps_panel"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 0.72)
+border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="hud_friendly_bar_fill"]
@@ -1212,6 +1422,15 @@ bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
 border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="pattern_dot"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="plate_panel"]
 bg_color = Color(0.043137256, 0.0627451, 0.09019608, 0.72)
 border_color = Color(1, 1, 1, 0)
@@ -1254,6 +1473,32 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="preview_card"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="preview_card_picked"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="primary_button_disabled"]
@@ -1353,6 +1598,20 @@ bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="pure_chip"]
+bg_color = Color(1, 1, 1, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="pure_chip_frame"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="raised_panel"]
 bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
 border_color = Color(1, 1, 1, 0)
@@ -1416,6 +1675,11 @@ border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="shot_dot"]
+bg_color = Color(0.21176471, 0.8156863, 0.47843137, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="side_panel"]
 bg_color = Color(0.043137256, 0.0627451, 0.09019608, 0.92)
 border_color = Color(1, 1, 1, 0)
@@ -1441,6 +1705,41 @@ content_margin_left = 16.0
 content_margin_top = 8.0
 content_margin_right = 16.0
 content_margin_bottom = 11.0
+
+[sub_resource type="FontVariation" id="spaced_font"]
+base_font = ExtResource("21_hur4u")
+spacing_glyph = 4
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_fill"]
+bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_line"]
+bg_color = Color(0.2, 0.2509804, 0.3529412, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_mute"]
+bg_color = Color(0.37254903, 0.42352942, 0.5019608, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="stat_bar_track"]
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="stat_result_loss"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="stat_result_win"]
+bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="strong_button_disabled"]
 content_margin_left = 24.0
@@ -1899,6 +2198,19 @@ border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="training_panel"]
+content_margin_left = 32.0
+content_margin_top = 32.0
+content_margin_right = 32.0
+content_margin_bottom = 32.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="v_scroll_bar_grabber"]
 content_margin_left = 2.0
 content_margin_top = 2.0
@@ -1942,6 +2254,11 @@ content_margin_bottom = 2.0
 color = Color(0.2, 0.2509804, 0.3529412, 1)
 thickness = 2
 vertical = true
+
+[sub_resource type="StyleBoxFlat" id="void_panel"]
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxEmpty" id="wide_segment_button_disabled"]
 content_margin_left = 16.0
@@ -2039,6 +2356,8 @@ BigPrimaryButton/styles/hover = SubResource("big_primary_button_hover")
 BigPrimaryButton/styles/hover_pressed = SubResource("big_primary_button_hover_pressed")
 BigPrimaryButton/styles/normal = SubResource("big_primary_button_normal")
 BigPrimaryButton/styles/pressed = SubResource("big_primary_button_pressed")
+BrightInkLabel/base_type = &"Label"
+BrightInkLabel/colors/font_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
 BrightLabel/base_type = &"Label"
 BrightLabel/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 Button/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
@@ -2213,6 +2532,20 @@ ConsolePanel/base_type = &"PanelContainer"
 ConsolePanel/styles/panel = SubResource("console_panel")
 ContentBox/base_type = &"VBoxContainer"
 ContentBox/constants/separation = 8
+CreditItem/base_type = &"Button"
+CreditItem/styles/disabled = SubResource("credit_item_disabled")
+CreditItem/styles/focus = SubResource("credit_item_focus")
+CreditItem/styles/hover = SubResource("credit_item_hover")
+CreditItem/styles/hover_pressed = SubResource("credit_item_hover_pressed")
+CreditItem/styles/normal = SubResource("credit_item_normal")
+CreditItem/styles/pressed = SubResource("credit_item_pressed")
+CreditMargin/base_type = &"MarginContainer"
+CreditMargin/constants/margin_bottom = 0
+CreditMargin/constants/margin_left = 16
+CreditMargin/constants/margin_right = 16
+CreditMargin/constants/margin_top = 0
+CreditTextPanel/base_type = &"PanelContainer"
+CreditTextPanel/styles/panel = SubResource("credit_text_panel")
 DefeatLabel/base_type = &"Label"
 DefeatLabel/colors/font_color = Color(1, 0.3019608, 0.23921569, 1)
 DefeatLabel/font_sizes/font_size = 96
@@ -2264,6 +2597,8 @@ FlushRow/base_type = &"HBoxContainer"
 FlushRow/constants/separation = 0
 FooterPanel/base_type = &"PanelContainer"
 FooterPanel/styles/panel = SubResource("footer_panel")
+FormColumn/base_type = &"VBoxContainer"
+FormColumn/constants/separation = 16
 FormGrid/base_type = &"GridContainer"
 FormGrid/constants/h_separation = 64
 FormGrid/constants/v_separation = 16
@@ -2319,26 +2654,60 @@ HeroLabel/fonts/font = ExtResource("13_5klhh")
 HeroTrim/base_type = &"MarginContainer"
 HeroTrim/constants/margin_bottom = -13
 HeroTrim/constants/margin_top = -14
+HistoryItem/base_type = &"Button"
+HistoryItem/styles/disabled = SubResource("history_item_disabled")
+HistoryItem/styles/focus = SubResource("history_item_focus")
+HistoryItem/styles/hover = SubResource("history_item_hover")
+HistoryItem/styles/hover_pressed = SubResource("history_item_hover_pressed")
+HistoryItem/styles/normal = SubResource("history_item_normal")
+HistoryItem/styles/pressed = SubResource("history_item_pressed")
+HistoryItemPicked/base_type = &"HistoryItem"
+HistoryItemPicked/styles/hover = SubResource("history_item_picked_hover")
+HistoryItemPicked/styles/normal = SubResource("history_item_picked")
+HistoryMargin/base_type = &"MarginContainer"
+HistoryMargin/constants/margin_bottom = 0
+HistoryMargin/constants/margin_left = 12
+HistoryMargin/constants/margin_right = 12
+HistoryMargin/constants/margin_top = 0
 Hud/colors/alert = Color(1, 0.6901961, 0.18039216, 1)
 Hud/colors/notice = Color(1, 0.6901961, 0.18039216, 1)
 Hud/constants/alert_plate_height = 32
 Hud/constants/bar_height = 8
 Hud/constants/bar_width = 160
+Hud/constants/callout_edge = 4
 Hud/constants/centre_width = 120
 Hud/constants/chip_count = 10
 Hud/constants/chip_health = 10
 Hud/constants/chip_height = 8
 Hud/constants/chip_width = 12
-Hud/constants/compass_arc = 120
-Hud/constants/compass_fade_ms = 1000
-Hud/constants/compass_marker = 8
-Hud/constants/compass_marker_time_ms = 2000
+Hud/constants/compass_alpha_1 = 100
+Hud/constants/compass_alpha_2 = 60
+Hud/constants/compass_alpha_3 = 30
+Hud/constants/compass_arc = 180
+Hud/constants/compass_box_height = 24
+Hud/constants/compass_box_width = 40
+Hud/constants/compass_mark_height = 16
+Hud/constants/compass_mark_pinned = 8
+Hud/constants/compass_mark_width = 4
+Hud/constants/compass_step_ms = 1000
+Hud/constants/compass_tag = 24
+Hud/constants/compass_tag_ms = 4000
 Hud/constants/compass_thickness = 2
-Hud/constants/compass_tick_large = 8
-Hud/constants/compass_tick_small = 4
+Hud/constants/compass_tick_large = 12
+Hud/constants/compass_tick_small = 8
 Hud/constants/compass_tick_step = 15
+Hud/constants/debug_key_width = 144
+Hud/constants/debug_width = 416
 Hud/constants/feed_height = 32
 Hud/constants/feed_time_ms = 6000
+Hud/constants/fps_gap = 16
+Hud/constants/fps_small_width = 40
+Hud/constants/fps_value_width = 48
+Hud/constants/graph_bars = 64
+Hud/constants/graph_height = 48
+Hud/constants/graph_limit = 167
+Hud/constants/graph_max = 46
+Hud/constants/graph_scale = 130
 Hud/constants/hit_inner = 14
 Hud/constants/hit_length = 12
 Hud/constants/hit_thickness = 4
@@ -2372,6 +2741,8 @@ HudAlertPlateLabel/constants/shadow_offset_y = 2
 HudAlertPlateLabel/constants/shadow_outline_size = 0
 HudAlertPlateLabel/font_sizes/font_size = 32
 HudAlertPlateLabel/fonts/font = SubResource("hud_font_large")
+HudBarFillText/base_type = &"Panel"
+HudBarFillText/styles/panel = SubResource("hud_bar_fill_text")
 HudBaselineLift/base_type = &"MarginContainer"
 HudBaselineLift/constants/margin_bottom = 1
 HudCentreMargin/base_type = &"MarginContainer"
@@ -2387,6 +2758,12 @@ HudCountdownLabel/font_sizes/font_size = 96
 HudCountdownLabel/fonts/font = SubResource("hud_font_hero_bold")
 HudDeadTint/base_type = &"Panel"
 HudDeadTint/styles/panel = SubResource("hud_dead_tint")
+HudDebugPanel/base_type = &"PanelContainer"
+HudDebugPanel/styles/panel = SubResource("hud_debug_panel")
+HudDebugRule/base_type = &"PanelContainer"
+HudDebugRule/styles/panel = SubResource("hud_debug_rule")
+HudDebugSections/base_type = &"VBoxContainer"
+HudDebugSections/constants/separation = 12
 HudDimLabel/base_type = &"Label"
 HudDimLabel/colors/font_color = Color(0.6039216, 0.65882355, 0.7411765, 1)
 HudDimLabel/colors/font_shadow_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
@@ -2412,10 +2789,16 @@ HudEnemyScoreLabel/font_sizes/font_size = 48
 HudEnemyScoreLabel/fonts/font = SubResource("hud_font_title")
 HudFeedPlate/base_type = &"PanelContainer"
 HudFeedPlate/styles/panel = SubResource("hud_feed_plate")
+HudFeedPlateCall/base_type = &"PanelContainer"
+HudFeedPlateCall/styles/panel = SubResource("hud_feed_plate_call")
 HudFeedPlateDeath/base_type = &"PanelContainer"
 HudFeedPlateDeath/styles/panel = SubResource("hud_feed_plate_death")
 HudFeedPlateYou/base_type = &"PanelContainer"
 HudFeedPlateYou/styles/panel = SubResource("hud_feed_plate_you")
+HudFpsPanel/base_type = &"PanelContainer"
+HudFpsPanel/styles/panel = SubResource("hud_fps_panel")
+HudFpsRow/base_type = &"HBoxContainer"
+HudFpsRow/constants/separation = 16
 HudFriendlyBarFill/base_type = &"Panel"
 HudFriendlyBarFill/styles/panel = SubResource("hud_friendly_bar_fill")
 HudFriendlyPipAlive/base_type = &"Panel"
@@ -2522,6 +2905,8 @@ HudRowStack/base_type = &"HBoxContainer"
 HudRowStack/constants/separation = 8
 HudRowStats/base_type = &"HBoxContainer"
 HudRowStats/constants/separation = 40
+HudRunRow/base_type = &"HBoxContainer"
+HudRunRow/constants/separation = 48
 HudScoreBarBack/base_type = &"Panel"
 HudScoreBarBack/styles/panel = SubResource("hud_score_bar_back")
 HudSlotsLabel/base_type = &"Label"
@@ -2608,6 +2993,8 @@ InkPanel/base_type = &"Panel"
 InkPanel/styles/panel = SubResource("ink_panel")
 InsetPanel/base_type = &"PanelContainer"
 InsetPanel/styles/panel = SubResource("inset_panel")
+InterfaceColumns/base_type = &"HBoxContainer"
+InterfaceColumns/constants/separation = 32
 KeyCapButton/base_type = &"Button"
 KeyCapButton/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 KeyCapButton/colors/font_hover_pressed_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
@@ -2724,9 +3111,12 @@ Palette/colors/accent = Color(0.78431374, 0.9411765, 0.23529412, 1)
 Palette/colors/accent_bright = Color(0.9019608, 1, 0.5411765, 1)
 Palette/colors/accent_dark = Color(0.78431374, 0.9411765, 0.23529412, 0.35)
 Palette/colors/alert = Color(1, 0.6901961, 0.18039216, 1)
+Palette/colors/compass_backing = Color(0.02745098, 0.03529412, 0.050980393, 0.6)
+Palette/colors/debug_backing = Color(0.02745098, 0.03529412, 0.050980393, 0.86)
 Palette/colors/enemy = Color(0.72, 0.22, 0.18, 1)
 Palette/colors/enemy_fill = Color(0.56078434, 0.13333334, 0.08627451, 1)
 Palette/colors/enemy_text = Color(1, 0.3019608, 0.23921569, 1)
+Palette/colors/fps_backing = Color(0.02745098, 0.03529412, 0.050980393, 0.72)
 Palette/colors/friendly = Color(0.25, 0.4, 0.7, 1)
 Palette/colors/friendly_fill = Color(0.12156863, 0.2901961, 0.61960787, 1)
 Palette/colors/friendly_text = Color(0.3529412, 0.5803922, 1, 1)
@@ -2757,6 +3147,8 @@ PanelMarginWide/constants/margin_bottom = 32
 PanelMarginWide/constants/margin_left = 32
 PanelMarginWide/constants/margin_right = 32
 PanelMarginWide/constants/margin_top = 32
+PatternDot/base_type = &"Panel"
+PatternDot/styles/panel = SubResource("pattern_dot")
 PerkLabel/base_type = &"Label"
 PerkLabel/colors/font_color = Color(0.6039216, 0.65882355, 0.7411765, 1)
 PerkLabel/constants/line_spacing = 3
@@ -2789,6 +3181,10 @@ PopupMenu/styles/labeled_separator_right = SubResource("popup_menu_separator_rig
 PopupMenu/styles/panel = SubResource("popup_menu_panel")
 PopupMenu/styles/separator = SubResource("popup_menu_separator")
 PopupPanel/styles/panel = SubResource("popup_panel")
+PreviewCard/base_type = &"PanelContainer"
+PreviewCard/styles/panel = SubResource("preview_card")
+PreviewCardPicked/base_type = &"PanelContainer"
+PreviewCardPicked/styles/panel = SubResource("preview_card_picked")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
 PrimaryButton/colors/font_focus_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
@@ -2810,8 +3206,20 @@ ProgressBar/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 ProgressBar/colors/font_outline_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
 ProgressBar/styles/background = SubResource("progress_background")
 ProgressBar/styles/fill = SubResource("progress_fill")
+PureChip/base_type = &"Panel"
+PureChip/styles/panel = SubResource("pure_chip")
+PureChipFrame/base_type = &"Panel"
+PureChipFrame/styles/panel = SubResource("pure_chip_frame")
+PureLabel/base_type = &"Label"
+PureLabel/colors/font_color = Color(1, 1, 1, 1)
+PureLargeLabel/base_type = &"Label"
+PureLargeLabel/colors/font_color = Color(1, 1, 1, 1)
+PureLargeLabel/font_sizes/font_size = 32
 RaisedPanel/base_type = &"PanelContainer"
 RaisedPanel/styles/panel = SubResource("raised_panel")
+ResultGrid/base_type = &"GridContainer"
+ResultGrid/constants/h_separation = 16
+ResultGrid/constants/v_separation = 16
 RichTextLabel/colors/default_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 RichTextLabel/colors/font_outline_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
 RichTextLabel/colors/font_selected_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
@@ -2855,6 +3263,8 @@ ShadowLabel/base_type = &"Label"
 ShadowLabel/constants/shadow_offset_x = 2
 ShadowLabel/constants/shadow_offset_y = 2
 ShadowLabel/constants/shadow_outline_size = 0
+ShotDot/base_type = &"Panel"
+ShotDot/styles/panel = SubResource("shot_dot")
 SideBox/base_type = &"VBoxContainer"
 SideBox/constants/separation = 12
 SideColumn/base_type = &"VBoxContainer"
@@ -2885,8 +3295,33 @@ SmallItemButton/styles/hover = SubResource("small_item_button_lit")
 SmallItemButton/styles/hover_pressed = SubResource("small_item_button_lit")
 SmallItemButton/styles/normal = SubResource("small_item_button_normal")
 SmallItemButton/styles/pressed = SubResource("small_item_button_lit")
+SpacedLabel/base_type = &"Label"
+SpacedLabel/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+SpacedLabel/font_sizes/font_size = 32
+SpacedLabel/fonts/font = SubResource("spaced_font")
+SprayMargin/base_type = &"MarginContainer"
+SprayMargin/constants/margin_bottom = 24
+SprayMargin/constants/margin_left = 24
+SprayMargin/constants/margin_right = 24
+SprayMargin/constants/margin_top = 24
 StackBox/base_type = &"VBoxContainer"
 StackBox/constants/separation = 0
+StatBarFill/base_type = &"Panel"
+StatBarFill/styles/panel = SubResource("stat_bar_fill")
+StatBarLine/base_type = &"Panel"
+StatBarLine/styles/panel = SubResource("stat_bar_line")
+StatBarMute/base_type = &"Panel"
+StatBarMute/styles/panel = SubResource("stat_bar_mute")
+StatBarTrack/base_type = &"Panel"
+StatBarTrack/styles/panel = SubResource("stat_bar_track")
+StatColumns/base_type = &"HBoxContainer"
+StatColumns/constants/separation = 48
+StatResultLoss/base_type = &"PanelContainer"
+StatResultLoss/styles/panel = SubResource("stat_result_loss")
+StatResultWin/base_type = &"PanelContainer"
+StatResultWin/styles/panel = SubResource("stat_result_win")
+StatStack/base_type = &"VBoxContainer"
+StatStack/constants/separation = 16
 StrongButton/base_type = &"Button"
 StrongButton/styles/disabled = SubResource("strong_button_disabled")
 StrongButton/styles/focus = SubResource("strong_button_focus")
@@ -3001,6 +3436,8 @@ TooltipLabel/base_type = &"Label"
 TooltipLabel/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 TooltipPanel/base_type = &"PopupPanel"
 TooltipPanel/styles/panel = SubResource("tooltip_panel")
+TrainingPanel/base_type = &"PanelContainer"
+TrainingPanel/styles/panel = SubResource("training_panel")
 VScrollBar/styles/grabber = SubResource("v_scroll_bar_grabber")
 VScrollBar/styles/grabber_highlight = SubResource("v_scroll_bar_grabber_highlight")
 VScrollBar/styles/grabber_pressed = SubResource("v_scroll_bar_grabber_pressed")
@@ -3020,6 +3457,8 @@ VictoryLabel/base_type = &"Label"
 VictoryLabel/colors/font_color = Color(0.3529412, 0.5803922, 1, 1)
 VictoryLabel/font_sizes/font_size = 96
 VictoryLabel/fonts/font = ExtResource("13_5klhh")
+VoidPanel/base_type = &"Panel"
+VoidPanel/styles/panel = SubResource("void_panel")
 WideSegmentButton/base_type = &"Button"
 WideSegmentButton/colors/font_color = Color(0.6039216, 0.65882355, 0.7411765, 1)
 WideSegmentButton/colors/font_disabled_color = Color(0.37254903, 0.42352942, 0.5019608, 1)

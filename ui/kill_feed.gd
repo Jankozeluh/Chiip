@@ -27,6 +27,14 @@ const PALETTE_TYPE := &"Palette"
 const PLATE_NORMAL := &"HudFeedPlate"
 const PLATE_KILL := &"HudFeedPlateYou"
 const PLATE_DEATH := &"HudFeedPlateDeath"
+## A bot's callout (v0.2, D-232): a plain plate with a team-coloured edge at its left, so it never reads as a kill.
+const PLATE_CALL := &"HudFeedPlateCall"
+## At most this many callout lines show; the older one dims (the designer's "max 2 callout lines").
+const MAX_CALLOUTS := 2
+## The meta key that marks a callout line.
+const CALLOUT_META := &"callout"
+## How much the older callout line is dimmed.
+const OLDER_CALLOUT_ALPHA := 0.6
 const HEADSHOT_SLOT := &"headshot"
 
 var _ui_scale: float = 1.0
@@ -70,6 +78,40 @@ func add_kill(victim: Character, killer: Character, headshot: bool, weapon: Weap
 	while get_child_count() > MAX_LINES:
 		_remove_line(get_child(0))
 	# The tween belongs to the line, so it ends with it when the line is pushed out, and a pause stops it.
+	var tween := line.create_tween()
+	tween.tween_interval(get_lifetime())
+	tween.tween_property(line, "modulate:a", 0.0, FADE_TIME)
+	tween.tween_callback(_remove_line.bind(line))
+
+
+## Adds a line for a callout of [param caller] ("Bot3  ENEMY NEAR A"): its name in its team's colour, [param text] in the
+## text colour, a [param edge]-coloured bar at the left. Keeps at most [constant MAX_CALLOUTS] of them, the older one dimmed.
+func add_callout(caller: Character, text: String) -> void:
+	var line := PanelContainer.new()
+	line.set_meta(CALLOUT_META, true)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.size_flags_horizontal = Control.SIZE_SHRINK_END
+	line.theme_type_variation = PLATE_CALL
+	line.custom_minimum_size.y = get_theme_constant(&"feed_height", THEME_TYPE)
+	add_child(line)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.theme_type_variation = &"HudRowIcon"
+	line.add_child(row)
+	var edge := ColorRect.new()
+	edge.name = "Edge"
+	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge.custom_minimum_size.x = get_theme_constant(&"callout_edge", THEME_TYPE)
+	edge.color = _team_color(caller.team)
+	row.add_child(edge)
+	row.add_child(_make_label("Caller", String(caller.name), _team_color(caller.team)))
+	row.add_child(_make_label("Text", text, get_theme_color(&"text", PALETTE_TYPE)))
+	UiScale.apply_tree(line, _ui_scale)
+	var callouts := get_children().filter(func(child: Node) -> bool: return child.has_meta(CALLOUT_META))
+	while callouts.size() > MAX_CALLOUTS:
+		_remove_line(callouts.pop_front())
+	for older in callouts.slice(0, callouts.size() - 1):
+		(older as Control).modulate.a = OLDER_CALLOUT_ALPHA
 	var tween := line.create_tween()
 	tween.tween_interval(get_lifetime())
 	tween.tween_property(line, "modulate:a", 0.0, FADE_TIME)

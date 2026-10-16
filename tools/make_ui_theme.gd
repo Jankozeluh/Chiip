@@ -86,6 +86,7 @@ func _palette() -> void:
 		"friendly": Teams.FRIENDLY_COLOR, "enemy": Teams.ENEMY_COLOR,
 		"friendly_text": Palette.FRIENDLY, "enemy_text": Palette.ENEMY,
 		"friendly_fill": Palette.FRIENDLY_FILL, "enemy_fill": Palette.ENEMY_FILL,
+		"compass_backing": Palette.COMPASS_BACKING, "fps_backing": Palette.FPS_BACKING, "debug_backing": Palette.DEBUG_BACKING,
 	})
 
 
@@ -182,6 +183,21 @@ func _labels() -> void:
 	_variation("LogoLabel", "Label")
 	_font_sizes("LogoLabel", {"font_size": Palette.TEXT_SIZE_HERO})
 	_fonts("LogoLabel", {"font": logo})
+	# White text to tint with a team's colour (the Interface tab's preview, which shows both colour schemes at once).
+	_variation("PureLabel", "Label")
+	_colors("PureLabel", {"font_color": Palette.PURE})
+	_variation("PureLargeLabel", "Label")
+	_font_sizes("PureLargeLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("PureLargeLabel", {"font_color": Palette.PURE})
+	# The studio's name on the boot screen: 32 px with the same letter spacing (v0.2 screen 30).
+	var spaced := FontVariation.new()
+	spaced.resource_scene_unique_id = "spaced_font"
+	spaced.base_font = load(Palette.FONT)
+	spaced.spacing_glyph = Palette.HERO_LETTER_SPACING
+	_variation("SpacedLabel", "Label")
+	_font_sizes("SpacedLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_fonts("SpacedLabel", {"font": spaced})
+	_colors("SpacedLabel", {"font_color": Palette.TEXT})
 	# Text over the game world with a hard shadow (the main menu's map name).
 	_variation("ShadowLabel", "Label")
 	_constants("ShadowLabel", {"shadow_offset_x": Palette.SHADOW_OFFSET, "shadow_offset_y": Palette.SHADOW_OFFSET, "shadow_outline_size": 0})
@@ -198,6 +214,86 @@ func _panels() -> void:
 	# The dimming behind a modal menu: a full-screen Panel that keeps the clicks from the game.
 	_variation("BackdropPanel", "Panel")
 	_styles("BackdropPanel", {"panel": _box("backdrop_panel", Palette.BACKDROP)})
+	# A card of the Interface tab's team colour preview: a quiet frame, and the picked scheme's in the text colour.
+	_variation("PreviewCard", "PanelContainer")
+	_styles("PreviewCard", {"panel": _box("preview_card", Palette.PANEL, Palette.PANEL, Palette.BORDER, _even(Palette.PREVIEW_PAD))})
+	_variation("PreviewCardPicked", "PanelContainer")
+	_styles("PreviewCardPicked", {"panel": _box("preview_card_picked", Palette.PANEL, Palette.TEXT, Palette.BORDER, _even(Palette.PREVIEW_PAD))})
+	# A square in white, to tint (the team colour preview's score chips): full or just a frame.
+	_variation("PureChip", "Panel")
+	_styles("PureChip", {"panel": _box("pure_chip", Palette.PURE)})
+	_variation("PureChipFrame", "Panel")
+	_styles("PureChipFrame", {"panel": _box("pure_chip_frame", Color.TRANSPARENT, Palette.PURE, Palette.BORDER)})
+	# The training panels (v0.2, D-236): an opaque panel with a LINE frame, and a TEXT fill for the HUD's time bar.
+	_variation("TrainingPanel", "PanelContainer")
+	_styles("TrainingPanel", {"panel": _box("training_panel", Palette.PANEL_OPAQUE, Palette.LINE_COLOR, Palette.BORDER, _even(Palette.TRAINING_PAD))})
+	_hud_panel("HudBarFillText", _box("hud_bar_fill_text", Palette.TEXT))
+	_hud_gap("HudRunRow", "HBoxContainer", Palette.HUD_RUN_GAP)
+	_variation("ResultGrid", "GridContainer")
+	_constants("ResultGrid", {"h_separation": Palette.FORM_GAP, "v_separation": Palette.FORM_GAP})
+	_variation("SprayMargin", "MarginContainer")
+	_margins("SprayMargin", Palette.SPRAY_PAD, Palette.SPRAY_PAD)
+	_variation("FormColumn", "VBoxContainer")
+	_constants("FormColumn", {"separation": Palette.FORM_GAP})
+	# The spray panel's legend: the pattern's dot (a frame) and yours (the crosshair green).
+	_hud_panel("PatternDot", _box("pattern_dot", Color.TRANSPARENT, Palette.TEXT, Palette.BORDER))
+	_hud_panel("ShotDot", _box("shot_dot", Palette.CROSSHAIR))
+	# The credits' list (v0.2, D-237): a row is nothing at rest and RAISED when picked or under the mouse; the text's frame.
+	_variation("CreditItem", "Button")
+	var credit_row := _even(0)
+	_styles("CreditItem", {
+		"normal": _empty("credit_item_normal", credit_row),
+		"hover": _box("credit_item_hover", Palette.PANEL_RAISED, Color.TRANSPARENT, 0, credit_row),
+		"pressed": _box("credit_item_pressed", Palette.PANEL_RAISED, Color.TRANSPARENT, 0, credit_row),
+		"hover_pressed": _box("credit_item_hover_pressed", Palette.PANEL_RAISED, Color.TRANSPARENT, 0, credit_row),
+		"disabled": _empty("credit_item_disabled", credit_row),
+		"focus": _ring("credit_item_focus", Palette.ACCENT, credit_row),
+	})
+	_variation("CreditMargin", "MarginContainer")
+	_margins("CreditMargin", Palette.CREDIT_ROW_PAD, 0)
+	_variation("CreditTextPanel", "PanelContainer")
+	_styles("CreditTextPanel", {"panel": _box("credit_text_panel", Palette.INSET, Palette.LINE_COLOR, Palette.BORDER, _even(Palette.CREDIT_TEXT_PAD))})
+	# The Stats screen's bars (v0.2, D-235): a RAISED track, a TEXT fill, a MUTE fill (deaths, a K/D below 1), a LINE rule.
+	_variation("StatBarTrack", "Panel")
+	_styles("StatBarTrack", {"panel": _box("stat_bar_track", Palette.PANEL_RAISED)})
+	_variation("StatBarFill", "Panel")
+	_styles("StatBarFill", {"panel": _box("stat_bar_fill", Palette.TEXT)})
+	_variation("StatBarMute", "Panel")
+	_styles("StatBarMute", {"panel": _box("stat_bar_mute", Palette.MUTE)})
+	_variation("StatBarLine", "Panel")
+	_styles("StatBarLine", {"panel": _box("stat_bar_line", Palette.LINE_COLOR)})
+	# A result chip of the match history: W is a TEXT square, L only its letter.
+	_variation("StatResultWin", "PanelContainer")
+	_styles("StatResultWin", {"panel": _box("stat_result_win", Palette.TEXT)})
+	_variation("StatResultLoss", "PanelContainer")
+	_styles("StatResultLoss", {"panel": _empty("stat_result_loss", Vector4.ZERO)})
+	# A match history row: nothing at rest, a MUTE frame under the mouse, the picked one RAISED with an accent frame.
+	_variation("HistoryItem", "Button")
+	var history_pad := _even(Palette.STAT_ROW_PAD)
+	_styles("HistoryItem", {
+		"normal": _box("history_item_normal", Color.TRANSPARENT, Color.TRANSPARENT, Palette.BORDER, history_pad),
+		"hover": _box("history_item_hover", Color.TRANSPARENT, Palette.MUTE, Palette.BORDER, history_pad),
+		"pressed": _box("history_item_pressed", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+		"hover_pressed": _box("history_item_hover_pressed", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+		"disabled": _box("history_item_disabled", Color.TRANSPARENT, Color.TRANSPARENT, Palette.BORDER, history_pad),
+		"focus": _ring("history_item_focus", Palette.ACCENT, history_pad),
+	})
+	_variation("HistoryItemPicked", "HistoryItem")
+	_styles("HistoryItemPicked", {
+		"normal": _box("history_item_picked", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+		"hover": _box("history_item_picked_hover", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, history_pad),
+	})
+	_variation("HistoryMargin", "MarginContainer")
+	_margins("HistoryMargin", Palette.STAT_ROW_PAD, 0)
+	_variation("BrightInkLabel", "Label")
+	_colors("BrightInkLabel", {"font_color": Palette.TEXT_ON_FILL})
+	_variation("StatStack", "VBoxContainer")
+	_constants("StatStack", {"separation": Palette.STAT_SECTION_GAP})
+	_variation("StatColumns", "HBoxContainer")
+	_constants("StatColumns", {"separation": Palette.STAT_COLUMN_GAP})
+	# The boot screen's background: the deepest dark (VOID, opaque).
+	_variation("VoidPanel", "Panel")
+	_styles("VoidPanel", {"panel": _box("void_panel", Palette.VOID)})
 	# A full-screen menu's ink background (settings, the Play screen, the match end).
 	_variation("InkPanel", "Panel")
 	_styles("InkPanel", {"panel": _box("ink_panel", Palette.INK)})
@@ -397,6 +493,8 @@ func _containers() -> void:
 	_constants("TeamChipRow", {"separation": Palette.TEAM_CHIP_GAP})
 	# The settings screen: the gaps between its title, tabs and footer, rows whose parts sit edge to edge
 	# (a 400 px label, then the control), rows that touch, and a small group (preview squares and caption).
+	_variation("InterfaceColumns", "HBoxContainer")
+	_constants("InterfaceColumns", {"separation": Palette.INTERFACE_GAP})
 	_variation("SettingsColumn", "VBoxContainer")
 	_constants("SettingsColumn", {"separation": Palette.SETTINGS_GAP})
 	_variation("FlushRow", "HBoxContainer")
@@ -441,8 +539,16 @@ func _hud() -> void:
 		"hit_time_ms": Palette.HUD_HIT_TIME_MS, "shadow_offset": Palette.SHADOW_OFFSET,
 		"compass_arc": Palette.HUD_COMPASS_ARC, "compass_tick_step": Palette.HUD_COMPASS_TICK_STEP,
 		"compass_tick_small": Palette.HUD_COMPASS_TICK_SMALL, "compass_tick_large": Palette.HUD_COMPASS_TICK_LARGE,
-		"compass_thickness": Palette.HUD_COMPASS_THICKNESS, "compass_marker": Palette.HUD_COMPASS_MARKER,
-		"compass_marker_time_ms": Palette.HUD_COMPASS_MARKER_TIME_MS, "compass_fade_ms": Palette.HUD_COMPASS_FADE_MS,
+		"compass_thickness": Palette.HUD_COMPASS_THICKNESS, "compass_box_width": Palette.HUD_COMPASS_BOX.x,
+		"compass_box_height": Palette.HUD_COMPASS_BOX.y, "compass_mark_width": Palette.HUD_COMPASS_MARK.x,
+		"compass_mark_height": Palette.HUD_COMPASS_MARK.y, "compass_mark_pinned": Palette.HUD_COMPASS_MARK_PINNED,
+		"compass_step_ms": Palette.HUD_COMPASS_STEP_MS, "compass_alpha_1": Palette.HUD_COMPASS_ALPHA_1,
+		"compass_alpha_2": Palette.HUD_COMPASS_ALPHA_2, "compass_alpha_3": Palette.HUD_COMPASS_ALPHA_3,
+		"compass_tag": Palette.HUD_COMPASS_TAG, "compass_tag_ms": Palette.HUD_COMPASS_TAG_MS,
+		"callout_edge": Palette.HUD_CALLOUT_EDGE, "fps_gap": Palette.HUD_FPS_GAP, "fps_value_width": Palette.HUD_FPS_VALUE_WIDTH,
+		"fps_small_width": Palette.HUD_FPS_SMALL_WIDTH, "debug_width": Palette.HUD_DEBUG_WIDTH, "debug_key_width": Palette.HUD_DEBUG_KEY_WIDTH,
+		"graph_height": Palette.HUD_GRAPH_HEIGHT, "graph_bars": Palette.HUD_GRAPH_BARS, "graph_scale": Palette.HUD_GRAPH_SCALE,
+		"graph_max": Palette.HUD_GRAPH_MAX, "graph_limit": Palette.HUD_GRAPH_LIMIT,
 	})
 	var regular: Font = load(Palette.FONT)
 	var bold: Font = load(Palette.FONT_BOLD)
@@ -516,6 +622,13 @@ func _hud() -> void:
 	var feed_margin := Vector4(Palette.HUD_FEED_PAD, 0, Palette.HUD_FEED_PAD, 0)
 	var feed_frame := Palette.HUD_FEED_FRAME_PAD + Palette.BORDER
 	_hud_plate("HudFeedPlate", _box("hud_feed_plate", Palette.PLATE, Color.TRANSPARENT, 0, feed_margin))
+	# The FPS counter's block, the developer overlay's panel and the rule under a section's title (v0.2, D-233).
+	_hud_plate("HudFpsPanel", _box("hud_fps_panel", Palette.FPS_BACKING, Color.TRANSPARENT, 0, Vector4(Palette.HUD_FPS_PAD.x, Palette.HUD_FPS_PAD.y, Palette.HUD_FPS_PAD.x, Palette.HUD_FPS_PAD.y)))
+	_hud_plate("HudDebugPanel", _box("hud_debug_panel", Palette.DEBUG_BACKING, Color.TRANSPARENT, 0, _even(Palette.HUD_DEBUG_PAD)))
+	_hud_plate("HudDebugRule", _underline("hud_debug_rule", Palette.PANEL_RAISED))
+	_hud_gap("HudFpsRow", "HBoxContainer", Palette.HUD_FPS_GAP)
+	_hud_gap("HudDebugSections", "VBoxContainer", Palette.HUD_DEBUG_SECTION_GAP)
+	_hud_plate("HudFeedPlateCall", _box("hud_feed_plate_call", Palette.PLATE, Color.TRANSPARENT, 0, Vector4(0, 0, Palette.HUD_FEED_PAD, 0)))
 	_hud_plate("HudFeedPlateYou", _box("hud_feed_plate_you", Palette.INK, Palette.TEXT, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
 	_hud_plate("HudFeedPlateDeath", _box("hud_feed_plate_death", Palette.INK, Palette.ENEMY, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
 	# The toasts' plates (news: INK, match point: TEXT, the bomb planted: ALERT, low ammo: INK with an ALERT frame) and their chips.

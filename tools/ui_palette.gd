@@ -286,6 +286,29 @@ const SWATCH_MARGIN := 4
 
 ## Between the settings screen's title, its tabs and its footer.
 const SETTINGS_GAP := 24
+## The space between the Interface and Controller tabs' two columns (the rows and the preview or table).
+const INTERFACE_GAP := 32
+## The padding inside a card of the team colour preview.
+const PREVIEW_PAD := 16
+## The Stats screen's bars (v0.2, D-235): the thickness of a bar track and of the lines that rule the lists.
+const STAT_BAR := 8
+## The padding of a match history row, and the space between the screen's columns.
+const STAT_ROW_PAD := 12
+const STAT_COLUMN_GAP := 48
+## The space between the Stats page's blocks one under another.
+const STAT_SECTION_GAP := 16
+## The padding inside the Shooting Range's training panels (the start panel and the result).
+const TRAINING_PAD := 32
+## The credits' list rows (sides) and the licence text's panel (all round).
+const CREDIT_ROW_PAD := 16
+const CREDIT_TEXT_PAD := 24
+## The space between the aim trainer's run readouts, and the padding of the spray panel.
+const HUD_RUN_GAP := 48
+const SPRAY_PAD := 24
+## The crosshair's default green: the spray panel's legend dot for your shots.
+const CROSSHAIR := Color("36d07a")
+## White, for text that is tinted with a colour at runtime (the team colour preview).
+const PURE := Color.WHITE
 ## Edge to edge: the parts of a settings row (a 400 px label, then the control) and of a table row.
 const FLUSH_GAP := 0
 ## Rows that touch (the crosshair tab's rows are 48 high and have no gap).
@@ -510,15 +533,50 @@ const HUD_HIT_LENGTH := 12
 const HUD_HIT_THICKNESS := 4
 const HUD_HIT_TIME_MS := 150
 
-## The compass (D-180): a thin strip at the top centre that turns with the view and shows N, E, S and W with ticks, and a marker where an
-## enemy fired. It shows this many degrees across its width, a tick every [constant HUD_COMPASS_TICK_STEP] degrees (a taller one every
-## third, at the 45-degree points; the letters stand at the 90-degree points), ticks and the centre pointer this thick, the enemy marker this
-## big for this many milliseconds, fading over the last [constant HUD_COMPASS_FADE_MS] of them.
-const HUD_COMPASS_ARC := 120
+## The compass (D-180, the designer's "29 Compass callouts" since D-232): a strip under the score that turns with the view,
+## 24 high and 448 wide (set in the HUD scene), showing this many degrees across (90 each side), a tick every
+## [constant HUD_COMPASS_TICK_STEP] degrees (2 px thick, [constant HUD_COMPASS_TICK_SMALL] tall; the 45-degree points
+## [constant HUD_COMPASS_TICK_LARGE] tall; N, E, S and W stand at the 90-degree points) on a VOID backing, a heading box under
+## the middle ([constant HUD_COMPASS_BOX]: its width and height), and where an enemy fired a red mark
+## ([constant HUD_COMPASS_MARK]: its width and height, 1 px VOID edge; [constant HUD_COMPASS_MARK_PINNED] wide when pinned to an
+## end) that shows full for one step ([constant HUD_COMPASS_STEP_MS]), then at the next two percents, then goes. A
+## callout tag ("ENEMY · A") hangs under its bearing for [constant HUD_COMPASS_TAG_MS], [constant HUD_COMPASS_TAG] tall.
+const HUD_COMPASS_ARC := 180
 const HUD_COMPASS_TICK_STEP := 15
-const HUD_COMPASS_TICK_SMALL := 4
-const HUD_COMPASS_TICK_LARGE := 8
+const HUD_COMPASS_TICK_SMALL := 8
+const HUD_COMPASS_TICK_LARGE := 12
 const HUD_COMPASS_THICKNESS := 2
-const HUD_COMPASS_MARKER := 8
-const HUD_COMPASS_MARKER_TIME_MS := 2000
-const HUD_COMPASS_FADE_MS := 1000
+const HUD_COMPASS_BOX := Vector2i(40, 24)
+const HUD_COMPASS_MARK := Vector2i(4, 16)
+const HUD_COMPASS_MARK_PINNED := 8
+const HUD_COMPASS_STEP_MS := 1000
+const HUD_COMPASS_ALPHA_1 := 100
+const HUD_COMPASS_ALPHA_2 := 60
+const HUD_COMPASS_ALPHA_3 := 30
+const HUD_COMPASS_TAG := 24
+const HUD_COMPASS_TAG_MS := 4000
+## The FPS counter (v0.2, D-233, the designer's "27 FPS player"): a block at the top left on VOID at 72 %, padded this much, its rows
+## [constant HUD_FPS_GAP] apart with the number this wide (and the second pair of numbers [constant HUD_FPS_SMALL_WIDTH] wide).
+const FPS_BACKING := Color("07090d", 0.72)
+const HUD_FPS_PAD := Vector2i(12, 8)
+const HUD_FPS_GAP := 16
+const HUD_FPS_VALUE_WIDTH := 48
+const HUD_FPS_SMALL_WIDTH := 40
+## The developer overlay ("28 Debug developer"): a panel this wide on VOID at 86 %, padded this much, a key column this wide, and
+## the frame-time graph: this high with this many bars, [constant HUD_GRAPH_SCALE] hundredths of a pixel per millisecond up to
+## [constant HUD_GRAPH_MAX] pixels, a line at [constant HUD_GRAPH_LIMIT] tenths of a millisecond (a 60 FPS frame).
+const DEBUG_BACKING := Color("07090d", 0.86)
+const HUD_DEBUG_WIDTH := 416
+const HUD_DEBUG_PAD := 16
+const HUD_DEBUG_KEY_WIDTH := 144
+## The space between the developer overlay's sections.
+const HUD_DEBUG_SECTION_GAP := 12
+const HUD_GRAPH_HEIGHT := 48
+const HUD_GRAPH_BARS := 64
+const HUD_GRAPH_SCALE := 130
+const HUD_GRAPH_MAX := 46
+const HUD_GRAPH_LIMIT := 167
+## The bar at the left of a callout line in the kill feed.
+const HUD_CALLOUT_EDGE := 4
+## The compass strip's backing: VOID at 60 %.
+const COMPASS_BACKING := Color("07090d", 0.6)

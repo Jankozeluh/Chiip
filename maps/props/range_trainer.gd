@@ -37,6 +37,8 @@ const PAD_COLOR := Color(1.0, 0.62, 0.15)
 const BEST_PREFIX := "aim_flick_"
 ## Tries at finding a spot in plain view before the target waits a moment.
 const SPOT_TRIES := 40
+## The run length the plain best key stands for, in seconds.
+const DEFAULT_SECONDS := 30.0
 
 ## Seconds a run lasts (after the countdown).
 @export var run_time: float = 30.0
@@ -79,6 +81,9 @@ var _origin_eye: Vector3 = Vector3.ZERO
 var _origin_yaw: float = 0.0
 var _origin_floor: float = 0.0
 var _notice: String = ""
+## How long the run now lasts, and the length the player chose in the start panel (0: the entity's [member run_time]).
+var _run_seconds: float = 0.0
+var _chosen_seconds: float = 0.0
 var _readout: Label3D
 var _pad_label: Label3D
 var _pad: Hitbox
@@ -102,6 +107,8 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_forget_readout()
+	if TrainingHub.trainer == self:
+		TrainingHub.trainer = null
 
 
 func _physics_process(delta: float) -> void:
@@ -163,16 +170,35 @@ func get_readout() -> String:
 	return _readout.text if _readout != null else ""
 
 
-## The key of the personal best for [param weapon_id] in the stats file.
-static func best_key(weapon_id: StringName) -> String:
-	return BEST_PREFIX + String(weapon_id)
+## The key of the personal best for [param weapon_id] in the stats file. A run of a length chosen in the start panel
+## ([param seconds], not the 30 of the entity) keeps its best apart: `aim_flick_rifle_60`.
+static func best_key(weapon_id: StringName, seconds: float = 0.0) -> String:
+	var key := BEST_PREFIX + String(weapon_id)
+	return key if seconds <= 0.0 or is_equal_approx(seconds, DEFAULT_SECONDS) else "%s_%d" % [key, roundi(seconds)]
+
+
+## True while the countdown or a run is on.
+func is_active() -> bool:
+	return _state == State.COUNTDOWN or _state == State.RUNNING
+
+
+## How many seconds the run now on (or the last one) lasts.
+func get_run_seconds() -> float:
+	return _run_seconds if _run_seconds > 0.0 else run_time
+
+
+## The length of the run the player chose ([param seconds], 0 for the entity's own) and its personal best key.
+func get_best_key(weapon_id: StringName, seconds: float) -> String:
+	return best_key(weapon_id, seconds)
 
 
 ## Starts a run for [param character] (what shooting the pad does): the countdown first. A run
 ## needs a gun in hand: without one it says so and nothing starts. Returns whether it started.
-func start(character: Character) -> bool:
+func start(character: Character, seconds: float = 0.0) -> bool:
 	if _state == State.COUNTDOWN or _state == State.RUNNING:
 		return false
+	_chosen_seconds = seconds
+	_run_seconds = seconds if seconds > 0.0 else run_time
 	var weapon := character.weapon
 	if weapon == null or weapon.data == null or weapon.data.category == WeaponData.Category.KNIFE \
 			or weapon.data.category == WeaponData.Category.GRENADE:
@@ -214,7 +240,7 @@ func _begin_run() -> void:
 		_origin_eye = _trainee.get_eye_position()
 		_origin_yaw = _trainee.get_aim_angles().x
 		_origin_floor = _trainee.global_position.y
-	_clock = run_time
+	_clock = get_run_seconds()
 	_gap_left = 0.0
 	_set_state(State.RUNNING)
 	run_started.emit(_weapon_id)
@@ -249,7 +275,7 @@ func _finish() -> void:
 	_follow_weapon(false)
 	var new_best := false
 	if _score.hits > 0:
-		new_best = _book().submit_best(best_key(_weapon_id), float(_score.score()), _score.details())
+		new_best = _book().submit_best(best_key(_weapon_id, _chosen_seconds), float(_score.score()), _score.details())
 	_clock = result_time
 	_set_state(State.RESULT)
 	var lines := PackedStringArray([
@@ -430,7 +456,7 @@ func _on_pad_hit(_damage: float, _zone: Hitbox.Zone, _position: Vector3, attacke
 		return
 	if _state == State.COUNTDOWN or _state == State.RUNNING:
 		stop()
-	else:
+	elif not TrainingHub.request_start(self, shooter):
 		start(shooter)
 
 
@@ -455,7 +481,8 @@ func _update_pad_label() -> void:
 
 func _make_readout(character: Character) -> void:
 	var camera := character.get_camera()
-	if camera == null:
+	# With the game's 2D screens (TrainingHud) the numbers are on the HUD, not in the world.
+	if camera == null or TrainingHub.hud_active:
 		return
 	_readout = Label3D.new()
 	_readout.name = "AimReadout"
@@ -488,8 +515,18 @@ func _forget_readout() -> void:
 
 func _set_state(state: State) -> void:
 	_state = state
+	if state == State.IDLE:
+		if TrainingHub.trainer == self:
+			TrainingHub.trainer = null
+	else:
+		TrainingHub.trainer = self
 	state_changed.emit(state)
 
 
 func _book() -> StatsBook:
 	return book if book != null else StatsBook.get_instance()
+
+
+## The book the bests are kept in (the shared one unless a test gave another).
+func get_book() -> StatsBook:
+	return _book()

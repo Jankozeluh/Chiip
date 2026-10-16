@@ -28,6 +28,9 @@ var shots: int = 0
 var points: int = 0
 ## The sum of the hits' reaction times in seconds.
 var reaction_total: float = 0.0
+## The targets hit in a row now (a target that times out starts it over) and the most there were in a row.
+var streak: int = 0
+var best_streak: int = 0
 
 
 ## The points of one hit that came [param reaction] seconds after its target appeared, for a target
@@ -40,6 +43,8 @@ static func hit_value(reaction: float, lifetime: float) -> int:
 ## Counts a hit [param reaction] seconds after its target appeared (the target lives [param lifetime]).
 func add_hit(reaction: float, lifetime: float) -> void:
 	hits += 1
+	streak += 1
+	best_streak = maxi(best_streak, streak)
 	points += hit_value(reaction, lifetime)
 	reaction_total += clampf(reaction, 0.0, lifetime)
 
@@ -47,6 +52,7 @@ func add_hit(reaction: float, lifetime: float) -> void:
 ## Counts a target that timed out.
 func add_expired() -> void:
 	expired += 1
+	streak = 0
 
 
 ## Counts [param count] shots fired.
@@ -78,5 +84,5 @@ func average_reaction() -> float:
 func details() -> Dictionary:
 	return {
 		"hits": hits, "misses": misses(), "expired": expired, "accuracy": snappedf(accuracy() * 100.0, 0.1),
-		"reaction_ms": roundi(average_reaction() * 1000.0),
+		"reaction_ms": roundi(average_reaction() * 1000.0), "best_streak": best_streak,
 	}

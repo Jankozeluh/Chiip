@@ -83,6 +83,8 @@ var net_session: NetSession
 @onready var _class_menu: ClassMenu = $ClassMenu
 @onready var _buy_menu: BuyMenu = $BuyMenu
 @onready var _loading_screen: LoadingScreen = $LoadingScreen
+@onready var _training_hud: TrainingHud = $TrainingHud
+@onready var _training_menu: TrainingMenu = $TrainingMenu
 
 ## The map currently loaded.
 var _map: Node
@@ -124,6 +126,7 @@ func _ready() -> void:
 	# The class menu and the buy menu show only the dimmed world (mockups 08 and 14): the HUD steps aside while one is open.
 	_class_menu.visibility_changed.connect(_update_hud_visibility)
 	_buy_menu.visibility_changed.connect(_update_hud_visibility)
+	_training_menu.visibility_changed.connect(_update_hud_visibility)
 	# The reverb follows the listener's place: open yard, walled yard, room or hall (M13, D-193).
 	_viewport.add_child(Acoustics.new())
 	Music.stop()
@@ -331,7 +334,7 @@ func _on_loading_finished() -> void:
 ## Shows the HUD (with its crosshair) unless the loading screen, the class menu or the buy menu is up. This is the one place
 ## that decides: the pause menu, the scoreboard and the console leave the HUD where it is.
 func _update_hud_visibility() -> void:
-	_hud.visible = not _loading_hides_hud and not _class_menu.is_open() and not _buy_menu.is_open()
+	_hud.visible = not _loading_hides_hud and not _class_menu.is_open() and not _buy_menu.is_open() and not _training_menu.is_open()
 
 
 ## Puts the map into the world viewport, adds the game rules, and connects
@@ -462,6 +465,8 @@ func apply_pixel_settings() -> void:
 	_class_menu.set_ui_scale(factor)
 	_buy_menu.set_ui_scale(factor)
 	_loading_screen.set_ui_scale(factor)
+	_training_hud.set_ui_scale(factor)
+	_training_menu.set_ui_scale(factor)
 
 
 func _on_setting_changed(key: StringName) -> void:

@@ -156,6 +156,22 @@ func _test_match_and_totals() -> void:
 			record_back != null and record_back.mode == "rounds" and record_back.map == "depot" and record_back.result == "win"
 			and record_back.kills == 12 and record_back.rounds == 20 and record_back.date == DATE
 			and record_back.weapons["rifle"].hits == 60, "round trip")
+	# v0.2 (D-235): kills and damage per weapon, kills and deaths per minute; old files without them still read.
+	first.kills_per_minute = [2, 0, 3] as Array[int]
+	first.deaths_per_minute = [1, 1] as Array[int]
+	first.weapons["rifle"].kills = 5
+	first.weapons["rifle"].damage = 612.5
+	var detail_back := StatsMatch.from_dict(JSON.parse_string(JSON.stringify(first.to_dict())))
+	var old_file := first.to_dict()
+	old_file.erase("kpm")
+	old_file.erase("dpm")
+	var old_back := StatsMatch.from_dict(old_file)
+	var wild_minutes := StatsMatch.from_dict(_with_keys(first.to_dict(), {"kpm": "lots", "dpm": [1, -4, "x", 2.0]}))
+	_check("Kills and deaths per minute and each weapon's kills and damage survive JSON; a file without them reads as none; junk is cleaned",
+			detail_back != null and detail_back.kills_per_minute == ([2, 0, 3] as Array[int]) and detail_back.deaths_per_minute == ([1, 1] as Array[int])
+			and detail_back.weapons["rifle"].kills == 5 and is_equal_approx(detail_back.weapons["rifle"].damage, 612.5)
+			and old_back != null and old_back.kills_per_minute.is_empty() and wild_minutes != null and wild_minutes.kills_per_minute.is_empty()
+			and wild_minutes.deaths_per_minute.size() == 4 and wild_minutes.deaths_per_minute[1] == 0, "round trip")
 
 
 func _test_cleaning() -> void:
@@ -302,16 +318,15 @@ func _test_screen_text() -> void:
 	var totals := StatsTotals.new()
 	totals.add_match(_make_match(StatsMatch.MODE_ROUNDS, "depot", StatsMatch.WIN, 12, 8, 1500.0, 20, 200, 60, 4))
 	totals.add_match(_make_match(StatsMatch.MODE_RESPAWN, "square", StatsMatch.LOSS, 20, 25, 3000.0, 0, 400, 100, 5, "smg"))
-	var tiles: Array = StatsMenu.tile_values(totals)
+	var tiles: Array = StatsMenu.lifetime_values(totals)
 	var texts: Array = tiles.map(func(pair: Array) -> String: return "%s=%s" % [pair[0], pair[1]])
-	_check("The Overview's tiles say K/D, ADR (round matches only), HS %, accuracy, wins, matches, kills, deaths, damage and time",
-			texts == ["K/D=0.97", "ADR=75", "HS %=28 %", "Accuracy=27 %", "Wins=50 %", "Matches=2", "Kills=32", "Deaths=33", "Damage=4500", "Played=20 min"],
-			"%s" % [texts])
-	_check("Without a round match the ADR tile shows a dash, not a made-up 0", StatsMenu.tile_values(StatsTotals.new())[1][1] == "-", "-")
-	var weapons: Array = StatsMenu.weapon_rows(totals)
-	_check("The Weapons rows list the most fired gun first, with its name, shots, hits, accuracy and the share of hits by zone",
-			weapons.size() == 2 and weapons[0][0] == "smg" and weapons[0][1] == "Hornet" and weapons[0][2] == "400" and weapons[0][3] == "100" and weapons[0][4] == "25 %"
-			and weapons[1][1] == "Ram" and weapons[1][5] == "7 %" and weapons[1][6] == "93 %", "%s" % [weapons])
+	_check("The lifetime row says K/D, ADR (round matches only), HS %, ACC, wins and losses",
+			texts == ["K/D=0.97", "ADR=75", "HS %=28%", "ACC=27%", "WINS=1", "LOSSES=1"], "%s" % [texts])
+	_check("Without a round match the ADR shows a dash, not a made-up 0", StatsMenu.lifetime_values(StatsTotals.new())[1][1] == "-", "-")
+	var weapons: Array = StatsMenu.accuracy_rows(totals)
+	_check("The accuracy rows list the most fired gun first, with its name, accuracy and head share",
+			weapons.size() == 2 and weapons[0][0] == "smg" and weapons[0][1] == "Hornet" and weapons[0][3] == "25%" and weapons[0][4] == "5%"
+			and weapons[1][1] == "Ram", "%s" % [weapons])
 	var wins: Array = StatsMenu.win_rows(totals.maps, StatsMenu.map_name)
 	_check("Wins per map are listed by matches played, with their names: [Depot 1 of 1], [Square 0 of 1]", wins == [["Depot", 1, 1], ["Square", 0, 1]], "%s" % [wins])
 	var matches: Array[StatsMatch] = []
@@ -319,11 +334,17 @@ func _test_screen_text() -> void:
 		var record := _make_match(StatsMatch.MODE_ROUNDS if index != 1 else StatsMatch.MODE_RESPAWN, "depot", StatsMatch.WIN, index, 1, 100.0, 5 if index != 1 else 0, 10, 5)
 		record.date = DATE + index * 100
 		matches.append(record)
-	var history: Array = StatsMenu.history_rows(matches)
-	_check("The History rows are newest first, and a Team Deathmatch has no ADR",
-			history.size() == 3 and history[0][4] == "2" and history[2][4] == "0" and history[1][1] == "Team Deathmatch · Depot" and history[1][7] == "-"
-			and history[0][7] == "20" and history[0][3] == "0 : 0", "%s" % [history[0]])
-	_check("The History lists at most the limit, newest first", StatsMenu.history_rows(matches, 2).size() == 2 and StatsMenu.history_rows(matches, 2)[1][4] == "1", "2 of 3")
+	var history: Array = StatsMenu.history_entries(matches, matches)
+	_check("The history entries are newest first, with the mode and day, and the kills and deaths",
+			history.size() == 3 and history[0]["kd"] == "2-1" and history[2]["kd"] == "0-1" and history[1]["line"].begins_with("TDM") and history[0]["line"].begins_with("BOMB")
+			and history[0]["map"] == "DEPOT" and history[0]["index"] == 2 and history[0]["result"] == "W", "%s" % [history[0]])
+	_check("The history lists at most the limit, newest first", StatsMenu.history_entries(matches, matches, 2).size() == 2 and StatsMenu.history_entries(matches, matches, 2)[1]["kd"] == "1-1", "2 of 3")
+	var spark := StatsMenu.spark_values(matches)
+	_check("The K/D bars are the matches' K/D oldest first and a bar is as high as the K/D (2 and over fill it)",
+			spark == ([0.0, 1.0, 2.0] as Array[float]) and StatsMenu.spark_height(1.0) == 24.0 and StatsMenu.spark_height(5.0) == 46.0, "%s" % [spark])
+	var record := StatsMenu.match_values(matches[0])
+	_check("A match's detail says the map, the mode and day and length, the result word and score, and your seven numbers",
+			record["title"] == "DEPOT" and record["word"] == "VICTORY" and record["line"].size() == 7 and record["line"][0] == ["KILLS", "0"] and str(record["meta"]).begins_with("BOMB · "), "%s" % [record["meta"]])
 	_check("Durations read as minutes under an hour and h:mm over it",
 			StatsMenu.format_duration(0.0) == "0 min" and StatsMenu.format_duration(2700.0) == "45 min" and StatsMenu.format_duration(3600.0) == "1:00 h"
 			and StatsMenu.format_duration(14580.0) == "4:03 h", "")
@@ -331,6 +352,8 @@ func _test_screen_text() -> void:
 			StatsMenu.format_date(0) == "-" and StatsMenu.format_date(DATE).length() == 16 and StatsMenu.format_date(DATE)[4] == "-", StatsMenu.format_date(DATE))
 	var training: Array = StatsMenu.training_rows({"aim_flick_rifle": {"score": 4200.0, "date": DATE, "hits": 31, "reaction_ms": 412},
 			"mystery_run": {"score": 7.5, "date": 0}, "spray_smg": {"score": 62.5, "date": DATE, "shots": 25, "drift_cm": 14.5}})
+	_check("A best of a chosen length says its seconds (D-236): aim_flick_rifle_60 is \"Aim trainer · Ram · 60 s\"",
+			StatsMenu.training_title("aim_flick_rifle_60") == "Aim trainer · Ram · 60 s" and StatsMenu.training_title("aim_flick_rifle") == "Aim trainer · Ram", StatsMenu.training_title("aim_flick_rifle_60"))
 	_check("Training bests are named after their training and gun (a key nobody knows is made readable), whole scores without .0, details in words",
 			training[0][0] == "Aim trainer · Ram" and training[0][1] == "4200" and training[0][3] == "Hits 31, Reaction ms 412" and training[1][0] == "Mystery Run"
 			and training[1][1] == "7.5" and training[2][0] == "Spray practice · Hornet" and training[2][1] == "62.5" and training[2][3] == "Shots 25, Drift cm 14.5",
@@ -365,3 +388,10 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	print("%s  %s: %s" % ["PASS" if passed else "FAIL", check_name, detail])
 	if not passed:
 		_failures += 1
+
+
+## [param base] with [param extra]'s keys put over it (a copy).
+func _with_keys(base: Dictionary, extra: Dictionary) -> Dictionary:
+	var merged := base.duplicate()
+	merged.merge(extra, true)
+	return merged

@@ -33,6 +33,8 @@ const SITE_TEXT := "Enemy spotted near %s"
 const DIRECTION_TEXT := "Enemy spotted %s"
 ## Compass directions every 45 degrees from north, the way the HUD's compass turns (north is -Z, east is +X).
 const DIRECTIONS: Array[String] = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
+## The same, abbreviated for the compass's tag.
+const SHORT_DIRECTIONS: Array[String] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
 
 ## Hands [param point] to the free bots on [param caller]'s team near it (see the class description); the
@@ -114,6 +116,16 @@ static func path_length(node: Node3D, from: Vector3, to: Vector3) -> float:
 ## The toast for a callout of an enemy at [param point] on [param map] (see the class description), for a
 ## player at [param listener].
 static func callout_text(point: Vector3, map: Node, listener: Node3D) -> String:
+	var place := callout_place(point, map, listener)
+	if place["site"] != "":
+		return SITE_TEXT % place["site"]
+	return DIRECTION_TEXT % place["direction"]
+
+
+## Where a callout of an enemy at [param point] puts it, for a player at [param listener]: {"site": the bomb site's
+## letter or "", "direction": the compass direction from the listener as [constant DIRECTIONS] spells it,
+## "short": the letter or the direction's abbreviation ("A", "NW"), for the compass tag (v0.2, D-232)}.
+static func callout_place(point: Vector3, map: Node, listener: Node3D) -> Dictionary:
 	var nearest: Area3D = null
 	for node in map.get_tree().get_nodes_in_group(Bomb.SITE_GROUP):
 		var site := node as Area3D
@@ -121,11 +133,11 @@ static func callout_text(point: Vector3, map: Node, listener: Node3D) -> String:
 			continue
 		if nearest == null or _flat(Bomb.get_site_floor(site), point) < _flat(Bomb.get_site_floor(nearest), point):
 			nearest = site
-	if nearest != null:
-		return SITE_TEXT % Bomb.site_letter(nearest)
 	var away := point - listener.global_position
 	var bearing := rad_to_deg(atan2(away.x, -away.z))
-	return DIRECTION_TEXT % DIRECTIONS[posmod(roundi(bearing / 45.0), DIRECTIONS.size())]
+	var index := posmod(roundi(bearing / 45.0), DIRECTIONS.size())
+	var site_letter: String = Bomb.site_letter(nearest) if nearest != null else ""
+	return {"site": site_letter, "direction": DIRECTIONS[index], "short": site_letter if nearest != null else SHORT_DIRECTIONS[index]}
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:

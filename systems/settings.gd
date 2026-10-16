@@ -58,10 +58,13 @@ const BUS_MUSIC := &"Music"
 
 ## The world image heights the pixel resolution can take; other values snap to the nearest.
 const PIXEL_HEIGHTS: Array[int] = [270, 360, 480, 540, 720]
-## The UI scales the video settings offer, as a percent of the biggest scale that fits the window (D-181): 0 is Auto
-## (the biggest whole or half step that fits, so the pixel font stays even), 50 and 75 are smaller, 100 fills the
-## window exactly.
-const UI_SCALES: Array[int] = [0, 50, 75, 100]
+## The UI scales the Interface settings offer, as a percent of the biggest scale that fits the window (D-181, the
+## designer's steps of ten since v0.2): 0 is Auto (the biggest whole or half step that fits, so the pixel font stays even),
+## 50 to 90 are smaller, 100 fills the window exactly.
+const UI_SCALES: Array[int] = [0, 50, 60, 70, 80, 90, 100]
+## What F3 and the Interface tab's FPS counter show (v0.2, D-233): nothing, a small block for players (FPS, frame time,
+## online ping and loss) or the developer's full readout.
+const FPS_COUNTER_MODES: Array[String] = ["off", "player", "developer"]
 ## The frame rate limits the menu offers (0 = unlimited). Any value from 30 to 1000 works.
 const FPS_CAPS: Array[int] = [0, 60, 120, 144, 240]
 ## The match lengths match setup offers: rounds a team must win (D-044).
@@ -111,6 +114,8 @@ const PAD_BINDABLE_ACTIONS: Array[StringName] = [
 ]
 ## Gamepad buttons nothing can be bound to: Start is the pause action.
 const PAD_RESERVED_BUTTONS: Array[int] = [JOY_BUTTON_START]
+## The pad style the button prompts and glyphs show: "auto" picks the pad plugged in ([PadGlyphs.style_for]).
+const PAD_PROMPTS: Array[String] = ["auto", "xbox", "ps", "generic"]
 ## The names of the gamepad buttons, Xbox style (a PlayStation pad's Cross is A, Circle B, Square X, Triangle Y).
 const PAD_BUTTON_NAMES := {
 	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
@@ -141,12 +146,17 @@ const SCHEMA := {
 	&"palette_effect": {"section": "video", "default": true},
 	&"pixelate_hud": {"section": "video", "default": false},
 	&"ui_scale": {"section": "video", "default": 0, "choices": UI_SCALES},
+	&"compass": {"section": "video", "default": true},
+	&"fps_counter": {"section": "video", "default": "off", "choices": FPS_COUNTER_MODES},
+	&"net_stats": {"section": "video", "default": true},
 	# M15 (D-212): the gamepad's look: degrees per second at full tilt are PlayerController.PAD_DEGREES_PER_SECOND times
 	# this, the dead zone is the stick's flat middle, and the curve is the power the stick's reach is raised to (1 = linear).
 	&"pad_sensitivity": {"section": "game", "default": 1.0, "min": 0.1, "max": 4.0},
 	&"pad_deadzone": {"section": "game", "default": 0.15, "min": 0.0, "max": 0.6},
 	&"pad_curve": {"section": "game", "default": 1.5, "min": 1.0, "max": 3.0},
 	&"pad_invert_y": {"section": "game", "default": false},
+	&"pad_invert_x": {"section": "game", "default": false},
+	&"pad_prompts": {"section": "game", "default": "auto", "choices": PAD_PROMPTS},
 	# M15 (D-210): the colour-blind-safe team colours.
 	&"team_colors": {"section": "video", "default": "standard", "choices": Teams.SCHEME_NAMES},
 	&"master_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
@@ -256,6 +266,14 @@ var pad_curve: float:
 var pad_invert_y: bool:
 	get: return _values[&"pad_invert_y"]
 	set(value): set_value(&"pad_invert_y", value)
+## Turn the view the other way with the right stick's horizontal axis (v0.2, D-234).
+var pad_invert_x: bool:
+	get: return _values[&"pad_invert_x"]
+	set(value): set_value(&"pad_invert_x", value)
+## Which pad's glyphs the prompts show: one of [constant PAD_PROMPTS].
+var pad_prompts: String:
+	get: return _values[&"pad_prompts"]
+	set(value): set_value(&"pad_prompts", value)
 ## Field of view the way CS says it: degrees across a 4:3 screen, 90 by default
 ## (70 to 110). [method vertical_fov] turns it into the camera's value.
 var fov: float:
@@ -286,6 +304,18 @@ var palette_effect: bool:
 var pixelate_hud: bool:
 	get: return _values[&"pixelate_hud"]
 	set(value): set_value(&"pixelate_hud", value)
+## What the FPS counter shows: one of [constant FPS_COUNTER_MODES] ("off", "player", "developer"); F3 steps through them.
+var fps_counter: String:
+	get: return _values[&"fps_counter"]
+	set(value): set_value(&"fps_counter", value)
+## Ping and packet loss in the player's FPS counter, online only (v0.2, D-233).
+var net_stats: bool:
+	get: return _values[&"net_stats"]
+	set(value): set_value(&"net_stats", value)
+## Show the compass strip on the HUD (v0.2, D-232).
+var compass: bool:
+	get: return _values[&"compass"]
+	set(value): set_value(&"compass", value)
 ## How big the UI is, as a percent of the biggest scale that fits the window: one of [constant UI_SCALES]
 ## (0 = Auto, D-181). See [method PixelView.ui_scale_for].
 var ui_scale: int:

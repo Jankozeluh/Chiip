@@ -1010,8 +1010,8 @@ func _test_hud_toasts() -> void:
 	var rect := toasts.get_global_rect()
 	var first := toasts.get_plate("News").get_global_rect()
 	var last := toasts.get_plate("Low").get_global_rect()
-	_check("The stack is centred under the top bar (128 from the top, below the compass strip), each plate %d high, %d apart, newest at the bottom" % [Tokens.HUD_TOAST_HEIGHT, Tokens.HUD_GAP_STACK],
-			absf(rect.position.y - 128.0) < 0.5 and absf(rect.get_center().x - view.x * 0.5) <= 1.0 and heights.values().all(func(height: int) -> bool: return height == Tokens.HUD_TOAST_HEIGHT)
+	_check("The stack is centred under the top bar (192 from the top, below the compass and its tag), each plate %d high, %d apart, newest at the bottom" % [Tokens.HUD_TOAST_HEIGHT, Tokens.HUD_GAP_STACK],
+			absf(rect.position.y - 192.0) < 0.5 and absf(rect.get_center().x - view.x * 0.5) <= 1.0 and heights.values().all(func(height: int) -> bool: return height == Tokens.HUD_TOAST_HEIGHT)
 					and is_equal_approx(last.position.y - first.position.y, 3.0 * (Tokens.HUD_TOAST_HEIGHT + Tokens.HUD_GAP_STACK)),
 			"stack %s (screen %s), heights %s, first %s, last %s" % [rect, view, heights, first, last])
 	# At scale 1.5 it all grows by 1.5, the offset from the top too.
@@ -1021,7 +1021,7 @@ func _test_hud_toasts() -> void:
 	var scaled_height := roundi(toasts.get_plate("News").size.y)
 	hud.call("set_ui_scale", 1.0)
 	_check("At scale 1.5 the toasts are 1.5 times as big and as far from the top",
-			absf(scaled_rect.position.y - 192.0) < 0.5 and scaled_height == roundi(Tokens.HUD_TOAST_HEIGHT * 1.5), "stack %s, plate height %d" % [scaled_rect, scaled_height])
+			absf(scaled_rect.position.y - 288.0) < 0.5 and scaled_height == roundi(Tokens.HUD_TOAST_HEIGHT * 1.5), "stack %s, plate height %d" % [scaled_rect, scaled_height])
 	# Repeating a toast starts it over; there are at most 4.
 	toasts.clear()
 	toasts.show_toast(ToastStack.Kind.NEUTRAL, "Again")

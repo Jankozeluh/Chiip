@@ -42,6 +42,11 @@ var damage: float = 0.0
 var headshot_kills: int = 0
 ## Weapon id → [StatsWeapon], for the guns you fired.
 var weapons: Dictionary[String, StatsWeapon] = {}
+## Your kills and deaths in each minute of the match, from the first (v0.2, D-235: the match detail's chart).
+var kills_per_minute: Array[int] = []
+var deaths_per_minute: Array[int] = []
+## The longest chart a match keeps (a match is never this long; a damaged file is cut here).
+const MAX_MINUTES := 120
 
 
 ## Kills per death (deaths counted as at least 1).
@@ -76,6 +81,7 @@ func to_dict() -> Dictionary:
 		"score_them": score_them, "rounds": rounds, "duration": snappedf(duration, 0.1),
 		"online": online, "kills": kills, "deaths": deaths, "assists": assists,
 		"damage": snappedf(damage, 0.1), "headshot_kills": headshot_kills, "weapons": guns,
+		"kpm": kills_per_minute, "dpm": deaths_per_minute,
 	}
 
 
@@ -104,6 +110,8 @@ static func from_dict(data: Variant) -> StatsMatch:
 	record.assists = StatsMath.clean_count(source.get("assists"))
 	record.damage = StatsMath.clean_number(source.get("damage"))
 	record.headshot_kills = mini(StatsMath.clean_count(source.get("headshot_kills")), record.kills)
+	record.kills_per_minute = _counts_from(source.get("kpm"))
+	record.deaths_per_minute = _counts_from(source.get("dpm"))
 	var guns: Variant = source.get("weapons")
 	if guns is Dictionary:
 		for id: Variant in guns:
@@ -112,3 +120,13 @@ static func from_dict(data: Variant) -> StatsMatch:
 			if weapon != null and key != "":
 				record.weapons[key] = weapon
 	return record
+
+
+## A list of per-minute counts read from the stats file: anything that isn't a list gives an empty one; each entry is
+## cleaned to a count and the list is cut at [constant MAX_MINUTES].
+static func _counts_from(value: Variant) -> Array[int]:
+	var counts: Array[int] = []
+	if value is Array:
+		for entry: Variant in (value as Array).slice(0, MAX_MINUTES):
+			counts.append(StatsMath.clean_count(entry))
+	return counts

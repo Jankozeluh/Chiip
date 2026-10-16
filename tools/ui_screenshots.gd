@@ -123,16 +123,25 @@ func _stats_shots() -> void:
 			weapon.add_shots(220 - gun_index * 30 + index)
 			for hit in 60 - gun_index * 7:
 				weapon.add_hit(Hitbox.Zone.HEAD if hit % 5 == 0 else Hitbox.Zone.values()[1 + hit % 4])
+			weapon.kills = 3 + index % 5
+			weapon.damage = 400.0 + gun_index * 90.0
 			record.weapons[guns[gun_index]] = weapon
+		record.kills_per_minute = [3, 2, 4, 1, 3, 2, 3, 2, 2, 2] as Array[int]
+		record.deaths_per_minute = [1, 2, 1, 2, 2, 1, 2, 1, 2, 1] as Array[int]
 		book.add_match(record)
 	book.submit_best("aim_flick_rifle", 4200.0, {"hits": 31, "accuracy": 62.5})
 	book.submit_best("aim_flick_smg", 3900.0, {"hits": 28, "accuracy": 55.0})
 	stats.book = book
 	stats.open()
-	for tab in StatsMenu.TAB_NAMES.size():
-		stats.get_tabs().current_tab = tab
-		await _frames(4)
-		await _shot("stats_%s" % StatsMenu.TAB_NAMES[tab].to_lower())
+	await _frames(4)
+	await _shot("stats")
+	stats.open_match(book.history.size() - 1)
+	await _frames(4)
+	await _shot("stats_match_detail")
+	stats.get_back_button().pressed.emit()
+	stats.set_filter("training")
+	await _frames(4)
+	await _shot("stats_training")
 	stats.close()
 	root.remove_child(menu)
 	menu.free()
