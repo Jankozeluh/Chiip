@@ -1682,6 +1682,19 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - Godot's script profiler (`-d --profiling`). It prints only one frame a second, so it misses most spikes. It is still useful for one deterministic run, such as perf_test's round starts.
 - The editor's profiler: it needs clicking through by hand, and the numbers can't be compared from run to run.
 
+## D-166 — The shop and the network keep the arsenal loaded (2026-10-16)
+
+**Decision:** `Shop` builds its list of items once and keeps it (`Shop.items()` returns a copy, `Shop.find()` searches the kept list). `NetProtocol` keeps the arsenal in packet order and a table from weapon id to index. Neither calls `WeaponData.all()` again.
+
+**Why:** `WeaponData.all()` calls `load()` for every weapon file. When nothing else holds a weapon's data, that reloads it from disk: about 6 ms per call for the eleven weapons.
+- At every round start the bots' shopping called it 83 times (through `Shop.find`), and `Shop.items()` also reloaded three icons each time. In perf_test (no player, so no buy menu holding the weapons) that was a 153 ms tick. Now the worst tick is 17 ms and the average tick 0.59 ms (was 0.78).
+- In a real match the buy menu holds the weapons, so the gain there is smaller (round start 25 → 21 ms on Depot). But the network code named every character's weapon through `WeaponData.all()` in every snapshot (64 a second): 8 µs a call, now 0.2 µs.
+- Keeping the shop's list keeps the arsenal loaded, so `WeaponData.all()` is fast for every other caller as well.
+
+**Reported, not changed here:** `WeaponData.all()` itself should keep what it loads (`weapons/weapon_data.gd` belongs to the M11 weapons session).
+
+**Alternatives:** holding the weapons in `RoundManager`, which helps only offline rounds; a lookup by id in `WeaponData`, which is the weapons session's file.
+
 ## Open questions
 
 | Question | Decide in |
