@@ -122,9 +122,10 @@ func _exit_tree() -> void:
 
 
 ## True when the command line [param args] (the arguments after [code]--[/code])
-## ask for the game directly: [code]--match[/code], [code]--practice[/code] or [code]--map[/code].
+## ask for the game directly: [code]--match[/code], [code]--practice[/code], [code]--map[/code] or
+## [code]--check-hits[/code] ([HitCheck]).
 static func wants_game(args: PackedStringArray) -> bool:
-	return args.has("--match") or args.has("--practice") or args.has("--map")
+	return args.has("--match") or args.has("--practice") or args.has("--map") or args.has(HitCheck.FLAG)
 
 
 ## Opens the Play screen (the Play button).

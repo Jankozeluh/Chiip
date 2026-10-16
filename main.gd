@@ -270,7 +270,10 @@ func _load_map() -> void:
 	var map_arg := args.find("--map")
 	if map_arg >= 0 and map_arg + 1 < args.size():
 		scene = load(args[map_arg + 1])
-	if args.has("--practice"):
+	if args.has(HitCheck.FLAG):
+		# The shooting self-check (v0.1.1, D-159): practice on the range, with the check running.
+		add_child(HitCheck.new())
+	if args.has("--practice") or args.has(HitCheck.FLAG):
 		mode = Mode.PRACTICE
 		# Practice plays the Shooting Range unless --map says otherwise (D-141).
 		if map_arg < 0:

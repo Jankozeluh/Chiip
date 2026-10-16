@@ -16,6 +16,7 @@ How to read it: **Auto** lines are commands that exit with the number of failure
 | 0.2 | `bash tools/lan_check.sh` | 4 PASS: a host, a friend who joins and leaves, a second friend who joins the running match, over this computer's LAN address, in three real processes |
 | 0.3 | `"$GODOT" --headless --path "$PROJECT" --quit-after 400 -- --no-settings --match` (and `--practice`, `--match --respawn`, `--map res://maps/depot.tscn`, `--match --rotation`) | no `SCRIPT ERROR` line |
 | 0.4 | `git status` is clean and `git grep -n -i "<your home folder>"` finds nothing | `release_test` does the second part |
+| 0.5 | `bash tools/check_export.sh` | `Chiip hit check: PASS`: in an exported release build a shot hurts a bot and a bot's shot you (v0.1.0 shipped without hit zones, D-159). `tools/package_release.sh` runs it on `builds/macos` too |
 
 If `tools/run_tests.sh` is run while another copy of the game runs on the same computer, use `TMPDIR=<some folder> bash tools/run_tests.sh` so two runs don't share log files. A test never touches the player's `settings.cfg` (`Settings.real_file_accesses`); another running game may change that file without making a test fail.
 

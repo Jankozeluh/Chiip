@@ -358,6 +358,9 @@ func _map_bounds() -> Rect2:
 ## Notes the live time of the first [param kind] event ("contact" or "damage")
 ## this round. Returns true if this was the first.
 func _mark(kind: String) -> bool:
+	# A character of the map that was just freed can still report in the same frame: nothing to note then.
+	if _rounds == null:
+		return false
 	if _rounds.phase == RoundManager.Phase.LIVE and _current.get(kind, 0.0) < 0.0:
 		_current[kind] = _live_ticks / 128.0
 		return true

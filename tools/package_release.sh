@@ -4,7 +4,8 @@
 #     bash tools/package_release.sh            # reads the version from project.godot
 #     BUILDS=<folder> bash tools/package_release.sh   # the builds are in another folder
 #
-# Run it after exporting (docs/DEVELOPING.md, "Exporting the game"), from anywhere. It needs
+# Run it after exporting (docs/DEVELOPING.md, "Exporting the game"), from anywhere. It first runs
+# tools/check_export.sh on the macOS build and stops if shooting doesn't work there (D-159). It needs
 # builds/windows/Chiip.exe, builds/linux/Chiip.x86_64 and builds/macos/Chiip.app (in $BUILDS,
 # builds/ in the project by default), and writes
 #
@@ -40,6 +41,13 @@ for built in "$BUILDS/windows/Chiip.exe" "$BUILDS/linux/Chiip.x86_64" "$BUILDS/m
 		exit 66
 	fi
 done
+
+# Shooting must work in the build (v0.1.0 shipped without hit zones, D-159): the Mac app is
+# checked on this Mac, and the other two are exported from the same project and its cache.
+if ! APP="$BUILDS/macos/Chiip.app" bash "$PROJECT/tools/check_export.sh"; then
+	echo "The macOS build fails the hit check: not packing a release." >&2
+	exit 1
+fi
 
 rm -rf "$OUT"
 mkdir -p "$STAGE"

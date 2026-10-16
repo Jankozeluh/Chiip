@@ -5,8 +5,11 @@ extends Node
 ##
 ## The licences: the licence files exist with the right words, the Licences screen reads every one of
 ## them and opens from the settings menu. Safe to publish: no personal path in a project text file,
-## and the ignore file keeps the build and the editor's cache out of git. Quits with the number of
-## failed checks as the exit code.
+## and the ignore file keeps the build and the editor's cache out of git. Shooting in an exported
+## build (v0.1.1, D-159): no exported packed array has an Array literal as its default (exporting
+## then drops its values: v0.1.0's hit zones were empty), the packaging runs the export hit check,
+## and the game's --check-hits self-check passes here too. Quits with the number of failed checks
+## as the exit code.
 
 const SETTINGS_MENU_SCENE := preload("res://ui/settings_menu.tscn")
 ## File types that are plain text and checked for personal paths.
@@ -33,6 +36,9 @@ func _ready() -> void:
 	_test_security_papers()
 	_test_no_personal_paths()
 	_test_gitignore()
+	_test_export_safe_defaults()
+	_test_hit_check_guards_releases()
+	await _test_hit_check()
 	MenuState.reset()
 	await get_tree().process_frame
 	if _failures == 0:
@@ -611,6 +617,60 @@ func _test_gitignore() -> void:
 
 
 ## Every plain-text project file under [param folder] (not the editor's cache, git, builds).
+## Exporting converts text resources to binary, and a property declared like
+## [code]@export var bones: PackedStringArray = [][/code] lost its stored values on the way (v0.1.0
+## shipped with every hit zone empty, D-159). Game scripts give packed arrays typed defaults.
+func _test_export_safe_defaults() -> void:
+	var pattern := RegEx.create_from_string("@export[^\\n]*:\\s*Packed\\w+Array\\s*=\\s*\\[")
+	var offenders: Array[String] = []
+	var scripts := 0
+	for path in _text_files("res://"):
+		if path.get_extension() != "gd" or path.begins_with("res://addons/"):
+			continue
+		scripts += 1
+		var lines := FileAccess.get_file_as_string(path).split("\n")
+		for i in lines.size():
+			if not lines[i].strip_edges().begins_with("#") and pattern.search(lines[i]) != null:
+				offenders.append("%s:%d" % [path, i + 1])
+	_check("No exported packed array in the game's scripts defaults to an Array literal (an export drops its values)",
+			scripts > 100 and offenders.is_empty(), "%d scripts; %s" % [scripts, ", ".join(offenders)])
+
+
+## The packaging checks shooting in the exported build before it packs a release (D-159), with the
+## game's own self-check.
+func _test_hit_check_guards_releases() -> void:
+	var packaging := FileAccess.get_file_as_string("res://tools/package_release.sh")
+	var check := FileAccess.get_file_as_string("res://tools/check_export.sh")
+	_check("tools/package_release.sh runs tools/check_export.sh, which runs the exported game's --check-hits",
+			packaging.contains("tools/check_export.sh") and check.contains(HitCheck.FLAG)
+					and check.contains("--export-release"), "")
+
+
+## The game's own shooting self-check ([HitCheck], what tools/check_export.sh runs in an export)
+## passes in the editor's build: a shot hurts a bot, and a bot's shot the player.
+func _test_hit_check() -> void:
+	GameLaunch.start_practice(Settings.DEFAULT_MAP, GameLaunch.difficulty_named("normal"))
+	var main := (load("res://main.tscn") as PackedScene).instantiate()
+	main.load_settings = false
+	main.loading_screen = false
+	var check := HitCheck.new()
+	check.quit_when_done = false
+	var result := []
+	check.finished.connect(func(passed: bool, detail: String) -> void: result.append_array([passed, detail]))
+	add_child(main)
+	main.add_child(check)
+	for i in 600:
+		if not result.is_empty():
+			break
+		await get_tree().physics_frame
+	_check("The shooting self-check (--check-hits) passes: a shot hurts a bot and a bot's shot the player",
+			not result.is_empty() and result[0], str(result[1]) if result.size() > 1 else "no result")
+	remove_child(main)
+	main.queue_free()
+	GameLaunch.clear()
+	await get_tree().process_frame
+
+
 func _text_files(folder: String) -> Array[String]:
 	var found: Array[String] = []
 	var dir := DirAccess.open(folder)

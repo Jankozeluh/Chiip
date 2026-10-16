@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — v0.1.1 hotfix: bullets hit again
+
+**Done**
+- Your report from the v0.1.0 build: bullets fly through enemies to the wall, nobody takes damage. Reproduced in a release export (the editor build hits). The cause: the hit-zone files lost their boxes in the export (an Array-literal default on their packed arrays, D-159), so the bodies had no hit zones.
+- Fixed with typed defaults; the hit-zone files name themselves, so a stale export cache converts them again.
+- New `--check-hits` self-check in the game (`systems/hit_check.gd`), `tools/check_export.sh` (exports a release build into a temporary folder and runs it), and `tools/package_release.sh` refuses to pack a build that fails it. The `release` suite runs the self-check and forbids the pattern. Version 0.1.1, CHANGELOG section.
+
+**Next:** your OK to release v0.1.1 (export, package, GitHub Release).
+
 ## 2026-10-16 — M13 sound
 
 Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the sound generators, Haiku for test runs), in parallel with M14 and M15. Decisions D-190 to D-199.
@@ -24,6 +33,7 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 **Not heard yet:** nobody has listened; the sounds, the mix and the music are checked by numbers only. Your listen is in "Your open checks" (PLAN.md).
 
 **Next:** your listen, then tuning `systems/sound_mix.gd` from what you hear. Possible later steps: sound through doorways (path-based, D-192), a front/back cue, a first-person mechanical layer on your own shots (D-191).
+
 
 ## 2026-10-16 — M12 share
 

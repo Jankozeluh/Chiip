@@ -2010,6 +2010,18 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Rewriting the history to remove the old path and the name (you decided against it); trusting the friends because they are invited (one broken client could still hang the host); encrypting the game's own traffic (Tailscale already does, and DTLS would add certificates to a hobby game); pinning actions to tags only (a moved tag would run new code unseen); signing the builds (costs money every year; checksums are the cheap part of it).
 
+## D-159 — v0.1.1: hit zones survive the export, and every build is checked by shooting (2026-10-16)
+
+**Decision:**
+- **The cause:** `HitZones` (`characters/crew/hit_zones.gd`) declared its arrays as `@export var bones: PackedStringArray = []`. When the export converts text resources to binary, a packed-array property whose default is an Array literal lost its stored values: every class's hit-zone file shipped empty (378 bytes instead of 1 KB), so the bodies had no hit zones and every bullet flew through to the wall behind. Playing from the editor reads the text files and worked, and every test runs there, so nothing saw it before the release. Weapon and class data were fine (their defaults are typed).
+- **The fix:** typed defaults (`PackedStringArray()`, `PackedInt32Array()`, `PackedVector3Array()`). The hit-zone files also name themselves now (`resource_name`, written by the generator): the export caches its conversions by a file's content, so a checkout that had exported before would otherwise have kept shipping the empty ones.
+- **The guard:** the game has a shooting self-check, `--check-hits` (`HitCheck`: practice on the range, an enemy bot 5 m ahead, one shot each way, exit code 0 or 1), because an exported build can't run `--script`. `tools/check_export.sh` exports a release build into a temporary folder (or takes `APP=`) and runs it; `tools/package_release.sh` runs it on the Mac build before it packs anything. The `release` suite runs the same self-check in the editor, fails on any exported packed array with an Array-literal default in the game's scripts, and checks that the packaging runs the check.
+- **Version 0.1.1**, with its CHANGELOG section.
+
+**Why:** Your report: bullets fly through enemies to the wall, and nobody takes damage, in the build. Reproduced in a release export (the editor build hits); the check fails on 0.1.0's files and passes with the fix.
+
+**Alternatives:** Turn off the export's conversion of text resources to binary (it would hide this case but not the next one, and makes the build bigger); build the hit zones from the model at runtime instead of a file (a bigger change for a hotfix); a check that compares every converted resource with its source (worth it later; the shot covers what players feel).
+
 ## D-220 — M16: maintainability and debugging; one branch at a time after M15 (2026-10-16)
 
 **Decision:** After M15 comes M16:

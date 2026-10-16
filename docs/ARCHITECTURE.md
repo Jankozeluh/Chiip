@@ -592,6 +592,8 @@ That is about 830 checks in about four minutes on the development Mac. A change 
 - Exports need the export templates of the exact engine version (`~/Library/Application Support/Godot/export_templates/4.7.2.stable/`) and, for Apple Silicon, `rendering/textures/vram_compression/import_etc2_astc`.
 - In an exported game text scenes and resources are converted to binary and reached through `.remap` files: code that lists `res://` folders must use `ResourceLoader.list_directory()` (the console's `map` list does).
 - `tools/frame_timing.gd` measures frame times of a real match (in the editor build). See "Performance" below.
+- **Shooting is checked in the export (v0.1.1, D-159):** `systems/hit_check.gd` (`HitCheck`, added by `main.gd` for `-- --check-hits`) starts practice on the range, puts an enemy bot 5 m ahead and fires once each way, prints `Chiip hit check: PASS` or `FAIL` and quits with 0 or 1 (`quit_when_done`, signal `finished`; `release_test` runs it too). Exported builds can't run `--script`, so this is the way into one. `tools/check_export.sh` exports a macOS release build into a temporary folder (or takes `APP=<.app>`) and runs it; `tools/package_release.sh` runs it on `builds/macos` first.
+- **Exported packed arrays need typed defaults:** `@export var x: PackedStringArray = PackedStringArray()`, never `= []`. With an Array literal the export's text-to-binary conversion dropped the stored values (v0.1.0's empty hit zones); `release_test` rejects the pattern. The export caches conversions by a file's content, so after fixing a script, change the resource files too (or delete `.godot/exported/`) before exporting.
 
 ## Performance (M11, D-165 to D-169)
 

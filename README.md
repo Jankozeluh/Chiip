@@ -2,7 +2,7 @@
 
 A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game: you and your bot teammates against a team of bots, bomb rounds or team deathmatch, on three small maps. Play it alone against bots, or with friends online (they take the bots' places). Free, for Windows, macOS and Linux. **Created by JK · Divocakos.** Built with [Godot](https://godotengine.org) 4.7.2.
 
-> **Version 0.1.0, the first public playtest.** Website: <https://jankozeluh.github.io/Chiip/>. Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
+> **Version 0.1.1, the first public playtest** (0.1.0 with bullets that hit again). Website: <https://jankozeluh.github.io/Chiip/>. Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
 
 ## Download and run
 
