@@ -9,6 +9,10 @@ writes them as a glTF binary (gltf.py) that Godot imports like any other model.
 Usage (from the project folder, in the chiip conda environment, D-071):
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py rifleman
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py all
+    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py props [prop names]
+
+"props" builds the map kit's props instead (props.py, written by kit.py, D-122): models,
+scenes and their TrenchBroom entities. Without names it builds every prop.
 
 Writes the AK-style rifle into assets/models/weapons/ (ak_rifle.glb + albedo), and into
 assets/models/crew/:
@@ -302,10 +306,14 @@ def write_texture(image, path):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Generate Chiip crew models (.glb + textures).')
-    ap.add_argument('classes', nargs='+', help="class names (rifleman, bulwark, ...) or 'all'")
+    ap = argparse.ArgumentParser(description='Generate Chiip crew models (.glb + textures) or map-kit props.')
+    ap.add_argument('classes', nargs='+', help="class names (rifleman, bulwark, ...), 'all', or 'props [names]'")
     ap.add_argument('--out', default=OUT_DIR)
     a = ap.parse_args()
+    if a.classes[0] == 'props':
+        import kit
+        kit.main(a.classes[1:])
+        return
     names = list(crew.CLASSES) if a.classes == ['all'] else a.classes
     os.makedirs(a.out, exist_ok=True)
     for name in names:

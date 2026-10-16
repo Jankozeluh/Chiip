@@ -1,0 +1,141 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=25 format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="point_class"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_metal.tscn" id="scene_prop_crate_metal"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_stack.tscn" id="scene_prop_crate_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_wood.tscn" id="scene_prop_crate_wood"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_wood_small.tscn" id="scene_prop_crate_wood_small"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet.tscn" id="scene_prop_pallet"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet_load.tscn" id="scene_prop_pallet_load"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet_stack.tscn" id="scene_prop_pallet_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel.tscn" id="scene_prop_barrel"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_group.tscn" id="scene_prop_barrel_group"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_hazard.tscn" id="scene_prop_barrel_hazard"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_rust.tscn" id="scene_prop_barrel_rust"]
+
+[sub_resource type="Resource" id="prop_crate_metal"]
+script = ExtResource("point_class")
+classname = "prop_crate_metal"
+description = "Olive steel transport box, 1.2 x 0.8 x 0.9 m, with handles and latches: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_metal.glb\"",
+"size": AABB(-18, -26, 0, 18, 26, 33)
+})
+scene_file = ExtResource("scene_prop_crate_metal")
+
+[sub_resource type="Resource" id="prop_crate_stack"]
+script = ExtResource("point_class")
+classname = "prop_crate_stack"
+description = "Two 1.2 m crates stacked, the top one turned a little: tall cover (2.4 m)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_stack.glb\"",
+"size": AABB(-26, -29, 0, 29, 26, 95)
+})
+scene_file = ExtResource("scene_prop_crate_stack")
+
+[sub_resource type="Resource" id="prop_crate_wood"]
+script = ExtResource("point_class")
+classname = "prop_crate_wood"
+description = "Wooden crate, 1.2 m: low cover you can jump onto and shoot over."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_wood.glb\"",
+"size": AABB(-24, -24, 0, 24, 24, 48)
+})
+scene_file = ExtResource("scene_prop_crate_wood")
+
+[sub_resource type="Resource" id="prop_crate_wood_small"]
+script = ExtResource("point_class")
+classname = "prop_crate_wood_small"
+description = "Small wooden crate, 0.8 m: a step up onto bigger crates."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_wood_small.glb\"",
+"size": AABB(-16, -16, 0, 16, 16, 32)
+})
+scene_file = ExtResource("scene_prop_crate_wood_small")
+
+[sub_resource type="Resource" id="prop_pallet"]
+script = ExtResource("point_class")
+classname = "prop_pallet"
+description = "A wooden pallet lying flat (0.12 m). Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/pallet.glb\"",
+"size": AABB(-20, -24, 0, 20, 24, 5)
+})
+scene_file = ExtResource("scene_prop_pallet")
+
+[sub_resource type="Resource" id="prop_pallet_load"]
+script = ExtResource("point_class")
+classname = "prop_pallet_load"
+description = "A pallet of strapped cardboard boxes, 1.2 m tall: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/pallet_load.glb\"",
+"size": AABB(-20, -24, 0, 20, 24, 48)
+})
+scene_file = ExtResource("scene_prop_pallet_load")
+
+[sub_resource type="Resource" id="prop_pallet_stack"]
+script = ExtResource("point_class")
+classname = "prop_pallet_stack"
+description = "Four pallets stacked, 0.46 m: low clutter you jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/pallet_stack.glb\"",
+"size": AABB(-22, -27, 0, 22, 26, 19)
+})
+scene_file = ExtResource("scene_prop_pallet_stack")
+
+[sub_resource type="Resource" id="prop_barrel"]
+script = ExtResource("point_class")
+classname = "prop_barrel"
+description = "Olive steel drum, 0.9 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel.glb\"",
+"size": AABB(-12, -12, 0, 12, 12, 36)
+})
+scene_file = ExtResource("scene_prop_barrel")
+
+[sub_resource type="Resource" id="prop_barrel_group"]
+script = ExtResource("point_class")
+classname = "prop_barrel_group"
+description = "Three drums in a cluster, about 1.2 m across: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel_group.glb\"",
+"size": AABB(-20, -25, 0, 25, 24, 36)
+})
+scene_file = ExtResource("scene_prop_barrel_group")
+
+[sub_resource type="Resource" id="prop_barrel_hazard"]
+script = ExtResource("point_class")
+classname = "prop_barrel_hazard"
+description = "Yellow drum with a black band, 0.9 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel_hazard.glb\"",
+"size": AABB(-12, -12, 0, 12, 12, 36)
+})
+scene_file = ExtResource("scene_prop_barrel_hazard")
+
+[sub_resource type="Resource" id="prop_barrel_rust"]
+script = ExtResource("point_class")
+classname = "prop_barrel_rust"
+description = "Rusty steel drum, 0.9 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel_rust.glb\"",
+"size": AABB(-12, -12, 0, 12, 12, 36)
+})
+scene_file = ExtResource("scene_prop_barrel_rust")
+
+[resource]
+script = ExtResource("fgd_file")
+fgd_name = "ChiipKit"
+entity_definitions = Array[Resource]([SubResource("prop_crate_metal"), SubResource("prop_crate_stack"), SubResource("prop_crate_wood"), SubResource("prop_crate_wood_small"), SubResource("prop_pallet"), SubResource("prop_pallet_load"), SubResource("prop_pallet_stack"), SubResource("prop_barrel"), SubResource("prop_barrel_group"), SubResource("prop_barrel_hazard"), SubResource("prop_barrel_rust")])

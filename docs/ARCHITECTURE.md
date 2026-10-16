@@ -43,7 +43,8 @@ Chiip/
 │   ├── materials/     One material per texture, world triplanar (for CSG geometry), in the same set folders
 │   ├── environments/  Shared sky / fog / ambient settings
 │   ├── models/
-│   │   └── crew/      Generated class models: .glb + albedo + team mask (tools/modelgen, D-072)
+│   │   ├── crew/      Generated class models: .glb + albedo + team mask (tools/modelgen, D-072)
+│   │   └── props/     Generated map-kit props: .glb + albedo (tools/modelgen props, D-122)
 │   ├── sounds/        Weapon sounds (generated placeholders for now, D-020)
 │   ├── fonts/         Silkscreen pixel font (+ its OFL license text)
 │   └── ui/            Pixel-art icons of the UI theme (generated, D-057)
@@ -56,7 +57,9 @@ Chiip/
 ├── maps/              Test maps and playable maps
 │   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
 │   ├── props/         Reusable map objects (target dummy)
-│   └── fgd/           Chiip's func_godot entity definitions: a worldspawn that stores texture metadata (D-084)
+│   ├── kit/           The map kit (M10): generated prop scenes (props/), lamp scenes (lights/), their scripts
+│   └── fgd/           Chiip's func_godot entity definitions: a worldspawn that stores texture metadata (D-084),
+│                      and the kit's generated entities (chiip_kit_fgd.tres, D-122)
 ├── ui/                HUD, scoreboard, menus, developer console, the UI theme (chiip_theme.tres) and its preview
 ├── systems/           Shared systems: teams, round manager, team respawn match and match settings, noise bus, surfaces, arena rules (practice), physics layers, the player's settings
 ├── shaders/           Shaders: palette effect, grid placeholder for blockouts
@@ -239,6 +242,8 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 
 TrenchBroom axes become Godot axes as (x, y, z) → (y, z, x), divided by 39.37. A 64-pixel texture covers 64 units = 1.63 m, the same density as the CSG materials.
 
+**Props from the map kit (D-122):** a prop is a func_godot *point entity* whose definition (in the generated `maps/fgd/chiip_kit_fgd.tres`, included by `chiip_fgd.tres` through `base_fgd_files`) names a scene, `maps/kit/props/prop_<name>.tscn`. When the map is built, func_godot instances that scene at the entity's origin, turned by its angle (+180°, so angle 0 points the prop's front, its −Z, along TrenchBroom's +X). The scene is generated: a `StaticBody3D` (layer 1 for solid props, layer 3 for see-through ones, D-123) or a plain `Node3D` for decoration, with the `.glb` as `Model`, one `BoxShape3D` per box of the part list, and `metadata/surface` for `Surfaces`. The entity definition also names the `.glb` as TrenchBroom's display model (`model("assets/models/props/<name>.glb")`, scaled by the game config's 39.37), so the entity browser and the 3D view show the real prop. `tools/build_maps.gd` saves placed props as scene instances: it only hands the scene root ownership of nodes func_godot made itself, never of the nodes inside an instance.
+
 **Textures and materials (D-121):** TrenchBroom lists every image below `assets/textures/` and turns each folder into a collection (the base set at the top, then `industrial`, `urban`, `interior`, `nature`). A face's texture name is its path below that folder without the extension (`industrial/rust_plates`). When building, func_godot looks for a material with the same path and the extension `.tres` next to the image; if there is none it makes one from `assets/materials/map_default.tres` with the image as albedo. So a texture that needs something special (the chain-link's see-through holes: alpha scissor, both sides drawn) gets a hand-made `<name>.tres` beside its PNG. `tools/texture_report.gd` measures textures against the look rules; `tools/texture_prep.py` prepares sources whose colour map alone doesn't work at 64 × 64 (CREDITS).
 
 ## How the screen is put together
@@ -392,7 +397,7 @@ Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit va
 |---|---|---|---|
 | 1 | world | 1 | Map geometry |
 | 2 | player | 2 | The player's body (collides with world and bots: mask 5) |
-| 3 | bots | 4 | Bot bodies (and any `Character` by default; mask 7), target dummies |
+| 3 | bots | 4 | Bot bodies (and any `Character` by default; mask 7), target dummies, and see-through blockers of the map kit (railings, open barriers, glass, fences: D-123). Characters and the navmesh bake (mask 5) treat it as solid; bullets (mask 9) and bot sight (world only) pass through |
 | 4 | hitboxes | 8 | Head / chest / stomach / arm / leg zones (`Area3D`) that bullets hit; on a character they are boxes on the model's bones (D-074) |
 | 5 | triggers | 16 | Buy zones (M7), bomb sites (`bomb_sites` areas, mask 6: player and bots; `Bomb` switches their `monitoring` on and asks `overlaps_body()`) |
 
@@ -426,7 +431,7 @@ bash tools/run_tests.sh
 | `class_test` | 57 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078) | ~1 s |
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
-| `kit_test` | 6 | The map kit (M10): the texture library's sets, sizes, look rules and materials, see-through chain-link, sounds from texture names (D-121) | under 1 s |
+| `kit_test` | 11 | The map kit (M10): the texture library's sets, sizes, look rules and materials, see-through chain-link, sounds from texture names (D-121); every prop's model, collision and surface, its TrenchBroom entity, and props in a test `.map` (`tests/maps/kit_props.map`): built where placed, stopping rays, sounding right, cut out of a baked navmesh (D-122, D-123) | ~1 s |
 
 That is 555 checks in about 75 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 

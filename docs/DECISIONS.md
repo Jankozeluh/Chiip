@@ -1003,6 +1003,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
   - its entry in `maps/fgd/chiip_kit_fgd.tres` (generated), a func_godot point class with the scene and the `.glb` as its display model, so TrenchBroom's entity browser shows the real model and `tools/export_trenchbroom_config.gd` writes it into the FGD.
 - **Names are `prop_<thing>`** (`prop_crate_wood`, `prop_barrel`), like Quake's and Source's prop classes. A prop's front faces `-Z` in Godot, which is the entity's angle in TrenchBroom.
 - **Glowing parts** (lamp bulbs, lit signs) are a second material with emission, so they glow without a light.
+- **Props use 48 texels per metre** (the crew 96, the world's textures about 39); a prop whose biggest side doesn't fit a 512-texel atlas gets fewer. Godot makes no LODs for them (`meshes/generate_lods=false`).
+- **Checked** (`tests/kit_test.tscn`): every prop scene has its model, a surface and collision for its kind; every one is an entity in the kit's FGD with its scene and display model; props placed in a test `.map` build where they were put, as instances, stop rays at their tops, sound like wood or metal, and are cut out of a navmesh baked around them while decoration isn't. Regenerating the crew after the painter learned props' materials and patterns gives byte-identical files.
 
 **Why:** The crew already proved the pipeline, so props match the crew's chunky low-poly look and palette by construction. Generated scenes and FGD entries mean a new prop is one part list and one command, with nothing to set up by hand in Godot or TrenchBroom.
 

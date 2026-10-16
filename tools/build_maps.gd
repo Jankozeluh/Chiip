@@ -36,8 +36,11 @@ func _build_scene(scene_path: String) -> bool:
 			return false
 		# Outside the editor, func_godot makes the map node the owner of what it
 		# builds; the scene root has to own it to be saved into the scene file.
+		# Nodes inside a placed scene (a kit prop's model and collision) keep
+		# that scene as their owner, so the map saves the prop as an instance.
 		for node in map.find_children("*", "", true, false):
-			node.owner = root
+			if node.owner == map or node.owner == null:
+				node.owner = root
 		print("%s: %s built %d nodes" % [scene_path, map.name, map.find_children("*", "", true, false).size()])
 	var scene := PackedScene.new()
 	var error := scene.pack(root)

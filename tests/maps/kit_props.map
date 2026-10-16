@@ -1,0 +1,41 @@
+// Game: Chiip
+// Format: Valve
+// Test fixture for tests/kit_test.gd: a floor and a few kit props (M10, D-122).
+// entity 0
+{
+"classname" "worldspawn"
+"mapversion" "220"
+// brush 0
+{
+( -400 -400 0 ) ( -400 400 0 ) ( 400 400 0 ) concrete_floor [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -400 -400 -16 ) ( 400 400 -16 ) ( -400 400 -16 ) concrete_floor [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -400 -400 -16 ) ( -400 -400 0 ) ( 400 -400 0 ) concrete_floor [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -400 400 -16 ) ( 400 400 0 ) ( -400 400 0 ) concrete_floor [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -400 -400 -16 ) ( -400 400 -16 ) ( -400 400 0 ) concrete_floor [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 400 -400 -16 ) ( 400 400 0 ) ( 400 400 -16 ) concrete_floor [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}
+// entity 1
+{
+"classname" "prop_crate_wood"
+"origin" "0 0 0"
+"angle" "0"
+}
+// entity 2
+{
+"classname" "prop_barrel"
+"origin" "120 0 0"
+"angle" "90"
+}
+// entity 3
+{
+"classname" "prop_pallet"
+"origin" "-120 0 0"
+"angle" "0"
+}
+// entity 4
+{
+"classname" "prop_crate_stack"
+"origin" "0 160 0"
+"angle" "45"
+}
