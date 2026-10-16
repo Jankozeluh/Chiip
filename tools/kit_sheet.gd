@@ -109,6 +109,10 @@ func _render(scene: PackedScene) -> Image:
 		var mesh_box := mesh.global_transform * mesh.get_aabb()
 		box = mesh_box if first else box.merge(mesh_box)
 		first = false
+	# Wall props (signs, windows, lamps) have their origin at their middle: stand them on the floor.
+	if box.position.y < 0.0:
+		node.position.y -= box.position.y
+		box.position.y = 0.0
 	var centre := box.get_center()
 	var radius := maxf(box.size.length() / 2.0, 0.3)
 	var distance := radius / sin(deg_to_rad(_camera.fov / 2.0)) * 1.05

@@ -1,9 +1,12 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/props/barrel.glb" id="model"]
 
 [sub_resource type="BoxShape3D" id="box_0"]
-size = Vector3(0.5834, 0.9, 0.5834)
+size = Vector3(0.5543, 0.9, 0.5543)
+
+[sub_resource type="BoxShape3D" id="box_1"]
+size = Vector3(0.5543, 0.9, 0.5543)
 
 [node name="PropBarrel" type="StaticBody3D"]
 collision_layer = 1
@@ -15,3 +18,7 @@ metadata/surface = "metal"
 [node name="Box0" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0.45, 0)
 shape = SubResource("box_0")
+
+[node name="Box1" type="CollisionShape3D" parent="."]
+transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, 0, 0.45, 0)
+shape = SubResource("box_1")

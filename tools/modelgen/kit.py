@@ -195,6 +195,8 @@ def write_scene(model, boxes, path):
         lines.append(f'light_offset = Vector3({_f(light["pos"][0])}, {_f(light["pos"][1])}, {_f(light["pos"][2])})')
         if light.get('angle'):
             lines.append(f'spot_angle = {_f(light["angle"])}')
+        if light.get('pitch'):
+            lines.append(f'light_pitch = {_f(light["pitch"])}')
     lines.append(f'metadata/surface = "{spec["surface"]}"')
     lines += ['', '[node name="Model" parent="." instance=ExtResource("model")]']
     for i, (centre, _, yaw) in enumerate(boxes):
@@ -256,8 +258,8 @@ def write_fgd(entries, path):
 def light_properties(light):
     c = light['color']
     return [('light_color', f'Color({_f(c[0])}, {_f(c[1])}, {_f(c[2])}, 1)'),
-            ('light_energy', _f(float(light['energy']))),
-            ('light_range', _f(float(light['range']))),
+            ('light_energy', f"{float(light['energy']):.2f}"),
+            ('light_range', f"{float(light['range']):.1f}"),
             ('shadows', 'false')]
 
 
