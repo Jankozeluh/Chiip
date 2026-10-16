@@ -510,15 +510,29 @@ const HUD_HIT_LENGTH := 12
 const HUD_HIT_THICKNESS := 4
 const HUD_HIT_TIME_MS := 150
 
-## The compass (D-180): a thin strip at the top centre that turns with the view and shows N, E, S and W with ticks, and a marker where an
-## enemy fired. It shows this many degrees across its width, a tick every [constant HUD_COMPASS_TICK_STEP] degrees (a taller one every
-## third, at the 45-degree points; the letters stand at the 90-degree points), ticks and the centre pointer this thick, the enemy marker this
-## big for this many milliseconds, fading over the last [constant HUD_COMPASS_FADE_MS] of them.
-const HUD_COMPASS_ARC := 120
+## The compass (D-180, the designer's "29 Compass callouts" since D-232): a strip under the score that turns with the view,
+## 24 high and 448 wide (set in the HUD scene), showing this many degrees across (90 each side), a tick every
+## [constant HUD_COMPASS_TICK_STEP] degrees (2 px thick, [constant HUD_COMPASS_TICK_SMALL] tall; the 45-degree points
+## [constant HUD_COMPASS_TICK_LARGE] tall; N, E, S and W stand at the 90-degree points) on a VOID backing, a heading box under
+## the middle ([constant HUD_COMPASS_BOX]: its width and height), and where an enemy fired a red mark
+## ([constant HUD_COMPASS_MARK]: its width and height, 1 px VOID edge; [constant HUD_COMPASS_MARK_PINNED] wide when pinned to an
+## end) that shows full for one step ([constant HUD_COMPASS_STEP_MS]), then at the next two percents, then goes. A
+## callout tag ("ENEMY · A") hangs under its bearing for [constant HUD_COMPASS_TAG_MS], [constant HUD_COMPASS_TAG] tall.
+const HUD_COMPASS_ARC := 180
 const HUD_COMPASS_TICK_STEP := 15
-const HUD_COMPASS_TICK_SMALL := 4
-const HUD_COMPASS_TICK_LARGE := 8
+const HUD_COMPASS_TICK_SMALL := 8
+const HUD_COMPASS_TICK_LARGE := 12
 const HUD_COMPASS_THICKNESS := 2
-const HUD_COMPASS_MARKER := 8
-const HUD_COMPASS_MARKER_TIME_MS := 2000
-const HUD_COMPASS_FADE_MS := 1000
+const HUD_COMPASS_BOX := Vector2i(40, 24)
+const HUD_COMPASS_MARK := Vector2i(4, 16)
+const HUD_COMPASS_MARK_PINNED := 8
+const HUD_COMPASS_STEP_MS := 1000
+const HUD_COMPASS_ALPHA_1 := 100
+const HUD_COMPASS_ALPHA_2 := 60
+const HUD_COMPASS_ALPHA_3 := 30
+const HUD_COMPASS_TAG := 24
+const HUD_COMPASS_TAG_MS := 4000
+## The bar at the left of a callout line in the kill feed.
+const HUD_CALLOUT_EDGE := 4
+## The compass strip's backing: VOID at 60 %.
+const COMPASS_BACKING := Color("07090d", 0.6)

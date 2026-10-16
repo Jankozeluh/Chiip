@@ -89,6 +89,10 @@ signal character_killed(victim: Character, killer: Character, headshot: bool)
 ## Emitted when a bot of [param team] calls out an enemy it just spotted (M15, D-216); [param text] says where
 ## ([method BotSquad.callout_text], seen from this computer's player when on that team). Host and offline only.
 signal callout(team: int, text: String)
+## The same call with where it came from (v0.2, D-232): the team, the bot that called, where the enemy is, and the
+## place the call names for the viewer ("A" at a bomb site, else the compass direction's abbreviation, "NW"). The
+## compass hangs a tag on it and the kill feed gets a line.
+signal callout_made(team: int, caller: Character, point: Vector3, place: String)
 ## Emitted when [method request_class] gave [param character] another class.
 signal class_changed(character: Character, data: ClassData)
 ## Emitted when someone joins the match (a bot, a friend arriving), on the host and on a client
@@ -933,6 +937,7 @@ func _on_called_out(enemy_position: Vector3, caller: Character) -> void:
 	BotSquad.call_team(caller, enemy_position)
 	var listener: Character = _player if is_instance_valid(_player) and _player.team == caller.team else caller
 	callout.emit(caller.team, BotSquad.callout_text(enemy_position, get_parent(), listener))
+	callout_made.emit(caller.team, caller, enemy_position, String(BotSquad.callout_place(enemy_position, get_parent(), listener)["short"]))
 
 
 # --- Online: the replica on a client (M9, D-105) ---

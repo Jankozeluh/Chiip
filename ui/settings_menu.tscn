@@ -76,6 +76,14 @@ mouse_filter = 2
 theme_type_variation = &"ContentBox"
 metadata/_tab_index = 2
 
+[node name="Interface" type="VBoxContainer" parent="Page/Column/Tabs"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+metadata/_tab_index = 3
+
 [node name="Crosshair" type="ScrollContainer" parent="Page/Column/Tabs"]
 visible = false
 layout_mode = 2

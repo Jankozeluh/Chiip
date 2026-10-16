@@ -133,6 +133,7 @@ var _magazine_seen: int = -1
 
 
 func _ready() -> void:
+	Settings.get_instance().changed.connect(_on_setting_changed)
 	_build_chips()
 	var plate_height := float(_theme_size(&"plate_height"))
 	_death_plate.custom_minimum_size.y = plate_height
@@ -150,6 +151,12 @@ func _ready() -> void:
 	_round_hud.set_toasts(_toasts)
 	_bomb_hud.set_toasts(_toasts)
 	_bomb_hud.set_carry_plate(_carry_plate)
+
+
+## The Interface settings' compass switch reaches the strip at once.
+func _on_setting_changed(key: StringName) -> void:
+	if key == &"compass":
+		_update_view()
 
 
 ## Shows this player's weapon on the HUD.
@@ -170,6 +177,7 @@ func set_round_manager(manager: RoundManager) -> void:
 	_toasts.clear()
 	_round_hud.set_round_manager(manager)
 	_bomb_hud.set_round_manager(manager)
+	_compass.set_round_manager(manager)
 	if is_instance_valid(_manager) and _manager.money_changed.is_connected(_on_money_changed):
 		_manager.money_changed.disconnect(_on_money_changed)
 	_manager = manager
@@ -482,7 +490,7 @@ func _update_view() -> void:
 	_bottom_right.visible = not spectating and not _player_dead
 	_spectate_box.visible = spectating
 	_dead_tint.visible = dead_view
-	_compass.visible = not dead_view
+	_compass.visible = Settings.get_instance().compass and not dead_view
 	_death_column.visible = dead_view
 	if spectating:
 		_update_spectate_name()

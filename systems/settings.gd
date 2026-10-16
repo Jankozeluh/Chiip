@@ -141,6 +141,7 @@ const SCHEMA := {
 	&"palette_effect": {"section": "video", "default": true},
 	&"pixelate_hud": {"section": "video", "default": false},
 	&"ui_scale": {"section": "video", "default": 0, "choices": UI_SCALES},
+	&"compass": {"section": "video", "default": true},
 	# M15 (D-212): the gamepad's look: degrees per second at full tilt are PlayerController.PAD_DEGREES_PER_SECOND times
 	# this, the dead zone is the stick's flat middle, and the curve is the power the stick's reach is raised to (1 = linear).
 	&"pad_sensitivity": {"section": "game", "default": 1.0, "min": 0.1, "max": 4.0},
@@ -286,6 +287,10 @@ var palette_effect: bool:
 var pixelate_hud: bool:
 	get: return _values[&"pixelate_hud"]
 	set(value): set_value(&"pixelate_hud", value)
+## Show the compass strip on the HUD (v0.2, D-232).
+var compass: bool:
+	get: return _values[&"compass"]
+	set(value): set_value(&"compass", value)
 ## How big the UI is, as a percent of the biggest scale that fits the window: one of [constant UI_SCALES]
 ## (0 = Auto, D-181). See [method PixelView.ui_scale_for].
 var ui_scale: int:

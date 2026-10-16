@@ -1755,8 +1755,8 @@ func _test_settings_menu_building() -> void:
 	var background := menu.get_node("Background") as Panel
 	var page := menu.get_node("Page") as MarginContainer
 	var title := menu.get_node("Page/Column/TitleBox/Title") as Label
-	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
-			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Crosshair", "Controls"]
+	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Interface, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
+			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Interface", "Crosshair", "Controls"]
 					and background.theme_type_variation == &"InkPanel" and background.mouse_filter == Control.MOUSE_FILTER_STOP
 					and page.theme_type_variation == &"PageMargin" and page.get_theme_constant("margin_left") == Tokens.PAGE_MARGIN_X
 					and title.theme_type_variation == &"TitleLabel" and title.text == "Settings"
@@ -3631,19 +3631,23 @@ func _test_loading_screen_in_the_game() -> void:
 	tree.paused = false
 
 
-# --- The compass (M11, D-180) ---
+# --- The compass (M11, D-180; the designer's page since v0.2, D-232) ---
 
 
-## The HUD's compass: tokens in the theme, N/E/S/W that follow the view, and a red square where an enemy fires: only
-## enemies within gunshot range, one per shooter, moving with your view, fading out after about two seconds.
+## The HUD's compass: tokens in the theme, N/E/S/W that follow the view, and a red mark where an enemy fires: only
+## enemies within gunshot range, one per shooter, moving with your view, stepping down over three seconds, pinned
+## to the strip's end past 90 degrees; a bot's callout hangs a tag under its bearing and writes a line in the kill feed.
 func _test_compass() -> void:
-	_check("The compass's sizes are tokens in the theme's Hud type: arc, tick step and sizes, thickness, the square's size, time and fade",
-			_theme.get_constant("compass_arc", "Hud") == Tokens.HUD_COMPASS_ARC and _theme.get_constant("compass_tick_step", "Hud") == Tokens.HUD_COMPASS_TICK_STEP
-					and _theme.get_constant("compass_tick_small", "Hud") == Tokens.HUD_COMPASS_TICK_SMALL and _theme.get_constant("compass_tick_large", "Hud") == Tokens.HUD_COMPASS_TICK_LARGE
-					and _theme.get_constant("compass_thickness", "Hud") == Tokens.HUD_COMPASS_THICKNESS and _theme.get_constant("compass_marker", "Hud") == Tokens.HUD_COMPASS_MARKER
-					and _theme.get_constant("compass_marker_time_ms", "Hud") == Tokens.HUD_COMPASS_MARKER_TIME_MS and _theme.get_constant("compass_fade_ms", "Hud") == Tokens.HUD_COMPASS_FADE_MS,
-			"arc %d, step %d, square %d for %d ms" % [_theme.get_constant("compass_arc", "Hud"), _theme.get_constant("compass_tick_step", "Hud"),
-					_theme.get_constant("compass_marker", "Hud"), _theme.get_constant("compass_marker_time_ms", "Hud")])
+	var tokens_ok: bool = _theme.get_constant("compass_arc", "Hud") == Tokens.HUD_COMPASS_ARC and _theme.get_constant("compass_tick_step", "Hud") == Tokens.HUD_COMPASS_TICK_STEP \
+			and _theme.get_constant("compass_tick_small", "Hud") == Tokens.HUD_COMPASS_TICK_SMALL and _theme.get_constant("compass_tick_large", "Hud") == Tokens.HUD_COMPASS_TICK_LARGE \
+			and _theme.get_constant("compass_thickness", "Hud") == Tokens.HUD_COMPASS_THICKNESS and _theme.get_constant("compass_mark_width", "Hud") == Tokens.HUD_COMPASS_MARK.x \
+			and _theme.get_constant("compass_mark_height", "Hud") == Tokens.HUD_COMPASS_MARK.y and _theme.get_constant("compass_mark_pinned", "Hud") == Tokens.HUD_COMPASS_MARK_PINNED \
+			and _theme.get_constant("compass_box_width", "Hud") == Tokens.HUD_COMPASS_BOX.x and _theme.get_constant("compass_step_ms", "Hud") == Tokens.HUD_COMPASS_STEP_MS \
+			and _theme.get_constant("compass_alpha_2", "Hud") == Tokens.HUD_COMPASS_ALPHA_2 and _theme.get_constant("compass_tag_ms", "Hud") == Tokens.HUD_COMPASS_TAG_MS \
+			and _theme.get_color("compass_backing", "Palette") == Tokens.COMPASS_BACKING
+	_check("The compass's sizes are tokens in the theme's Hud type: arc, ticks, marks, steps, the heading box, the tag and the strip's backing",
+			tokens_ok, "arc %d, step %d ms, mark %d × %d" % [_theme.get_constant("compass_arc", "Hud"), _theme.get_constant("compass_step_ms", "Hud"),
+					_theme.get_constant("compass_mark_width", "Hud"), _theme.get_constant("compass_mark_height", "Hud")])
 	var main: Node = await _new_game()
 	var compass := main.get_node("HUD/Compass") as Compass
 	var player := _player
@@ -3661,49 +3665,55 @@ func _test_compass() -> void:
 		headings.append(snappedf(compass.get_heading(), 0.1))
 	_check("The compass heading follows the view: north 0, east 90, south 180, west 270 degrees",
 			headings == [0.0, 90.0, 180.0, 270.0], "headings %s" % [headings])
-	# An enemy's shot: a square at its bearing, relative to where you look.
+	# An enemy's shot: a mark at its bearing, relative to where you look.
 	player.aim_at(player.get_eye_position() + Vector3(0, 0, -10))
 	await get_tree().process_frame
 	var shooter := enemies[0]
-	var east := player.global_position + Vector3(20, 0, 0)
-	Noises.announce_shot(east, shooter)
+	Noises.announce_shot(player.global_position + Vector3(20, 0, 0), shooter)
 	var offsets := compass.get_marker_offsets()
 	var first := offsets[0] if not offsets.is_empty() else 999.0
-	_check("An enemy's shot puts a square at its bearing: a shot due east while you look north is 90 degrees to the right",
-			compass.get_marker_count() == 1 and is_equal_approx(first, 90.0) and is_equal_approx(compass.get_marker_alpha(), 1.0),
-			"%d squares, offsets %s, alpha %.2f" % [compass.get_marker_count(), offsets, compass.get_marker_alpha()])
-	# It moves with your view and stays on the strip's edge when it is out of the arc.
+	_check("An enemy's shot puts a mark at its bearing: a shot due east while you look north is 90 degrees to the right, at the strip's right end",
+			compass.get_marker_count() == 1 and is_equal_approx(first, 90.0) and is_equal_approx(compass.get_marker_alpha(), 1.0)
+					and absf(compass.get_marker_rects()[0].get_center().x - compass.x_for_offset(90.0)) <= 1.0,
+			"%d marks, offsets %s, alpha %.2f" % [compass.get_marker_count(), offsets, compass.get_marker_alpha()])
+	# It moves with your view; past 90 degrees it is pinned to the end as a wider mark.
 	player.aim_at(player.get_eye_position() + Vector3(10, 0, 0))
 	await get_tree().process_frame
 	var turned := compass.get_marker_offsets()
 	var in_middle := turned.size() == 1 and absf(turned[0]) < 0.001
 	var rect := compass.get_marker_rects()[0] if compass.get_marker_count() == 1 else Rect2()
+	player.aim_at(player.get_eye_position() + Vector3(0, 0, 10))
+	await get_tree().process_frame
+	var behind := compass.get_marker_rects()[0] if compass.get_marker_count() == 1 else Rect2()
 	player.aim_at(player.get_eye_position() + Vector3(0, 0, -10))
 	await get_tree().process_frame
-	var edge := compass.get_marker_rects()[0] if compass.get_marker_count() == 1 else Rect2()
-	_check("The square follows your turn: looking at the shot puts it in the middle of the strip; 90 degrees off it sits at the strip's right end (the arc is 120 degrees)",
-			in_middle and absf(rect.get_center().x - compass.size.x / 2.0) <= 1.0 and absf(edge.get_center().x - compass.x_for_offset(Tokens.HUD_COMPASS_ARC / 2.0)) <= 1.0,
-			"offsets %s, centre %.1f (strip %.0f wide), edge %.1f" % [turned, rect.get_center().x, compass.size.x, edge.get_center().x])
-	# One square per shooter: a new shot from the same enemy moves it and restarts its time.
+	_check("The mark follows your turn: looking at the shot puts it in the middle of the strip; with it behind you it is pinned to the strip's end, %d instead of %d wide" % [Tokens.HUD_COMPASS_MARK_PINNED, Tokens.HUD_COMPASS_MARK.x],
+			in_middle and absf(rect.get_center().x - compass.size.x / 2.0) <= 1.0 and rect.size.x == Tokens.HUD_COMPASS_MARK.x
+					and behind.size.x == Tokens.HUD_COMPASS_MARK_PINNED and (behind.position.x <= 1.0 or behind.end.x >= compass.size.x - 1.0),
+			"offsets %s, middle x %.1f, pinned %s" % [turned, rect.get_center().x, behind])
+	# One mark per shooter: a new shot from the same enemy moves it and starts its time over.
 	compass.advance(1.5)
 	var faded := compass.get_marker_alpha()
 	Noises.announce_shot(player.global_position + Vector3(-20, 0, 0), shooter)
 	var moved := compass.get_marker_offsets()
-	_check("An enemy has one square: a new shot from him moves it (to the west, 90 degrees to the left) and starts the time over",
-			compass.get_marker_count() == 1 and faded < 1.0 and moved.size() == 1 and is_equal_approx(moved[0], -90.0) and is_equal_approx(compass.get_marker_alpha(), 1.0),
-			"%d squares, alpha before the shot %.2f, now %s" % [compass.get_marker_count(), faded, moved])
-	# A second enemy has a second square.
+	_check("An enemy has one mark: a new shot from him moves it (to the west, 90 degrees to the left) and starts it over at full opacity",
+			compass.get_marker_count() == 1 and is_equal_approx(faded, Tokens.HUD_COMPASS_ALPHA_2 / 100.0) and moved.size() == 1 and is_equal_approx(moved[0], -90.0)
+					and is_equal_approx(compass.get_marker_alpha(), 1.0),
+			"%d marks, alpha before the shot %.2f, now %s" % [compass.get_marker_count(), faded, moved])
+	# A second enemy has a second mark.
 	Noises.announce_shot(player.global_position + Vector3(0, 0, 20), enemies[1])
 	var two := compass.get_marker_count()
-	# Fading: full for the first second, then it fades, and it is gone after the 2 seconds.
-	compass.advance(1.0)
-	var full := compass.get_marker_alpha()
+	# Steps: full for the first second, 60 % to two, 30 % to three, then gone.
 	compass.advance(0.5)
-	var half := compass.get_marker_alpha()
-	compass.advance(0.6)
-	_check("A square stays about 2 seconds: full opacity for the first second, fading over the second, gone after (%d squares with two shooters)" % two,
-			two == 2 and full > 0.99 and absf(half - 0.5) < 0.01 and compass.get_marker_count() == 0,
-			"two shooters %d, alpha %.2f after 1 s, %.2f after 1.5 s, %d squares after 2.1 s" % [two, full, half, compass.get_marker_count()])
+	var full := compass.get_marker_alpha()
+	compass.advance(1.0)
+	var sixty := compass.get_marker_alpha()
+	compass.advance(1.0)
+	var thirty := compass.get_marker_alpha()
+	compass.advance(1.0)
+	_check("A mark stays three seconds in steps: full for the first, 60 %% for the second, 30 %% for the third, then gone (%d marks with two shooters)" % two,
+			two == 2 and is_equal_approx(full, 1.0) and is_equal_approx(sixty, 0.6) and is_equal_approx(thirty, 0.3) and compass.get_marker_count() == 0,
+			"two shooters %d, alpha %.2f at 0.5 s, %.2f at 1.5 s, %.2f at 2.5 s, %d marks at 3.5 s" % [two, full, sixty, thirty, compass.get_marker_count()])
 	# Not shown: teammates, you, shots out of range.
 	Noises.announce_shot(player.global_position + Vector3(10, 0, 0), mates[0] if not mates.is_empty() else player)
 	Noises.announce_shot(player.get_eye_position(), player)
@@ -3722,6 +3732,29 @@ func _test_compass() -> void:
 	_check("The compass shows no teammates, nothing of your own and nothing out of gunshot range (%d m); a real shot from an enemy's gun does show, and so does a puppet's replayed shot (online)" % int(Noises.GUNSHOT_RANGE),
 			other_world_ignored and by_gun == 1 and by_puppet == 1,
 			"squares after the three shots that don't count: %d, after the enemy's gun: %d, after a puppet's shot: %d" % [other_world_ignored as int, by_gun, by_puppet])
+	# A bot's callout: a tag under the bearing for four seconds, one at a time, and a line in the kill feed (two at most).
+	compass.advance(10.0)
+	var manager := _rounds
+	var feed := main.get_node("HUD/RoundHud/KillFeed") as KillFeed
+	feed.clear()
+	var mate := mates[0]
+	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(20, 0, 0), "A")
+	var tag_a := compass.get_tag_text()
+	var tag_rect := compass.get_tag_rect()
+	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(0, 0, -20), "NW")
+	var tag_nw := compass.get_tag_text()
+	var lines_after_two := feed.get_line_count()
+	manager.callout_made.emit(player.team, mate, player.global_position + Vector3(0, 0, -20), "N")
+	var lines_after_three := feed.get_line_count()
+	manager.callout_made.emit(Teams.other(player.team), mate, player.global_position, "S")
+	var enemy_ignored := compass.get_tag_text() == "ENEMY · N"
+	compass.advance(3.5)
+	var held := compass.get_tag_text() == "ENEMY · N"
+	compass.advance(1.0)
+	_check("A bot's callout hangs a tag under its bearing for 4 seconds (\"ENEMY · A\", then the next one replaces it) and the kill feed keeps two lines; the other team's callout is ignored",
+			tag_a == "ENEMY · A" and tag_nw == "ENEMY · NW" and lines_after_two == 2 and lines_after_three == 2 and enemy_ignored and held and compass.get_tag_text() == ""
+					and tag_rect.position.y >= compass.get_box_rect().position.y - 1.0 and not tag_rect.intersects(compass.get_box_rect()),
+			"tags %s, %s; feed lines %d, %d; ignored %s; after 3.5 s '%s'; tag rect %s" % [tag_a, tag_nw, lines_after_two, lines_after_three, enemy_ignored, "held" if held else "gone", tag_rect])
 	main.queue_free()
 	await get_tree().process_frame
 	MenuState.reset()

@@ -9,7 +9,9 @@
 
 - Boot screen to the designer's page (D-231): smooth logo, spaced "DIVOCAKOS", four squares, the credit line, a 0.3 s fade-in; the menu footer carries the credit line too.
 
-**Next:** the compass to the new spec, the FPS counter and debug overlay, the settings tabs, Stats, training, credits, the pad prompts.
+- Compass to the designer's page (D-232): under the score, 90° each side with a heading box, marks that step down over 3 s, a callout tag and a kill-feed line for the bots' callouts; a new Settings → Interface tab (UI scale, team colours, compass).
+
+**Next:** the FPS counter and debug overlay, the settings tabs, Stats, training, credits, the pad prompts.
 
 ## 2026-10-16 — M15 accessibility & polish
 

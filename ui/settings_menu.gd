@@ -130,6 +130,7 @@ var _previews: Array[Crosshair] = []
 @onready var _game_rows: VBoxContainer = %Game
 @onready var _video_rows: VBoxContainer = %Video
 @onready var _audio_rows: VBoxContainer = %Audio
+@onready var _interface_rows: VBoxContainer = %Interface
 @onready var _crosshair_rows: VBoxContainer = %CrosshairRows
 @onready var _controls_rows: VBoxContainer = %ControlsRows
 @onready var _dark_preview: Crosshair = %DarkCrosshair
@@ -148,6 +149,7 @@ func _ready() -> void:
 	_build_game_tab()
 	_build_video_tab()
 	_build_audio_tab()
+	_build_interface_tab()
 	_build_crosshair_tab()
 	_build_controls_tab()
 	_settings.changed.connect(_on_setting_changed)
@@ -413,14 +415,21 @@ func _build_video_tab() -> void:
 		"tip": "The height of the 3D image in lines; it is scaled up with sharp pixels. Fewer lines = chunkier."})
 	_add_toggle_row(_video_rows, &"palette_effect", "Palette effect", "Limit the world's colours, with light dithering.")
 	_add_toggle_row(_video_rows, &"pixelate_hud", "Pixelated HUD", "Draw the HUD at the low resolution too.")
-	_add_choice_row(_video_rows, &"ui_scale", "UI scale", Settings.UI_SCALES,
+
+
+## The Interface tab (v0.2, D-232): how the HUD looks and what it shows. UI scale, the team colours and the compass;
+## the FPS counter's rows come with the overlay.
+func _build_interface_tab() -> void:
+	_tab_name = "Interface"
+	_add_choice_row(_interface_rows, &"ui_scale", "UI scale", Settings.UI_SCALES,
 			func(value: int) -> String: return "Auto" if value == 0 else "%d %%" % value,
 			"Auto: the biggest even step that fits the window. 100 % fills it exactly, 75 % and 50 % are smaller.")
 	# M15 (D-210): the two teams in blue and orange, apart for every kind of colour blindness.
-	var team_row := _add_row(_video_rows, &"team_colors", "Team colours",
+	var team_row := _add_row(_interface_rows, &"team_colors", "Team colours",
 			"Standard is blue against red. Colour-blind safe is a dark blue against a light orange: it stays apart for red-green and blue-yellow colour blindness, and in greyscale.")
 	_choices[&"team_colors"] = _add_segments(team_row, &"team_colors", ["Standard", "Colour-blind safe"], Teams.SCHEME_NAMES)
 	_track(&"team_colors")
+	_add_toggle_row(_interface_rows, &"compass", "Compass", "The strip under the score that shows where enemies fire.")
 
 
 func _build_audio_tab() -> void:

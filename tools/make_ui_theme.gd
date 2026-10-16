@@ -86,6 +86,7 @@ func _palette() -> void:
 		"friendly": Teams.FRIENDLY_COLOR, "enemy": Teams.ENEMY_COLOR,
 		"friendly_text": Palette.FRIENDLY, "enemy_text": Palette.ENEMY,
 		"friendly_fill": Palette.FRIENDLY_FILL, "enemy_fill": Palette.ENEMY_FILL,
+		"compass_backing": Palette.COMPASS_BACKING,
 	})
 
 
@@ -453,8 +454,13 @@ func _hud() -> void:
 		"hit_time_ms": Palette.HUD_HIT_TIME_MS, "shadow_offset": Palette.SHADOW_OFFSET,
 		"compass_arc": Palette.HUD_COMPASS_ARC, "compass_tick_step": Palette.HUD_COMPASS_TICK_STEP,
 		"compass_tick_small": Palette.HUD_COMPASS_TICK_SMALL, "compass_tick_large": Palette.HUD_COMPASS_TICK_LARGE,
-		"compass_thickness": Palette.HUD_COMPASS_THICKNESS, "compass_marker": Palette.HUD_COMPASS_MARKER,
-		"compass_marker_time_ms": Palette.HUD_COMPASS_MARKER_TIME_MS, "compass_fade_ms": Palette.HUD_COMPASS_FADE_MS,
+		"compass_thickness": Palette.HUD_COMPASS_THICKNESS, "compass_box_width": Palette.HUD_COMPASS_BOX.x,
+		"compass_box_height": Palette.HUD_COMPASS_BOX.y, "compass_mark_width": Palette.HUD_COMPASS_MARK.x,
+		"compass_mark_height": Palette.HUD_COMPASS_MARK.y, "compass_mark_pinned": Palette.HUD_COMPASS_MARK_PINNED,
+		"compass_step_ms": Palette.HUD_COMPASS_STEP_MS, "compass_alpha_1": Palette.HUD_COMPASS_ALPHA_1,
+		"compass_alpha_2": Palette.HUD_COMPASS_ALPHA_2, "compass_alpha_3": Palette.HUD_COMPASS_ALPHA_3,
+		"compass_tag": Palette.HUD_COMPASS_TAG, "compass_tag_ms": Palette.HUD_COMPASS_TAG_MS,
+		"callout_edge": Palette.HUD_CALLOUT_EDGE,
 	})
 	var regular: Font = load(Palette.FONT)
 	var bold: Font = load(Palette.FONT_BOLD)
@@ -528,6 +534,7 @@ func _hud() -> void:
 	var feed_margin := Vector4(Palette.HUD_FEED_PAD, 0, Palette.HUD_FEED_PAD, 0)
 	var feed_frame := Palette.HUD_FEED_FRAME_PAD + Palette.BORDER
 	_hud_plate("HudFeedPlate", _box("hud_feed_plate", Palette.PLATE, Color.TRANSPARENT, 0, feed_margin))
+	_hud_plate("HudFeedPlateCall", _box("hud_feed_plate_call", Palette.PLATE, Color.TRANSPARENT, 0, Vector4(0, 0, Palette.HUD_FEED_PAD, 0)))
 	_hud_plate("HudFeedPlateYou", _box("hud_feed_plate_you", Palette.INK, Palette.TEXT, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
 	_hud_plate("HudFeedPlateDeath", _box("hud_feed_plate_death", Palette.INK, Palette.ENEMY, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
 	# The toasts' plates (news: INK, match point: TEXT, the bomb planted: ALERT, low ammo: INK with an ALERT frame) and their chips.

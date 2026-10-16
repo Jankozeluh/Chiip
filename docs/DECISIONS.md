@@ -1832,7 +1832,7 @@ It also prints its five slowest ticks with the round's phase and time, so a fail
 
 **Alternatives:** Spreading the round start over several ticks: the loadouts and the bots' purchases would come during the freeze time instead of at its start. That's a change to the rules' order that the round and economy tests check, for about 15 ms once a round.
 
-## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
+## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16) — *amended by D-232 (position, steps, tags)*
 
 **Decision:**
 - **A thin compass strip at the top centre of the HUD** (`ui/compass.gd`, `Compass`): N, E, S and W with small ticks every 15° (taller every 45°), a short pointer in the middle, turning with your view, 120° across 400 design pixels. In the HUD's look: Silkscreen 16 px, hard 2 px shadows, the TEXT, MUTE and enemy colours of the palette. Its sizes are tokens (`HUD_COMPASS_*` in `tools/ui_palette.gd`, the theme's "Hud" type).
@@ -2275,6 +2275,18 @@ Not now: first-launch tips, crosshair share codes, replays.
 **Decision:** The boot screen (D-153) is the designer's "30 Boot": the logo with a **smooth filter** (it is a painted mark; the nearest filter of D-153 was wrong for it), "DIVOCAKOS" in 32 px with 4 px letter spacing (a new `SpacedLabel` role) instead of the 48 px bold name, **four** squares instead of eight, the credit line "Created by JK · Divocakos" at the bottom left (the main menu's footer says it too, in place of "Build M10 · Divocakos") and "Any key to skip" at the bottom right, on the opaque deepest dark (a new `VoidPanel` role). Timing: the logo, name and squares fade in over 0.3 s, then the screen holds 1.6 s (`hold_time` 1.9 s). The logo stays at 224 design pixels, a whole multiple of its 112 pixels at every UI scale of half steps.
 
 **Why:** The designer's review (D-230). **Alternatives:** none worth it; the page is explicit about every item. The squares' gap is the theme's 6 px, the page's 8 px: left, because the loading screen's squares share the role.
+
+## D-232 — The compass follows the designer's page: a strip under the score, callout tags, an Interface tab (2026-10-16) — *amends D-180*
+
+**Decision:**
+- **The strip moves under the score** (448 × 24 design pixels at y 104, a 60 % VOID backing) and shows **90 degrees each side**: ticks every 15° (2 × 8, at the 45° points 2 × 12), N, E, S and W in the text colour, and a **heading box** hanging under the middle (the bearing in degrees). The round top bar goes back to y 24 (D-180 had pushed it down 16 px) and the toasts sit under the compass and its tag (y 192).
+- **Enemy marks last three seconds in steps:** 4 × 16, a 1 px VOID edge, full for the first second, 60 % for the second, 30 % for the third, then gone (D-180: two seconds, one fade). A shot from more than 90° to the side pins to the strip's end as an 8 px mark. One mark per shooter, as before.
+- **Bot callouts show on the compass and in the kill feed** (D-216 had only a toast): `RoundManager.callout_made(team, caller, point, place)` says where; the compass hangs a tag "ENEMY · A" (a bomb site's letter, else the direction's abbreviation, "ENEMY · NW") under that bearing for 4 seconds, one at a time (the tag steps aside for the heading box), and `KillFeed.add_callout()` writes "Bot3  ENEMY NEAR A" with a team-coloured edge, two lines at most, the older dimmed. The toast is gone. The older `callout(team, text)` signal stays, as the squad test uses it. `BotSquad.callout_place()` splits the call into the site letter, the direction and its short form.
+- **Settings has an Interface tab** (between Audio and Crosshair): UI scale and Team colours move there from Video (which had run out of room: with a Compass switch it was taller than 720 pixels), with the new **Compass** switch (`Settings.compass`, on by default). The FPS rows come next.
+
+**Why:** The designer's review of the compass (D-230, page 29) changes what D-180 built; the page wins. A single toast lost the callout once it faded, and a tag shows which way to look.
+
+**Alternatives:** keeping the compass on top and only adding the tag (the page puts everything under the score, with room for the heading box); calling out groups ("2 ENEMIES MID", on the page's third line): the bots call out one enemy at a time.
 
 ## Open questions
 
