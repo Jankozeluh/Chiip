@@ -93,7 +93,7 @@ An old-town square. **Open mid, tight side lanes.**
 - **West, site A:** a narrow zig-zag alley between houses. The two houses that jut into it overlap, so no straight line runs through. A is a small square with a well at the alley's north end. A covered passage through the houses connects the alley to the plaza.
 - **East, site B:** a long market hall with a roof, stone pillars and stalls. A wall with a gap on the east side splits it in two; B is **indoors** at the north end. An arch through the houses connects the plaza to the hall's north half. The hall's doors are offset from the gap, so you can't see down the whole hall.
 - **Spawns:** a kiosk in front of each spawn breaks the views across the spawn yards.
-- **Look (4 materials):** stone paving, pale plaster houses, stone corner houses and pillars, a gravel alley, wooden stalls, kiosks and hall roof. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky, a little more haze, neutral ambient light).
+- **Look (5 main materials, dressed with the map kit in M10):** cobbled plaza and slabbed yards and hall floor (one paving family), pale and olive plaster houses, rubble-stone alley houses and stone pillars, the gravel alley, wooden stalls, kiosks and an old plank roof over the hall. Props and lamps (86 entities in `square.map`): shuttered windows on two floors all round, wooden doors, lanterns around the plaza, in the passage, the arch and the alley, pendant lamps in the market hall instead of the scene's lamps, signs to A and B, crates on the hall's stalls, a bench, bins, a hydrant and a phone box in the yards' corners. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky, a little more haze, neutral ambient light).
 
 ## Map 3: Spillway
 
@@ -115,7 +115,7 @@ From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the roun
 | First contact, each round (median), bomb rounds (D-081) | 5.4, 5.4, 5.5, 6.0 s (5.4 s) | 6.0, 6.2, 7.2, 9.1 s (6.7 s) | 5.5, 5.6, 6.0, 6.7 s (5.8 s) |
 | Round length (bomb rounds; before the bomb all ended by elimination in 9–23 s) | 31–43 s | 19–50 s | 15–31 s |
 | Spawn to spawn, walking (straight line) | 52 m (49 m) | 62 m (50 m) | 52 m (51 m) |
-| Attackers to A / B | 57 m / 52 m | 65 m / 54 m | 51 m / 53 m |
+| Attackers to A / B | 57 m / 52 m | 62 m / 54 m (65 m before M10, see below) | 51 m / 53 m |
 | Defenders to A / B | 25 m / 23 m | 18 m / 20 m | 20 m / 21 m |
 | Routes west / mid / east | 58 / 49 / 68 m | 61 / 51 / 59 m | 57 / 53 / 55 m |
 | Longest sightline | 44 m | 35 m | 38 m |
@@ -124,6 +124,8 @@ From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the roun
 | Bomb rounds with bots (D-081): plants in 4 rounds, how they ended | 4 plants: 4 defused | 4 plants: 2 defused, 2 elimination | 3 plants: 1 defused, 2 elimination; 1 round decided before a plant |
 
 At 5.5 m/s (rifle in hand) a 52 m walk takes about 9.5 s. Contact comes earlier because defenders move up to their hold spots and toward the sound of footsteps.
+
+After dressing (M10) every number in this table is the same as before, except one: on Square the bots' shortest walk to A is 62 m instead of 65 m. The geometry is identical; the re-baked navmesh now includes the 1.4 m gap between the well crate and the alley house on the west route, which players could always walk through, so bots now find the same way. First contact on Square: 6.1, 6.2, 7.2, 9.1 s (median 6.7 s, as before).
 
 ## How the layouts were tuned
 
