@@ -56,10 +56,18 @@ const CROSSHAIR_COLORS: Array = [
 ]
 ## What the Controls tab shows for a slot without a key.
 const EMPTY_SLOT_TEXT := "-"
+## What the Pad column shows for the movement actions: they are the left stick and can't be changed.
+const STICK_TEXT := "L-Stick"
+## The slot number the Pad column uses in [method start_listening]: after the keys' slots.
+const PAD_SLOT := Settings.BINDING_SLOTS
+## The Pad column's width: narrower than a key column, its names are short.
+const PAD_COLUMN_WIDTH := 120.0
 ## What a slot shows while it waits for the next key.
 const LISTENING_TEXT := "Press a key..."
+## The Pad column's, shorter to fit its narrow box.
+const PAD_LISTENING_TEXT := "Press..."
 ## What the line under the key list says when there is nothing else to tell.
-const CONTROLS_HINT := "Click a key, then press the new one. Esc cancels, Backspace clears."
+const CONTROLS_HINT := "Click a key or Pad box, then press the new key or button. Esc cancels, Backspace clears."
 ## The sizes of the layout, in pixels for a 720-pixel-tall window (the mockup's; the menu scales them).
 ## A settings row is 48 high with a 400 px label, then the control; the crosshair tab's label is 240 px.
 const ROW_HEIGHT := 48.0
@@ -79,7 +87,7 @@ const SWATCH_FRAME := 4.0
 const HEX_BOX_WIDTH := 112.0
 ## The Controls tab: a table row is 34 high (a 2 px line and 32), the two key columns 240 px each.
 const TABLE_ROW_HEIGHT := 34.0
-const KEY_COLUMN_WIDTH := 240.0
+const KEY_COLUMN_WIDTH := 220.0
 ## The preview's dynamic crosshair opens up to this many degrees, once every few seconds.
 const PREVIEW_SPREAD_DEGREES := 3.0
 const PREVIEW_PULSE_SECONDS := 2.4
@@ -283,15 +291,32 @@ func listen(event: InputEvent) -> bool:
 			var action := _listening_action
 			var slot := _listening_slot
 			stop_listening()
-			_settings.clear_binding(action, slot)
-			_set_notice("%s: slot %d cleared." % [action_name(action), slot + 1])
+			if slot == PAD_SLOT:
+				_settings.clear_pad_binding(action)
+				_set_notice("%s: the pad button is cleared." % action_name(action))
+			else:
+				_settings.clear_binding(action, slot)
+				_set_notice("%s: slot %d cleared." % [action_name(action), slot + 1])
+			return true
+		if _listening_slot == PAD_SLOT:
 			return true
 		_bind(event)
+		return true
+	if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		if _listening_slot != PAD_SLOT:
+			return false
+		if event is InputEventJoypadButton and not (event as InputEventJoypadButton).pressed:
+			return false
+		if event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) < Settings.PAD_TRIGGER_THRESHOLD:
+			return false
+		_bind_pad(event)
 		return true
 	if event is InputEventMouseButton:
 		if not (event as InputEventMouseButton).pressed:
 			return false
 		if Engine.get_process_frames() == _listen_frame:
+			return true
+		if _listening_slot == PAD_SLOT:
 			return true
 		_bind(event)
 		return true
@@ -318,6 +343,26 @@ func _bind(event: InputEvent) -> void:
 	_set_notice(text)
 
 
+## Binds a gamepad [param event] to the waiting action and takes it from whatever had it. Sticks and Start
+## can't be bound (a stick's push is not a press: only a trigger pulled in counts).
+func _bind_pad(event: InputEvent) -> void:
+	if not Settings.can_bind_pad(event):
+		if event is InputEventJoypadMotion:
+			return # A stick moving: wait for a button or a trigger instead of complaining.
+		_set_notice("That button can't be used.")
+		return
+	var action := _listening_action
+	stop_listening()
+	var lost := _settings.bind_pad_exclusive(action, event)
+	var text := "%s: %s." % [action_name(action), Settings.pad_text(_settings.get_pad_binding(action))]
+	var others: Array[String] = []
+	for other in lost:
+		others.append(action_name(other))
+	if not others.is_empty():
+		text += " %s no longer has it." % " and ".join(others)
+	_set_notice(text)
+
+
 ## Sets the line under the key list: what the last rebinding did, or the hint when there is nothing to say.
 func _set_notice(text: String) -> void:
 	_notice_text = text
@@ -337,6 +382,17 @@ func _build_game_tab() -> void:
 	_add_slider_row(_game_rows, &"fov", {
 		"label": "Field of view", "step": 1.0, "format": "%d",
 		"tip": "Degrees across a 4:3 screen, like CS: 90 here is CS's 90. A wider window shows more to the sides."})
+	# M15 (D-212): the gamepad's look.
+	_add_slider_row(_game_rows, &"pad_sensitivity", {
+		"label": "Pad sensitivity", "step": 0.05, "format": "%.2f",
+		"tip": "How fast the right stick turns the view at a full push. 1.00 is a quarter turn a second."})
+	_add_slider_row(_game_rows, &"pad_deadzone", {
+		"label": "Stick dead zone", "step": 0.01, "scale": 100.0, "format": "%d",
+		"tip": "How far (in percent) a stick must be pushed before it does anything. Raise it if the view or you drift by themselves."})
+	_add_slider_row(_game_rows, &"pad_curve", {
+		"label": "Look curve", "step": 0.1, "format": "%.1f",
+		"tip": "1.0 is straight: the turn follows the push. Higher turns slowly for small pushes (fine aim) and still turns fast at a full push."})
+	_add_toggle_row(_game_rows, &"pad_invert_y", "Invert pad Y")
 
 
 func _build_video_tab() -> void:
@@ -428,6 +484,21 @@ func _build_controls_tab() -> void:
 			button.pressed.connect(start_listening.bind(action, slot))
 			cell.add_child(button)
 			buttons.append(button)
+		# The gamepad's column (D-211): a button or trigger; movement is the left stick and fixed.
+		var pad_cell := HBoxContainer.new()
+		pad_cell.theme_type_variation = &"FlushRow"
+		pad_cell.custom_minimum_size = Vector2(PAD_COLUMN_WIDTH, 0)
+		pad_cell.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(pad_cell)
+		var pad_button := Button.new()
+		pad_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		pad_button.toggle_mode = true
+		if Settings.PAD_BINDABLE_ACTIONS.has(action):
+			pad_button.pressed.connect(start_listening.bind(action, PAD_SLOT))
+		else:
+			pad_button.disabled = true
+		pad_cell.add_child(pad_button)
+		buttons.append(pad_button)
 		_binding_buttons[action] = buttons
 
 
@@ -767,10 +838,13 @@ func _refresh_bindings() -> void:
 		for slot in buttons.size():
 			var button: Button = buttons[slot]
 			var waiting := action == _listening_action and slot == _listening_slot
-			var text := Settings.binding_text(_settings.get_binding(action, slot))
-			button.text = LISTENING_TEXT if waiting else (text if text != "" else EMPTY_SLOT_TEXT)
+			var text := Settings.binding_text(_settings.get_binding(action, slot)) if slot < Settings.BINDING_SLOTS \
+					else Settings.pad_text(_settings.get_pad_binding(action))
+			if slot == PAD_SLOT and not Settings.PAD_BINDABLE_ACTIONS.has(action):
+				text = STICK_TEXT
+			button.text = (PAD_LISTENING_TEXT if slot == PAD_SLOT else LISTENING_TEXT) if waiting else (text if text != "" else EMPTY_SLOT_TEXT)
 			button.set_pressed_no_signal(waiting)
-			# The first key is a key cap, the second plain text.
+			# The first key is a key cap, the others plain text.
 			button.theme_type_variation = &"ListeningKeyButton" if waiting else (&"KeyCapButton" if slot == 0 else &"KeySlotButton")
 		(_action_labels[action] as Label).theme_type_variation = &"BrightLabel" if action == _listening_action else &"DimLabel"
 

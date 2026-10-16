@@ -26,6 +26,10 @@ extends RefCounted
 ## get_binding], [method set_binding], [method reset_bindings]); a change
 ## reports the key [code]&"bindings"[/code].
 ##
+## A gamepad button or trigger can be bound next to the keys ([method get_pad_binding],
+## [method set_pad_binding], D-211); movement and looking are the sticks and aren't bindable.
+## A pad binding reports the same key [code]&"bindings"[/code].
+##
 ## Settings are local to this computer and never game rules (they are not part
 ## of a match, so M9's host won't send them).
 ##
@@ -97,6 +101,27 @@ const BINDABLE_ACTIONS: Array[StringName] = [
 	&"slot_primary", &"slot_pistol", &"slot_knife", &"slot_grenade", &"last_weapon", &"drop_weapon", &"buy_menu",
 ]
 
+## The actions a gamepad button or trigger can be bound to (D-211): the bindable actions except
+## the four movement ones, which are the left stick. Looking is the right stick ([PlayerController]).
+const PAD_BINDABLE_ACTIONS: Array[StringName] = [
+	&"jump", &"crouch", &"walk", &"shoot", &"aim", &"reload", &"use", &"scoreboard", &"class_menu",
+	&"toggle_debug", &"toggle_console", &"slot_primary", &"slot_pistol", &"slot_knife", &"slot_grenade",
+	&"last_weapon", &"drop_weapon", &"buy_menu",
+]
+## Gamepad buttons nothing can be bound to: Start is the pause action.
+const PAD_RESERVED_BUTTONS: Array[int] = [JOY_BUTTON_START]
+## The names of the gamepad buttons, Xbox style (a PlayStation pad's Cross is A, Circle B, Square X, Triangle Y).
+const PAD_BUTTON_NAMES := {
+	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_BACK: "Back", JOY_BUTTON_GUIDE: "Guide", JOY_BUTTON_START: "Start",
+	JOY_BUTTON_LEFT_STICK: "L3", JOY_BUTTON_RIGHT_STICK: "R3",
+	JOY_BUTTON_LEFT_SHOULDER: "LB", JOY_BUTTON_RIGHT_SHOULDER: "RB",
+	JOY_BUTTON_DPAD_UP: "D-Up", JOY_BUTTON_DPAD_DOWN: "D-Down", JOY_BUTTON_DPAD_LEFT: "D-Left", JOY_BUTTON_DPAD_RIGHT: "D-Right",
+	JOY_BUTTON_MISC1: "Misc", JOY_BUTTON_TOUCHPAD: "Touchpad",
+}
+## How far a trigger must be pressed to count as a bound press (the action's own dead zone).
+const PAD_TRIGGER_THRESHOLD := 0.5
+
 ## Every setting: its section in the file, its default and its limits. The
 ## defaults are today's behaviour (D-016, D-048, D-021). A value outside
 ## [code]min[/code]..[code]max[/code] is clamped; [code]choices[/code] snaps to
@@ -115,6 +140,12 @@ const SCHEMA := {
 	&"palette_effect": {"section": "video", "default": true},
 	&"pixelate_hud": {"section": "video", "default": false},
 	&"ui_scale": {"section": "video", "default": 0, "choices": UI_SCALES},
+	# M15 (D-212): the gamepad's look: degrees per second at full tilt are PlayerController.PAD_DEGREES_PER_SECOND times
+	# this, the dead zone is the stick's flat middle, and the curve is the power the stick's reach is raised to (1 = linear).
+	&"pad_sensitivity": {"section": "game", "default": 1.0, "min": 0.1, "max": 4.0},
+	&"pad_deadzone": {"section": "game", "default": 0.15, "min": 0.0, "max": 0.6},
+	&"pad_curve": {"section": "game", "default": 1.5, "min": 1.0, "max": 3.0},
+	&"pad_invert_y": {"section": "game", "default": false},
 	# M15 (D-210): the colour-blind-safe team colours.
 	&"team_colors": {"section": "video", "default": "standard", "choices": Teams.SCHEME_NAMES},
 	&"master_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
@@ -183,12 +214,16 @@ var applies_to_engine: bool = false
 ## InputMap once, before anything changed it: action → [BINDING_SLOTS] entries,
 ## each an InputEvent or null.
 static var _default_bindings: Dictionary = {}
+## The same for the gamepad: action in [constant PAD_BINDABLE_ACTIONS] → an InputEvent or null.
+static var _default_pad_bindings: Dictionary = {}
 static var _instance: Settings
 
 ## Setting name → current value.
 var _values: Dictionary = {}
 ## Action → [BINDING_SLOTS] entries, each an InputEvent or null.
 var _bindings: Dictionary = {}
+## Action in [constant PAD_BINDABLE_ACTIONS] → the gamepad button or trigger bound to it, or null.
+var _pad_bindings: Dictionary = {}
 ## While above 0, changes are not saved one by one (set by reset and load).
 var _batch_depth: int = 0
 ## True when something changed that isn't saved yet.
@@ -202,6 +237,23 @@ var sensitivity: float:
 var invert_y: bool:
 	get: return _values[&"invert_y"]
 	set(value): set_value(&"invert_y", value)
+## Gamepad look speed: a multiplier of [constant PlayerController.PAD_DEGREES_PER_SECOND], 0.1 to 4 (D-212).
+var pad_sensitivity: float:
+	get: return _values[&"pad_sensitivity"]
+	set(value): set_value(&"pad_sensitivity", value)
+## The stick's dead zone, 0 to 0.6: a stick pushed less than this far does nothing (looking and moving).
+var pad_deadzone: float:
+	get: return _values[&"pad_deadzone"]
+	set(value): set_value(&"pad_deadzone", value)
+## The look stick's response curve, 1 to 3: the push (after the dead zone) is raised to this power, so
+## above 1 a small push turns slowly for fine aim while a full push still turns at full speed.
+var pad_curve: float:
+	get: return _values[&"pad_curve"]
+	set(value): set_value(&"pad_curve", value)
+## Flip vertical look on the right stick.
+var pad_invert_y: bool:
+	get: return _values[&"pad_invert_y"]
+	set(value): set_value(&"pad_invert_y", value)
 ## Field of view the way CS says it: degrees across a 4:3 screen, 90 by default
 ## (70 to 110). [method vertical_fov] turns it into the camera's value.
 var fov: float:
@@ -350,6 +402,8 @@ func _init() -> void:
 	_read_default_bindings()
 	for action in BINDABLE_ACTIONS:
 		_bindings[action] = (_default_bindings[action] as Array).duplicate()
+	for action in PAD_BINDABLE_ACTIONS:
+		_pad_bindings[action] = _default_pad_bindings[action]
 
 
 ## The shared instance: what the game's systems read and listen to.
@@ -535,14 +589,93 @@ func reset_binding(action: StringName) -> void:
 	_bindings_changed()
 
 
-## Puts every action's keys back to the project's defaults.
+## Puts every action's keys and gamepad buttons back to the project's defaults.
 func reset_bindings() -> void:
 	var different := false
 	for action in BINDABLE_ACTIONS:
 		different = different or not _same_slots(_bindings[action], _default_bindings[action])
 		_bindings[action] = (_default_bindings[action] as Array).duplicate()
+	for action in PAD_BINDABLE_ACTIONS:
+		different = different or _pad_to_text(_pad_bindings[action]) != _pad_to_text(_default_pad_bindings[action])
+		_pad_bindings[action] = _default_pad_bindings[action]
 	if different:
 		_bindings_changed()
+
+
+## The gamepad button or trigger bound to [param action], or null (also for actions that have none, such as movement). A copy.
+func get_pad_binding(action: StringName) -> InputEvent:
+	var event: InputEvent = _pad_bindings.get(action)
+	return event.duplicate() if event != null else null
+
+
+## Binds [param event] (a gamepad button, or a trigger pulled all the way) to [param action], replacing
+## what it had. False if the action has no pad binding or the event can't be bound ([method can_bind_pad]).
+## Doesn't take it from other actions: see [method bind_pad_exclusive].
+func set_pad_binding(action: StringName, event: InputEvent) -> bool:
+	if not _pad_bindings.has(action):
+		return false
+	var clean := _clean_pad_event(event)
+	if clean == null:
+		return false
+	if _pad_to_text(_pad_bindings[action]) != _pad_to_text(clean):
+		_pad_bindings[action] = clean
+		_bindings_changed()
+	return true
+
+
+## True if [param event] is something a gamepad binding can hold: a button (not Start, which is
+## pause) or a trigger. The sticks can't be bound.
+static func can_bind_pad(event: InputEvent) -> bool:
+	return _clean_pad_event(event) != null
+
+
+## Binds [param event] to [param action] on the gamepad and takes it from every other action that has it
+## (the later bind wins, like the keys' [method bind_exclusive]). Returns the actions that lost it.
+func bind_pad_exclusive(action: StringName, event: InputEvent) -> Array[StringName]:
+	var lost: Array[StringName] = []
+	if not _pad_bindings.has(action) or not can_bind_pad(event):
+		return lost
+	var wanted := _pad_to_text(_clean_pad_event(event))
+	_batch_depth += 1
+	for other in PAD_BINDABLE_ACTIONS:
+		if other != action and _pad_to_text(_pad_bindings[other]) == wanted:
+			clear_pad_binding(other)
+			lost.append(other)
+	set_pad_binding(action, event)
+	_batch_depth -= 1
+	_flush()
+	return lost
+
+
+## Leaves [param action] without a gamepad button.
+func clear_pad_binding(action: StringName) -> void:
+	if not _pad_bindings.has(action) or _pad_bindings[action] == null:
+		return
+	_pad_bindings[action] = null
+	_bindings_changed()
+
+
+## The action that has [param event] on the gamepad, other than [param except], or [code]&""[/code].
+func find_pad_action_using(event: InputEvent, except: StringName = &"") -> StringName:
+	var wanted := _pad_to_text(_clean_pad_event(event))
+	if wanted == "":
+		return &""
+	for action in PAD_BINDABLE_ACTIONS:
+		if action != except and _pad_to_text(_pad_bindings[action]) == wanted:
+			return action
+	return &""
+
+
+## The text of a gamepad binding for menus and prompts: "A", "RB", "D-Up", "RT". Empty for null.
+static func pad_text(event: InputEvent) -> String:
+	if event is InputEventJoypadButton:
+		var button := (event as InputEventJoypadButton).button_index
+		return PAD_BUTTON_NAMES.get(button, "Button %d" % button)
+	if event is InputEventJoypadMotion:
+		match (event as InputEventJoypadMotion).axis:
+			JOY_AXIS_TRIGGER_LEFT: return "LT"
+			JOY_AXIS_TRIGGER_RIGHT: return "RT"
+	return ""
 
 
 ## Reads the settings file at [param path] and applies everything, and from now
@@ -572,6 +705,7 @@ func load_from_disk(path: String = SETTINGS_PATH) -> Error:
 		for key in MATCH_SETUP_V2_KEYS:
 			set_value(key, SCHEMA[key]["default"])
 	_load_bindings(file)
+	_load_pad_bindings(file)
 	_batch_depth -= 1
 	# What was just read is already in the file; clamped values wait for the next change.
 	_dirty = false
@@ -605,6 +739,8 @@ func save_to_disk(path: String = "") -> Error:
 		for event: InputEvent in _bindings[action]:
 			texts.append(_event_to_text(event))
 		file.set_value("controls", action, texts)
+	for action in PAD_BINDABLE_ACTIONS:
+		file.set_value("pad", action, _pad_to_text(_pad_bindings[action]))
 	return file.save(target)
 
 
@@ -677,6 +813,9 @@ func _apply_bindings() -> void:
 		for event: InputEvent in _bindings[action]:
 			if event != null:
 				InputMap.action_add_event(action, event.duplicate())
+		var pad_event: InputEvent = _pad_bindings.get(action)
+		if pad_event != null:
+			InputMap.action_add_event(action, pad_event.duplicate())
 
 
 # --- Saving and loading ---
@@ -717,6 +856,28 @@ func _load_bindings(file: ConfigFile) -> void:
 			slots = (_default_bindings[action] as Array).duplicate()
 		if not _same_slots(slots, _bindings[action]):
 			_bindings[action] = slots
+			changed_any = true
+	if changed_any:
+		_bindings_changed()
+
+
+## Reads the [pad] section: an action without an entry keeps its default, an empty entry unbinds it,
+## and an entry that isn't a bindable button or trigger keeps the default.
+func _load_pad_bindings(file: ConfigFile) -> void:
+	var changed_any := false
+	for action in PAD_BINDABLE_ACTIONS:
+		var event: InputEvent = _default_pad_bindings[action]
+		if file.has_section_key("pad", action):
+			var stored: Variant = file.get_value("pad", action)
+			if stored is String:
+				if stored == "":
+					event = null
+				else:
+					var read := _pad_from_text(stored)
+					if read != null:
+						event = read
+		if _pad_to_text(event) != _pad_to_text(_pad_bindings[action]):
+			_pad_bindings[action] = event
 			changed_any = true
 	if changed_any:
 		_bindings_changed()
@@ -826,6 +987,14 @@ static func _read_default_bindings() -> void:
 		while slots.size() < BINDING_SLOTS:
 			slots.append(null)
 		_default_bindings[action] = slots
+	for action in PAD_BINDABLE_ACTIONS:
+		var pad_event: InputEvent = null
+		if InputMap.has_action(action):
+			for event in InputMap.action_get_events(action):
+				var clean := _clean_pad_event(event)
+				if clean != null and pad_event == null:
+					pad_event = clean
+		_default_pad_bindings[action] = pad_event
 
 
 ## A clean copy of a key (by physical position) or mouse button event, with
@@ -848,6 +1017,55 @@ static func _clean_event(event: InputEvent) -> InputEvent:
 		clean.device = -1
 		clean.button_index = button
 		return clean
+	return null
+
+
+## A clean copy of a gamepad button (not a reserved one) or a trigger pulled all the way, with device -1
+## (all pads); null for anything else, the sticks included.
+static func _clean_pad_event(event: InputEvent) -> InputEvent:
+	if event is InputEventJoypadButton:
+		var button := (event as InputEventJoypadButton).button_index
+		if button < 0 or button >= JOY_BUTTON_SDL_MAX or PAD_RESERVED_BUTTONS.has(button):
+			return null
+		var clean := InputEventJoypadButton.new()
+		clean.device = -1
+		clean.button_index = button
+		return clean
+	if event is InputEventJoypadMotion:
+		var motion := event as InputEventJoypadMotion
+		if motion.axis != JOY_AXIS_TRIGGER_LEFT and motion.axis != JOY_AXIS_TRIGGER_RIGHT:
+			return null
+		var clean := InputEventJoypadMotion.new()
+		clean.device = -1
+		clean.axis = motion.axis
+		clean.axis_value = 1.0
+		return clean
+	return null
+
+
+## "pad:2" (a button) or "trigger:5" (an axis) for a clean pad event, "" for null.
+static func _pad_to_text(event: InputEvent) -> String:
+	if event is InputEventJoypadButton:
+		return "pad:%d" % (event as InputEventJoypadButton).button_index
+	if event is InputEventJoypadMotion:
+		return "trigger:%d" % (event as InputEventJoypadMotion).axis
+	return ""
+
+
+## The event for text written by [method _pad_to_text], or null if it isn't a bindable one.
+static func _pad_from_text(text: String) -> InputEvent:
+	var parts := text.split(":")
+	if parts.size() != 2 or not parts[1].is_valid_int():
+		return null
+	var number := parts[1].to_int()
+	if parts[0] == "pad":
+		var button := InputEventJoypadButton.new()
+		button.button_index = number as JoyButton
+		return _clean_pad_event(button)
+	if parts[0] == "trigger":
+		var motion := InputEventJoypadMotion.new()
+		motion.axis = number as JoyAxis
+		return _clean_pad_event(motion)
 	return null
 
 

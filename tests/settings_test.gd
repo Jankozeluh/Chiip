@@ -35,6 +35,7 @@ const DEFAULTS := {
 	&"sensitivity": 1.0, &"invert_y": false, &"fov": 90.0,
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
 	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0, &"team_colors": "standard",
+	&"pad_sensitivity": 1.0, &"pad_deadzone": 0.15, &"pad_curve": 1.5, &"pad_invert_y": false,
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
 	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
@@ -109,7 +110,7 @@ func _test_defaults() -> void:
 	var problems: Array[String] = []
 	for action: StringName in Settings.BINDABLE_ACTIONS:
 		var texts := _binding_texts(_settings, action)
-		var live := InputMap.action_get_events(action)
+		var live := _bound_events(action)
 		var live_texts: Array[String] = []
 		for event in live:
 			live_texts.append(_event_text(event))
@@ -332,7 +333,7 @@ func _test_engine_settings() -> void:
 func _test_bindings() -> void:
 	_forget_changes()
 	var rebound := _settings.set_binding(&"reload", _key(KEY_T))
-	var events := InputMap.action_get_events(&"reload")
+	var events := _bound_events(&"reload")
 	var event := events[0] as InputEventKey if not events.is_empty() else null
 	_check("set_binding() puts the new key into the InputMap (physical key T, all devices) and emits `changed`(bindings)",
 			rebound and events.size() == 1 and event != null and event.physical_keycode == KEY_T and event.device == -1 and _changes == [&"bindings"],
@@ -353,14 +354,14 @@ func _test_bindings() -> void:
 		await _wait_ticks(2)
 	_check("A real T press triggers reload now, and the old R doesn't", states == [true, false], "T held: %s, R held: %s" % [states[0], states[1]])
 	_settings.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
-	var jump_events := InputMap.action_get_events(&"jump")
+	var jump_events := _bound_events(&"jump")
 	_check("A second slot binds a second key: jump now answers to Space and mouse button 4, not the wheel",
 			jump_events.size() == 2 and _event_text(jump_events[0]) == _k(KEY_SPACE) and _event_text(jump_events[1]) == _m(MOUSE_BUTTON_XBUTTON1)
 					and _binding_texts(_settings, &"jump") == [_k(KEY_SPACE), _m(MOUSE_BUTTON_XBUTTON1)],
 			"input map %s, settings %s" % [_event_texts(jump_events), _binding_texts(_settings, &"jump")])
 	_settings.clear_binding(&"crouch")
-	_check("clear_binding() leaves an action without keys", InputMap.action_get_events(&"crouch").is_empty() and _settings.get_binding(&"crouch") == null,
-			"%d event(s)" % InputMap.action_get_events(&"crouch").size())
+	_check("clear_binding() leaves an action without keys", _bound_events(&"crouch").is_empty() and _settings.get_binding(&"crouch") == null,
+			"%d event(s)" % _bound_events(&"crouch").size())
 	var clash := _settings.find_action_using(_key(KEY_W))
 	_check("find_action_using() names the action a key is already bound to (W: move_forward), not counting the one asked about",
 			clash == &"move_forward" and _settings.find_action_using(_key(KEY_W), &"move_forward") == &"" and _settings.find_action_using(_key(KEY_F12)) == &"",
@@ -376,14 +377,14 @@ func _test_bindings() -> void:
 					Settings.binding_text(_mouse(MOUSE_BUTTON_LEFT)), Settings.binding_text(_mouse(MOUSE_BUTTON_WHEEL_DOWN))])
 	_settings.set_binding(&"reload", _key(KEY_T))
 	_settings.reset_binding(&"reload")
-	var reload_events := InputMap.action_get_events(&"reload")
+	var reload_events := _bound_events(&"reload")
 	_check("reset_binding() restores one action (reload is R again, jump stays rebound)",
 			reload_events.size() == 1 and _event_text(reload_events[0]) == _k(KEY_R) and _binding_texts(_settings, &"jump")[1] == _m(MOUSE_BUTTON_XBUTTON1),
 			"reload %s" % [_event_texts(reload_events)])
 	_settings.reset_bindings()
 	var back := true
 	for action: StringName in Settings.BINDABLE_ACTIONS:
-		back = back and _event_texts(InputMap.action_get_events(action)) == _non_empty(_default_bindings()[action])
+		back = back and _event_texts(_bound_events(action)) == _non_empty(_default_bindings()[action])
 	_check("reset_bindings() puts every action back to the project's keys", back, "all %d actions checked" % Settings.BINDABLE_ACTIONS.size())
 
 
@@ -415,6 +416,10 @@ func _test_saving() -> void:
 	writer.pixelate_hud = true
 	writer.ui_scale = 75
 	writer.team_colors = "colorblind"
+	writer.pad_sensitivity = 1.8
+	writer.pad_deadzone = 0.25
+	writer.pad_curve = 2.0
+	writer.pad_invert_y = true
 	writer.master_volume = 0.4
 	writer.effects_volume = 0.7
 	writer.interface_volume = 0.1
@@ -444,8 +449,8 @@ func _test_saving() -> void:
 	writer.set_binding(&"shoot", _key(KEY_F), 1)
 	saved = _read_cfg(TEMP_PATH)
 	var sections := saved.get_sections() if saved != null else PackedStringArray()
-	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online and controls (the crosshair's keys without their prefix)",
-			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls"]) and saved.has_section_key("crosshair", "gap")
+	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online, controls and pad (the crosshair's keys without their prefix)",
+			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls", "pad"]) and saved.has_section_key("crosshair", "gap")
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360 and saved.get_value("video", "ui_scale", -1) == 75
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
@@ -481,7 +486,7 @@ func _test_saving() -> void:
 					_binding_texts(reader, &"jump"), _binding_texts(reader, &"shoot")])
 	_check("A separate instance never touches the engine: the Master bus, the frame limit and reload's key are as before",
 			is_zero_approx(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(Settings.BUS_MASTER))) and Engine.max_fps == 0
-					and _event_texts(InputMap.action_get_events(&"reload")) == [_k(KEY_R)],
+					and _event_texts(_bound_events(&"reload")) == [_k(KEY_R)],
 			"max fps %d" % Engine.max_fps)
 	reader.sensitivity = 3.0
 	var reloaded := Settings.new()
@@ -581,7 +586,7 @@ func _test_reset() -> void:
 	var master := AudioServer.get_bus_index(Settings.BUS_MASTER)
 	_check("reset_to_defaults() restores every value, the frame limit, the bus volume and the keys",
 			back and Engine.max_fps == 0 and is_zero_approx(AudioServer.get_bus_volume_db(master))
-					and _event_texts(InputMap.action_get_events(&"reload")) == [_k(KEY_R)],
+					and _event_texts(_bound_events(&"reload")) == [_k(KEY_R)],
 			"all defaults %s, max fps %d, master %.2f dB" % [back, Engine.max_fps, AudioServer.get_bus_volume_db(master)])
 	_check("... and announces exactly the five things that were different, once each",
 			_sorted(_changes) == _sorted([&"bindings", &"crosshair_dot", &"fps_cap", &"master_volume", &"sensitivity"]), "signals %s" % [_sorted(_changes)])
@@ -774,7 +779,9 @@ func _event_text(event: InputEvent) -> String:
 func _event_texts(events: Array) -> Array[String]:
 	var texts: Array[String] = []
 	for event: InputEvent in events:
-		texts.append(_event_text(event))
+		# The gamepad's buttons (D-211) have their own bindings and tests.
+		if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+			texts.append(_event_text(event))
 	return texts
 
 
@@ -842,3 +849,12 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	print("%s  %s: %s" % ["PASS" if passed else "FAIL", check_name, detail])
 	if not passed:
 		_failures += 1
+
+
+## The key and mouse events of an action: its gamepad events (D-211) have their own checks (access_test).
+func _bound_events(action: StringName) -> Array[InputEvent]:
+	var events: Array[InputEvent] = []
+	for event in InputMap.action_get_events(action):
+		if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+			events.append(event)
+	return events

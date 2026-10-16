@@ -50,7 +50,7 @@ The main menu offers **Play**, **Practice**, **Settings**, **Quit**, and **Host*
 | Action | Key |
 |---|---|
 | Move | W A S D |
-| Look | Mouse |
+| Look | Mouse (gamepad: right stick) |
 | Jump | Space or mouse wheel down |
 | Crouch (crouch in the air to crouch-jump) | Ctrl |
 | Walk (silent) | Shift |
@@ -70,6 +70,8 @@ The main menu offers **Play**, **Practice**, **Settings**, **Quit**, and **Host*
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit; hidden at start) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
+
+**Gamepad** (any controller your computer sees; plug it in and press a button, then prompts show its buttons): left stick moves, right stick looks, **RT** shoots, **LT** aims, **A** jumps, **B** crouches, **X** reloads, **Y** last weapon, **LB** uses (plant, defuse, pick up), **RB** buy menu, **R3** class menu, **L3** walks (silent), **Back** the scoreboard, **Start** pauses, the **D-pad** picks weapon 1 to 4 (up, right, down, left). In menus the D-pad or left stick moves, **A** presses and **B** goes back. Settings → Game has the pad's sensitivity, dead zone, look curve and Y inversion; Settings → Controls has a **Pad** column to rebind every button.
 
 **Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 

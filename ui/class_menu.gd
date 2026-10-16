@@ -323,6 +323,8 @@ func _update_hint() -> void:
 	for i in _classes.size():
 		keys.append(str(i + 1))
 	var hint := "Click or press %s · Esc keeps your class" % " / ".join(keys)
+	if LastInput.gamepad:
+		hint = "D-pad and A pick a class · B keeps your class"
 	if is_instance_valid(_rules) and _rules is RespawnMatch:
 		hint += " · the new class comes with your next respawn"
 	_hint.text = hint

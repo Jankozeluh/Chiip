@@ -80,6 +80,8 @@ var _lobby_opener: Button
 
 func _ready() -> void:
 	var settings := Settings.get_instance()
+	# Gamepad menus and prompts (D-211, D-213): it only watches the input.
+	add_child(PadInput.new())
 	# -- --no-settings: scripted runs (the two-process online check) leave your settings file alone.
 	if load_settings and not settings.is_loaded() and not OS.get_cmdline_user_args().has("--no-settings"):
 		var result := settings.load_from_disk()

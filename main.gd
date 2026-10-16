@@ -104,6 +104,8 @@ func _ready() -> void:
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
 	settings.changed.connect(_on_setting_changed)
+	# Gamepad menus and prompts (D-211, D-213): it only watches the input.
+	add_child(PadInput.new())
 	_console.main = self
 	# Menu buttons tick and click (D-084).
 	UiSounds.attach(_match_end_screen)

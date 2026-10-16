@@ -1869,13 +1869,13 @@ func _test_settings_menu_look() -> void:
 	var header_muted := true
 	for index in 3:
 		header_muted = header_muted and (header.get_child(index) as Label).theme_type_variation == &"MuteLabel"
-	_check("The Controls table: a header row ACTION / KEY 1 / KEY 2 in MUTE (32 high, 240 px key columns), rows 34 high with a 2 px line on top in a table-row panel, the action in DIM, key 1 as a key cap, key 2 as plain text, an empty slot as '-'",
+	_check("The Controls table: a header row ACTION / KEY 1 / KEY 2 in MUTE (32 high, 220 px key columns), rows 34 high with a 2 px line on top in a table-row panel, the action in DIM, key 1 as a key cap, key 2 as plain text, an empty slot as '-'",
 			(header.get_child(0) as Label).text == "Action" and (header.get_child(1) as Label).text == "Key 1" and (header.get_child(2) as Label).text == "Key 2"
-					and header_muted and header.custom_minimum_size.y == 32.0 and (header.get_child(1) as Control).custom_minimum_size.x == 240.0
+					and header_muted and header.custom_minimum_size.y == 32.0 and (header.get_child(1) as Control).custom_minimum_size.x == 220.0
 					and jump_row.theme_type_variation == &"TableRowPanel" and jump_row.custom_minimum_size.y == 34.0
 					and jump_label.theme_type_variation == &"DimLabel" and cap.theme_type_variation == &"KeyCapButton"
 					and plain.theme_type_variation == &"KeySlotButton" and plain.text == "Wheel Down" and empty.text == "-"
-					and cap.get_parent().custom_minimum_size.x == 240.0 and plain.get_parent().custom_minimum_size.x == 240.0,
+					and cap.get_parent().custom_minimum_size.x == 220.0 and plain.get_parent().custom_minimum_size.x == 220.0,
 			"header %s, row %s, caps '%s' / '%s', empty '%s'" % [(header.get_child(1) as Label).text, jump_row.theme_type_variation, cap.theme_type_variation, plain.theme_type_variation, empty.text])
 	var reset := menu.get_reset_button()
 	var back := menu.get_back_button()
@@ -2050,10 +2050,11 @@ func _test_rebinding() -> void:
 			"listening %s, text '%s', role '%s', capturing %s" % [menu.is_listening(), slot.text, slot.theme_type_variation, MenuState.capturing_input])
 	_send(_key_event(KEY_T))
 	_send(_key_event(KEY_T, false))
-	var reload_events := InputMap.action_get_events(&"reload")
+	var reload_events := _bound_events(&"reload")
 	var reload_keys: Array[Key] = []
 	for event in reload_events:
-		reload_keys.append((event as InputEventKey).physical_keycode)
+		if event is InputEventKey:
+			reload_keys.append((event as InputEventKey).physical_keycode)
 	_check("The next key press is bound: reload now answers to R and T (in the settings and in the InputMap, for all devices), the slot shows T and the menu stops waiting",
 			not menu.is_listening() and not MenuState.capturing_input and slot.text == "T" and not slot.button_pressed
 					and slot.theme_type_variation == &"KeySlotButton" and menu.get_action_label(&"reload").theme_type_variation == &"DimLabel"
@@ -2086,7 +2087,7 @@ func _test_rebinding() -> void:
 	scoreboard_slot.pressed.emit()
 	_send(_key_event(KEY_W))
 	_send(_key_event(KEY_W, false))
-	var forward_events := InputMap.action_get_events(&"move_forward")
+	var forward_events := _bound_events(&"move_forward")
 	_check("A key belongs to one action: binding W to the scoreboard takes it from 'Move forward' (its slot shows —, its InputMap entry is gone) and a line says so",
 			settings.get_binding(&"scoreboard", 1) != null and settings.get_binding(&"move_forward", 0) == null
 					and forward.text == SettingsMenu.EMPTY_SLOT_TEXT and forward_events.is_empty() and scoreboard_slot.text == "W"
@@ -2099,7 +2100,7 @@ func _test_rebinding() -> void:
 	_send(_key_event(KEY_SPACE, false))
 	_check("Binding Space to jump's second slot moves it there: the first slot is empty again and nothing else is said to have lost it",
 			jump_secondary.text == "Space" and menu.get_binding_button(&"jump", 0).text == SettingsMenu.EMPTY_SLOT_TEXT
-					and InputMap.action_get_events(&"jump").size() == 1 and menu.get_notice() == "Jump: Space.",
+					and _bound_events(&"jump").size() == 1 and menu.get_notice() == "Jump: Space.",
 			"slots '%s' / '%s', notice '%s'" % [menu.get_binding_button(&"jump", 0).text, jump_secondary.text, menu.get_notice()])
 	# Backspace clears a slot.
 	jump_secondary.pressed.emit()
@@ -2107,8 +2108,8 @@ func _test_rebinding() -> void:
 	_send(_key_event(KEY_BACKSPACE, false))
 	_check("Backspace clears the waiting slot (jump has no keys now) instead of binding Backspace",
 			settings.get_binding(&"jump", 1) == null and jump_secondary.text == SettingsMenu.EMPTY_SLOT_TEXT
-					and InputMap.action_get_events(&"jump").is_empty() and not menu.is_listening(),
-			"slot '%s', %d event(s)" % [jump_secondary.text, InputMap.action_get_events(&"jump").size()])
+					and _bound_events(&"jump").is_empty() and not menu.is_listening(),
+			"slot '%s', %d event(s)" % [jump_secondary.text, _bound_events(&"jump").size()])
 	# While waiting, the console key is a key like any other.
 	var console := CONSOLE_SCENE.instantiate() as DevConsole
 	add_child(console)
@@ -2132,10 +2133,10 @@ func _test_rebinding() -> void:
 			texts.append(Settings.binding_text(settings.get_binding(action, index)))
 		back = back and menu.get_binding_button(action, 0).text == (texts[0] if texts[0] != "" else SettingsMenu.EMPTY_SLOT_TEXT)
 	_check("'Reset tab to defaults' on the Controls tab puts every key back (reload is R again, W moves forward, jump has Space and Wheel Down, ` opens the console)",
-			back and InputMap.action_get_events(&"reload").size() == 1 and menu.get_binding_button(&"move_forward", 0).text == "W"
+			back and _bound_events(&"reload").size() == 1 and menu.get_binding_button(&"move_forward", 0).text == "W"
 					and menu.get_binding_button(&"jump", 1).text == "Wheel Down" and menu.get_binding_button(&"toggle_console", 0).text == "`"
 					and menu.get_notice() == "Keys are back to their defaults.",
-			"slots match the settings: %s, reload %d event(s), notice '%s'" % [back, InputMap.action_get_events(&"reload").size(), menu.get_notice()])
+			"slots match the settings: %s, reload %d event(s), notice '%s'" % [back, _bound_events(&"reload").size(), menu.get_notice()])
 	# A change from outside shows in the slots.
 	settings.set_binding(&"reload", _key_event(KEY_G), 1)
 	var outside := menu.get_binding_button(&"reload", 1).text == "G"
@@ -2956,8 +2957,10 @@ func _test_scene_flow() -> void:
 ## `toggle_mouse` is gone.
 func _test_pause_action() -> void:
 	var events := InputMap.action_get_events(&"pause")
-	var on_esc := events.size() == 1 and events[0] is InputEventKey and (events[0] as InputEventKey).physical_keycode == KEY_ESCAPE
-	_check("The `pause` action is on Esc alone; Esc is not rebindable (not one of Settings.BINDABLE_ACTIONS); the old `toggle_mouse` action no longer exists",
+	# Esc, and since M15 (D-211) the gamepad's Start.
+	var on_esc := events.size() == 2 and events[0] is InputEventKey and (events[0] as InputEventKey).physical_keycode == KEY_ESCAPE \
+			and events[1] is InputEventJoypadButton and (events[1] as InputEventJoypadButton).button_index == JOY_BUTTON_START
+	_check("The `pause` action is on Esc and the pad's Start only; Esc is not rebindable (not one of Settings.BINDABLE_ACTIONS); the old `toggle_mouse` action no longer exists",
 			on_esc and InputMap.has_action(&"pause") and not InputMap.has_action(&"toggle_mouse") and not Settings.BINDABLE_ACTIONS.has(&"pause")
 					and not Settings.get_instance().set_binding(&"pause", _key_event(KEY_T)),
 			"%d event(s), on Esc %s, toggle_mouse exists %s" % [events.size(), on_esc, InputMap.has_action(&"toggle_mouse")])
@@ -5072,3 +5075,12 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	print("%s  %s: %s" % ["PASS" if passed else "FAIL", check_name, detail])
 	if not passed:
 		_failures += 1
+
+
+## The key and mouse events of an action: its gamepad events (D-211) have their own checks (access_test).
+func _bound_events(action: StringName) -> Array[InputEvent]:
+	var events: Array[InputEvent] = []
+	for event in InputMap.action_get_events(action):
+		if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+			events.append(event)
+	return events

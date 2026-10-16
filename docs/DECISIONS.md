@@ -2024,6 +2024,34 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** One extra preset per deficiency (more choices, no better for the player); swapping only the HUD (the models are where it matters in a fight); rebuilding the theme from `make_ui_theme.gd` at runtime (the tool is not in exported builds); a shape cue instead of a lightness gap (more work, and a colour that is hard to tell still tires the eyes).
 
+## D-211 — Gamepad: what is bindable, and how menus work with it (2026-10-16)
+
+**Decision:** A gamepad plays the whole game, and the keyboard and mouse keep working beside it (any device, at any time).
+- **Sticks are fixed, buttons are bindable.** The left stick moves (action vector `pad_move_*`), the right stick looks (`pad_look_*`); they are not rebindable and the Controls tab shows "L-Stick" for the movement rows. Every other action has a **Pad** column next to Key 1 and Key 2, with one button or trigger per action: jump A, crouch B (held), walk L3, fire RT, aim LT, reload X, use LB, last weapon Y, scoreboard Back, buy menu RB, class menu R3, weapon 1 to 4 on the D-pad (up, right, down, left), pause Start. The console, debug overlay and drop have no default.
+- **Clean events, like keys:** a binding is a `InputEventJoypadButton` or a trigger (`InputEventJoypadMotion` on axis 4 or 5 at 1.0), device -1 (all pads). Start (it is `pause`) and the sticks can't be bound. It is a single slot per action, stored in a `[pad]` section (`pad:2`, `trigger:5`); a damaged entry falls back to the default and an empty one unbinds. A button belongs to one action (the later bind wins), as with keys (D-059). `Settings._apply_bindings()` writes the pad event into the `InputMap` next to the keys, so the game keeps reading actions and never a device.
+- **Menus:** the D-pad and left stick are Godot's `ui_*` navigation already; this engine build gives `ui_accept` and `ui_cancel` no pad button, so `PadInput` adds A and B once. Chiip's menus close on the `pause` action (Esc), which is Start, and B is crouch in the game: while a menu is open `PadInput` turns a B press into a `pause` press, so B backs out of every menu like Esc without any menu knowing about pads. A pad press in a menu with no focused control gives the first button the focus. The player ignores pad input while a menu is open, like keys.
+- **Ground movement is all or nothing, as in CS:** the stick gives a direction (past its dead zone); the walk button (L3) is the only way to go slow. A half-pushed stick is not half speed.
+
+**Why:** the user's roadmap (D-177) asked for every action, rebinding and menu navigation. Keeping the game on actions (not devices) means no code outside input knows a pad exists; turning B into Esc in one node avoids changing nine menus.
+
+**Alternatives:** Adding a third key slot (the table is two keys wide already, and a pad button is a different kind of thing); letting sticks be rebound (rarely wanted, and half the table would need axis handling); changing every menu to also accept `ui_cancel` (nine places, and `pause` is the shared "back").
+
+## D-212 — Gamepad look: dead zone, sensitivity and a response curve (2026-10-16)
+
+**Decision:** The right stick turns the view at a **rate**, not by distance: a full push turns `220° × pad sensitivity` per second (sensitivity 1.0 is a quarter turn in about 0.4 s; the setting is 0.1 to 4). The push goes through `PlayerController.pad_response()`: a circular **dead zone** is cut out (default 15 %, 0 to 60 %; the left stick uses the same one), the rest is stretched back to 0..1, and the length is raised to the **curve** power (default 1.5, 1 to 3): a small push turns slowly for fine aim while a full push is still full speed. Y can be inverted for the pad on its own. Through a scope the turn is scaled down by the same ratio as the mouse's (CS's `zoom_sensitivity_ratio` 1.0). All four are Settings (Game tab) and apply live.
+
+**Why:** a stick's range is a speed, and an exponent curve is the usual, easy-to-explain response; the dead zone is the setting that fixes a worn stick. The numbers were picked to feel like a console shooter's defaults, and are settings because that is a personal thing; they need your hands to tune (an open check).
+
+**Alternatives:** Acceleration while a stick is held (CoD style: harder to explain and test); aim assist (a bot game for one person doesn't need it, and it would change what a hit means); a separate vertical speed (one more slider; the pad invert covers the common ask).
+
+## D-213 — Prompts follow the device used last (2026-10-16)
+
+**Decision:** `LastInput` (a static class) remembers whether the last real input was a gamepad (a button, or a stick or trigger pushed past 0.5, so a resting stick's drift doesn't count) or the keyboard and mouse (a key, a mouse button, or a mouse move over 2 px). `PadInput` feeds it. `LastInput.prompt_for(action)` answers with the pad button ("LB") or the key ("E"). The bomb prompt's key cap and the class menu's hint use it; the settings menu always shows both, in columns. A new prompt asks for its text when it is shown, never stores it.
+
+**Why:** a prompt that says "E" to someone holding a pad is a bug the user would hit in their first minute. A static class (like `MenuState`) keeps the rule in one place and testable.
+
+**Alternatives:** Reading `Input.get_connected_joypads()` (a pad plugged in is not a pad in use: the user plays with the mouse and has a pad connected); a signal from an autoload (autoloads don't exist in tool scripts, D-066).
+
 ## Open questions
 
 | Question | Decide in |

@@ -777,3 +777,14 @@
 
 **Time in a test that runs at a fixed frame rate** (`Time.get_ticks_msec()` against `SceneTreeTimer`)
 - `--fixed-fps 128` makes every frame exactly 1/128 s of *game* time however fast it really runs, so `create_timer(1.5)` fires after 192 frames in a fraction of a second of wall-clock time. `Time.get_ticks_msec()` is the wall clock: a "Copied" label that reset itself by comparing ticks never reset in the test. The Copy button counts presses instead. (This is also why CLAUDE.md says to count time in deltas.)
+
+## M15: accessibility and polish
+
+**Gamepads in Godot** (D-211, D-212; Unity's old Input Manager axes, or the new Input System's actions)
+- Godot's `InputMap` actions can hold keys, mouse buttons, **joypad buttons** (`InputEventJoypadButton`) and **joypad axes** (`InputEventJoypadMotion`, one event per direction: axis 1 with value -1 is "stick up"). Code that reads actions (`Input.is_action_pressed("jump")`) doesn't care which device pressed. That's the same idea as the new Input System's actions; the difference is that bindings live in `project.godot`, not in an asset.
+- `Input.get_vector(left, right, up, down, deadzone)` turns four actions into one stick vector (what Unity's `Input.GetAxis` pair does), with a circular dead zone. Chiip passes 0 and cuts its own dead zone and response curve in `PlayerController.pad_response()`, because those are settings.
+- A stick is read every frame (a **rate**: degrees per second times the push), while the mouse arrives as events (a **distance** per count). Multiply by `delta` in `_process`.
+- Menus: Godot's `Control` focus does the navigation (`ui_up`/`ui_down`... from the D-pad and left stick, `ui_accept` presses). Nothing is focused until code calls `grab_focus()`.
+- `Input.parse_input_event()` queues an event; it reaches the action states at the next frame, or at once after `Input.flush_buffered_events()` (what a test does).
+
+**`WeakRef`** (D-210): a reference that doesn't keep an object alive. `UiTheme` keeps a list of the theme copies it handed out as weak references, so it can recolour the ones still in use without keeping dead ones.

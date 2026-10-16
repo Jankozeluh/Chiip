@@ -9,7 +9,9 @@ Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 s
 **Done**
 - **Colour-blind-safe team colours** (D-210): Settings → Video → Team colours. `Teams.SCHEMES` holds six colours per scheme; the shared `Settings` applies one to the characters (`Teams.set_color_scheme`) and recolours the UI theme in place (`UiTheme.apply_team_scheme`); the kill feed, round HUD, HUD, compass and scoreboard ask `Teams`. The new `access` suite simulates protanopia, deuteranopia and tritanopia and checks the colour distance and the lightness gap (the standard blue and red are equally light, which is why the option exists).
 
-**Next:** gamepad support, then wallbangs, then smarter team bots.
+- **Gamepad** (D-211 to D-213): left stick moves, right stick looks (rate-based, dead zone, sensitivity, look curve, Y inversion in Settings → Game), every action on a button or trigger, a **Pad** column in Settings → Controls (one button per action, saved in a `[pad]` section), menus by D-pad and A, B backs out like Esc (`PadInput`), and prompts that follow the device used last (`LastInput`). Defaults are a console shooter's. The `access` suite has the stick maths, the default and rebound bindings, injected pad events, a real player's look and move, and the menu rules. **Needs your hands:** the dead zone, curve and speed are by-feel numbers (an open check).
+
+**Next:** wallbangs, then smarter team bots.
 
 ## 2026-10-16 — M12 share
 

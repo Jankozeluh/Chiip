@@ -328,7 +328,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Action | Key |
 |---|---|
 | Move | W A S D |
-| Look | Mouse |
+| Look | Mouse (gamepad: right stick) |
 | Shoot / scope (Heron: two zoom steps), knife: slash / stab | Left mouse / right mouse |
 | Next teammate (while dead in a match) | Left mouse |
 | Jump | Space or mouse wheel down |
@@ -346,6 +346,8 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Capture the mouse again (after alt-tab, with no menu open) | Click in the window |
 | Settings menu | The main menu's Settings button, the pause menu's Settings button, or the console command `settings` in the game |
 | Debug overlay (hidden at start, D-133) | F3 |
+
+**Gamepad (M15, D-211):** left stick moves, right stick looks (rate-based, with a dead zone and a look curve, D-212); RT shoot, LT aim, A jump, B crouch, X reload, Y last weapon, LB use, RB buy menu, R3 class menu, L3 walk, Back scoreboard, Start pause, D-pad weapons 1 to 4. Every button except Start and the sticks can be rebound in Settings → Controls → Pad (one button per action, and a button belongs to one action). In menus B backs out like Esc; prompts show the buttons of the device used last (D-213).
 
 Keys are bound by physical position, so they stay in the same place on any keyboard layout (e.g. Czech QWERTZ). These are the defaults: every action except Esc can be rebound (each with a second key or button) in the settings menu, see section 7; a key belongs to one action, so binding it takes it away from the one that had it, as in CS. Open question: macOS may treat Ctrl + click as a right click, which would clash with crouch + shoot. This is checked in M1 (see [DECISIONS.md](DECISIONS.md)).
 
@@ -367,7 +369,7 @@ Settings are saved in a file (`settings.cfg` in the game's user data folder, D-0
 | Video | **UI scale** (D-181): how big the menus and the HUD are, as a share of the biggest size that fits the window. Auto keeps the pixel font even (steps of half: 1×, 1.5×, 2× ...); 100 % fills the window exactly; 75 % and 50 % are smaller. Applies at once | Auto | Auto, 50, 75, 100 % |
 | Audio | Master, Effects (footsteps and shots) and Interface (menus) volume, each on its own audio bus | 1.0 each | 0 – 1 |
 | Crosshair | Color (swatches or a hex code) and opacity, size (line length), gap, thickness, outline, center dot and dynamic, like CS's crosshair settings; the menu shows a live preview on a dark and a light background (the sizes are in pixels at 720p and scale with the window) | green `#36D07A` (the mockup's, D-137), 7 px, gap 4, thickness 2, outline on, no dot, static (D-021) | size 1 – 30, gap 0 – 20, thickness 1 – 8 |
-| Controls | Keys and mouse buttons of move, jump, crouch, walk, shoot, aim, reload, scoreboard, debug overlay and console, each with a primary and a secondary binding; Esc stays fixed. A key is bound by physical position (D-012). In the menu you click a slot and press the new key or mouse button (Esc cancels, Backspace clears the slot). **A key belongs to one action:** binding it takes it from whatever had it, and the menu says which action lost it (D-059) | section 6 | |
+| Controls | Keys and mouse buttons of move, jump, crouch, walk, shoot, aim, reload, scoreboard, debug overlay and console, each with a primary and a secondary binding; Esc stays fixed. A key is bound by physical position (D-012). The **Pad** column binds a gamepad button or trigger to each action (D-211); the Game tab also has the pad's sensitivity, stick dead zone, look curve and Y inversion (D-212). In the menu you click a slot and press the new key or mouse button (Esc cancels, Backspace clears the slot). **A key belongs to one action:** binding it takes it from whatever had it, and the menu says which action lost it (D-059) | section 6 | |
 
 - The crosshair was built in M2 (`ui/crosshair.gd`, D-021). Dynamic mode widens the gap to match the actual inaccuracy cone, e.g. +38 px at 720p for 4.5°.
 - A value outside its range is clamped; the file can be edited by hand, and anything unreadable falls back to the default.
