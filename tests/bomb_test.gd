@@ -24,6 +24,8 @@ extends Node
 const MAP_SCENE := preload("res://maps/depot.tscn")
 const TEST_MAP_SCENE := preload("res://maps/test_map.tscn")
 const HUD_SCENE := preload("res://ui/hud.tscn")
+## The design tokens the HUD's look is built from.
+const Tokens := preload("res://tools/ui_palette.gd")
 const PLANT_TIME := 1.0
 const DEFUSE_TIME := 2.0
 const KIT_DEFUSE_TIME := 1.0
@@ -98,9 +100,24 @@ func _test_carry_and_plant() -> void:
 	Input.action_release("use")
 	await _go_live()
 	await _wait_ticks(3)
-	_check("Your HUD: the BOMB tag, and 'Hold E to plant' inside a site",
-			_bomb_hud().is_carry_shown() and _bomb_hud().get_prompt() == "Hold E to plant",
-			"tag %s, prompt '%s'" % [_bomb_hud().is_carry_shown(), _bomb_hud().get_prompt()])
+	var carry_plate := _hud.get_node("%CarryPlate") as Control
+	var weapon_row := _hud.get_node("%BottomRight/WeaponRow") as Control
+	_check("Your HUD: the ALERT 'Bomb' plate with the bomb's icon sits above the weapon row without touching it, and the E key cap with 'Hold · plant the bomb' shows inside a site",
+			_bomb_hud().is_carry_shown() and carry_plate.visible and carry_plate.get_global_rect().end.y <= weapon_row.get_global_rect().position.y
+			and (carry_plate.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == carry_plate.get_theme_color("alert", "Palette")
+			and (_hud.get_node("%CarryIcon") as TextureRect).texture == UiIcons.get_icon(carry_plate, &"bomb")
+			and _bomb_hud().get_prompt() == "Hold · plant the bomb" and _bomb_hud().is_key_shown() and _bomb_hud().get_progress_shown() < 0.0,
+			"tag %s, plate %s over the weapon row %s, prompt '%s'" % [_bomb_hud().is_carry_shown(), carry_plate.get_global_rect(), weapon_row.get_global_rect(), _bomb_hud().get_prompt()])
+	var plate_gaps: Array[String] = []
+	for factor: float in [1.0, 1.5]:
+		_hud.call("set_ui_scale", factor)
+		await _wait_ticks(2)
+		var plate_rect := carry_plate.get_global_rect()
+		var row_rect := weapon_row.get_global_rect()
+		if plate_rect.end.y > row_rect.position.y or plate_rect.size.y < 32.0 * factor - 1.0:
+			plate_gaps.append("at %s: plate %s, weapon row %s" % [factor, plate_rect, row_rect])
+	_hud.call("set_ui_scale", 1.0)
+	_check("The bomb plate (32 high at scale 1.0) stays above the weapon row at scales 1.0 and 1.5", plate_gaps.is_empty(), "%s" % [plate_gaps])
 
 	# Outside a site, Use does nothing.
 	await _teleport(_player, _site_floor(site_a) + Vector3(0.0, 0.0, 9.0))
@@ -117,10 +134,13 @@ func _test_carry_and_plant() -> void:
 	await _wait_seconds(PLANT_TIME * 0.5)
 	var half := bomb.progress
 	var speed := Vector2(_player.velocity.x, _player.velocity.z).length()
-	_check("Planting: progress grows, you can't move, the HUD shows 'Planting' and the bar",
+	var seconds_shown := float(_bomb_hud().get_seconds())
+	_check("Planting: progress grows, you can't move, the HUD shows the bomb's icon, 'Planting', the seconds left in ALERT and the bar (the key cap is gone)",
 			absf(half - 0.5) < 0.05 and _player.busy and speed < 0.01 and bomb.is_planting(_player)
-			and _bomb_hud().get_prompt() == "Planting" and absf(_bomb_hud().get_progress_shown() - half) < 0.05,
-			"progress %.2f, busy %s, speed %.2f with W held, prompt '%s', bar %.2f" % [half, _player.busy, speed, _bomb_hud().get_prompt(), _bomb_hud().get_progress_shown()])
+			and _bomb_hud().get_prompt() == "Planting" and absf(_bomb_hud().get_progress_shown() - half) < 0.05
+			and _bomb_hud().get_prompt_icon() == &"bomb" and not _bomb_hud().is_key_shown() and absf(seconds_shown - PLANT_TIME * 0.5) < 0.15,
+			"progress %.2f, busy %s, speed %.2f with W held, prompt '%s', bar %.2f, icon %s, seconds '%s'" % [half, _player.busy, speed, _bomb_hud().get_prompt(),
+					_bomb_hud().get_progress_shown(), _bomb_hud().get_prompt_icon(), _bomb_hud().get_seconds()])
 	Input.action_release("use")
 	Input.action_release("move_forward")
 	await _wait_ticks(2)
@@ -148,8 +168,13 @@ func _test_carry_and_plant() -> void:
 			_rounds.time_left == at_plant and at_plant < time_before and _timer_text() == RoundHud.BOMB_TIMER_TEXT
 			and plate.visible and not (round_hud.get_node("%Timer") as Control).visible
 			and (plate.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == round_hud.get_theme_color("alert", "Palette")
-			and _bomb_hud().get_message() == "Bomb planted at A" and _rounds.phase == RoundManager.Phase.LIVE,
-			"time %.2f → %.2f, timer '%s', message '%s'" % [at_plant, _rounds.time_left, _timer_text(), _bomb_hud().get_message()])
+			and _toast_texts().has("Bomb planted at A") and _rounds.phase == RoundManager.Phase.LIVE,
+			"time %.2f → %.2f, timer '%s', toasts %s" % [at_plant, _rounds.time_left, _timer_text(), _toast_texts()])
+	var planted_toast := (_hud.get_node("%Toasts") as ToastStack).get_plate("Bomb planted at A")
+	_check("The plant is a toast: an ALERT plate with the bomb's icon tinted INK",
+			planted_toast != null and (planted_toast.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.ALERT
+			and (planted_toast.find_children("*", "TextureRect", true, false)[0] as TextureRect).modulate == Tokens.TEXT_ON_FILL,
+			"toast %s" % [planted_toast])
 
 
 ## Continues the round from [method _test_carry_and_plant]: the bomb is planted at A.
@@ -197,8 +222,8 @@ func _test_drop_and_pickup() -> void:
 	_check("A dying carrier drops the bomb on the floor where they fell; your team is told",
 			bomb.state == Bomb.State.DROPPED and bomb.carrier == null
 			and Vector2(bomb.global_position.x - spot.x, bomb.global_position.z - spot.z).length() < 0.2
-			and absf(bomb.global_position.y - spot.y) < 0.2 and _bomb_hud().get_message() == "The bomb was dropped",
-			"state %s at %s (died at %s), message '%s'" % [Bomb.State.keys()[bomb.state], bomb.global_position, spot, _bomb_hud().get_message()])
+			and absf(bomb.global_position.y - spot.y) < 0.2 and _toast_texts().has("Bomb dropped"),
+			"state %s at %s (died at %s), toasts %s" % [Bomb.State.keys()[bomb.state], bomb.global_position, spot, _toast_texts()])
 	_check("Attackers see the dropped bomb's marker", (bomb.get_node("Marker") as Label3D).visible, "")
 	var defender := _rounds.get_members(_rounds.get_defending_team())[0]
 	await _teleport(defender, bomb.global_position)
@@ -209,8 +234,8 @@ func _test_drop_and_pickup() -> void:
 	await _wait_ticks(3)
 	_check("An attacker who walks over it picks it up",
 			bomb.state == Bomb.State.CARRIED and bomb.carrier == _player and _bomb_hud().is_carry_shown()
-			and _bomb_hud().get_message() == "You have the bomb",
-			"state %s, carrier %s, message '%s'" % [Bomb.State.keys()[bomb.state], bomb.carrier, _bomb_hud().get_message()])
+			and _toast_texts().has("You picked up the bomb"),
+			"state %s, carrier %s, toasts %s" % [Bomb.State.keys()[bomb.state], bomb.carrier, _toast_texts()])
 
 
 func _test_defuse() -> void:
@@ -242,10 +267,12 @@ func _test_defuse() -> void:
 	var prompt: String = _bomb_hud().get_prompt()
 	Input.action_press("use")
 	await _wait_seconds(DEFUSE_TIME * 0.5)
-	_check("Next to the bomb: 'Hold E to defuse', then defusing locks you in place and fills the bar",
-			prompt == "Hold E to defuse" and bomb.is_defusing(_player) and _player.busy and absf(bomb.progress - 0.5) < 0.05
-			and _bomb_hud().get_prompt() == "Defusing",
-			"prompt before '%s', after '%s', progress %.2f, busy %s" % [prompt, _bomb_hud().get_prompt(), bomb.progress, _player.busy])
+	_check("Next to the bomb: 'Hold · defuse the bomb', then defusing locks you in place and fills the bar, with the bomb's icon (no kit) and the seconds left",
+			prompt == "Hold · defuse the bomb" and bomb.is_defusing(_player) and _player.busy and absf(bomb.progress - 0.5) < 0.05
+			and _bomb_hud().get_prompt() == "Defusing" and _bomb_hud().get_prompt_icon() == &"bomb"
+			and absf(float(_bomb_hud().get_seconds()) - DEFUSE_TIME * 0.5) < 0.15,
+			"prompt before '%s', after '%s', progress %.2f, busy %s, icon %s, seconds '%s'" % [prompt, _bomb_hud().get_prompt(), bomb.progress, _player.busy,
+					_bomb_hud().get_prompt_icon(), _bomb_hud().get_seconds()])
 	Input.action_release("use")
 	await _wait_ticks(2)
 	_check("Letting go starts the defuse over", bomb.progress == 0.0 and bomb.actor == null and not _player.busy,
@@ -256,6 +283,14 @@ func _test_defuse() -> void:
 	bomb.kit_check = func(_defuser: Character) -> bool: return false
 	_check("The defuse-kit hook: 2 s without a kit, 1 s with one (everyone has none until M7)",
 			no_kit == DEFUSE_TIME and with_kit == KIT_DEFUSE_TIME, "%.1f s / %.1f s" % [no_kit, with_kit])
+	bomb.kit_check = func(defuser: Character) -> bool: return defuser == _player
+	Input.action_press("use")
+	await _wait_seconds(0.3)
+	var kit_icon: StringName = _bomb_hud().get_prompt_icon()
+	Input.action_release("use")
+	bomb.kit_check = func(_defuser: Character) -> bool: return false
+	await _wait_ticks(2)
+	_check("Defusing with a kit shows the kit's icon instead of the bomb's", kit_icon == &"defuse_kit", "icon %s" % kit_icon)
 	Input.action_press("use")
 	await _wait_seconds(DEFUSE_TIME + 0.1)
 	Input.action_release("use")
@@ -525,14 +560,19 @@ func _bomb_hud() -> BombHud:
 	return _hud.get_node("BombHud") as BombHud
 
 
+## The toasts showing, oldest first.
+func _toast_texts() -> Array[String]:
+	return (_hud.get_node("%Toasts") as ToastStack).get_texts()
+
+
 func _timer_text() -> String:
 	return (_hud.get_node("RoundHud") as RoundHud).get_timer_text()
 
 
-## The round HUD's center lines as [title, line 1, line 2, line 3]; a hidden line counts as empty.
+## The round HUD's center lines as [title, line 1]; a hidden line counts as empty.
 func _center() -> Array:
 	var lines := []
-	for label_name in ["Title", "Line1", "Line2", "Line3"]:
+	for label_name in ["Title", "Line1"]:
 		var label := _hud.get_node("RoundHud/Center/" + label_name) as Label
 		lines.append(label.text if label.visible else "")
 	return lines

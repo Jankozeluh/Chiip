@@ -389,7 +389,7 @@ func _containers() -> void:
 ## columns, plates, icons), so a screen asks get_theme_color("alert", "Hud") or
 ## get_theme_constant("chip_width", "Hud") instead of keeping a number of its own.
 func _hud() -> void:
-	_colors("Hud", {"alert": Palette.ALERT, "notice": Palette.ALERT, "gold": Palette.HUD_GOLD})
+	_colors("Hud", {"alert": Palette.ALERT, "notice": Palette.ALERT})
 	_constants("Hud", {
 		"pip_size": Palette.HUD_PIP_SIZE, "chip_width": Palette.HUD_CHIP_SIZE.x, "chip_height": Palette.HUD_CHIP_SIZE.y,
 		"chip_health": Palette.HUD_CHIP_HEALTH, "chip_count": Palette.HUD_CHIP_COUNT,
@@ -397,6 +397,11 @@ func _hud() -> void:
 		"score_width": Palette.HUD_SCORE_WIDTH, "centre_width": Palette.HUD_CENTRE_WIDTH,
 		"icon_scale": Palette.HUD_ICON_SCALE, "plate_height": Palette.HUD_PLATE_HEIGHT,
 		"alert_plate_height": Palette.HUD_ALERT_PLATE_HEIGHT,
+		"feed_height": Palette.HUD_FEED_HEIGHT, "feed_time_ms": Palette.HUD_FEED_TIME_MS,
+		"toast_height": Palette.HUD_TOAST_HEIGHT, "toast_chip": Palette.HUD_TOAST_CHIP, "toast_time_ms": Palette.HUD_TOAST_TIME_MS,
+		"prompt_bar_width": Palette.HUD_PROMPT_BAR.x, "prompt_bar_height": Palette.HUD_PROMPT_BAR.y,
+		"hit_inner": Palette.HUD_HIT_INNER, "hit_length": Palette.HUD_HIT_LENGTH, "hit_thickness": Palette.HUD_HIT_THICKNESS,
+		"hit_time_ms": Palette.HUD_HIT_TIME_MS, "shadow_offset": Palette.SHADOW_OFFSET,
 	})
 	var regular: Font = load(Palette.FONT)
 	var bold: Font = load(Palette.FONT_BOLD)
@@ -423,15 +428,17 @@ func _hud() -> void:
 	_hud_label("HudPlateLabel", Palette.TEXT_SIZE, Palette.TEXT, null, false)
 	_hud_label("HudPlateNameLabel", Palette.TEXT_SIZE_LARGE, Palette.TEXT, large, false)
 	_hud_label("HudAlertPlateLabel", Palette.TEXT_SIZE_LARGE, Palette.TEXT_ON_FILL, large, false)
-	# The bomb: its tag, the prompt under the crosshair and the message under the top bar (restyled with the bomb HUD).
-	_hud_label("HudBombTagLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_GOLD)
-	_hud_label("HudPromptLabel", Palette.HUD_SIZE_TEXT, Palette.TEXT)
-	_hud_label("HudBombMessageLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_GOLD)
+	# 16 px text on a plate in the ink of a filled plate (a TEXT or ALERT one: the match point toast, the bomb's tag) or in
+	# ALERT (the low ammo toast), no shadow; and the prompt's seconds in ALERT on the world, with the shadow.
+	_hud_label("HudPlateInkLabel", Palette.TEXT_SIZE, Palette.TEXT_ON_FILL, null, false)
+	_hud_label("HudPlateAlertLabel", Palette.TEXT_SIZE, Palette.ALERT, null, false)
+	_hud_label("HudAlertLabel", Palette.TEXT_SIZE, Palette.ALERT)
 	# Spacing: stacked blocks (columns) and rows of parts.
 	_hud_gap("HudStack", "VBoxContainer", Palette.HUD_GAP_STACK)
 	_hud_gap("HudStackBlock", "VBoxContainer", Palette.HUD_GAP_BLOCK)
 	_hud_gap("HudStackDeath", "VBoxContainer", Palette.HUD_GAP_DEATH)
 	_hud_gap("HudStackCentre", "VBoxContainer", Palette.HUD_GAP_CENTRE)
+	_hud_gap("HudStackIcon", "VBoxContainer", Palette.HUD_GAP_ICON)
 	_hud_gap("HudRowStack", "HBoxContainer", Palette.HUD_GAP_STACK)
 	_hud_gap("HudRowIcon", "HBoxContainer", Palette.HUD_GAP_ICON)
 	_hud_gap("HudRowBlock", "HBoxContainer", Palette.HUD_GAP_BLOCK)
@@ -463,12 +470,25 @@ func _hud() -> void:
 	_styles("HudPlate", {"panel": _box("hud_plate", Palette.INK, Color.TRANSPARENT, 0, Vector4(Palette.HUD_PLATE_PAD, 0, Palette.HUD_PLATE_PAD, 0))})
 	_variation("HudAlertPlate", "PanelContainer")
 	_styles("HudAlertPlate", {"panel": _box("hud_alert_plate", Palette.ALERT, Color.TRANSPARENT, 0, Vector4(Palette.HUD_ALERT_PLATE_PAD, 0, Palette.HUD_ALERT_PLATE_PAD, 0))})
-	# The kill feed's lines (restyled with the kill feed).
-	_variation("HudKillFeed", "VBoxContainer")
-	_constants("HudKillFeed", {"separation": Palette.HUD_FEED_GAP})
-	# The bomb's progress bar: a strip and the fill on it (both plain Panels with one flat colour; restyled with the bomb HUD).
-	_hud_panel("HudBarBack", _box("hud_bar_back", Palette.HUD_BAR_BACK))
-	_hud_panel("HudBarFill", _box("hud_bar_fill", Palette.HUD_BAR_FILL))
+	# The kill feed's lines (a PLATE; yours: INK with a TEXT frame, your death: INK with an ENEMY frame). A frame's padding is
+	# inside it, so every line's text starts at the same distance from the edge.
+	var feed_margin := Vector4(Palette.HUD_FEED_PAD, 0, Palette.HUD_FEED_PAD, 0)
+	var feed_frame := Palette.HUD_FEED_FRAME_PAD + Palette.BORDER
+	_hud_plate("HudFeedPlate", _box("hud_feed_plate", Palette.PLATE, Color.TRANSPARENT, 0, feed_margin))
+	_hud_plate("HudFeedPlateYou", _box("hud_feed_plate_you", Palette.INK, Palette.TEXT, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
+	_hud_plate("HudFeedPlateDeath", _box("hud_feed_plate_death", Palette.INK, Palette.ENEMY, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
+	# The toasts' plates (news: INK, match point: TEXT, the bomb planted: ALERT, low ammo: INK with an ALERT frame) and their chips.
+	var toast_margin := Vector4(Palette.HUD_TOAST_PAD, 0, Palette.HUD_TOAST_PAD, 0)
+	var toast_frame := Palette.HUD_TOAST_PAD + Palette.BORDER
+	_hud_plate("HudToastNeutral", _box("hud_toast_neutral", Palette.INK, Color.TRANSPARENT, 0, toast_margin))
+	_hud_plate("HudToastMatchPoint", _box("hud_toast_match_point", Palette.TEXT, Color.TRANSPARENT, 0, toast_margin))
+	_hud_plate("HudToastBomb", _box("hud_toast_bomb", Palette.ALERT, Color.TRANSPARENT, 0, toast_margin))
+	_hud_plate("HudToastLowAmmo", _box("hud_toast_low_ammo", Palette.INK, Palette.ALERT, Palette.BORDER, Vector4(toast_frame, 0, toast_frame, 0)))
+	_hud_panel("HudToastChip", _box("hud_toast_chip", Palette.TEXT))
+	_hud_panel("HudToastChipInk", _box("hud_toast_chip_ink", Palette.INK))
+	# The plant and defuse bar: INK with a hard shadow, and the fill on it.
+	_hud_panel("HudProgressBack", _shadowed("hud_progress_back", Palette.INK, Vector4.ZERO))
+	_hud_panel("HudProgressFill", _box("hud_progress_fill", Palette.ALERT))
 
 
 ## A HUD text role: a [Label] with a size, a colour, a font (null: the usual one) and a hard shadow
@@ -488,6 +508,12 @@ func _hud_label(role: String, size: int, color: Color, font: Font = null, shadow
 ## A box role: a [Panel] with one stylebox.
 func _hud_panel(role: String, box: StyleBoxFlat) -> void:
 	_variation(role, "Panel")
+	_styles(role, {"panel": box})
+
+
+## A plate role: a [PanelContainer] with one box.
+func _hud_plate(role: String, box: StyleBoxFlat) -> void:
+	_variation(role, "PanelContainer")
 	_styles(role, {"panel": box})
 
 

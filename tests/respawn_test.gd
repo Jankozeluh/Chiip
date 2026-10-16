@@ -72,7 +72,7 @@ func _test_start() -> void:
 			_rounds.is_team_respawn() and _rounds.phase == RoundManager.Phase.FREEZE and at_ends and _rounds.bomb == null
 			and _player.frozen and _rounds.score == [0, 0],
 			"phase %s, at their ends %s, bomb %s, score %s" % [RoundManager.Phase.keys()[_rounds.phase], at_ends, _rounds.bomb, _rounds.score])
-	_check("The freeze time says what wins", _center() == ["Team respawn · starts in 1", "First team to %d kills wins" % KILL_LIMIT, "", ""], str(_center()))
+	_check("The freeze time says what wins", _center() == ["Team respawn · starts in 1", "First team to %d kills wins" % KILL_LIMIT], str(_center()))
 	await _go_live()
 	_check("Live: the clock runs the time limit and the top bar says what wins",
 			_rounds.phase == RoundManager.Phase.LIVE and absf(_rounds.time_left - TIME_LIMIT) < 0.1 and _round_label() == "First to %d" % KILL_LIMIT
@@ -553,7 +553,7 @@ func _bar_score(team: int) -> String:
 
 func _center() -> Array:
 	var lines := []
-	for label_name in ["Title", "Line1", "Line2", "Line3"]:
+	for label_name in ["Title", "Line1"]:
 		var label := _hud.get_node("RoundHud/Center/" + label_name) as Label
 		lines.append(label.text if label.visible else "")
 	return lines

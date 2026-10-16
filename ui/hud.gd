@@ -12,7 +12,10 @@ extends CanvasLayer
 ## have left. While you spectate a teammate (see [PlayerController]) a row with their health, armor
 ## and weapon, over a plate with their name, replaces the corners. In a match the [RoundHud] child
 ## adds the top bar, banners and kill feed, and in bomb rounds the [BombHud] child the bomb tag,
-## prompts and messages.
+## prompts and news. The hit marker ([HitMarker]) flashes around the crosshair when the weapon on show
+## hits a character, and the toasts ([ToastStack]: switching sides, match point, the bomb's news, low ammo)
+## stack under the top bar; the HUD hands that stack to its round and bomb parts and adds the low ammo toast itself
+## (once per magazine, when it first drops to [constant LOW_AMMO_FRACTION] of a full one).
 ##
 ## A pure view: it only reads the game's state. The look comes from the UI theme (D-133, D-141):
 ## the scene's controls pick roles, the sizes of the drawn parts and the state colours come from
@@ -40,6 +43,8 @@ const PALETTE_TYPE := &"Palette"
 const RESPAWN_TEXT := "Respawning in %d"
 ## Practice brings you back at once: the plate just says so.
 const PRACTICE_RESPAWN_TEXT := "Respawning..."
+## What the low ammo toast says; %s is the reload key.
+const LOW_AMMO_TEXT := "Low ammo · %s reload"
 ## The scale of the small icons (the spectate row, the killer's weapon): the icon set's own size. The corners'
 ## icons are [code]icon_scale[/code] times that (the theme's "Hud" type).
 const ICON_NORMAL := 1
@@ -72,8 +77,14 @@ var _killer_weapon: WeaponData
 var _ring_audio: AudioStreamPlayer
 var _ui_scale: float = 1.0
 var _chips: Array[Panel] = []
+## The magazine of the watched weapon the last time it changed (-1: none), to tell a drop to "low" from a refill.
+var _magazine_seen: int = -1
 
 @onready var _crosshair: Crosshair = $Crosshair
+@onready var _hit_marker: HitMarker = $HitMarker
+@onready var _toasts: ToastStack = %Toasts
+@onready var _carry_plate: Control = %CarryPlate
+@onready var _carry_icon: TextureRect = %CarryIcon
 @onready var _dead_tint: Panel = %DeadTint
 @onready var _bottom_left: Control = %BottomLeft
 @onready var _bottom_right: Control = %BottomRight
@@ -125,12 +136,19 @@ func _ready() -> void:
 	var plate_height := float(_theme_size(&"plate_height"))
 	_death_plate.custom_minimum_size.y = plate_height
 	_spectate_plate.custom_minimum_size.y = plate_height
+	_carry_plate.custom_minimum_size.y = _theme_size(&"alert_plate_height")
 	# The icons are sized from their textures (see _set_icon), not by UiScale; they are white and take a tint.
 	for rect in [_health_icon, _armor_icon, _kit_icon, _weapon_icon, _mini_health_icon, _mini_armor_icon,
-			_mini_gun_icon, _killer_icon]:
+			_mini_gun_icon, _killer_icon, _carry_icon]:
 		var icon_rect: TextureRect = rect
 		icon_rect.set_meta(UiScale.SKIP_SIZE_META, true)
 		icon_rect.modulate = _palette(&"text")
+	# The bomb tag's icon is INK on the ALERT plate; the bomb part of the HUD shows and hides the plate.
+	_carry_icon.modulate = _palette(&"text_on_fill")
+	_set_icon(_carry_icon, &"bomb", ICON_NORMAL)
+	_round_hud.set_toasts(_toasts)
+	_bomb_hud.set_toasts(_toasts)
+	_bomb_hud.set_carry_plate(_carry_plate)
 
 
 ## Shows this player's weapon on the HUD.
@@ -148,6 +166,7 @@ func set_player(new_player: Character) -> void:
 ## run by [param manager], or hides it when null (practice mode). Called on
 ## every map load; the previous manager is dropped.
 func set_round_manager(manager: RoundManager) -> void:
+	_toasts.clear()
 	_round_hud.set_round_manager(manager)
 	_bomb_hud.set_round_manager(manager)
 	if is_instance_valid(_manager) and _manager.money_changed.is_connected(_on_money_changed):
@@ -190,9 +209,12 @@ func set_ui_scale(factor: float) -> void:
 	for root: Control in [_bottom_left, _bottom_right, _spectate_box, _death_column, _slots_label]:
 		UiScale.apply_tree(root, factor)
 	_crosshair.set_ui_scale(factor)
+	_hit_marker.set_ui_scale(factor)
+	_toasts.set_ui_scale(factor)
 	_scope_overlay.set_ui_scale(factor)
 	_round_hud.set_ui_scale(factor)
 	_bomb_hud.set_ui_scale(factor)
+	_set_icon(_carry_icon, &"bomb", ICON_NORMAL)
 	# The icons are sized from their textures and the scale.
 	if shown != null and is_instance_valid(shown):
 		_update_health()
@@ -261,11 +283,14 @@ func _watch_weapon(weapon: Weapon) -> void:
 		_watched_weapon.ammo_changed.disconnect(_on_ammo_changed)
 		_watched_weapon.reload_started.disconnect(_update_weapon_label)
 		_watched_weapon.reload_finished.disconnect(_update_weapon_label)
+		_watched_weapon.hit_landed.disconnect(_on_hit_landed)
 	_watched_weapon = weapon
+	_magazine_seen = weapon.magazine if weapon != null else -1
 	if weapon != null:
 		weapon.ammo_changed.connect(_on_ammo_changed)
 		weapon.reload_started.connect(_update_weapon_label)
 		weapon.reload_finished.connect(_update_weapon_label)
+		weapon.hit_landed.connect(_on_hit_landed)
 
 
 ## The character on show took out another weapon (D-094).
@@ -291,8 +316,18 @@ func _show_weapon() -> void:
 	_update_weapon_label()
 
 
+## The weapon on show hit something: a character (or a dummy) flashes the hit marker, a head in the alert colour.
+func _on_hit_landed(hit: Dictionary) -> void:
+	var zone: String = hit.get("zone", "")
+	if zone.is_empty():
+		return
+	_hit_marker.show_hit(zone == String(Hitbox.Zone.keys()[Hitbox.Zone.HEAD]).capitalize())
+
+
 func _on_ammo_changed(magazine: int, reserve: int) -> void:
 	var weapon := shown.weapon
+	var seen := _magazine_seen
+	_magazine_seen = magazine
 	if weapon == null or weapon.data.is_melee():
 		_mag_label.text = ""
 		_reserve_label.text = ""
@@ -310,7 +345,16 @@ func _on_ammo_changed(magazine: int, reserve: int) -> void:
 	_reserve_label.text = "/ %d" % reserve
 	_reserve_label.visible = true
 	_mini_gun_label.text = "%d / %d" % [magazine, reserve]
-	_tint_label(_mag_label, magazine <= weapon.data.magazine_size * LOW_AMMO_FRACTION)
+	var low := _is_low_ammo(weapon.data, magazine)
+	_tint_label(_mag_label, low)
+	# Once per magazine: when it first drops to the threshold (not when you pick the weapon up already low).
+	if low and not _is_low_ammo(weapon.data, seen) and seen >= 0 and reserve > 0 and shown == player and shown.is_alive():
+		_toasts.show_toast(ToastStack.Kind.LOW_AMMO, LOW_AMMO_TEXT % BombHud.key_name(&"reload"))
+
+
+## True when [param magazine] rounds are at or below [constant LOW_AMMO_FRACTION] of a full magazine.
+func _is_low_ammo(data: WeaponData, magazine: int) -> bool:
+	return magazine <= data.magazine_size * LOW_AMMO_FRACTION
 
 
 ## The weapon's name (with "reloading" while it reloads) and its icon, big in the corner and small in the spectate row.

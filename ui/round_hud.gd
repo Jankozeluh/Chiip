@@ -19,8 +19,10 @@ extends Control
 ## still reach the player controls.
 ##
 ## The banners in the middle are one 48 px headline (the countdown in freeze time, the result at the
-## round end, "Overtime") and up to three 16 px lines under it. The respawn countdown of a team
-## respawn match is part of the death view ([code]hud.gd[/code]).
+## round end, "Overtime") and a 16 px line under it (your side, why the round ended). What is only news
+## ("Switching sides", "Match point", "Enemy match point") is a toast ([ToastStack], handed over with
+## [method set_toasts]). The respawn countdown of a team respawn match is part of the death view
+## ([code]hud.gd[/code]).
 ##
 ## The look comes from the UI theme (D-133): the scene's controls pick roles (type variations
 ## such as [code]HudFriendlyScoreLabel[/code] and [code]HudScoreBarBack[/code]) for sizes, shadows,
@@ -35,6 +37,11 @@ const LOW_TIME := 10.0
 const THEME_TYPE := &"Hud"
 ## The theme type that holds the palette's named colours.
 const PALETTE_TYPE := &"Palette"
+## The toasts' texts.
+const SWITCHING_TEXT := "Switching sides"
+const MATCH_POINT_TEXT := "Match point"
+const ENEMY_MATCH_POINT_TEXT := "Enemy match point"
+const MATCH_POINT_BOTH_TEXT := "Match point for both teams"
 const ATTACK_TEXT := "You attack: push to the far end"
 const DEFEND_TEXT := "You defend: hold your end"
 ## The side lines in bomb rounds; %s is the sites, e.g. "A or B".
@@ -58,6 +65,8 @@ var _just_swapped: bool = false
 var _timer_state: StringName = &""
 ## The alert plate ("Bomb") shows instead of the time (the bomb is planted).
 var _planted_shown: bool = false
+## The toasts this part of the HUD announces on (null: none).
+var _toasts: ToastStack
 
 @onready var _tdm_bar: HBoxContainer = %TdmBar
 @onready var _tdm_your_score: Label = %TdmYourScore
@@ -80,8 +89,6 @@ var _planted_shown: bool = false
 @onready var _lift: Control = %Lift
 @onready var _title: Label = $Center/Title
 @onready var _line1: Label = $Center/Line1
-@onready var _line2: Label = $Center/Line2
-@onready var _line3: Label = $Center/Line3
 @onready var _kill_feed: KillFeed = $KillFeed
 
 
@@ -129,6 +136,11 @@ func set_round_manager(manager: RoundManager) -> void:
 		signal_to_use.connect(pair[1])
 	_refresh()
 	_show_phase_message()
+
+
+## The toasts this node announces half time and match point on (null: no toasts).
+func set_toasts(toasts: ToastStack) -> void:
+	_toasts = toasts
 
 
 ## Scales the layout; 1.0 is the size it is designed for (a 720-pixel-tall window).
@@ -361,7 +373,9 @@ func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 
 
 func _on_character_killed(victim: Character, killer: Character, headshot: bool) -> void:
-	_kill_feed.add_kill(victim, killer, headshot, victim.last_damage_source)
+	# A death with no killer is the bomb's when it has gone off (nothing else kills without one).
+	var from_bomb := _manager.bomb != null and _manager.bomb.state == Bomb.State.EXPLODED
+	_kill_feed.add_kill(victim, killer, headshot, victim.last_damage_source, &"bomb" if from_bomb else &"")
 	_refresh()
 
 
@@ -381,7 +395,7 @@ func _show_phase_message() -> void:
 	var attacking := _manager.get_side(Teams.viewer_team) == Teams.Side.ATTACKING
 	_set_message(_line1, _side_text(attacking))
 	if _just_swapped:
-		_set_tinted_message(_line2, "Switching sides", _theme_color(&"notice"))
+		_toast(ToastStack.Kind.NEUTRAL, SWITCHING_TEXT)
 	_show_match_point()
 
 
@@ -410,7 +424,7 @@ func _show_overtime() -> void:
 		_set_message(_line1, "Next kill wins")
 
 
-## A third line when a team is one round from winning the match.
+## A toast when a team is one round from winning the match.
 func _show_match_point() -> void:
 	var to_win := _manager.settings.rounds_to_win
 	if to_win < 2:
@@ -420,11 +434,16 @@ func _show_match_point() -> void:
 	var you_on_point := _manager.score[you] == to_win - 1
 	var them_on_point := _manager.score[them] == to_win - 1
 	if you_on_point and them_on_point:
-		_set_message(_line3, "Match point for both teams")
+		_toast(ToastStack.Kind.MATCH_POINT, MATCH_POINT_BOTH_TEXT)
 	elif you_on_point:
-		_set_tinted_message(_line3, "Match point", _team_color(you))
+		_toast(ToastStack.Kind.MATCH_POINT, MATCH_POINT_TEXT)
 	elif them_on_point:
-		_set_tinted_message(_line3, "Enemy match point", _team_color(them))
+		_toast(ToastStack.Kind.MATCH_POINT, ENEMY_MATCH_POINT_TEXT)
+
+
+func _toast(kind: ToastStack.Kind, text: String) -> void:
+	if _toasts != null:
+		_toasts.show_toast(kind, text)
 
 
 ## What your side has to do this half: push or hold, or in bomb rounds plant or guard the sites.
@@ -457,7 +476,7 @@ func _reason_text(won: bool, reason: RoundManager.EndReason) -> String:
 
 
 func _clear_messages() -> void:
-	for label in [_title, _line1, _line2, _line3]:
+	for label in [_title, _line1]:
 		_set_message(label, "")
 	_lift.visible = false
 

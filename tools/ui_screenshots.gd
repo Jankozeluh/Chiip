@@ -123,6 +123,7 @@ func _match_shots() -> void:
 	player.take_damage(38.0, Hitbox.Zone.CHEST, null)
 	await _frames(30)
 	await _shot("hud_live")
+	await _hud_extras_shot(main, manager, player, enemies)
 	# The Tab scoreboard (the console flag would hide it).
 	_block_input = false
 	DevConsole.is_open = false
@@ -158,6 +159,46 @@ func _match_shots() -> void:
 	await _frames(10)
 	await _shot("match_end")
 	await _stop_game(main)
+
+
+## The kill feed with every kind of line (yours with a headshot, your death, a kill between others, the bomb's), a
+## few toasts, the hit marker and the bomb tag with the plant prompt, staged straight on the HUD: the feed and the
+## toasts only show what they are told. The shot follows the hit marker's flash by one frame.
+func _hud_extras_shot(main: Node, manager: RoundManager, player: Character, enemies: Array) -> void:
+	var hud := main.get_node("HUD")
+	var feed := hud.get_node("RoundHud/KillFeed") as KillFeed
+	var toasts := hud.get_node("%Toasts") as ToastStack
+	feed.clear()
+	var gun := player.weapon.data
+	feed.add_kill(enemies[0], player, true, gun)
+	feed.add_kill(player, enemies[1], false, enemies[1].weapon.data)
+	feed.add_kill(enemies[1], enemies[2], false, enemies[2].weapon.data)
+	feed.add_kill(enemies[2], null, false, null, &"bomb")
+	toasts.show_toast(ToastStack.Kind.NEUTRAL, "Switching sides")
+	toasts.show_toast(ToastStack.Kind.MATCH_POINT, "Match point")
+	toasts.show_toast(ToastStack.Kind.BOMB, "Bomb planted at A")
+	toasts.show_toast(ToastStack.Kind.LOW_AMMO, "Low ammo · R reload")
+	if manager.bomb != null:
+		manager.bomb.start_round(player, manager.bomb.attacking_team)
+	await _frames(3)
+	(hud.get_node("HitMarker") as HitMarker).show_hit(true)
+	await _shot("hud_feed_toasts")
+	# The plant prompt: in a bomb site with the bomb, first what to hold, then holding it for half a second.
+	if manager.bomb == null:
+		return
+	toasts.clear()
+	feed.clear()
+	var site := manager.bomb.get_sites()[0]
+	player.global_position = site.global_position + Vector3.DOWN * 1.5
+	await _frames(20)
+	await _shot("hud_bomb_hold")
+	_block_input = false
+	DevConsole.is_open = false
+	Input.action_press("use")
+	await _frames(40)
+	await _shot("hud_bomb_planting")
+	Input.action_release("use")
+	_block_input = true
 
 
 func _respawn_shots() -> void:

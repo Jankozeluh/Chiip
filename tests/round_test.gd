@@ -50,7 +50,7 @@ const SPECTATE_ROUND_TIME := 30.0
 const SPECTATE_ROUND_END_TIME := 8.0
 ## The HUD checks that read the round timer need a round of the real length.
 const HUD_ROUND_TIME := 115.0
-const HUD_HEADLINES: Array[String] = ["Title", "Line1", "Line2", "Line3"]
+const HUD_HEADLINES: Array[String] = ["Title", "Line1"]
 const HUD_ATTACK_TEXT := "You attack: push to the far end"
 const HUD_DEFEND_TEXT := "You defend: hold your end"
 
@@ -436,6 +436,8 @@ func _test_round_hud() -> void:
 	await _test_hud_wiring()
 	await _test_hud_look()
 	await _test_hud_states()
+	await _test_hud_toasts()
+	await _test_hud_hit_marker_and_low_ammo()
 	await _test_hud_death_and_spectate()
 
 
@@ -453,7 +455,7 @@ func _test_hud_timer_and_feed() -> void:
 	var side_text := HUD_ATTACK_TEXT if _rounds.get_side(Teams.viewer_team) == Teams.Side.ATTACKING else HUD_DEFEND_TEXT
 	var bar := _bar(hud)
 	_check("Freeze time: the timer shows the freeze countdown, the center says when round 1 starts and which side you play",
-			bar[1] == "0:01" and bar[3] == "Round 1" and _center(hud) == ["Round 1 · starts in 1", side_text, "", ""],
+			bar[1] == "0:01" and bar[3] == "Round 1" and _center(hud) == ["Round 1 · starts in 1", side_text] and _toast_texts(hud).is_empty(),
 			"timer %s, round label %s, center %s (your side line should be '%s')" % [bar[1], bar[3], _center(hud), side_text])
 	_check("The top bar starts at 0 - 0 with all 3 players alive on each side",
 			bar[0] == "0" and bar[2] == "0" and bar[4] == 3 and bar[5] == 3,
@@ -462,32 +464,32 @@ func _test_hud_timer_and_feed() -> void:
 	await _wait_ticks(2)
 	bar = _bar(hud)
 	_check("Live: the timer shows the round time (1:55) and the countdown is gone",
-			bar[1] == "1:55" and _center(hud) == ["", "", "", ""], "timer %s, center %s" % [bar[1], _center(hud)])
+			bar[1] == "1:55" and _center(hud) == ["", ""], "timer %s, center %s" % [bar[1], _center(hud)])
 
 	# Deaths: your headshot on an enemy, an enemy's kill of a teammate, a death with no killer.
 	var feed := _feed(hud)
 	var enemies := _rounds.get_members(1)
 	var mates := _rounds.get_members(0).filter(func(member: Character) -> bool: return member != _player)
-	var blue := Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
-	var red := Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	var blue := _ui_team_color(true)
+	var red := _ui_team_color(false)
 	enemies[0].take_damage(500.0, Hitbox.Zone.HEAD, _player)
 	await _wait_ticks(2)
 	var yours := _read_line(feed.get_child(0))
-	_check("Your headshot kill is one line: you (blue) > the victim (red), 'HS', highlighted as your own",
-			feed.get_line_count() == 1 and yours == {"killer": String(_player.name), "killer_color": blue, "separator": ">",
-					"victim": String(enemies[0].name), "victim_color": red, "headshot": true, "highlighted": true},
+	_check("Your headshot kill is one line on your kill plate: you (blue) > the victim (red) with the headshot mark",
+			feed.get_line_count() == 1 and yours == {"killer": String(_player.name), "killer_color": blue, "separator": ">", "weapon": false,
+					"victim": String(enemies[0].name), "victim_color": red, "headshot": true, "role": KillFeed.PLATE_KILL},
 			"%d line(s): %s" % [feed.get_line_count(), yours])
 	mates[0].take_damage(500.0, Hitbox.Zone.CHEST, enemies[1])
 	mates[1].take_damage(500.0, Hitbox.Zone.CHEST, null)
 	await _wait_ticks(2)
 	var theirs := _read_line(feed.get_child(1))
 	var nobody := _read_line(feed.get_child(2))
-	_check("An enemy's kill is 'enemy (red) > teammate (blue)' with no headshot mark and no highlight; a death without a killer shows only the victim; newest at the bottom",
+	_check("An enemy's kill is 'enemy (red) > teammate (blue)' with no headshot mark on the normal plate; a death without a killer shows only the victim; newest at the bottom",
 			feed.get_line_count() == 3
-			and theirs == {"killer": String(enemies[1].name), "killer_color": red, "separator": ">", "victim": String(mates[0].name),
-					"victim_color": blue, "headshot": false, "highlighted": false}
-			and nobody == {"killer": "", "killer_color": Color(0, 0, 0, 0), "separator": "", "victim": String(mates[1].name),
-					"victim_color": blue, "headshot": false, "highlighted": false},
+			and theirs == {"killer": String(enemies[1].name), "killer_color": red, "separator": ">", "weapon": false, "victim": String(mates[0].name),
+					"victim_color": blue, "headshot": false, "role": KillFeed.PLATE_NORMAL}
+			and nobody == {"killer": "", "killer_color": Color(0, 0, 0, 0), "separator": "", "weapon": false, "victim": String(mates[1].name),
+					"victim_color": blue, "headshot": false, "role": KillFeed.PLATE_NORMAL},
 			"%d line(s): %s / %s" % [feed.get_line_count(), theirs, nobody])
 	bar = _bar(hud)
 	_check("Players alive follows the deaths: yourself alone on your side, 2 enemies left, score still 0 - 0",
@@ -501,7 +503,7 @@ func _test_hud_timer_and_feed() -> void:
 	await _wait_ticks(2)
 	bar = _bar(hud)
 	_check("Winning by elimination: 'Round won' in blue, 'Enemy team eliminated', score 1 - 0, nobody alive on their side, and the timer stays at the round's time",
-			_center(hud) == ["Round won", "Enemy team eliminated", "", ""] and _center_color(hud, "Title") == Tokens.FRIENDLY
+			_center(hud) == ["Round won", "Enemy team eliminated"] and _center_color(hud, "Title") == Tokens.FRIENDLY
 					and bar[0] == "1" and bar[2] == "0" and bar[4] == 1 and bar[5] == 0 and bar[1] == "1:55",
 			"center %s, score %s - %s, alive %s and %s, timer %s" % [_center(hud), bar[0], bar[2], bar[4], bar[5], bar[1]])
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
@@ -541,10 +543,14 @@ func _test_hud_banners() -> void:
 	await _wait_ticks(2)
 	var new_side_text := HUD_DEFEND_TEXT if first_side == Teams.Side.ATTACKING else HUD_ATTACK_TEXT
 	var center := _center(hud)
-	var point_text := "Enemy match point" if _rounds.score == [0, 2] else ""
-	_check("Half time: round 3's freeze time says 'Switching sides' and shows your new side (match point only if the enemy has 2 rounds)",
-			_rounds.get_side(Teams.viewer_team) != first_side and center == ["Round 3 · starts in 1", new_side_text, "Switching sides", point_text],
-			"center %s, expected side line '%s', score %s" % [center, new_side_text, _rounds.score])
+	var point_toasts: Array[String] = []
+	if _rounds.score == [0, 2]:
+		point_toasts.append("Enemy match point")
+	_check("Half time: round 3's freeze time shows your new side in the banner and 'Switching sides' as a toast (match point only if the enemy has 2 rounds)",
+			_rounds.get_side(Teams.viewer_team) != first_side and center == ["Round 3 · starts in 1", new_side_text]
+					and _toast_texts(hud) == (["Switching sides"] + point_toasts),
+			"center %s, expected side line '%s', toasts %s, score %s" % [center, new_side_text, _toast_texts(hud), _rounds.score])
+	_toasts(hud).clear()
 	await _wait_for_phase(RoundManager.Phase.LIVE)
 	await _wait_for_phase(RoundManager.Phase.ROUND_END)
 	await _wait_ticks(2)
@@ -552,10 +558,9 @@ func _test_hud_banners() -> void:
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
 	center = _center(hud)
-	_check("Round 4 (score %s): the half-time notice is gone and the enemy, one round from winning, is on match point" % [_rounds.score],
-			_rounds.score == [1, 2] and center == ["Round 4 · starts in 1", new_side_text, "", "Enemy match point"]
-					and _center_color(hud, "Line3") == Tokens.ENEMY,
-			"center %s, score %s" % [center, _rounds.score])
+	_check("Round 4 (score %s): the half-time notice is gone and the enemy, one round from winning, is on match point (a toast)" % [_rounds.score],
+			_rounds.score == [1, 2] and center == ["Round 4 · starts in 1", new_side_text] and _toast_texts(hud) == ["Enemy match point"],
+			"center %s, toasts %s, score %s" % [center, _toast_texts(hud), _rounds.score])
 	await _win_round(0)
 	await _wait_ticks(2)
 	_check_banner(hud, "round 4, enemy team wiped out", outcomes)
@@ -576,16 +581,16 @@ func _test_hud_match_point() -> void:
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
 	var new_side_text := HUD_DEFEND_TEXT if first_side == Teams.Side.ATTACKING else HUD_ATTACK_TEXT
-	_check("You lead 1 - 0 in a match to 2: the freeze time says 'Switching sides' and 'Match point' (in your color)",
-			_center(hud) == ["Round 2 · starts in 1", new_side_text, "Switching sides", "Match point"]
-					and _center_color(hud, "Line3") == Tokens.FRIENDLY,
-			"center %s, score %s" % [_center(hud), _rounds.score])
+	_check("You lead 1 - 0 in a match to 2: the freeze time shows 'Switching sides' and 'Match point' as toasts",
+			_center(hud) == ["Round 2 · starts in 1", new_side_text] and _toast_texts(hud) == ["Switching sides", "Match point"],
+			"center %s, toasts %s, score %s" % [_center(hud), _toast_texts(hud), _rounds.score])
+	_toasts(hud).clear()
 	await _win_round(1)
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
 	_check("At 1 - 1 both teams are on match point, and round 3 has no half-time notice",
-			_rounds.score == [1, 1] and _center(hud) == ["Round 3 · starts in 1", new_side_text, "", "Match point for both teams"],
-			"center %s, score %s" % [_center(hud), _rounds.score])
+			_rounds.score == [1, 1] and _center(hud) == ["Round 3 · starts in 1", new_side_text] and _toast_texts(hud) == ["Match point for both teams"],
+			"center %s, toasts %s, score %s" % [_center(hud), _toast_texts(hud), _rounds.score])
 	_free_hud(hud)
 
 
@@ -600,8 +605,8 @@ func _test_hud_wiring() -> void:
 	await _wait_for_phase(RoundManager.Phase.LIVE)
 	var enemies := _rounds.get_members(1)
 	var mate := _rounds.get_members(0)[1]
-	var blue := Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
-	var red := Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	var blue := _ui_team_color(true)
+	var red := _ui_team_color(false)
 
 	# No round manager (practice mode): nothing shows, and the old manager's signals no longer reach the HUD.
 	hud.set_round_manager(null)
@@ -625,11 +630,15 @@ func _test_hud_wiring() -> void:
 	hud.set_ui_scale(1.5)
 	feed.add_kill(enemies[2], _player, false)
 	var line_sizes := feed.get_children().map(func(line: Node) -> int: return (line.find_child("Victim", true, false) as Label).get_theme_font_size("font_size"))
+	var line_heights: Array = []
 	var score_size := (round_hud.get_node("%YourScore") as Label).get_theme_font_size("font_size")
 	var title_size := (round_hud.get_node("Center/Title") as Label).get_theme_font_size("font_size")
-	_check("UI scale 1.5 scales the kill-feed lines (old and new), the scores and the center messages",
-			line_sizes == [24, 24] and score_size == 72 and title_size == 72,
-			"line font sizes %s (expected 24), score %d (72), title %d (72)" % [line_sizes, score_size, title_size])
+	await _wait_ticks(2)
+	line_heights = feed.get_children().map(func(line: Node) -> int: return roundi((line as Control).size.y))
+	_check("UI scale 1.5 scales the kill-feed lines (old and new: text and plate height), the scores and the center messages",
+			line_sizes == [24, 24] and line_heights == [roundi(Tokens.HUD_FEED_HEIGHT * 1.5), roundi(Tokens.HUD_FEED_HEIGHT * 1.5)]
+					and score_size == 72 and title_size == 72,
+			"line font sizes %s (expected 24), heights %s (%d), score %d (72), title %d (72)" % [line_sizes, line_heights, roundi(Tokens.HUD_FEED_HEIGHT * 1.5), score_size, title_size])
 	hud.set_ui_scale(1.0)
 
 	# The cap: 7 deaths leave the newest 5, newest at the bottom.
@@ -644,15 +653,30 @@ func _test_hud_wiring() -> void:
 			feed.get_line_count() == KillFeed.MAX_LINES and shown == victims.slice(2),
 			"%d line(s): %s (expected %s)" % [feed.get_line_count(), shown, victims.slice(2)])
 
-	# Highlights and colors relative to the viewer.
+	# The plates and colors relative to the viewer: your kill, your death, a kill between others, a world kill.
 	feed.clear()
 	feed.add_kill(_player, enemies[0], false)
 	feed.add_kill(enemies[1], mate, false)
+	feed.add_kill(enemies[2], _player, false)
+	feed.add_kill(mate, null, false, null, &"bomb")
 	var you_died := _read_line(feed.get_child(0))
 	var others := _read_line(feed.get_child(1))
-	_check("Lines that involve you, also your own death, are highlighted; lines between others are not",
-			you_died["highlighted"] == true and you_died["victim_color"] == blue and others["highlighted"] == false,
-			"your death: %s, others: %s" % [you_died, others])
+	var your_kill := _read_line(feed.get_child(2))
+	var world := _read_line(feed.get_child(3))
+	var plates: Array[StyleBoxFlat] = []
+	for line in feed.get_children():
+		plates.append((line as Control).get_theme_stylebox("panel") as StyleBoxFlat)
+	var cause_icon := feed.get_child(3).find_child("Cause", true, false) as TextureRect
+	_check("The plates: a line between others is the ink plate at 72%%, your kill is solid INK with a TEXT frame, your death solid INK with an ENEMY frame; each %d px high" % Tokens.HUD_FEED_HEIGHT,
+			you_died["role"] == KillFeed.PLATE_DEATH and you_died["victim_color"] == blue and others["role"] == KillFeed.PLATE_NORMAL and your_kill["role"] == KillFeed.PLATE_KILL
+					and plates[1].bg_color == Tokens.PLATE and plates[1].border_width_left == 0
+					and plates[2].bg_color == Tokens.INK and plates[2].border_color == Tokens.TEXT and plates[2].border_width_left == Tokens.BORDER
+					and plates[0].bg_color == Tokens.INK and plates[0].border_color == Tokens.ENEMY and plates[0].border_width_left == Tokens.BORDER,
+			"your death: %s, others: %s, your kill: %s; plates %s" % [you_died, others, your_kill, plates.map(func(box: StyleBoxFlat) -> String: return "%s/%s" % [box.bg_color, box.border_color])])
+	_check("A world kill (the bomb) has no killer: the bomb's icon in the alert colour, then the victim on the normal plate",
+			world["killer"] == "" and world["role"] == KillFeed.PLATE_NORMAL and world["victim"] == String(mate.name) and cause_icon != null
+					and cause_icon.texture == UiIcons.get_icon(feed, &"bomb") and cause_icon.modulate == Tokens.ALERT,
+			"%s, icon %s" % [world, cause_icon])
 	Teams.set_viewer_team(1)
 	feed.clear()
 	feed.add_kill(mate, enemies[0], false)
@@ -670,16 +694,17 @@ func _test_hud_wiring() -> void:
 	# Fading: fully visible at half the lifetime, fading around its end, gone soon after.
 	feed.clear()
 	feed.add_kill(enemies[0], _player, false)
-	await _wait_seconds(KillFeed.LINE_LIFETIME * 0.5)
+	var lifetime := feed.get_lifetime()
+	await _wait_seconds(lifetime * 0.5)
 	var early := feed.get_line_count() == 1 and is_equal_approx((feed.get_child(0) as Control).modulate.a, 1.0)
-	await _wait_seconds(KillFeed.LINE_LIFETIME * 0.5 + KillFeed.FADE_TIME * 0.5)
+	await _wait_seconds(lifetime * 0.5 + KillFeed.FADE_TIME * 0.5)
 	var fading := feed.get_line_count() == 1 and (feed.get_child(0) as Control).modulate.a < 0.9
 	await _wait_seconds(KillFeed.FADE_TIME * 0.5 + 0.2)
-	_check("A kill-feed line stays fully visible for %.0f s, then fades out and is removed" % KillFeed.LINE_LIFETIME,
-			early and fading and feed.get_line_count() == 0,
+	_check("A kill-feed line stays fully visible for %.0f s (the token's %d ms), then fades out and is removed" % [lifetime, Tokens.HUD_FEED_TIME_MS],
+			is_equal_approx(lifetime, Tokens.HUD_FEED_TIME_MS / 1000.0) and early and fading and feed.get_line_count() == 0,
 			"fully visible at %.1f s: %s, fading at %.2f s: %s, lines left at %.1f s: %d" % [
-					KillFeed.LINE_LIFETIME * 0.5, early, KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME * 0.5, fading,
-					KillFeed.LINE_LIFETIME + KillFeed.FADE_TIME + 0.2, feed.get_line_count()])
+					lifetime * 0.5, early, lifetime + KillFeed.FADE_TIME * 0.5, fading,
+					lifetime + KillFeed.FADE_TIME + 0.2, feed.get_line_count()])
 	_free_hud(hud)
 
 ## The HUD's look comes from the theme (M10, D-133, D-141): a HUD with no match has, for every
@@ -717,11 +742,9 @@ func _test_hud_look() -> void:
 		"RoundHud/%PlantedPlate/PlantedLabel": [Tokens.TEXT_SIZE_LARGE, Tokens.TEXT_ON_FILL, false],
 		"RoundHud/Center/Title": [Tokens.TEXT_SIZE_TITLE, Tokens.TEXT, true],
 		"RoundHud/Center/Line1": [Tokens.TEXT_SIZE, Tokens.TEXT, true],
-		"RoundHud/Center/Line2": [Tokens.TEXT_SIZE, Tokens.TEXT, true],
-		"RoundHud/Center/Line3": [Tokens.TEXT_SIZE, Tokens.TEXT, true],
-		"BombHud/CarryLabel": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_GOLD, true],
-		"BombHud/Prompt": [Tokens.HUD_SIZE_TEXT, Tokens.TEXT, true],
-		"BombHud/Message": [Tokens.HUD_SIZE_TEXT, Tokens.HUD_GOLD, true],
+		"%CarryPlate/CarryRow/CarryLabel": [Tokens.TEXT_SIZE, Tokens.TEXT_ON_FILL, false],
+		"BombHud/Prompt/Row/Text": [Tokens.TEXT_SIZE, Tokens.TEXT, true],
+		"BombHud/Prompt/Row/Seconds": [Tokens.TEXT_SIZE, Tokens.ALERT, true],
 	}
 	var wrong: Dictionary = {1.0: [], 1.5: []}
 	for factor: float in [1.0, 1.5, 1.0]:
@@ -765,7 +788,11 @@ func _test_hud_look() -> void:
 		"RoundHud/%BombBar": [&"separation", Tokens.HUD_GAP_BAR_BOMB],
 		"RoundHud/%BombCentre": [&"separation", Tokens.HUD_GAP_CENTRE],
 		"RoundHud/Center": [&"separation", Tokens.HUD_GAP_BLOCK],
-		"RoundHud/KillFeed": [&"separation", Tokens.HUD_FEED_GAP],
+		"RoundHud/KillFeed": [&"separation", Tokens.HUD_GAP_STACK],
+		"%Toasts": [&"separation", Tokens.HUD_GAP_STACK],
+		"BombHud/Prompt": [&"separation", Tokens.HUD_GAP_ICON],
+		"BombHud/Prompt/Row": [&"separation", Tokens.HUD_GAP_ICON],
+		"%CarryPlate/CarryRow": [&"separation", Tokens.HUD_GAP_STACK],
 		"BottomLeft/StatsRow/GearRow": [&"separation", Tokens.HUD_GAP_ICON],
 		"RoundHud/TdmBar/TdmCentreMargin": [&"margin_top", Tokens.HUD_GAP_STACK],
 		"BottomRight/AmmoRow/ReserveLift": [&"margin_bottom", Tokens.HUD_BASELINE_LIFT],
@@ -849,12 +876,13 @@ func _test_hud_look() -> void:
 
 	# The state colours and sizes code reads from the theme's Hud type.
 	var round_hud := _round_hud(hud)
-	var bar_back := (hud.get_node("BombHud/Bar/Back") as Control).get_theme_stylebox("panel") as StyleBoxFlat
-	var bar_fill := (hud.get_node("BombHud/Bar/Fill") as Control).get_theme_stylebox("panel") as StyleBoxFlat
-	_check("The bomb's progress bar keeps its colours (restyled with the bomb HUD), and the theme's Hud type holds the alert, the notice, the gold and the chip's size",
-			bar_back.bg_color == Tokens.HUD_BAR_BACK and bar_fill.bg_color == Tokens.HUD_BAR_FILL
+	var bar_back := (hud.get_node("BombHud/Prompt/Bar") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	var bar_fill := (hud.get_node("BombHud/Prompt/Bar/Fill") as Control).get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The bomb's progress bar is INK with a hard VOID shadow filled with ALERT, and the theme's Hud type holds the alert, the notice and the chip's size",
+			bar_back.bg_color == Tokens.INK and bar_back.border_color == Tokens.SHADOW and bar_back.border_width_right == Tokens.SHADOW_OFFSET
+					and bar_fill.bg_color == Tokens.ALERT
 					and round_hud.get_theme_color("alert", "Hud") == Tokens.ALERT and round_hud.get_theme_color("notice", "Hud") == Tokens.ALERT
-					and round_hud.get_theme_color("gold", "Hud") == Tokens.HUD_GOLD and round_hud.get_theme_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE,
+					and round_hud.get_theme_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE,
 			"strip %s, fill %s, pip size %d" % [bar_back.bg_color, bar_fill.bg_color, round_hud.get_theme_constant("pip_size", "Hud")])
 	_free_hud(hud)
 
@@ -936,9 +964,179 @@ func _test_hud_states() -> void:
 	await _wait_for_phase(RoundManager.Phase.ROUND_END)
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
-	_check("'Switching sides' (the notice at half time) is drawn in the theme's notice colour",
-			_center(hud)[2] == "Switching sides" and _center_color(hud, "Line2") == Tokens.ALERT,
-			"center %s, notice colour %s" % [_center(hud), _center_color(hud, "Line2")])
+	var switching := _toasts(hud).get_plate("Switching sides")
+	_check("'Switching sides' (the notice at half time) is a news toast: an INK plate",
+			switching != null and (switching.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.INK,
+			"toasts %s" % [_toast_texts(hud)])
+	_free_hud(hud)
+
+
+## The toasts: each kind's plate (INK news with a TEXT chip, TEXT match point with an INK chip, ALERT bomb with its
+## icon, INK low ammo with an ALERT frame), centred under the top bar and stacked newest at the bottom, the same
+## text shown again starting over instead of piling up, at most 4 at once, each gone after the token's 2.5 s and
+## frozen while the game is paused.
+func _test_hud_toasts() -> void:
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	_hold_bots()
+	var hud := _new_hud()
+	var toasts := _toasts(hud)
+	toasts.clear()
+	toasts.show_toast(ToastStack.Kind.NEUTRAL, "News")
+	toasts.show_toast(ToastStack.Kind.MATCH_POINT, "Point")
+	toasts.show_toast(ToastStack.Kind.BOMB, "Bomb news")
+	toasts.show_toast(ToastStack.Kind.LOW_AMMO, "Low")
+	await _wait_ticks(2)
+	var boxes := {}
+	var chips := {}
+	var icons := {}
+	var heights := {}
+	for text in toasts.get_texts():
+		var plate := toasts.get_plate(text)
+		boxes[text] = plate.get_theme_stylebox("panel") as StyleBoxFlat
+		chips[text] = plate.find_children("*", "Panel", true, false).size()
+		icons[text] = plate.find_children("*", "TextureRect", true, false).size()
+		heights[text] = roundi(plate.size.y)
+	var texts_colour := func(text: String) -> Color: return (toasts.get_plate(text).find_child("Text", true, false) as Label).get_theme_color("font_color")
+	var news_chip := toasts.get_plate("News").find_children("*", "Panel", true, false)[0] as Control
+	_check("Toasts: news is an INK plate with a TEXT chip and TEXT text, match point a TEXT plate with an INK chip and INK text, the bomb an ALERT plate with an icon and INK text, low ammo an INK plate with an ALERT frame and ALERT text",
+			boxes["News"].bg_color == Tokens.INK and texts_colour.call("News") == Tokens.TEXT and chips["News"] == 1
+					and boxes["Point"].bg_color == Tokens.TEXT and texts_colour.call("Point") == Tokens.TEXT_ON_FILL and chips["Point"] == 1
+					and boxes["Bomb news"].bg_color == Tokens.ALERT and texts_colour.call("Bomb news") == Tokens.TEXT_ON_FILL and icons["Bomb news"] == 1 and chips["Bomb news"] == 0
+					and boxes["Low"].bg_color == Tokens.INK and boxes["Low"].border_color == Tokens.ALERT and boxes["Low"].border_width_left == Tokens.BORDER
+					and texts_colour.call("Low") == Tokens.ALERT and chips["Low"] == 0 and icons["Low"] == 0
+					and news_chip.size == Vector2(Tokens.HUD_TOAST_CHIP, Tokens.HUD_TOAST_CHIP),
+			"boxes %s, chips %s, icons %s, chip size %s" % [boxes.keys().map(func(key: String) -> String: return "%s %s" % [key, (boxes[key] as StyleBoxFlat).bg_color]), chips, icons, news_chip.size])
+	var view := get_viewport().get_visible_rect().size
+	var rect := toasts.get_global_rect()
+	var first := toasts.get_plate("News").get_global_rect()
+	var last := toasts.get_plate("Low").get_global_rect()
+	_check("The stack is centred under the top bar (112 from the top), each plate %d high, %d apart, newest at the bottom" % [Tokens.HUD_TOAST_HEIGHT, Tokens.HUD_GAP_STACK],
+			absf(rect.position.y - 112.0) < 0.5 and absf(rect.get_center().x - view.x * 0.5) <= 1.0 and heights.values().all(func(height: int) -> bool: return height == Tokens.HUD_TOAST_HEIGHT)
+					and is_equal_approx(last.position.y - first.position.y, 3.0 * (Tokens.HUD_TOAST_HEIGHT + Tokens.HUD_GAP_STACK)),
+			"stack %s (screen %s), heights %s, first %s, last %s" % [rect, view, heights, first, last])
+	# At scale 1.5 it all grows by 1.5, the offset from the top too.
+	hud.call("set_ui_scale", 1.5)
+	await _wait_ticks(2)
+	var scaled_rect := toasts.get_global_rect()
+	var scaled_height := roundi(toasts.get_plate("News").size.y)
+	hud.call("set_ui_scale", 1.0)
+	_check("At scale 1.5 the toasts are 1.5 times as big and as far from the top",
+			absf(scaled_rect.position.y - 168.0) < 0.5 and scaled_height == roundi(Tokens.HUD_TOAST_HEIGHT * 1.5), "stack %s, plate height %d" % [scaled_rect, scaled_height])
+	# Repeating a toast starts it over; there are at most 4.
+	toasts.clear()
+	toasts.show_toast(ToastStack.Kind.NEUTRAL, "Again")
+	toasts.show_toast(ToastStack.Kind.NEUTRAL, "Again")
+	var once := toasts.get_texts().size()
+	for i in 6:
+		toasts.show_toast(ToastStack.Kind.NEUTRAL, "No. %d" % i)
+	_check("The same toast shown twice is one toast; at most %d show at once, the oldest pushed out" % ToastStack.MAX_TOASTS,
+			once == 1 and toasts.get_texts() == ["No. 2", "No. 3", "No. 4", "No. 5"], "%d, then %s" % [once, toasts.get_texts()])
+	# Expiry: 2.5 s (the token), counted in the game's time.
+	toasts.clear()
+	toasts.show_toast(ToastStack.Kind.NEUTRAL, "Brief")
+	var lifetime := toasts.get_lifetime()
+	await _wait_seconds(lifetime - 0.2)
+	var still_there := toasts.get_texts() == ["Brief"]
+	await _wait_seconds(0.4)
+	_check("A toast stays the token's %d ms and is gone right after" % Tokens.HUD_TOAST_TIME_MS,
+			is_equal_approx(lifetime, Tokens.HUD_TOAST_TIME_MS / 1000.0) and still_there and toasts.get_texts().is_empty(),
+			"lifetime %.2f s, there at %.2f s: %s, left after: %s" % [lifetime, lifetime - 0.2, still_there, toasts.get_texts()])
+	# A pause freezes it.
+	toasts.show_toast(ToastStack.Kind.NEUTRAL, "Frozen")
+	await _wait_seconds(1.0)
+	get_tree().paused = true
+	await _wait_seconds(lifetime + 1.0)
+	var survived := toasts.get_texts() == ["Frozen"]
+	get_tree().paused = false
+	await _wait_seconds(lifetime - 1.0 - 0.2)
+	var still_up := toasts.get_texts() == ["Frozen"]
+	await _wait_seconds(0.4)
+	_check("A paused game freezes a toast where it was: it outlasts a pause longer than its lifetime, then runs out",
+			survived and still_up and toasts.get_texts().is_empty(),
+			"after the pause: %s, before its end: %s, after its end: %s" % [survived, still_up, toasts.get_texts()])
+	_free_hud(hud)
+
+
+## The hit marker: it flashes for the token's 150 ms when the weapon on show hits a character (a head in the alert
+## colour, anything else white) and not when it hits a wall, is eight bars in four L-shaped corners, and the low
+## ammo toast comes once per magazine when it first drops to a quarter, never for the knife or a grenade.
+func _test_hud_hit_marker_and_low_ammo() -> void:
+	await _new_match(MatchSettings.new().rounds_to_win, HUD_ROUND_TIME)
+	_hold_bots()
+	var hud := _new_hud()
+	var marker := hud.get_node("HitMarker") as HitMarker
+	var weapon := _player.weapon
+	weapon.hit_landed.emit({"zone": "Chest", "damage": 20.0})
+	var body := marker.is_showing() and marker.get_color() == Tokens.TEXT_BRIGHT
+	await _wait_ticks(roundi(0.1 * Engine.physics_ticks_per_second))
+	var at_100_ms := marker.is_showing()
+	await _wait_ticks(roundi(0.1 * Engine.physics_ticks_per_second))
+	var at_200_ms := marker.is_showing()
+	weapon.hit_landed.emit({"zone": "Head", "damage": 100.0})
+	var head := marker.is_showing() and marker.get_color() == Tokens.ALERT
+	await _wait_ticks(roundi(0.3 * Engine.physics_ticks_per_second))
+	weapon.hit_landed.emit({"zone": "", "damage": 0.0})
+	var wall := marker.is_showing()
+	_check("A hit on the body flashes the marker white, a headshot in ALERT; it lasts the token's %d ms (there at 100 ms, gone at 200 ms) and a wall shows nothing" % Tokens.HUD_HIT_TIME_MS,
+			body and at_100_ms and not at_200_ms and head and not wall,
+			"body %s, at 100 ms %s, at 200 ms %s, head %s, wall %s" % [body, at_100_ms, at_200_ms, head, wall])
+	weapon.hit_landed.emit({"zone": "Chest", "damage": 20.0})
+	var bars := marker.get_bars()
+	var inner := float(Tokens.HUD_HIT_INNER)
+	var outer := inner + Tokens.HUD_HIT_LENGTH
+	var centre := (marker.size / 2.0).floor()
+	var span := Rect2()
+	for bar in bars:
+		span = bar if span.size == Vector2.ZERO else span.merge(bar)
+	var thick := bars.filter(func(bar: Rect2) -> bool: return bar.size == Vector2(Tokens.HUD_HIT_LENGTH, Tokens.HUD_HIT_THICKNESS) or bar.size == Vector2(Tokens.HUD_HIT_THICKNESS, Tokens.HUD_HIT_LENGTH))
+	hud.call("set_ui_scale", 1.5)
+	var scaled_span := Rect2()
+	for bar in marker.get_bars():
+		scaled_span = bar if scaled_span.size == Vector2.ZERO else scaled_span.merge(bar)
+	hud.call("set_ui_scale", 1.0)
+	_check("The marker is 8 bars (two per corner, %d x %d) from %d to %d px around the crosshair's centre, 1.5 times as big at scale 1.5" % [Tokens.HUD_HIT_LENGTH, Tokens.HUD_HIT_THICKNESS, int(inner), int(outer)],
+			bars.size() == 8 and thick.size() == 8 and span == Rect2(centre - Vector2(outer, outer), Vector2(outer, outer) * 2.0)
+					and scaled_span.size == Vector2(outer, outer) * 3.0,
+			"%d bars, %d of the right size, span %s (centre %s), scaled span %s" % [bars.size(), thick.size(), span, centre, scaled_span.size])
+
+	# Low ammo: once per magazine, when it first drops to the threshold.
+	var toasts := _toasts(hud)
+	toasts.clear()
+	var size := weapon.data.magazine_size
+	var threshold := int(size * 0.25)
+	weapon.ammo_changed.emit(threshold + 1, 90)
+	var before := toasts.get_texts().size()
+	weapon.ammo_changed.emit(threshold, 90)
+	var text := "Low ammo · %s reload" % BombHud.key_name(&"reload")
+	var came := toasts.get_texts() == [text]
+	var plate := toasts.get_plate(text)
+	var frame := plate != null and (plate.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.ALERT
+	toasts.clear()
+	weapon.ammo_changed.emit(threshold - 1, 90)
+	var again := toasts.get_texts().size()
+	weapon.ammo_changed.emit(size, 90)
+	weapon.ammo_changed.emit(threshold, 90)
+	var after_reload := toasts.get_texts() == [text]
+	toasts.clear()
+	weapon.ammo_changed.emit(size, 0)
+	weapon.ammo_changed.emit(threshold, 0)
+	var no_reserve := toasts.get_texts().size()
+	_check("Low ammo ('Low ammo · R reload', an INK plate with an ALERT frame) comes when the magazine first drops to %d of %d, once per magazine (again after a reload), and not without a reserve to reload from" % [threshold, size],
+			before == 0 and came and frame and again == 0 and after_reload and no_reserve == 0,
+			"above the threshold: %d toasts, at it: %s (frame %s), below it: %d, after a reload: %s, no reserve: %d" % [before, toasts.get_texts(), frame, again, after_reload, no_reserve])
+	toasts.clear()
+	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.KNIFE), true)
+	await _wait_ticks(2)
+	_player.weapon.ammo_changed.emit(0, 0)
+	var knife := toasts.get_texts().size()
+	var clicks_blocked: Array[String] = []
+	toasts.show_toast(ToastStack.Kind.BOMB, "Bomb news")
+	_feed(hud).add_kill(_rounds.get_members(1)[0], _player, true)
+	for control: Control in hud.find_children("*", "Control", true, false):
+		if control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			clicks_blocked.append(String(control.name))
+	_check("No low ammo toast for the knife, and a toast, a feed line and the hit marker take no mouse clicks",
+			knife == 0 and clicks_blocked.is_empty(), "knife toasts %d, controls that would take clicks: %s" % [knife, clicks_blocked])
 	_free_hud(hud)
 
 
@@ -1366,24 +1564,34 @@ func _center(hud: Node) -> Array:
 	return lines
 
 
+## The toasts showing, oldest first.
+func _toast_texts(hud: Node) -> Array[String]:
+	return _toasts(hud).get_texts()
+
+
+func _toasts(hud: Node) -> ToastStack:
+	return hud.get_node("%Toasts") as ToastStack
+
+
 func _center_color(hud: Node, label_name: String) -> Color:
 	return (hud.get_node("RoundHud/Center/" + label_name) as Label).get_theme_color("font_color")
 
 
-## What a kill-feed line shows: names and colors (empty when there is no killer), the headshot mark and whether it is highlighted.
+## What a kill-feed line shows: names and colors (empty when there is no killer), whether a weapon icon or name and a
+## headshot mark are there, and the role of its plate.
 func _read_line(line: Node) -> Dictionary:
 	var killer := line.find_child("Killer", true, false) as Label
 	var separator := line.find_child("Separator", true, false) as Label
 	var victim := line.find_child("Victim", true, false) as Label
-	var panel := (line as Control).get_theme_stylebox("panel") as StyleBoxFlat
 	return {
 		"killer": killer.text if killer != null else "",
 		"killer_color": killer.get_theme_color("font_color") if killer != null else Color(0, 0, 0, 0),
 		"separator": separator.text if separator != null else "",
+		"weapon": line.find_child("Weapon", true, false) != null,
 		"victim": victim.text,
 		"victim_color": victim.get_theme_color("font_color"),
 		"headshot": line.find_child("Headshot", true, false) != null,
-		"highlighted": panel.border_width_left > 0,
+		"role": (line as Control).theme_type_variation,
 	}
 
 
@@ -1415,7 +1623,7 @@ func _check_banner(hud: Node, label: String, outcomes: Dictionary) -> void:
 	var timer := (_bar(hud))[1] as String
 	outcomes["%s by %s" % ["won" if won else "lost", "time-out" if by_time else "elimination"]] = true
 	_check("Round-end banner (%s): %s by %s" % [label, "won" if won else "lost", "time-out" if by_time else "elimination"],
-			center == ["Round won" if won else "Round lost", reason_text, "", ""] and _center_color(hud, "Title") == color
+			center == ["Round won" if won else "Round lost", reason_text] and _center_color(hud, "Title") == color
 					and (not by_time or timer == "0:00"),
 			"center %s, title color %s (expected %s), timer %s" % [center, _center_color(hud, "Title"), color, timer])
 

@@ -43,7 +43,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **HUD, part A** (task 14, Sonnet): your mockups 09–13: text with the hard shadow, health and armor with icons (and the health chips in Team Deathmatch), the weapon's icon and ammo, the Team Deathmatch bars, the Bomb alive chips and the planted plate, the round banners, the grey death screen with the big countdown and "Killed by" plate, and the spectate plate. 12 suites (660 checks) pass.
 
-**Next:** HUD part B (kill feed plates, bomb plate and prompts, toasts, hit marker), class-draft cards and buy menu.
+- **HUD, part B** (Sonnet): kill-feed plates with weapon icons (your kills framed white, your deaths red), the amber Bomb plate when you carry it, the plant/defuse prompt with its bar, toasts (switching sides, match point, bomb planted, low ammo) and a hit marker (white, amber on a headshot). All 30 suites pass (1018 checks).
+
+**Next:** class-draft cards and buy menu.
 
 ## 2026-10-16 — M9 multiplayer
 

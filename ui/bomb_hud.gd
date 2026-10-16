@@ -1,44 +1,63 @@
 class_name BombHud
 extends Control
-## The bomb part of the HUD (D-080), shown in bomb rounds only:
-## - a gold "BOMB" tag above the weapon name while the character on show carries it;
-## - a prompt under the crosshair: "Hold E to plant" inside a bomb site with the
-##   bomb, "Hold E to defuse" next to the planted bomb as a defender, and
-##   "Planting" / "Defusing" with a progress bar while it happens;
-## - short messages under the top bar: you have the bomb, it was dropped or
-##   picked up (for the attackers), and where it was planted (for everyone).
+## The bomb part of the HUD (D-080; mockups 11 and 12), shown in bomb rounds only:
+## - the "Bomb" tag (an ALERT plate with the bomb's icon) above the weapon row in the bottom-right column while the
+##   character on show carries the bomb: the plate is part of [code]hud.tscn[/code]'s column, handed over with
+##   [method set_carry_plate], and this node only shows and hides it;
+## - a prompt under the crosshair: the E key cap and "Hold · plant the bomb" inside a bomb site with the bomb,
+##   "Hold · defuse the bomb" next to the planted bomb as a defender; while it happens the key cap gives way to the
+##   bomb's (or the kit's) icon, the text says "Planting" or "Defusing", the seconds left show in ALERT and a bar
+##   fills under it;
+## - toasts ([ToastStack], handed over with [method set_toasts]): you picked up the bomb, it was dropped (for the
+##   attackers), and where it was planted (for everyone).
 ##
-## A pure view: it reads the round manager's [Bomb] every frame and listens to
-## its signals, and never changes it. [method set_round_manager] hands it the
-## manager (null hides everything); [method set_view_target] the character on
+## A pure view: it reads the round manager's [Bomb] every frame and listens to its signals, and never changes it.
+## [method set_round_manager] hands it the manager (null hides everything); [method set_view_target] the character on
 ## show (you, or the teammate you spectate). Nothing here takes mouse clicks.
 ##
-## The look comes from the UI theme (D-133): the labels pick roles ([code]HudBombTagLabel[/code],
-## [code]HudPromptLabel[/code], [code]HudBombMessageLabel[/code]), the progress bar's two
-## panels [code]HudBarBack[/code] and [code]HudBarFill[/code], and the gold of the
-## messages is read from the theme's custom type "Hud".
+## The look comes from the UI theme (D-133): the labels pick roles ([code]KeyCapLabel[/code], [code]HudSmallLabel[/code],
+## [code]HudAlertLabel[/code]), the bar's two panels [code]HudProgressBack[/code] and [code]HudProgressFill[/code], and
+## its size and the icons' tint come from the theme's "Hud" type and the palette.
 
-## Seconds a message stays before it fades.
-const MESSAGE_TIME := 4.0
-## Seconds the fade takes.
-const MESSAGE_FADE := 0.5
-## The theme type that holds the HUD's state colours (see tools/make_ui_theme.gd).
+## The theme types that hold the HUD's sizes and the palette's named colours.
 const THEME_TYPE := &"Hud"
+const PALETTE_TYPE := &"Palette"
+## The prompt's texts. "Hold" and the key cap say how, so the key is not in the text.
+const PLANT_TEXT := "Hold · plant the bomb"
+const DEFUSE_TEXT := "Hold · defuse the bomb"
+const PLANTING_TEXT := "Planting"
+const DEFUSING_TEXT := "Defusing"
+## The toasts' texts; %s is a name or a site's letter.
+const PICKED_UP_TEXT := "You picked up the bomb"
+const TEAMMATE_PICKED_UP_TEXT := "%s picked up the bomb"
+const DROPPED_TEXT := "Bomb dropped"
+const PLANTED_TEXT := "Bomb planted at %s"
 
 var _manager: RoundManager
 var _bomb: Bomb
 ## The character the HUD shows: the player, or the teammate being spectated.
 var _viewer: Character
-var _message_left: float = 0.0
+var _ui_scale: float = 1.0
+## The tag in the bottom-right column (null until the HUD hands it over) and whether it shows.
+var _carry_plate: Control
+var _carrying: bool = false
+var _toasts: ToastStack
+## The icon slot the prompt's icon shows now ("" while it is hidden).
+var _icon_slot: StringName = &""
 
-@onready var _carry_label: Label = $CarryLabel
-@onready var _prompt: Label = $Prompt
-@onready var _bar: Control = $Bar
-@onready var _bar_fill: Panel = $Bar/Fill
-@onready var _message: Label = $Message
+@onready var _prompt: Control = $Prompt
+@onready var _key: Label = $Prompt/Row/Key
+@onready var _icon: TextureRect = $Prompt/Row/Icon
+@onready var _text: Label = $Prompt/Row/Text
+@onready var _seconds: Label = $Prompt/Row/Seconds
+@onready var _bar: Control = $Prompt/Bar
+@onready var _bar_fill: Panel = $Prompt/Bar/Fill
 
 
 func _ready() -> void:
+	_bar.custom_minimum_size = Vector2(_theme_size(&"prompt_bar_width"), _theme_size(&"prompt_bar_height"))
+	_icon.set_meta(UiScale.SKIP_SIZE_META, true)
+	_icon.modulate = get_theme_color(&"text", PALETTE_TYPE)
 	_hide_all()
 
 
@@ -55,29 +74,53 @@ func set_view_target(target: Character) -> void:
 	_viewer = target
 
 
+## The "Bomb" tag this node shows while the character on show carries the bomb (the plate in the HUD's bottom-right column).
+func set_carry_plate(plate: Control) -> void:
+	_carry_plate = plate
+	_carry_plate.visible = _carrying
+
+
+## The toasts this node announces the bomb's news on (null: no news).
+func set_toasts(toasts: ToastStack) -> void:
+	_toasts = toasts
+
+
 ## Scales the layout; 1.0 is the size it is designed for (a 720-pixel-tall window).
 func set_ui_scale(factor: float) -> void:
+	_ui_scale = factor
 	UiScale.apply_tree(self, factor)
+	if _icon.texture != null:
+		UiIcons.fit_rect(_icon, factor)
 
 
 ## The prompt text shown right now (empty when hidden). For tests.
 func get_prompt() -> String:
-	return _prompt.text if _prompt.visible else ""
+	return _text.text if _prompt.visible else ""
 
 
-## The message shown right now (empty when hidden). For tests.
-func get_message() -> String:
-	return _message.text if _message.visible else ""
+## The seconds left of a plant or defuse as the prompt shows them ("2.4"), or "" while nothing is happening. For tests.
+func get_seconds() -> String:
+	return _seconds.text if _prompt.visible and _seconds.visible else ""
 
 
-## True while the gold "BOMB" tag shows. For tests.
+## True while the key cap shows (the prompt says what to hold; it is the icon's instead while it happens). For tests.
+func is_key_shown() -> bool:
+	return _prompt.visible and _key.visible
+
+
+## The icon slot of the prompt's icon ("bomb", "defuse_kit"), or "" while it is hidden. For tests.
+func get_prompt_icon() -> StringName:
+	return _icon_slot if _prompt.visible and _icon.visible else &""
+
+
+## True while the "Bomb" tag shows. For tests.
 func is_carry_shown() -> bool:
-	return _carry_label.visible
+	return _carrying
 
 
 ## The progress bar's fill, 0 to 1, or -1 while it is hidden. For tests.
 func get_progress_shown() -> float:
-	return _bar_fill.anchor_right if _bar.visible else -1.0
+	return _bar_fill.anchor_right if _prompt.visible and _bar.visible else -1.0
 
 
 ## The name of the key bound to [param action], e.g. "E" for use. Keys are
@@ -91,7 +134,7 @@ static func key_name(action: StringName) -> String:
 	return String(action)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var bomb := _manager.bomb if is_instance_valid(_manager) else null
 	if bomb != _bomb:
 		_connect_bomb(bomb)
@@ -99,34 +142,62 @@ func _process(delta: float) -> void:
 		_hide_all()
 		return
 	visible = true
-	_carry_label.visible = _bomb.carrier == _viewer and _bomb.state == Bomb.State.CARRIED
+	_set_carrying(_bomb.carrier == _viewer and _bomb.state == Bomb.State.CARRIED)
 	_update_prompt()
-	if _message_left > 0.0:
-		_message_left -= delta
-		_message.modulate.a = clampf(_message_left / MESSAGE_FADE, 0.0, 1.0)
-		_message.visible = _message_left > 0.0
 
 
+## The prompt: what to hold (the key cap and the text) when you can plant or defuse, what is happening (the
+## icon, the text, the seconds left and the bar) while you do.
 func _update_prompt() -> void:
 	var text := ""
 	var progress := -1.0
+	var slot := &""
+	var total := 0.0
 	if _bomb.actor == _viewer:
 		if _bomb.is_planting(_viewer):
-			text = "Planting"
+			text = PLANTING_TEXT
+			slot = &"bomb"
+			total = _bomb.settings.plant_time
 		else:
-			text = "Defusing with kit" if _bomb.kit_check.call(_viewer) else "Defusing"
+			text = DEFUSING_TEXT
+			slot = &"defuse_kit" if _bomb.kit_check.call(_viewer) else &"bomb"
+			total = _bomb.get_defuse_time(_viewer)
 		progress = clampf(_bomb.progress, 0.0, 1.0)
 	elif _viewer.is_local_player() and _viewer.is_alive() and _bomb.active:
-		var use_key := key_name(&"use")
 		if _bomb.carrier == _viewer and _bomb.get_site_of(_viewer) != null:
-			text = "Hold %s to plant" % use_key
+			text = PLANT_TEXT
 		elif _bomb.is_planted() and _viewer.team != _bomb.attacking_team and _near_bomb():
-			text = "Hold %s to defuse" % use_key
-	_prompt.text = text
+			text = DEFUSE_TEXT
 	_prompt.visible = not text.is_empty()
-	_bar.visible = progress >= 0.0
-	if _bar.visible:
+	_text.text = text
+	var holding := progress >= 0.0
+	_bar.visible = holding
+	_seconds.visible = holding
+	_key.visible = not holding
+	_set_icon(slot)
+	_key.text = key_name(&"use")
+	if holding:
 		_bar_fill.set_anchor(SIDE_RIGHT, progress, true)
+		_seconds.text = "%.1f" % maxf(0.0, (1.0 - progress) * total)
+
+
+## Puts the icon of [param slot] in the prompt (hidden for "" or while the slot is empty).
+func _set_icon(slot: StringName) -> void:
+	if slot == _icon_slot and (slot == &"" or _icon.texture != null):
+		return
+	_icon_slot = slot
+	var texture := UiIcons.get_icon(_icon, slot) if slot != &"" else null
+	_icon.texture = texture
+	_icon.visible = texture != null
+	if texture != null:
+		UiIcons.fit_rect(_icon, _ui_scale)
+
+
+## Shows or hides the "Bomb" tag in the bottom-right column.
+func _set_carrying(carrying: bool) -> void:
+	_carrying = carrying
+	if _carry_plate != null:
+		_carry_plate.visible = carrying
 
 
 ## Close enough to the planted bomb to see the defuse prompt (a little more than the defuse reach).
@@ -142,7 +213,6 @@ func _connect_bomb(bomb: Bomb) -> void:
 			if signal_to_drop.is_connected(pair[1]):
 				signal_to_drop.disconnect(pair[1])
 	_bomb = bomb
-	_message_left = 0.0
 	if _bomb == null:
 		return
 	for pair in _bomb_connections():
@@ -162,39 +232,35 @@ func _on_picked_up(carrier: Character) -> void:
 	if not is_instance_valid(_viewer):
 		return
 	if carrier == _viewer and _viewer.is_local_player():
-		_show_message("You have the bomb", _gold())
+		_toast(PICKED_UP_TEXT)
 	elif Teams.viewer_team == _bomb.attacking_team and _manager.phase == RoundManager.Phase.LIVE:
-		_show_message("%s picked up the bomb" % carrier.name, _gold())
+		_toast(TEAMMATE_PICKED_UP_TEXT % carrier.name)
 
 
 func _on_dropped(_at: Vector3) -> void:
 	if Teams.viewer_team == _bomb.attacking_team:
-		_show_message("The bomb was dropped", _gold())
+		_toast(DROPPED_TEXT)
 
 
 func _on_planted(site: Area3D, _planter: Character) -> void:
-	_show_message("Bomb planted at %s" % Bomb.site_letter(site), Teams.text_color_for(_bomb.attacking_team))
+	if _toasts != null:
+		_toasts.show_toast(ToastStack.Kind.BOMB, PLANTED_TEXT % Bomb.site_letter(site))
 	UiSounds.play(UiSounds.BOMB_PLANTED)
 
 
-## The gold of the bomb's messages, from the theme.
-func _gold() -> Color:
-	return get_theme_color(&"gold", THEME_TYPE)
+## News of the bomb, on a toast.
+func _toast(text: String) -> void:
+	if _toasts != null:
+		_toasts.show_toast(ToastStack.Kind.NEUTRAL, text)
 
 
-func _show_message(text: String, color: Color) -> void:
-	_message.text = text
-	_message.add_theme_color_override("font_color", color)
-	_message.modulate.a = 1.0
-	_message.visible = true
-	_message_left = MESSAGE_TIME
+func _theme_size(constant_name: StringName) -> int:
+	return get_theme_constant(constant_name, THEME_TYPE)
 
 
 func _hide_all() -> void:
-	if _carry_label == null:
+	if _prompt == null:
 		return
-	_carry_label.visible = false
+	_set_carrying(false)
 	_prompt.visible = false
 	_bar.visible = false
-	if _message_left <= 0.0:
-		_message.visible = false

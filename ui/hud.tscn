@@ -5,6 +5,8 @@
 [ext_resource type="PackedScene" path="res://ui/round_hud.tscn" id="round_hud_scene"]
 [ext_resource type="PackedScene" path="res://ui/bomb_hud.tscn" id="bomb_hud_scene"]
 [ext_resource type="Script" path="res://ui/scope_overlay.gd" id="scope_overlay_script"]
+[ext_resource type="Script" path="res://ui/hit_marker.gd" id="hit_marker_script"]
+[ext_resource type="Script" path="res://ui/toast_stack.gd" id="toast_stack_script"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
@@ -38,6 +40,15 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("crosshair_script")
 
+[node name="HitMarker" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("hit_marker_script")
+
 [node name="DeadTint" type="Panel" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -52,6 +63,18 @@ theme_type_variation = &"HudDeadTint"
 [node name="RoundHud" parent="." instance=ExtResource("round_hud_scene")]
 
 [node name="BombHud" parent="." instance=ExtResource("bomb_hud_scene")]
+
+[node name="Toasts" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = 112.0
+offset_bottom = 112.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+script = ExtResource("toast_stack_script")
 
 [node name="SlotsLabel" type="Label" parent="."]
 visible = false
@@ -209,6 +232,33 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 theme_type_variation = &"HudStack"
+
+[node name="CarryPlate" type="PanelContainer" parent="BottomRight"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_filter = 2
+theme_type_variation = &"HudAlertPlate"
+
+[node name="CarryRow" type="HBoxContainer" parent="BottomRight/CarryPlate"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowStack"
+
+[node name="CarryIcon" type="TextureRect" parent="BottomRight/CarryPlate/CarryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="CarryLabel" type="Label" parent="BottomRight/CarryPlate/CarryRow"]
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateInkLabel"
+text = "Bomb"
 
 [node name="WeaponRow" type="HBoxContainer" parent="BottomRight"]
 layout_mode = 2

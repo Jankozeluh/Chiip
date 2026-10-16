@@ -119,22 +119,26 @@ const HUD_VARIATIONS := {
 	"HudSmallLabel": "Label", "HudDimLabel": "Label", "HudSlotsLabel": "Label", "HudValueLabel": "Label", "HudLargeLabel": "Label",
 	"HudReserveLabel": "Label", "HudFriendlyScoreLabel": "Label", "HudEnemyScoreLabel": "Label", "HudTitleLabel": "Label",
 	"HudCountdownLabel": "Label", "HudPlateDimLabel": "Label", "HudPlateMuteLabel": "Label", "HudPlateLabel": "Label",
-	"HudPlateNameLabel": "Label", "HudAlertPlateLabel": "Label", "HudBombTagLabel": "Label", "HudPromptLabel": "Label",
-	"HudBombMessageLabel": "Label",
+	"HudPlateNameLabel": "Label", "HudAlertPlateLabel": "Label",
+	# M10 task 14: the kill feed, the toasts, the bomb's tag and prompt, the hit marker's sizes (the "Hud" type).
+	"HudPlateInkLabel": "Label", "HudPlateAlertLabel": "Label", "HudAlertLabel": "Label",
 	"HudStack": "VBoxContainer", "HudStackBlock": "VBoxContainer", "HudStackDeath": "VBoxContainer", "HudStackCentre": "VBoxContainer",
-	"HudKillFeed": "VBoxContainer",
+	"HudStackIcon": "VBoxContainer",
 	"HudRowStack": "HBoxContainer", "HudRowIcon": "HBoxContainer", "HudRowBlock": "HBoxContainer", "HudRowBarBomb": "HBoxContainer",
 	"HudRowBarTdm": "HBoxContainer", "HudRowStats": "HBoxContainer", "HudRowChips": "HBoxContainer",
 	"HudCentreMargin": "MarginContainer", "HudBaselineLift": "MarginContainer",
 	"HudHealthChip": "Panel", "HudHealthChipEmpty": "Panel", "HudScoreBarBack": "Panel", "HudFriendlyBarFill": "Panel",
 	"HudEnemyBarFill": "Panel", "HudFriendlyPipAlive": "Panel", "HudEnemyPipAlive": "Panel", "HudFriendlyPipDead": "Panel",
-	"HudEnemyPipDead": "Panel", "HudDeadTint": "Panel", "HudBarBack": "Panel", "HudBarFill": "Panel",
-	"HudPlate": "PanelContainer", "HudAlertPlate": "PanelContainer",
+	"HudEnemyPipDead": "Panel", "HudDeadTint": "Panel", "HudProgressBack": "Panel", "HudProgressFill": "Panel",
+	"HudToastChip": "Panel", "HudToastChipInk": "Panel",
+	"HudPlate": "PanelContainer", "HudAlertPlate": "PanelContainer", "HudFeedPlate": "PanelContainer", "HudFeedPlateYou": "PanelContainer",
+	"HudFeedPlateDeath": "PanelContainer", "HudToastNeutral": "PanelContainer", "HudToastMatchPoint": "PanelContainer",
+	"HudToastBomb": "PanelContainer", "HudToastLowAmmo": "PanelContainer",
 }
-## The HUD's scenes and scripts that must take everything from the theme (kill_feed.gd is not in the
-## list: it still carries its own colours until the kill feed is restyled).
+## The HUD's scenes and scripts that must take everything from the theme.
 const HUD_SCENES: Array[String] = ["res://ui/hud.tscn", "res://ui/round_hud.tscn", "res://ui/bomb_hud.tscn"]
-const HUD_SCRIPTS: Array[String] = ["res://ui/hud.gd", "res://ui/round_hud.gd", "res://ui/bomb_hud.gd"]
+const HUD_SCRIPTS: Array[String] = ["res://ui/hud.gd", "res://ui/round_hud.gd", "res://ui/bomb_hud.gd", "res://ui/kill_feed.gd",
+		"res://ui/toast_stack.gd", "res://ui/hit_marker.gd"]
 ## The theme overrides a menu must not carry (see [method _override_names]): the names a control's
 ## properties don't list because the built-in theme has no such item for its class, asked for one by one.
 ## Kind (the part Godot puts after "theme_override_") → item names.
@@ -1507,15 +1511,16 @@ func _test_hud_roles() -> void:
 	var countdown := _variation_node(Label.new(), "HudCountdownLabel", holder)
 	var friendly := _variation_node(Label.new(), "HudFriendlyScoreLabel", holder)
 	var small := _variation_node(Label.new(), "HudSmallLabel", holder)
-	var tag := _variation_node(Label.new(), "HudBombTagLabel", holder)
+	var alert_text := _variation_node(Label.new(), "HudAlertLabel", holder)
 	var bold: Font = load(Tokens.FONT_BOLD)
-	_check("The HUD's label roles take their tokens: 16 px small text, 32 px for armor, money and time, 48 px for health, magazine and scores (the friendly one in FRIENDLY), 48 px Bold for the banners, 96 px Bold for the countdown, the reserve in TEXT at 70%, the bomb tag the gold",
+	_check("The HUD's label roles take their tokens: 16 px small text, 32 px for armor, money and time, 48 px for health, magazine and scores (the friendly one in FRIENDLY), 48 px Bold for the banners, 96 px Bold for the countdown, the reserve in TEXT at 70%, the prompt's seconds ALERT",
 			small.get_theme_font_size("font_size") == Tokens.TEXT_SIZE and large.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
 					and value.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and friendly.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
 					and friendly.get_theme_color("font_color") == Tokens.FRIENDLY and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
 					and (title.get_theme_font("font") as FontVariation).base_font == bold
 					and countdown.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and (countdown.get_theme_font("font") as FontVariation).base_font == bold
-					and reserve.get_theme_color("font_color") == Tokens.HUD_RESERVE_TEXT and tag.get_theme_color("font_color") == Tokens.HUD_GOLD
+					and reserve.get_theme_color("font_color") == Tokens.HUD_RESERVE_TEXT and alert_text.get_theme_color("font_color") == Tokens.ALERT
+					and alert_text.get_theme_font_size("font_size") == Tokens.TEXT_SIZE
 					and (value.get_theme_font("font") as FontVariation).base_font.resource_path == FONT_PATH,
 			"value %d, large %d, title %d, countdown %d, reserve %s" % [value.get_theme_font_size("font_size"), large.get_theme_font_size("font_size"),
 					title.get_theme_font_size("font_size"), countdown.get_theme_font_size("font_size"), reserve.get_theme_color("font_color")])
@@ -1555,8 +1560,8 @@ func _test_hud_roles() -> void:
 					and alert_plate.bg_color == Tokens.ALERT and alert_plate.content_margin_left == Tokens.HUD_ALERT_PLATE_PAD and tint.bg_color == Tokens.HUD_DEAD_TINT,
 			"chip %s/%s, alive %s, dead %s, plate %s/%s, alert plate %s, tint %s" % [chip.bg_color, chip_empty.bg_color, alive.bg_color, dead.border_color,
 					plate.bg_color, plate.content_margin_left, alert_plate.bg_color, tint.bg_color])
-	_check("The custom 'Hud' type holds what code reads: the alert, the notice (both ALERT), the bomb's gold, and the sizes of the drawn parts (chip, bar, columns, plates, icons)",
-			_theme.get_color("alert", "Hud") == Tokens.ALERT and _theme.get_color("notice", "Hud") == Tokens.ALERT and _theme.get_color("gold", "Hud") == Tokens.HUD_GOLD
+	_check("The custom 'Hud' type holds what code reads: the alert, the notice (both ALERT), and the sizes of the drawn parts (chip, bar, columns, plates, icons)",
+			_theme.get_color("alert", "Hud") == Tokens.ALERT and _theme.get_color("notice", "Hud") == Tokens.ALERT
 					and _theme.get_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE and _theme.get_constant("chip_width", "Hud") == Tokens.HUD_CHIP_SIZE.x
 					and _theme.get_constant("chip_height", "Hud") == Tokens.HUD_CHIP_SIZE.y and _theme.get_constant("chip_health", "Hud") == Tokens.HUD_CHIP_HEALTH
 					and _theme.get_constant("chip_count", "Hud") == Tokens.HUD_CHIP_COUNT and _theme.get_constant("bar_width", "Hud") == Tokens.HUD_BAR_SIZE.x
@@ -1565,6 +1570,45 @@ func _test_hud_roles() -> void:
 					and _theme.get_constant("plate_height", "Hud") == Tokens.HUD_PLATE_HEIGHT and _theme.get_constant("alert_plate_height", "Hud") == Tokens.HUD_ALERT_PLATE_HEIGHT,
 			"alert %s, pip size %d, chip %d x %d" % [_theme.get_color("alert", "Hud"), _theme.get_constant("pip_size", "Hud"), _theme.get_constant("chip_width", "Hud"),
 					_theme.get_constant("chip_height", "Hud")])
+	# M10 task 14: the kill feed's plates, the toasts', the prompt's bar, the plant tag's text and the sizes of the feed, the toasts and the hit marker.
+	var feed_plate := _variation_node(PanelContainer.new(), "HudFeedPlate", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var feed_kill := _variation_node(PanelContainer.new(), "HudFeedPlateYou", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var feed_death := _variation_node(PanelContainer.new(), "HudFeedPlateDeath", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The kill feed's plates: the ink plate at 72%% padded %d, your kill INK with a %d px TEXT frame, your death INK with an ENEMY frame (the padding inside the frame: %d from the edge)" % [Tokens.HUD_FEED_PAD, Tokens.BORDER, Tokens.HUD_FEED_FRAME_PAD + Tokens.BORDER],
+			feed_plate.bg_color == Tokens.PLATE and feed_plate.border_width_left == 0 and feed_plate.content_margin_left == Tokens.HUD_FEED_PAD
+					and feed_kill.bg_color == Tokens.INK and feed_kill.border_color == Tokens.TEXT and feed_kill.border_width_left == Tokens.BORDER
+					and feed_kill.content_margin_left == Tokens.HUD_FEED_FRAME_PAD + Tokens.BORDER
+					and feed_death.bg_color == Tokens.INK and feed_death.border_color == Tokens.ENEMY and feed_death.border_width_top == Tokens.BORDER,
+			"plate %s, kill %s/%s, death %s/%s" % [feed_plate.bg_color, feed_kill.bg_color, feed_kill.border_color, feed_death.bg_color, feed_death.border_color])
+	var neutral := _variation_node(PanelContainer.new(), "HudToastNeutral", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var match_point := _variation_node(PanelContainer.new(), "HudToastMatchPoint", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var bomb_toast := _variation_node(PanelContainer.new(), "HudToastBomb", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var low_ammo := _variation_node(PanelContainer.new(), "HudToastLowAmmo", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var chip_text := _variation_node(Panel.new(), "HudToastChip", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var chip_ink := _variation_node(Panel.new(), "HudToastChipInk", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var ink_label := _variation_node(Label.new(), "HudPlateInkLabel", holder)
+	var alert_label := _variation_node(Label.new(), "HudPlateAlertLabel", holder)
+	_check("The toasts: news INK, match point TEXT, the bomb ALERT (all padded %d), low ammo INK with a %d px ALERT frame; the chips TEXT and INK; their text INK on a filled plate, ALERT in the frame" % [Tokens.HUD_TOAST_PAD, Tokens.BORDER],
+			neutral.bg_color == Tokens.INK and neutral.content_margin_left == Tokens.HUD_TOAST_PAD and match_point.bg_color == Tokens.TEXT and bomb_toast.bg_color == Tokens.ALERT
+					and low_ammo.bg_color == Tokens.INK and low_ammo.border_color == Tokens.ALERT and low_ammo.border_width_left == Tokens.BORDER
+					and chip_text.bg_color == Tokens.TEXT and chip_ink.bg_color == Tokens.INK
+					and ink_label.get_theme_color("font_color") == Tokens.TEXT_ON_FILL and alert_label.get_theme_color("font_color") == Tokens.ALERT,
+			"neutral %s, match point %s, bomb %s, low ammo %s/%s" % [neutral.bg_color, match_point.bg_color, bomb_toast.bg_color, low_ammo.bg_color, low_ammo.border_color])
+	var progress_back := _variation_node(Panel.new(), "HudProgressBack", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var progress_fill := _variation_node(Panel.new(), "HudProgressFill", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The prompt's bar: INK with a hard VOID shadow, filled with ALERT",
+			progress_back.bg_color == Tokens.INK and progress_back.border_color == Tokens.SHADOW and progress_back.border_width_right == Tokens.SHADOW_OFFSET
+					and progress_fill.bg_color == Tokens.ALERT,
+			"back %s, fill %s" % [progress_back.bg_color, progress_fill.bg_color])
+	_check("The 'Hud' type also holds the feed's plate height and lifetime, the toasts' height, chip and lifetime, the prompt bar and the hit marker's geometry and time",
+			_theme.get_constant("feed_height", "Hud") == Tokens.HUD_FEED_HEIGHT and _theme.get_constant("feed_time_ms", "Hud") == Tokens.HUD_FEED_TIME_MS
+					and _theme.get_constant("toast_height", "Hud") == Tokens.HUD_TOAST_HEIGHT and _theme.get_constant("toast_chip", "Hud") == Tokens.HUD_TOAST_CHIP
+					and _theme.get_constant("toast_time_ms", "Hud") == Tokens.HUD_TOAST_TIME_MS
+					and _theme.get_constant("prompt_bar_width", "Hud") == Tokens.HUD_PROMPT_BAR.x and _theme.get_constant("prompt_bar_height", "Hud") == Tokens.HUD_PROMPT_BAR.y
+					and _theme.get_constant("hit_inner", "Hud") == Tokens.HUD_HIT_INNER and _theme.get_constant("hit_length", "Hud") == Tokens.HUD_HIT_LENGTH
+					and _theme.get_constant("hit_thickness", "Hud") == Tokens.HUD_HIT_THICKNESS and _theme.get_constant("hit_time_ms", "Hud") == Tokens.HUD_HIT_TIME_MS,
+			"feed %d / %d ms, toast %d / %d ms, hit %d ms" % [_theme.get_constant("feed_height", "Hud"), _theme.get_constant("feed_time_ms", "Hud"),
+					_theme.get_constant("toast_height", "Hud"), _theme.get_constant("toast_time_ms", "Hud"), _theme.get_constant("hit_time_ms", "Hud")])
 	remove_child(holder)
 	holder.queue_free()
 

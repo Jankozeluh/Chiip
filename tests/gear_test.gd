@@ -373,11 +373,20 @@ func _test_hud_and_body_follow() -> void:
 	add_child(feed)
 	feed.add_kill(bot, _player, true, SMG)
 	feed.add_kill(bot, _player, false)
+	var odd := SMG.duplicate() as WeaponData
+	odd.id = &"no_such_slot"
+	feed.add_kill(bot, _player, false, odd)
+	odd.kill_icon = null
+	feed.add_kill(bot, _player, false, odd)
 	var icon := feed.get_child(0).find_child("Weapon", true, false) as TextureRect
 	var plain := feed.get_child(1).find_child("Separator", true, false) as Label
-	_check("The kill feed shows the killing weapon's white icon between the names (\">\" without one)",
-			icon != null and icon.texture == SMG.kill_icon and icon.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST
-					and plain != null and plain.text == ">", "icon %s, plain '%s'" % [icon != null, plain.text if plain else ""])
+	var rendered := feed.get_child(2).find_child("Weapon", true, false) as TextureRect
+	var named := feed.get_child(3).find_child("Weapon", true, false) as Label
+	_check("The kill feed shows the killing weapon's UI icon (by its id) between the names; without a slot for it M7's rendered icon, then its name; \">\" without a weapon",
+			icon != null and icon.texture == UiIcons.get_icon(feed, SMG.id) and icon.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST
+					and plain != null and plain.text == ">" and rendered != null and rendered.texture == SMG.kill_icon
+					and named != null and named.text == odd.display_name,
+			"icon %s, plain '%s', rendered %s, named %s" % [icon != null, plain.text if plain else "", rendered != null, named != null])
 	feed.queue_free()
 	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.KNIFE), true)
 	await _wait_ticks(2)

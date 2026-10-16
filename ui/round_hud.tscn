@@ -208,24 +208,14 @@ layout_mode = 2
 theme_type_variation = &"HudSmallLabel"
 horizontal_alignment = 1
 
-[node name="Line2" type="Label" parent="Center"]
-layout_mode = 2
-theme_type_variation = &"HudSmallLabel"
-horizontal_alignment = 1
-
-[node name="Line3" type="Label" parent="Center"]
-layout_mode = 2
-theme_type_variation = &"HudSmallLabel"
-horizontal_alignment = 1
-
 [node name="KillFeed" type="VBoxContainer" parent="."]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -16.0
-offset_top = 16.0
-offset_right = -16.0
+offset_left = -32.0
+offset_top = 32.0
+offset_right = -32.0
 grow_horizontal = 0
 mouse_filter = 2
-theme_type_variation = &"HudKillFeed"
+theme_type_variation = &"HudStack"
 script = ExtResource("kill_feed_script")

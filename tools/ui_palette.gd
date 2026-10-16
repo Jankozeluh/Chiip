@@ -377,14 +377,6 @@ const CONSOLE_CARET_WIDTH := 10
 const HUD_DEAD_TINT := Color("282c32", 0.55)
 ## The reserve ammo ("/ 90") is TEXT at 70% opacity.
 const HUD_RESERVE_TEXT := Color("e6ecf5", 0.7)
-## The bomb HUD's gold (its tag, its messages and the progress bar's fill) and the bar's strip behind it.
-## Kept for [BombHud] until it is restyled; the kill feed's gap too.
-const HUD_GOLD := Color(1.0, 0.82, 0.35)
-const HUD_BAR_BACK := Color(0.05, 0.06, 0.08, 0.8)
-const HUD_BAR_FILL := Color(1.0, 0.82, 0.35)
-## The bomb HUD's text size (24 px, kept until it is restyled), and the gap between the kill feed's lines.
-const HUD_SIZE_TEXT := 24
-const HUD_FEED_GAP := 3
 
 ## Line boxes. Silkscreen's line box is much taller than its size (41 px at 32, 62 at 48, 123 at 96),
 ## and the mockups set the line height equal to the size. These trim a label's font by that much:
@@ -423,7 +415,7 @@ const HUD_CENTRE_WIDTH := 120
 ## How many times bigger the bottom corners' icons are drawn than the 16 px icon set (the mini row uses 1).
 const HUD_ICON_SCALE := 2
 ## The plate under the countdown and in the spectate view: its height and its side padding (INK, no text shadow);
-## the alert plate that replaces the Bomb timer once the bomb is planted.
+## the alert plate that replaces the Bomb timer once the bomb is planted, and the "Bomb" tag above the weapon row.
 const HUD_PLATE_HEIGHT := 48
 const HUD_PLATE_PAD := 20
 const HUD_ALERT_PLATE_HEIGHT := 32
@@ -431,3 +423,30 @@ const HUD_ALERT_PLATE_PAD := 12
 ## The magazine (48 px) and the reserve (32 px) share a baseline: with the line boxes trimmed the reserve's
 ## baseline is this much nearer its bottom than the magazine's, so it is lifted by it.
 const HUD_BASELINE_LIFT := 1
+
+## The kill feed (Foundations: KILL FEED; mockup 09): a line is a plate this high, [constant PLATE] (ink at 72%), with this padding at
+## its sides. Your own kill and death are solid INK with a [constant BORDER] frame (TEXT for a kill, ENEMY for a death) and this padding
+## inside the frame. A line stays this many milliseconds (counted in the game's own time, so a pause freezes it); the lines are
+## [constant HUD_GAP_STACK] apart, the parts of a line [constant HUD_GAP_ICON].
+const HUD_FEED_HEIGHT := 32
+const HUD_FEED_PAD := 12
+const HUD_FEED_FRAME_PAD := 10
+const HUD_FEED_TIME_MS := 6000
+
+## Toasts (Foundations: TOASTS; centred under the top bar): a plate this high with this padding at its sides, a chip this big, and how
+## long one stays (milliseconds, counted in the game's own time). The kinds: INK with a TEXT chip (news), TEXT with an INK chip (match
+## point), ALERT with the bomb's icon (the bomb planted) and INK with an ALERT frame (low ammo; the padding is inside the frame).
+const HUD_TOAST_HEIGHT := 40
+const HUD_TOAST_PAD := 16
+const HUD_TOAST_CHIP := 8
+const HUD_TOAST_TIME_MS := 2500
+
+## The plant and defuse prompt (mockup 12): the progress bar's size, on INK with a hard shadow, filled with ALERT.
+const HUD_PROMPT_BAR := Vector2i(320, 8)
+
+## The hit marker (Foundations: HIT MARKER): four L-shaped corners around the crosshair's centre, each two bars of this length and
+## thickness, from this far from the centre to that plus the length, with a hard shadow; it shows this many milliseconds.
+const HUD_HIT_INNER := 14
+const HUD_HIT_LENGTH := 12
+const HUD_HIT_THICKNESS := 4
+const HUD_HIT_TIME_MS := 150

@@ -67,3 +67,25 @@ static func has_icon(control: Control, slot: StringName) -> bool:
 ## The PNG path of [param slot] (whether it exists or not).
 static func path_for(slot: StringName) -> String:
 	return "%s%s.png" % [FOLDER, slot]
+
+
+## A [TextureRect] for a row of the HUD that shows [param texture], [param factor] times its own size (the HUD's scale),
+## tinted [param tint] (the icons are white). Crisp, takes no mouse clicks, and [UiScale] leaves its size alone: call
+## [method fit_rect] when the scale changes.
+static func make_rect(texture: Texture2D, tint: Color, factor: float) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.texture = texture
+	rect.modulate = tint
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rect.set_meta(UiScale.SKIP_SIZE_META, true)
+	fit_rect(rect, factor)
+	return rect
+
+
+## Sizes [param rect] to its texture times [param factor], in whole pixels.
+static func fit_rect(rect: TextureRect, factor: float) -> void:
+	rect.custom_minimum_size = (rect.texture.get_size() * factor).round()
