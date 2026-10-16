@@ -28,6 +28,8 @@ extends Node
 ## as the exit code (0 means everything passed).
 
 const MAIN_SCENE := preload("res://main.tscn")
+## The map: the test map, which is the tests' map (hidden from the player since M10, D-141).
+const MAP := "res://maps/test_map.tscn"
 const TEAM_SIZE := 3
 const ROUNDS_TO_WIN := 5
 const FREEZE_TIME := 1.0
@@ -94,7 +96,7 @@ func _start_match() -> void:
 	rules.freeze_time = FREEZE_TIME
 	rules.round_time = ROUND_TIME
 	rules.round_end_time = ROUND_END_TIME
-	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	GameLaunch.start_match(MAP, rules)
 	_main = MAIN_SCENE.instantiate()
 	# Never read or write the player's real settings file.
 	_main.load_settings = false
@@ -157,7 +159,7 @@ func _on_character_killed(victim: Character, killer: Character, _headshot: bool)
 ## One line per round: who attacked, who won and why, how long it was live, who was left.
 func _print_summary() -> void:
 	print("Match played on %s, first to %d, %dv%d, you are team %d (round time %.0f s, freeze %.0f s, end pause %.0f s):" % [
-			Settings.DEFAULT_MAP, ROUNDS_TO_WIN, TEAM_SIZE, TEAM_SIZE, _player.team, ROUND_TIME, FREEZE_TIME, ROUND_END_TIME])
+			MAP, ROUNDS_TO_WIN, TEAM_SIZE, TEAM_SIZE, _player.team, ROUND_TIME, FREEZE_TIME, ROUND_END_TIME])
 	for entry in _log:
 		if entry["winner"] < 0:
 			print("  round %d: team %d attacks, not finished" % [entry["number"], entry["attacker"]])

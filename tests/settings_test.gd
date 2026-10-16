@@ -38,9 +38,9 @@ const DEFAULTS := {
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
 	&"crosshair_color": Color(0.2, 1.0, 0.2), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
-	# The last match setup (D-064): D-041's match, on the test map.
+	# The last match setup (D-064): D-041's match, on Depot (D-141; the test map until M10).
 	&"match_team_size": 3, &"match_enemy_team_size": 3, &"match_difficulty": "normal", &"match_rounds_to_win": 5,
-	&"match_friendly_fire": false, &"match_map": "res://maps/test_map.tscn",
+	&"match_friendly_fire": false, &"match_map": "res://maps/depot.tscn",
 	# M8 (D-087): rounds on one map; team respawn's kill limit is D-083's 50.
 	&"match_mode": "rounds", &"match_kill_limit": 50, &"match_rotation": false,
 	# M9 (D-108): online name, the last host joined, Quake's port.
@@ -517,7 +517,7 @@ func _test_unreadable_values() -> void:
 	_check("A hand-edited [match] section is forgiven: a team of 9 is clamped to 5, text for a number, an unknown difficulty, a number for a bool and a number for the map fall back to the defaults, 7 rounds snaps to 5",
 			match_settings.match_team_size == 5 and match_settings.match_enemy_team_size == 3 and match_settings.match_difficulty == "normal"
 					and match_settings.match_rounds_to_win == 5 and not match_settings.match_friendly_fire
-					and match_settings.match_map == Settings.DEFAULT_MAP,
+					and match_settings.match_map == Settings.DEFAULT_MATCH_MAP,
 			"team %d, enemy %d, difficulty %s, rounds %d, friendly fire %s, map %s" % [match_settings.match_team_size, match_settings.match_enemy_team_size,
 					match_settings.match_difficulty, match_settings.match_rounds_to_win, match_settings.match_friendly_fire, match_settings.match_map])
 	_write_text(TEMP_PATH, "[match]\nrounds_to_win = 12\ndifficulty = \"hard\"\nteam_size = 0\n")

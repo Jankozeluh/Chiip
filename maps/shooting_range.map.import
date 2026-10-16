@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://cyc2rrsy3ooub"
+path="res://.godot/imported/shooting_range.map-1c67a9907015a904e074cbd1132306be.tres"
+
+[deps]
+
+source_file="res://maps/shooting_range.map"
+dest_files=["res://.godot/imported/shooting_range.map-1c67a9907015a904e074cbd1132306be.tres"]
+
+[params]
+

@@ -27,6 +27,14 @@ var _time_since_hit: float = 0.0
 @onready var _total_label: Label3D = $TotalLabel
 
 
+## Takes the values of a range_target entity placed in TrenchBroom (D-142): title, move_distance,
+## move_speed. A moving dummy moves along its own x axis, across the entity's angle.
+func _func_godot_apply_properties(properties: Dictionary) -> void:
+	title = str(properties.get("title", title))
+	move_distance = float(properties.get("move_distance", move_distance))
+	move_speed = float(properties.get("move_speed", move_speed))
+
+
 func _ready() -> void:
 	_start_position = position
 	for child in $Hitboxes.get_children():

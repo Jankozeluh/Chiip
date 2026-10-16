@@ -658,6 +658,12 @@
 - `call_deferred()` runs a call at the end of the frame, once the scene tree has finished what it's doing. A route point can't move itself to another parent inside `_ready()` (its parent is busy adding children), so it asks for `_join_route.call_deferred()` and reparents itself a moment later (Unity has no direct equivalent; it's like starting a coroutine that waits one frame).
 - `node.reparent(new_parent)` keeps the node's place in the world; `move_child(node, index)` sorts a parent's children, which is all a route's order is.
 
+**The Shooting Range: choices in TrenchBroom, metadata on a scene, text in the world** (`maps/kit/kit_weapon_stand.gd`, `kit_text_sign.gd`, D-141, D-142)
+- An FGD property whose default is a `Dictionary` becomes a drop-down list in TrenchBroom (`range_weapon`'s `weapon`: "Ram (rifle)" → `rifle`). func_godot hands the script the value, a String; the description `["Which gun", "rifle"]` gives the default.
+- func_godot turns a point entity before it calls `_func_godot_apply_properties()`, so a script can still change its rotation there: the text sign turns itself 180° once, at build time, and the built scene keeps it.
+- A map tells the game something about itself with metadata on its root node (`metadata/practice_bots = 0` in the `.tscn`; *Add Metadata* in the Inspector). Unity would use a component on the scene's root object for that.
+- A `Label3D` with *Fixed Size* is the same size on screen at any distance, so far away it is huge in the world: at 30 m a 14-letter title is about 10 m wide and runs into the nearest wall, which hides that part of it (labels are depth tested unless `no_depth_test`). Keep such titles short, or put the long text on the wall.
+
 ### M9 — Multiplayer
 
 **Godot's high-level multiplayer** (`net/net_session.gd`)

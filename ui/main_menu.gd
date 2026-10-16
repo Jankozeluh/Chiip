@@ -126,8 +126,8 @@ func prepare_match() -> void:
 	GameLaunch.start_match(_setup.get_map_path(), _setup.build_match_settings(), _setup.get_rotation_maps())
 
 
-## Leaves the description of practice for main.gd: the test map, with the bot
-## difficulty last chosen in match setup.
+## Leaves the description of practice for main.gd: the practice map (the Shooting Range,
+## D-141), with the bot difficulty last chosen in match setup.
 func prepare_practice() -> void:
 	GameLaunch.start_practice(Settings.DEFAULT_MAP, GameLaunch.difficulty_named(_setup.settings.match_difficulty))
 

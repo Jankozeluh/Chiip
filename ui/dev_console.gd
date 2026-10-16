@@ -176,7 +176,7 @@ func _register_commands() -> void:
 	register_command("god", _cmd_god, "god", "Toggle taking no damage")
 	register_command("noclip", _cmd_noclip, "noclip", "Toggle flying through walls")
 	register_command("mp_friendlyfire", _cmd_friendly_fire, "mp_friendlyfire [0|1]", "Teammates can hurt each other (no argument: show)")
-	register_command("map", _cmd_map, "map <name>", "Load a map, e.g. map test_map (no name: list maps)")
+	register_command("map", _cmd_map, "map <name>", "Load a map, e.g. map depot (no name: list maps)")
 	register_command("sensitivity", _cmd_setting.bind(&"sensitivity", "sensitivity"), "sensitivity [0.05-10]", "Mouse sensitivity, CS scale (no value: show)")
 	register_command("fov", _cmd_setting.bind(&"fov", "fov"), "fov [70-110]", "Field of view across a 4:3 screen, like CS (no value: show)")
 	register_command("volume", _cmd_setting.bind(&"master_volume", "volume"), "volume [0-1]", "Master volume (no value: show)")
@@ -481,10 +481,11 @@ func _load_difficulty(level: String) -> BotDifficulty:
 ## Map scenes in maps/ and its subfolders, as names the map command accepts.
 ## Uses ResourceLoader's listing, which also works in an exported game, where
 ## scenes are stored converted (DirAccess would only see "depot.tscn.remap").
+## The hidden maps (the test map) load by name, but aren't listed (D-141).
 func _list_maps() -> PackedStringArray:
 	var maps := PackedStringArray()
 	for folder in ["", "comparison/"]:
 		for file in ResourceLoader.list_directory(MAPS_FOLDER + folder):
-			if file.ends_with(".tscn"):
+			if file.ends_with(".tscn") and not GameLaunch.is_hidden_map(MAPS_FOLDER + folder + file):
 				maps.append(folder + file.trim_suffix(".tscn"))
 	return maps

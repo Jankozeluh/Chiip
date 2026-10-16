@@ -2,6 +2,23 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M10: the Shooting Range, and the test map hidden
+
+In the map-kit branch (`claude/m10-mapkit-dc3914`), after main was merged in (M9 at "Checks and the LAN playtest list").
+
+**Done**
+- **Your words:** *"radeji postav sample shooting range s optional pridanim botum skrze konzoli, tady ten test co tam je nyni bych nechal neviditelny"*. Decisions D-141 (practice is the range, the test map hidden, Depot the default match map) and D-142 (range entities).
+- **Range entities** in the mapper FGD: `range_target` (the old training dummy, now with entity properties), `range_weapon` (`KitWeaponStand`: a map-weapon spot with a chosen gun that comes back 2 s after it's taken), `sign_text` (`KitTextSign`, pixel-font text read from the side its angle points to) and `info_bot_spawn` (bots only, so you come back where you started).
+- **The map** (`maps/shooting_range.map`, written by a layout script by a Sonnet subagent from a spec, then rebuilt here): a 28 m range hall with lanes, targets at 5, 10, 20, 25 (head only) and 40 m, a walking and a running target, a spray wall at 10 m, distance lines and signs, ten stands (every gun and grenade) under a lit canopy, and a 44 × 36 m arena behind with 8 bot spawns and 12 patrol points. Its root carries `practice_bots = 0`, which main.gd hands to ArenaRules: practice starts empty, and the console's `bot_add`, `bot_kick` and `bot_difficulty` do the rest. The first shots showed the moving targets' long titles cut off by the east wall (a Label3D with a fixed screen size is metres wide at 30 m): short titles now, the speeds on wall signs. Three more pieces of cover in the arena.
+- **Practice plays it:** the main menu's Practice and `-- --practice` (with `--map`, practice on that map as before).
+- **The test map hidden** by data only (no menu layout touched, for the UI restyle): `GameLaunch.HIDDEN_MAPS`, filtered out of `list_maps()` (match setup, the lobby) and the console's map list; it still loads with `map test_map` and `--map`. The range isn't in match setup either (no team spawns). A match starts on `Settings.DEFAULT_MATCH_MAP` (Depot; the same constant, value and comment as the UI branch, to merge cleanly), and `Settings.DEFAULT_MAP` is now the practice map (the range), so the UI branch's practice code, which uses it, lands on the range after the merge. The match test and two ui_test games still play on the test map, now by name.
+- `tools/map_screenshots.gd` shoots practice maps too (from the Player node and the bot spawns).
+- New `tests/range_test.tscn` (13 checks): the map's contents and paths, no starting bots, the console's bot commands, a moving target, a stand refilling, the map list without the test map. The runner has 31 suites; all pass (885 checks). The first run failed three lobby checks that expected "Test Map" in the default summary (now "Depot").
+
+**Next**
+- The main menu's background still flies over the test map: its camera path is drawn for that map in `ui/main_menu.tscn`, which the UI restyle owns. Giving the menu another map (the range or Depot) needs a new flight path there.
+- Your check of the range (in "Your open checks", map kit, point 6).
+
 ## 2026-10-16 — M9 multiplayer
 
 Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsenal`).

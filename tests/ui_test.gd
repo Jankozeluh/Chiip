@@ -1259,9 +1259,9 @@ func _test_match_setup() -> void:
 					and _texts(team_buttons) == ["1", "2", "3", "4", "5"] and setup.get_map_option() != null
 					and setup.get_back_button().text == "Back" and setup.get_start_button().text == "Start",
 			"team %s, difficulty %s, length %s, friendly fire %s" % [_texts(team_buttons), _texts(difficulty_buttons), _texts(length_buttons), _texts(fire_buttons)])
-	_check("The defaults are 3v3, Normal bots, first to 5, friendly fire off, on the test map, and they equal MatchSettings' own defaults (D-041)",
+	_check("The defaults are 3v3, Normal bots, first to 5, friendly fire off, on Depot, and they equal MatchSettings' own defaults (D-041)",
 			_pressed(team_buttons) == 2 and _pressed(enemy_buttons) == 2 and _pressed(difficulty_buttons) == 1 and _pressed(length_buttons) == 0 and _pressed(fire_buttons) == 0
-					and setup.get_map_path() == Settings.DEFAULT_MAP and rules.team_size == 3 and rules.enemy_team_size == 3
+					and setup.get_map_path() == Settings.DEFAULT_MATCH_MAP and rules.team_size == 3 and rules.enemy_team_size == 3
 					and rules.bot_difficulty.display_name == "normal" and rules.rounds_to_win == 5 and not rules.friendly_fire
 					and rules.team_size == defaults.team_size and rules.enemy_team_size == defaults.enemy_team_size
 					and rules.bot_difficulty == defaults.bot_difficulty and rules.rounds_to_win == defaults.rounds_to_win
@@ -1321,29 +1321,30 @@ func _test_match_setup() -> void:
 	remove_child(second)
 	second.queue_free()
 
-	# The map list.
+	# The map list: every map but the hidden test map and the practice-only Shooting Range (D-141).
 	var on_disk: Array[String] = []
 	for file in DirAccess.get_files_at("res://maps/"):
-		if file.ends_with(".tscn"):
+		if file.ends_with(".tscn") and file != "test_map.tscn" and file != "shooting_range.tscn":
 			on_disk.append("res://maps/" + file)
 	on_disk.sort()
 	var option := setup.get_map_option()
 	var shown: Array[String] = []
 	for index in option.item_count:
 		shown.append(option.get_item_text(index))
-	_check("The map list is every scene directly in res://maps/ (like the console's map command), test_map among them, listed by name: %s" % [shown],
-			setup.get_map_paths() == on_disk and on_disk.has("res://maps/test_map.tscn") and option.item_count == on_disk.size()
-					and GameLaunch.list_maps() == on_disk and shown.has("Test Map"),
+	_check("The map list is every scene directly in res://maps/ but the hidden test map and the practice-only Shooting Range (D-141), listed by name: %s" % [shown],
+			setup.get_map_paths() == on_disk and on_disk.has(Settings.DEFAULT_MATCH_MAP) and option.item_count == on_disk.size()
+					and GameLaunch.list_maps() == on_disk and shown.has("Depot") and not shown.has("Test Map") and not shown.has("Shooting Range")
+					and GameLaunch.is_hidden_map("res://maps/test_map.tscn") and not GameLaunch.is_hidden_map(Settings.DEFAULT_MATCH_MAP),
 			"on disk %s, offered %s" % [on_disk, setup.get_map_paths()])
-	var other := 1 - maxi(0, setup.get_map_paths().find("res://maps/test_map.tscn"))
+	var other := 1 - maxi(0, setup.get_map_paths().find(Settings.DEFAULT_MATCH_MAP))
 	var picked_other := setup.get_map_paths().size() > 1
 	if picked_other:
 		option.select(other)
 		option.item_selected.emit(other)
 	var map_stored := not picked_other or (stored.match_map == setup.get_map_paths()[other] and setup.get_map_path() == setup.get_map_paths()[other])
 	stored.match_map = "res://maps/gone.tscn"
-	var fell_back := setup.get_map_path() == Settings.DEFAULT_MAP and option.selected == setup.get_map_paths().find(Settings.DEFAULT_MAP)
-	_check("Choosing another map (when there is one) is stored, and a stored map that no longer exists falls back to the test map",
+	var fell_back := setup.get_map_path() == Settings.DEFAULT_MATCH_MAP and option.selected == setup.get_map_paths().find(Settings.DEFAULT_MATCH_MAP)
+	_check("Choosing another map (when there is one) is stored, and a stored map that no longer exists falls back to the default map (Depot)",
 			map_stored and fell_back, "stored %s, with a missing map the panel offers %s" % [map_stored, setup.get_map_path()])
 
 	# Opening, Esc, Back, Start; scaling.
@@ -1530,7 +1531,7 @@ func _test_scene_flow() -> void:
 		await tree.process_frame
 		var practice := tree.current_scene
 		var arena: ArenaRules = practice.get_map().get_node_or_null("ArenaRules") if practice != null and practice.has_method("get_map") else null
-		_check("The Practice button changes to the game scene in practice mode: the respawning arena (no rounds) on the test map, with the difficulty last chosen in match setup (Easy here)",
+		_check("The Practice button changes to the game scene in practice mode: the respawning arena (no rounds) on the Shooting Range, with the difficulty last chosen in match setup (Easy here) for the bots the console adds",
 				practice != null and practice.scene_file_path == GameLaunch.GAME_SCENE and not is_instance_valid(back) and arena != null
 						and arena.bot_difficulty.display_name == "easy" and practice.get_map().scene_file_path == Settings.DEFAULT_MAP
 						and practice.get_map().get_node_or_null("RoundManager") == null,
@@ -1842,7 +1843,7 @@ func _test_pause_leaves_the_game() -> void:
 	tree.current_scene = holder
 	var rules := MatchSettings.new()
 	rules.freeze_time = 0.3
-	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	GameLaunch.start_match(MAP_SCENE.resource_path, rules)
 	tree.change_scene_to_file(GameLaunch.GAME_SCENE)
 	for i in 3:
 		await tree.process_frame
@@ -1999,7 +2000,7 @@ func _test_lobby_menu() -> void:
 	var result := lobby.host_game()
 	var session := lobby.get_session()
 	var lobby_node := NetLobby.of(session) if session != null else null
-	var default_summary := "Rounds · Test Map · first to 5 rounds · Normal bots"
+	var default_summary := "Rounds · Depot · first to 5 rounds · Normal bots"
 	var team_0 := lobby.get_team_texts(0)
 	var team_1 := lobby.get_team_texts(1)
 	_check("Host game opens a session as the host on the port in the field and shows the lobby page: titled Lobby, one line saying where friends join, you in Team 1 as \"(you) (host)\" and \"Bot\" rows for the other slots of both teams, the match's summary line, Match settings and Start match (no waiting line)",
@@ -2007,7 +2008,7 @@ func _test_lobby_menu() -> void:
 					and lobby.get_page() == LobbyMenu.Page.LOBBY and (lobby.get_node("Panel/Margin/Content/Title") as Label).text == "Lobby"
 					and lobby.get_info_label().text.begins_with("Hosting on port %d" % port) and stored.online_port == port
 					and team_0 == ["Jan (you) (host)", "Bot", "Bot"] and team_1 == ["Bot", "Bot", "Bot"]
-					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MAP
+					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MATCH_MAP
 					and lobby.get_summary_label().text == default_summary and lobby_node.info.get("summary", "") == default_summary
 					and lobby.get_settings_button().visible and lobby.get_start_button().visible and lobby.get_start_button().text == "Start match"
 					and not lobby.get_waiting_label().visible and not lobby.get_node("Panel/Margin/Content/ConnectPage").visible,
@@ -2054,12 +2055,12 @@ func _test_lobby_menu() -> void:
 	var rotation_summary := lobby.get_summary_label().text
 	await harness.wait_until(func() -> bool: return friend_lobby.info.get("summary", "") == rotation_summary, 320)
 	_check("The summary line is built from the choices: mode, map or rotation (starting at the chosen map), length, bot difficulty and friendly fire, and the friend sees the same line",
-			respawn_summary == "Team respawn · Test Map · first to 75 kills · Hard bots · friendly fire"
+			respawn_summary == "Team respawn · Depot · first to 75 kills · Hard bots · friendly fire"
 					and rotation_summary == "Rounds · Rotation: Square, Spillway, Depot · first to 5 rounds · Easy bots"
 					and friend_lobby.info.get("summary", "") == rotation_summary and lobby_node.info.get("map", "") == "res://maps/square.tscn",
 			"respawn '%s', rotation '%s', friend sees '%s'" % [respawn_summary, rotation_summary, friend_lobby.info.get("summary", "")])
 	stored.match_rotation = false
-	stored.match_map = Settings.DEFAULT_MAP
+	stored.match_map = Settings.DEFAULT_MATCH_MAP
 
 	# Join Team moves you (the host) and swaps the slots and the colors.
 	lobby.get_join_team_button(1).pressed.emit()
@@ -2102,7 +2103,7 @@ func _test_lobby_menu() -> void:
 	stored.match_kill_limit = 30
 	lobby.get_start_button().pressed.emit()
 	var started_rules := GameLaunch.match_settings
-	var started := GameLaunch.is_pending() and GameLaunch.map_path == Settings.DEFAULT_MAP and GameLaunch.net_session == session and scenes == [GameLaunch.GAME_SCENE] \
+	var started := GameLaunch.is_pending() and GameLaunch.map_path == Settings.DEFAULT_MATCH_MAP and GameLaunch.net_session == session and scenes == [GameLaunch.GAME_SCENE] \
 			and started_rules != null and started_rules.team_size == 2 and started_rules.enemy_team_size == 4 \
 			and started_rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and started_rules.kill_limit == 30 and lobby_node.in_game
 	var friend_started := await harness.wait_until(func() -> bool: return friend_lobby.in_game, 320)
@@ -2356,7 +2357,7 @@ func _new_game(rounds_to_win: int = 5) -> Node:
 	rules.round_time = 30.0
 	rules.round_end_time = 0.3
 	rules.rounds_to_win = rounds_to_win
-	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	GameLaunch.start_match(MAP_SCENE.resource_path, rules)
 	var main := MAIN_SCENE.instantiate()
 	main.load_settings = false
 	add_child(main)

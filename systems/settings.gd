@@ -64,8 +64,12 @@ const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
 const MATCH_MODES: Array[String] = ["rounds", "respawn"]
 ## The kill limits match setup offers for team respawn (D-083: 50 is about 4 minutes with bots).
 const KILL_LIMITS: Array[int] = [30, 50, 75]
-## The map match setup starts with, and the one the main menu flies over.
-const DEFAULT_MAP := "res://maps/test_map.tscn"
+## The practice map (D-141: the Shooting Range), and the map the game falls back to when
+## nothing chose one. The test map is hidden; main.gd's own fallback (no menu, no --map) and the
+## main menu's background still use it.
+const DEFAULT_MAP := "res://maps/shooting_range.tscn"
+## The map a match starts on until you choose another: the first of the rotation (D-132).
+const DEFAULT_MATCH_MAP := "res://maps/depot.tscn"
 ## How many keys or buttons one action can have (primary and secondary).
 const BINDING_SLOTS := 2
 ## CS's field of view is measured across a 4:3 screen: 90° there. [method vertical_fov] converts.
@@ -111,7 +115,7 @@ const SCHEMA := {
 	&"match_difficulty": {"section": "match", "default": "normal", "choices": DIFFICULTIES},
 	&"match_rounds_to_win": {"section": "match", "default": 5, "choices": MATCH_LENGTHS},
 	&"match_friendly_fire": {"section": "match", "default": false},
-	&"match_map": {"section": "match", "default": DEFAULT_MAP},
+	&"match_map": {"section": "match", "default": DEFAULT_MATCH_MAP},
 	# M8 (D-087): the mode, team respawn's kill limit, and playing the quick maps in rotation.
 	&"match_mode": {"section": "match", "default": "rounds", "choices": MATCH_MODES},
 	&"match_kill_limit": {"section": "match", "default": 50, "choices": KILL_LIMITS},
@@ -265,7 +269,7 @@ var match_rounds_to_win: int:
 var match_friendly_fire: bool:
 	get: return _values[&"match_friendly_fire"]
 	set(value): set_value(&"match_friendly_fire", value)
-## The map scene of the next match, e.g. [constant DEFAULT_MAP]. Nothing checks
+## The map scene of the next match, e.g. [constant DEFAULT_MATCH_MAP]. Nothing checks
 ## that it still exists: match setup falls back to the default map when it doesn't.
 var match_map: String:
 	get: return _values[&"match_map"]
