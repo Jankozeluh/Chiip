@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Runs every Chiip test suite, one at a time, and prints a summary table.
 #
-#     bash tools/run_tests.sh                  # all seventeen suites
+#     bash tools/run_tests.sh                  # all the suites (eighteen)
 #     bash tools/run_tests.sh round ui         # only the named suites (movement weapon bot
 #                                              # round tactics ui settings match bomb respawn
-#                                              # sound maps crew class zone perf rotation)
+#                                              # sound maps crew class zone perf rotation net)
 #     GODOT=/path/to/Godot bash tools/run_tests.sh   # another Godot binary
 #
 # Each suite is a headless Godot run of tests/<name>_test.tscn at 128 fixed fps
@@ -29,7 +29,7 @@ LOG_DIR="${LOG_DIR%/}/chiip-tests"
 # name:frames for --quit-after, the safety net. Every suite finishes in at most a
 # third of its frames (the match needs about 65000 of its 200000); a headless run
 # at 128 fixed fps goes through roughly 3500 frames a second.
-SUITES="movement:60000 weapon:60000 bot:100000 round:200000 tactics:200000 ui:60000 settings:60000 match:200000 bomb:100000 respawn:100000 sound:20000 maps:400000 crew:60000 class:200000 zone:60000 perf:100000 rotation:60000"
+SUITES="movement:60000 weapon:60000 bot:100000 round:200000 tactics:200000 ui:60000 settings:60000 match:200000 bomb:100000 respawn:100000 sound:20000 maps:400000 crew:60000 class:200000 zone:60000 perf:100000 rotation:60000 net:60000"
 
 if [ ! -x "$GODOT" ]; then
 	echo "Godot not found at $GODOT (set GODOT=/path/to/Godot)" >&2

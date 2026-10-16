@@ -2,7 +2,7 @@
 
 > Notes on Godot concepts as Chiip uses them. Each milestone adds a section with what was new and where it's used in the project.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## Unity → Godot cheat sheet
 
@@ -611,3 +611,21 @@
 **Playing clips from code, and moving a node to another parent** (`weapons/weapon.gd`)
 - `AnimationPlayer.play("fp_fire", blend, speed)` plays a clip (with a short cross-fade and a speed factor, here to stretch the reload to the weapon's reload time), `seek(0.0, true)` restarts it when the same clip is already playing, and `queue("fp_idle")` plays the idle clip once it ends: Unity's `Animator.Play()` and a transition back, without a state machine. Setting `active = false` stops a player from doing any work, which the hidden arms of every bot use.
 - `node.reparent(new_parent)` moves a node to another parent in one call (Unity: `transform.SetParent()`); with `keep_global_transform = false` it keeps its *local* position instead. The muzzle flash moves onto the gun's bone attachment this way, so it follows the gun's kick and reload.
+
+### M9 — Multiplayer
+
+**Godot's high-level multiplayer** (`net/net_session.gd`)
+- Every node can reach `multiplayer`, a `MultiplayerAPI` (in practice a `SceneMultiplayer`), Godot's counterpart of Unity Netcode's `NetworkManager`. What actually sends packets is its `multiplayer_peer`: an `ENetMultiplayerPeer` (UDP through the ENet library, like Unity Transport), a `WebSocketMultiplayerPeer`, a `WebRTCMultiplayerPeer` or, later in M9, a Steam peer. Swapping the peer swaps the transport; the rest of the code stays.
+- `peer.create_server(port, max_clients, channels)` hosts, `peer.create_client(address, port, channels)` joins; assign the peer to `multiplayer.multiplayer_peer` and the signals `peer_connected`, `peer_disconnected`, `connected_to_server`, `connection_failed` and `server_disconnected` tell you what happens. Every computer gets a *peer id*: the server is always 1, clients get random numbers (`multiplayer.get_unique_id()`).
+- ENet *channels* are independent queues: a lost unreliable snapshot on one channel never holds up reliable events on another.
+
+**RPCs** (`@rpc`)
+- A function marked `@rpc` can be called on the same node on another computer: `my_function.rpc(args)` calls it on everyone, `my_function.rpc_id(peer_id, args)` on one computer. Unity's `[ServerRpc]` / `[ClientRpc]` are the same idea, but Godot uses one annotation with options: `"any_peer"` (any computer may call it; check `multiplayer.get_remote_sender_id()` to see who did) or `"authority"` (only the node's *multiplayer authority*, the server by default); `"call_remote"` (not on yourself) or `"call_local"`; `"reliable"`, `"unreliable"` or `"unreliable_ordered"`; and a channel number.
+- The call finds its node by **path**, so the node must exist at the same path on both computers. That is why the session node always has the same name (`NetSession`) and the same place below its multiplayer root.
+
+**One process, several "computers"** (`SceneTree.set_multiplayer()`, `tests/net_harness.gd`)
+- `get_tree().set_multiplayer(SceneMultiplayer.new(), ^"/root/Test/Host")` gives one branch of the tree its own multiplayer API: nodes below it use that one, with paths counted from the branch. Two branches with their own APIs connected over localhost behave like two computers, which is how Chiip's network tests run a host and clients in one test run. Unity has nothing built in for this (its multiplayer play mode starts extra editor processes).
+
+**Raw packets next to RPCs** (`SceneMultiplayer.send_bytes()`, `peer_packet`)
+- `SceneMultiplayer` can also send plain byte arrays, with no node and no path: `send_bytes(bytes, peer_id, transfer_mode, channel)`, received through the `peer_packet(id, bytes)` signal. Chiip uses them for the game stream, where it wants its own compact format and tick numbers (D-101), and RPCs for the lobby.
+

@@ -11,7 +11,9 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 - A quick check before planning: two `SceneMultiplayer`s in one Godot process, each on its own branch of the tree, talk over ENet on localhost. That is what the network tests need (D-111).
 - All 17 suites pass on the starting point (568 checks).
 
-**Next:** task 2, the connection and the session.
+- **Connection and session** (task 2): `NetSession` hosts on port 26000 or joins by IP over ENet, keeps the roster (unique, cleaned names; newcomers on the smaller team; team requests with a limit), carries match messages over RPCs and the game stream as raw packets, and can fake lag (in ticks), jitter and loss (unreliable packets only, reliable ones stay in order). `NetHarness` runs a host and clients in one process, each side with its own `SceneMultiplayer`. New `tests/net_test.tscn`, 14 checks; the first run found that Godot's `sort_custom` isn't stable, so packets due in the same tick now keep their order by arrival number.
+
+**Next:** task 3, one match on every screen.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 

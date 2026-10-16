@@ -2,7 +2,7 @@
 
 > How the project is organized and which rules the code follows. Updated whenever a folder, system or convention is added.
 >
-> Last updated: 2026-10-15. The Godot project exists; the folders below are created, systems are added milestone by milestone.
+> Last updated: 2026-10-16. The Godot project exists; the folders below are created, systems are added milestone by milestone.
 
 ## Engine
 
@@ -52,6 +52,7 @@ Chiip/
 ├── weapons/           Weapon logic, weapon data files (.tres), weapon scenes
 ├── bots/              Bot scene (a Character variant) and its AI controller
 ├── bomb/              The bomb of bomb rounds: scene and rules (M8, D-080)
+├── net/               Multiplayer (M9): the session, the packets, the host's and the clients' game code
 ├── maps/              Test maps and playable maps
 │   ├── comparison/    M3: the same room built with CSG and with TrenchBroom
 │   ├── props/         Reusable map objects (target dummy)
@@ -200,6 +201,7 @@ Chiip/
 | Classes | Four classes, each a look and one passive perk; pick one at match start, change it in freeze time; bots get a mix | M6 → M7 | Built: `ClassData`, class swap at runtime, `request_class`, the class menu, bot mix (D-078); the perks switch on in M7 |
 | Economy | Money, rewards, buy menu | M7 | Planned |
 | Bomb | Carry, drop, plant, fuse, defuse, explosion | M8 | Built: `Bomb` (`bomb/`), added by the round manager on maps with bomb sites; `BombHud` shows it (D-080) |
+| Multiplayer | Host and join, the roster, commands, snapshots, prediction, lag compensation, lobby, Steam | M9 | In progress: `NetSession` and `NetProtocol` (`net/`, D-101, D-102). See "Multiplayer (M9)" below |
 
 ## Input actions
 
@@ -403,7 +405,7 @@ Run **all** the checks with one command from the project folder (the standard wa
 bash tools/run_tests.sh
 ```
 
-`tools/run_tests.sh` runs the sixteen suites one at a time, each as its own headless Godot run with its own `--quit-after`, counts the PASS and FAIL lines of each and prints a summary table (suite, pass, fail, status, seconds). It exits with the number of failed suites, so 0 means everything passed. A suite counts as failed when it prints a FAIL line, **no PASS line at all** (a parse error makes a suite exit with code 0 and print nothing, which looks like a pass), a `SCRIPT ERROR`, never reaches its final "All checks passed." line (the `--quit-after` safety net ended it) or exits with a non-zero code. A plain `ERROR:` line is not a failure: the settings suite prints one expected "ConfigFile parse error" from its unreadable-file check. `bash tools/run_tests.sh round ui` runs only the named suites, and each suite's full output stays in `$TMPDIR/chiip-tests/<name>.log` until the next run. The script needs only bash 3.2 and the Godot binary (no `timeout` command, which macOS lacks), and it never runs `--import` or touches git.
+`tools/run_tests.sh` runs every suite one at a time, each as its own headless Godot run with its own `--quit-after`, counts the PASS and FAIL lines of each and prints a summary table (suite, pass, fail, status, seconds). It exits with the number of failed suites, so 0 means everything passed. A suite counts as failed when it prints a FAIL line, **no PASS line at all** (a parse error makes a suite exit with code 0 and print nothing, which looks like a pass), a `SCRIPT ERROR`, never reaches its final "All checks passed." line (the `--quit-after` safety net ended it) or exits with a non-zero code. A plain `ERROR:` line is not a failure: the settings suite prints one expected "ConfigFile parse error" from its unreadable-file check. `bash tools/run_tests.sh round ui` runs only the named suites, and each suite's full output stays in `$TMPDIR/chiip-tests/<name>.log` until the next run. The script needs only bash 3.2 and the Godot binary (no `timeout` command, which macOS lacks), and it never runs `--import` or touches git.
 
 | Suite | Checks | What it covers | Run time |
 |---|---|---|---|
@@ -423,8 +425,10 @@ bash tools/run_tests.sh
 | `class_test` | 57 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078) | ~1 s |
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
+| `rotation_test` | 13 | Mode and map rotation in match setup, Next map on the end screen (D-087) | ~1 s |
+| `net_test` | 14 | The network session: hosting, joining, the roster, team requests, messages, stream packets, fake lag and loss (M9, D-101, D-111) | ~2 s |
 
-That is 555 checks in about 75 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
+That is 582 checks in about 80 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 
 ```
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn
@@ -443,6 +447,8 @@ That is 555 checks in about 75 s on the development Mac. A change to one system 
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 200000 res://tests/class_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/zone_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/rotation_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/net_test.tscn
 ```
 
 `perf_test` times every physics tick of a seeded bots-only 5v5 (the CPU side: physics, bots, animation, skeletons); with `-- --window` after it (and without `--headless`), it also prints the frame rate from a camera over the map. `zone_test` checks that every class's hit zones follow its animated bones.
@@ -488,3 +494,18 @@ Multiplayer is added in M9, after the single-player game. These rules for M4–M
 5. **Characters and other gameplay objects get stable IDs**, so the host and clients can refer to the same thing.
 6. **Settings are local, never game rules.** `Settings` (sensitivity, FOV, video, audio, crosshair, keys) is each player's own preference on their own computer. Nothing in a match (damage, rounds, spawns, bot behaviour) may read it, so the host never needs to send or check it; only presentation and the local controller do.
 7. **Pausing is single-player only** (D-065). The pause menu stops the game with `get_tree().paused`, which nobody can do to a host's clock or to other players. In M9 it becomes an overlay that doesn't pause: it keeps its `MenuState` registration (so the local player still can't move or shoot while it is open) and stops touching `paused`. Keep gameplay free of anything that assumes the pause (it counts time only in `_physics_process` deltas), and the switch is small.
+
+## Multiplayer (M9)
+
+The decisions are D-100 to D-112. In short: the host runs the single-player game as it is; clients send their commands and show the host's snapshots; each client predicts its own player.
+
+**The session** (`net/net_session.gd`, `NetSession`, D-101, D-102). One node per computer while it is online: `NetSession.open(tree)` adds it to the tree root (it survives scene changes; it is not an autoload), `host_game(name, port)` or `join_game(address, name, port)` connects, `close()` leaves and frees it. It talks through its own `multiplayer` (Godot's `SceneMultiplayer` with an `ENetMultiplayerPeer`, two ENet channels: 0 reliable, 1 unreliable).
+
+- **Peer ids:** the host is 1, each client a random number (`local_peer_id`).
+- **The roster** (`get_players()`: peer id, name, team, in join order) belongs to the host. A client says hello (`_rpc_hello`, with `NetProtocol.VERSION`; another version is refused), the host adds it with a unique, cleaned name (at most 16 characters, valid as a node name, never a bot's "Bot3") on the smaller team and sends everyone the whole roster (`_rpc_roster`). `request_team(team, limit)` asks the host for a team. `roster_changed`, `player_joined`, `player_left`, `joined`, `join_failed`, `closed(reason)`.
+- **Match messages:** `send_to_all(dict)` (host → everyone, and itself) and `send_to_host(dict)` (client → host, with `"from"` added) arrive as `match_message`. RPCs, reliable, in order with the roster.
+- **The game stream:** `send_packet(peer, bytes, reliable)` (peer 0: everyone) and `packet_received(peer, bytes)`. Packets are typed by their first byte (`NetProtocol.Message`: commands, snapshots, events, requests); events and requests are reliable. Every received packet waits in an inbox and is handed out at the start of a later physics tick (the session's `process_physics_priority` is -1000, so before any game code). Fake lag (`fake_lag_ms`, plus `fake_jitter_ms`) adds whole ticks; fake loss (`fake_loss`, 0 to 1, seeded `rng`) drops unreliable packets only; reliable packets keep their order. Counters: `packets_sent`, `packets_received`, `bytes_sent`, `bytes_received`, `packets_dropped`; `get_ping_ms()` is ENet's round-trip time.
+- **ENet timeouts** are 3 to 8 s on both sides, so a lost connection is noticed quickly.
+
+**Testing in one process** (`tests/net_harness.gd`, `NetHarness`, D-111): `add_side(name)` makes a branch of the tree with its own `SceneMultiplayer` (`SceneTree.set_multiplayer(api, branch_path)`), `start_host()` and `start_client()` open sessions on new sides on a random port between 27600 and 27900, `wait_until(condition, max_ticks)` waits. RPCs find their node by its path below the branch (`NetSession` on every side), so a host branch and a client branch talk exactly as two computers would.
+
