@@ -63,6 +63,10 @@ signal match_message(data: Dictionary)
 
 ## The port a host listens on unless told otherwise (Quake's).
 const DEFAULT_PORT := 26000
+## Seconds a join waits for the host's answer (the roster) before it gives up (M12, D-178).
+const JOIN_TIMEOUT := 10.0
+## What the Join page says when nobody answers: the usual reasons, in the order a friend should check them.
+const NO_HOST_TEXT := "Couldn't reach the host. Check the address and port, that the host's game is running, and that you are both connected to Tailscale."
 ## Players besides the host: 5v5 at most.
 const MAX_CLIENTS := 9
 ## Names are cut to this many characters.
@@ -193,6 +197,8 @@ func join_game(address: String, player_name: String, port: int = DEFAULT_PORT) -
 	multiplayer.multiplayer_peer = _peer
 	local_name = _clean_name(player_name)
 	_waiting_for_roster = true
+	# ENet itself gives up on a host that isn't there only after about 30 s, which looks like a hang.
+	get_tree().create_timer(JOIN_TIMEOUT).timeout.connect(_on_join_timeout)
 	return OK
 
 
@@ -369,9 +375,18 @@ func _on_connected_to_server() -> void:
 	_rpc_hello.rpc_id(1, local_name, NetProtocol.VERSION)
 
 
+## [constant JOIN_TIMEOUT] seconds after [method join_game]: nobody answered yet, so give up.
+func _on_join_timeout() -> void:
+	if _closed or not _waiting_for_roster:
+		return
+	_waiting_for_roster = false
+	join_failed.emit(NO_HOST_TEXT)
+	_shut_down("Couldn't reach the host.")
+
+
 func _on_connection_failed() -> void:
 	_waiting_for_roster = false
-	join_failed.emit("Couldn't reach the host.")
+	join_failed.emit(NO_HOST_TEXT)
 	_shut_down("Couldn't reach the host.")
 
 

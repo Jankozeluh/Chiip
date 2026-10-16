@@ -27,6 +27,7 @@ func _ready() -> void:
 	_test_contributing()
 	_test_tailscale_addresses()
 	await _test_tailscale_in_the_lobby()
+	await _test_join_to_nobody()
 	_test_no_personal_paths()
 	_test_gitignore()
 	MenuState.reset()
@@ -220,6 +221,41 @@ func _has_secrets(config: ConfigFile) -> bool:
 	return false
 
 
+# --- A join that nobody answers ---
+
+
+## Joining an address with no game behind it (a typo, Tailscale off) must end with a message after
+## [constant NetSession.JOIN_TIMEOUT] seconds, not leave "Connecting..." up for the better part of a minute
+## (ENet's own limit is 30 s).
+func _test_join_to_nobody() -> void:
+	MenuState.reset()
+	GameLaunch.clear()
+	var stored := Settings.new()
+	stored.online_name = "Tester"
+	var lobby := (load("res://ui/lobby_menu.tscn") as PackedScene).instantiate() as LobbyMenu
+	lobby.set_settings(stored)
+	add_child(lobby)
+	await get_tree().process_frame
+	lobby.open()
+	lobby.get_address_field().text = "127.0.0.1"
+	lobby.get_port_field().text = "28999"
+	var result := lobby.join_game()
+	var connecting_text := lobby.get_status_label().text
+	var ticks := 0
+	while lobby.get_join_button().disabled and ticks < 20 * 128:
+		await get_tree().physics_frame
+		ticks += 1
+	var seconds := ticks / 128.0
+	_check("Joining where no game runs says so after %.0f s (it took %.1f s of game time): the status names the usual causes and Join works again" % [NetSession.JOIN_TIMEOUT, seconds],
+			result == OK and connecting_text.begins_with("Connecting to 127.0.0.1:28999") and seconds >= NetSession.JOIN_TIMEOUT - 0.1 and seconds < NetSession.JOIN_TIMEOUT + 2.0
+					and lobby.get_status_label().text == NetSession.NO_HOST_TEXT and not lobby.get_join_button().disabled,
+			"result %d, status '%s', %.1f s" % [result, lobby.get_status_label().text, seconds])
+	lobby.close()
+	remove_child(lobby)
+	lobby.queue_free()
+	MenuState.reset()
+
+
 # --- Contributing and credits ---
 
 
@@ -235,6 +271,14 @@ func _test_contributing() -> void:
 			readme.contains("Created by JK · Divocakos") and readme.contains("all rights reserved")
 					and LicensesMenu.overview_text().contains("Created by JK · Divocakos"),
 			"")
+	var notes := FileAccess.get_file_as_string("res://docs/RELEASE_NOTES_v0.1.0.md")
+	var checklist := FileAccess.get_file_as_string("res://docs/RELEASE_CHECKLIST.md")
+	var known := FileAccess.get_file_as_string("res://docs/KNOWN_ISSUES.md")
+	_check("The release papers exist: notes that credit \"Created by JK · Divocakos\" and name the three downloads, a checklist with every section, and the known issues",
+			notes.contains("Created by JK · Divocakos") and notes.contains("windows-x86_64.zip") and notes.contains("macos-universal.zip") and notes.contains("linux-x86_64.zip")
+					and checklist.contains("## 0. Gates") and checklist.contains("## 7. The builds") and checklist.contains("## 8. Before it goes public")
+					and known.contains("## Builds") and known.contains("## Online play"),
+			"notes %d, checklist %d, known issues %d characters" % [notes.length(), checklist.length(), known.length()])
 	var maps_test := FileAccess.get_file_as_string("res://tests/maps_test.gd")
 	var launch := FileAccess.get_file_as_string("res://systems/game_launch.gd")
 	_check("The two lists CONTRIBUTING.md tells map authors to extend still exist (GameLaunch.ROTATION_MAPS and the maps test's MAPS)",

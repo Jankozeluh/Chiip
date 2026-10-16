@@ -165,6 +165,11 @@ const KEY_NAMES := {
 	KEY_KP_DIVIDE: "Num /", KEY_KP_PERIOD: "Num .",
 }
 
+## How many times this process read or wrote the player's real settings file ([constant SETTINGS_PATH]).
+## Tests check it is still 0: a checksum of the file would also fail when *another* game on the
+## same computer wrote it during the run (every worktree and the player share the user data folder).
+static var real_file_accesses: int = 0
+
 ## Where changes are saved ([code]""[/code]: nowhere). Set by [method load_from_disk].
 var save_path: String = ""
 ## True for the shared instance: changes also reach the engine (window, frame
@@ -541,6 +546,8 @@ func reset_bindings() -> void:
 ## [constant ERR_FILE_NOT_FOUND] or [constant ERR_PARSE_ERROR].
 func load_from_disk(path: String = SETTINGS_PATH) -> Error:
 	save_path = path
+	if path == SETTINGS_PATH:
+		real_file_accesses += 1
 	var file := ConfigFile.new()
 	var result := file.load(path)
 	if result != OK:
@@ -577,6 +584,8 @@ func save_to_disk(path: String = "") -> Error:
 	var target := path if path != "" else save_path
 	if target == "":
 		return ERR_UNCONFIGURED
+	if target == SETTINGS_PATH:
+		real_file_accesses += 1
 	var file := ConfigFile.new()
 	for key: StringName in SCHEMA:
 		file.set_value(SCHEMA[key]["section"], _file_key(key), _values[key])

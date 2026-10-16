@@ -688,7 +688,7 @@ func _test_nothing_left_connected(expected: int) -> void:
 func _test_real_file_untouched() -> void:
 	var now := FileAccess.get_md5(Settings.SETTINGS_PATH) if FileAccess.file_exists(Settings.SETTINGS_PATH) else ""
 	_check("The real user://settings.cfg was not read, created or changed by any of this",
-			now == _real_file_md5 and not _settings.save_path, "before '%s', after '%s', shared instance saves to '%s'" % [_real_file_md5, now, _settings.save_path])
+			Settings.real_file_accesses == 0 and not _settings.save_path, "accesses %d, shared instance saves to '%s' (checksum before '%s', after '%s')" % [Settings.real_file_accesses, _settings.save_path, _real_file_md5, now])
 
 
 # --- Helpers ---

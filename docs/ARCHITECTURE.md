@@ -531,7 +531,8 @@ bash tools/run_tests.sh
 | `netjoin_test` | 6 | Players coming and going: a bot takes over a leaver, a latecomer takes over a bot, the host ends the game (D-110) | ~2 s |
 | `netrespawn_test` | 5 | An online team respawn match to 15 kills: kills with the score, respawns of puppets and of your own player, the end (D-082 online) | ~20 s |
 | `netstress_test` | 11 | A 5v5 with two clients, one at 100 ms with 5% loss and jitter: four bomb rounds the same everywhere, few small corrections, gliding puppets, traffic per client (M9 task 11) | ~30 s |
-| `release_test` | 35 | Ready to share (M12, D-170): the licence files, the Licences screen and its button in the settings menu, the three export presets, CONTRIBUTING.md and the credit line, Tailscale addresses in the lobby (the address ranges, Copy, "address:port" in Join by IP), no personal path in the project's text files, the ignore file | ~1 s |
+| `qa_test` | 20 | Every mode on every map as a player starts it (M12, D-178): Bomb and Team Deathmatch on Depot, Square and Spillway, Practice on the Shooting Range, the kit gallery and the test map, 70 s of game time each; the console's `bot_add` and `bot_kick` | ~35 s |
+| `release_test` | 37 | Ready to share (M12, D-170): the licence files, the Licences screen and its button in the settings menu, the three export presets, CONTRIBUTING.md and the credit line, Tailscale addresses in the lobby (the address ranges, Copy, "address:port" in Join by IP), a join to nobody ending after `NetSession.JOIN_TIMEOUT`, no personal path in the project's text files, the ignore file | ~1 s |
 
 That is about 830 checks in about four minutes on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 

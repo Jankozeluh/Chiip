@@ -35,6 +35,8 @@ func _init() -> void:
 	if out_index >= 0 and out_index + 1 < args.size():
 		_out_folder = args[out_index + 1]
 	DirAccess.make_dir_recursive_absolute(_out_folder)
+	# The studio's boot screen (M11) would cover every menu shot: it is checked by layout_test.
+	BootScreen.enabled = false
 	process_frame.connect(_keep_input_away)
 	await _menu_shots()
 	await _match_shots()

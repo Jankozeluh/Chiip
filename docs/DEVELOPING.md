@@ -167,7 +167,7 @@ Run all the automated checks with one command (no window, about a minute and a q
 cd "$PROJECT" && bash tools/run_tests.sh
 ```
 
-It runs the thirty-four suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the thirty-five suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
@@ -202,6 +202,8 @@ To run a single suite on its own (about a second each, the match test about twen
 ```bash
 "$GODOT" --headless --path "$PROJECT" --fixed-fps 128 --quit-after 200000 res://tests/match_test.tscn
 ```
+
+Two more checks come with M12: `bash tools/run_tests.sh qa` plays every mode on every map through the real game scene, and `bash tools/lan_check.sh` (about a minute) runs a host and two friends as three real game processes over this computer's LAN address. The full test plan for a release is [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). A test never touches your real `settings.cfg` (`Settings.real_file_accesses` stays 0), and another game running at the same time can't make one fail by writing that file.
 
 The match test plays a whole 3v3 match, bots and all, through the real game scene and prints one line per round before its checks; it plays the same match every time. The tests never touch your real `settings.cfg`. The settings test prints one Godot "ConfigFile parse error" on purpose: it loads a broken file to check that the game falls back to the defaults.
 

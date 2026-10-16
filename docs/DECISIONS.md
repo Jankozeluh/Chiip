@@ -1964,6 +1964,21 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Steam lobbies and a dedicated server first (they stay in the Backlog); more maps first (they come through pull requests as they arrive, D-176).
 
+## D-178 — The pre-release QA pass: what is automated, what was fixed (2026-10-16)
+
+**Decision:**
+- **Test plan:** `docs/RELEASE_CHECKLIST.md`: gates, every mode on every map, every menu, settings and rebinding, fullscreen and resizing, class draft, buying, pickups and the bomb, online (LAN and Tailscale), the builds, and the checks before going public. Automatic lines say the command; hand lines say what to do and what to see.
+- **Automated, new:** the `qa` suite plays Bomb and Team Deathmatch on Depot, Square and Spillway and Practice on three maps through the real game scene with a player in it (70 s of game time each: rules, 3v3, bots walking and fighting, rounds or respawns, nobody falling through the world), and the console's `bot_add` / `bot_kick` on the Shooting Range. `tools/lan_check.sh` runs a host and two friends as three real processes over this computer's LAN address (one joins and leaves, the second joins the running match). The suites now count 35.
+- **Two flaky tests fixed at the root.** (1) `match` (and `ui`, `settings`) compared a checksum of the real `settings.cfg` before and after, which fails whenever *another* game on the computer writes that file (every worktree and the player share it). `Settings.real_file_accesses` now counts this process's own reads and writes of that file, and the tests require 0. (2) `netjoin` measured the distance a joined player walked in a second, which depends on which bot he takes over (a wall a metre ahead gives 1 m): it measures the top speed in a window in which the round stays live and he stays alive.
+- **A bug fixed:** joining an address where no game runs left "Connecting…" up for the better part of a minute (ENet gives up after about 30 s). The session now gives up after `NetSession.JOIN_TIMEOUT` (10 s of game time) with a message that names the usual causes (address and port, the host's game, Tailscale). A test covers it.
+- **A tool fixed:** `tools/ui_screenshots.gd` showed the boot screen in its first seven pictures; it turns the boot screen off now.
+- **Not found:** no script error or engine error in any suite's log apart from the known exit-time leak warnings and the two expected lines (ENet port in use, the broken-settings parse error). Full run: 35 suites, 1,150+ checks pass.
+- **Release notes** for v0.1.0 are `docs/RELEASE_NOTES_v0.1.0.md`; `docs/KNOWN_ISSUES.md` lists what is known and unchecked (the Windows and Linux builds on real computers, a real Tailscale join, Ctrl-click on macOS, fullscreen by hand).
+
+**Why:** Your brief: check, polish and finish what can be finished before the first release. A test that fails when someone else plays is worse than no test; a hang that looks like a crash is the first thing a friend with a typo in the address would meet.
+
+**Alternatives:** Give each test run its own user-data folder (Godot has no command-line switch for it on macOS); skip the player in the QA games (the real flow has one); a join timeout in the transport only (ENet's connecting peers can't be given a shorter timeout through Godot's API in a way that worked here).
+
 ## Open questions
 
 | Question | Decide in |
