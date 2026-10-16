@@ -11,8 +11,11 @@ extends Node
 ## feed, the scoreboard and the bomb's carrier and state. Server authority (task 4): the
 ## client's commands move its character on the host, each command runs exactly once (also with
 ## 25% of the packets lost), a flood of commands can't run faster than the budget, and a shot's
-## spread is rolled from its command's number. Quits with the number of failed checks as the
-## exit code.
+## spread is rolled from its command's number. Snapshots (task 5): a puppet is shown 6 ticks
+## behind the newest snapshot, exactly between the host's positions around that moment and
+## without jumps; its shots, reloads and footsteps play on the client (also with 5% of the
+## snapshots lost); a dead client spectates a teammate's puppet. Quits with the number of failed
+## checks as the exit code.
 
 const MAP := preload("res://maps/depot.tscn")
 ## Seconds of each phase, short so the test plays a few rounds quickly.
@@ -35,6 +38,28 @@ var _host_kills: Array = []
 var _client_kills: Array = []
 var _host_rounds: Array = []
 var _client_rounds: Array = []
+## While the puppet test runs: the host player's position by host tick, and the client's puppet
+## of it with the render tick it was shown at ([render tick, position]).
+var _host_track: Dictionary = {}
+var _puppet_track: Array = []
+var _tracking: Character
+var _tracking_puppet: Character
+
+
+## Drives a character with commands from a function (the host's own player in the tests).
+class ScriptedController extends CharacterController:
+	var source: Callable
+
+	func get_input(delta: float) -> CharacterInput:
+		return source.call(delta)
+
+
+func _physics_process(_delta: float) -> void:
+	# Runs before the map's characters (this node is above them), so the host's player is where
+	# the snapshot of the host's current tick showed it; the client has posed its puppets already.
+	if _tracking != null and _host != null:
+		_host_track[_host.tick] = _tracking.global_position
+		_puppet_track.append([_client.get_render_tick(), _tracking_puppet.global_position])
 
 
 func _ready() -> void:
@@ -46,6 +71,8 @@ func _ready() -> void:
 		await _harness.wait_ticks(10)
 		_test_same_match()
 		await _test_commands()
+		await _test_puppets()
+		await _test_spectating()
 		await _test_rounds()
 	_stop()
 	for i in 5:
@@ -211,6 +238,98 @@ func _test_commands() -> void:
 	_client.command_tick += 40
 	_client.set_physics_process(true)
 	_client.command_source = Callable()
+	_hold_bots(false)
+
+
+## The host's player strafes and shoots; its puppet on the client must follow (D-104).
+func _test_puppets() -> void:
+	_hold_bots(true)
+	var host_player: Character = _host_main.get_player()
+	var puppet := _client.get_character(host_player.net_id)
+	var scripted := ScriptedController.new()
+	scripted.name = "ScriptedController"
+	host_player.add_child(scripted)
+	var yaw := host_player.rotation.y
+	var count := [0]
+	scripted.source = func(_delta: float) -> CharacterInput:
+		count[0] += 1
+		var command := CharacterInput.new()
+		command.yaw = yaw + sin(count[0] * 0.02) * 0.6
+		command.move = Vector2(1.0 if (count[0] / 96) % 2 == 0 else -1.0, 0.0)
+		command.shoot = count[0] % 40 < 20
+		command.reload = count[0] == 200
+		return command
+	host_player.set_controller(scripted)
+	var host_shots := [0]
+	var puppet_shots := [0]
+	var host_reloads := [0]
+	var puppet_reloads := [0]
+	var host_steps := [0]
+	var puppet_steps := [0]
+	host_player.weapon.fired.connect(func(_shot: int) -> void: host_shots[0] += 1)
+	puppet.weapon.fired.connect(func(_shot: int) -> void: puppet_shots[0] += 1)
+	host_player.weapon.reload_started.connect(func() -> void: host_reloads[0] += 1)
+	puppet.weapon.reload_started.connect(func() -> void: puppet_reloads[0] += 1)
+	host_player.footstep.connect(func(loud: bool) -> void: host_steps[0] += 1 if loud else 0)
+	puppet.footstep.connect(func(loud: bool) -> void: puppet_steps[0] += 1 if loud else 0)
+	_client_session.rng.seed = 5
+	_client_session.fake_loss = 0.05
+	_tracking = host_player
+	_tracking_puppet = puppet
+	await _harness.wait_ticks(320)
+	scripted.source = func(_delta: float) -> CharacterInput:
+		var command := CharacterInput.new()
+		command.yaw = yaw
+		return command
+	await _harness.wait_ticks(40)
+	_tracking = null
+	_client_session.fake_loss = 0.0
+	host_player.set_controller(host_player.get_node("PlayerController") as CharacterController)
+	host_player.remove_child(scripted)
+	scripted.queue_free()
+
+	var worst := 0.0
+	var worst_step := 0.0
+	var compared := 0
+	var behind := 0.0
+	for i in _puppet_track.size():
+		var render: float = _puppet_track[i][0]
+		var shown: Vector3 = _puppet_track[i][1]
+		var tick := floori(render)
+		if i > 0:
+			worst_step = maxf(worst_step, shown.distance_to(_puppet_track[i - 1][1]))
+		if not _host_track.has(tick) or not _host_track.has(tick + 1):
+			continue
+		var expected: Vector3 = (_host_track[tick] as Vector3).lerp(_host_track[tick + 1], render - tick)
+		worst = maxf(worst, shown.distance_to(expected))
+		compared += 1
+		behind += float(_client.newest_snapshot) - render
+	_check("A puppet is shown exactly between the host's positions around its render tick (within 2 cm, 5% loss)",
+			compared > 200 and worst < 0.02, "%d ticks compared, worst %.3f m" % [compared, worst])
+	_check("A puppet moves without jumps (at most 6 cm a tick while strafing)", worst_step < 0.06, "%.3f m" % worst_step)
+	var clock_lag := float(_client.newest_snapshot) - _client.get_render_tick()
+	_check("Puppets are shown about 6 ticks (47 ms) behind the newest snapshot", clock_lag >= 5.0 and clock_lag <= 8.0, "%.1f ticks" % clock_lag)
+	_check("Every shot and reload of the host's player plays on its puppet once, also with 5% of the snapshots lost",
+			host_shots[0] >= 8 and puppet_shots[0] == host_shots[0] and host_reloads[0] >= 1 and puppet_reloads[0] == host_reloads[0],
+			"shots %d / %d, reloads %d / %d" % [host_shots[0], puppet_shots[0], host_reloads[0], puppet_reloads[0]])
+	_check("The puppet takes its loud footsteps from its movement (as many as the host's, give or take 2)",
+			host_steps[0] > 3 and absi(puppet_steps[0] - host_steps[0]) <= 2, "host %d, puppet %d" % [host_steps[0], puppet_steps[0]])
+
+
+## The client's player is killed on the host: it dies on the client and watches a teammate's puppet.
+func _test_spectating() -> void:
+	var friend := _host.get_character_of(_client_session.local_peer_id)
+	var own: Character = _client_main.get_player()
+	var controller := own.get_node("PlayerController") as PlayerController
+	var mates := _client_rules.get_members(own.team).filter(func(c: Character) -> bool: return c != own and c.is_alive())
+	friend.take_damage(500.0, Hitbox.Zone.CHEST, null)
+	var died := await _harness.wait_until(func() -> bool: return not own.is_alive(), 60)
+	await _harness.wait_ticks(roundi(controller.spectate_delay * Engine.physics_ticks_per_second) + 20)
+	var watched := controller.get_view_target()
+	var hud := _client_main.get_node("HUD")
+	_check("Killed on the host, the client's player dies on the client and then watches a teammate's puppet",
+			died and not mates.is_empty() and watched != own and watched.remote and watched.team == own.team and hud.shown == watched,
+			"died %s, watching %s" % [died, watched.name])
 	_hold_bots(false)
 
 

@@ -52,7 +52,7 @@ enum Event {
 	KILLED,
 	## [victim, amount, zone, attacker (0: none), health left].
 	DAMAGED,
-	## [net id, position, yaw].
+	## [net id, position, yaw, host tick of the first snapshot with it there].
 	RESPAWNED,
 	## [[net id, kills, deaths, assists, damage], ...].
 	STATS,

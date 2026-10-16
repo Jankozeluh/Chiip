@@ -17,7 +17,9 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 
 - **Server authority** (task 4, in the same commit as task 3): the client numbers and sends its commands, repeating the unconfirmed ones; the host runs each exactly once with `Character.step()`, within a budget of one command per tick (up to 8 saved); the snapshot's ack confirms them. A numbered command's shot rolls its spread from `hash([net_id, tick])`. The first test run found ENet's throttle dropping the odd unreliable packet on localhost with no fake loss at all; it is switched off now (D-103). 5 new checks in `netplay_test` (21): moving, exactly once also at 25% loss, the flood budget, the seeded spread. All 19 suites pass.
 
-**Next:** task 5, snapshots: interpolation, shots and reloads on puppets.
+- **Snapshots** (task 5): puppets are shown 6 ticks (47 ms) behind the newest snapshot, interpolated between the two around that moment, with a clock that follows the snapshots smoothly; they keep going along their velocity for 100 ms when snapshots stop. Shots and reloads ride in four snapshots each and play once; a respawned puppet doesn't glide from where it died. 6 new checks in `netplay_test` (27): within 2 cm of the host's path with 5% of the snapshots lost, no jumps, every shot and reload once, footsteps, spectating a teammate's puppet.
+
+**Next:** task 6, client-side prediction.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 

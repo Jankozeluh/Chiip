@@ -15,7 +15,12 @@ extends Node
 ##   damage, respawns, class changes and the scoreboard go to the replica round manager and the
 ##   characters, which emit their usual signals, so the HUD and menus work as offline.
 ## - **Snapshots** (64 a second): the clock, the bomb, and every puppet's position, aim,
-##   stance, health and ammo.
+##   stance, health and ammo. Puppets are shown [constant INTERPOLATION_TICKS] ticks behind the
+##   newest snapshot, interpolated between the two snapshots around that moment (D-104), so
+##   they move smoothly even though snapshots come every second tick and a few get lost. If
+##   snapshots stop, a puppet keeps moving along its velocity for
+##   [constant EXTRAPOLATION_TICKS] ticks, then stands. The shots and reloads riding in the
+##   snapshots play on the puppets at once (each is numbered and played once).
 ## - **Commands** (D-103). Every tick your controller's command is numbered and sent to the
 ##   host with every earlier one the host hasn't confirmed yet (at most
 ##   [constant MAX_SENT]); a snapshot's ack confirms them.
@@ -33,6 +38,17 @@ const PUPPET_SCENE := preload("res://bots/bot.tscn")
 const MAX_SENT := 16
 ## Unconfirmed commands kept at most (a second): older ones are given up.
 const MAX_UNCONFIRMED := 128
+## How far behind the newest snapshot the puppets are shown, in ticks: 6 is 47 ms, three
+## snapshot intervals, so one lost snapshot still leaves one to interpolate to (D-104).
+const INTERPOLATION_TICKS := 6.0
+## How long a puppet keeps moving along its velocity when snapshots stop, in ticks (100 ms).
+const EXTRAPOLATION_TICKS := 13.0
+## Snapshots kept per puppet (half a second).
+const MAX_SAMPLES := 32
+## How quickly the clock follows the snapshots' ticks (a share of the difference per tick), and
+## the difference at which it jumps instead.
+const CLOCK_CORRECTION := 0.05
+const CLOCK_JUMP := 16.0
 
 ## The session of this match.
 var session: NetSession
@@ -51,9 +67,18 @@ var command_source: Callable
 var command_tick: int = 0
 ## The last command the host confirmed it ran.
 var acked_tick: int = 0
+## The host tick this computer thinks it is (it follows the snapshots' ticks smoothly).
+var clock: float = -1.0
 
 ## Commands sent but not confirmed yet, oldest first.
 var _unconfirmed: Array[CharacterInput] = []
+## Net id → the puppet's snapshots, oldest first: [host tick, CharacterState] each.
+var _samples: Dictionary = {}
+## Net id → the host tick of the puppet's last respawn: older snapshots of it are ignored.
+var _respawn_ticks: Dictionary = {}
+## Numbers of the cosmetic effects already played (the newest few hundred).
+var _played: Dictionary = {}
+var _played_order: Array[int] = []
 
 ## Net id → character, for everyone in the match (you included).
 var _characters: Dictionary = {}
@@ -102,7 +127,65 @@ func get_character(net_id: int) -> Character:
 func _physics_process(delta: float) -> void:
 	if not _welcomed:
 		return
+	_advance_clock()
+	_show_puppets()
 	_send_command(delta)
+
+
+## The host tick the puppets are shown at now: [constant INTERPOLATION_TICKS] behind the clock.
+func get_render_tick() -> float:
+	return clock - INTERPOLATION_TICKS
+
+
+## Moves the clock on by a tick and pulls it gently toward the newest snapshot's tick.
+func _advance_clock() -> void:
+	if newest_snapshot < 0:
+		return
+	if clock < 0.0:
+		clock = float(newest_snapshot)
+		return
+	clock += 1.0
+	var error := float(newest_snapshot) - clock
+	if absf(error) > CLOCK_JUMP:
+		clock = float(newest_snapshot)
+	else:
+		clock += error * CLOCK_CORRECTION
+
+
+## Puts every puppet where it was at the render tick, between the two snapshots around it.
+func _show_puppets() -> void:
+	var render := get_render_tick()
+	for net_id: int in _samples:
+		var character := get_character(net_id)
+		var samples: Array = _samples[net_id]
+		if character == null or samples.is_empty():
+			continue
+		var a: Array = samples[0]
+		var b: Array = []
+		for sample: Array in samples:
+			if float(sample[0]) <= render:
+				a = sample
+			else:
+				b = sample
+				break
+		var from: NetProtocol.CharacterState = a[1]
+		if float(a[0]) > render or b.is_empty():
+			# Before the first snapshot, or past the newest: hold, or keep going for a moment.
+			var ahead := clampf(render - float(a[0]), 0.0, EXTRAPOLATION_TICKS)
+			var moved := from.position + from.velocity * ahead / Engine.physics_ticks_per_second if from.has(NetProtocol.FLAG_ALIVE) else from.position
+			_pose(character, from, moved, from.yaw, from.pitch, from.eye_height)
+			continue
+		var to: NetProtocol.CharacterState = b[1]
+		var weight := clampf((render - float(a[0])) / float(maxi(b[0] - a[0], 1)), 0.0, 1.0)
+		_pose(character, from, from.position.lerp(to.position, weight), lerp_angle(from.yaw, to.yaw, weight),
+				lerpf(from.pitch, to.pitch, weight), lerpf(from.eye_height, to.eye_height, weight), from.velocity.lerp(to.velocity, weight))
+
+
+func _pose(character: Character, state: NetProtocol.CharacterState, at: Vector3, yaw: float, pitch: float, eye_height: float,
+		moving: Vector3 = Vector3.INF) -> void:
+	character.visible = true
+	character.set_remote_pose(at, state.velocity if moving == Vector3.INF else moving, yaw, pitch, eye_height,
+			state.has(NetProtocol.FLAG_CROUCHING), state.has(NetProtocol.FLAG_ON_FLOOR))
 
 
 ## Makes this tick's command, numbers it and sends it with the unconfirmed ones.
@@ -117,7 +200,7 @@ func _send_command(delta: float) -> void:
 	command = NetProtocol.quantize(command)
 	command_tick += 1
 	command.tick = command_tick
-	command.view_tick = float(newest_snapshot)
+	command.view_tick = get_render_tick()
 	_unconfirmed.append(command)
 	while _unconfirmed.size() > MAX_UNCONFIRMED:
 		_unconfirmed.pop_front()
@@ -188,7 +271,7 @@ func _on_event(values: Array) -> void:
 			if hurt != null:
 				hurt.apply_remote_damage(values[2], values[3], get_character(values[4]), values[5])
 		NetProtocol.Event.RESPAWNED:
-			_on_respawned(get_character(values[1]), values[2], values[3])
+			_on_respawned(get_character(values[1]), values[2], values[3], values[4])
 		NetProtocol.Event.STATS:
 			_apply_stats(values[1])
 		NetProtocol.Event.CLASS_CHANGED:
@@ -250,6 +333,7 @@ func _add_character(entry: Array) -> void:
 		character.remote = true
 		character.replica = true
 		character.footstep_sound = player.footstep_sound
+		# Puppets are posed every tick from the snapshots; the engine's smoothing between ticks stays.
 		map.add_child(character)
 		character.weapon.remote = true
 		character.weapon.data = player.weapon.data
@@ -266,11 +350,16 @@ func _apply_stats(list: Array) -> void:
 			rules.replica_set_stats(character, item[1], item[2], item[3], item[4])
 
 
-func _on_respawned(character: Character, at: Vector3, yaw: float) -> void:
+func _on_respawned(character: Character, at: Vector3, yaw: float, host_tick: int) -> void:
 	if character == null:
 		return
 	character.respawn(at, yaw)
 	character.visible = true
+	if character != player:
+		# From its spawn on: no gliding from where it died, and older snapshots of it don't count.
+		_respawn_ticks[character.net_id] = host_tick
+		var samples: Array = _samples.get(character.net_id, [])
+		_samples[character.net_id] = samples.filter(func(sample: Array) -> bool: return sample[0] >= host_tick)
 
 
 # --- Snapshots ---
@@ -278,6 +367,14 @@ func _on_respawned(character: Character, at: Vector3, yaw: float) -> void:
 
 func _on_snapshot(snapshot: NetProtocol.Snapshot) -> void:
 	snapshots_received += 1
+	# Every snapshot's puppets go into their buffers, also one that arrives late (interpolation
+	# can still use it); the rest only from the newest.
+	for state in snapshot.characters:
+		var character := get_character(state.net_id)
+		if character == null or character == player:
+			continue
+		_store_sample(snapshot.tick, state)
+	_play_effects(snapshot.effects)
 	if snapshot.tick <= newest_snapshot:
 		return
 	newest_snapshot = snapshot.tick
@@ -286,23 +383,56 @@ func _on_snapshot(snapshot: NetProtocol.Snapshot) -> void:
 	_apply_bomb(snapshot.bomb)
 	for state in snapshot.characters:
 		var character := get_character(state.net_id)
-		if character == null or character == player:
-			continue
-		_apply_puppet(character, state)
+		if character != null and character != player:
+			_apply_puppet_state(character, state)
 	if snapshot.own != null:
 		_on_ack(snapshot.own.ack)
 		_apply_own(snapshot.own)
 
 
-func _apply_puppet(character: Character, state: NetProtocol.CharacterState) -> void:
-	character.visible = true
-	character.set_remote_pose(state.position, state.velocity, state.yaw, state.pitch, state.eye_height,
-			state.has(NetProtocol.FLAG_CROUCHING), state.has(NetProtocol.FLAG_ON_FLOOR))
+func _store_sample(host_tick: int, state: NetProtocol.CharacterState) -> void:
+	if host_tick < _respawn_ticks.get(state.net_id, -1):
+		return
+	var samples: Array = _samples.get_or_add(state.net_id, [])
+	var index := samples.size()
+	while index > 0 and samples[index - 1][0] > host_tick:
+		index -= 1
+	if index > 0 and samples[index - 1][0] == host_tick:
+		return
+	samples.insert(index, [host_tick, state])
+	while samples.size() > MAX_SAMPLES:
+		samples.pop_front()
+
+
+## What isn't interpolated: frozen and busy, health (while alive) and ammo, from the newest snapshot.
+func _apply_puppet_state(character: Character, state: NetProtocol.CharacterState) -> void:
 	character.frozen = state.has(NetProtocol.FLAG_FROZEN)
 	character.busy = state.has(NetProtocol.FLAG_BUSY)
-	if character.is_alive():
+	if character.is_alive() and state.has(NetProtocol.FLAG_ALIVE):
 		character.health = state.health
 	character.weapon.set_remote_ammo(state.magazine, state.reserve)
+
+
+## Plays the shots and reloads of the puppets that weren't played yet. Your own are predicted.
+func _play_effects(effects: Array) -> void:
+	for effect: Array in effects:
+		var number: int = effect[0]
+		if _played.has(number):
+			continue
+		_played[number] = true
+		_played_order.append(number)
+		while _played_order.size() > 512:
+			_played.erase(_played_order.pop_front())
+		var character := get_character(effect[2])
+		if character == null or character == player or not character.remote:
+			continue
+		match int(effect[1]):
+			NetProtocol.Effect.SHOT_HIT:
+				character.weapon.play_remote_shot(true, effect[3])
+			NetProtocol.Effect.SHOT_MISS:
+				character.weapon.play_remote_shot(false, Vector3.ZERO)
+			NetProtocol.Effect.RELOAD:
+				character.weapon.start_remote_reload()
 
 
 ## The host has run every command up to [param ack]: they needn't be sent again.

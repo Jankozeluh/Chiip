@@ -33,8 +33,8 @@ const LOAD_TIMEOUT := 15.0
 const SNAPSHOT_INTERVAL := 2
 ## Ticks between scoreboard updates (32: 4 a second).
 const STATS_INTERVAL := 32
-## Ticks a cosmetic effect (a shot, a reload) is repeated in the snapshots: three snapshots.
-const EFFECT_TICKS := 6
+## Ticks a cosmetic effect (a shot, a reload) is repeated in the snapshots: four snapshots.
+const EFFECT_TICKS := 8
 ## The scene of a friend's character: a bot without its brain (D-110: a bot can take it over).
 const PLAYER_SCENE := preload("res://bots/bot.tscn")
 
@@ -373,7 +373,8 @@ func _on_died(_killer: Character, _victim: Character) -> void:
 
 
 func _on_respawned(character: Character) -> void:
-	_broadcast([NetProtocol.Event.RESPAWNED, character.net_id, character.global_position, character.rotation.y])
+	# The snapshot sent at the end of this tick carries tick + 1: the first with the character here.
+	_broadcast([NetProtocol.Event.RESPAWNED, character.net_id, character.global_position, character.rotation.y, tick + 1])
 
 
 func _on_hit_landed(hit: Dictionary, character: Character) -> void:
