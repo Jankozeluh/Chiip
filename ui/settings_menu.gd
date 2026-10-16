@@ -37,9 +37,11 @@ signal closed
 const ACTION_NAMES := {
 	&"move_forward": "Move forward", &"move_back": "Move back", &"move_left": "Move left",
 	&"move_right": "Move right", &"jump": "Jump", &"crouch": "Crouch", &"walk": "Walk (silent)",
-	&"shoot": "Shoot", &"aim": "Aim", &"reload": "Reload", &"use": "Plant / defuse (hold)",
+	&"shoot": "Shoot", &"aim": "Aim", &"reload": "Reload", &"use": "Use: plant, defuse, swap gun",
 	&"scoreboard": "Scoreboard (hold)", &"class_menu": "Class menu",
 	&"toggle_debug": "Debug overlay", &"toggle_console": "Console",
+	&"slot_primary": "Primary weapon", &"slot_pistol": "Pistol", &"slot_knife": "Knife",
+	&"slot_grenade": "Grenades (again: next)", &"last_weapon": "Last weapon", &"drop_weapon": "Drop weapon", &"buy_menu": "Buy menu",
 }
 ## The crosshair colors offered as swatches: name and color (the opacity is kept).
 const CROSSHAIR_COLORS: Array = [

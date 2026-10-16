@@ -11,8 +11,13 @@ extends SceneTree
 ## Stand (2D blend: idle, walk and run in 8 directions)  ┐
 ## CrouchMove (2D blend: crouch idle, crouch-walk)       ┴ Crouch ─ LocoSpeed ┐
 ## Fall / FallCrouch ─ AirPose ──────────────────────────────────────────── Air ─ Jump ─ Land ┐
-## Aim (1D blend: aim_d80 ... aim_u80) ─────────────────────────────────────────────────── Upper ─ Fire ─ Flinch ─ Reload ─ Death ─ output
+## Hold (one Aim_<set> 1D blend per animation set) ────────────────────────────────────── Upper ─ Fire ─ Flinch ─ Attack ─ Reload ─ Death ─ output
 ## [/codeblock]
+## From M7 (D-096) the upper body comes from the held weapon's animation set: the Hold transition
+## picks that set's aim blend (Aim_rifle, Aim_pistol, Aim_knife...), FireKind picks the rifle's or
+## the pistol's kick, Attack plays a knife slash or stab or a grenade throw or lob (AttackKind),
+## and ReloadKind picks the weapon's reload (or one shotgun shell). CrewBody sets them when the
+## character switches weapons.
 ## The legs blend by speed and by direction relative to where the character faces; the upper
 ## body (filtered to spine, chest, head and arms) aims up and down on its own; fire and the
 ## flinch are added on top, the reload replaces the arms, and a death replaces everything.
@@ -33,6 +38,19 @@ const DIRECTIONS := {
 const UPPER_BONES: Array[String] = ["spine", "chest", "head", "upper_arm_l", "forearm_l", "hand_l",
 		"upper_arm_r", "forearm_r", "hand_r"]
 const ARM_BONES: Array[String] = ["upper_arm_l", "forearm_l", "hand_l", "upper_arm_r", "forearm_r", "hand_r"]
+## The animation sets (tools/modelgen/holds.py, WeaponData.anim_set). The rifle's aim clips keep
+## their M6 names (aim_d80...); every other set's are aim_<set>_<pitch>.
+const SETS: Array[String] = ["rifle", "carbine", "smg", "shotgun", "sniper", "pistol", "hand_cannon", "knife", "grenade"]
+const PITCHES := [["d80", -80.0], ["d40", -40.0], ["0", 0.0], ["u40", 40.0], ["u80", 80.0]]
+## Reload clips: one per set with a magazine (the rifle's is "reload"), and one shotgun shell.
+const RELOADS: Array[String] = ["reload", "reload_carbine", "reload_smg", "reload_shotgun", "reload_shell",
+		"reload_sniper", "reload_pistol", "reload_hand_cannon"]
+const FIRES: Array[String] = ["fire", "fire_pistol"]
+const ATTACKS: Array[String] = ["knife_slash", "knife_stab", "grenade_throw", "grenade_lob"]
+
+
+## Transitions made by _kinds() whose clip nodes still need adding: [transition, clips, position].
+var _pending_kinds: Array = []
 
 
 func _init() -> void:
@@ -84,12 +102,22 @@ func _init() -> void:
 	tree.connect_node("Land", 0, "Jump")
 	tree.connect_node("Land", 1, "LandClip")
 
-	var aim := AnimationNodeBlendSpace1D.new()
-	aim.min_space = -90.0
-	aim.max_space = 90.0
-	for pair: Array in [["aim_d80", -80.0], ["aim_d40", -40.0], ["aim_0", 0.0], ["aim_u40", 40.0], ["aim_u80", 80.0]]:
-		aim.add_blend_point(_clip(pair[0]), pair[1], -1, StringName(pair[0]))
-	tree.add_node("Aim", aim, Vector2(x, -150))
+	var hold := AnimationNodeTransition.new()
+	hold.xfade_time = 0.15
+	var aim_y := -150.0 - 120.0 * SETS.size()
+	for i in SETS.size():
+		var set_name: String = SETS[i]
+		var aim := AnimationNodeBlendSpace1D.new()
+		aim.min_space = -90.0
+		aim.max_space = 90.0
+		for pair: Array in PITCHES:
+			var clip_name := "aim_%s" % pair[0] if set_name == "rifle" else "aim_%s_%s" % [set_name, pair[0]]
+			aim.add_blend_point(_clip(clip_name), pair[1], -1, StringName(clip_name))
+		tree.add_node("Aim_" + set_name, aim, Vector2(x - 220, aim_y + 120.0 * i))
+		hold.add_input(set_name)
+	tree.add_node("Hold", hold, Vector2(x, -150))
+	for i in SETS.size():
+		tree.connect_node("Hold", i, "Aim_" + SETS[i])
 
 	x += 200
 	# CrewBody keeps its amount at 1: the filtered upper-body bones come from Aim, the rest from the legs.
@@ -97,13 +125,13 @@ func _init() -> void:
 	_filter(upper, UPPER_BONES)
 	tree.add_node("Upper", upper, Vector2(x, 100))
 	tree.connect_node("Upper", 0, "Land")
-	tree.connect_node("Upper", 1, "Aim")
+	tree.connect_node("Upper", 1, "Hold")
 
 	x += 200
-	tree.add_node("FireClip", _clip("fire"), Vector2(x - 100, 400))
+	tree.add_node("FireKind", _kinds(tree, FIRES, Vector2(x - 300, 400)), Vector2(x - 100, 400))
 	tree.add_node("Fire", _one_shot(0.0, 0.04, true), Vector2(x, 100))
 	tree.connect_node("Fire", 0, "Upper")
-	tree.connect_node("Fire", 1, "FireClip")
+	tree.connect_node("Fire", 1, "FireKind")
 	x += 200
 	tree.add_node("FlinchClip", _clip("flinch"), Vector2(x - 100, 400))
 	tree.add_node("Flinch", _one_shot(0.0, 0.06, true), Vector2(x, 100))
@@ -111,13 +139,21 @@ func _init() -> void:
 	tree.connect_node("Flinch", 1, "FlinchClip")
 
 	x += 200
-	tree.add_node("ReloadClip", _clip("reload"), Vector2(x - 200, 400))
+	tree.add_node("AttackKind", _kinds(tree, ATTACKS, Vector2(x - 300, 700)), Vector2(x - 100, 600))
+	var attack := _one_shot(0.04, 0.1, false)
+	_filter(attack, UPPER_BONES)
+	tree.add_node("Attack", attack, Vector2(x, 100))
+	tree.connect_node("Attack", 0, "Flinch")
+	tree.connect_node("Attack", 1, "AttackKind")
+
+	x += 200
+	tree.add_node("ReloadKind", _kinds(tree, RELOADS, Vector2(x - 400, 900)), Vector2(x - 200, 400))
 	tree.add_node("ReloadSpeed", AnimationNodeTimeScale.new(), Vector2(x - 60, 400))
-	tree.connect_node("ReloadSpeed", 0, "ReloadClip")
+	tree.connect_node("ReloadSpeed", 0, "ReloadKind")
 	var reload := _one_shot(0.12, 0.15, false)
 	_filter(reload, ARM_BONES)
 	tree.add_node("Reload", reload, Vector2(x, 100))
-	tree.connect_node("Reload", 0, "Flinch")
+	tree.connect_node("Reload", 0, "Attack")
 	tree.connect_node("Reload", 1, "ReloadSpeed")
 
 	x += 220
@@ -135,6 +171,7 @@ func _init() -> void:
 		tree.connect_node("Death", i + 1, node_name)
 		y += 120
 	tree.connect_node("output", 0, "Death")
+	_connect_kinds(tree)
 	tree.set_node_position("output", Vector2(x + 220, 100))
 
 	var error := ResourceSaver.save(tree, OUT)
@@ -142,10 +179,37 @@ func _init() -> void:
 	quit(error)
 
 
+## A transition (no cross-fade) with one input per clip in [param clips]; the clips are added to
+## [param tree] as nodes named after them, at [param at] downwards, and connected.
+func _kinds(tree: AnimationNodeBlendTree, clips: Array[String], at: Vector2) -> AnimationNodeTransition:
+	var kinds := AnimationNodeTransition.new()
+	kinds.xfade_time = 0.0
+	for i in clips.size():
+		kinds.add_input(clips[i])
+	# The clip nodes are connected after the transition is added (see _connect_kinds).
+	_pending_kinds.append([kinds, clips, at])
+	return kinds
+
+
 func _clip(animation: String) -> AnimationNodeAnimation:
 	var node := AnimationNodeAnimation.new()
 	node.animation = StringName(animation)
 	return node
+
+
+## Adds the clip nodes of every transition made by _kinds() and connects them to it.
+func _connect_kinds(tree: AnimationNodeBlendTree) -> void:
+	for pending: Array in _pending_kinds:
+		var kinds: AnimationNodeTransition = pending[0]
+		var clips: Array[String] = pending[1]
+		var at: Vector2 = pending[2]
+		var transition_name := ""
+		for node_name in tree.get_node_list():
+			if tree.get_node(node_name) == kinds:
+				transition_name = node_name
+		for i in clips.size():
+			tree.add_node("Clip_" + clips[i], _clip(clips[i]), at + Vector2(0, 110 * i))
+			tree.connect_node(transition_name, i, "Clip_" + clips[i])
 
 
 func _one_shot(fade_in: float, fade_out: float, additive: bool) -> AnimationNodeOneShot:

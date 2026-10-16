@@ -23,6 +23,11 @@ extends Node
 ##   of its last command run.
 ## - **Lag compensation** (D-107): at the end of every tick the hit zones are recorded
 ##   ([LagCompensation]), and the friends' shots are checked against them.
+## - **The arsenal** (D-113, M7): each friend's own inventory goes to them alone
+##   ([constant NetProtocol.Event.INVENTORY]) whenever it changes; every character's weapon in hand
+##   and armor ride in the snapshots; guns on the floor (every fourth snapshot) and grenades in
+##   flight (every snapshot) too, as numbered world objects; a grenade going off and everyone it
+##   blinds are events.
 ## - **Coming and going** (D-110). A friend who leaves or loses the connection is taken over by
 ##   a bot ([method hand_to_bot]): the character keeps its team, class and stats and plays on as
 ##   "Name (bot)". A friend who joins a running match takes over a bot of their team (or of the
@@ -38,6 +43,8 @@ const LOAD_TIMEOUT := 15.0
 const SNAPSHOT_INTERVAL := 2
 ## Ticks between scoreboard updates (32: 4 a second).
 const STATS_INTERVAL := 32
+## Guns on the floor go into every this many snapshots (they lie still; grenades go into every one).
+const PICKUP_SNAPSHOTS := 4
 ## Ticks a cosmetic effect (a shot, a reload) is repeated in the snapshots: four snapshots.
 const EFFECT_TICKS := 8
 ## The scene of a friend's character: a bot without its brain (D-110: a bot can take it over).
@@ -84,6 +91,11 @@ var _effect_sequence: int = 0
 var _landed: Dictionary = {}
 var _stats_dirty: bool = false
 var _late: _LateTick
+## World object → its number (guns on the floor, grenades), and the next number.
+var _entity_ids: Dictionary = {}
+var _next_entity_id: int = 1
+## Friends' characters whose inventory changed this tick (sent at its end).
+var _inventory_dirty: Dictionary = {}
 
 
 ## Runs at the end of every tick, after everyone has moved: records the hit zones and sends
@@ -240,6 +252,10 @@ func _end_of_tick() -> void:
 	if _stats_dirty and tick % STATS_INTERVAL == 0:
 		_stats_dirty = false
 		_broadcast([NetProtocol.Event.STATS, _stats_list()])
+	for character: Character in _inventory_dirty:
+		if is_instance_valid(character) and _peers.has(character):
+			_send_inventory(character)
+	_inventory_dirty.clear()
 	if tick % SNAPSHOT_INTERVAL == 0:
 		_send_snapshots()
 
@@ -260,7 +276,6 @@ func _add_friend(peer_id: int, player_name: String, team: int) -> Character:
 	character.manual = true
 	character.lag_compensation = lag_compensation
 	map.add_child(character)
-	character.weapon.manual = true
 	# Out of the way until the first round puts it on a spawn.
 	character.global_position = Vector3(0.0, -100.0, 0.0)
 	rules.extra_players.append(character)
@@ -291,10 +306,26 @@ func _register(character: Character) -> void:
 	character.damaged.connect(_on_damaged.bind(character))
 	character.died.connect(_on_died.bind(character))
 	character.respawned.connect(_on_respawned.bind(character))
-	if character.weapon != null:
-		character.weapon.fired.connect(_on_fired.bind(character))
-		character.weapon.hit_landed.connect(_on_hit_landed.bind(character))
-		character.weapon.reload_started.connect(_on_reload_started.bind(character))
+	character.flashed.connect(func(full: float, fade: float) -> void: _broadcast([NetProtocol.Event.FLASHED, character.net_id, full, fade]))
+	# The weapon in hand changes (M7): follow whichever it is.
+	character.weapon_changed.connect(_follow_weapon.bind(character))
+	character.inventory.changed.connect(func() -> void: _inventory_dirty[character] = true)
+	_follow_weapon(character.weapon, character)
+
+
+## Listens to [param weapon], the one [param character] holds now, for the shots and reloads the
+## clients must see; the one held before is let go.
+func _follow_weapon(weapon: Weapon, character: Character) -> void:
+	for carried in character.inventory.get_weapons():
+		for connection in [[carried.fired, _on_fired], [carried.hit_landed, _on_hit_landed], [carried.reload_started, _on_reload_started]]:
+			var bound: Callable = (connection[1] as Callable).bind(character)
+			if (connection[0] as Signal).is_connected(bound):
+				(connection[0] as Signal).disconnect(bound)
+	if weapon == null:
+		return
+	weapon.fired.connect(_on_fired.bind(character))
+	weapon.hit_landed.connect(_on_hit_landed.bind(character))
+	weapon.reload_started.connect(_on_reload_started.bind(character))
 
 
 func _all_characters() -> Array[Character]:
@@ -328,8 +359,6 @@ func hand_to_bot(character: Character) -> void:
 		character.add_child(brain)
 	character.manual = false
 	character.lag_compensation = null
-	if character.weapon != null:
-		character.weapon.manual = false
 	character.set_controller(brain)
 	if old != null and old != brain:
 		character.remove_child(old)
@@ -360,8 +389,6 @@ func _take_over_bot(peer_id: int, player_name: String, team: int) -> bool:
 	bot.set_controller(controller)
 	bot.manual = true
 	bot.lag_compensation = lag_compensation
-	if bot.weapon != null:
-		bot.weapon.manual = true
 	_characters_by_peer[peer_id] = bot
 	_peers[bot] = peer_id
 	if session.get_team(peer_id) != bot.team:
@@ -427,6 +454,9 @@ func _on_request(peer_id: int, values: Array) -> void:
 			var classes := ClassData.all()
 			if character != null and values.size() >= 2 and int(values[1]) >= 0 and int(values[1]) < classes.size():
 				rules.request_class(character, classes[int(values[1])])
+		NetProtocol.Request.BUY:
+			if character != null and values.size() >= 2 and (values[1] is StringName or values[1] is String):
+				rules.request_buy(character, StringName(values[1]))
 
 
 func _on_match_message(data: Dictionary) -> void:
@@ -461,11 +491,17 @@ func _welcome(peer_id: int) -> void:
 	var state := [rules.phase, rules.time_left, rules.round_number, rules.attacking_team,
 			rules.score[0], rules.score[1], rules.winner, respawn != null and respawn.overtime]
 	var health: Array = []
+	var money: Array = []
+	var drafts: Array = []
 	for character in _all_characters():
 		health.append([character.net_id, character.health])
+		money.append([character.net_id, rules.get_money(character)])
+		drafts.append([character.net_id, _class_indices(rules.get_draft(character))])
 	_ready_peers.append(peer_id)
 	session.send_packet(peer_id, NetProtocol.pack_values(NetProtocol.Message.EVENT,
-			[NetProtocol.Event.WELCOME, own.net_id if own != null else 0, entries, state, _stats_list(), health]), true)
+			[NetProtocol.Event.WELCOME, own.net_id if own != null else 0, entries, state, _stats_list(), health, money, drafts]), true)
+	if own != null:
+		_send_inventory(own)
 
 
 func _broadcast(values: Array) -> void:
@@ -476,13 +512,78 @@ func _broadcast(values: Array) -> void:
 
 func _send_snapshots() -> void:
 	var body := StreamPeerBuffer.new()
-	NetProtocol.write_snapshot_body(body, rules, _all_characters(), _effects)
+	var with_pickups := (tick / SNAPSHOT_INTERVAL) % PICKUP_SNAPSHOTS == 0
+	NetProtocol.write_snapshot_body(body, rules, _all_characters(), _effects, _entities(with_pickups), with_pickups)
 	for peer_id in _ready_peers:
 		var own: Character = _characters_by_peer.get(peer_id)
 		var ack := 0
 		if own != null and own.get_controller() is NetworkController:
 			ack = (own.get_controller() as NetworkController).last_run
 		session.send_packet(peer_id, NetProtocol.pack_snapshot(tick, own, ack, body.data_array), false)
+
+
+## The world objects for a snapshot: every grenade in flight and, with [param with_pickups], every
+## gun on the floor of this map, each with its number (given on first sight).
+func _entities(with_pickups: bool) -> Array[NetProtocol.EntityState]:
+	var list: Array[NetProtocol.EntityState] = []
+	for node in get_tree().get_nodes_in_group("grenades"):
+		var grenade := node as Grenade
+		if grenade == null or not map.is_ancestor_of(grenade) or grenade.is_queued_for_deletion():
+			continue
+		var state := _entity_state(grenade, NetProtocol.ENTITY_GRENADE, grenade.data)
+		state.flags = NetProtocol.ENTITY_RESTING if grenade.resting else 0
+		list.append(state)
+	if with_pickups:
+		for pickup in WeaponPickup.all_in_world(map):
+			if pickup.is_queued_for_deletion() or not map.is_ancestor_of(pickup):
+				continue
+			var state := _entity_state(pickup, NetProtocol.ENTITY_PICKUP, pickup.data)
+			state.flags = NetProtocol.ENTITY_FLOATING if pickup.floating else 0
+			list.append(state)
+		for node in get_tree().get_nodes_in_group(WeaponSpot.GROUP):
+			var spot := node as WeaponSpot
+			if spot != null and map.is_ancestor_of(spot) and not spot.is_queued_for_deletion():
+				list.append(_entity_state(spot, NetProtocol.ENTITY_SPOT, spot.weapon))
+	return list
+
+
+func _entity_state(node: Node3D, kind: int, data: WeaponData) -> NetProtocol.EntityState:
+	if not _entity_ids.has(node):
+		_entity_ids[node] = _next_entity_id
+		_next_entity_id = _next_entity_id % 65535 + 1
+		node.tree_exited.connect(func() -> void: _entity_ids.erase(node), CONNECT_ONE_SHOT)
+		if node is Grenade:
+			(node as Grenade).detonated.connect(_on_grenade_detonated.bind(node as Grenade))
+	var state := NetProtocol.EntityState.new()
+	state.id = _entity_ids[node]
+	state.kind = kind
+	state.weapon = NetProtocol.weapon_index(data)
+	state.position = node.global_position
+	state.yaw = node.global_rotation.y
+	return state
+
+
+func _on_grenade_detonated(at: Vector3, grenade: Grenade) -> void:
+	var kind: int = {&"frag": Explosion.Kind.FRAG, &"flashbang": Explosion.Kind.FLASH, &"smoke": Explosion.Kind.SMOKE}.get(grenade.data.id, Explosion.Kind.FRAG)
+	_broadcast([NetProtocol.Event.GRENADE, _entity_ids.get(grenade, 0), kind, at])
+
+
+## Tells a friend what its own character carries now (D-113).
+func _send_inventory(character: Character) -> void:
+	var weapons: Array = []
+	var held := -1
+	for weapon in character.inventory.get_weapons():
+		if weapon == character.weapon:
+			held = weapons.size()
+		weapons.append([NetProtocol.weapon_index(weapon.data), weapon.magazine, weapon.reserve])
+	var peer_id: int = _peers[character]
+	if peer_id != 1 and _ready_peers.has(peer_id):
+		session.send_packet(peer_id, NetProtocol.pack_values(NetProtocol.Message.EVENT, [NetProtocol.Event.INVENTORY, weapons, held]), true)
+
+
+func _class_indices(classes: Array[ClassData]) -> Array:
+	var all := ClassData.all()
+	return classes.map(func(data: ClassData) -> int: return all.find(data))
 
 
 func _stats_list() -> Array:
@@ -506,7 +607,14 @@ func _connect_rules() -> void:
 	rules.match_ended.connect(func(winner: int) -> void:
 		_broadcast([NetProtocol.Event.MATCH_ENDED, winner, rules.score[0], rules.score[1]]))
 	rules.character_killed.connect(func(victim: Character, killer: Character, headshot: bool) -> void:
-		_broadcast([NetProtocol.Event.KILLED, victim.net_id, killer.net_id if killer != null else 0, headshot, rules.score[0], rules.score[1]]))
+		_broadcast([NetProtocol.Event.KILLED, victim.net_id, killer.net_id if killer != null else 0, headshot, rules.score[0], rules.score[1],
+				NetProtocol.weapon_index(victim.last_damage_source)]))
+	rules.money_changed.connect(func(character: Character, amount: int, reason: String) -> void:
+		if character.net_id != 0:
+			_broadcast([NetProtocol.Event.MONEY, character.net_id, rules.get_money(character), amount, reason]))
+	rules.class_drafted.connect(func(character: Character, classes: Array[ClassData]) -> void:
+		if character.net_id != 0:
+			_broadcast([NetProtocol.Event.DRAFTED, character.net_id, _class_indices(classes)]))
 	rules.class_changed.connect(func(character: Character, data: ClassData) -> void:
 		_broadcast([NetProtocol.Event.CLASS_CHANGED, character.net_id, ClassData.all().find(data)]))
 	if rules is RespawnMatch:

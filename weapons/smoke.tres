@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+
+[ext_resource type="PackedScene" path="res://assets/models/weapons/smoke.glb" id="model"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/smoke.png" id="icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/smoke_kill.png" id="kill_icon"]
+
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/grenade_throw.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/grenade_pin.wav" id="pin_sound"]
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"smoke"
+display_name = "Smoke"
+slot = 3
+category = 6
+hold = 3
+max_speed_units = 245.0
+draw_time = 0.5
+price = 300
+kill_reward = 200
+damage = 0.0
+range_modifier = 1.0
+armor_penetration = 1.0
+magazine_size = 1
+reserve_ammo = 0
+fire_rate_rpm = 60.0
+reload_time = 0.0
+automatic = false
+standing_inaccuracy = 0.0
+crouching_inaccuracy = 0.0
+moving_inaccuracy = 0.0
+air_inaccuracy = 0.0
+spray_inaccuracy_per_shot = 0.0
+max_spray_inaccuracy = 0.0
+spray_pattern = PackedVector2Array(0, 0)
+view_punch_fraction = 0.0
+max_carried = 1
+throw_speed = 15.0
+lob_speed = 7.0
+model = ExtResource("model")
+icon = ExtResource("icon")
+kill_icon = ExtResource("kill_icon")
+anim_set = &"grenade"
+hold_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -0.005)
+shot_sound = ExtResource("shot_sound")
+pin_sound = ExtResource("pin_sound")

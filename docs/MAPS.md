@@ -1,6 +1,6 @@
 # Chiip — Maps
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
 > The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed and without baked lighting. They play as bomb rounds (D-080). Decisions: D-060–D-063.
 
@@ -59,6 +59,12 @@ Every map scene has the same nodes, like the test map:
 | `Practice` | 14–16 `Patrol…` markers (`patrol_points`) | Practice bots |
 | `Lamps`, `Sun`, `WorldEnvironment` | Lighting and the map's sky and fog | — |
 | `Player` | You (stands at the attackers' spawn when no rules move you) | `main.gd` |
+
+## Map weapons (M7, D-098)
+
+Maps place no weapons. `MapWeapons` (`systems/map_weapons.gd`) puts guns out at random places at runtime: on the walkable floor of the navmesh, on the islands the spawn markers stand on, at least 15 m from every team spawn, off the bomb sites in bomb rounds, 8 m from every respawn point in Team Deathmatch, 15 m apart, and 0.8 m from the nearest wall or crate (two per round; three at a time in Team Deathmatch). So a map gets map weapons as long as it has a baked navmesh and its spawn markers; the maps test checks twenty rounds of draws on every quick map.
+
+A mapper only has to keep in mind: floor that should never get a gun must not be on the spawns' navmesh island (a roof or a closed room is fine as its own island), and a map needs enough open floor more than 15 m from its spawns (the quick maps have about 40% of their floor that far).
 
 ## Editing a map
 

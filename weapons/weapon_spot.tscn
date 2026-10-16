@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_spot.gd" id="spot_script"]
+
+[node name="WeaponSpot" type="Node3D"]
+script = ExtResource("spot_script")

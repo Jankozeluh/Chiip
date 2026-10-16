@@ -35,8 +35,9 @@ enum GameMode {
 
 @export_group("Timing")
 ## Seconds at the start of each round when everyone can look around but not
-## move or shoot. CS: 15 s with buying; 5 s until there's something to buy (M7).
-@export var freeze_time: float = 5.0
+## move or shoot, and buy (D-098). CS: 15 s with buying (5 s until M7 brought the buy menu).
+## Team respawn keeps 5 s.
+@export var freeze_time: float = 15.0
 ## Seconds a live round lasts. When it runs out, the defending side wins. CS: 1:55.
 @export var round_time: float = 115.0
 ## Seconds between a round's result and the next round's freeze time.
@@ -68,6 +69,47 @@ enum GameMode {
 @export var respawn_delay: float = 3.0
 
 @export_group("Player")
-## The class the player starts the match with. Null keeps the class of the map's [code]Player[/code]
-## character (the Rifleman); the class menu changes it during freeze time (D-052, D-078).
+## The class the player starts the match with. Null takes the first class of your draft (or, with
+## [member class_draft] off, keeps the class of the map's [code]Player[/code] character, the
+## Rifleman); the class menu changes it during freeze time (D-052, D-078). With the draft on, a
+## class set here is one of your two.
 @export var player_class: ClassData
+## The class draft (M7 task 17, D-099): each match offers everyone two random classes to choose
+## from, bots too, with a mix per team. Off: any class, and the bots get one of each in turn (M6).
+@export var class_draft: bool = true
+
+@export_group("Loadout")
+## What everyone has at the start of every round (D-090: a fresh loadout every round, like CoD's
+## Search & Destroy): the knife and the Sparrow. Whatever is bought or picked up lasts one round.
+## Team respawn uses each class's own loadout instead ([member ClassData.loadout]).
+@export var round_loadout: Array[WeaponData] = [preload("res://weapons/knife.tres"), preload("res://weapons/pistol.tres")]
+
+@export_group("Economy")
+## Money in rounds (D-090, D-098): earned by winning, losing, killing and the bomb, carried over
+## between rounds and spent in the buy menu. Off: no money at all (the team respawn mode has none).
+@export var economy: bool = true
+## Money at the start of each half, and the most anyone can have.
+@export var start_money: int = 1000
+@export var max_money: int = 10000
+## For winning a round.
+@export var win_money: int = 3000
+## For losing a round: the first number for a first loss, the next for each loss in a row after
+## it; the last one repeats. A win starts the count again.
+@export var loss_money: PackedInt32Array = PackedInt32Array([1500, 2000, 2500, 3000])
+## Taken away for killing a teammate.
+@export var teamkill_penalty: int = 200
+## For every attacker when the bomb is planted, and for the defender who defuses it.
+@export var plant_money: int = 200
+@export var defuse_money: int = 200
+## The bots shop at the start of each round by their money (D-099). Tests of the money rules turn
+## it off, so only what they do changes the numbers.
+@export var bots_buy: bool = true
+
+@export_group("Map weapons")
+## Guns that appear at random places on the map (M7 task 16, D-098, [MapWeapons]): how many each
+## round in rounds (0: none).
+@export var map_weapons: int = 2
+## How many are out at a time in a team respawn match (Team Deathmatch).
+@export var respawn_map_weapons: int = 3
+## Seconds before a taken map weapon is replaced somewhere else in a team respawn match.
+@export var map_weapon_replace_time: float = 20.0

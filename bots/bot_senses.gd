@@ -90,6 +90,9 @@ func reset() -> void:
 func can_see(other: Character) -> bool:
 	if other == null or other == _character or not other.is_alive() or other.team == _character.team:
 		return false
+	# Blinded by a flashbang: nothing at all (D-097).
+	if _character.get_flash_alpha() > 0.5:
+		return false
 	var to_other := other.get_eye_position() - _character.get_eye_position()
 	if to_other.length() > sight_range:
 		return false
@@ -97,6 +100,9 @@ func can_see(other: Character) -> bool:
 		return false
 	# Visible if a ray from the eyes reaches the head or the chest.
 	for target in other.get_visibility_points():
+		# A smoke cloud hides what's behind or inside it (D-097).
+		if Smokes.blocks(_character.get_eye_position(), target):
+			continue
 		var query := PhysicsRayQueryParameters3D.create(_character.get_eye_position(), target, PhysicsLayers.WORLD)
 		if _character.get_world_3d().direct_space_state.intersect_ray(query).is_empty():
 			return true

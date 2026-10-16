@@ -12,9 +12,9 @@ extends CanvasLayer
 ## scroll back through the last [constant HISTORY_LINES], so a long answer such
 ## as [code]help[/code] is never lost.
 
-## How many output lines show at once. The panel is as tall as this many lines
+## How many output lines show at once (27 since M9 added its network commands to M7's). The panel is as tall as this many lines
 ## need: [code]help[/code] (one line per command, plus the echo of the command) fits.
-const VISIBLE_LINES := 22
+const VISIBLE_LINES := 27
 ## How many output lines are kept to scroll back through.
 const HISTORY_LINES := 200
 ## How many lines the mouse wheel scrolls per notch.
@@ -185,6 +185,8 @@ func _register_commands() -> void:
 	register_command("settings_reset", _cmd_settings_reset, "settings_reset", "Put every setting, key and the match setup back to its default")
 	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu (online: leave the session)")
 	register_command("class", _cmd_class, "class [name]", "List the classes, or take one (in a match: during freeze time)")
+	register_command("armor", _cmd_armor, "armor [0-100] [helmet]", "Set your armor, with or without a helmet (no value: show)")
+	register_command("money", _cmd_money, "money [amount]", "Set your money in a match (no value: show)")
 	register_command("status", _cmd_status, "status", "Online: the session, the players, ping, loss and corrections")
 	register_command("net_fakelag", _cmd_fake.bind("lag"), "net_fakelag [ms]", "Online: delay everything this computer receives (no value: show)")
 	register_command("net_fakeloss", _cmd_fake.bind("loss"), "net_fakeloss [percent]", "Online: drop this share of the snapshots or commands received (no value: show)")
@@ -267,6 +269,30 @@ func _cmd_god(_args: Array) -> void:
 	if player != null:
 		player.god_mode = not player.god_mode
 		print_line("God mode %s." % ("on" if player.god_mode else "off"))
+
+
+func _cmd_armor(args: Array) -> void:
+	var player := _get_player()
+	if player == null:
+		return
+	if not args.is_empty():
+		if _refuse_online("armor"):
+			return
+		player.set_armor(float(args[0]), args.size() > 1 and String(args[1]) == "helmet")
+	print_line("Armor %d%s." % [ceili(player.armor), " with a helmet" if player.has_helmet else ""])
+
+
+func _cmd_money(args: Array) -> void:
+	var player := _get_player()
+	var rules := _get_rules() as RoundManager
+	if player == null or rules == null or not rules.has_economy():
+		print_line("There is no money here (only in a match with rounds).")
+		return
+	if not args.is_empty():
+		if _refuse_online("money"):
+			return
+		rules.add_money(player, int(args[0]) - rules.get_money(player), "Console")
+	print_line("You have $%d." % rules.get_money(player))
 
 
 func _cmd_noclip(_args: Array) -> void:
@@ -380,7 +406,8 @@ func _refuse_online(command_name: String) -> bool:
 
 
 ## class lists the classes and tells which one you are; class bulwark asks the game rules for
-## that class (a match allows it during freeze time only, practice mode any time).
+## that class (a match allows one of your two drafted classes during freeze time only, practice
+## mode any class any time).
 func _cmd_class(args: Array) -> void:
 	var player := _get_player()
 	if player == null:
@@ -404,6 +431,9 @@ func _cmd_class(args: Array) -> void:
 		player.class_data = data
 	if accepted:
 		print_line("You are the %s now." % data.display_name)
+	elif rules is RoundManager and not (rules as RoundManager).is_drafted(player, data):
+		var draft := (rules as RoundManager).get_draft(player).map(func(c: ClassData) -> String: return c.display_name)
+		print_line("Your draft this match is %s." % " or ".join(draft))
 	else:
 		print_line("You can change class only during freeze time.")
 

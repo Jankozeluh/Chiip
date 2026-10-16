@@ -77,6 +77,7 @@ func _check_map(path: String) -> void:
 	_check_structure(has_player)
 	_check_on_mesh()
 	_check_reachable()
+	await _check_weapon_spots()
 	await _play_rounds()
 	_rounds.queue_free()
 	_rounds = null
@@ -144,11 +145,84 @@ func _check_reachable() -> void:
 	_check("Both spawns can walk to both bomb sites", reachable, ", ".join(lines))
 
 
+## M7 task 16 (D-098): map weapons at random places. Over twenty rounds' worth of draws they land
+## on walkable floor every spawn can reach, at least 15 m from the team spawns, off the bomb sites and
+## 15 m apart, in many different places; the Hornet comes up more often than the Heron. Team
+## Deathmatch's three also keep 8 m from every respawn point.
+func _check_weapon_spots() -> void:
+	var weapons := MapWeapons.new()
+	weapons.rng.seed = 11
+	weapons.avoid_bomb_sites = true
+	_map.add_child(weapons)
+	var spawns: Array[Vector3] = []
+	for group in [Teams.ATTACK_SPAWN_GROUP, Teams.DEFEND_SPAWN_GROUP]:
+		for marker in _in_map(group):
+			spawns.append((marker as Node3D).global_position)
+	var start := spawns[0]
+	var places: Array[Vector3] = []
+	var kinds := {}
+	var problems: Array[String] = []
+	for round_number in 20:
+		weapons.replace_all()
+		var spots := weapons.get_spots()
+		if spots.size() != 2:
+			problems.append("round %d: %d out" % [round_number, spots.size()])
+		for i in spots.size():
+			var at := spots[i].global_position
+			places.append(at)
+			kinds[spots[i].weapon.id] = kinds.get(spots[i].weapon.id, 0) + 1
+			for spawn in spawns:
+				if Vector2(at.x - spawn.x, at.z - spawn.z).length() < 15.0:
+					problems.append("%.0f, %.0f near a spawn" % [at.x, at.z])
+			for j in i:
+				var other := spots[j].global_position
+				if Vector2(at.x - other.x, at.z - other.z).length() < 15.0:
+					problems.append("%.0f, %.0f near the other one" % [at.x, at.z])
+			if weapons._on_site(at, weapons._site_boxes()):
+				problems.append("%.0f, %.0f on a bomb site" % [at.x, at.z])
+			var nav_path := NavigationServer3D.map_get_path(_navigation_map(), start, at, true)
+			if nav_path.is_empty() or Vector2(nav_path[-1].x - at.x, nav_path[-1].z - at.z).length() > 1.0 or absf(nav_path[-1].y - at.y) > 1.0:
+				problems.append("%.0f, %.1f, %.0f unreachable" % [at.x, at.y, at.z])
+	var distinct := {}
+	for at in places:
+		distinct[Vector3i(at.round())] = true
+	_check("Map weapons: 2 a round at walkable places every spawn reaches, 15 m from spawns and each other, off the sites, in many places, the Hornet more often than the Heron",
+			problems.is_empty() and distinct.size() >= 30 and kinds.get(&"smg", 0) > kinds.get(&"sniper", 0),
+			"%d places, kinds %s; %s" % [distinct.size(), kinds, ", ".join(problems.slice(0, 6))])
+	weapons.clear()
+	weapons.count = 3
+	weapons.avoid_bomb_sites = false
+	weapons.avoid_respawn_points = true
+	var respawn_points: Array[Vector3] = []
+	for marker in _in_map(RespawnMatch.RESPAWN_GROUP):
+		respawn_points.append((marker as Node3D).global_position)
+	var close: Array[String] = []
+	var out_counts: Array[int] = []
+	for round_number in 10:
+		weapons.replace_all()
+		out_counts.append(weapons.get_spots().size())
+		for spot in weapons.get_spots():
+			var at := spot.global_position
+			for point in respawn_points + spawns:
+				var limit := 8.0 if respawn_points.has(point) else 15.0
+				if Vector2(at.x - point.x, at.z - point.z).length() < limit:
+					close.append("%.0f, %.0f" % [at.x, at.z])
+	_check("Team Deathmatch's three keep 8 m from every respawn point (and 15 m from the team spawns)",
+			close.is_empty() and out_counts.all(func(n: int) -> bool: return n == 3), "%s; too close: %s" % [out_counts, close.slice(0, 6)])
+	weapons.clear()
+	weapons.queue_free()
+	await get_tree().physics_frame
+
+
 func _play_rounds() -> void:
 	var settings := MatchSettings.new()
 	settings.freeze_time = 0.5
 	settings.round_end_time = 0.5
 	settings.rounds_to_win = 15
+	# The maps' timing rules (D-061) are measured at rifle speed: everyone carries the Ram here, as
+	# when this check was written. M7's fresh pistol rounds run about 10% faster (240 u/s).
+	settings.round_loadout = [preload("res://weapons/knife.tres"), preload("res://weapons/pistol.tres"),
+			preload("res://weapons/rifle.tres")] as Array[WeaponData]
 	_rounds = RoundManager.new()
 	_rounds.settings = settings
 	_rounds.rng.seed = 7

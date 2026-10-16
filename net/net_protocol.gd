@@ -12,7 +12,7 @@ extends RefCounted
 ## one side writes the other reads in the same order.
 
 ## Bump when packets change: a host refuses clients with another version.
-const VERSION := 1
+const VERSION := 2
 
 ## What a packet is: its first byte.
 enum Message {
@@ -48,7 +48,8 @@ enum Event {
 	MATCH_ENDED,
 	## []: a team respawn match went into overtime.
 	OVERTIME,
-	## [victim, killer (0: none), headshot, score 0, score 1] (team respawn scores every kill).
+	## [victim, killer (0: none), headshot, score 0, score 1, weapon index of the killing hit]
+	## (team respawn scores every kill; the kill feed shows the weapon's icon).
 	KILLED,
 	## [victim, amount, zone, attacker (0: none), health left].
 	DAMAGED,
@@ -58,12 +59,25 @@ enum Event {
 	STATS,
 	## [net id, class index in ClassData.all()].
 	CLASS_CHANGED,
+	## To one client: [[weapon index, magazine, reserve], ...] its own character carries, in order,
+	## and the index (into that list) of the one in hand (-1: none). Sent when it changes (D-113).
+	INVENTORY,
+	## [entity id, Explosion.Kind, position]: a grenade went off (frag, flash or smoke).
+	GRENADE,
+	## [net id, seconds of white, seconds of fading]: a flashbang blinded a character.
+	FLASHED,
+	## [net id, money now, change, reason]: a character's money changed (D-113).
+	MONEY,
+	## [net id, [class index, ...]]: the classes the draft offered a character.
+	DRAFTED,
 }
 
 ## What a client can ask the host (the first value of a [constant Message.REQUEST] packet).
 enum Request {
 	## [class index]: play this class (the host's round manager decides, D-078).
 	CLASS = 1,
+	## [item id]: buy this ([Shop]'s ids: a weapon's id, vest, vest_helmet or kit; D-113).
+	BUY,
 }
 
 ## Cosmetic events riding in snapshots (D-104), repeated in a few snapshots each.
@@ -94,6 +108,26 @@ const BUTTON_USE := 32
 
 ## A snapshot's bomb state when there is no bomb.
 const NO_BOMB := 255
+## A character's weapon in a snapshot when it holds nothing.
+const NO_WEAPON := 255
+## More character flags (M7's gear, D-113).
+const FLAG_HELMET := 64
+const FLAG_KIT := 128
+## Command buttons added for M7's arsenal (two bytes of buttons from protocol 2).
+const BUTTON_AIM := 64
+const BUTTON_LAST_WEAPON := 128
+const BUTTON_DROP := 256
+## A world object in a snapshot: a gun on the floor or a grenade in flight.
+const ENTITY_PICKUP := 1
+const ENTITY_GRENADE := 2
+## A map weapon's spot (its ring, name and light; the gun over it is a pickup of its own).
+const ENTITY_SPOT := 3
+## World object flags: a floating map weapon, a resting grenade.
+const ENTITY_FLOATING := 1
+const ENTITY_RESTING := 2
+## Bytes per command and per entity in a packet.
+const COMMAND_BYTES := 21
+const ENTITY_BYTES := 19
 
 ## One character in a snapshot.
 class CharacterState:
@@ -107,9 +141,23 @@ class CharacterState:
 	var health: int = 0
 	var magazine: int = 0
 	var reserve: int = 0
+	## Index in [method WeaponData.all] of the weapon in hand, or [constant NO_WEAPON].
+	var weapon: int = NO_WEAPON
+	var armor: int = 0
 
 	func has(flag: int) -> bool:
 		return flags & flag != 0
+
+
+## A world object in a snapshot.
+class EntityState:
+	var id: int = 0
+	var kind: int = 0
+	## Index in [method WeaponData.all] of the gun or the grenade.
+	var weapon: int = 0
+	var flags: int = 0
+	var position: Vector3 = Vector3.ZERO
+	var yaw: float = 0.0
 
 
 ## The receiving client's own character, at full precision, after the host ran command [member ack].
@@ -121,6 +169,8 @@ class OwnState:
 	var eye_height: float = 0.0
 	var magazine: int = 0
 	var reserve: int = 0
+	## The weapon in hand after the acked command ([constant NO_WEAPON]: none).
+	var weapon: int = NO_WEAPON
 
 	func has(flag: int) -> bool:
 		return flags & flag != 0
@@ -152,6 +202,10 @@ class Snapshot:
 	var characters: Array[CharacterState] = []
 	## [sequence, Effect, net id, position] each.
 	var effects: Array = []
+	## The world objects: every grenade in flight, and, when [member has_pickups], every gun on the
+	## floor (the host sends those in every fourth snapshot only).
+	var entities: Array[EntityState] = []
+	var has_pickups: bool = false
 
 
 ## True for packets that travel reliably (they are never dropped by fake loss either).
@@ -217,7 +271,11 @@ static func pack_commands(commands: Array[CharacterInput]) -> PackedByteArray:
 		buttons |= BUTTON_SHOOT if command.shoot else 0
 		buttons |= BUTTON_RELOAD if command.reload else 0
 		buttons |= BUTTON_USE if command.use else 0
-		buffer.put_u8(buttons)
+		buttons |= BUTTON_AIM if command.aim else 0
+		buttons |= BUTTON_LAST_WEAPON if command.last_weapon else 0
+		buttons |= BUTTON_DROP if command.drop else 0
+		buffer.put_u16(buttons)
+		buffer.put_8(clampi(command.weapon_slot, -1, 127))
 		buffer.put_float(command.view_tick)
 	return buffer.data_array
 
@@ -231,7 +289,7 @@ static func unpack_commands(packet: PackedByteArray) -> Array[CharacterInput]:
 		return commands
 	buffer.get_u8()
 	var count := buffer.get_u8()
-	if packet.size() < 2 + count * 19:
+	if packet.size() < 2 + count * COMMAND_BYTES:
 		return commands
 	for i in count:
 		var command := CharacterInput.new()
@@ -241,13 +299,17 @@ static func unpack_commands(packet: PackedByteArray) -> Array[CharacterInput]:
 		command.move = Vector2(x / 127.0, y / 127.0)
 		command.yaw = buffer.get_float()
 		command.pitch = buffer.get_float()
-		var buttons := buffer.get_u8()
+		var buttons := buffer.get_u16()
 		command.jump = buttons & BUTTON_JUMP != 0
 		command.crouch = buttons & BUTTON_CROUCH != 0
 		command.walk = buttons & BUTTON_WALK != 0
 		command.shoot = buttons & BUTTON_SHOOT != 0
 		command.reload = buttons & BUTTON_RELOAD != 0
 		command.use = buttons & BUTTON_USE != 0
+		command.aim = buttons & BUTTON_AIM != 0
+		command.last_weapon = buttons & BUTTON_LAST_WEAPON != 0
+		command.drop = buttons & BUTTON_DROP != 0
+		command.weapon_slot = buffer.get_8()
 		command.view_tick = buffer.get_float()
 		if not is_finite(command.yaw) or not is_finite(command.pitch) or not is_finite(command.view_tick):
 			continue
@@ -268,13 +330,30 @@ static func flags_of(character: Character) -> int:
 	flags |= FLAG_BUSY if character.busy else 0
 	if character.weapon != null and character.weapon.is_reloading():
 		flags |= FLAG_RELOADING
+	flags |= FLAG_HELMET if character.has_helmet else 0
+	flags |= FLAG_KIT if character.has_defuse_kit else 0
 	return flags
+
+
+## The index of [param data] in [method WeaponData.all] (what packets carry), or [constant NO_WEAPON].
+static func weapon_index(data: WeaponData) -> int:
+	if data == null:
+		return NO_WEAPON
+	var index := WeaponData.all().map(func(other: WeaponData) -> StringName: return other.id).find(data.id)
+	return index if index >= 0 else NO_WEAPON
+
+
+## The [WeaponData] of an index from [method weapon_index], or null.
+static func weapon_data(index: int) -> WeaponData:
+	var weapons := WeaponData.all()
+	return weapons[index] if index >= 0 and index < weapons.size() else null
 
 
 ## Writes the part of a snapshot that is the same for every client: the match, the bomb, every
 ## character in [param characters] and the cosmetic [param effects] ([sequence, Effect, net id,
 ## position] each).
-static func write_snapshot_body(buffer: StreamPeerBuffer, rounds: RoundManager, characters: Array[Character], effects: Array) -> void:
+static func write_snapshot_body(buffer: StreamPeerBuffer, rounds: RoundManager, characters: Array[Character], effects: Array,
+		entities: Array[EntityState] = [], has_pickups: bool = false) -> void:
 	buffer.put_u8(rounds.phase if rounds != null else 0)
 	buffer.put_float(rounds.time_left if rounds != null else 0.0)
 	var respawn := rounds as RespawnMatch
@@ -308,6 +387,8 @@ static func write_snapshot_body(buffer: StreamPeerBuffer, rounds: RoundManager, 
 		buffer.put_u8(clampi(ceili(character.health), 0, 255))
 		buffer.put_u8(clampi(character.weapon.magazine if character.weapon != null else 0, 0, 255))
 		buffer.put_u16(clampi(character.weapon.reserve if character.weapon != null else 0, 0, 65535))
+		buffer.put_u8(weapon_index(character.weapon.data) if character.weapon != null else NO_WEAPON)
+		buffer.put_u8(clampi(ceili(character.armor), 0, 255))
 	buffer.put_u8(mini(effects.size(), 255))
 	for i in mini(effects.size(), 255):
 		var effect: Array = effects[i]
@@ -315,6 +396,16 @@ static func write_snapshot_body(buffer: StreamPeerBuffer, rounds: RoundManager, 
 		buffer.put_u8(effect[1])
 		buffer.put_u8(effect[2])
 		_put_vector(buffer, effect[3])
+	buffer.put_u8(1 if has_pickups else 0)
+	buffer.put_u8(mini(entities.size(), 255))
+	for i in mini(entities.size(), 255):
+		var entity := entities[i]
+		buffer.put_u16(entity.id % 65536)
+		buffer.put_u8(entity.kind)
+		buffer.put_u8(entity.weapon)
+		buffer.put_u8(entity.flags)
+		_put_vector(buffer, entity.position)
+		buffer.put_u16(roundi(wrapf(entity.yaw, 0.0, TAU) / TAU * 65535.0) % 65536)
 
 
 ## A whole snapshot for one client: the host [param tick], the client's own [param character]
@@ -335,6 +426,7 @@ static func pack_snapshot(tick: int, character: Character, ack: int, body: Packe
 		buffer.put_float(character.get_eye_height())
 		buffer.put_u8(clampi(character.weapon.magazine if character.weapon != null else 0, 0, 255))
 		buffer.put_u16(clampi(character.weapon.reserve if character.weapon != null else 0, 0, 65535))
+		buffer.put_u8(weapon_index(character.weapon.data) if character.weapon != null else NO_WEAPON)
 	var packet := buffer.data_array
 	packet.append_array(body)
 	return packet
@@ -350,7 +442,7 @@ static func read_snapshot(packet: PackedByteArray) -> Snapshot:
 	buffer.get_u8()
 	snapshot.tick = buffer.get_u32()
 	if buffer.get_u8() == 1:
-		if buffer.get_available_bytes() < 36:
+		if buffer.get_available_bytes() < 37:
 			return null
 		var own := OwnState.new()
 		own.ack = buffer.get_u32()
@@ -360,6 +452,7 @@ static func read_snapshot(packet: PackedByteArray) -> Snapshot:
 		own.eye_height = buffer.get_float()
 		own.magazine = buffer.get_u8()
 		own.reserve = buffer.get_u16()
+		own.weapon = buffer.get_u8()
 		snapshot.own = own
 	if buffer.get_available_bytes() < 7:
 		return null
@@ -383,7 +476,7 @@ static func read_snapshot(packet: PackedByteArray) -> Snapshot:
 	if buffer.get_available_bytes() < 1:
 		return null
 	var count := buffer.get_u8()
-	if buffer.get_available_bytes() < count * 29:
+	if buffer.get_available_bytes() < count * 31:
 		return null
 	for i in count:
 		var state := CharacterState.new()
@@ -397,6 +490,8 @@ static func read_snapshot(packet: PackedByteArray) -> Snapshot:
 		state.health = buffer.get_u8()
 		state.magazine = buffer.get_u8()
 		state.reserve = buffer.get_u16()
+		state.weapon = buffer.get_u8()
+		state.armor = buffer.get_u8()
 		snapshot.characters.append(state)
 	if buffer.get_available_bytes() < 1:
 		return snapshot
@@ -408,6 +503,21 @@ static func read_snapshot(packet: PackedByteArray) -> Snapshot:
 		var kind := buffer.get_u8()
 		var net_id := buffer.get_u8()
 		snapshot.effects.append([sequence, kind, net_id, _get_vector(buffer)])
+	if buffer.get_available_bytes() < 2:
+		return snapshot
+	snapshot.has_pickups = buffer.get_u8() == 1
+	var entity_count := buffer.get_u8()
+	if buffer.get_available_bytes() < entity_count * ENTITY_BYTES:
+		return snapshot
+	for i in entity_count:
+		var entity := EntityState.new()
+		entity.id = buffer.get_u16()
+		entity.kind = buffer.get_u8()
+		entity.weapon = buffer.get_u8()
+		entity.flags = buffer.get_u8()
+		entity.position = _get_vector(buffer)
+		entity.yaw = buffer.get_u16() / 65535.0 * TAU
+		snapshot.entities.append(entity)
 	return snapshot
 
 

@@ -1,105 +1,443 @@
 [gd_resource type="AnimationNodeBlendTree" format=3]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_noe4h"]
-animation = &"aim_d80"
+animation = &"aim_carbine_d80"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_t0j1h"]
-animation = &"aim_d40"
+animation = &"aim_carbine_d40"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ndpb8"]
-animation = &"aim_0"
+animation = &"aim_carbine_0"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hjlnm"]
-animation = &"aim_u40"
+animation = &"aim_carbine_u40"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_j5rvl"]
-animation = &"aim_u80"
+animation = &"aim_carbine_u80"
 
 [sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_di0fb"]
 min_space = -90.0
 max_space = 90.0
 blend_point_0/node = SubResource("AnimationNodeAnimation_noe4h")
 blend_point_0/pos = -80.0
-blend_point_0/name = &"aim_d80"
+blend_point_0/name = &"aim_carbine_d80"
 blend_point_1/node = SubResource("AnimationNodeAnimation_t0j1h")
 blend_point_1/pos = -40.0
-blend_point_1/name = &"aim_d40"
+blend_point_1/name = &"aim_carbine_d40"
 blend_point_2/node = SubResource("AnimationNodeAnimation_ndpb8")
 blend_point_2/pos = 0.0
-blend_point_2/name = &"aim_0"
+blend_point_2/name = &"aim_carbine_0"
 blend_point_3/node = SubResource("AnimationNodeAnimation_hjlnm")
 blend_point_3/pos = 40.0
-blend_point_3/name = &"aim_u40"
+blend_point_3/name = &"aim_carbine_u40"
 blend_point_4/node = SubResource("AnimationNodeAnimation_j5rvl")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_carbine_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_smufa"]
+animation = &"aim_grenade_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_yt8du"]
+animation = &"aim_grenade_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_thn6b"]
+animation = &"aim_grenade_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_55xd6"]
+animation = &"aim_grenade_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2nkjm"]
+animation = &"aim_grenade_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_smrn7"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_smufa")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_grenade_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_yt8du")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_grenade_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_thn6b")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_grenade_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_55xd6")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_grenade_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_2nkjm")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_grenade_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8ucnv"]
+animation = &"aim_hand_cannon_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_bvy82"]
+animation = &"aim_hand_cannon_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_c2xlu"]
+animation = &"aim_hand_cannon_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_trwwl"]
+animation = &"aim_hand_cannon_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_coq33"]
+animation = &"aim_hand_cannon_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_qsu85"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_8ucnv")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_hand_cannon_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_bvy82")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_hand_cannon_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_c2xlu")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_hand_cannon_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_trwwl")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_hand_cannon_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_coq33")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_hand_cannon_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_7emlv"]
+animation = &"aim_knife_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hlvxy"]
+animation = &"aim_knife_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ngo0c"]
+animation = &"aim_knife_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2qe22"]
+animation = &"aim_knife_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_txacm"]
+animation = &"aim_knife_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_ih4o2"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_7emlv")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_knife_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_hlvxy")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_knife_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_ngo0c")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_knife_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_2qe22")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_knife_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_txacm")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_knife_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_o2dtp"]
+animation = &"aim_pistol_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_k3dx2"]
+animation = &"aim_pistol_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_t3i5s"]
+animation = &"aim_pistol_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h6hwy"]
+animation = &"aim_pistol_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_oqgv3"]
+animation = &"aim_pistol_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_5u8ke"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_o2dtp")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_pistol_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_k3dx2")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_pistol_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_t3i5s")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_pistol_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_h6hwy")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_pistol_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_oqgv3")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_pistol_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_waxkn"]
+animation = &"aim_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_60ptr"]
+animation = &"aim_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ew3lm"]
+animation = &"aim_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5yq2d"]
+animation = &"aim_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_cwk1r"]
+animation = &"aim_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_1ovnu"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_waxkn")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_60ptr")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_ew3lm")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_5yq2d")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_cwk1r")
 blend_point_4/pos = 80.0
 blend_point_4/name = &"aim_u80"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_smufa"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_sib84"]
+animation = &"aim_shotgun_d80"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_yt8du"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h87cs"]
+animation = &"aim_shotgun_d40"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_thn6b"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_dpa81"]
+animation = &"aim_shotgun_0"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_55xd6"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_svuoj"]
+animation = &"aim_shotgun_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gxj4v"]
+animation = &"aim_shotgun_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_w73f4"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_sib84")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_shotgun_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_h87cs")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_shotgun_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_dpa81")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_shotgun_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_svuoj")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_shotgun_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_gxj4v")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_shotgun_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5idyp"]
+animation = &"aim_smg_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_47jp6"]
+animation = &"aim_smg_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hejd3"]
+animation = &"aim_smg_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3xnyi"]
+animation = &"aim_smg_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_0x1d3"]
+animation = &"aim_smg_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_gox8q"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_5idyp")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_smg_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_47jp6")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_smg_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_hejd3")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_smg_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_3xnyi")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_smg_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_0x1d3")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_smg_u80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_42x1i"]
+animation = &"aim_sniper_d80"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_r1hr2"]
+animation = &"aim_sniper_d40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2clkr"]
+animation = &"aim_sniper_0"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_dx5vv"]
+animation = &"aim_sniper_u40"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_203ke"]
+animation = &"aim_sniper_u80"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_h4ic1"]
+min_space = -90.0
+max_space = 90.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_42x1i")
+blend_point_0/pos = -80.0
+blend_point_0/name = &"aim_sniper_d80"
+blend_point_1/node = SubResource("AnimationNodeAnimation_r1hr2")
+blend_point_1/pos = -40.0
+blend_point_1/name = &"aim_sniper_d40"
+blend_point_2/node = SubResource("AnimationNodeAnimation_2clkr")
+blend_point_2/pos = 0.0
+blend_point_2/name = &"aim_sniper_0"
+blend_point_3/node = SubResource("AnimationNodeAnimation_dx5vv")
+blend_point_3/pos = 40.0
+blend_point_3/name = &"aim_sniper_u40"
+blend_point_4/node = SubResource("AnimationNodeAnimation_203ke")
+blend_point_4/pos = 80.0
+blend_point_4/name = &"aim_sniper_u80"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_opqc5"]
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_1i47w"]
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_b81bw"]
+filter_enabled = true
+filters = ["Skeleton3D:chest", "Skeleton3D:forearm_l", "Skeleton3D:forearm_r", "Skeleton3D:hand_l", "Skeleton3D:hand_r", "Skeleton3D:head", "Skeleton3D:spine", "Skeleton3D:upper_arm_l", "Skeleton3D:upper_arm_r"]
+fadein_time = 0.04
+fadeout_time = 0.1
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_6sxa5"]
+input_0/name = "knife_slash"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "knife_stab"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "grenade_throw"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
+input_3/name = "grenade_lob"
+input_3/auto_advance = false
+input_3/break_loop_at_end = false
+input_3/reset = true
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_l22fi"]
+animation = &"fire"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_cg6mj"]
+animation = &"fire_pistol"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_efac0"]
+animation = &"grenade_lob"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8l5d5"]
+animation = &"grenade_throw"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ft27t"]
+animation = &"knife_slash"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_0aufm"]
+animation = &"knife_stab"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_k8tv0"]
+animation = &"reload"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_lrh2t"]
+animation = &"reload_carbine"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_obtpd"]
+animation = &"reload_hand_cannon"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8suu3"]
+animation = &"reload_pistol"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_dyr8o"]
+animation = &"reload_shell"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_0qnai"]
+animation = &"reload_shotgun"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_wvtgi"]
+animation = &"reload_smg"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_01qno"]
+animation = &"reload_sniper"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_xbaks"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gxept"]
 animation = &"crouch_idle"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2nkjm"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ufgr7"]
 animation = &"crouch_walk_f"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_smrn7"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_714ek"]
 animation = &"crouch_walk_fr"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8ucnv"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5b4vw"]
 animation = &"crouch_walk_r"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_bvy82"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_mw8u5"]
 animation = &"crouch_walk_br"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_c2xlu"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_68jv4"]
 animation = &"crouch_walk_b"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_trwwl"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_eao44"]
 animation = &"crouch_walk_bl"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_coq33"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2m57p"]
 animation = &"crouch_walk_l"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_qsu85"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_he21a"]
 animation = &"crouch_walk_fl"
 
-[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_7emlv"]
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_jjeqt"]
 min_space = Vector2(-6.5532, -6.5532)
 max_space = Vector2(6.5532, 6.5532)
 sync_mode = 1
-blend_point_0/node = SubResource("AnimationNodeAnimation_55xd6")
+blend_point_0/node = SubResource("AnimationNodeAnimation_gxept")
 blend_point_0/pos = Vector2(0, 0)
 blend_point_0/name = &"crouch_idle"
-blend_point_1/node = SubResource("AnimationNodeAnimation_2nkjm")
+blend_point_1/node = SubResource("AnimationNodeAnimation_ufgr7")
 blend_point_1/pos = Vector2(0, 1.85674)
 blend_point_1/name = &"crouch_walk_f"
-blend_point_2/node = SubResource("AnimationNodeAnimation_smrn7")
+blend_point_2/node = SubResource("AnimationNodeAnimation_714ek")
 blend_point_2/pos = Vector2(1.3129008, 1.3129008)
 blend_point_2/name = &"crouch_walk_fr"
-blend_point_3/node = SubResource("AnimationNodeAnimation_8ucnv")
+blend_point_3/node = SubResource("AnimationNodeAnimation_5b4vw")
 blend_point_3/pos = Vector2(1.85674, 0)
 blend_point_3/name = &"crouch_walk_r"
-blend_point_4/node = SubResource("AnimationNodeAnimation_bvy82")
+blend_point_4/node = SubResource("AnimationNodeAnimation_mw8u5")
 blend_point_4/pos = Vector2(1.3129008, -1.3129008)
 blend_point_4/name = &"crouch_walk_br"
-blend_point_5/node = SubResource("AnimationNodeAnimation_c2xlu")
+blend_point_5/node = SubResource("AnimationNodeAnimation_68jv4")
 blend_point_5/pos = Vector2(0, -1.85674)
 blend_point_5/name = &"crouch_walk_b"
-blend_point_6/node = SubResource("AnimationNodeAnimation_trwwl")
+blend_point_6/node = SubResource("AnimationNodeAnimation_eao44")
 blend_point_6/pos = Vector2(-1.3129008, -1.3129008)
 blend_point_6/name = &"crouch_walk_bl"
-blend_point_7/node = SubResource("AnimationNodeAnimation_coq33")
+blend_point_7/node = SubResource("AnimationNodeAnimation_2m57p")
 blend_point_7/pos = Vector2(-1.85674, 0)
 blend_point_7/name = &"crouch_walk_l"
-blend_point_8/node = SubResource("AnimationNodeAnimation_qsu85")
+blend_point_8/node = SubResource("AnimationNodeAnimation_he21a")
 blend_point_8/pos = Vector2(-1.3129008, 1.3129008)
 blend_point_8/name = &"crouch_walk_fl"
 
-[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_hlvxy"]
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_5qdau"]
 xfade_time = 0.08
 input_0/name = "alive"
 input_0/auto_advance = false
@@ -118,223 +456,350 @@ input_3/auto_advance = false
 input_3/break_loop_at_end = false
 input_3/reset = true
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ngo0c"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_t0q6a"]
 animation = &"death_backward"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2qe22"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_808yj"]
 animation = &"death_forward"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_txacm"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_j8cc8"]
 animation = &"death_headshot"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ih4o2"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_l1d6s"]
 animation = &"fall"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_o2dtp"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_nqqnb"]
 animation = &"fall_crouch"
 
-[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_k3dx2"]
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_a3n2v"]
 mix_mode = 1
 fadeout_time = 0.04
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_t3i5s"]
-animation = &"fire"
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_6pk4f"]
+input_0/name = "fire"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "fire_pistol"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
 
-[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_h6hwy"]
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_e1tcx"]
 mix_mode = 1
 fadeout_time = 0.06
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_oqgv3"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_4cbw0"]
 animation = &"flinch"
 
-[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_5u8ke"]
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_qr1ip"]
+xfade_time = 0.15
+input_0/name = "rifle"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "carbine"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "smg"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
+input_3/name = "shotgun"
+input_3/auto_advance = false
+input_3/break_loop_at_end = false
+input_3/reset = true
+input_4/name = "sniper"
+input_4/auto_advance = false
+input_4/break_loop_at_end = false
+input_4/reset = true
+input_5/name = "pistol"
+input_5/auto_advance = false
+input_5/break_loop_at_end = false
+input_5/reset = true
+input_6/name = "hand_cannon"
+input_6/auto_advance = false
+input_6/break_loop_at_end = false
+input_6/reset = true
+input_7/name = "knife"
+input_7/auto_advance = false
+input_7/break_loop_at_end = false
+input_7/reset = true
+input_8/name = "grenade"
+input_8/auto_advance = false
+input_8/break_loop_at_end = false
+input_8/reset = true
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_ltsg8"]
 fadein_time = 0.03
 fadeout_time = 0.12
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_waxkn"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_dalwa"]
 animation = &"jump"
 
-[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_60ptr"]
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_3t4qm"]
 fadein_time = 0.02
 fadeout_time = 0.1
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ew3lm"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_y44dx"]
 animation = &"land"
 
-[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_5yq2d"]
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_qdbw3"]
 
-[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_cwk1r"]
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_6n4ww"]
 filter_enabled = true
 filters = ["Skeleton3D:forearm_l", "Skeleton3D:forearm_r", "Skeleton3D:hand_l", "Skeleton3D:hand_r", "Skeleton3D:upper_arm_l", "Skeleton3D:upper_arm_r"]
 fadein_time = 0.12
 fadeout_time = 0.15
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_1ovnu"]
-animation = &"reload"
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_0m57x"]
+input_0/name = "reload"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "reload_carbine"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "reload_smg"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
+input_3/name = "reload_shotgun"
+input_3/auto_advance = false
+input_3/break_loop_at_end = false
+input_3/reset = true
+input_4/name = "reload_shell"
+input_4/auto_advance = false
+input_4/break_loop_at_end = false
+input_4/reset = true
+input_5/name = "reload_sniper"
+input_5/auto_advance = false
+input_5/break_loop_at_end = false
+input_5/reset = true
+input_6/name = "reload_pistol"
+input_6/auto_advance = false
+input_6/break_loop_at_end = false
+input_6/reset = true
+input_7/name = "reload_hand_cannon"
+input_7/auto_advance = false
+input_7/break_loop_at_end = false
+input_7/reset = true
 
-[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_sib84"]
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_gtrft"]
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h87cs"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_eq6rf"]
 animation = &"idle"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_dpa81"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tj3s7"]
 animation = &"walk_f"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_svuoj"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2l71j"]
 animation = &"run_b"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gxj4v"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_e74b2"]
 animation = &"walk_bl"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_w73f4"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_jgjq3"]
 animation = &"run_bl"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5idyp"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ep1aa"]
 animation = &"walk_l"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_47jp6"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_x2edq"]
 animation = &"run_l"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hejd3"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_0lick"]
 animation = &"walk_fl"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3xnyi"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_f7tlu"]
 animation = &"run_fl"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_0x1d3"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3n4jb"]
 animation = &"run_f"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gox8q"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_swtp7"]
 animation = &"walk_fr"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_42x1i"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_e8n1i"]
 animation = &"run_fr"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_r1hr2"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_mrrnb"]
 animation = &"walk_r"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2clkr"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_vbdxc"]
 animation = &"run_r"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_dx5vv"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_41v82"]
 animation = &"walk_br"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_203ke"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_nvqaw"]
 animation = &"run_br"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h4ic1"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2amv8"]
 animation = &"walk_b"
 
-[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_opqc5"]
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_kcg7p"]
 min_space = Vector2(-6.5532, -6.5532)
 max_space = Vector2(6.5532, 6.5532)
 sync_mode = 1
-blend_point_0/node = SubResource("AnimationNodeAnimation_h87cs")
+blend_point_0/node = SubResource("AnimationNodeAnimation_eq6rf")
 blend_point_0/pos = Vector2(0, 0)
 blend_point_0/name = &"idle"
-blend_point_1/node = SubResource("AnimationNodeAnimation_dpa81")
+blend_point_1/node = SubResource("AnimationNodeAnimation_tj3s7")
 blend_point_1/pos = Vector2(0, 2.83972)
 blend_point_1/name = &"walk_f"
-blend_point_2/node = SubResource("AnimationNodeAnimation_0x1d3")
+blend_point_2/node = SubResource("AnimationNodeAnimation_3n4jb")
 blend_point_2/pos = Vector2(0, 5.461)
 blend_point_2/name = &"run_f"
-blend_point_3/node = SubResource("AnimationNodeAnimation_gox8q")
+blend_point_3/node = SubResource("AnimationNodeAnimation_swtp7")
 blend_point_3/pos = Vector2(2.007966, 2.007966)
 blend_point_3/name = &"walk_fr"
-blend_point_4/node = SubResource("AnimationNodeAnimation_42x1i")
+blend_point_4/node = SubResource("AnimationNodeAnimation_e8n1i")
 blend_point_4/pos = Vector2(3.8614728, 3.8614728)
 blend_point_4/name = &"run_fr"
-blend_point_5/node = SubResource("AnimationNodeAnimation_r1hr2")
+blend_point_5/node = SubResource("AnimationNodeAnimation_mrrnb")
 blend_point_5/pos = Vector2(2.83972, 0)
 blend_point_5/name = &"walk_r"
-blend_point_6/node = SubResource("AnimationNodeAnimation_2clkr")
+blend_point_6/node = SubResource("AnimationNodeAnimation_vbdxc")
 blend_point_6/pos = Vector2(5.461, 0)
 blend_point_6/name = &"run_r"
-blend_point_7/node = SubResource("AnimationNodeAnimation_dx5vv")
+blend_point_7/node = SubResource("AnimationNodeAnimation_41v82")
 blend_point_7/pos = Vector2(2.007966, -2.007966)
 blend_point_7/name = &"walk_br"
-blend_point_8/node = SubResource("AnimationNodeAnimation_203ke")
+blend_point_8/node = SubResource("AnimationNodeAnimation_nvqaw")
 blend_point_8/pos = Vector2(3.8614728, -3.8614728)
 blend_point_8/name = &"run_br"
-blend_point_9/node = SubResource("AnimationNodeAnimation_h4ic1")
+blend_point_9/node = SubResource("AnimationNodeAnimation_2amv8")
 blend_point_9/pos = Vector2(0, -2.83972)
 blend_point_9/name = &"walk_b"
-blend_point_10/node = SubResource("AnimationNodeAnimation_svuoj")
+blend_point_10/node = SubResource("AnimationNodeAnimation_2l71j")
 blend_point_10/pos = Vector2(0, -5.461)
 blend_point_10/name = &"run_b"
-blend_point_11/node = SubResource("AnimationNodeAnimation_gxj4v")
+blend_point_11/node = SubResource("AnimationNodeAnimation_e74b2")
 blend_point_11/pos = Vector2(-2.007966, -2.007966)
 blend_point_11/name = &"walk_bl"
-blend_point_12/node = SubResource("AnimationNodeAnimation_w73f4")
+blend_point_12/node = SubResource("AnimationNodeAnimation_jgjq3")
 blend_point_12/pos = Vector2(-3.8614728, -3.8614728)
 blend_point_12/name = &"run_bl"
-blend_point_13/node = SubResource("AnimationNodeAnimation_5idyp")
+blend_point_13/node = SubResource("AnimationNodeAnimation_ep1aa")
 blend_point_13/pos = Vector2(-2.83972, 0)
 blend_point_13/name = &"walk_l"
-blend_point_14/node = SubResource("AnimationNodeAnimation_47jp6")
+blend_point_14/node = SubResource("AnimationNodeAnimation_x2edq")
 blend_point_14/pos = Vector2(-5.461, 0)
 blend_point_14/name = &"run_l"
-blend_point_15/node = SubResource("AnimationNodeAnimation_hejd3")
+blend_point_15/node = SubResource("AnimationNodeAnimation_0lick")
 blend_point_15/pos = Vector2(-2.007966, 2.007966)
 blend_point_15/name = &"walk_fl"
-blend_point_16/node = SubResource("AnimationNodeAnimation_3xnyi")
+blend_point_16/node = SubResource("AnimationNodeAnimation_f7tlu")
 blend_point_16/pos = Vector2(-3.8614728, 3.8614728)
 blend_point_16/name = &"run_fl"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_1i47w"]
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_pdg8i"]
 filter_enabled = true
 filters = ["Skeleton3D:chest", "Skeleton3D:forearm_l", "Skeleton3D:forearm_r", "Skeleton3D:hand_l", "Skeleton3D:hand_r", "Skeleton3D:head", "Skeleton3D:spine", "Skeleton3D:upper_arm_l", "Skeleton3D:upper_arm_r"]
 
 [resource]
-nodes/output/position = Vector2(2280, 100)
-nodes/Stand/node = SubResource("AnimationNodeBlendSpace2D_opqc5")
+nodes/output/position = Vector2(2480, 100)
+nodes/Stand/node = SubResource("AnimationNodeBlendSpace2D_kcg7p")
 nodes/Stand/position = Vector2(0, 0)
-nodes/CrouchMove/node = SubResource("AnimationNodeBlendSpace2D_7emlv")
+nodes/CrouchMove/node = SubResource("AnimationNodeBlendSpace2D_jjeqt")
 nodes/CrouchMove/position = Vector2(0, 200)
-nodes/Crouch/node = SubResource("AnimationNodeBlend2_thn6b")
+nodes/Crouch/node = SubResource("AnimationNodeBlend2_xbaks")
 nodes/Crouch/position = Vector2(240, 100)
-nodes/LocoSpeed/node = SubResource("AnimationNodeTimeScale_5yq2d")
+nodes/LocoSpeed/node = SubResource("AnimationNodeTimeScale_qdbw3")
 nodes/LocoSpeed/position = Vector2(440, 100)
-nodes/Fall/node = SubResource("AnimationNodeAnimation_ih4o2")
+nodes/Fall/node = SubResource("AnimationNodeAnimation_l1d6s")
 nodes/Fall/position = Vector2(0, 400)
-nodes/FallCrouch/node = SubResource("AnimationNodeAnimation_o2dtp")
+nodes/FallCrouch/node = SubResource("AnimationNodeAnimation_nqqnb")
 nodes/FallCrouch/position = Vector2(0, 520)
-nodes/AirPose/node = SubResource("AnimationNodeBlend2_yt8du")
+nodes/AirPose/node = SubResource("AnimationNodeBlend2_1i47w")
 nodes/AirPose/position = Vector2(240, 450)
-nodes/Air/node = SubResource("AnimationNodeBlend2_smufa")
+nodes/Air/node = SubResource("AnimationNodeBlend2_opqc5")
 nodes/Air/position = Vector2(640, 150)
-nodes/JumpClip/node = SubResource("AnimationNodeAnimation_waxkn")
+nodes/JumpClip/node = SubResource("AnimationNodeAnimation_dalwa")
 nodes/JumpClip/position = Vector2(740, 400)
-nodes/Jump/node = SubResource("AnimationNodeOneShot_5u8ke")
+nodes/Jump/node = SubResource("AnimationNodeOneShot_ltsg8")
 nodes/Jump/position = Vector2(840, 150)
-nodes/LandClip/node = SubResource("AnimationNodeAnimation_ew3lm")
+nodes/LandClip/node = SubResource("AnimationNodeAnimation_y44dx")
 nodes/LandClip/position = Vector2(940, 400)
-nodes/Land/node = SubResource("AnimationNodeOneShot_60ptr")
+nodes/Land/node = SubResource("AnimationNodeOneShot_3t4qm")
 nodes/Land/position = Vector2(1040, 150)
-nodes/Aim/node = SubResource("AnimationNodeBlendSpace1D_di0fb")
-nodes/Aim/position = Vector2(1040, -150)
-nodes/Upper/node = SubResource("AnimationNodeBlend2_1i47w")
+nodes/Aim_rifle/node = SubResource("AnimationNodeBlendSpace1D_1ovnu")
+nodes/Aim_rifle/position = Vector2(820, -1230)
+nodes/Aim_carbine/node = SubResource("AnimationNodeBlendSpace1D_di0fb")
+nodes/Aim_carbine/position = Vector2(820, -1110)
+nodes/Aim_smg/node = SubResource("AnimationNodeBlendSpace1D_gox8q")
+nodes/Aim_smg/position = Vector2(820, -990)
+nodes/Aim_shotgun/node = SubResource("AnimationNodeBlendSpace1D_w73f4")
+nodes/Aim_shotgun/position = Vector2(820, -870)
+nodes/Aim_sniper/node = SubResource("AnimationNodeBlendSpace1D_h4ic1")
+nodes/Aim_sniper/position = Vector2(820, -750)
+nodes/Aim_pistol/node = SubResource("AnimationNodeBlendSpace1D_5u8ke")
+nodes/Aim_pistol/position = Vector2(820, -630)
+nodes/Aim_hand_cannon/node = SubResource("AnimationNodeBlendSpace1D_qsu85")
+nodes/Aim_hand_cannon/position = Vector2(820, -510)
+nodes/Aim_knife/node = SubResource("AnimationNodeBlendSpace1D_ih4o2")
+nodes/Aim_knife/position = Vector2(820, -390)
+nodes/Aim_grenade/node = SubResource("AnimationNodeBlendSpace1D_smrn7")
+nodes/Aim_grenade/position = Vector2(820, -270)
+nodes/Hold/node = SubResource("AnimationNodeTransition_qr1ip")
+nodes/Hold/position = Vector2(1040, -150)
+nodes/Upper/node = SubResource("AnimationNodeBlend2_pdg8i")
 nodes/Upper/position = Vector2(1240, 100)
-nodes/FireClip/node = SubResource("AnimationNodeAnimation_t3i5s")
-nodes/FireClip/position = Vector2(1340, 400)
-nodes/Fire/node = SubResource("AnimationNodeOneShot_k3dx2")
+nodes/FireKind/node = SubResource("AnimationNodeTransition_6pk4f")
+nodes/FireKind/position = Vector2(1340, 400)
+nodes/Fire/node = SubResource("AnimationNodeOneShot_a3n2v")
 nodes/Fire/position = Vector2(1440, 100)
-nodes/FlinchClip/node = SubResource("AnimationNodeAnimation_oqgv3")
+nodes/FlinchClip/node = SubResource("AnimationNodeAnimation_4cbw0")
 nodes/FlinchClip/position = Vector2(1540, 400)
-nodes/Flinch/node = SubResource("AnimationNodeOneShot_h6hwy")
+nodes/Flinch/node = SubResource("AnimationNodeOneShot_e1tcx")
 nodes/Flinch/position = Vector2(1640, 100)
-nodes/ReloadClip/node = SubResource("AnimationNodeAnimation_1ovnu")
-nodes/ReloadClip/position = Vector2(1640, 400)
-nodes/ReloadSpeed/node = SubResource("AnimationNodeTimeScale_sib84")
-nodes/ReloadSpeed/position = Vector2(1780, 400)
-nodes/Reload/node = SubResource("AnimationNodeOneShot_cwk1r")
-nodes/Reload/position = Vector2(1840, 100)
-nodes/Death/node = SubResource("AnimationNodeTransition_hlvxy")
-nodes/Death/position = Vector2(2060, 100)
-nodes/DeathForward/node = SubResource("AnimationNodeAnimation_2qe22")
-nodes/DeathForward/position = Vector2(1940, 300)
-nodes/DeathBackward/node = SubResource("AnimationNodeAnimation_ngo0c")
-nodes/DeathBackward/position = Vector2(1940, 420)
-nodes/DeathHeadshot/node = SubResource("AnimationNodeAnimation_txacm")
-nodes/DeathHeadshot/position = Vector2(1940, 540)
-node_connections = [&"output", 0, &"Death", &"Crouch", 0, &"Stand", &"Crouch", 1, &"CrouchMove", &"LocoSpeed", 0, &"Crouch", &"AirPose", 0, &"Fall", &"AirPose", 1, &"FallCrouch", &"Air", 0, &"LocoSpeed", &"Air", 1, &"AirPose", &"Jump", 0, &"Air", &"Jump", 1, &"JumpClip", &"Land", 0, &"Jump", &"Land", 1, &"LandClip", &"Upper", 0, &"Land", &"Upper", 1, &"Aim", &"Fire", 0, &"Upper", &"Fire", 1, &"FireClip", &"Flinch", 0, &"Fire", &"Flinch", 1, &"FlinchClip", &"ReloadSpeed", 0, &"ReloadClip", &"Reload", 0, &"Flinch", &"Reload", 1, &"ReloadSpeed", &"Death", 0, &"Reload", &"Death", 1, &"DeathForward", &"Death", 2, &"DeathBackward", &"Death", 3, &"DeathHeadshot"]
+nodes/AttackKind/node = SubResource("AnimationNodeTransition_6sxa5")
+nodes/AttackKind/position = Vector2(1740, 600)
+nodes/Attack/node = SubResource("AnimationNodeOneShot_b81bw")
+nodes/Attack/position = Vector2(1840, 100)
+nodes/ReloadKind/node = SubResource("AnimationNodeTransition_0m57x")
+nodes/ReloadKind/position = Vector2(1840, 400)
+nodes/ReloadSpeed/node = SubResource("AnimationNodeTimeScale_gtrft")
+nodes/ReloadSpeed/position = Vector2(1980, 400)
+nodes/Reload/node = SubResource("AnimationNodeOneShot_6n4ww")
+nodes/Reload/position = Vector2(2040, 100)
+nodes/Death/node = SubResource("AnimationNodeTransition_5qdau")
+nodes/Death/position = Vector2(2260, 100)
+nodes/DeathForward/node = SubResource("AnimationNodeAnimation_808yj")
+nodes/DeathForward/position = Vector2(2140, 300)
+nodes/DeathBackward/node = SubResource("AnimationNodeAnimation_t0q6a")
+nodes/DeathBackward/position = Vector2(2140, 420)
+nodes/DeathHeadshot/node = SubResource("AnimationNodeAnimation_j8cc8")
+nodes/DeathHeadshot/position = Vector2(2140, 540)
+nodes/Clip_fire/node = SubResource("AnimationNodeAnimation_l22fi")
+nodes/Clip_fire/position = Vector2(1140, 400)
+nodes/Clip_fire_pistol/node = SubResource("AnimationNodeAnimation_cg6mj")
+nodes/Clip_fire_pistol/position = Vector2(1140, 510)
+nodes/Clip_knife_slash/node = SubResource("AnimationNodeAnimation_ft27t")
+nodes/Clip_knife_slash/position = Vector2(1540, 700)
+nodes/Clip_knife_stab/node = SubResource("AnimationNodeAnimation_0aufm")
+nodes/Clip_knife_stab/position = Vector2(1540, 810)
+nodes/Clip_grenade_throw/node = SubResource("AnimationNodeAnimation_8l5d5")
+nodes/Clip_grenade_throw/position = Vector2(1540, 920)
+nodes/Clip_grenade_lob/node = SubResource("AnimationNodeAnimation_efac0")
+nodes/Clip_grenade_lob/position = Vector2(1540, 1030)
+nodes/Clip_reload/node = SubResource("AnimationNodeAnimation_k8tv0")
+nodes/Clip_reload/position = Vector2(1640, 900)
+nodes/Clip_reload_carbine/node = SubResource("AnimationNodeAnimation_lrh2t")
+nodes/Clip_reload_carbine/position = Vector2(1640, 1010)
+nodes/Clip_reload_smg/node = SubResource("AnimationNodeAnimation_wvtgi")
+nodes/Clip_reload_smg/position = Vector2(1640, 1120)
+nodes/Clip_reload_shotgun/node = SubResource("AnimationNodeAnimation_0qnai")
+nodes/Clip_reload_shotgun/position = Vector2(1640, 1230)
+nodes/Clip_reload_shell/node = SubResource("AnimationNodeAnimation_dyr8o")
+nodes/Clip_reload_shell/position = Vector2(1640, 1340)
+nodes/Clip_reload_sniper/node = SubResource("AnimationNodeAnimation_01qno")
+nodes/Clip_reload_sniper/position = Vector2(1640, 1450)
+nodes/Clip_reload_pistol/node = SubResource("AnimationNodeAnimation_8suu3")
+nodes/Clip_reload_pistol/position = Vector2(1640, 1560)
+nodes/Clip_reload_hand_cannon/node = SubResource("AnimationNodeAnimation_obtpd")
+nodes/Clip_reload_hand_cannon/position = Vector2(1640, 1670)
+node_connections = [&"output", 0, &"Death", &"Crouch", 0, &"Stand", &"Crouch", 1, &"CrouchMove", &"LocoSpeed", 0, &"Crouch", &"AirPose", 0, &"Fall", &"AirPose", 1, &"FallCrouch", &"Air", 0, &"LocoSpeed", &"Air", 1, &"AirPose", &"Jump", 0, &"Air", &"Jump", 1, &"JumpClip", &"Land", 0, &"Jump", &"Land", 1, &"LandClip", &"Hold", 0, &"Aim_rifle", &"Hold", 1, &"Aim_carbine", &"Hold", 2, &"Aim_smg", &"Hold", 3, &"Aim_shotgun", &"Hold", 4, &"Aim_sniper", &"Hold", 5, &"Aim_pistol", &"Hold", 6, &"Aim_hand_cannon", &"Hold", 7, &"Aim_knife", &"Hold", 8, &"Aim_grenade", &"Upper", 0, &"Land", &"Upper", 1, &"Hold", &"FireKind", 0, &"Clip_fire", &"FireKind", 1, &"Clip_fire_pistol", &"Fire", 0, &"Upper", &"Fire", 1, &"FireKind", &"Flinch", 0, &"Fire", &"Flinch", 1, &"FlinchClip", &"AttackKind", 0, &"Clip_knife_slash", &"AttackKind", 1, &"Clip_knife_stab", &"AttackKind", 2, &"Clip_grenade_throw", &"AttackKind", 3, &"Clip_grenade_lob", &"Attack", 0, &"Flinch", &"Attack", 1, &"AttackKind", &"ReloadKind", 0, &"Clip_reload", &"ReloadKind", 1, &"Clip_reload_carbine", &"ReloadKind", 2, &"Clip_reload_smg", &"ReloadKind", 3, &"Clip_reload_shotgun", &"ReloadKind", 4, &"Clip_reload_shell", &"ReloadKind", 5, &"Clip_reload_sniper", &"ReloadKind", 6, &"Clip_reload_pistol", &"ReloadKind", 7, &"Clip_reload_hand_cannon", &"ReloadSpeed", 0, &"ReloadKind", &"Reload", 0, &"Attack", &"Reload", 1, &"ReloadSpeed", &"Death", 0, &"Reload", &"Death", 1, &"DeathForward", &"Death", 2, &"DeathBackward", &"Death", 3, &"DeathHeadshot"]

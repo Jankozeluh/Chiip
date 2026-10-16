@@ -36,7 +36,83 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 - **Two last test fixes:** `netplay_test` sometimes put the lag-compensation target behind a low wall (its sight check only looked at eye height); it checks the whole strafing strip at four heights now. And a puppet standing still blocks your prediction again (it is where the host has it); only moving ones don't (faster than 0.5 m/s): the 5v5's corrections went from about 90 to under 30 in 80 s.
 - Tasks 8 to 11 are one commit: their changes are interleaved in the same network files. All 22 suites pass (678 checks).
 
-**Next:** phase B waits for M7 to reach main, phase C for the answer about the GodotSteam download (it isn't on GitHub releases any more; asked the coordinating session).
+- **Main merged into M9** (M7 arsenal, perks and economy, and the M10 plan): conflicts in the character (M7's inventory and flash lines went into `_simulate()` and the top of `_physics_process()`), the input command, the weapon (the scope's accuracy with `is_grounded()`), the round manager (the class draft now also drafts the online friends; half time changes only bots' classes), the console (27 lines for M7's and M9's commands), the test runner and the docs. M7's shotgun showed that seeding the spread per call gave every pellet the same direction online: seeded once per shot now.
+- **The arsenal online** (tasks 12 to 14, D-113): your inventory comes from the host by weapon ids, switching is predicted, dropping, swapping and picking up are the host's; everyone's weapon in hand and armor ride in the snapshots; guns on the floor, map weapons' spots and grenades are numbered world objects with copies on the clients; grenades going off and flashes are events, a smoke leaves the same cloud from the same seed; money with its reward lines, purchases, the class draft and the kill feed's weapon work on clients. New `tests/netarsenal_test.tscn` (17 checks). The lag-compensation test now sets both classes and the shooter's rifle (the draft and the pistol loadout made it vary), and the 5v5 stress test allows two small corrections a second (the host pushes characters out of each other in crowded spawns).
+- `maps_test`'s bots-only team respawn pace check ("20 kills in 180 s") failed once and passed on the rerun: M7's own variance, not M9's.
+
+**Open when this session stopped (usage limit):** `netarsenal_test` is flaky in its setup, not the netcode: when the class draft's loadout already holds a primary (an SMG), giving the rifle fails (the slot is taken), and once a smoke never appeared within the wait. Fix: clear the primary slot before giving the rifle, and wait longer for the smoke. All other 28 suites pass.
+
+**Next:** fix that test; then phase C (Steam), which waits for the answer about the GodotSteam download (it isn't on GitHub releases any more; asked the coordinating session); then task 17 (the playtest list, M9 marked built).
+## 2026-10-16 — M7 arsenal, perks & economy (continued)
+
+**Done**
+- **The plan, revised after your answers** (D-090): weapons mostly come from picking them up, a light economy where money still matters, and a fresh loadout every round. Every round starts with the knife and the Sparrow; money carries over, gear doesn't. Prices are round by tier ($500 / $1,000 / $2,500 / $4,000), every kill pays $200 ($500 with the knife), a win $3,000, a loss $1,500 rising to $3,000. Dead players' guns stay on the floor for the round, and each quick map gets two power-weapon spots (a Heron and a Breaker). Team respawn has no money: your class is your loadout. Tasks 5 and 9–14 changed, a new task 9 (power weapons on the maps), 15 tasks in all. The data files and `docs/weapons.csv` have the new prices and rewards; GAME_DESIGN 4.3 and 4.6 describe it.
+
+- **Task 5, slots, loadouts, switching, dropping and picking up** (D-094): an `Inventory` node per character; keys 1–4, Q and G (rebindable), E to swap for a gun on the floor, walking over a gun takes it; draw times (the Rifleman's Quick Hands); guns lie on the floor with their ammo, and the dead drop their best one. Every round starts with the knife and the Sparrow; team respawn and practice give each class its loadout. The HUD, the body and the bots follow the weapon in hand; bots tap semi-automatic pistols. The console shows 24 lines so `help` still fits. `gear_test` has 31 checks; the maps test measures first contact with rifles, as D-061 meant (pistol rounds are about 10% faster).
+
+- **Task 3, weapon models and icons** (D-092): a Sonnet subagent built every weapon as a part list in the generator (the AK became `rifle`, unchanged), with buy-menu and kill-feed icons rendered headless in Python; I checked the contact sheets (every gun reads by its silhouette). The data files point at the models and icons, guns on the floor and in bodies' hands show their own models, and the kill feed shows the killing weapon's icon.
+
+- **Task 6, how each gun works** (D-095): pistols fire once per click; the Breaker fires 9 pellets and loads shell by shell (fire interrupts); the Heron's scope steps on the right mouse button with CS's scope-in delay and stand-still accuracy, drops out after each shot and comes back, narrows the camera and slows the mouse, with a drawn scope view and no crosshair; the knife slashes and stabs with CS:GO's numbers and backstabs. The Rifleman reloads 15% faster and the Marksman scopes in 20% faster and recovers 30% faster. Every gun has its own generated sound (22 new sounds by a Sonnet subagent, measured but not heard: your ears decide; the rifle, hand cannon and shotgun are the closest trio). New `tests/guns_test.tscn` (16 checks); the weapon test's player is now a Scout so the rifle's M2 numbers stay perk-free. All 20 suites pass.
+
+- **Task 7, holds and animations** (D-096): the generator now solves nine animation sets (each long gun around its own points, pistols two-handed out in front, the knife low with the blade up, the grenades at the chest): aim poses, a reload per gun (the Breaker a shell at a time), the pistol kick, knife slash and stab, grenade throw and lob for the body (93 clips per class), and idle, draw, fire, reload, pump, bolt, pin, throw and lob for the first-person arms (38). The animation graph switches the upper body by the held weapon; the knife and grenades sit in the fist with a hold offset. Checked with stick-figure renders and 5 new crew checks; all 20 suites pass (651 checks).
+
+- **Task 8, grenades** (D-097): CS's three. Fire pulls the pin and throws, aim lobs; they fly by rays with a light gravity and bounce. The Frag's blast falls off like a bell curve and walls stop it (98 at most, as in CS); the Flashbang blinds everyone who looks at it (a white screen and ringing ears for you, no sight for bots); the Smoke's 18 s cloud hides what's behind it from bots and greys your view inside it. Explosions with light, a fireball and particles. New `tests/grenade_test.tscn` (14 checks); all 21 suites pass.
+
+- **Task 9, power weapons on the maps** (D-098): every quick map has a Heron and a Breaker on gold rings in contested lanes, placed so both teams walk about as far to them; back every round (in team respawn 30 s after being taken). MAPS.md has where.
+
+- **Task 10, money** (D-098): the light economy runs in the round manager: $1,000 to start each half, $3,000 a win, $1,500 rising to $3,000 for losses in a row, $200 a kill ($500 with the knife), $200 for the plant (every attacker) and the defuse, −$200 for a teamkill, $10,000 at most. Your money and the last rewards are on the HUD, your team's money on the Tab scoreboard; console `money`. New `tests/economy_test.tscn` (10 checks); all 22 suites pass (680 checks).
+
+- **Task 11, the buy menu** (D-098): freeze time is 15 s and that's buy time; **B** opens the buy menu (five columns with icons and prices, CS's number keys or clicks, greyed items say why). The round manager decides every purchase (`request_buy()`), the items live in `Shop`; practice buys everything free, team respawn has none. A Sonnet subagent built the menu and its 11 checks.
+
+- **Task 12, defuse kits** (D-098): defenders buy a kit for $300 and defuse in 5 s (the bomb's `kit_check` hook); a kit icon on the HUD and "· kit" on your team's scoreboard rows; it lasts one round.
+
+- **Task 13, class perks** (D-099): the Scout's Light Step (running steps carry 70% as far, for bots and for your ears) completes the four perks; the class cards show each class's loadout; in team respawn you can change class any time and get it at your next respawn.
+
+- **Task 14, bots and the arsenal** (D-099): bots buy as a team (pistol rounds, full buys, force buys, saves) by class taste, change class at half time, keep a gun in hand (the pistol when the rifle runs dry), scope the Heron and wait to be steady, close in with the shotgun, go for better guns and power weapons near them, and throw frags and flashbangs at enemies they heard. A bots-only 5v5 on Depot shows the whole economy cycle and about five grenades a round. New `tests/botgear_test.tscn` (8 checks).
+
+- **Task 15, checks and the playtest list:** screenshots of every weapon in first person and the new holds in third person, which found the knife's blade pointing down (Godot's text format writes a transform's basis row by row: a CLAUDE.md gotcha now) and the knife and grenades too low; fixed. The balancing table is up to date, all 23 suites pass, and the M7 playtest list is in PLAN.md's "Your open checks".
+
+**M7 is built** (15 tasks, D-090 to D-099) and waits for your playtest. Main isn't merged: the coordinating session merges `m7-arsenal`.
+
+**Then your new direction (D-120) added tasks 16 to 19** (main merged in first, for the M10 plan):
+- **Task 16, random map weapons** (D-098): the fixed Heron and Breaker spots are gone. `MapWeapons` puts guns out at random places from the navmesh at runtime (on the islands the spawns stand on, never within 15 m of a spawn or on a bomb site, 8 m from respawn points in Team Deathmatch, 15 m apart), a random gun from a weighted pool (the Hornet most often, the Heron rarest), on the gold ring with a new beam of light. Two each round; three at a time in Team Deathmatch, replaced elsewhere 20 s after being taken. The map files are back to main's, so the map-kit session can edit them freely.
+
+- **Task 17, the class draft** (D-099): each match offers everyone two random classes. You start as your first and the class menu shows just your two cards (keys 1 and 2). Every offer includes a class the team doesn't have yet, and bots take the one their team has fewer of, so a team of three is still three classes. You switch only between your two (freeze time; any time in Team Deathmatch), and at half time the bots switch within their drafts. `MatchSettings.class_draft` turns it off for M6's rules, which the older class checks use. The respawn suite's check on bots walking in pairs now runs without map weapons (the new classes made a follower detour for a gun).
+
+- **Task 18, Team Deathmatch's loadout and pickups** (D-094): walking over a dropped gun you already carry takes its ammo (CoD's scavenging, never from a map weapon), dropped guns vanish after 30 s in Team Deathmatch, and the respawn loadout already came out with the signature gun in hand. The buy menu was already built only on the theme's type variations (a new economy check proves it, for M10's UI refresh). ARCHITECTURE has a new section on M7's interfaces for M9: who decides what a character carries, guns on the floor, money, buying, armor, classes and grenades, and what M9 has to change. A fix found on the way: a frozen character could still stab or lob a grenade with aim; now only a scope zooms while frozen (D-097).
+
+- **Task 19, checks and the playtest list:** screenshots in the real game: the class menu with your two cards; map weapons on Depot, which led to three fixes (the beam now rises from above the name instead of hiding the gun, the name is half as big again, and guns keep 0.8 m from walls and crates). All 23 suites pass (722 checks). The M7 playtest list has the map weapons, Team Deathmatch's loadout and pickups, and the class draft.
+
+**M7 is built** (19 tasks, D-090 to D-099) and waits for your playtest. Main (with 008feed) is merged into `m7-arsenal`; the coordinating session merges it into main.
+
+**Next:** M9 — Multiplayer (in its own branch), and M10.
+
+## 2026-10-16 — Roadmap: M10 look & feel
+
+**Done**
+- M8 is complete on main (map rotation and the mode choice); 17 suites, 568 checks pass.
+- M7 resumed after the night. It now has your weapon answers: a light economy plus pickups, and a fresh loadout every round. M9 (multiplayer) runs in parallel.
+- Your new feedback became M10 (D-120): a map kit (CC0 textures plus our own props, a mapping guide, the maps dressed) and a modern, minimal UI with Team Deathmatch as the primary mode. Random map weapons and a class draft were added to M7.
+- Your rule for development: stop only at the usage limit or when the whole plan is done.
+
+**Next:** M7, M9 and both M10 parts in parallel branches, merged into main as each finishes.
+
+## 2026-10-15 — M7 arsenal, perks & economy
+
+Started M7 in its own worktree (branch `m7-arsenal`), cut from main with M8's last commit (mode choice and map rotation) on top.
+
+**Done**
+- **Task 1, the plan:** M7 is now a list of 14 tasks with model tags (PLAN.md), and its open choices are decided provisionally in D-090: CS2's money values, buying in the 15 s freeze time plus 10 s near your spawn, survivors keep their gear, a free loadout in team respawn, one generated model per weapon, and proposed weapon names (Ram, Warden, Hornet, Breaker, Heron, Sparrow, Verdict, Knife, Frag, Flashbang, Smoke), added to your open checks.
+
+- **Task 2, the arsenal's data** (D-091): `WeaponData` holds everything a weapon needs (slot, price, kill reward, armor penetration, draw time, pellets, scope, melee and grenade values, model and icons), and the eleven weapons have their data files with CS-based numbers. `docs/weapons.csv` is the balancing table, exported from those files by `tools/export_weapon_table.gd` (a Sonnet subagent wrote the tool and the new `tests/arsenal_test.tscn`, 28 checks); it uses the new `Armor` class, CS:GO's armor rule, which the characters get in task 4.
+
+- **Task 4, armor and helmet** (D-093): CS:GO's rule in `Character.take_damage()` (hits carry their weapon, the bomb ignores armor), the Bulwark's *Plated* perk on, the armor number and a pixel shield on the HUD, console `armor`. New `tests/gear_test.tscn` (13 checks).
+
+**Where M7 stopped** (2026-10-16, paused for the night at your request):
+- **Done:** tasks 1 (plan), 2 (data files and the balancing table) and 4 (armor). Main (5b1491b, M8 complete) is already in this branch. 19 suites; every suite touched so far passes (weapon, bot, round, class, arsenal, gear).
+- **In progress:** nothing in the working tree. Task 3 (weapon models and icons) was handed to a Sonnet subagent, which stopped on an API timeout before writing any files; it starts again from its brief.
+- **New direction to fold in first** (your answers, relayed by the coordinating session): weapons come mainly from **picking them up**, CS plus Call of Duty, with a **light economy that still matters**. A small buy menu (money from rounds and kills, carried between rounds; fewer, rounder prices than CS); **a fresh loadout every round** (knife and service pistol; bought or picked-up weapons, armor and grenades last one round); dropped weapons can be picked up for the rest of the round, and each map gets a couple of **power-weapon spots** (e.g. a sniper and a shotgun) that refill each round. Team respawn: no money, spawn with the class's signature gun and pistol, pickups as above. D-090's economy, buying and "survivors keep their gear" choices and the M7 task list change accordingly.
+- **Next:** rewrite the M7 plan and D-090 for that direction, then task 3 (models), task 5 (slots, switching, dropping and picking up, now the heart of M7), and on through the list.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 

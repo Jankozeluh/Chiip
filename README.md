@@ -17,7 +17,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
    **Play** opens match setup: the mode (**Rounds**, which are bomb rounds on the quick maps, or **Team respawn**), the size of your team and of the enemy team (1–5 each, you included in yours), the bots' difficulty (Easy, Normal, Hard), the match length (first to 5, 10 or 15 rounds; for team respawn 30, 50 or 75 kills), friendly fire, one map or the **rotation** of the three quick maps, and the map. In a rotation the end screen offers **Next map**. The defaults are a 3v3 match, Normal bots, first to 5, friendly fire off, on the test map, and the game remembers your last choices. **Start** begins the match: you and your bot teammates (blue) against the bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
-   At the start of the match a class menu opens: pick Rifleman, Bulwark, Marksman or Scout (click a card, or press 1 to 4; Esc closes it). **M** opens it again during freeze time. For now the classes differ in looks and hit zones; the perks switch on in M7. Bots get a mix of classes.
+   At the start of the match a class menu opens with **your two drafted classes** for this match (each match offers two of Rifleman, Bulwark, Marksman and Scout at random): click a card or press 1 or 2; Esc closes it. **M** opens it again during freeze time (any time in Team Deathmatch). Each class has its own perk and loadout. Bots draft too, and each team gets a mix of classes.
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Main menu** buttons.
    **Esc** during a game opens the **pause menu**, which pauses everything (the round timer, the bots, the sounds): **Resume**, **Settings** and **Leave match** (back to the main menu). Esc again resumes.
 3. **Practice** in the main menu (or running with `-- --practice`, see below) is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
@@ -71,17 +71,30 @@ To play a different map (also straight into the game, as a match where the map a
 | Walk (silent) | Shift |
 | Pause menu (pauses the game and frees the mouse; Esc again resumes) | Esc |
 | Capture the mouse again (after alt-tab, with no menu open) | Click in the window |
-| Shoot | Left mouse button |
+| Shoot (the knife: slash; a grenade: throw) | Left mouse button |
+| Scope in two steps (Heron), stab (knife), lob (grenade) | Right mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Weapons: primary, pistol, knife, grenades (4 again: the next grenade) | 1, 2, 3, 4 |
+| Last weapon / drop the gun in hand | Q / G |
+| Pick up a gun: walk over it (into a free slot), or look at it and press E to swap | E |
+| Buy menu (during the 15 s freeze time; any time in practice): the category's number then the item's, or click | B |
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
-| Class menu (opens by itself at the start of a match; during freeze time, any time in practice mode; then click a card or press 1 to 4) | M |
+| Class menu (opens by itself at the start of a match with your two drafted classes; during freeze time, any time in Team Deathmatch and practice mode; then click a card or press 1 or 2, 1 to 4 in practice) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+
+## Weapons, money and buying (M7)
+
+- **Every round starts with the knife and the Sparrow** (a pistol); whatever you buy or pick up lasts that round. Money carries over: $1,000 at the start of each half, $3,000 for a win, $1,500 rising to $3,000 for losses in a row, $200 a kill ($500 with the knife).
+- **B** opens the buy menu during the 15 s freeze time (in practice any time, free): the category's number, then the item's, or click.
+- **Pick guns up:** walk over one to take it into a free slot, or look at it and press **E** to swap. Each quick map has a **Heron** (sniper rifle) and a **Breaker** (shotgun) on gold rings.
+- **Team respawn** has no money: you spawn with your class's loadout.
+- The weapons' numbers are in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (4.3, 4.6, 4.10, 4.11) and in the spreadsheet **[docs/weapons.csv](docs/weapons.csv)**, exported from the data files (`tools/export_weapon_table.gd`, see CLAUDE.md).
 
 ## Settings
 
@@ -219,7 +232,7 @@ Run all the automated checks with one command (no window, about a minute and a q
 cd /Users/kozeluhj/Documents/Games/Chiip && bash tools/run_tests.sh
 ```
 
-It runs the sixteen suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the twenty-three suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
@@ -297,6 +310,12 @@ The maps test plays bot rounds on all three quick maps and takes a minute or two
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
 ```
 
+The M7 suites (the arsenal's data, gear and inventory, how each gun works, grenades, money and the buy menu, bots and the arsenal) run the same way: `arsenal_test`, `gear_test`, `guns_test` and `grenade_test` with `--quit-after 60000`, `economy_test` and `botgear_test` with `--quit-after 100000`, for example:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/economy_test.tscn
+```
+
 To see the frame rate with ten animated characters, run the performance test in a window (it prints FPS after 15 s):
 
 ```bash
@@ -310,6 +329,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | Document | What it contains |
 |---|---|
 | [PLAN.md](docs/PLAN.md) | Roadmap: milestones, tasks and current status |
+| [UI_MOCKUPS.md](docs/UI_MOCKUPS.md) | The UI screens to design (in Claude Design) and the rules every mockup follows |
 | [GAME_DESIGN.md](docs/GAME_DESIGN.md) | What the game is: pillars, mechanics, controls, look |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |

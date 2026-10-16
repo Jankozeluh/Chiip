@@ -26,8 +26,8 @@ extends Node3D
 const SHADER := preload("res://characters/crew/crew.gdshader")
 ## The animation graph every class shares.
 const ANIMATION_TREE := preload("res://characters/crew/crew_animation_tree.tres")
-## The gun in the hands (the AK-style rifle in M6; the arsenal comes in M7).
-const GUN_SCENE := preload("res://assets/models/weapons/ak_rifle.glb")
+## The gun in the hands before a character is attached (the Ram); then the held weapon's own model.
+const GUN_SCENE := preload("res://assets/models/weapons/rifle.glb")
 ## The third-person muzzle flash.
 const GUN_FLASH_SCENE := preload("res://characters/crew/gun_flash.tscn")
 ## Where the gun's muzzle is, in weapon space (tools/modelgen/weapons.py).
@@ -40,9 +40,18 @@ const GUN_FLASH_TIME := 0.04
 const RUN_SPEED := 215.0 * 0.0254
 const WALK_SPEED := RUN_SPEED * 0.52
 const CROUCH_SPEED := RUN_SPEED * 0.34
-## Length of the reload clip in seconds (the rifle's reload time when it was made); it is
-## stretched to the held weapon's own reload time.
+## Length of every reload clip in seconds (the rifle's reload time when it was made); it is
+## stretched to the held weapon's own reload time (a shotgun shell's too).
 const RELOAD_CLIP_TIME := 2.5
+## The animation sets of the graph (tools/make_crew_animation_tree.gd, D-096): each has its own
+## aim blend, Aim_<set>.
+const ANIM_SETS: Array[StringName] = [&"rifle", &"carbine", &"smg", &"shotgun", &"sniper", &"pistol", &"hand_cannon",
+		&"knife", &"grenade"]
+## The body's attack clip for a weapon's [member Weapon.last_attack].
+const ATTACK_CLIPS := {&"slash": "knife_slash", &"stab": "knife_stab", &"throw": "grenade_throw", &"lob": "grenade_lob"}
+## The reload clips of the graph's ReloadKind.
+const RELOAD_CLIPS: Array[String] = ["reload", "reload_carbine", "reload_smg", "reload_shotgun", "reload_shell",
+		"reload_sniper", "reload_pistol", "reload_hand_cannon"]
 ## Seconds to blend into or out of crouching (the character's crouch takes 0.15 s).
 const CROUCH_BLEND_TIME := 0.15
 ## Seconds to blend between the ground poses and the falling pose.
@@ -68,6 +77,8 @@ const JUMP_SPEED := 0.5
 
 ## One shared material per class model, by model path.
 static var _materials: Dictionary = {}
+## What the hands show while the character holds nothing: a weapon without a model.
+static var _NO_GUN := WeaponData.new()
 
 ## The colour to paint the team parts in, kept until the model is built.
 var _team_color: Color = Teams.FRIENDLY_COLOR
@@ -83,6 +94,11 @@ var _hitbox_shapes: Array[CollisionShape3D] = []
 var _character: Character
 var _tree: AnimationTree
 var _gun_flash: Node3D
+## The bone attachment the gun hangs on, and the gun's data shown there (the held weapon's, M7).
+var _gun_mount: BoneAttachment3D
+var _gun_data: WeaponData
+## The weapon whose shots and reloads the body plays (the character's held one).
+var _weapon: Weapon
 var _flash_time_left: float = 0.0
 ## Smoothed 0..1 amounts for the crouch and the falling pose.
 var _crouch: float = 0.0
@@ -147,9 +163,8 @@ func attach(character: Character) -> void:
 	character.damaged.connect(_on_damaged)
 	character.died.connect(_on_died)
 	character.respawned.connect(_on_respawned)
-	if character.weapon != null:
-		character.weapon.fired.connect(_on_fired)
-		character.weapon.reload_started.connect(_on_reload_started)
+	character.weapon_changed.connect(_on_weapon_changed)
+	_on_weapon_changed(character.weapon)
 
 
 ## Makes this body that of another class: the model and the hit zones are replaced by those of
@@ -174,6 +189,7 @@ func set_class(data: ClassData) -> void:
 	_skeleton = null
 	_tree = null
 	_gun_flash = null
+	_gun_mount = null
 	_flash_time_left = 0.0
 	model = data.model
 	hit_zones = data.hit_zones
@@ -206,7 +222,8 @@ func update_animation_state(velocity: Vector2, crouching: bool, on_ground: bool,
 	_tree.set("parameters/AirPose/blend_amount", _crouch)
 	_tree.set("parameters/Air/blend_amount", _air)
 	_tree.set("parameters/LocoSpeed/scale", _locomotion_speed_scale(velocity.length(), crouching))
-	_tree.set("parameters/Aim/blend_position", aim_degrees)
+	for set_name in ANIM_SETS:
+		_tree.set("parameters/Aim_%s/blend_position" % set_name, aim_degrees)
 
 
 ## Plays a death: [param style] is "forward", "backward" or "headshot". The body holds the last
@@ -367,10 +384,36 @@ func _build_gun() -> void:
 	mount.name = "Gun"
 	mount.bone_name = "weapon"
 	_skeleton.add_child(mount)
-	mount.add_child(GUN_SCENE.instantiate())
+	_gun_mount = mount
 	_gun_flash = GUN_FLASH_SCENE.instantiate()
 	_gun_flash.position = GUN_MUZZLE
 	mount.add_child(_gun_flash)
+	_show_gun(_gun_data)
+
+
+## Shows [param data]'s model in the hands (the rifle's for null data, as the body scene was made
+## with; nothing for a weapon without a model), with the muzzle flash at its muzzle.
+func _show_gun(data: WeaponData) -> void:
+	_gun_data = data
+	if _gun_mount == null:
+		return
+	var old := _gun_mount.get_node_or_null("GunModel")
+	if old != null:
+		_gun_mount.remove_child(old)
+		old.queue_free()
+	var scene: PackedScene = GUN_SCENE if data == null else data.model
+	if scene == null:
+		return
+	var model := scene.instantiate() as Node3D
+	model.name = "GunModel"
+	model.transform = data.hold_offset if data != null else Transform3D.IDENTITY
+	_gun_mount.add_child(model)
+	_gun_flash.position = data.muzzle_point if data != null else GUN_MUZZLE
+
+
+## The gun in the hands, for tests: the model node on the weapon bone (null if none).
+func get_gun_model() -> Node3D:
+	return _gun_mount.get_node_or_null("GunModel") as Node3D if _gun_mount != null else null
 
 
 ## Adds the AnimationTree next to the model's AnimationPlayer. Its root node is the model's root
@@ -389,9 +432,16 @@ func _build_animation_tree(instance: Node3D) -> void:
 	_tree.set("parameters/Upper/blend_amount", 1.0)
 	_tree.set("parameters/ReloadSpeed/scale", 1.0)
 	_tree.set("parameters/LocoSpeed/scale", 1.0)
-	# A Transition starts with no state at all (and then outputs nothing): pick "alive".
+	# A Transition starts with no state at all (and then outputs nothing): pick "alive", and the
+	# rifle's hold and clips until the held weapon says otherwise.
 	_tree.set("parameters/Death/transition_request", "alive")
+	_tree.set("parameters/Hold/transition_request", "rifle")
+	_tree.set("parameters/FireKind/transition_request", "fire")
+	_tree.set("parameters/AttackKind/transition_request", "knife_slash")
+	_tree.set("parameters/ReloadKind/transition_request", "reload")
 	_tree.active = true
+	if _weapon != null and is_instance_valid(_weapon):
+		_set_hold(_weapon.data)
 
 
 func _first_shape_of(zone: Hitbox.Zone) -> CollisionShape3D:
@@ -401,9 +451,50 @@ func _first_shape_of(zone: Hitbox.Zone) -> CollisionShape3D:
 	return null
 
 
+## The character took out another weapon: play its shots and reloads, and hold its model.
+func _on_weapon_changed(weapon: Weapon) -> void:
+	if _weapon != null and is_instance_valid(_weapon):
+		if _weapon.fired.is_connected(_on_fired):
+			_weapon.fired.disconnect(_on_fired)
+			_weapon.reload_started.disconnect(_on_reload_started)
+	if _weapon != null and is_instance_valid(_weapon) and _weapon.shell_loading.is_connected(_on_shell_loading):
+		_weapon.shell_loading.disconnect(_on_shell_loading)
+		_weapon.drawn.disconnect(_on_weapon_drawn)
+	_weapon = weapon
+	if weapon != null:
+		weapon.fired.connect(_on_fired)
+		weapon.reload_started.connect(_on_reload_started)
+		weapon.shell_loading.connect(_on_shell_loading)
+		weapon.drawn.connect(_on_weapon_drawn)
+	var data := weapon.data if weapon != null else _NO_GUN
+	if data != _gun_data:
+		_show_gun(data)
+	_set_hold(weapon.data if weapon != null else null)
+
+
+## Holds [param data] the way its animation set does: the upper body's aim blend, and its fire
+## kick (D-096). The rifle's set without a weapon.
+func _set_hold(data: WeaponData) -> void:
+	if _tree == null:
+		return
+	var set_name := data.get_anim_set() if data != null else &"rifle"
+	if not ANIM_SETS.has(set_name):
+		set_name = &"rifle"
+	_tree.set("parameters/Hold/transition_request", String(set_name))
+	var pistol := data != null and data.hold == WeaponData.Hold.PISTOL
+	_tree.set("parameters/FireKind/transition_request", "fire_pistol" if pistol else "fire")
+
+
 func _on_fired(_spray_shot: int) -> void:
 	if _tree != null:
-		_tree.set("parameters/Fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		var attack: String = ATTACK_CLIPS.get(_weapon.last_attack, "") if _weapon != null else ""
+		if attack != "":
+			_tree.set("parameters/AttackKind/transition_request", attack)
+			_tree.set("parameters/Attack/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+			if attack.begins_with("grenade"):
+				_set_gun_shown(false)
+		else:
+			_tree.set("parameters/Fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	if _gun_flash != null:
 		_gun_flash.visible = true
 		_gun_flash.rotation.z = randf() * TAU
@@ -413,7 +504,40 @@ func _on_fired(_spray_shot: int) -> void:
 func _on_reload_started() -> void:
 	if _tree == null or _character == null or _character.weapon == null:
 		return
-	_tree.set("parameters/ReloadSpeed/scale", RELOAD_CLIP_TIME / maxf(_character.weapon.data.reload_time, 0.1))
+	var weapon := _character.weapon
+	var set_name := weapon.data.get_anim_set()
+	var duration := weapon.get_reload_time()
+	var clip := "reload" if set_name == &"rifle" else "reload_%s" % set_name
+	if weapon.data.reload_per_shell:
+		# The first shell includes bringing the gun up; every later one plays the shell again.
+		clip = "reload_shell"
+		duration += weapon.data.reload_start_time * weapon._class_factor(&"reload_time_factor")
+	if not RELOAD_CLIPS.has(clip):
+		return
+	_play_reload(clip, duration)
+
+
+## A weapon is taken out (also the next grenade after a throw): its model is back in the hand.
+func _on_weapon_drawn() -> void:
+	_set_gun_shown(true)
+
+
+func _set_gun_shown(on: bool) -> void:
+	var model := get_gun_model()
+	if model != null:
+		model.visible = on
+
+
+## The next shotgun shell goes in.
+func _on_shell_loading() -> void:
+	if _tree != null and _character != null and _character.weapon != null:
+		_play_reload("reload_shell", _character.weapon.get_reload_time())
+
+
+## Plays the reload clip [param clip] on the arms, stretched to [param duration] seconds.
+func _play_reload(clip: String, duration: float) -> void:
+	_tree.set("parameters/ReloadKind/transition_request", clip)
+	_tree.set("parameters/ReloadSpeed/scale", RELOAD_CLIP_TIME / maxf(duration, 0.1))
 	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 

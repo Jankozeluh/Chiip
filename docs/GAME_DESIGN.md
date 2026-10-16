@@ -2,7 +2,7 @@
 
 > Living document: it changes as the game is built and playtested. Values marked *(tune)* are starting points, not final numbers.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## 1. Pitch
 
@@ -19,7 +19,7 @@ Every feature should support at least one pillar. If it doesn't, it goes to the 
 
 ## 3. Core loop
 
-Buy during freeze time → play the round (move, hold angles, fight, plant or defuse) → round ends → earn money → next round.
+Buy or save during freeze time → play the round (move, hold angles, fight, take guns off the floor, plant or defuse) → round ends → earn money → next round, with a fresh loadout.
 
 A match is won by the first team to win a set number of rounds.
 
@@ -98,14 +98,36 @@ Starting physics values, CS:GO-like *(tune)*:
   | Legs | 26.8 | 25.3 |
 
   A headshot kills an unarmored player (100 HP) at any distance on the range. Damage is shown rounded down, as in CS.
-- **Armor** reduces body damage, and a **helmet** reduces headshot damage. Bought from M7 on; until then nobody has armor (D-041).
+- **Armor** reduces body damage, and a **helmet** reduces headshot damage (CS:GO's rule, D-093): see 4.11.
 - Later (backlog): wallbangs (shooting through thin surfaces) and tagging (getting hit slows you down).
 
 ### 4.3 Weapons
 
-Weapons get their own names in Chiip. CS names are used here only as a reference. Weapon stats are stored in data files (`weapons/*.tres`), so they're easy to compare and tune.
+Weapons get their own names in Chiip (provisional, D-090: your check). CS names are used here only as a reference. Every weapon is one data file (`weapons/<role>.tres`, D-091), and **`docs/weapons.csv`** is the balancing table exported from those files (`tools/export_weapon_table.gd`): every stat plus damage per second, shots to kill with and without armor, and whether a headshot kills through a helmet, at 10 and 30 m. Open it in Excel or Numbers. Starting values *(tune)*:
 
-**Rifle** (working name, AK-like), starting values *(tune)*:
+You get weapons three ways: the **loadout** (rounds: the knife and the Sparrow; Team Deathmatch: your class's signature gun, the Sparrow, the knife and a grenade), the **buy menu** (rounds only, 4.6), and **pickups**: guns the dead drop and **map weapons** that appear at random places each round (4.6, D-098).
+
+| Slot | Weapon (role) | CS reference | Price | Kill reward | Damage | Armor pen. | Fire rate | Magazine | Reload | Speed (u/s) | Draw |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Pistol | **Sparrow** (service pistol, semi-auto) | Glock / USP | in every loadout ($200 if you lost it) | $200 | 32, ×0.90 | 50% | 400 /min | 15 + 45 | 2.2 s | 240 | 0.6 s |
+| Pistol | **Verdict** (hand cannon, semi-auto) | Desert Eagle | $500 | $200 | 63, ×0.81 | 93.2% | 267 /min | 7 + 35 | 2.2 s | 230 | 0.75 s |
+| Primary | **Hornet** (SMG) | MP9 / MAC-10 | $1,000 | $200 | 26, ×0.87 | 60% | 857 /min | 30 + 120 | 2.1 s | 240 | 0.75 s |
+| Primary | **Breaker** (pump shotgun, 9 pellets in a 3.2° cone) | Nova | $1,000 | $200 | 9 × 26, ×0.70, 30 m reach | 50% | 68 /min | 8 + 32 | 0.4 s + 0.5 s per shell | 220 | 0.85 s |
+| Primary | **Ram** (AK-style rifle) | AK-47 | $2,500 | $200 | 36, ×0.98 | 77.5% | 600 /min | 30 + 90 | 2.5 s | 215 | 0.95 s |
+| Primary | **Warden** (carbine) | M4A4 | $2,500 | $200 | 33, ×0.97 | 70% | 666 /min | 30 + 90 | 3.1 s | 225 | 0.95 s |
+| Primary | **Heron** (sniper rifle, scoped) | AWP | $4,000 | $200 | 115, ×0.99 | 97.5% | 41 /min | 5 + 30 | 3.7 s | 200 (100 scoped) | 1.15 s |
+| Knife | **Knife** (slash 40, stab 65; from behind 90 / 180) | Knife | in every loadout | $500 | — | 85% | slash 0.4 s, stab 1 s | — | — | 250 | 0.5 s |
+| Grenade | **Frag** (high explosive) | HE grenade | $300 | $200 | 98 at the centre | 57.5% | — | 1 | — | 245 | 0.5 s |
+| Grenade | **Flashbang** | Flashbang | $200 | — | blinds | — | — | 2 | — | 245 | 0.5 s |
+| Grenade | **Smoke** | Smoke grenade | $300 | — | an 18 s cloud | — | — | 1 | — | 245 | 0.5 s |
+
+Damage is per bullet at point-blank, then ×the falloff for every 500 units (12.7 m). *Armor pen.* is the share of a hit on armor that still reaches health (CS's armor ratio halved, see 4.2). *Draw* is the time after switching to it before it can fire. What the numbers mean in a fight (from the table, 10 m):
+
+- **A headshot through a helmet kills** with the Ram (111), the Verdict, the Heron and a full Breaker blast; not with the Warden (92), the Hornet or the Sparrow. That's CS's AK-vs-M4 trade: the Warden is more accurate, moves faster and holds 30 rounds, but needs a second bullet on a helmet.
+- **Body shots to kill:** Ram 3 (4 through armor), Warden 4 (5), Hornet 5 (8), Sparrow 4 (7), Verdict 2 (3), Breaker one blast (two through armor), Heron one, armor or not.
+- **Prices are round and go by tier** (the light economy, D-090): $500 for the better pistol, $1,000 for the close-range guns, $2,500 for a rifle, $4,000 for the sniper rifle. Every kill pays $200, a knife kill $500.
+
+**Rifle** (the Ram, AK-like), its M2 values in detail *(tune)*:
 
 | Stat | Value | CS AK-47 reference |
 |---|---|---|
@@ -119,19 +141,15 @@ Weapons get their own names in Chiip. CS names are used here only as a reference
 | Spray | 30-shot pattern: climbs ~6° over 10 shots, sways left to −2.3°, then right to +1.95° | Similar shape |
 | Aim punch | The view kicks 50% of the pattern; recoil wears off at 12 shots per second | ~50% |
 
-The arsenal (D-056), working names until M7:
+**How each kind works** (D-095):
 
-| Slot | Weapon | Role | CS reference |
-|---|---|---|---|
-| Primary | Rifle (AK-style) | Main automatic weapon, one-tap headshots | AK-47 |
-| Primary | Carbine | More accurate than the rifle, less damage | M4 |
-| Primary | SMG | Cheap and fast to move with, for eco and anti-eco rounds | MP9 / MAC-10 |
-| Primary | Pump shotgun | Close range, holds tight corners | Nova |
-| Primary | Sniper rifle | One-shot body kill, slow, scoped | AWP |
-| Pistol | Service pistol | Free default sidearm | Glock / USP |
-| Pistol | Hand cannon | Expensive, one-tap headshots | Desert Eagle |
-| Knife | Knife | Melee, fastest movement | Knife |
-| Grenades | High explosive, flashbang, smoke | Utility | HE / flashbang / smoke |
+- **Pistols** (Sparrow, Verdict) fire once per click; holding the trigger fires one shot.
+- **The Breaker** fires 9 pellets in a 3.2° cone (on top of its own small inaccuracy): one blast kills up close, while at 25 m most pellets miss and falloff does the rest. It loads **one shell at a time** (0.4 s to bring it up, 0.5 s a shell); pressing fire with at least one shell in stops the reload and fires.
+- **The Heron's scope:** the right mouse button steps through two zoom levels (40/90 and 15/90 of your field of view, CS's AWP) and back out. Unscoped it is useless (a 4° cone) and shows no crosshair, as in CS. Scoping in takes 0.3 s to become fully accurate (0.02°); moving costs accuracy that takes 0.35 s to come back after you stop; scoped you move at 100 u/s. After each shot you drop out of the scope and go back in once the bolt is worked (1.46 s). The mouse turns the view less while scoped, in step with the zoom, so the same hand movement crosses the same part of the screen. A black scope view with a round window and thin cross lines covers the screen.
+- **The knife:** left click slashes (40, every 0.4 s, reach 1.5 m), right click stabs (65, every second, reach 1.1 m); from behind (the victim facing away) 90 and 180. The damage is the same on every zone (no headshot bonus, as in CS), and armor stops 15% of it. A swing makes no noise for the bots.
+- **Reloads are per holder:** the Rifleman's *Quick Hands* reloads 15% faster (the Ram in 2.1 s).
+
+The other automatic guns have their own patterns: the Warden climbs about 78% as high and sways right first, the Hornet climbs only 3.6° and then wobbles quickly from side to side; quick pistol shots climb (the Verdict 2.8° a shot), and the Breaker and Heron kick once per shot.
 
 Every weapon is generated from one part list (D-054) and comes as a world model (drops and pickups), a third-person model in the character's hand, a first-person model with arms, and buy-menu and kill-feed icons.
 
@@ -164,6 +182,8 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - **No long-range stalemates** (D-067): an attacker that has traded shots with an enemy beyond 35 m for 6 s stops shooting for 4 s and closes in. Defenders keep holding at any range.
 - **In bomb rounds** (D-081): the attackers pick one site at random. The carrier's group takes the route that ends nearest to it, and after their routes all attackers clear around that site. The carrier plants near the site's middle, or goes straight there when less than 30 s of round time would be left for it. The attacker bot nearest a dropped bomb fetches it. After the plant the attackers watch the bomb from 5–10 m away; every defender retakes: the first at the bomb defuses and the others cover within 7 m, looking away from it. A bot planting or defusing stops to fight an enemy who shows up unless it's at least 70% done (or the fuse wouldn't allow a restart). The carrier and the fetcher don't go and check noises, and after the plant bots only check enemies within 15 m of the bomb.
 - **In the team respawn mode** (D-083) bots hunt in pairs: each team's bots form groups of about two. The member alive the longest leads: it runs to a teammate's sighting (anything a teammate saw or heard in the last 6 s) if it's within 25 m, otherwise it roams from patrol point to patrol point, looking left and right at each. Its partner follows about 6 m behind and to one side, watching that flank; the leader walks while the partner catches up. A bot only goes to check what it saw or heard within 25 m, so the fights spread over the map instead of everyone running to every gunshot.
+- **Buying** (D-099): bots buy as a team as the freeze time begins: a pistol round in the first round of each half, a full buy when the team averages $3,300 (each class its gun, a vest and a helmet, kits for defenders, grenades), a force buy (cheap guns and a vest) when a team is on match point, in the last round of a half or with $2,400 on average, and otherwise a save. At half time each bot changes class (the team stays a mix).
+- **Using the arsenal** (D-099): a gun in hand always (the pistol when the primary is empty, or instead of a reload up close), the Heron scoped and still before it fires, the shotgun only within 18 m, guns worth $500 more picked up within 10 m (map weapons within 15 m), and frags and flashbangs thrown at enemies they heard or lost sight of 6–24 m away (looking away from their own flash).
 - **Getting unstuck:** a bot that tries to walk but gets nowhere for 0.5 s jumps (like a CS bot); after 1.2 s it backs off to the side and finds a new path.
 - **Holding fire:** a bot doesn't shoot while a living teammate (you included) is within 0.6 m of its line of fire, whether or not friendly fire is on.
 - Measured in a bots-only 3v3 on the test map: defenders are on their spots after about 7 s, attackers are 36 m out of spawn after 10 s, the first fight starts after about 12 s, and rounds end by elimination after 27–47 s.
@@ -177,7 +197,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - **Main menu and match setup** (D-064). The game starts on the **main menu**: the title CHIIP and the buttons **Play**, **Practice**, **Settings** and **Quit**, over a slow camera flight across the test map (a calm 80-second lap, 4 to 6 m up, looking over the level; nobody is playing). **Play** opens **match setup**, where you choose: your team size and the enemy team size (1–5 each, you included in yours; 3v3 by default), the bots' difficulty (Easy, **Normal**, Hard), the match length (first to **5**, 10 or 15 rounds), friendly fire (**Off** or On) and the map (every map in the game). Since M8 (D-087) it starts with the **Mode**: **Rounds** (bomb rounds on maps with bomb sites) or **Team respawn**, whose length is first to 30, **50** or 75 kills; and a **Maps** row: **One map**, or **Rotation**: Depot, Square and Spillway one after the other, starting on the map you chose if it's one of them. A line sums it up ("You and 2 bots against 3 bots. Normal bots, first to 5 rounds, friendly fire off.", "Team respawn: … first to 50 kills …", "Maps in rotation: Depot, Square, Spillway."). **Start** begins the match, **Back** returns. The game remembers your last choices for the next start. **Esc** closes match setup or the settings menu; on the main page it does nothing. In the game, the end screen's **Main menu** button and the console command `disconnect` (as in CS) go back to the menu.
 - **Pause menu** (D-065). In the game **Esc** pauses everything: the round timer, the bots, bullets and sounds all stand still, and a panel offers **Resume**, **Settings** (the same settings menu; Esc or Back returns to the pause menu) and **Leave match** (**Leave practice** in the bot arena), which goes back to the main menu. Esc again resumes. Esc does nothing new while the console is open (it closes the console) or after the match is over (the end screen has the screen). While you are paused the Tab scoreboard stays hidden and the HUD stays as it was. This is for playing alone: in multiplayer (M9) nobody can stop the other players, so there the menu will be an overlay that doesn't pause (D-065).
 - Round phases *(tune)*: freeze time (5 s; 15 s with buying from M7) → live round (1:55) → round end (5 s). During freeze time you can look around, crouch and reload, but not move, jump or shoot.
-- At each round start everyone is back at their side's spawn with full health and a full rifle.
+- At each round start everyone is back at their side's spawn with full health and a **fresh loadout**: the knife and the Sparrow, no armor (D-090, section 4.6). In team respawn and practice you spawn with your class's loadout instead.
 - A round is won by eliminating the other team, or through the bomb (section 4.7: on maps with bomb sites the explosion wins it for the attackers and a defuse for the defenders). If time runs out before a plant, the defending side wins, as in CS. If the last players of both teams die in the same moment, the defenders win too (after a plant: the attackers).
 - Whoever dies stays dead until the next round. During the round-end pause the survivors can still move and shoot, but the result stands.
 - **After you die in a match you spectate** (D-046), like CS, in first person only:
@@ -197,16 +217,32 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - **How a match ends:** when a team wins its 5th (10th, 15th) round, the usual round-end pause still plays so you see how that round was won. Then everyone is frozen and the **end screen** opens over the scene with the mouse free: "Victory" or "Defeat" for your team, the final score ("yours - theirs", your number blue, theirs red), and a scoreboard with your team first (blue) and the enemy team below (red): one row per player with kills, deaths, assists and damage, best first (kills, then damage), your own row highlighted. Buttons: **Play again** (a fresh match on the same map) and **Main menu** (back to the main menu; it was Quit until the menu existed).
 - **Spawns:** each side has five spawn points at its own end of the map. On the test map the defenders start at the north end behind the peek walls and the attackers at the south end of the range, 112 m apart.
 - Friendly fire is a match setting: off by default; when on, teammates take a third of the damage, like CS competitive. With it off, bullets pass through teammates (as in CS), so a teammate walking through your spray doesn't block it.
-- **Modes** (D-049):
+- **Modes** (D-049). **Team Deathmatch** (the team respawn mode) is the primary mode: first in the menu and the default (D-120).
   - **Rounds** (today's mode): one life per round, the bomb objective from M8. Like CS, or CoD's Search & Destroy.
   - **Team respawn** (M8, D-082): like CoD's Team Deathmatch. Both teams start at their ends after 5 s of freeze time. You respawn **3 s** after dying, with full health and ammo, at the map's safest respawn point: as far from the living enemies as possible (40 m and more count the same, so far spots take turns), out of their line of sight, preferably near a teammate. Each enemy killed is a point for the killer's team (teamkills and suicides score nothing). The first team to **50 kills** wins (*tune*; D-083: bots-only 3v3 matches score about 20 kills a minute, so this takes about 4 minutes), or the team with more kills after **10 minutes**; a tie goes to **overtime**, where the next kill wins. The top bar shows the kills, "First to 50" under the timer ("OT" and "Next kill wins" in overtime); no bomb and no spectating. Choose it in match setup's Mode row (or `-- --respawn` from the terminal).
 - **Maps** (D-049): three small, fast maps in rotation (M8), built for action like CoD's maps rather than CS's long ones. With **Rotation** chosen in match setup (D-087) the end screen offers **Next map: Square** (Depot → Square → Spillway → Depot…): a fresh match by the same rules; **Play again** replays the same map. About 40–60 m across, with three lanes and connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map has two bomb sites and spawn zones, so it works in both modes.
 
-### 4.6 Economy
+### 4.6 Economy and pickups
 
-- Money is earned for round wins, round losses (with a loss bonus that grows), kills and objective actions.
-- A buy menu is available during freeze time, inside the buy zone.
-- Values are modeled on CS *(tune)*.
+A mix of CS and Call of Duty (D-090, your answers of 2026-10-16): a **light economy** where money still matters, a **fresh loadout every round**, and weapons you **pick up**. *(tune)*
+
+- **A fresh loadout every round** (bomb rounds), like CoD's Search & Destroy: at each round start everyone, alive or dead last round, has the **knife and the Sparrow** and nothing else. Whatever you bought or picked up (guns, armor, grenades, a kit) lasts that round only. Money carries over.
+- **Money** (round numbers, easy to read): **$1,000** at the start of each half, **$10,000** at most.
+
+  | For | Money |
+  |---|---|
+  | Winning a round | $3,000 |
+  | Losing a round | $1,500; $2,000 for the second loss in a row, $2,500 for the third, $3,000 from the fourth (a win starts the count again) |
+  | A kill | $200 ($500 with the knife) |
+  | A teamkill | −$200 |
+  | Planting the bomb | $200 for every attacker, win or lose |
+  | Defusing the bomb | $200 for the defuser |
+
+- **Buying:** during the 15 s freeze time, when everyone stands at their spawn (so there is no buy zone): **B** opens the buy menu. Prices: Verdict $500; Hornet and Breaker $1,000; Ram and Warden $2,500; Heron $4,000; Sparrow $200 (only if you lost yours); vest $500, vest and helmet $800; defuse kit $300 (defenders); Frag $300, Flashbang $200, Smoke $300. A full buy (rifle, vest and helmet, a grenade) is $3,600, so a winning team can buy every round, and a losing team saves for a round or two, buys cheap, or takes guns off the floor.
+- **Pickups:** a gun the dead drop (their best one: the primary, else the pistol) lies on the floor for the rest of the round with its ammo. Walk over it to take it into a free slot; **E** while looking at it swaps it for the gun in that slot. **G** drops the gun you hold. Walking over a dropped gun of a kind you already carry takes its ammo into your reserve (CoD's scavenging; never from a map weapon).
+- **Map weapons** (D-098): guns appear at **random places** on the map, never within 15 m of a team's spawn (and 8 m of a respawn point in Team Deathmatch) or on a bomb site, and never always in the same place. Which gun is random too: the Hornet most often, then the Warden, the Ram and the Breaker, the Verdict and the Heron rarest. Each floats and turns over a glowing gold ring with its name and a beam of light. Rounds: **two** new ones every round. Team Deathmatch: **three** out at a time, a taken one replaced somewhere else 20 s later. Walk over one to take it, like any gun on the floor.
+- **Team respawn has no money:** you spawn with your class's loadout (its signature gun in hand, the Sparrow, the knife and one grenade); pickups and map weapons work as in rounds, and a dropped gun goes after 30 s; the class menu works any time and your next respawn brings the new class's loadout.
+- **Practice:** your class's loadout, and the buy menu gives anything for free, any time.
 
 ### 4.7 Bomb mode
 
@@ -215,7 +251,7 @@ Bomb rounds are the round mode on every map with bomb sites (the three quick map
 - **Carrying:** at each round start a random attacker has the bomb, strapped to their back where everyone can see it. If the carrier dies, it drops where they fell; the first attacker to walk over it picks it up. Defenders can't. Attackers see a dropped bomb's marker through walls (CS shows it on their radar), and get the message "The bomb was dropped".
 - **Planting:** hold **Use (E)** inside a bomb site, standing on the floor, for **3.2 s**. You can look around and crouch, but not move or shoot. Letting go starts it over. Defenders within 20 m hear the key presses.
 - **After the plant:** the round clock stops and the timer shows "BOMB"; everyone is told the site ("Bomb planted at A") and sees the bomb's marker. The bomb beeps faster and faster (once a second at first, about 8 times a second at the end) and explodes after **40 s**.
-- **Defusing:** a defender holds **Use** within **1.5 m** of the bomb for **10 s** (**5 s** with a defuse kit, sold from M7). The same lock and restart rule as planting; only one defender defuses at a time.
+- **Defusing:** a defender holds **Use** within **1.5 m** of the bomb for **10 s** (**5 s** with a defuse kit: $300 in the buy menu, defenders only, one round, D-098). The same lock and restart rule as planting; only one defender defuses at a time.
 - **Winning:** the explosion wins the round for the attackers, a defuse for the defenders. After the plant, killing every attacker doesn't end the round (the defenders still have to defuse), and killing every defender wins it for the attackers at once. Before the plant, the usual rules: elimination, or the defenders on time-out.
 - **The blast:** 500 damage at the bomb, falling off like a bell curve: lethal out to about 13.5 m, 50 damage at about 18 m, nothing beyond about 22 m. Walls don't shield. Nobody gets a kill for it.
 - **HUD:** a gold "BOMB" tag above your weapon while you carry it; "Hold E to plant" / "Hold E to defuse" under the crosshair where you can; "Planting" / "Defusing" with a progress bar while you do. Freeze time says "You attack: plant the bomb at A or B" or "You defend: guard A and B"; the round-end banner says "The bomb exploded" or "The bomb was defused".
@@ -238,18 +274,40 @@ In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots mus
 
 ### 4.9 Classes
 
-Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy anything, so the economy stays CS-like. The signature gun is only what the class holds in the class menu. You pick a class at match start and can change it during freeze time; bots get a mix. Perks switch on in M7; until then the classes differ only in looks and hit-zone sizes. **How you pick** (D-078): a class menu opens by itself when the match starts (four cards: click one or press **1** to **4**; **Esc** closes it without a change), and **M** opens it again during freeze time of any round, so you can change class between rounds but never in a live round. Your class stays until you change it. In practice mode, which has no freeze time, M works at any time. The console's `class [name]` does the same. **Bots get a mix:** each team's bots cycle through the four classes from a random one, so three bots are three different classes.
+Four classes, each with its own look and **one passive perk** (D-052). Classes don't restrict weapons: anyone can buy or pick up anything, so the economy stays CS-like. The signature gun is the class's loadout where there's no money (team respawn and practice: signature gun, Sparrow, knife and one grenade, shown on the class card; D-090) and what its bots like to buy. You pick a class at match start and can change it during freeze time (in team respawn any time: the new class comes with your next respawn); bots get a mix and pick again at half time. **All four perks work** (M7, D-099): the numbers in the table below. **How you pick** (D-078): a class menu opens by itself when the match starts (four cards: click one or press **1** to **4**; **Esc** closes it without a change), and **M** opens it again during freeze time of any round, so you can change class between rounds but never in a live round. Your class stays until you change it. In practice mode, which has no freeze time, M works at any time. The console's `class [name]` does the same. **Bots get a mix:** each team's bots cycle through the four classes from a random one, so three bots are three different classes.
 
-| Class | Build and silhouette | Perk *(tune)* | Signature gun |
+| Class | Build and silhouette | Perk *(tune)* | Signature gun (respawn loadout) |
 |---|---|---|---|
-| **Rifleman** | 1.82 m, stocky, upright. High-cut helmet with a team stripe, goggles, plate carrier, olive-grey trousers | **Quick Hands:** reloads and weapon switches 15% faster | AK-style rifle |
-| **Bulwark** | 1.92 m, broad, slight hunch. Closed helmet with a team stripe over a gas mask, big grey shoulder plates edged in team colour | **Plated:** with armor on, takes 10% less damage than other classes and the armor wears down 30% slower. No effect without armor | Pump shotgun |
-| **Marksman** | 1.88 m, lanky. Knee-length moss-grey coat, hood, team-colour scarf and a team panel across the back | **Steady:** scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster | Sniper rifle |
-| **Scout** | 1.72 m, slim. Beanie, balaclava, glowing goggles, a fitted team-colour jacket, a radio with an antenna | **Light Step:** running footsteps carry 70% as far (a deliberate exception to D-038) | SMG |
+| **Rifleman** | 1.82 m, stocky, upright. High-cut helmet with a team stripe, goggles, plate carrier, olive-grey trousers | **Quick Hands:** reloads and weapon switches 15% faster | Ram (+ Frag) |
+| **Bulwark** | 1.92 m, broad, slight hunch. Closed helmet with a team stripe over a gas mask, big grey shoulder plates edged in team colour | **Plated:** with armor on, takes 10% less damage than other classes and the armor wears down 30% slower. No effect without armor | Breaker (+ Flashbang) |
+| **Marksman** | 1.88 m, lanky. Knee-length moss-grey coat, hood, team-colour scarf and a team panel across the back | **Steady:** scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster | Heron (+ Smoke) |
+| **Scout** | 1.72 m, slim. Beanie, balaclava, glowing goggles, a fitted team-colour jacket, a radio with an antenna | **Light Step:** running footsteps carry 70% as far (a deliberate exception to D-038) | Hornet (+ Flashbang) |
 
+- **The class draft** (D-099): each match offers you **two random classes**; you choose one in the class menu that opens at the start (keys 1 and 2) and can switch between your two in any freeze time (any time in Team Deathmatch, from your next respawn). Bots draft the same way, and every offer includes a class the team doesn't have yet, so each team still gets a mix. At half time the bots may switch to their other class. Practice offers all four.
 - **Silhouette first** (D-053): height, build, posture and headgear make each class recognisable at a glance, even as a dark shape.
 - **Team colour** is painted at runtime: every class wears a neutral kit (olive-grey, charcoal, stone grey, moss; never desert tones, D-031) with team-colour parts: **sleeves on every class**, plus the class's own marks (shirt or jacket, helmet stripe, plate edges, scarf, back panel). They show blue on your team and red on the enemy team (D-041), and cover 11–23% of the body from every side (D-070). The names are final.
 - **Hit zones follow each body** (D-055, D-074, D-077): the Bulwark is the biggest target and the Scout the smallest (total zone volume Scout 132 L, Marksman 173 L, Rifleman 223 L, Bulwark 484 L, since the Bulwark's shoulder plates and ammo pack count as chest). Perks balance the difference. The zones are boxes on the body's bones (15 per class: head, chest, stomach, and one box per arm and leg bone), measured from the model's own parts, so they move with the animation. **Eye height stays the same for every class** (CS's 64 units standing, 46 crouched), and so does the collision hull, so cover and peeking work the same for everyone; a taller class shows its head above cover a little before it can see over it, and the Scout a little after.
+
+### 4.10 Grenades
+
+CS's grenades (D-097) *(tune)*. You carry at most 1 Frag, 2 Flashbangs and 1 Smoke (4 in all); **4** takes one out (again: the next kind).
+
+- **Throwing:** press fire (or aim) to pull the pin (0.3 s); the grenade leaves your hand when you let go. **Fire throws** hard (15 m/s), **aim lobs** gently (7 m/s); either way 10° above where you look (when you look level; less looking up), plus your own movement (×1.25). After the last one of a kind, the weapon you held before comes out. Switching away with the pin pulled puts it back.
+- **Flight:** a light gravity (0.4 of the world's, as in CS), bouncing off walls, floors and people (losing half its speed into the surface each bounce), then rolling to a stop.
+- **Frag** (high explosive): goes off 1.6 s after the throw. 98 damage at the middle, falling off like a bell curve (about 87 at 1.5 m, 59 at 3 m, 13 at 6 m, nothing past 9 m). Walls stop it (it needs a clear line to your chest or head). Armor lets 57.5% through. Alone it can't kill a full-health player, as in CS. It hurts its thrower and, with friendly fire on, teammates; the kill is the thrower's, with the Frag in the kill feed.
+- **Flashbang:** goes off 1.6 s after the throw. Everyone with a clear line to it is blinded (teammates and the thrower too): up to 4.5 s, white at first and fading over the last 2 s. Full strength when you look toward it (within about 45°), less from the side, only a short flash when it's behind you; full up to 8 m, a third at 45 m, nothing farther or behind a wall. Your screen goes white and your ears ring; a blinded bot sees nothing (it can't notice or keep sight of anyone) until it fades.
+- **Smoke:** pops where it comes to rest (at least 1 s after the throw; at the latest after 3.5 s) into a grey cloud about 7 m across and 3 m high for **18 s**: it grows over a second and thins out over the last two. Bots can't see through it; inside it your view goes grey. Bullets pass through, as in CS.
+
+### 4.11 Armor
+
+CS:GO's rule (D-093), the same for every hit, in `Armor`:
+
+- **Kevlar** (100 points) covers the chest, stomach and arms; the **helmet** covers the head while there is armor; the legs are never covered.
+- On a covered hit only the weapon's **armor penetration** of the damage reaches health (the Ram 77.5%, the Warden 70%, the Heron 97.5%, see 4.3); the armor loses **half of what it stopped**. When the armor left can't stop that much, each remaining point stops two points of damage and the rest goes through. At 0 armor the helmet is gone too.
+- So an armored player hit in the chest by the Ram loses 27.9 health and 4 armor; a Ram headshot does 111.6 through a helmet (a kill), a Warden headshot 92.4 (not a kill).
+- The bomb's blast ignores armor (D-080's distances stay true), and dying loses armor, helmet and kit.
+- The **Bulwark's Plated** perk works: while it wears armor, every hit does 10% less to its health and wears the armor 30% less.
+- **HUD:** the armor number next to your health, behind a pixel shield (an "H" on it with a helmet; dimmed at 0). Console: `armor [0-100] [helmet]`.
 
 ## 5. Look and feel
 
@@ -270,14 +328,15 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 |---|---|
 | Move | W A S D |
 | Look | Mouse |
-| Shoot / scope | Left mouse / right mouse |
+| Shoot / scope (Heron: two zoom steps), knife: slash / stab | Left mouse / right mouse |
 | Next teammate (while dead in a match) | Left mouse |
 | Jump | Space or mouse wheel down |
 | Crouch | Ctrl |
 | Walk (silent) | Shift |
 | Reload | R |
-| Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades, 5 bomb |
-| Use: plant / defuse the bomb (hold) | E |
+| Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades (again: the next grenade); Q last weapon; G drops the gun in hand. Switching takes the new weapon's draw time before it fires |
+| Use: plant / defuse the bomb (hold); a press while looking at a gun on the floor swaps it for yours | E |
+| Buy menu (freeze time; any time in practice): the category's number, then the item's, or click | B |
 | Buy menu | B |
 | Class menu (opens at match start; M in freeze time; 1–4 or click to pick) | M |
 | Scoreboard (hold, in a match) | Tab |

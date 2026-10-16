@@ -22,6 +22,8 @@ extends RoundManager
 ## Emitted when the time runs out with the score tied: the next kill wins.
 signal overtime_started
 
+## Seconds of freeze time at the start (the rounds' 15 s are buy time, which this mode has none of).
+const FREEZE_TIME := 5.0
 ## Group of the map's respawn markers (12 per quick map, in four zones).
 const RESPAWN_GROUP := "respawn_points"
 ## A respawn spot counts as taken while someone stands closer than this (metres).
@@ -38,11 +40,16 @@ const TEAMMATE_BONUS := 4.0
 const TEAMMATE_DISTANCE := 15.0
 ## Random spread added to each spot's score, so spots that are about as good take turns.
 const SCORE_JITTER := 3.0
+## Seconds a gun dropped by the dead lies on the floor before it goes (M7 task 18): ten minutes
+## of deaths would otherwise cover the map.
+const DROPPED_GUN_LIFETIME := 30.0
 
 ## True once the time limit ran out with the score tied.
 var overtime: bool = false
 ## Character → seconds until it comes back.
 var _respawn_left: Dictionary = {}
+## Class changes waiting for a respawn: Character → ClassData.
+var _pending_class: Dictionary = {}
 ## Each team's shared hunting plan for its bots (index = team number).
 var _hunt_plans: Array[HuntPlan] = []
 
@@ -88,6 +95,28 @@ func _add_bomb() -> void:
 	pass
 
 
+## Five seconds at the team ends, as in D-082: there is nothing to buy (D-090).
+func _freeze_time() -> float:
+	return minf(settings.freeze_time, FREEZE_TIME)
+
+
+## Team Deathmatch keeps [member MatchSettings.respawn_map_weapons] guns out all the time: a taken
+## one is replaced somewhere else after [member MatchSettings.map_weapon_replace_time] (D-098). They
+## keep away from the respawn points too, since anyone can come back at any of them.
+func _set_up_map_weapons(weapons: MapWeapons) -> void:
+	weapons.count = settings.respawn_map_weapons
+	weapons.replace_time = settings.map_weapon_replace_time
+	weapons.avoid_respawn_points = true
+
+
+## No money here (D-090): each class spawns with its own loadout (its signature gun, the Sparrow,
+## the knife and a grenade), the round loadout for a class without one.
+func _loadout_for(character: Character) -> Array[WeaponData]:
+	if character.class_data != null and not character.class_data.loadout.is_empty():
+		return character.class_data.loadout
+	return settings.round_loadout
+
+
 ## The bots of each team hunt in groups of about two, sharing what they see (D-083).
 func _plan_bots() -> void:
 	_hunt_plans.clear()
@@ -107,6 +136,7 @@ func _round_duration() -> float:
 func _live_tick(delta: float) -> void:
 	for plan in _hunt_plans:
 		plan.time += delta
+	_clear_old_guns()
 	for character: Character in _respawn_left.keys():
 		if not is_instance_valid(character):
 			_respawn_left.erase(character)
@@ -115,7 +145,14 @@ func _live_tick(delta: float) -> void:
 		if _respawn_left[character] <= 0.0:
 			_respawn_left.erase(character)
 			var spot := pick_spawn(character)
+			if _pending_class.has(character):
+				var data: ClassData = _pending_class[character]
+				_pending_class.erase(character)
+				if character.class_data != data:
+					character.class_data = data
+					class_changed.emit(character, data)
 			character.respawn(spot.origin, spot.basis.get_euler().y)
+			_give_loadout(character)
 			_rejoin_hunt(character)
 
 
@@ -169,6 +206,44 @@ func _after_round_end() -> void:
 
 
 # --- Helpers ---
+
+
+## In team respawn the class can change any time (D-099), to the other class of your draft: in
+## the freeze time at once, otherwise with the next respawn, which brings the new class's loadout.
+## Returns true when accepted.
+func request_class(character: Character, data: ClassData) -> bool:
+	if data == null or not is_instance_valid(character) or phase == Phase.MATCH_END or not is_drafted(character, data):
+		return false
+	if replica:
+		# Online, on a client: the host decides; its answer comes back as a class change.
+		if class_request.is_valid():
+			class_request.call(character, data)
+		return true
+	if phase == Phase.FREEZE or not character.is_alive():
+		_pending_class.erase(character)
+		if character.class_data != data:
+			character.class_data = data
+			class_changed.emit(character, data)
+		if phase == Phase.FREEZE:
+			_give_loadout(character)
+		return true
+	_pending_class[character] = data
+	return true
+
+
+## The class [param character] will have after its next respawn (its current one if none waits).
+func get_next_class(character: Character) -> ClassData:
+	return _pending_class.get(character, character.class_data)
+
+
+## Takes away guns that have lain on the floor longer than [constant DROPPED_GUN_LIFETIME] (not
+## the map weapons, which [MapWeapons] looks after).
+func _clear_old_guns() -> void:
+	var map := get_parent()
+	for pickup in WeaponPickup.all_in_world(map):
+		if pickup.spot == null and pickup.age > DROPPED_GUN_LIFETIME and map.is_ancestor_of(pickup):
+			pickup.remove_from_group(WeaponPickup.GROUP)
+			pickup.queue_free()
 
 
 ## A bot that comes back hunts with its group again (respawning reset its orders).

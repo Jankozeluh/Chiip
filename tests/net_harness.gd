@@ -21,9 +21,12 @@ var _sides: Array[Node] = []
 
 func _init() -> void:
 	port = 27600 + randi() % 300
+	# Headless runs have no audio device: every weapon stays silent (M7's switch).
+	Weapon.silent = true
 
 
 func _exit_tree() -> void:
+	Weapon.silent = false
 	for side in _sides:
 		if is_instance_valid(side) and side.is_inside_tree():
 			get_tree().set_multiplayer(null, side.get_path())
@@ -94,15 +97,10 @@ func start_game(side: Node, session: NetSession, map: PackedScene, rules: MatchS
 	return main
 
 
-## Makes [param character] silent (headless runs have no audio device; tests use silent weapons).
+## Makes [param character]'s footsteps silent (headless runs have no audio device; the weapons are
+## silent through [member Weapon.silent] while the harness is in the tree).
 static func silence(character: Character) -> void:
 	character.footstep_sound = null
-	if character.weapon != null and character.weapon.data != null and character.weapon.data.shot_sound != null:
-		var data := character.weapon.data.duplicate() as WeaponData
-		data.shot_sound = null
-		data.dry_fire_sound = null
-		data.reload_sound = null
-		character.weapon.data = data
 
 
 ## Makes [param bomb] silent.

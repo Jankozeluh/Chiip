@@ -14,6 +14,11 @@ Clips (all solved with the same two-bone IK as the body, so the hands stay on th
   fp_fire    the kick: back and up, then home (0.12 s)
   fp_reload  tilt, magazine out, a fresh one in, rack the handle (2.5 s, scaled to the weapon)
 Sway and bob are added in code (weapons/weapon.gd), since they follow the mouse and the feet.
+
+M7 (D-096): every other animation set (holds.py) gets its own clips, fp_<set>_<action>: the long
+guns their idle, draw, fire and reload around their own points (the Breaker adds its pump and a
+clip per shell, the Heron its bolt); the pistols a two-handed hold out in front; the knife a slash
+and a stab; the grenades the pin, a throw and a lob. See set_clips().
 """
 import math
 
@@ -21,7 +26,7 @@ import numpy as np
 
 import anims
 from anims import frame_from, pitch_up, rx, rz, two_bone
-from rig import hand_in_weapon, norm
+from rig import frame, hand_in_weapon, norm
 
 BONES = ['view', 'upper_arm_l', 'forearm_l', 'hand_l', 'upper_arm_r', 'forearm_r', 'hand_r', 'weapon']
 PARENT = {'view': None, 'upper_arm_l': 'view', 'forearm_l': 'upper_arm_l', 'hand_l': 'forearm_l',
@@ -44,9 +49,13 @@ SHOULDER_L = np.array([0.02, -0.46, -0.10])
 class ArmsRig:
     """solves first-person arm poses for one class around one gun."""
 
-    def __init__(self, body, gun_points):
+    def __init__(self, body, gun_points, grip=None, grip_yaw=None, grip_pitch=None):
         self.body = body
         self.gun = gun_points
+        # Where the grip sits at rest, and how the gun is turned (the rifle's unless given).
+        self.grip = GRIP if grip is None else np.asarray(grip, float)
+        self.grip_yaw = GRIP_YAW if grip_yaw is None else grip_yaw
+        self.grip_pitch = GRIP_PITCH if grip_pitch is None else grip_pitch
         self.hand_r_rot, self.hand_r_wrist = hand_in_weapon('r')
         self.hand_l_rot, self.hand_l_wrist = hand_in_weapon('l')
         w = body.w
@@ -81,8 +90,8 @@ class ArmsRig:
 
     def gun_at(self, offset=(0, 0, 0), pitch=0.0, yaw=0.0, roll=0.0):
         """the gun's rotation and grip position, moved from its rest place."""
-        rot = anims.turn_right(-GRIP_YAW - yaw) @ pitch_up(GRIP_PITCH + pitch) @ rz(roll)
-        return rot, GRIP + np.asarray(offset, float)
+        rot = anims.turn_right(-self.grip_yaw - yaw) @ pitch_up(self.grip_pitch + pitch) @ rz(roll)
+        return rot, self.grip + np.asarray(offset, float)
 
     def arm(self, pose, side, wrist, hand_rot, pole):
         shoulder = self.off['upper_arm_' + side]
@@ -188,3 +197,154 @@ def clips(rig):
             (2.50, rig.held())]
     out.append(('fp_reload', False, keyed(*eased(keys, 2.5))))
     return out
+
+
+
+# ---------------------------------------------------------------- M7: the other weapons (D-096)
+# Rest placements per style: grip position in camera space, yaw (degrees, barrel inward), pitch.
+PISTOL_GRIP = (np.array([0.11, -0.15, -0.40]), 2.0, 1.0)
+KNIFE_GRIP = (np.array([0.15, -0.15, -0.38]), 10.0, -38.0)
+GRENADE_GRIP = (np.array([0.15, -0.14, -0.36]), 4.0, 0.0)
+# A left hand that isn't on the gun: out of view below the camera, or near the grenade.
+LEFT_AWAY = np.array([-0.20, -0.62, -0.05])
+LEFT_NEAR_GRENADE = np.array([0.02, -0.22, -0.35])
+
+
+def _relaxed_left(rig, wrist, pole=(-0.9, -0.8, 0.1)):
+    """a left hand at `wrist` (camera space), palm up and fingers forward, not on the gun."""
+    fingers = norm(np.array([0.25, 0.15, -1.0]))
+    return np.asarray(wrist, float), frame_from(-fingers, (-0.3, -1.0, 0.0)), pole
+
+
+def _named(prefix, clips_list):
+    return [(f'fp_{prefix}_{name[3:]}', loop, ch) for name, loop, ch in clips_list]
+
+
+def _one_hand(rig, left_wrist, **kw):
+    rot, pos = rig.gun_at(**kw)
+    return rig.hold(rot, pos, left=_relaxed_left(rig, left_wrist))
+
+
+def _keyed_clip(name, keys, length, loop=False):
+    return (name, loop, keyed(*eased(keys, length)))
+
+
+def _idle(rig, pose_at):
+    n = int(2.4 * anims.FPS)
+    times = np.arange(n + 1) / anims.FPS
+    poses = [pose_at(math.sin(2 * math.pi * t / 2.4)) for t in times]
+    return keyed(times, poses)
+
+
+def _long_gun_extras(rig, set_name):
+    """the Breaker's pump after a shot and its shells; the Heron's bolt."""
+    out = []
+    if set_name == 'shotgun':
+        def pumped(back):
+            rot, pos = rig.gun_at()
+            wrist = pos + rot @ (rig.gun['foregrip'] + rig.hand_l_wrist + np.array([0, 0, 0.09 * back]))
+            return rig.hold(rot, pos, left=(wrist, rot @ rig.hand_l_rot, (-0.9, -0.8, 0.1)))
+        kick = rig.held(offset=(0, 0.006, 0.05), pitch=5.0)
+        out.append(_keyed_clip('fp_shotgun_fire', [(0.0, rig.held()), (0.03, kick), (0.18, rig.held()),
+                                                   (0.32, pumped(1.0)), (0.46, pumped(0.0)), (0.6, rig.held())], 0.6))
+
+        def tipped(k, left=None):
+            rot, pos = rig.gun_at(offset=(-0.02 * k, -0.06 * k, 0.03 * k), pitch=10 * k, roll=-40 * k)
+            if left is None:
+                return rig.hold(rot, pos)
+            if isinstance(left, str):
+                wrist = pos + rot @ (rig.gun[left] + np.array([-0.04, -0.06, 0.05]))
+            else:
+                wrist = np.asarray(left, float)
+            return rig.hold(rot, pos, left=(wrist, rot @ rig.hand_l_rot, (-0.9, -0.7, 0.1)))
+        shell = [(0.0, tipped(1.0)), (0.18, tipped(1.0, (-0.06, -0.55, -0.20))), (0.36, tipped(1.0, 'magazine')),
+                 (0.50, tipped(1.0))]
+        out.append(_keyed_clip('fp_shotgun_reload', [(0.0, rig.held()), (0.40, tipped(1.0))] +
+                               [(0.40 + t, p) for t, p in shell[1:]], 0.90))
+        out.append(_keyed_clip('fp_shotgun_reload_shell', shell, 0.50))
+    elif set_name == 'sniper':
+        def bolt(k, back):
+            rot, pos = rig.gun_at(offset=(0, -0.02 * k, 0.02 * k), roll=-12 * k)
+            wrist = pos + rot @ (rig.gun['handle'] + np.array([-0.02, 0.05 + 0.02 * back, 0.05 + 0.08 * back]))
+            return rig.hold(rot, pos, left=(wrist, rot @ rig.hand_l_rot, (-0.4, 0.6, 0.3)))
+        kick = rig.held(offset=(0, 0.01, 0.06), pitch=7.0)
+        out.append(_keyed_clip('fp_sniper_fire', [(0.0, rig.held()), (0.04, kick), (0.30, rig.held()),
+                                                  (0.50, bolt(1.0, 0.0)), (0.70, bolt(1.0, 1.0)), (0.88, bolt(1.0, 0.0)),
+                                                  (1.20, rig.held())], 1.2))
+    return out
+
+
+def _pistol_clips(rig, set_name):
+    big = set_name == 'hand_cannon'
+    out = [(f'fp_{set_name}_idle', True, _idle(rig, lambda k: rig.held(offset=(0, 0.003 * k, 0.002 * k), pitch=0.4 * k)))]
+    out.append(_keyed_clip(f'fp_{set_name}_draw', [(0.0, rig.held(offset=(0.05, -0.20, 0.10), pitch=-40, roll=20)),
+                                                   (0.28, rig.held(offset=(0, 0.01, 0), pitch=3)), (0.45, rig.held())], 0.45))
+    kick = rig.held(offset=(0, 0.012 if big else 0.006, 0.045 if big else 0.025), pitch=12.0 if big else 6.0)
+    out.append(_keyed_clip(f'fp_{set_name}_fire', [(0.0, rig.held()), (0.025, kick), (0.22 if big else 0.15, rig.held())],
+                           0.22 if big else 0.15))
+
+    def tipped(k, left=None):
+        rot, pos = rig.gun_at(offset=(-0.03 * k, -0.04 * k, 0.06 * k), pitch=15 * k, roll=-30 * k)
+        if left is None:
+            return rig.hold(rot, pos)
+        if isinstance(left, str):
+            wrist = pos + rot @ (rig.gun[left] + np.array([-0.03, -0.05, 0.04]))
+        else:
+            wrist = np.asarray(left, float)
+        return rig.hold(rot, pos, left=(wrist, rot @ rig.hand_l_rot, (-0.9, -0.7, 0.1)))
+    keys = [(0.0, rig.held()), (0.25, tipped(1.0)), (0.50, tipped(1.0, 'magazine')),
+            (0.80, tipped(1.0, (-0.08, -0.60, -0.20))), (1.10, tipped(1.0, (-0.05, -0.45, -0.30))),
+            (1.40, tipped(1.0, 'magazine')), (1.70, tipped(0.6, 'handle')), (1.85, tipped(0.6, 'handle')),
+            (2.20, rig.held())]
+    out.append(_keyed_clip(f'fp_{set_name}_reload', keys, 2.2))
+    return out
+
+
+def _knife_clips(rig):
+    hand = lambda **kw: _one_hand(rig, LEFT_AWAY, **kw)
+    rest = hand()
+    out = [('fp_knife_idle', True, _idle(rig, lambda k: _one_hand(rig, LEFT_AWAY, offset=(0, 0.004 * k, 0), pitch=0.6 * k)))]
+    out.append(_keyed_clip('fp_knife_draw', [(0.0, hand(offset=(0.05, -0.25, 0.12), pitch=-40, roll=30)),
+                                             (0.30, hand(offset=(0, 0.01, 0), pitch=4)), (0.45, rest)], 0.45))
+    out.append(_keyed_clip('fp_knife_slash', [(0.0, rest), (0.08, hand(offset=(0.08, 0.10, 0.04), yaw=-25, roll=-35, pitch=10)),
+                                              (0.20, hand(offset=(-0.22, -0.04, -0.12), yaw=40, roll=45, pitch=-20)),
+                                              (0.40, rest)], 0.40))
+    out.append(_keyed_clip('fp_knife_stab', [(0.0, rest), (0.12, hand(offset=(0.0, 0.03, 0.06), pitch=-10)),
+                                             (0.24, hand(offset=(-0.06, 0.05, -0.20), pitch=-35)),
+                                             (0.38, hand(offset=(-0.06, 0.05, -0.19), pitch=-35)), (0.60, rest)], 0.60))
+    return out
+
+
+def _grenade_clips(rig):
+    def hand(left=LEFT_NEAR_GRENADE, **kw):
+        return _one_hand(rig, left, **kw)
+    rest = hand()
+    out = [('fp_grenade_idle', True, _idle(rig, lambda k: _one_hand(rig, LEFT_NEAR_GRENADE, offset=(0, 0.004 * k, 0))))]
+    out.append(_keyed_clip('fp_grenade_draw', [(0.0, hand(offset=(0.04, -0.22, 0.10), pitch=-30)),
+                                               (0.30, hand(offset=(0, 0.01, 0))), (0.45, rest)], 0.45))
+    rot, pos = rig.gun_at()
+    pin = pos + rot @ rig.gun['pin']
+    out.append(_keyed_clip('fp_grenade_pull', [(0.0, rest), (0.12, hand(left=pin + np.array([-0.03, -0.02, 0.04]))),
+                                               (0.30, hand(left=pin + np.array([-0.16, -0.10, 0.06])))], 0.30))
+    away = LEFT_AWAY
+    out.append(_keyed_clip('fp_grenade_throw', [(0.0, hand(left=away)), (0.14, hand(left=away, offset=(0.06, 0.16, 0.30), pitch=-20)),
+                                                (0.28, hand(left=away, offset=(-0.06, 0.18, -0.30), pitch=40)),
+                                                (0.40, hand(left=away, offset=(-0.04, -0.10, -0.10), pitch=10))], 0.40))
+    out.append(_keyed_clip('fp_grenade_lob', [(0.0, hand(left=away)), (0.14, hand(left=away, offset=(0.0, -0.25, 0.10), pitch=-30)),
+                                              (0.28, hand(left=away, offset=(-0.04, 0.02, -0.28), pitch=30)),
+                                              (0.40, hand(left=away, offset=(-0.04, -0.10, -0.10)))], 0.40))
+    return out
+
+
+def set_clips(body, set_name, style, gun_points):
+    """the first-person clips of one animation set (not the rifle's: clips() has those)."""
+    if style == 'rifle':
+        rig = ArmsRig(body, gun_points)
+        out = [c for c in _named(set_name, clips(rig)) if not (set_name == 'shotgun' and c[0] == 'fp_shotgun_reload')]
+        out = [c for c in out if not (set_name in ('shotgun', 'sniper') and c[0] == f'fp_{set_name}_fire')]
+        return out + _long_gun_extras(rig, set_name)
+    if style == 'pistol':
+        return _pistol_clips(ArmsRig(body, gun_points, *PISTOL_GRIP), set_name)
+    if style == 'knife':
+        return _knife_clips(ArmsRig(body, gun_points, *KNIFE_GRIP))
+    return _grenade_clips(ArmsRig(body, gun_points, *GRENADE_GRIP))

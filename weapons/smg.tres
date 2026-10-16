@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/smg_shot.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_reload.wav" id="reload_sound"]
+
+[ext_resource type="PackedScene" path="res://assets/models/weapons/smg.glb" id="model"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/smg.png" id="icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/smg_kill.png" id="kill_icon"]
+
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"smg"
+display_name = "Hornet"
+slot = 0
+category = 1
+hold = 0
+max_speed_units = 240.0
+draw_time = 0.75
+price = 1000
+kill_reward = 200
+damage = 26.0
+range_modifier = 0.87
+armor_penetration = 0.6
+magazine_size = 30
+reserve_ammo = 120
+fire_rate_rpm = 857.0
+reload_time = 2.1
+automatic = true
+standing_inaccuracy = 0.5
+crouching_inaccuracy = 0.4
+moving_inaccuracy = 1.6
+air_inaccuracy = 6.0
+spray_inaccuracy_per_shot = 0.07
+max_spray_inaccuracy = 1.4
+spray_pattern = PackedVector2Array(0, 0, 0, 0.65, 0, 1.25, 0, 1.7, 0, 2.05, 0, 2.4, 0, 2.65, 0.1, 2.85, 0.3, 3.05, 0.6, 3.2, 0.9, 3.3, 0.85, 3.4, 0.65, 3.5, 0.4, 3.6, 0.05, 3.65, -0.3, 3.7, -0.6, 3.75, -0.8, 3.8, -0.9, 3.85, -0.85, 3.9, -0.7, 3.95, -0.45, 3.95, -0.1, 4, 0.25, 4, 0.55, 4.05, 0.75, 4.1, 0.9, 4.1, 0.9, 4.1, 0.75, 4.15, 0.5, 4.15)
+view_punch_fraction = 0.5
+recoil_recovery_rate = 14.0
+shot_sound = ExtResource("shot_sound")
+dry_fire_sound = ExtResource("dry_fire_sound")
+reload_sound = ExtResource("reload_sound")
+model = ExtResource("model")
+muzzle_point = Vector3(0, 0.03, -0.28)
+icon = ExtResource("icon")
+kill_icon = ExtResource("kill_icon")

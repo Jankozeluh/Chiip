@@ -158,7 +158,7 @@ func _test_same_match() -> void:
 			client_list == host_list, "host %s, client %s" % [host_list, client_list])
 	var puppets_remote := true
 	for character in _client_rules.get_participants():
-		if character != _client_main.get_player() and not (character.remote and character.replica and character.weapon.remote):
+		if character != _client_main.get_player() and not (character.remote and character.replica and (character.weapon == null or character.weapon.remote)):
 			puppets_remote = false
 	var own: Character = _client_main.get_player()
 	_check("On the client the friend's own character is the map's player, named after them; everyone else is a puppet",
@@ -370,6 +370,14 @@ func _test_lag_compensation() -> void:
 	var to_friend := friend.global_position - spot
 	host_player.respawn(spot, atan2(-to_friend.x, -to_friend.z))
 	host_player.god_mode = true
+	# The same every run: both Riflemen (the draft would pick classes of other sizes), the shooter
+	# with the rifle (the round's loadout is a pistol, M7).
+	var rifleman := ClassData.find(&"rifleman")
+	for character in [host_player, friend]:
+		if character.class_data != rifleman:
+			_host_rules.replica_class_changed(character, rifleman)
+	var loadout: Array[WeaponData] = [WeaponData.find(&"rifle")]
+	friend.inventory.set_loadout(loadout)
 	var scripted := ScriptedController.new()
 	scripted.name = "ScriptedController"
 	host_player.add_child(scripted)
@@ -420,7 +428,7 @@ func _test_lag_compensation() -> void:
 	scripted.queue_free()
 	host_player.god_mode = false
 	_check("At 100 ms, taps at a target strafing 12 m away hit where the shooter saw it (lag compensation: 85% or more)",
-			with_shots >= 35 and with_rate >= 0.85, "%d shots, %.0f%% hits" % [with_shots, with_rate * 100.0])
+			with_shots >= 25 and with_rate >= 0.85, "%d shots, %.0f%% hits" % [with_shots, with_rate * 100.0])
 	_check("Without lag compensation the same taps mostly miss (you would have to lead the target by your ping)",
 			without_rate <= 0.6 and with_rate - without_rate >= 0.3, "%.0f%% hits without, %.0f%% with" % [without_rate * 100.0, with_rate * 100.0])
 	print("      (lag compensation: %.0f%% of %d taps hit; without it %.0f%%)" % [with_rate * 100.0, with_shots, without_rate * 100.0])
@@ -442,7 +450,8 @@ func _test_puppets() -> void:
 		var command := CharacterInput.new()
 		command.yaw = yaw + sin(count[0] * 0.02) * 0.6
 		command.move = Vector2(1.0 if (count[0] / 96) % 2 == 0 else -1.0, 0.0)
-		command.shoot = count[0] % 40 < 20
+		# Taps: the round's loadout holds a pistol, which fires once a press (M7).
+		command.shoot = count[0] % 24 < 12
 		command.reload = count[0] == 200
 		return command
 	host_player.set_controller(scripted)

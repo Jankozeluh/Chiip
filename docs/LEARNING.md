@@ -612,6 +612,26 @@
 - `AnimationPlayer.play("fp_fire", blend, speed)` plays a clip (with a short cross-fade and a speed factor, here to stretch the reload to the weapon's reload time), `seek(0.0, true)` restarts it when the same clip is already playing, and `queue("fp_idle")` plays the idle clip once it ends: Unity's `Animator.Play()` and a transition back, without a state machine. Setting `active = false` stops a player from doing any work, which the hidden arms of every bot use.
 - `node.reparent(new_parent)` moves a node to another parent in one call (Unity: `transform.SetParent()`); with `keep_global_transform = false` it keeps its *local* position instead. The muzzle flash moves onto the gun's bone attachment this way, so it follows the gun's kick and reload.
 
+### M7 — Arsenal, perks & economy
+
+**Composition: an inventory node instead of a weapon class hierarchy** (`characters/inventory.gd`)
+- A character's weapons are plain `Weapon` nodes, one per weapon, all made from one generic scene with different data (`Weapon.create(data)`, a *static* function: Godot's version of a factory method). What a weapon does comes from its `WeaponData` resource, not from a subclass per gun. The `Inventory` is a child node that owns them, like a component in Unity: the character asks it, the HUD listens to it. Godot favours this: a node has one script, and behaviour is added by adding child nodes.
+- Weapons not in hand are switched off with `process_mode = PROCESS_MODE_DISABLED` (no `_process` / `_physics_process` for the node and its children; Unity: disabling a component) and hidden with `visible = false` (Unity: `SetActive(false)` does both at once).
+- When the thing a listener follows can change (the weapon in hand), the owner emits a signal (`weapon_changed`) and each listener disconnects from the old one and connects to the new one. Disconnecting from a node that is about to be freed is fine as long as it isn't freed yet: `queue_free()` waits until the end of the frame.
+- `@onready` variables are null until a node enters the tree. A method called on a node that was made but not added yet (`Weapon.set_arms()`) has to keep its work for `_ready()`; `is_node_ready()` tells which case it is.
+
+**Zooming the camera, and drawing a scope in code** (`player/player_controller.gd`, `ui/scope_overlay.gd`)
+- A scope is just a narrower `Camera3D.fov` (vertical degrees in Godot; Unity's `Camera.fieldOfView` is vertical too). The player's field of view setting is CS's horizontal degrees across 4:3, so the zoomed angle goes through the same conversion (`Settings.vertical_fov()`). Mouse sensitivity is scaled by the ratio of the half-angles' tangents, so a mouse movement crosses the same part of the screen zoomed or not.
+- The scope's black mask is drawn in `_draw()` (Unity: `OnGUI` or a UI `Graphics` subclass): rectangles row by row beside a circle, plus `draw_arc()` for the rim. `queue_redraw()` asks for a new drawing only when the size changes, so it costs nothing per frame.
+
+**One animation graph, many holds** (`tools/make_crew_animation_tree.gd`, `characters/crew/crew_body.gd`)
+- An `AnimationNodeTransition` (Unity: a sub-state machine with instant transitions, or an int-driven blend) picks one of its inputs by name: `tree.set("parameters/Hold/transition_request", "pistol")`. The crew graph uses one to choose the upper body's aim blend by the held weapon, and others inside one-shots to choose which kick, attack or reload plays. Parameters live on the `AnimationTree` *instance*, so ten characters share one graph resource and each holds its own weapon.
+- A request is consumed when the node next runs. A transition that only runs while a one-shot plays (the kick) switches at that moment, which is exactly when it matters; `current_state` reads the old one until then.
+
+**A projectile without a rigid body, and particles** (`weapons/grenade.gd`, `weapons/explosion.gd`)
+- A grenade moves itself in `_physics_process`: gravity on its velocity, then a ray (`intersect_ray`) along this tick's move; a hit puts it at the surface and reflects the velocity (`velocity - normal * 2 * dot`, scaled for the bounce). Unity would use a `Rigidbody` with a bouncy `PhysicMaterial`; doing it by hand keeps every throw exactly the same on every run (and on M9's host), which a physics engine doesn't promise.
+- `GPUParticles3D` is Godot's particle system (Unity's Particle System): the node emits, a `ParticleProcessMaterial` says how particles start and move (direction, spread, speed, gravity, damping), and a mesh in `draw_pass_1` is what each particle looks like. `one_shot` plus `explosiveness = 1` fires them all at once, for a burst. Headless runs don't draw them, which is fine for tests.
+
 ### M9 — Multiplayer
 
 **Godot's high-level multiplayer** (`net/net_session.gd`)

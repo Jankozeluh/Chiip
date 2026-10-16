@@ -33,6 +33,13 @@ extends Node
 ##   (movement only), so you end up where the host will have you. The camera hides the jump of a
 ##   small correction, letting it fade over [constant SMOOTHING_TIME] (CS's [code]cl_smooth[/code]).
 ##   Ammo is corrected by the difference between the host's count and the predicted one.
+## - **The arsenal** (D-113, M7). What you carry comes from the host
+##   ([constant NetProtocol.Event.INVENTORY]); switching weapons is predicted (your commands' slot
+##   keys), and when the host has another weapon in your hands for the same command you take that
+##   one out. Dropping, swapping and picking up are the host's. Puppets hold the weapon the
+##   snapshots name and wear their armor. Guns on the floor and grenades in flight are copies the
+##   snapshots place (grenades between two snapshots, like the puppets); a grenade going off and a
+##   flash are events.
 ##
 ## [code]main.gd[/code] adds it to the map of an online match on a client, after the replica
 ## rules, and calls [method setup].
@@ -42,6 +49,8 @@ signal welcomed
 
 ## The scene of a puppet: a bot without its brain (it never thinks here).
 const PUPPET_SCENE := preload("res://bots/bot.tscn")
+## A map weapon's spot, for the copies of the host's.
+const SPOT_SCENE := preload("res://weapons/weapon_spot.tscn")
 ## Unconfirmed commands sent in one packet at most (an eighth of a second): enough to cover
 ## lost packets, small enough to keep the packet small.
 const MAX_SENT := 16
@@ -119,6 +128,10 @@ var _played_order: Array[int] = []
 var _history: Array = []
 ## Command number → the physics tick (of this computer) it was sent at, for [member ping_ms].
 var _sent_at: Dictionary = {}
+## Entity id → the copy of a host's world object (a [WeaponPickup] or a [Grenade]).
+var _entities: Dictionary = {}
+## Entity id → a grenade's snapshots, oldest first: [host tick, position] each.
+var _entity_samples: Dictionary = {}
 ## For the statistics: ticks counted, snapshots and the newest tick at the start of this second,
 ## and the session's byte counters then.
 var _stat_ticks: int = 0
@@ -137,6 +150,8 @@ class PredictedState:
 	var on_floor: bool
 	var magazine: int
 	var reserve: int
+	## The weapon in hand ([method NetProtocol.weapon_index]).
+	var weapon: int
 
 	static func of(character: Character) -> PredictedState:
 		var state := PredictedState.new()
@@ -147,6 +162,7 @@ class PredictedState:
 		state.on_floor = character.is_on_floor()
 		state.magazine = character.weapon.magazine if character.weapon != null else 0
 		state.reserve = character.weapon.reserve if character.weapon != null else 0
+		state.weapon = NetProtocol.weapon_index(character.weapon.data) if character.weapon != null else NetProtocol.NO_WEAPON
 		return state
 
 ## Net id → character, for everyone in the match (you included).
@@ -175,9 +191,8 @@ func setup(game_session: NetSession, game_map: Node, game_rules: RoundManager, o
 	# has them; others on the move are shown a little in the past, so they don't block you here
 	# (bumping into them would be bumping into where they were): the host decides those bumps
 	# ([constant BLOCKING_SPEED], D-106).
-	if player.weapon != null:
-		player.weapon.manual = true
 	rules.class_request = _request_class
+	rules.buy_request = _request_buy
 	session.packet_received.connect(_on_packet)
 	session.closed.connect(_on_session_closed)
 	session.send_to_host({"loaded": true})
@@ -234,6 +249,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_advance_clock()
 	_show_puppets()
+	_show_grenades()
 	_send_command(delta)
 	_count_statistics()
 
@@ -357,6 +373,11 @@ func _send_command(delta: float) -> void:
 			_history.pop_front()
 
 
+func _request_buy(_character: Character, item_id: StringName) -> void:
+	if session != null:
+		session.send_packet(1, NetProtocol.pack_values(NetProtocol.Message.REQUEST, [NetProtocol.Request.BUY, String(item_id)]), true)
+
+
 func _request_class(_character: Character, data: ClassData) -> void:
 	if session == null:
 		return
@@ -419,6 +440,8 @@ func _on_event(values: Array) -> void:
 			if victim != null:
 				# In team respawn every kill is a point: the score comes with it.
 				rules.score.assign([values[4], values[5]])
+				# The weapon of the killing hit, for the kill feed's icon.
+				victim.last_damage_source = NetProtocol.weapon_data(values[6]) if values.size() > 6 else null
 				rules.replica_killed(victim, get_character(values[2]), values[3])
 		NetProtocol.Event.DAMAGED:
 			var hurt := get_character(values[1])
@@ -428,6 +451,22 @@ func _on_event(values: Array) -> void:
 			_on_respawned(get_character(values[1]), values[2], values[3], values[4])
 		NetProtocol.Event.STATS:
 			_apply_stats(values[1])
+		NetProtocol.Event.INVENTORY:
+			_apply_inventory(values[1], values[2])
+		NetProtocol.Event.MONEY:
+			var paid := get_character(values[1])
+			if paid != null:
+				rules.replica_set_money(paid, values[2], values[3], values[4])
+		NetProtocol.Event.DRAFTED:
+			var drafted := get_character(values[1])
+			if drafted != null:
+				rules.replica_drafted(drafted, _classes_of(values[2]))
+		NetProtocol.Event.GRENADE:
+			_on_grenade(values[1], values[2], values[3])
+		NetProtocol.Event.FLASHED:
+			var blinded := get_character(values[1])
+			if blinded != null:
+				blinded.flash(values[2], values[3])
 		NetProtocol.Event.CLASS_CHANGED:
 			var changed := get_character(values[1])
 			var classes := ClassData.all()
@@ -451,6 +490,15 @@ func _on_welcome(values: Array) -> void:
 	if state[7] and rules is RespawnMatch:
 		(rules as RespawnMatch).replica_overtime()
 	_apply_stats(values[4])
+	if values.size() > 7:
+		for item: Array in values[6]:
+			var paid := get_character(item[0])
+			if paid != null:
+				rules.replica_set_money(paid, item[1], 0, "")
+		for item: Array in values[7]:
+			var drafted := get_character(item[0])
+			if drafted != null:
+				rules.replica_drafted(drafted, _classes_of(item[1]))
 	for item: Array in values[5]:
 		var character := get_character(item[0])
 		if character == null:
@@ -495,12 +543,20 @@ func _add_character(entry: Array) -> void:
 		character.footstep_sound = player.footstep_sound
 		# Puppets are posed every tick from the snapshots; the engine's smoothing between ticks stays.
 		map.add_child(character)
-		character.weapon.remote = true
 		character.weapon.data = player.weapon.data
 		# Hidden until the first snapshot puts it somewhere.
 		character.visible = false
 		_characters[net_id] = character
 	rules.replica_join(character)
+
+
+func _classes_of(indices: Array) -> Array[ClassData]:
+	var all := ClassData.all()
+	var classes: Array[ClassData] = []
+	for index: Variant in indices:
+		if int(index) >= 0 and int(index) < all.size():
+			classes.append(all[int(index)])
+	return classes
 
 
 func _apply_stats(list: Array) -> void:
@@ -548,8 +604,12 @@ func _on_snapshot(snapshot: NetProtocol.Snapshot) -> void:
 	_apply_bomb(snapshot.bomb)
 	for state in snapshot.characters:
 		var character := get_character(state.net_id)
-		if character != null and character != player:
+		if character == null:
+			continue
+		_apply_gear(character, state)
+		if character != player:
 			_apply_puppet_state(character, state)
+	_apply_entities(snapshot)
 	if snapshot.own != null:
 		_on_ack(snapshot.own.ack)
 		_apply_own(snapshot.own)
@@ -575,7 +635,51 @@ func _apply_puppet_state(character: Character, state: NetProtocol.CharacterState
 	character.busy = state.has(NetProtocol.FLAG_BUSY)
 	if character.is_alive() and state.has(NetProtocol.FLAG_ALIVE):
 		character.health = state.health
-	character.weapon.set_remote_ammo(state.magazine, state.reserve)
+	var held := NetProtocol.weapon_index(character.weapon.data) if character.weapon != null else NetProtocol.NO_WEAPON
+	if held != state.weapon:
+		# The puppet took out another weapon: it carries just that one here.
+		character.inventory.clear()
+		var data := NetProtocol.weapon_data(state.weapon)
+		if data != null:
+			character.inventory.give(data)
+	if character.weapon != null:
+		character.weapon.set_remote_ammo(state.magazine, state.reserve)
+
+
+## Armor, helmet and defuse kit, as the host has them (yours too).
+func _apply_gear(character: Character, state: NetProtocol.CharacterState) -> void:
+	if ceili(character.armor) != state.armor or character.has_helmet != state.has(NetProtocol.FLAG_HELMET):
+		character.set_armor(state.armor, state.has(NetProtocol.FLAG_HELMET))
+	character.set_defuse_kit(state.has(NetProtocol.FLAG_KIT))
+
+
+## What your own character carries, from the host: [param weapons] ([weapon index, magazine,
+## reserve] each) and the one it holds there ([param held], an index into them). Weapons you don't
+## carry here are given, those you no longer carry taken away; the weapon in your hands keeps its
+## predicted ammo (the snapshots correct it), the others take the host's. You keep the weapon you
+## took out unless it's gone (D-113).
+func _apply_inventory(weapons: Array, held: int) -> void:
+	var inventory := player.inventory
+	var wanted: Array[WeaponData] = []
+	for entry: Array in weapons:
+		var data := NetProtocol.weapon_data(entry[0])
+		if data != null:
+			wanted.append(data)
+	# What the host doesn't have goes first, so its slots are free for what the host has.
+	for carried in inventory.get_weapons():
+		if not wanted.any(func(data: WeaponData) -> bool: return data.id == carried.data.id):
+			inventory.remove(carried)
+	for entry: Array in weapons:
+		var data := NetProtocol.weapon_data(entry[0])
+		if data == null:
+			continue
+		var carried := inventory.find(data)
+		if carried == null:
+			inventory.give(data, entry[1], entry[2])
+		elif carried != player.weapon:
+			carried.set_remote_ammo(entry[1], entry[2])
+	if held >= 0 and held < wanted.size() and (player.weapon == null or inventory.find(player.weapon.data) == null):
+		inventory.hold(inventory.find(wanted[held]), true)
 
 
 ## Plays the shots and reloads of the puppets that weren't played yet. Your own are predicted.
@@ -640,14 +744,27 @@ func _reconcile(own: NetProtocol.OwnState) -> void:
 		return
 	var crouching := own.has(NetProtocol.FLAG_CROUCHING)
 	var on_floor := own.has(NetProtocol.FLAG_ON_FLOOR)
-	# Ammo: what the host counted that this computer didn't (or the other way round) is added.
-	var magazine_difference := own.magazine - predicted.magazine
-	var reserve_difference := own.reserve - predicted.reserve
-	if magazine_difference != 0 or reserve_difference != 0:
-		player.weapon.correct_ammo(magazine_difference, reserve_difference)
-		for entry: Array in _history:
-			(entry[1] as PredictedState).magazine += magazine_difference
-			(entry[1] as PredictedState).reserve += reserve_difference
+	if predicted.weapon != own.weapon:
+		# The host has another weapon in your hands (a drop, a swap, a pickup): take that one out
+		# once you carry it, and leave the ammo until both agree on the weapon.
+		var data := NetProtocol.weapon_data(own.weapon)
+		var carried := player.inventory.find(data) if data != null else null
+		if carried != null and carried != player.weapon:
+			player.inventory.hold(carried, true)
+			for entry: Array in _history:
+				(entry[1] as PredictedState).weapon = own.weapon
+	else:
+		# Ammo: what the host counted that this computer didn't (or the other way round) is added
+		# to that weapon, whether or not it is still the one in hand.
+		var magazine_difference := own.magazine - predicted.magazine
+		var reserve_difference := own.reserve - predicted.reserve
+		var acked_weapon := player.inventory.find(NetProtocol.weapon_data(own.weapon)) if own.weapon != NetProtocol.NO_WEAPON else null
+		if (magazine_difference != 0 or reserve_difference != 0) and acked_weapon != null:
+			acked_weapon.correct_ammo(magazine_difference, reserve_difference)
+			for entry: Array in _history:
+				if (entry[1] as PredictedState).weapon == own.weapon:
+					(entry[1] as PredictedState).magazine += magazine_difference
+					(entry[1] as PredictedState).reserve += reserve_difference
 	var error := predicted.position.distance_to(own.position)
 	if error <= POSITION_TOLERANCE and predicted.velocity.distance_to(own.velocity) <= VELOCITY_TOLERANCE \
 			and predicted.crouching == crouching and predicted.on_floor == on_floor:
@@ -681,3 +798,121 @@ func _apply_bomb(state: NetProtocol.BombState) -> void:
 		return
 	bomb.apply_replica_state(state.state, get_character(state.carrier), state.position, state.yaw, state.fuse_left,
 			get_character(state.actor), state.progress, state.active, state.attacking_team, state.site)
+
+
+# --- World objects (D-113) ---
+
+
+## Makes the copies of the host's guns on the floor and grenades in flight match the snapshot:
+## new ones appear, gone ones go (guns only in snapshots that list them all).
+func _apply_entities(snapshot: NetProtocol.Snapshot) -> void:
+	var seen := {}
+	for state in snapshot.entities:
+		seen[state.id] = true
+		var node: Node3D = _entities.get(state.id)
+		if node == null or not is_instance_valid(node):
+			node = _make_entity(state)
+			if node == null:
+				continue
+			_entities[state.id] = node
+		if node is WeaponPickup or node is WeaponSpot:
+			node.global_position = state.position
+			node.global_rotation = Vector3(0.0, state.yaw, 0.0)
+		else:
+			var samples: Array = _entity_samples.get_or_add(state.id, [])
+			samples.append([snapshot.tick, state.position])
+			while samples.size() > 8:
+				samples.pop_front()
+			(node as Grenade).resting = state.flags & NetProtocol.ENTITY_RESTING != 0
+	for id: int in _entities.keys():
+		var node: Node3D = _entities[id]
+		if not is_instance_valid(node):
+			_entities.erase(id)
+			_entity_samples.erase(id)
+			continue
+		var listed := node is Grenade or snapshot.has_pickups
+		if listed and not seen.has(id):
+			_remove_entity(id)
+
+
+func _make_entity(state: NetProtocol.EntityState) -> Node3D:
+	var data := NetProtocol.weapon_data(state.weapon)
+	if data == null:
+		return null
+	if state.kind == NetProtocol.ENTITY_SPOT:
+		var spot := SPOT_SCENE.instantiate() as WeaponSpot
+		spot.name = "MapWeapon_%s" % String(data.id)
+		spot.weapon = data
+		spot.replica = true
+		map.add_child(spot)
+		spot.global_position = state.position
+		spot.global_rotation = Vector3(0.0, state.yaw, 0.0)
+		return spot
+	if state.kind == NetProtocol.ENTITY_PICKUP:
+		var pickup := WeaponPickup.new()
+		pickup.name = "Pickup_%s" % String(data.id)
+		pickup.data = data
+		pickup.replica = true
+		map.add_child(pickup)
+		pickup.floating = state.flags & NetProtocol.ENTITY_FLOATING != 0
+		pickup.global_position = state.position
+		pickup.reset_physics_interpolation()
+		return pickup
+	var grenade := Grenade.new()
+	grenade.name = "Grenade_%s" % String(data.id)
+	grenade.data = data
+	grenade.replica = true
+	map.add_child(grenade)
+	grenade.global_position = state.position
+	grenade.reset_physics_interpolation()
+	return grenade
+
+
+func _remove_entity(id: int) -> void:
+	var node: Node3D = _entities.get(id)
+	_entities.erase(id)
+	_entity_samples.erase(id)
+	if node != null and is_instance_valid(node):
+		if node is WeaponPickup:
+			node.remove_from_group(WeaponPickup.GROUP)
+		node.queue_free()
+
+
+## Puts every grenade where it was at the render tick, between its two snapshots around it.
+func _show_grenades() -> void:
+	var render := get_render_tick()
+	for id: int in _entity_samples:
+		var node: Node3D = _entities.get(id)
+		var samples: Array = _entity_samples[id]
+		if node == null or not is_instance_valid(node) or samples.is_empty():
+			continue
+		var a: Array = samples[0]
+		var b: Array = []
+		for sample: Array in samples:
+			if float(sample[0]) <= render:
+				a = sample
+			else:
+				b = sample
+				break
+		if b.is_empty() or float(a[0]) > render:
+			node.global_position = a[1]
+		else:
+			node.global_position = (a[1] as Vector3).lerp(b[1], clampf((render - float(a[0])) / float(maxi(b[0] - a[0], 1)), 0.0, 1.0))
+
+
+## A grenade went off on the host: its copy goes, the blast, flash or hiss plays here, and a smoke
+## leaves the same cloud (its puffs come from the same seed).
+func _on_grenade(id: int, kind: int, at: Vector3) -> void:
+	_remove_entity(id)
+	var effect := Explosion.new()
+	effect.kind = kind
+	effect.silent = Weapon.silent
+	map.add_child(effect)
+	effect.global_position = at
+	if kind == Explosion.Kind.SMOKE:
+		var cloud := SmokeCloud.new()
+		cloud.name = "SmokeCloud"
+		cloud.rng.seed = hash(at)
+		map.add_child(cloud)
+		cloud.global_position = at
+

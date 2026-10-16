@@ -25,8 +25,17 @@ var walk: bool = false
 var shoot: bool = false
 ## Reload was pressed this tick.
 var reload: bool = false
-## Use is held: plants the bomb in a bomb site, or defuses a planted bomb (D-080).
+## Use is held: plants the bomb in a bomb site, or defuses a planted bomb (D-080). A fresh press
+## while looking at a gun on the floor swaps it for the one in that slot (D-094).
 var use: bool = false
+## Aim (the right mouse button) is held: the sniper rifle's scope, the knife's stab, a grenade's lob.
+var aim: bool = false
+## A weapon slot was picked this tick ([enum WeaponData.Slot]: keys 1 to 4), or -1.
+var weapon_slot: int = -1
+## Switch back to the weapon held before (Q) was pressed this tick.
+var last_weapon: bool = false
+## Drop the gun in hand (G) was pressed this tick.
+var drop: bool = false
 ## Online (M9, D-103): the command's number, counted up by the player's computer from 1. The
 ## host runs each number once and in order, tells the client the last one it ran, and seeds
 ## the shot spread from it. 0 for commands that never travel (bots, single-player).
@@ -49,6 +58,10 @@ func copy() -> CharacterInput:
 	other.shoot = shoot
 	other.reload = reload
 	other.use = use
+	other.aim = aim
+	other.weapon_slot = weapon_slot
+	other.last_weapon = last_weapon
+	other.drop = drop
 	other.tick = tick
 	other.view_tick = view_tick
 	return other

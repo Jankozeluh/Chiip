@@ -56,7 +56,15 @@ func add_bot(difficulty: BotDifficulty = bot_difficulty, team: int = 1) -> Chara
 	bot.rotation.y = spot.basis.get_euler().y
 	get_parent().add_child(bot)
 	bot.died.connect(_on_died.bind(bot))
+	give_loadout(bot)
 	return bot
+
+
+## Gives [param character] its class's loadout (D-090: practice has no money; the buy menu gives
+## anything for free). A class without a loadout keeps what it carries.
+func give_loadout(character: Character) -> void:
+	if character.class_data != null and not character.class_data.loadout.is_empty():
+		character.inventory.set_loadout(character.class_data.loadout)
 
 
 ## Gives [param character] the class [param data]. Practice mode has no freeze time, so it
@@ -67,6 +75,34 @@ func request_class(character: Character, data: ClassData) -> bool:
 		return false
 	character.class_data = data
 	return true
+
+
+## Practice buys anything for free, any time (D-090): the buy menu's questions answered for it.
+func can_buy_now(character: Character) -> bool:
+	return is_instance_valid(character) and character.is_alive()
+
+
+func get_buy_time_left() -> float:
+	return 0.0
+
+
+## Everything is free in practice.
+func get_price(_character: Character, _item_id: StringName) -> int:
+	return 0
+
+
+func get_buy_refusal(character: Character, item_id: StringName) -> String:
+	if not can_buy_now(character):
+		return "You're dead"
+	return Shop.refusal(character, item_id, true, false)
+
+
+## Hands [param item_id] over for free. Returns "" when given, else why not.
+func request_buy(character: Character, item_id: StringName) -> String:
+	var reason := get_buy_refusal(character, item_id)
+	if reason == "":
+		Shop.give(character, item_id)
+	return reason
 
 
 ## Removes the most recently added bot. Returns false if there are none.
@@ -88,6 +124,8 @@ func get_bots() -> Array[Character]:
 
 
 func _add_starting_bots() -> void:
+	if _player != null:
+		give_loadout(_player)
 	for i in bot_count:
 		add_bot()
 
@@ -98,6 +136,7 @@ func _on_died(_killer: Character, victim: Character) -> void:
 		return
 	var spot := _pick_from_group(PLAYER_SPAWN_GROUP, _player_start) if victim == _player else _pick_bot_spawn()
 	victim.respawn(spot.origin, spot.basis.get_euler().y)
+	give_loadout(victim)
 
 
 func _pick_bot_spawn() -> Transform3D:

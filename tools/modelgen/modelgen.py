@@ -7,11 +7,20 @@ one skeleton (rig.py), a palette-limited texture atlas and a team mask (paint.py
 writes them as a glTF binary (gltf.py) that Godot imports like any other model.
 
 Usage (from the project folder, in the chiip conda environment, D-071):
-    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py rifleman
-    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py all
+    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py rifleman     one class
+    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py weapons      the arsenal only
+    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py all          every class and the arsenal
 
-Writes the AK-style rifle into assets/models/weapons/ (ak_rifle.glb + albedo), and into
-assets/models/crew/:
+`weapons` builds every item of weapons.py (rifle, carbine, smg, shotgun, sniper, pistol,
+hand_cannon, knife, frag, flashbang, smoke, defuse_kit) and writes, without touching the crew:
+    assets/models/weapons/<id>.glb          static mesh in weapon space (origin at the grip)
+    assets/models/weapons/<id>_albedo.png   its palette texture
+    assets/ui/weapons/<id>.png              buy-menu icon, 128 x 48 (icons.py)
+    assets/ui/weapons/<id>_kill.png         kill-feed icon, 16 px tall, white silhouette
+    (the vests armor and armor_helmet get a buy icon only)
+It prints every item's triangle count (guns stay under 700, grenades under 250), and writes
+two overview images, icons_sheet.png and guns_sheet.png, to --sheets (default: not written).
+The crew models always hold the rifle (HELD_GUN). A class writes into assets/models/crew/:
     <class>.glb              mesh, skeleton (17 bones, T-pose rest) and animations
     <class>_albedo.png       palette-limited colours; team parts in neutral grey
     <class>_mask.png         red = team colour, green = glows (see paint.py)
@@ -31,6 +40,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import anims  # noqa: E402
 import crew  # noqa: E402
 import fparms  # noqa: E402
+import holds  # noqa: E402
+import icons  # noqa: E402
 import weapons  # noqa: E402
 from geometry import Atlas, PieceMesh  # noqa: E402
 from gltf import Glb  # noqa: E402
@@ -44,8 +55,13 @@ TORSO_SPLIT = 0.06
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 OUT_DIR = os.path.join(PROJECT, 'assets', 'models', 'crew')
 GUN_DIR = os.path.join(PROJECT, 'assets', 'models', 'weapons')
-# The gun every class holds in M6 (the arsenal follows in M7).
-HELD_GUN = 'ak_rifle'
+ICON_DIR = os.path.join(PROJECT, 'assets', 'ui', 'weapons')
+# The gun every class holds: the AK-style rifle (the rest of the arsenal is picked up in game).
+HELD_GUN = 'rifle'
+# Most triangles an item may have: guns, and grenades (they are drawn and held in numbers).
+MAX_GUN_TRIANGLES = 700
+MAX_GRENADE_TRIANGLES = 250
+GRENADES = ('frag', 'flashbang', 'smoke')
 
 # Godot import settings for the generated textures: lossless (the palette must survive),
 # mipmaps for distance, and no switch to VRAM compression when Godot sees them used in 3D.
@@ -162,6 +178,10 @@ def write_arms_glb(model, path):
     g.root(node_of['view'])
     g.root(g.node('arms', mesh=mesh, skin=skin))
     clips = fparms.clips(arms)
+    # M7 (D-096): every other weapon's first-person clips, around its own points.
+    for set_name in holds.SETS:
+        if set_name != 'rifle':
+            clips += fparms.set_clips(model['body'], set_name, holds.style(set_name), holds.points(set_name))
     for clip, loop, channels in clips:
         g.animation(clip + ('-loop' if loop else ''), [(node_of[b], kind, t, v) for b, kind, t, v in channels])
     g.write(path)
@@ -261,13 +281,21 @@ def write_hit_zones(boxes, path):
         fh.write('\n'.join(lines))
 
 
-def write_gun(name, out_dir):
-    """a static gun model in weapon space (weapons.py), with its own palette texture."""
-    pieces, _ = weapons.GUNS[name]()
+def build_item(name):
+    """a gun, grenade or piece of gear: its pieces and points, meshes, atlas and painted texture."""
+    maker = weapons.GUNS.get(name) or weapons.GEAR[name]
+    pieces, points = maker()
     atlas = Atlas()
     meshes = [PieceMesh(p, atlas) for p in pieces]
     atlas.pack()
-    albedo, _ = Painter(weapons.GUN_KIT, 'skin_l', seed=7).paint(meshes, atlas)
+    albedo, _ = Painter(weapons.kit_for(name), 'skin_l', seed=7).paint(meshes, atlas)
+    return dict(name=name, pieces=pieces, points=points, atlas=atlas, meshes=meshes, albedo=albedo)
+
+
+def write_gun(item, out_dir):
+    """a static model in weapon space (weapons.py), with its own palette texture; returns
+    its triangle count."""
+    name, atlas, meshes = item['name'], item['atlas'], item['meshes']
     pos, nrm, uv, idx = [], [], [], []
     verts = {}
     for pm in meshes:
@@ -285,13 +313,38 @@ def write_gun(name, out_dir):
                     uv.append(t)
                 idx.append(verts[key])
     os.makedirs(out_dir, exist_ok=True)
-    write_texture(albedo, os.path.join(out_dir, f'{name}_albedo.png'))
+    write_texture(item['albedo'], os.path.join(out_dir, f'{name}_albedo.png'))
     g = Glb()
     mat = g.material(name, g.texture(f'{name}_albedo.png'))
     mesh = g.mesh(name, np.array(pos), np.array(nrm), np.array(uv), np.array(idx, np.uint32), mat)
     g.root(g.node(name, mesh=mesh))
     g.write(os.path.join(out_dir, f'{name}.glb'))
     return len(idx) // 3
+
+
+def write_weapons(gun_dir, icon_dir, sheets=None):
+    """every item of the arsenal: .glb + texture for the guns, grenades and the kit (not the
+    vests), icons for all of them, and the contact sheets if `sheets` is a folder."""
+    tris = {}
+    problems = []
+    for name in list(weapons.GUNS) + list(weapons.GEAR):
+        item = build_item(name)
+        tris[name] = icons.item_triangles(item['meshes'], item['atlas'], item['albedo'])
+        if name in weapons.GEAR:
+            print(f'{name}: {len(item["pieces"])} pieces, icon only')
+            continue
+        n = write_gun(item, gun_dir)
+        limit = MAX_GRENADE_TRIANGLES if name in GRENADES else MAX_GUN_TRIANGLES
+        print(f'{name}: {len(item["pieces"])} pieces, {n} triangles' + ('' if n < limit else f'  TOO MANY (limit {limit})'))
+        if n >= limit:
+            problems.append(name)
+    made = icons.write_icons(tris, icon_dir, gear_only=tuple(weapons.GEAR))
+    print(f'{len(made)} items, icons in {os.path.relpath(icon_dir, PROJECT)}')
+    if sheets:
+        os.makedirs(sheets, exist_ok=True)
+        icons.contact_sheets(tris, made, os.path.join(sheets, 'icons_sheet.png'), os.path.join(sheets, 'guns_sheet.png'))
+    if problems:
+        sys.exit(f'too many triangles: {", ".join(problems)}')
 
 
 def write_texture(image, path):
@@ -302,17 +355,26 @@ def write_texture(image, path):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Generate Chiip crew models (.glb + textures).')
-    ap.add_argument('classes', nargs='+', help="class names (rifleman, bulwark, ...) or 'all'")
+    ap = argparse.ArgumentParser(description='Generate Chiip crew models and the arsenal (.glb + textures + icons).')
+    ap.add_argument('targets', nargs='+', help="class names (rifleman, bulwark, ...), 'weapons' (the arsenal), or 'all' (both)")
     ap.add_argument('--out', default=OUT_DIR)
+    ap.add_argument('--sheets', default=None, help='folder for the icon and gun overview images (outside the project)')
     a = ap.parse_args()
-    names = list(crew.CLASSES) if a.classes == ['all'] else a.classes
+    names = []
+    for t in a.targets:
+        names += list(crew.CLASSES) + ['weapons'] if t == 'all' else [t]
     os.makedirs(a.out, exist_ok=True)
     for name in names:
+        if name == 'weapons':
+            write_weapons(GUN_DIR, ICON_DIR, a.sheets)
+            continue
         model = build(name)
         write_texture(model['albedo'], os.path.join(a.out, f'{name}_albedo.png'))
         write_texture(model['mask'], os.path.join(a.out, f'{name}_mask.png'))
         clips = anims.all_clips(model['rig'])
+        # M7 (D-096): the other weapons' holds, aim poses, reloads and attacks.
+        clips += anims.set_clips(model['body'], model['rig'].points, list(holds.SETS), holds.points, holds.style,
+                                 weapons.GUNS['rifle']()[1])
         glb_path = os.path.join(a.out, f'{name}.glb')
         # Godot's importer loops animations whose names end in "-loop" and drops the suffix.
         nv, nt = write_glb(model, glb_path, [(n + ('-loop' if loop else ''), ch) for n, loop, ch in clips])
@@ -324,7 +386,6 @@ def main():
             print(f'  {zone:8s} on {bone:12s} size {size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f}')
         print(f'{name}: scale {model["s"]:.3f}, {len(model["pieces"])} pieces, {nv} vertices, {nt} triangles, '
               f'texture {model["atlas"].width}x{model["atlas"].height()}, {len(clips)} animations')
-    print(f'{HELD_GUN}: {write_gun(HELD_GUN, GUN_DIR)} triangles')
 
 
 if __name__ == '__main__':
