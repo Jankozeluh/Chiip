@@ -2075,6 +2075,38 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Stats in the match-end screen only (no way to look at the lifetime numbers); a link in the small "Host / Join" row (hidden away); one long page (the history would push everything else off the screen); charts of K/D over time (a good later idea; a table and a CSV come first); a `GridContainer` for tables (no theme scaling).
 
+## D-205 — The aim trainer: one flick ball at a time, in plain view, a timed run (2026-10-16)
+
+**Decision:** The Shooting Range has an aim trainer (`RangeTrainer`, `maps/props/range_trainer.gd`, with `AimTarget` for the balls). A gold coin on the range, off to the side of the start (a floating pad about 1 m right of the start and 1.2 m ahead, at 1.3 m), starts a run when you **shoot it**; the console's `aim` does the same (`aim stop` stops it), and shooting the coin again during a run stops it without a score.
+- **A run:** a 3 s countdown (a big 3-2-1 on your screen), then **30 s** in which **one ball at a time** pops up at a random spot **in plain view** from your eyes: 7 to 20 m away, up to 45° to each side of where you looked when the countdown ended (so turn back downrange during the countdown), 0.6 to 2.3 m above the floor, and **at least 12° from the last ball** so every ball is a flick. A ball lives 1.5 s; the next appears 0.12 s after one is hit or times out. A spot a wall or a dummy hides is skipped (40 tries, a ray from your eyes), and **a ball that something walks in front of** (the range's moving dummy) **moves to a spot in view** at once and doesn't count as timed out.
+- **Every ball is the same size on your screen** (3.2° across: 24 cm at 8.6 m, 55 cm at 20 m), so distance doesn't make a ball harder; the picture grows from small in 80 ms but the hit zone is full size from the first tick.
+- **Feedback** is in the world's own pixel font, not the 2D HUD: a `Label3D` on your camera (fixed screen size, the world's low resolution, like the dummies' damage numbers): the countdown, "27.4 S  1250 PTS" during the run, and the result (score, hits, misses, timed out, accuracy, average reaction, "NEW BEST!") for 8 s. The pad's label says how to start and your best for the gun in hand. No sounds (M13's); hits show on the hit marker as usual.
+- **It needs a gun in hand** (a knife or a grenade says "Take a gun first") and follows the shooter's `Weapon.fired`, so what counts as a shot is what the weapon fired; only the person at this computer can start it (a bot's stray bullet can't).
+- **Only flick targets for now:** the plan's "tracking target" is the range's moving dummy at 15 m (walking pace) for the moment; a tracking run with its own scoring is a possible later addition.
+
+**Why:** A flick is what CS players mean by aim practice (and the thing the existing static dummies don't train); one ball at a time keeps the score honest (no choosing the easy one), spots in plain view and the same angular size make runs comparable, and a start you shoot needs no menu or key (as in aim maps on Steam).
+
+**Alternatives:** Several balls at once (a choice of target muddies the score); balls at fixed places (learnable, and a layout change in the map file); a 2D HUD readout (needs the HUD's scale logic, and a pixel-font label in the world looks like the rest of the range); a ball scaled by distance in metres (far balls would be harder, and a score would say little about aim); the pad as a key press (a key to bind, and a mouse-first game).
+
+## D-206 — The aim score (2026-10-16)
+
+**Decision:** `AimScore` (`systems/aim_score.gd`) is the whole scoring: **100 points for every ball hit plus up to 100 for speed** (the full amount for a hit the moment it pops up, falling in a straight line to nothing at the end of its life, so 150 at 0.75 s of 1.5 s), **minus 25 for every shot that hit no ball**, never below 0. A ball that times out earns nothing. The result also shows hits, misses, timed-out balls, **accuracy** (hits ÷ shots) and the **average reaction** (the hits' seconds from popping up to being hit). Shots are the trigger pulls of the gun in hand while the run is on (the shot that starts a run and shots in the countdown don't count); a shotgun pull that hits counts as one shot and one hit.
+- A good run is around 40 balls at 150 to 190 points each; a spray at the balls scores 0.
+
+**Why:** The speed bonus rewards what a flick drill is for (fast and right), the miss penalty makes spraying pointless without a long list of rules, and the numbers behind the score are shown, so you can see whether you are fast, accurate or both.
+
+**Alternatives:** Score by distance from the ball's centre (a bullseye bonus: a precision trainer; the hit zone is one flat sphere and a chest hit is a hit in CS); a time bonus for streaks (more rules to explain); no miss penalty (a spray wins); ranking by hits only (accuracy and speed would not show).
+
+## D-207 — The trainer in the map, and personal bests (2026-10-16)
+
+**Decision:** The pad is a new TrenchBroom point entity, **`range_trainer`** (in `chiip_mapper_fgd.tres`, MAPPING.md's training-maps table): its `run_time`, `target_lifetime`, `min_distance`, `max_distance` and `half_angle` are properties, the rest are exports. It is in `maps/shooting_range.map` (the source) and the scene was rebuilt with `tools/build_maps.gd`; the layout is unchanged (the pad floats), so the navmesh needed no new bake. A map without the entity has no trainer, so a custom range can leave it out.
+- **Personal bests are per gun** (`aim_flick_<gun>`: the Ram's runs against the Ram's), kept in the stats file next to the match history (`StatsBook.submit_best`: only a higher score replaces a best, a run without a hit saves nothing) and shown on the Stats screen's Training tab ("Aim trainer · Ram — 4200 — Hits 31, Misses 3, Accuracy % 62.5, Reaction ms 412").
+- **Tests use a book of their own** (`RangeTrainer.book`) and never your file.
+
+**Why:** A gun's recoil, fire rate and accuracy change what a good score is, so a best against the Warden would be a different thing from one against the Heron. The entity keeps the range editable in TrenchBroom as the other range parts are.
+
+**Alternatives:** One best for all guns (the first gun you try would set a number nobody else can beat); the trainer spawned by code on the range map (hidden from the map file); a best per run length (the run length is a map property but one length is the norm).
+
 ## Open questions
 
 | Question | Decide in |

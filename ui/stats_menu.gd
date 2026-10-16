@@ -43,6 +43,8 @@ const MODE_NAMES := {"rounds": "Bomb", "respawn": "Team Deathmatch"}
 const RESULT_NAMES := {"win": "Win", "loss": "Loss", "draw": "Draw"}
 ## Training key prefixes → their names. The aim trainer and the spray wall add theirs (D-205, D-208).
 const TRAINING_NAMES := {"aim_flick": "Aim trainer", "spray": "Spray practice"}
+## How a detail saved with a best reads on the Training tab (a key not listed is made readable).
+const DETAIL_NAMES := {"reaction_ms": "Reaction ms", "accuracy": "Accuracy %", "drift_cm": "Drift cm", "pattern_cm": "Pattern cm"}
 
 ## The book shown; the shared one ([method StatsBook.get_instance]) when left empty.
 var book: StatsBook
@@ -245,7 +247,7 @@ static func training_rows(training: Dictionary) -> Array:
 		var details := PackedStringArray()
 		for detail: String in entry:
 			if detail != "score" and detail != "date":
-				details.append("%s %s" % [detail.capitalize(), _number_text(float(entry[detail]))])
+				details.append("%s %s" % [DETAIL_NAMES.get(detail, detail.capitalize()), _number_text(float(entry[detail]))])
 		rows.append([training_title(key), _number_text(float(entry.get("score", 0.0))), format_date(int(entry.get("date", 0))), ", ".join(details)])
 	return rows
 

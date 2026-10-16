@@ -660,13 +660,14 @@ Every marker must stand on the navmesh (within 0.8 m), so bake the navmesh befor
 
 ## Training maps (range entities)
 
-Four more entities make a training map like the **Shooting Range** (`maps/shooting_range.map`, the map Practice plays, D-141), built from nothing else. They are for practice only: a match on a map with them works, but the gun stands would hand out guns the economy doesn't know about (D-142).
+Five more entities make a training map like the **Shooting Range** (`maps/shooting_range.map`, the map Practice plays, D-141), built from nothing else. They are for practice only: a match on a map with them works, but the gun stands would hand out guns the economy doesn't know about (D-142).
 
 | Entity | What it is | Properties |
 |---|---|---|
 | `range_target` | The training dummy: CS hit zones (head, chest, stomach, arms, legs), a floating number for every hit (red for a headshot) and a running total over its head that resets after 3 s without hits. Origin on the floor; it faces the entity's `angle`. | `title` (shown over it, e.g. `20 m`), `move_distance` (metres it walks from side to side, across its angle; 0 stands still), `move_speed` (m/s: walking 2.5, a rifle running 5.5) |
 | `range_weapon` | A gun stand: the gun floats and turns over a gold ring, with its name, like the random map weapons. Walk over it to take the gun (when that slot is free), or press E to swap. It comes back `refill_time` seconds after it's taken. | `weapon` (a list: Sparrow, Verdict, Hornet, Breaker, Warden, Ram, Heron, Frag, Flashbang, Smoke), `refill_time` (2 s) |
 | `sign_text` | Text in the pixel font: distance markers, hints, names. It reads from the side its `angle` points to (put it 5 cm off a wall, angle pointing away from the wall), or always turns to the player. | `text` (`\n` makes a new line), `letter_height` (metres, 0.3), `color` (light and plain, no team red or blue), `billboard` (1 turns to the player) |
+| `range_trainer` | The aim trainer's pad (M14, D-205): a gold coin (30 cm across) that, when shot, starts a timed run of flick balls in front of whoever shot it; shot again during a run, it stops it. The balls pop up one at a time at random spots in plain view, 7 to 20 m away. Put it off to the side of the lanes, about 1.3 m up; it floats (no post needed). Bests are per gun in the player's stats file. | `run_time` (seconds, 30), `target_lifetime` (seconds a ball lives, 1.5), `min_distance`, `max_distance` (metres, 7 and 20), `half_angle` (degrees to each side of the shooter's view, 45) |
 | `info_bot_spawn` | Where practice bots appear and come back after dying. Not a player spawn: you start at the scene's `Player` node and come back there. Put 6 or more, away from where the player stands (the range's are at least 20 m). | — |
 
 **No bots at the start.** Practice starts with two bots on a map, unless the map's scene root has the metadata `practice_bots` (in Godot: select the root node, Inspector, *Add Metadata*, an `int`). The Shooting Range has 0: you add bots with the console (`bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick [all]`, `bot_difficulty <level>`).
