@@ -72,7 +72,7 @@ func _test_start() -> void:
 			_rounds.is_team_respawn() and _rounds.phase == RoundManager.Phase.FREEZE and at_ends and _rounds.bomb == null
 			and _player.frozen and _rounds.score == [0, 0],
 			"phase %s, at their ends %s, bomb %s, score %s" % [RoundManager.Phase.keys()[_rounds.phase], at_ends, _rounds.bomb, _rounds.score])
-	_check("The freeze time says what wins", _center() == ["", "Team respawn  ·  starts in 1", "First team to %d kills wins" % KILL_LIMIT, ""], str(_center()))
+	_check("The freeze time says what wins", _center() == ["Team respawn · starts in 1", "First team to %d kills wins" % KILL_LIMIT, "", ""], str(_center()))
 	await _go_live()
 	_check("Live: the clock runs the time limit and the top bar says what wins",
 			_rounds.phase == RoundManager.Phase.LIVE and absf(_rounds.time_left - TIME_LIMIT) < 0.1 and _round_label() == "First to %d" % KILL_LIMIT
@@ -87,6 +87,19 @@ func _test_kills_and_respawns() -> void:
 	await _wait_ticks(2)
 	_check("A kill of an enemy is a point for the killer's team, shown in the top bar",
 			_rounds.score == [1, 0] and _bar_score(0) == "1" and _bar_score(1) == "0", "score %s" % [_rounds.score])
+	var round_hud := _hud.get_node("RoundHud") as RoundHud
+	var your_fill := round_hud.get_node("%TdmYourFill") as Control
+	var enemy_fill := round_hud.get_node("%TdmEnemyFill") as Control
+	_check("The Team Deathmatch top bar is the one showing (not the chips): your bar fills from the right edge toward the timer by kills over the limit (1 of %d), the enemy's is empty" % KILL_LIMIT,
+			round_hud.is_tdm_bar() and round_hud.get_node("%TdmBar").visible and not round_hud.get_node("%BombBar").visible
+			and is_equal_approx(your_fill.anchor_left, 1.0 - 1.0 / KILL_LIMIT) and your_fill.anchor_right == 1.0 and your_fill.visible and not enemy_fill.visible,
+			"your fill %.2f to %.2f (visible %s), enemy fill visible %s" % [your_fill.anchor_left, your_fill.anchor_right, your_fill.visible, enemy_fill.visible])
+	_rounds.score[1] = 2
+	await _wait_ticks(2)
+	var enemy_bar := enemy_fill.anchor_left == 0.0 and is_equal_approx(enemy_fill.anchor_right, 2.0 / KILL_LIMIT) and enemy_fill.visible
+	_rounds.score[1] = 0
+	await _wait_ticks(2)
+	_check("The enemy's bar fills from the left edge toward the timer (2 of %d)" % KILL_LIMIT, enemy_bar, "enemy fill %.2f to %.2f" % [enemy_fill.anchor_left, enemy_fill.anchor_right])
 	mate.take_damage(500.0, Hitbox.Zone.CHEST, null)
 	await _wait_ticks(2)
 	_check("A death without an enemy killer scores nothing", _rounds.score == [1, 0], "score %s" % [_rounds.score])
@@ -206,11 +219,11 @@ func _test_main_scene() -> void:
 	main.queue_free()
 
 
-## The respawn countdown (M10, D-133) in the real main scene: team respawn says
-## "Respawning in 3" (the default delay) under "Killed by ...", counts down to 2
+## The respawn countdown (M10, D-133, D-141) in the real main scene: team respawn says
+## "Respawning in 3" (the default delay) on the death plate under the big 3, counts down to 2
 ## and 1 and is gone after the respawn; it is hidden at the round end and the match
-## end while you are still dead; practice keeps "Respawning..." in the death
-## message and shows no countdown; a rounds match has none either.
+## end while you are still dead; practice keeps "Respawning..." on the plate and shows
+## no countdown; a rounds match has none either.
 func _test_respawn_countdown() -> void:
 	var settings := MatchSettings.new()
 	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
@@ -220,49 +233,61 @@ func _test_respawn_countdown() -> void:
 	var main := await _new_main(settings)
 	var rules := main.call("get_map").get_node("RespawnMatch") as RespawnMatch
 	var player := main.call("get_map").get_node("Player") as Character
-	var round_hud := main.get_node("HUD/RoundHud") as RoundHud
-	var death := main.get_node("HUD/DeathLabel") as Label
+	var hud := main.get_node("HUD")
 	await _go_live_in(rules)
 	var enemies := rules.get_members(1)
 	var mate := rules.get_members(0).filter(func(member: Character) -> bool: return member != player)[0] as Character
-	_check("Alive in a live team respawn match: no countdown", round_hud.get_respawn_text() == "" and _is_default_delay(rules),
-			"text '%s', delay %.1f s" % [round_hud.get_respawn_text(), rules.settings.respawn_delay])
+	_check("Alive in a live team respawn match: no countdown, the death view is hidden and the corners show", hud.call("get_respawn_text") == "" and _is_default_delay(rules)
+			and not _node(hud, "DeathColumn").visible and _node(hud, "BottomLeft").visible and not _node(hud, "DeadTint").visible,
+			"text '%s', delay %.1f s" % [hud.call("get_respawn_text"), rules.settings.respawn_delay])
+	var hp_before := ceili(enemies[0].health)
 	player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[0])
 	await _wait_ticks(2)
-	_check("You die in a team respawn match: the death message says who killed you, and under it the round HUD says 'Respawning in 3'",
-			round_hud.get_respawn_text() == "Respawning in 3" and death.visible and death.text == "Killed by %s" % enemies[0].name,
-			"countdown '%s', death message '%s' (visible %s)" % [round_hud.get_respawn_text(), death.text, death.visible])
+	var killed := _node(hud, "KilledLabel") as Label
+	var killer := _node(hud, "KillerLabel") as Label
+	var countdown := _node(hud, "Countdown") as Label
+	var respawn := _node(hud, "RespawnLabel") as Label
+	_check("You die in a team respawn match: the world is tinted, the corners hide, a big '3' counts down over a plate saying 'Killed by', the killer's name and weapon, '·' and 'Respawning in 3', and under it the killer's health",
+			hud.call("get_respawn_text") == "Respawning in 3" and _node(hud, "DeathColumn").visible and _node(hud, "DeadTint").visible
+			and not _node(hud, "BottomLeft").visible and not _node(hud, "BottomRight").visible
+			and killed.text == "Killed by" and killer.text == String(enemies[0].name) and (_node(hud, "KillerIcon") as Control).visible
+			and countdown.visible and countdown.text == "3" and respawn.visible and respawn.text == "Respawning in 3" and _node(hud, "DeathDot").visible
+			and (_node(hud, "KillerHp") as Label).text == "%s · %d HP left" % [enemies[0].name, hp_before],
+			"countdown '%s' / '%s', plate '%s' '%s' '%s', hp '%s'" % [hud.call("get_respawn_text"), countdown.text, killed.text, killer.text, respawn.text, (_node(hud, "KillerHp") as Label).text])
 	await _wait_seconds(1.0)
-	var after_one := round_hud.get_respawn_text()
+	var after_one: String = hud.call("get_respawn_text")
 	await _wait_seconds(1.0)
-	var after_two := round_hud.get_respawn_text()
-	_check("The countdown follows the manager's clock, the seconds rounded up: 3, then 2 a second later, then 1",
-			after_one == "Respawning in 2" and after_two == "Respawning in 1",
-			"after 1 s '%s', after 2 s '%s' (manager says %.2f s left)" % [after_one, after_two, rules.get_respawn_time_left(player)])
+	var after_two: String = hud.call("get_respawn_text")
+	_check("The countdown follows the manager's clock, the seconds rounded up: 3, then 2 a second later, then 1; the big number and the plate say the same",
+			after_one == "Respawning in 2" and after_two == "Respawning in 1" and countdown.text == "1" and respawn.text == "Respawning in 1",
+			"after 1 s '%s', after 2 s '%s' (manager says %.2f s left), big '%s'" % [after_one, after_two, rules.get_respawn_time_left(player), countdown.text])
 	await _wait_seconds(1.2)
-	_check("After the respawn the countdown and the death message are gone, and you are alive again",
-			player.is_alive() and round_hud.get_respawn_text() == "" and not death.visible,
-			"alive %s, countdown '%s', death message visible %s" % [player.is_alive(), round_hud.get_respawn_text(), death.visible])
+	_check("After the respawn the countdown and the death view are gone, the corners are back, and you are alive again",
+			player.is_alive() and hud.call("get_respawn_text") == "" and not _node(hud, "DeathColumn").visible and not _node(hud, "DeadTint").visible
+			and _node(hud, "BottomLeft").visible,
+			"alive %s, countdown '%s', death view visible %s" % [player.is_alive(), hud.call("get_respawn_text"), _node(hud, "DeathColumn").visible])
 	# The deciding kill while you are dead: first to 2 kills. You die with no killer (no point for
 	# anyone), then your teammate kills two enemies (2 for your team).
 	player.take_damage(500.0, Hitbox.Zone.CHEST, null)
 	await _wait_ticks(2)
-	var counting := round_hud.get_respawn_text() == "Respawning in 3"
+	var counting: bool = hud.call("get_respawn_text") == "Respawning in 3"
+	var no_killer := killed.text == "You died" and not killer.visible and not (_node(hud, "KillerHp") as Label).visible
 	enemies[0].take_damage(500.0, Hitbox.Zone.CHEST, mate)
 	enemies[1].take_damage(500.0, Hitbox.Zone.CHEST, mate)
 	await _wait_ticks(3)
-	_check("The round end hides the countdown at once, although the manager still has you waiting",
-			counting and rules.phase == RoundManager.Phase.ROUND_END and rules.get_respawn_time_left(player) > 0.0
-			and round_hud.get_respawn_text() == "",
-			"counting before %s, phase %s, manager %.2f s, countdown '%s'" % [counting, RoundManager.Phase.keys()[rules.phase],
-					rules.get_respawn_time_left(player), round_hud.get_respawn_text()])
+	var round_hud := main.get_node("HUD/RoundHud") as RoundHud
+	_check("A death with no killer says 'You died'; the round end hides the countdown at once, although the manager still has you waiting",
+			counting and no_killer and rules.phase == RoundManager.Phase.ROUND_END and rules.get_respawn_time_left(player) > 0.0
+			and hud.call("get_respawn_text") == "" and not countdown.visible and not respawn.visible,
+			"counting before %s, no killer line %s, phase %s, manager %.2f s, countdown '%s'" % [counting, no_killer, RoundManager.Phase.keys()[rules.phase],
+					rules.get_respawn_time_left(player), hud.call("get_respawn_text")])
 	await _wait_seconds(0.7)
 	_check("At the match end there is no countdown either",
-			rules.phase == RoundManager.Phase.MATCH_END and round_hud.get_respawn_text() == "",
-			"phase %s, countdown '%s'" % [RoundManager.Phase.keys()[rules.phase], round_hud.get_respawn_text()])
+			rules.phase == RoundManager.Phase.MATCH_END and hud.call("get_respawn_text") == "" and round_hud.get_round_text() != "",
+			"phase %s, countdown '%s'" % [RoundManager.Phase.keys()[rules.phase], hud.call("get_respawn_text")])
 	_remove_main(main)
 
-	# Practice: the arena brings you back, and the death message still says so; the round HUD is not shown.
+	# Practice: the arena brings you back, and the plate still says so; the round HUD is not shown.
 	var practice_settings := MatchSettings.new()
 	main = await _new_main(practice_settings, true, PRACTICE_MAP_SCENE)
 	var arena := main.call("get_map").get_node("ArenaRules") as ArenaRules
@@ -270,13 +295,15 @@ func _test_respawn_countdown() -> void:
 	for bot in arena.get_bots():
 		bot.frozen = true
 	round_hud = main.get_node("HUD/RoundHud") as RoundHud
-	death = main.get_node("HUD/DeathLabel") as Label
+	hud = main.get_node("HUD")
 	player.take_damage(500.0, Hitbox.Zone.CHEST, arena.get_bots()[0])
 	await _wait_ticks(3)
-	_check("Practice: the death message still says 'Respawning...' under who killed you, and there is no countdown",
-			death.visible and death.text == "Killed by %s\nRespawning..." % arena.get_bots()[0].name and round_hud.get_respawn_text() == ""
-			and not round_hud.visible and main.get_node("HUD").get("respawn_hint") == true,
-			"death message '%s', countdown '%s', round HUD visible %s" % [death.text, round_hud.get_respawn_text(), round_hud.visible])
+	_check("Practice: the plate says 'Killed by' and who, then 'Respawning...', and there is no countdown",
+			(_node(hud, "KilledLabel") as Label).text == "Killed by" and (_node(hud, "KillerLabel") as Label).text == String(arena.get_bots()[0].name)
+			and (_node(hud, "RespawnLabel") as Label).text == "Respawning..." and (_node(hud, "RespawnLabel") as Label).visible
+			and not (_node(hud, "Countdown") as Label).visible and hud.call("get_respawn_text") == "" and not round_hud.visible and hud.get("respawn_hint") == true,
+			"plate '%s' '%s', countdown '%s', round HUD visible %s" % [(_node(hud, "KilledLabel") as Label).text, (_node(hud, "RespawnLabel") as Label).text,
+					hud.call("get_respawn_text"), round_hud.visible])
 	_remove_main(main)
 
 	# A rounds match: the dead wait for the next round, so no countdown and no "Respawning" anywhere.
@@ -285,15 +312,20 @@ func _test_respawn_countdown() -> void:
 	main = await _new_main(rounds_settings)
 	var round_rules := main.call("get_map").get_node("RoundManager") as RoundManager
 	player = main.call("get_map").get_node("Player") as Character
-	round_hud = main.get_node("HUD/RoundHud") as RoundHud
-	death = main.get_node("HUD/DeathLabel") as Label
+	hud = main.get_node("HUD")
 	await _go_live_in(round_rules)
 	player.take_damage(500.0, Hitbox.Zone.CHEST, round_rules.get_members(1)[0])
 	await _wait_ticks(3)
-	_check("A rounds match: no countdown and no 'Respawning' text after you die (the dead wait for the next round)",
-			round_hud.get_respawn_text() == "" and not death.text.contains("Respawning") and main.get_node("HUD").get("respawn_hint") == false,
-			"countdown '%s', death message '%s', hint %s" % [round_hud.get_respawn_text(), death.text, main.get_node("HUD").get("respawn_hint")])
+	_check("A rounds match: no countdown and no 'Respawning' on the plate after you die (the dead wait for the next round)",
+			hud.call("get_respawn_text") == "" and not (_node(hud, "RespawnLabel") as Label).visible and not (_node(hud, "Countdown") as Label).visible
+			and hud.get("respawn_hint") == false,
+			"countdown '%s', respawn visible %s, hint %s" % [hud.call("get_respawn_text"), (_node(hud, "RespawnLabel") as Label).visible, hud.get("respawn_hint")])
 	_remove_main(main)
+
+
+## A named part of the HUD ("%Name" inside the HUD scene).
+func _node(hud: Node, node_name: String) -> Node:
+	return hud.get_node("%" + node_name)
 
 
 # --- Bots hunting ---
@@ -507,17 +539,16 @@ func _flat(a: Vector3, b: Vector3) -> float:
 
 
 func _round_label() -> String:
-	return (_hud.get_node("RoundHud/TopBar/TimerBox/Margin/Content/RoundLabel") as Label).text
+	return (_hud.get_node("RoundHud") as RoundHud).get_round_text()
 
 
 func _timer_text() -> String:
-	return (_hud.get_node("RoundHud/TopBar/TimerBox/Margin/Content/Timer") as Label).text
+	return (_hud.get_node("RoundHud") as RoundHud).get_timer_text()
 
 
 ## Your score (team 0) or theirs (team 1) as the top bar shows it.
 func _bar_score(team: int) -> String:
-	var box := "YourBox" if team == Teams.viewer_team else "EnemyBox"
-	return (_hud.get_node("RoundHud/TopBar/%s/Margin/Content/Score" % box) as Label).text
+	return (_hud.get_node("RoundHud") as RoundHud).get_score_text(team == Teams.viewer_team)
 
 
 func _center() -> Array:

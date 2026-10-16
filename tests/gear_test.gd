@@ -173,19 +173,25 @@ func _test_hud() -> void:
 	var hud := HUD_SCENE.instantiate()
 	add_child(hud)
 	hud.set_player(_player)
-	var label := hud.get_node("ArmorLabel") as Label
-	var icon := hud.get_node("ArmorIcon") as ArmorIcon
+	var label := hud.get_node("%ArmorLabel") as Label
+	var icon := hud.get_node("%ArmorIcon") as TextureRect
+	var block := hud.get_node("%ArmorBlock") as Control
 	_player.set_armor(0.0, false)
-	var empty := label.text == "0" and icon.points == 0.0 and not icon.helmet and label.modulate.a < 1.0
+	var empty := not block.visible
 	_player.set_armor(100.0, true)
-	var full := label.text == "100" and icon.points == 100.0 and icon.helmet and label.modulate.a == 1.0
+	var full := label.text == "100" and block.visible and icon.visible and icon.texture == UiIcons.get_icon(icon, &"helmet")
+	_player.set_armor(100.0, false)
+	var plain := icon.texture == UiIcons.get_icon(icon, &"armor") and icon.texture != UiIcons.get_icon(icon, &"helmet")
+	_player.set_armor(100.0, true)
 	_player.take_damage(36.0, Hitbox.Zone.CHEST, null, 0.775)
 	var worn := label.text == "96"
-	_check("The HUD shows the armor (dimmed at 0), the helmet's mark, and the armor wearing down",
-			empty and full and worn and icon.mouse_filter == Control.MOUSE_FILTER_IGNORE,
-			"empty %s, full %s, after a hit '%s'" % [empty, full, label.text])
+	_check("The HUD shows the armor (its whole block hidden at 0), the helmet's icon when one is worn and the armor icon when not, and the armor wearing down",
+			empty and full and plain and worn and icon.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"empty %s, full %s, plain %s, after a hit '%s'" % [empty, full, plain, label.text])
 	hud.set_ui_scale(1.5)
-	_check("...and scales with the HUD", is_equal_approx(icon.size.y, 54.0), "icon %s" % icon.size)
+	var scaled := icon.custom_minimum_size
+	var base: Vector2 = icon.texture.get_size() * (hud.get_node("%ArmorIcon").get_theme_constant("icon_scale", "Hud"))
+	_check("...and the icon scales with the HUD (2 times the 16 px icon, 1.5 times as big at 1.5)", scaled == (base * 1.5).round(), "icon %s, expected %s" % [scaled, (base * 1.5).round()])
 	hud.queue_free()
 	_player.set_armor(0.0, false)
 	await _wait_ticks(2)
@@ -347,17 +353,22 @@ func _test_hud_and_body_follow() -> void:
 			body_ok and _shows_model(bot.body.get_gun_model(), KNIFE), "pistol shown %s" % body_ok)
 	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.PISTOL), true)
 	await _wait_ticks(2)
-	var ammo := hud.get_node("AmmoLabel") as Label
-	var name_label := hud.get_node("WeaponLabel") as Label
+	var ammo := hud.get_node("%MagLabel") as Label
+	var reserve := hud.get_node("%ReserveLabel") as Label
+	var ammo_row := hud.get_node("%AmmoRow") as Control
+	var name_label := hud.get_node("%WeaponLabel") as Label
+	var weapon_icon := hud.get_node("%WeaponIcon") as TextureRect
 	var slots := hud.get_node("SlotsLabel") as Label
 	var held_pistol := _player.weapon
-	var shows_pistol := ammo.text == "%d / %d" % [held_pistol.magazine, held_pistol.reserve] and name_label.text == PISTOL.display_name
+	var shows_pistol: bool = ammo.text == "%d" % held_pistol.magazine and reserve.text == "/ %d" % held_pistol.reserve and name_label.text == PISTOL.display_name \
+			and weapon_icon.visible and weapon_icon.texture == UiIcons.get_icon(weapon_icon, PISTOL.id)
 	_player.weapon.magazine = 3
 	_player.weapon.ammo_changed.emit(3, 45)
-	var follows := ammo.text == "3 / 45"
-	_check("The HUD follows the weapon in hand: its ammo, its name and the slot list with it marked",
-			shows_pistol and follows and slots.text.contains("» 2  " + PISTOL.display_name) and slots.text.contains("1  ") and slots.modulate.a > 0.9,
-			"ammo '%s', name '%s', slots '%s'" % [ammo.text, name_label.text, slots.text.replace("\n", " | ")])
+	var follows := ammo.text == "3" and reserve.text == "/ 45"
+	var low: bool = ammo.get_theme_color("font_color") == hud.get_node("%BottomRight").get_theme_color("alert", "Palette")
+	_check("The HUD follows the weapon in hand: its ammo (magazine and reserve, the magazine in the alert colour when low), its name and icon, and the slot list (kept, hidden) with it marked",
+			shows_pistol and follows and low and not slots.visible and slots.text.contains("» 2  " + PISTOL.display_name) and slots.text.contains("1  ") and slots.modulate.a > 0.9,
+			"ammo '%s %s', name '%s', slots '%s'" % [ammo.text, reserve.text, name_label.text, slots.text.replace("\n", " | ")])
 	var feed := KillFeed.new()
 	add_child(feed)
 	feed.add_kill(bot, _player, true, SMG)
@@ -370,7 +381,7 @@ func _test_hud_and_body_follow() -> void:
 	feed.queue_free()
 	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.KNIFE), true)
 	await _wait_ticks(2)
-	_check("...the knife shows no ammo", ammo.text == "" and name_label.text == "Knife", "ammo '%s'" % ammo.text)
+	_check("...the knife shows no ammo row and its icon", not ammo_row.visible and name_label.text == "Knife" and weapon_icon.visible, "ammo '%s'" % ammo.text)
 	await _wait_seconds(HUD_SLOTS_TIME)
 	_check("...and the slot list fades out a few seconds after a change", slots.modulate.a < 0.05, "alpha %.2f" % slots.modulate.a)
 	hud.queue_free()

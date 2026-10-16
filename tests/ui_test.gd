@@ -114,21 +114,27 @@ const VARIATIONS := {
 	"FooterPanel": "PanelContainer", "PageRow": "HBoxContainer", "SideColumn": "VBoxContainer", "SideBox": "VBoxContainer",
 	"TightBox": "VBoxContainer", "FieldRow": "HBoxContainer", "SlotRow": "HBoxContainer", "SlotMargin": "MarginContainer",
 }
-## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
+## The roles the HUD uses (M10 task 6, D-133; the mockups' look, task 14, D-141): name → the type it varies.
 const HUD_VARIATIONS := {
-	"HudWeaponLabel": "Label", "HudValueLabel": "Label", "HudDeathLabel": "Label", "HudSpectateLabel": "Label",
-	"HudRespawnLabel": "Label", "HudScoreLabel": "Label", "HudTimerLabel": "Label", "HudRoundLabel": "Label",
-	"HudTitleLabel": "Label", "HudLineLabel": "Label", "HudNoteLabel": "Label", "HudBombTagLabel": "Label",
-	"HudPromptLabel": "Label", "HudBombMessageLabel": "Label",
-	"HudTopBar": "HBoxContainer", "HudPips": "HBoxContainer", "HudBoxContent": "VBoxContainer",
-	"HudMessages": "VBoxContainer", "HudKillFeed": "VBoxContainer", "HudBoxMargin": "MarginContainer",
-	"HudFriendlyBox": "PanelContainer", "HudEnemyBox": "PanelContainer", "HudTimerBox": "PanelContainer",
-	"HudBarBack": "Panel", "HudBarFill": "Panel",
+	"HudSmallLabel": "Label", "HudDimLabel": "Label", "HudSlotsLabel": "Label", "HudValueLabel": "Label", "HudLargeLabel": "Label",
+	"HudReserveLabel": "Label", "HudFriendlyScoreLabel": "Label", "HudEnemyScoreLabel": "Label", "HudTitleLabel": "Label",
+	"HudCountdownLabel": "Label", "HudPlateDimLabel": "Label", "HudPlateMuteLabel": "Label", "HudPlateLabel": "Label",
+	"HudPlateNameLabel": "Label", "HudAlertPlateLabel": "Label", "HudBombTagLabel": "Label", "HudPromptLabel": "Label",
+	"HudBombMessageLabel": "Label",
+	"HudStack": "VBoxContainer", "HudStackBlock": "VBoxContainer", "HudStackDeath": "VBoxContainer", "HudStackCentre": "VBoxContainer",
+	"HudKillFeed": "VBoxContainer",
+	"HudRowStack": "HBoxContainer", "HudRowIcon": "HBoxContainer", "HudRowBlock": "HBoxContainer", "HudRowBarBomb": "HBoxContainer",
+	"HudRowBarTdm": "HBoxContainer", "HudRowStats": "HBoxContainer", "HudRowChips": "HBoxContainer",
+	"HudCentreMargin": "MarginContainer", "HudBaselineLift": "MarginContainer",
+	"HudHealthChip": "Panel", "HudHealthChipEmpty": "Panel", "HudScoreBarBack": "Panel", "HudFriendlyBarFill": "Panel",
+	"HudEnemyBarFill": "Panel", "HudFriendlyPipAlive": "Panel", "HudEnemyPipAlive": "Panel", "HudFriendlyPipDead": "Panel",
+	"HudEnemyPipDead": "Panel", "HudDeadTint": "Panel", "HudBarBack": "Panel", "HudBarFill": "Panel",
+	"HudPlate": "PanelContainer", "HudAlertPlate": "PanelContainer",
 }
-## The HUD's scenes and scripts that must take everything from the theme (hud.gd and kill_feed.gd
-## are not in the list: they still carry their own colours until the HUD work on the M7 branch lands).
+## The HUD's scenes and scripts that must take everything from the theme (kill_feed.gd is not in the
+## list: it still carries its own colours until the kill feed is restyled).
 const HUD_SCENES: Array[String] = ["res://ui/hud.tscn", "res://ui/round_hud.tscn", "res://ui/bomb_hud.tscn"]
-const HUD_SCRIPTS: Array[String] = ["res://ui/round_hud.gd", "res://ui/bomb_hud.gd"]
+const HUD_SCRIPTS: Array[String] = ["res://ui/hud.gd", "res://ui/round_hud.gd", "res://ui/bomb_hud.gd"]
 ## The theme overrides a menu must not carry (see [method _override_names]): the names a control's
 ## properties don't list because the built-in theme has no such item for its class, asked for one by one.
 ## Kind (the part Godot puts after "theme_override_") → item names.
@@ -1462,9 +1468,10 @@ func _test_menus_have_no_overrides() -> void:
 # --- The HUD (M10 task 6, D-133) ---
 
 
-## The HUD's roles exist on the right base types and carry the tokens: sizes and
-## outlines of the labels, the top bar's boxes (the team colours from Teams, darkened),
-## the spacing, and the custom "Hud" type that code reads the game-state colours from.
+## The HUD's roles exist on the right base types and carry the tokens: sizes, colours and hard
+## shadows of the labels (no outline), the line boxes trimmed to the mockups' line height, the
+## spacing, the boxes (chips, bars, plates, the dead tint), and the custom "Hud" type that code
+## reads the game-state colours and the sizes of the drawn parts from.
 func _test_hud_roles() -> void:
 	var missing: Array[String] = []
 	for variation: String in HUD_VARIATIONS:
@@ -1474,37 +1481,90 @@ func _test_hud_roles() -> void:
 			"missing or on another base: %s" % [missing])
 	var holder := Control.new()
 	add_child(holder)
+	var shadowless: Array[String] = []
+	var outlined: Array[String] = []
+	var unshadowed: Array[String] = []
+	for variation: String in HUD_VARIATIONS:
+		if HUD_VARIATIONS[variation] != "Label":
+			continue
+		var label := _variation_node(Label.new(), variation, holder)
+		var on_plate := variation.begins_with("HudPlate") or variation == "HudAlertPlateLabel"
+		if label.get_theme_constant("outline_size") != 0:
+			outlined.append(variation)
+		if on_plate:
+			if label.get_theme_color("font_shadow_color").a != 0.0:
+				shadowless.append(variation)
+		elif label.get_theme_color("font_shadow_color") != Tokens.SHADOW or label.get_theme_constant("shadow_offset_x") != Tokens.SHADOW_OFFSET \
+				or label.get_theme_constant("shadow_offset_y") != Tokens.SHADOW_OFFSET:
+			unshadowed.append(variation)
+	_check("Every HUD label role has a hard %d px VOID shadow down and right and no outline (text on a plate has no shadow at all)" % Tokens.SHADOW_OFFSET,
+			outlined.is_empty() and shadowless.is_empty() and unshadowed.is_empty(),
+			"outlined %s, plate text with a shadow %s, without the shadow %s" % [outlined, shadowless, unshadowed])
 	var value := _variation_node(Label.new(), "HudValueLabel", holder)
+	var large := _variation_node(Label.new(), "HudLargeLabel", holder)
+	var reserve := _variation_node(Label.new(), "HudReserveLabel", holder)
 	var title := _variation_node(Label.new(), "HudTitleLabel", holder)
-	var timer := _variation_node(Label.new(), "HudTimerLabel", holder)
+	var countdown := _variation_node(Label.new(), "HudCountdownLabel", holder)
+	var friendly := _variation_node(Label.new(), "HudFriendlyScoreLabel", holder)
+	var small := _variation_node(Label.new(), "HudSmallLabel", holder)
 	var tag := _variation_node(Label.new(), "HudBombTagLabel", holder)
-	_check("The HUD's label roles take their tokens: the health and ammo number is HUD_SIZE_VALUE with its outline, the centre title HUD_SIZE_TITLE, the timer HUD_SIZE_SCORE with no outline, the bomb tag the gold; all outlined in the HUD's outline colour",
-			value.get_theme_font_size("font_size") == Tokens.HUD_SIZE_VALUE and value.get_theme_constant("outline_size") == Tokens.HUD_OUTLINE_VALUE
-					and title.get_theme_font_size("font_size") == Tokens.HUD_SIZE_TITLE and title.get_theme_constant("outline_size") == Tokens.HUD_OUTLINE_TITLE
-					and timer.get_theme_font_size("font_size") == Tokens.HUD_SIZE_SCORE and timer.get_theme_constant("outline_size") == Tokens.HUD_OUTLINE_SCORE
-					and tag.get_theme_color("font_color") == Tokens.HUD_GOLD and value.get_theme_color("font_outline_color") == Tokens.HUD_OUTLINE
-					and value.get_theme_font("font").resource_path == FONT_PATH,
-			"value %d px / %d, title %d px / %d, timer %d px, tag %s" % [value.get_theme_font_size("font_size"), value.get_theme_constant("outline_size"),
-					title.get_theme_font_size("font_size"), title.get_theme_constant("outline_size"), timer.get_theme_font_size("font_size"), tag.get_theme_color("font_color")])
-	var friendly := _variation_node(PanelContainer.new(), "HudFriendlyBox", holder)
-	var enemy := _variation_node(PanelContainer.new(), "HudEnemyBox", holder)
-	var friendly_box := friendly.get_theme_stylebox("panel") as StyleBoxFlat
-	var enemy_box := enemy.get_theme_stylebox("panel") as StyleBoxFlat
-	var margin := _variation_node(MarginContainer.new(), "HudBoxMargin", holder)
-	var bar := _variation_node(HBoxContainer.new(), "HudTopBar", holder)
-	_check("The top bar's roles: the team boxes are Teams' friendly and enemy colours darkened by the token at the token's opacity, the box margin has its four paddings, the bar its spacing",
-			friendly_box.bg_color == Color(Teams.FRIENDLY_COLOR.darkened(Tokens.HUD_SCORE_BOX_DARKEN), Tokens.HUD_SCORE_BOX_ALPHA)
-					and enemy_box.bg_color == Color(Teams.ENEMY_COLOR.darkened(Tokens.HUD_SCORE_BOX_DARKEN), Tokens.HUD_SCORE_BOX_ALPHA)
-					and margin.get_theme_constant("margin_left") == Tokens.HUD_BOX_PAD_X and margin.get_theme_constant("margin_top") == Tokens.HUD_BOX_PAD_TOP
-					and margin.get_theme_constant("margin_right") == Tokens.HUD_BOX_PAD_X and margin.get_theme_constant("margin_bottom") == Tokens.HUD_BOX_PAD_BOTTOM
-					and bar.get_theme_constant("separation") == Tokens.HUD_BAR_GAP,
-			"friendly %s, enemy %s, margin %d / %d, gap %d" % [friendly_box.bg_color, enemy_box.bg_color, margin.get_theme_constant("margin_left"),
-					margin.get_theme_constant("margin_top"), bar.get_theme_constant("separation")])
-	_check("The custom 'Hud' type holds what code reads: the freeze-time timer, the alert, the notice, the bomb's gold, the dead square and the square's size",
-			_theme.get_color("freeze_timer", "Hud") == Tokens.HUD_FREEZE_TIMER and _theme.get_color("alert", "Hud") == Tokens.HUD_ALERT
-					and _theme.get_color("notice", "Hud") == Tokens.HUD_NOTICE and _theme.get_color("gold", "Hud") == Tokens.HUD_GOLD
-					and _theme.get_color("pip_dead", "Hud") == Tokens.HUD_PIP_DEAD and _theme.get_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE,
-			"freeze %s, alert %s, pip size %d" % [_theme.get_color("freeze_timer", "Hud"), _theme.get_color("alert", "Hud"), _theme.get_constant("pip_size", "Hud")])
+	var bold: Font = load(Tokens.FONT_BOLD)
+	_check("The HUD's label roles take their tokens: 16 px small text, 32 px for armor, money and time, 48 px for health, magazine and scores (the friendly one in FRIENDLY), 48 px Bold for the banners, 96 px Bold for the countdown, the reserve in TEXT at 70%, the bomb tag the gold",
+			small.get_theme_font_size("font_size") == Tokens.TEXT_SIZE and large.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+					and value.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and friendly.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
+					and friendly.get_theme_color("font_color") == Tokens.FRIENDLY and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
+					and (title.get_theme_font("font") as FontVariation).base_font == bold
+					and countdown.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and (countdown.get_theme_font("font") as FontVariation).base_font == bold
+					and reserve.get_theme_color("font_color") == Tokens.HUD_RESERVE_TEXT and tag.get_theme_color("font_color") == Tokens.HUD_GOLD
+					and (value.get_theme_font("font") as FontVariation).base_font.resource_path == FONT_PATH,
+			"value %d, large %d, title %d, countdown %d, reserve %s" % [value.get_theme_font_size("font_size"), large.get_theme_font_size("font_size"),
+					title.get_theme_font_size("font_size"), countdown.get_theme_font_size("font_size"), reserve.get_theme_color("font_color")])
+	var trims := [(large.get_theme_font("font") as FontVariation), (value.get_theme_font("font") as FontVariation), (countdown.get_theme_font("font") as FontVariation)]
+	_check("The 32, 48 and 96 px fonts have their line box trimmed by the tokens (top, bottom): HUD_TRIM_LARGE, HUD_TRIM_TITLE, HUD_TRIM_HERO",
+			trims[0].spacing_top == -Tokens.HUD_TRIM_LARGE.x and trims[0].spacing_bottom == -Tokens.HUD_TRIM_LARGE.y
+					and trims[1].spacing_top == -Tokens.HUD_TRIM_TITLE.x and trims[1].spacing_bottom == -Tokens.HUD_TRIM_TITLE.y
+					and trims[2].spacing_top == -Tokens.HUD_TRIM_HERO.x and trims[2].spacing_bottom == -Tokens.HUD_TRIM_HERO.y,
+			"large %d/%d, value %d/%d, countdown %d/%d" % [trims[0].spacing_top, trims[0].spacing_bottom, trims[1].spacing_top, trims[1].spacing_bottom,
+					trims[2].spacing_top, trims[2].spacing_bottom])
+	var gaps := {
+		"HudStack": ["VBoxContainer", Tokens.HUD_GAP_STACK], "HudStackBlock": ["VBoxContainer", Tokens.HUD_GAP_BLOCK],
+		"HudStackDeath": ["VBoxContainer", Tokens.HUD_GAP_DEATH], "HudStackCentre": ["VBoxContainer", Tokens.HUD_GAP_CENTRE],
+		"HudRowStack": ["HBoxContainer", Tokens.HUD_GAP_STACK], "HudRowIcon": ["HBoxContainer", Tokens.HUD_GAP_ICON],
+		"HudRowBlock": ["HBoxContainer", Tokens.HUD_GAP_BLOCK], "HudRowBarBomb": ["HBoxContainer", Tokens.HUD_GAP_BAR_BOMB],
+		"HudRowBarTdm": ["HBoxContainer", Tokens.HUD_GAP_BAR_TDM], "HudRowStats": ["HBoxContainer", Tokens.HUD_GAP_STATS],
+		"HudRowChips": ["HBoxContainer", Tokens.HUD_GAP_CHIPS],
+	}
+	var wrong_gaps: Array[String] = []
+	for role: String in gaps:
+		var container := _variation_node(ClassDB.instantiate(gaps[role][0]) as Control, role, holder) as Container
+		if container.get_theme_constant("separation") != gaps[role][1]:
+			wrong_gaps.append(role)
+	_check("The HUD's column and row roles take their spacing from the tokens", wrong_gaps.is_empty(), "wrong: %s" % [wrong_gaps])
+	var chip := _variation_node(Panel.new(), "HudHealthChip", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var chip_empty := _variation_node(Panel.new(), "HudHealthChipEmpty", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var alive := _variation_node(Panel.new(), "HudFriendlyPipAlive", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var dead := _variation_node(Panel.new(), "HudEnemyPipDead", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var plate := _variation_node(PanelContainer.new(), "HudPlate", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var alert_plate := _variation_node(PanelContainer.new(), "HudAlertPlate", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	var tint := _variation_node(Panel.new(), "HudDeadTint", holder).get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The HUD's boxes: health chips TEXT and LINE, an alive chip filled with a VOID hard shadow, a dead one a 2 px frame without fill, plates INK (padded 20) and ALERT (padded 12), the dead tint's colour",
+			chip.bg_color == Tokens.TEXT and chip_empty.bg_color == Tokens.LINE_COLOR
+					and alive.bg_color == Tokens.FRIENDLY and alive.border_color == Tokens.SHADOW and alive.border_width_right == Tokens.SHADOW_OFFSET and alive.border_width_left == 0
+					and dead.bg_color.a == 0.0 and dead.border_color == Tokens.ENEMY and dead.border_width_left == Tokens.BORDER
+					and plate.bg_color == Tokens.INK and plate.content_margin_left == Tokens.HUD_PLATE_PAD and plate.content_margin_right == Tokens.HUD_PLATE_PAD
+					and alert_plate.bg_color == Tokens.ALERT and alert_plate.content_margin_left == Tokens.HUD_ALERT_PLATE_PAD and tint.bg_color == Tokens.HUD_DEAD_TINT,
+			"chip %s/%s, alive %s, dead %s, plate %s/%s, alert plate %s, tint %s" % [chip.bg_color, chip_empty.bg_color, alive.bg_color, dead.border_color,
+					plate.bg_color, plate.content_margin_left, alert_plate.bg_color, tint.bg_color])
+	_check("The custom 'Hud' type holds what code reads: the alert, the notice (both ALERT), the bomb's gold, and the sizes of the drawn parts (chip, bar, columns, plates, icons)",
+			_theme.get_color("alert", "Hud") == Tokens.ALERT and _theme.get_color("notice", "Hud") == Tokens.ALERT and _theme.get_color("gold", "Hud") == Tokens.HUD_GOLD
+					and _theme.get_constant("pip_size", "Hud") == Tokens.HUD_PIP_SIZE and _theme.get_constant("chip_width", "Hud") == Tokens.HUD_CHIP_SIZE.x
+					and _theme.get_constant("chip_height", "Hud") == Tokens.HUD_CHIP_SIZE.y and _theme.get_constant("chip_health", "Hud") == Tokens.HUD_CHIP_HEALTH
+					and _theme.get_constant("chip_count", "Hud") == Tokens.HUD_CHIP_COUNT and _theme.get_constant("bar_width", "Hud") == Tokens.HUD_BAR_SIZE.x
+					and _theme.get_constant("bar_height", "Hud") == Tokens.HUD_BAR_SIZE.y and _theme.get_constant("score_width", "Hud") == Tokens.HUD_SCORE_WIDTH
+					and _theme.get_constant("centre_width", "Hud") == Tokens.HUD_CENTRE_WIDTH and _theme.get_constant("icon_scale", "Hud") == Tokens.HUD_ICON_SCALE
+					and _theme.get_constant("plate_height", "Hud") == Tokens.HUD_PLATE_HEIGHT and _theme.get_constant("alert_plate_height", "Hud") == Tokens.HUD_ALERT_PLATE_HEIGHT,
+			"alert %s, pip size %d, chip %d x %d" % [_theme.get_color("alert", "Hud"), _theme.get_constant("pip_size", "Hud"), _theme.get_constant("chip_width", "Hud"),
+					_theme.get_constant("chip_height", "Hud")])
 	remove_child(holder)
 	holder.queue_free()
 

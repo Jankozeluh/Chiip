@@ -146,6 +146,10 @@ func _match_shots() -> void:
 	console.set_open(false)
 	_block_input = true
 	await _frames(2)
+	# You die with a teammate alive: the spectate view (their health, armor and weapon over the plate with their name), after the 2 s delay.
+	player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[1])
+	await _frames(200)
+	await _shot("hud_spectate")
 	# The end of the match, as the round manager announces it (in a rotation, so the third button shows).
 	(main.get_node("MatchEndScreen") as MatchEndScreen).set_next_map("Square")
 	manager.score[you] = 5

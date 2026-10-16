@@ -12,109 +12,191 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("round_hud_script")
 
-[node name="TopBar" type="HBoxContainer" parent="."]
+[node name="TdmBar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_top = 8.0
+offset_top = 24.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_type_variation = &"HudTopBar"
+theme_type_variation = &"HudRowBarTdm"
 
-[node name="YourBox" type="PanelContainer" parent="TopBar"]
+[node name="TdmYour" type="VBoxContainer" parent="TdmBar"]
 layout_mode = 2
+size_flags_vertical = 0
 mouse_filter = 2
-theme_type_variation = &"HudFriendlyBox"
+theme_type_variation = &"HudStack"
 
-[node name="Margin" type="MarginContainer" parent="TopBar/YourBox"]
+[node name="TdmYourScore" type="Label" parent="TdmBar/TdmYour"]
+unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudBoxMargin"
-
-[node name="Content" type="VBoxContainer" parent="TopBar/YourBox/Margin"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudBoxContent"
-
-[node name="Score" type="Label" parent="TopBar/YourBox/Margin/Content"]
-custom_minimum_size = Vector2(72, 0)
-layout_mode = 2
-theme_type_variation = &"HudScoreLabel"
+size_flags_horizontal = 8
+theme_type_variation = &"HudFriendlyScoreLabel"
 text = "0"
-horizontal_alignment = 1
 
-[node name="Pips" type="HBoxContainer" parent="TopBar/YourBox/Margin/Content"]
+[node name="TdmYourBar" type="Panel" parent="TdmBar/TdmYour"]
+unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"HudPips"
-alignment = 1
+theme_type_variation = &"HudScoreBarBack"
 
-[node name="TimerBox" type="PanelContainer" parent="TopBar"]
+[node name="TdmYourFill" type="Panel" parent="TdmBar/TdmYour/TdmYourBar"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"HudFriendlyBarFill"
+
+[node name="TdmCentreMargin" type="MarginContainer" parent="TdmBar"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"HudCentreMargin"
+
+[node name="TdmCentre" type="VBoxContainer" parent="TdmBar/TdmCentreMargin"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"HudTimerBox"
+theme_type_variation = &"HudStack"
 
-[node name="Margin" type="MarginContainer" parent="TopBar/TimerBox"]
+[node name="TdmTimer" type="Label" parent="TdmBar/TdmCentreMargin/TdmCentre"]
+unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudBoxMargin"
-
-[node name="Content" type="VBoxContainer" parent="TopBar/TimerBox/Margin"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudBoxContent"
-
-[node name="Timer" type="Label" parent="TopBar/TimerBox/Margin/Content"]
-custom_minimum_size = Vector2(104, 0)
-layout_mode = 2
-theme_type_variation = &"HudTimerLabel"
+theme_type_variation = &"HudLargeLabel"
 text = "0:00"
 horizontal_alignment = 1
 
-[node name="RoundLabel" type="Label" parent="TopBar/TimerBox/Margin/Content"]
+[node name="TdmRound" type="Label" parent="TdmBar/TdmCentreMargin/TdmCentre"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"HudRoundLabel"
+theme_type_variation = &"HudSmallLabel"
+text = "First to 50"
+horizontal_alignment = 1
+
+[node name="TdmEnemy" type="VBoxContainer" parent="TdmBar"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+
+[node name="TdmEnemyScore" type="Label" parent="TdmBar/TdmEnemy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"HudEnemyScoreLabel"
+text = "0"
+
+[node name="TdmEnemyBar" type="Panel" parent="TdmBar/TdmEnemy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudScoreBarBack"
+
+[node name="TdmEnemyFill" type="Panel" parent="TdmBar/TdmEnemy/TdmEnemyBar"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"HudEnemyBarFill"
+
+[node name="BombBar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = 24.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowBarBomb"
+
+[node name="YourPips" type="HBoxContainer" parent="BombBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"HudRowChips"
+alignment = 2
+
+[node name="YourScore" type="Label" parent="BombBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudFriendlyScoreLabel"
+text = "0"
+horizontal_alignment = 2
+
+[node name="BombCentre" type="VBoxContainer" parent="BombBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"HudStackCentre"
+
+[node name="Timer" type="Label" parent="BombBar/BombCentre"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudLargeLabel"
+text = "0:00"
+horizontal_alignment = 1
+
+[node name="PlantedPlate" type="PanelContainer" parent="BombBar/BombCentre"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"HudAlertPlate"
+
+[node name="PlantedLabel" type="Label" parent="BombBar/BombCentre/PlantedPlate"]
+layout_mode = 2
+theme_type_variation = &"HudAlertPlateLabel"
+text = "Bomb"
+vertical_alignment = 1
+
+[node name="RoundLabel" type="Label" parent="BombBar/BombCentre"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudSmallLabel"
 text = "Round 1"
 horizontal_alignment = 1
 
-[node name="EnemyBox" type="PanelContainer" parent="TopBar"]
+[node name="EnemyScore" type="Label" parent="BombBar"]
+unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudEnemyBox"
-
-[node name="Margin" type="MarginContainer" parent="TopBar/EnemyBox"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudBoxMargin"
-
-[node name="Content" type="VBoxContainer" parent="TopBar/EnemyBox/Margin"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"HudBoxContent"
-
-[node name="Score" type="Label" parent="TopBar/EnemyBox/Margin/Content"]
-custom_minimum_size = Vector2(72, 0)
-layout_mode = 2
-theme_type_variation = &"HudScoreLabel"
+size_flags_vertical = 4
+theme_type_variation = &"HudEnemyScoreLabel"
 text = "0"
-horizontal_alignment = 1
 
-[node name="Pips" type="HBoxContainer" parent="TopBar/EnemyBox/Margin/Content"]
+[node name="EnemyPips" type="HBoxContainer" parent="BombBar"]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 4
 mouse_filter = 2
-theme_type_variation = &"HudPips"
-alignment = 1
+theme_type_variation = &"HudRowChips"
 
 [node name="Center" type="VBoxContainer" parent="."]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -400.0
-offset_top = 136.0
+offset_top = 184.0
 offset_right = 400.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_type_variation = &"HudMessages"
+theme_type_variation = &"HudStackBlock"
+
+[node name="Lift" type="Control" parent="Center"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
 
 [node name="Title" type="Label" parent="Center"]
 layout_mode = 2
@@ -123,34 +205,17 @@ horizontal_alignment = 1
 
 [node name="Line1" type="Label" parent="Center"]
 layout_mode = 2
-theme_type_variation = &"HudLineLabel"
+theme_type_variation = &"HudSmallLabel"
 horizontal_alignment = 1
 
 [node name="Line2" type="Label" parent="Center"]
 layout_mode = 2
-theme_type_variation = &"HudNoteLabel"
+theme_type_variation = &"HudSmallLabel"
 horizontal_alignment = 1
 
 [node name="Line3" type="Label" parent="Center"]
 layout_mode = 2
-theme_type_variation = &"HudNoteLabel"
-horizontal_alignment = 1
-
-[node name="Respawn" type="Label" parent="."]
-visible = false
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = 80.0
-offset_right = 320.0
-offset_bottom = 112.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"HudRespawnLabel"
+theme_type_variation = &"HudSmallLabel"
 horizontal_alignment = 1
 
 [node name="KillFeed" type="VBoxContainer" parent="."]

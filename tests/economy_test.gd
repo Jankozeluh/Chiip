@@ -126,11 +126,18 @@ func _test_hud_and_scoreboard() -> void:
 	add_child(hud)
 	hud.set_round_manager(_rounds)
 	hud.set_player(_player)
-	var money := hud.get_node("MoneyLabel") as Label
-	var rewards := hud.get_node("RewardLabel") as Label
-	var shown := money.visible and money.text == "$ 1000"
+	var money := hud.get_node("%MoneyLabel") as Label
+	var rewards := hud.get_node("%RewardLabel") as Label
+	var shown: bool = money.is_visible_in_tree() and money.text == "$1000" and not hud.get_node("%HealthChips").visible
+	await _wait_ticks(2)
+	var hint := hud.get_node("%BuyHint") as Control
+	var hint_in_freeze := hint.is_visible_in_tree() and (hud.get_node("%BuyKey") as Label).text == "B" and _rounds.can_buy_now(_player)
+	await _wait_for_live()
+	await _wait_ticks(2)
+	_check("The money row shows a key cap 'B' with 'Buy' while the rules let you buy (freeze time), and not once the round is live",
+			hint_in_freeze and not hint.is_visible_in_tree(), "freeze %s, live %s" % [hint_in_freeze, hint.is_visible_in_tree()])
 	await _win_round(0)
-	var after := money.text == "$ 4000" and rewards.text.contains("+$3000  Round won")
+	var after: bool = money.text == "$4000" and rewards.text.contains("+$3000  Round won") and rewards.is_visible_in_tree()
 	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
 	add_child(board)
 	board.set_round_manager(_rounds)
@@ -148,7 +155,7 @@ func _test_hud_and_scoreboard() -> void:
 	await _new_match(_settings(), RespawnMatch.new())
 	hud.set_round_manager(_rounds)
 	hud.set_player(_player)
-	_check("...and no money on the HUD where there is none", not money.visible, "visible %s" % money.visible)
+	_check("...and no money on the HUD where there is none (the health chips are back)", not money.is_visible_in_tree() and hud.get_node("%HealthChips").visible, "visible %s" % money.is_visible_in_tree())
 	hud.queue_free()
 	board.queue_free()
 	await _wait_ticks(2)
@@ -389,14 +396,14 @@ func _test_kits() -> void:
 	Input.action_release("scoreboard")
 	var row := (board.find_child("Table", true, false) as ScoreboardTable).get_row(defender)
 	var marked := _cells(row)[0].contains("kit")
-	_check("The kit shows on the HUD and on your team's scoreboard row", (hud.get_node("KitIcon") as Control).visible and marked,
+	_check("The kit shows on the HUD and on your team's scoreboard row", (hud.get_node("%KitIcon") as Control).visible and marked,
 			"row %s" % [_cells(row)])
 	await _wait_for_live()
 	for loser in _rounds.get_members(_rounds.attacking_team):
 		loser.take_damage(500.0, Hitbox.Zone.CHEST, null)
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
-	_check("A kit lasts one round (a fresh loadout next round)", not defender.has_defuse_kit and not (hud.get_node("KitIcon") as Control).visible,
+	_check("A kit lasts one round (a fresh loadout next round)", not defender.has_defuse_kit and not (hud.get_node("%KitIcon") as Control).visible,
 			"kit %s" % defender.has_defuse_kit)
 	Teams.set_viewer_team(0)
 	hud.queue_free()

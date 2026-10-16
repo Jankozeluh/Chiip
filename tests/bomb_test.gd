@@ -80,7 +80,7 @@ func _test_where_the_bomb_exists() -> void:
 			and bomb.attacking_team == _rounds.attacking_team
 			and bomb.global_position.distance_to(carrier.global_transform * Bomb.BACK_OFFSET) < 0.01,
 			"state %s, carrier %s (team %d, attackers %d)" % [Bomb.State.keys()[bomb.state], carrier, carrier.team if carrier else -1, _rounds.attacking_team])
-	var side_line: String = _center()[2]
+	var side_line: String = _center()[1]
 	_check("Freeze time says what to do in a bomb round",
 			side_line == "You attack: plant the bomb at A or B" or side_line == "You defend: guard A and B", side_line)
 
@@ -142,8 +142,12 @@ func _test_carry_and_plant() -> void:
 	var at_plant := _rounds.time_left
 	await _wait_seconds(0.5)
 	await _wait_ticks(1)
-	_check("The plant stops the round clock; the timer shows BOMB and everyone is told the site",
+	var round_hud := _hud.get_node("RoundHud") as RoundHud
+	var plate := round_hud.get_node("%PlantedPlate") as Control
+	_check("The plant stops the round clock; an alert plate saying 'Bomb' takes the timer's place and everyone is told the site",
 			_rounds.time_left == at_plant and at_plant < time_before and _timer_text() == RoundHud.BOMB_TIMER_TEXT
+			and plate.visible and not (round_hud.get_node("%Timer") as Control).visible
+			and (plate.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == round_hud.get_theme_color("alert", "Palette")
 			and _bomb_hud().get_message() == "Bomb planted at A" and _rounds.phase == RoundManager.Phase.LIVE,
 			"time %.2f → %.2f, timer '%s', message '%s'" % [at_plant, _rounds.time_left, _timer_text(), _bomb_hud().get_message()])
 
@@ -522,7 +526,7 @@ func _bomb_hud() -> BombHud:
 
 
 func _timer_text() -> String:
-	return (_hud.get_node("RoundHud/TopBar/TimerBox/Margin/Content/Timer") as Label).text
+	return (_hud.get_node("RoundHud") as RoundHud).get_timer_text()
 
 
 ## The round HUD's center lines as [title, line 1, line 2, line 3]; a hidden line counts as empty.

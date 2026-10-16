@@ -193,6 +193,12 @@ static func _scale_control(control: Control, factor: float) -> void:
 		control.offset_bottom = roundf(offsets[3] * factor)
 
 
+## A copy of [param box] with its borders, corners, margins and shadow multiplied
+## by [param factor]. For the HUD, which [UiScale] scales control by control.
+static func scale_box(box: StyleBox, factor: float) -> StyleBox:
+	return _scale_stylebox(box, factor)
+
+
 ## A copy of [param box] with its borders, corners, margins and shadow multiplied.
 static func _scale_stylebox(box: StyleBox, factor: float) -> StyleBox:
 	var copy := box.duplicate() as StyleBox

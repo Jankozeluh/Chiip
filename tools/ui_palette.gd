@@ -363,76 +363,71 @@ const CONSOLE_ROW_GAP := 12
 ## The input's caret is a 10 px wide block (the mockup's lime block, 10 x 18).
 const CONSOLE_CARET_WIDTH := 10
 
-# --- HUD (the overlay of a running game; D-133) ---
+# --- HUD (the overlay of a running game; D-133, D-141) ---
 #
 # The HUD takes its look from the same theme as the menus, through the roles
-# (type variations) that tools/make_ui_theme.gd builds from these tokens. It is
-# scaled by [UiScale] rather than [UiTheme], and it was laid out before the menus'
-# 16 px grid, so its text sizes are today's numbers (40, 28, 24...) until a
-# mockup replaces them. The tokens are the HUD's own, so changing a menu token
-# never moves the HUD.
+# (type variations) that tools/make_ui_theme.gd builds from these tokens, and the
+# mockups' (09 to 13) sizes, colours and 8 px grid: the text sizes are the menus'
+# (TEXT_SIZE, TEXT_SIZE_LARGE, TEXT_SIZE_TITLE, TEXT_SIZE_HERO), the colours the
+# palette's, and HUD text gets a hard SHADOW_OFFSET shadow in SHADOW instead of an
+# outline. The HUD is scaled by [UiScale] rather than [UiTheme]; the numbers here
+# are for a 720-pixel-tall window like every other token.
 
-## The outline of all HUD text (black, so it reads over any scenery).
-const HUD_OUTLINE := Color(0, 0, 0)
-
-## HUD text: the weapon name, health, ammo, the top bar's scores and the bomb prompt.
-const HUD_TEXT := Color("e6ecf5")
-## Brighter HUD text: the round timer, the centre messages and the respawn count.
-const HUD_TEXT_BRIGHT := Color("ffffff")
-## The small line under the round timer ("Round 3", "First to 50").
-const HUD_TEXT_DIM := Color(0.75, 0.77, 0.8)
-## Something wrong: the timer in the last seconds, bomb planted and overtime, the "Killed by" message.
-const HUD_ALERT := Color(1.0, 0.4, 0.3)
-## The timer during freeze time.
-const HUD_FREEZE_TIMER := Color(1.0, 0.85, 0.4)
-## The title notices in the middle of the screen ("Switching sides", "Overtime").
-const HUD_NOTICE := Color(1.0, 0.85, 0.4)
-## The bomb: its tag, its messages and the progress bar's fill.
+## The dead tint (mockup 10): ink-grey over the whole screen while you wait to respawn.
+const HUD_DEAD_TINT := Color("282c32", 0.55)
+## The reserve ammo ("/ 90") is TEXT at 70% opacity.
+const HUD_RESERVE_TEXT := Color("e6ecf5", 0.7)
+## The bomb HUD's gold (its tag, its messages and the progress bar's fill) and the bar's strip behind it.
+## Kept for [BombHud] until it is restyled; the kill feed's gap too.
 const HUD_GOLD := Color(1.0, 0.82, 0.35)
-## The bomb's progress bar: the strip behind the fill, and the fill.
 const HUD_BAR_BACK := Color(0.05, 0.06, 0.08, 0.8)
 const HUD_BAR_FILL := Color(1.0, 0.82, 0.35)
-## A player's square in the top bar once they are dead (a living player's is their team's colour).
-const HUD_PIP_DEAD := Color(0.22, 0.23, 0.26)
-## The round timer's box.
-const HUD_TIMER_BOX := Color(0.06, 0.07, 0.09, 0.85)
-## A team's score box is the team's colour (from [Teams]) darkened by this much, at this opacity.
-const HUD_SCORE_BOX_DARKEN := 0.55
-const HUD_SCORE_BOX_ALPHA := 0.9
-
-## Text sizes, each with the width of its outline: health and ammo; the "Killed by"
-## message and the main line of the centre messages; the "Spectating" line; the
-## weapon name, bomb tag and prompts and the lower lines of the centre messages;
-## the centre messages' title; the top bar's scores and timer (no outline) and
-## the small line under the timer.
-const HUD_SIZE_VALUE := 40
-const HUD_OUTLINE_VALUE := 8
-const HUD_SIZE_HEADLINE := 32
-const HUD_OUTLINE_HEADLINE := 8
-const HUD_SIZE_SPECTATE := 28
-const HUD_OUTLINE_SPECTATE := 6
+## The bomb HUD's text size (24 px, kept until it is restyled), and the gap between the kill feed's lines.
 const HUD_SIZE_TEXT := 24
-const HUD_OUTLINE_TEXT := 6
-const HUD_SIZE_TITLE := 48
-const HUD_OUTLINE_TITLE := 10
-const HUD_SIZE_SCORE := 32
-const HUD_OUTLINE_SCORE := 0
-const HUD_SIZE_SMALL := 16
-## M7's small HUD lines (the weapon slots, the money reward): 16 px with a 4 px outline.
-const HUD_OUTLINE_SMALL := 4
-## The money and its rewards (M7): a soft green.
-const HUD_MONEY := Color(0.55, 0.9, 0.55)
-
-## Side of a player's square in the top bar.
-const HUD_PIP_SIZE := 12
-## Between the three boxes of the top bar, between a box's score and its squares, and between the squares.
-const HUD_BAR_GAP := 4
-const HUD_BOX_GAP := 2
-const HUD_PIP_GAP := 3
-## Inside a top bar box: left and right, top, bottom.
-const HUD_BOX_PAD_X := 12
-const HUD_BOX_PAD_TOP := 4
-const HUD_BOX_PAD_BOTTOM := 8
-## Between the lines of the centre messages, and between the lines of the kill feed.
-const HUD_MESSAGE_GAP := 4
 const HUD_FEED_GAP := 3
+
+## Line boxes. Silkscreen's line box is much taller than its size (41 px at 32, 62 at 48, 123 at 96),
+## and the mockups set the line height equal to the size. These trim a label's font by that much:
+## x pixels off the top and y off the bottom of the line box (at 32 px, 48 px and 96 px).
+const HUD_TRIM_LARGE := Vector2i(5, 4)
+const HUD_TRIM_TITLE := Vector2i(7, 7)
+const HUD_TRIM_HERO := Vector2i(14, 13)
+
+## Gaps (the 8 px grid). Between stacked parts of a block (health and its chips, the weapon and its ammo,
+## a TDM score and its bar); between an icon and its number, a name and its icon, magazine and reserve;
+## between the big blocks (money and health, the banner's lines, the plate's parts, the spectate plate and the row above it).
+const HUD_GAP_STACK := 8
+const HUD_GAP_ICON := 12
+const HUD_GAP_BLOCK := 16
+## The Bomb top bar's items and the spectate row's three groups; the Team Deathmatch top bar's three columns.
+const HUD_GAP_BAR_BOMB := 24
+const HUD_GAP_BAR_TDM := 32
+## Between the health block and the armor block in the bottom-left corner.
+const HUD_GAP_STATS := 40
+## Between the time and the round in the Bomb top bar; between the countdown and the death plate.
+const HUD_GAP_CENTRE := 6
+const HUD_GAP_DEATH := 24
+## Between the health chips, and between a team's alive chips.
+const HUD_GAP_CHIPS := 4
+
+## Sizes of the drawn parts. The health chip (one per 10 health, ten of them), the HP one chip stands for;
+## a player's chip in the Bomb top bar; a Team Deathmatch score bar.
+const HUD_CHIP_SIZE := Vector2i(12, 8)
+const HUD_CHIP_HEALTH := 10
+const HUD_CHIP_COUNT := 10
+const HUD_PIP_SIZE := 12
+const HUD_BAR_SIZE := Vector2i(160, 8)
+## The Bomb top bar's score boxes (the number is right- or left-aligned in them) and its centre column.
+const HUD_SCORE_WIDTH := 64
+const HUD_CENTRE_WIDTH := 120
+## How many times bigger the bottom corners' icons are drawn than the 16 px icon set (the mini row uses 1).
+const HUD_ICON_SCALE := 2
+## The plate under the countdown and in the spectate view: its height and its side padding (INK, no text shadow);
+## the alert plate that replaces the Bomb timer once the bomb is planted.
+const HUD_PLATE_HEIGHT := 48
+const HUD_PLATE_PAD := 20
+const HUD_ALERT_PLATE_HEIGHT := 32
+const HUD_ALERT_PLATE_PAD := 12
+## The magazine (48 px) and the reserve (32 px) share a baseline: with the line boxes trimmed the reserve's
+## baseline is this much nearer its bottom than the magazine's, so it is lifted by it.
+const HUD_BASELINE_LIFT := 1

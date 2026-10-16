@@ -378,86 +378,133 @@ func _containers() -> void:
 	_margins("SwatchMargin", Palette.SWATCH_MARGIN, Palette.SWATCH_MARGIN)
 
 
-## The HUD's roles (D-133): the labels of the weapon, health and ammo, the death
-## and spectate messages, the top bar and the centre messages, the bomb's text,
-## the top bar's boxes and spacing, and the bomb's progress bar. The HUD is scaled
-## by [UiScale], which reads the sizes and spacing these roles give a control and
-## scales them, so a role's numbers are for a 720-pixel-tall window like the rest.
-## The custom type "Hud" holds what code reads: the colours of game states (the
-## timer in freeze time and in the last seconds, a notice, the bomb's gold, a dead
-## player's square) and the size of a player's square, so a screen asks
-## get_theme_color("alert", "Hud") instead of keeping a colour of its own.
+## The HUD's roles (D-133, D-141), as in the mockups 09 to 13. Every label of the HUD has a hard
+## 2 px SHADOW shadow instead of an outline (the plates, which are ink, none), in the menus' text
+## sizes; the 32, 48 and 96 px roles use a font with its line box trimmed to the size (the mockups'
+## line height), so the gaps in the layout are the mockups'. The HUD is scaled by [UiScale], which
+## reads the sizes, spacing, shadows and boxes these roles give a control and scales them, so a
+## role's numbers are for a 720-pixel-tall window like the rest.
+## The custom type "Hud" holds what code reads: the colours of game states (the alert of the timer
+## in the last seconds, a notice, the bomb's gold) and the sizes of the drawn parts (chips, bars,
+## columns, plates, icons), so a screen asks get_theme_color("alert", "Hud") or
+## get_theme_constant("chip_width", "Hud") instead of keeping a number of its own.
 func _hud() -> void:
-	_colors("Hud", {
-		"freeze_timer": Palette.HUD_FREEZE_TIMER, "alert": Palette.HUD_ALERT, "notice": Palette.HUD_NOTICE,
-		"gold": Palette.HUD_GOLD, "pip_dead": Palette.HUD_PIP_DEAD,
+	_colors("Hud", {"alert": Palette.ALERT, "notice": Palette.ALERT, "gold": Palette.HUD_GOLD})
+	_constants("Hud", {
+		"pip_size": Palette.HUD_PIP_SIZE, "chip_width": Palette.HUD_CHIP_SIZE.x, "chip_height": Palette.HUD_CHIP_SIZE.y,
+		"chip_health": Palette.HUD_CHIP_HEALTH, "chip_count": Palette.HUD_CHIP_COUNT,
+		"bar_width": Palette.HUD_BAR_SIZE.x, "bar_height": Palette.HUD_BAR_SIZE.y,
+		"score_width": Palette.HUD_SCORE_WIDTH, "centre_width": Palette.HUD_CENTRE_WIDTH,
+		"icon_scale": Palette.HUD_ICON_SCALE, "plate_height": Palette.HUD_PLATE_HEIGHT,
+		"alert_plate_height": Palette.HUD_ALERT_PLATE_HEIGHT,
 	})
-	_constants("Hud", {"pip_size": Palette.HUD_PIP_SIZE})
-	# Bottom corners: the weapon name, and health and ammo. The death and spectate lines.
-	_hud_label("HudWeaponLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT)
-	_hud_label("HudValueLabel", Palette.HUD_SIZE_VALUE, Palette.HUD_OUTLINE_VALUE, Palette.HUD_TEXT)
-	_hud_label("HudDeathLabel", Palette.HUD_SIZE_HEADLINE, Palette.HUD_OUTLINE_HEADLINE, Palette.HUD_ALERT)
-	_hud_label("HudSpectateLabel", Palette.HUD_SIZE_SPECTATE, Palette.HUD_OUTLINE_SPECTATE, Palette.HUD_TEXT)
-	# M7's lines: the weapon slots, the money and the reward under it.
-	_hud_label("HudSlotsLabel", Palette.HUD_SIZE_SMALL, Palette.HUD_OUTLINE_SMALL, Palette.HUD_TEXT)
-	_hud_label("HudMoneyLabel", Palette.HUD_SIZE_SCORE, Palette.HUD_OUTLINE_TEXT, Palette.HUD_MONEY)
-	_hud_label("HudRewardLabel", Palette.HUD_SIZE_SMALL, Palette.HUD_OUTLINE_SMALL, Palette.HUD_MONEY)
-	# Under the death message in a respawning match: "Respawning in 3".
-	_hud_label("HudRespawnLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT_BRIGHT)
-	# The top bar: scores, the timer (game states recolour it) and the line under it.
-	_hud_label("HudScoreLabel", Palette.HUD_SIZE_SCORE, Palette.HUD_OUTLINE_SCORE, Palette.HUD_TEXT)
-	_hud_label("HudTimerLabel", Palette.HUD_SIZE_SCORE, Palette.HUD_OUTLINE_SCORE, Palette.HUD_TEXT_BRIGHT)
-	_hud_label("HudRoundLabel", Palette.HUD_SIZE_SMALL, Palette.HUD_OUTLINE_SCORE, Palette.HUD_TEXT_DIM)
-	# The centre messages: the title, the main line, and the lower lines.
-	_hud_label("HudTitleLabel", Palette.HUD_SIZE_TITLE, Palette.HUD_OUTLINE_TITLE, Palette.HUD_TEXT_BRIGHT)
-	_hud_label("HudLineLabel", Palette.HUD_SIZE_HEADLINE, Palette.HUD_OUTLINE_HEADLINE, Palette.HUD_TEXT_BRIGHT)
-	_hud_label("HudNoteLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT_BRIGHT)
-	# The bomb: its tag, the prompt under the crosshair and the message under the top bar.
-	_hud_label("HudBombTagLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_GOLD)
-	_hud_label("HudPromptLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT)
-	_hud_label("HudBombMessageLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_GOLD)
-	# The top bar: its spacing, the boxes (each team's colour comes from Teams, darkened) and what is inside them.
-	_variation("HudTopBar", "HBoxContainer")
-	_constants("HudTopBar", {"separation": Palette.HUD_BAR_GAP})
-	_variation("HudFriendlyBox", "PanelContainer")
-	_styles("HudFriendlyBox", {"panel": _box("hud_friendly_box", _team_box(Teams.FRIENDLY_COLOR))})
-	_variation("HudEnemyBox", "PanelContainer")
-	_styles("HudEnemyBox", {"panel": _box("hud_enemy_box", _team_box(Teams.ENEMY_COLOR))})
-	_variation("HudTimerBox", "PanelContainer")
-	_styles("HudTimerBox", {"panel": _box("hud_timer_box", Palette.HUD_TIMER_BOX)})
-	_variation("HudBoxMargin", "MarginContainer")
-	_constants("HudBoxMargin", {
-		"margin_left": Palette.HUD_BOX_PAD_X, "margin_top": Palette.HUD_BOX_PAD_TOP,
-		"margin_right": Palette.HUD_BOX_PAD_X, "margin_bottom": Palette.HUD_BOX_PAD_BOTTOM,
-	})
-	_variation("HudBoxContent", "VBoxContainer")
-	_constants("HudBoxContent", {"separation": Palette.HUD_BOX_GAP})
-	_variation("HudPips", "HBoxContainer")
-	_constants("HudPips", {"separation": Palette.HUD_PIP_GAP})
-	# The centre messages' lines, and the kill feed's.
-	_variation("HudMessages", "VBoxContainer")
-	_constants("HudMessages", {"separation": Palette.HUD_MESSAGE_GAP})
+	var regular: Font = load(Palette.FONT)
+	var bold: Font = load(Palette.FONT_BOLD)
+	var large := _trimmed("hud_font_large", regular, Palette.HUD_TRIM_LARGE)
+	var title := _trimmed("hud_font_title", regular, Palette.HUD_TRIM_TITLE)
+	var title_bold := _trimmed("hud_font_title_bold", bold, Palette.HUD_TRIM_TITLE)
+	var hero_bold := _trimmed("hud_font_hero_bold", bold, Palette.HUD_TRIM_HERO)
+	# 16 px text: the weapon name, "Buy", the side line, the mini row; dim: the reward; the unseen slot list.
+	_hud_label("HudSmallLabel", Palette.TEXT_SIZE, Palette.TEXT)
+	_hud_label("HudDimLabel", Palette.TEXT_SIZE, Palette.TEXT_DIM)
+	_hud_label("HudSlotsLabel", Palette.TEXT_SIZE, Palette.TEXT)
+	# The big numbers: health and magazine (48), armor, money, the time and the reserve (32, the reserve 70%).
+	_hud_label("HudValueLabel", Palette.TEXT_SIZE_TITLE, Palette.TEXT, title)
+	_hud_label("HudLargeLabel", Palette.TEXT_SIZE_LARGE, Palette.TEXT, large)
+	_hud_label("HudReserveLabel", Palette.TEXT_SIZE_LARGE, Palette.HUD_RESERVE_TEXT, large)
+	# The top bars' scores in the UI's team colours, the banners (48 Bold) and the respawn countdown (96 Bold).
+	_hud_label("HudFriendlyScoreLabel", Palette.TEXT_SIZE_TITLE, Palette.FRIENDLY, title)
+	_hud_label("HudEnemyScoreLabel", Palette.TEXT_SIZE_TITLE, Palette.ENEMY, title)
+	_hud_label("HudTitleLabel", Palette.TEXT_SIZE_TITLE, Palette.TEXT, title_bold)
+	_hud_label("HudCountdownLabel", Palette.TEXT_SIZE_HERO, Palette.TEXT, hero_bold)
+	# On a plate (ink, no text shadow): the dim words, the dot, the plain words, a name, the alert plate's word.
+	_hud_label("HudPlateDimLabel", Palette.TEXT_SIZE, Palette.TEXT_DIM, null, false)
+	_hud_label("HudPlateMuteLabel", Palette.TEXT_SIZE, Palette.MUTE, null, false)
+	_hud_label("HudPlateLabel", Palette.TEXT_SIZE, Palette.TEXT, null, false)
+	_hud_label("HudPlateNameLabel", Palette.TEXT_SIZE_LARGE, Palette.TEXT, large, false)
+	_hud_label("HudAlertPlateLabel", Palette.TEXT_SIZE_LARGE, Palette.TEXT_ON_FILL, large, false)
+	# The bomb: its tag, the prompt under the crosshair and the message under the top bar (restyled with the bomb HUD).
+	_hud_label("HudBombTagLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_GOLD)
+	_hud_label("HudPromptLabel", Palette.HUD_SIZE_TEXT, Palette.TEXT)
+	_hud_label("HudBombMessageLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_GOLD)
+	# Spacing: stacked blocks (columns) and rows of parts.
+	_hud_gap("HudStack", "VBoxContainer", Palette.HUD_GAP_STACK)
+	_hud_gap("HudStackBlock", "VBoxContainer", Palette.HUD_GAP_BLOCK)
+	_hud_gap("HudStackDeath", "VBoxContainer", Palette.HUD_GAP_DEATH)
+	_hud_gap("HudStackCentre", "VBoxContainer", Palette.HUD_GAP_CENTRE)
+	_hud_gap("HudRowStack", "HBoxContainer", Palette.HUD_GAP_STACK)
+	_hud_gap("HudRowIcon", "HBoxContainer", Palette.HUD_GAP_ICON)
+	_hud_gap("HudRowBlock", "HBoxContainer", Palette.HUD_GAP_BLOCK)
+	_hud_gap("HudRowBarBomb", "HBoxContainer", Palette.HUD_GAP_BAR_BOMB)
+	_hud_gap("HudRowBarTdm", "HBoxContainer", Palette.HUD_GAP_BAR_TDM)
+	_hud_gap("HudRowStats", "HBoxContainer", Palette.HUD_GAP_STATS)
+	_hud_gap("HudRowChips", "HBoxContainer", Palette.HUD_GAP_CHIPS)
+	# The Team Deathmatch centre column hangs 8 px lower than the score columns (HUD_GAP_STACK).
+	_variation("HudCentreMargin", "MarginContainer")
+	_constants("HudCentreMargin", {"margin_top": Palette.HUD_GAP_STACK})
+	# The reserve ammo is lifted to share the magazine's baseline.
+	_variation("HudBaselineLift", "MarginContainer")
+	_constants("HudBaselineLift", {"margin_bottom": Palette.HUD_BASELINE_LIFT})
+	# The health chips (TEXT while that 10 HP is there, LINE when gone) and the score bars (a VOID shadow behind).
+	_hud_panel("HudHealthChip", _box("hud_health_chip", Palette.TEXT))
+	_hud_panel("HudHealthChipEmpty", _box("hud_health_chip_empty", Palette.LINE_COLOR))
+	_hud_panel("HudScoreBarBack", _shadowed("hud_score_bar_back", Palette.INK, Vector4.ZERO))
+	_hud_panel("HudFriendlyBarFill", _box("hud_friendly_bar_fill", Palette.FRIENDLY))
+	_hud_panel("HudEnemyBarFill", _box("hud_enemy_bar_fill", Palette.ENEMY))
+	# A player's chip in the Bomb top bar: filled with a hard shadow while alive, a 2 px frame when dead.
+	_hud_panel("HudFriendlyPipAlive", _shadowed("hud_friendly_pip_alive", Palette.FRIENDLY, Vector4.ZERO))
+	_hud_panel("HudEnemyPipAlive", _shadowed("hud_enemy_pip_alive", Palette.ENEMY, Vector4.ZERO))
+	_hud_panel("HudFriendlyPipDead", _box("hud_friendly_pip_dead", Color.TRANSPARENT, Palette.FRIENDLY, Palette.BORDER))
+	_hud_panel("HudEnemyPipDead", _box("hud_enemy_pip_dead", Color.TRANSPARENT, Palette.ENEMY, Palette.BORDER))
+	# The dead tint over the whole screen (mockup 10).
+	_hud_panel("HudDeadTint", _box("hud_dead_tint", Palette.HUD_DEAD_TINT))
+	# Plates: ink, padded at the sides (their height is the "plate_height" constant); the alert plate of the planted bomb.
+	_variation("HudPlate", "PanelContainer")
+	_styles("HudPlate", {"panel": _box("hud_plate", Palette.INK, Color.TRANSPARENT, 0, Vector4(Palette.HUD_PLATE_PAD, 0, Palette.HUD_PLATE_PAD, 0))})
+	_variation("HudAlertPlate", "PanelContainer")
+	_styles("HudAlertPlate", {"panel": _box("hud_alert_plate", Palette.ALERT, Color.TRANSPARENT, 0, Vector4(Palette.HUD_ALERT_PLATE_PAD, 0, Palette.HUD_ALERT_PLATE_PAD, 0))})
+	# The kill feed's lines (restyled with the kill feed).
 	_variation("HudKillFeed", "VBoxContainer")
 	_constants("HudKillFeed", {"separation": Palette.HUD_FEED_GAP})
-	# The bomb's progress bar: a strip and the fill on it (both plain Panels with one flat colour).
-	_variation("HudBarBack", "Panel")
-	_styles("HudBarBack", {"panel": _box("hud_bar_back", Palette.HUD_BAR_BACK)})
-	_variation("HudBarFill", "Panel")
-	_styles("HudBarFill", {"panel": _box("hud_bar_fill", Palette.HUD_BAR_FILL)})
+	# The bomb's progress bar: a strip and the fill on it (both plain Panels with one flat colour; restyled with the bomb HUD).
+	_hud_panel("HudBarBack", _box("hud_bar_back", Palette.HUD_BAR_BACK))
+	_hud_panel("HudBarFill", _box("hud_bar_fill", Palette.HUD_BAR_FILL))
 
 
-## A HUD text role: a [Label] with a size, an outline width (the outline is
-## [constant Palette.HUD_OUTLINE]) and a colour.
-func _hud_label(role: String, size: int, outline: int, color: Color) -> void:
+## A HUD text role: a [Label] with a size, a colour, a font (null: the usual one) and a hard shadow
+## ([constant Palette.SHADOW_OFFSET] down and right in [constant Palette.SHADOW]), or none for text on a plate.
+func _hud_label(role: String, size: int, color: Color, font: Font = null, shadow: bool = true) -> void:
 	_variation(role, "Label")
 	_font_sizes(role, {"font_size": size})
-	_colors(role, {"font_color": color, "font_outline_color": Palette.HUD_OUTLINE})
-	_constants(role, {"outline_size": outline})
+	if font != null:
+		_fonts(role, {"font": font})
+	_colors(role, {"font_color": color, "font_shadow_color": Palette.SHADOW if shadow else Color.TRANSPARENT})
+	_constants(role, {
+		"outline_size": Palette.TEXT_OUTLINE_SIZE, "shadow_outline_size": 0,
+		"shadow_offset_x": Palette.SHADOW_OFFSET, "shadow_offset_y": Palette.SHADOW_OFFSET,
+	})
 
 
-## A team's colour as the top bar's score box shows it: darkened, a little see-through.
-func _team_box(color: Color) -> Color:
-	return Color(color.darkened(Palette.HUD_SCORE_BOX_DARKEN), Palette.HUD_SCORE_BOX_ALPHA)
+## A box role: a [Panel] with one stylebox.
+func _hud_panel(role: String, box: StyleBoxFlat) -> void:
+	_variation(role, "Panel")
+	_styles(role, {"panel": box})
+
+
+## A container role that only sets the space between its children.
+func _hud_gap(role: String, base_type: String, gap: int) -> void:
+	_variation(role, base_type)
+	_constants(role, {"separation": gap})
+
+
+## [param font] with its line box trimmed by [param trim] (x off the top, y off the bottom).
+func _trimmed(id: String, font: Font, trim: Vector2i) -> FontVariation:
+	var trimmed := FontVariation.new()
+	trimmed.resource_scene_unique_id = id
+	trimmed.base_font = font
+	trimmed.spacing_top = -trim.x
+	trimmed.spacing_bottom = -trim.y
+	return trimmed
 
 
 ## The developer console (mockup 17), on top of the ConsolePanel strip: the output's lines in the

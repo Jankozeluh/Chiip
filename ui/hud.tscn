@@ -4,9 +4,7 @@
 [ext_resource type="Script" path="res://ui/crosshair.gd" id="crosshair_script"]
 [ext_resource type="PackedScene" path="res://ui/round_hud.tscn" id="round_hud_scene"]
 [ext_resource type="PackedScene" path="res://ui/bomb_hud.tscn" id="bomb_hud_scene"]
-[ext_resource type="Script" path="res://ui/armor_icon.gd" id="armor_icon_script"]
 [ext_resource type="Script" path="res://ui/scope_overlay.gd" id="scope_overlay_script"]
-[ext_resource type="Texture2D" path="res://assets/ui/weapons/defuse_kit_kill.png" id="kit_icon"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
@@ -40,53 +38,23 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("crosshair_script")
 
+[node name="DeadTint" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"HudDeadTint"
+
 [node name="RoundHud" parent="." instance=ExtResource("round_hud_scene")]
 
 [node name="BombHud" parent="." instance=ExtResource("bomb_hud_scene")]
 
-[node name="WeaponLabel" type="Label" parent="."]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -352.0
-offset_top = -112.0
-offset_right = -32.0
-offset_bottom = -80.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_type_variation = &"HudWeaponLabel"
-horizontal_alignment = 2
-
-[node name="AmmoLabel" type="Label" parent="."]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -352.0
-offset_top = -80.0
-offset_right = -32.0
-offset_bottom = -24.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_type_variation = &"HudValueLabel"
-horizontal_alignment = 2
-
-[node name="HealthLabel" type="Label" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 32.0
-offset_top = -80.0
-offset_right = 352.0
-offset_bottom = -24.0
-grow_vertical = 0
-theme_type_variation = &"HudValueLabel"
-text = "+ 100"
-
 [node name="SlotsLabel" type="Label" parent="."]
+visible = false
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -102,103 +70,373 @@ theme_type_variation = &"HudSlotsLabel"
 horizontal_alignment = 2
 vertical_alignment = 2
 
-[node name="MoneyLabel" type="Label" parent="."]
-visible = false
+[node name="BottomLeft" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 32.0
-offset_top = -124.0
-offset_right = 352.0
-offset_bottom = -84.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = -32.0
 grow_vertical = 0
-theme_type_variation = &"HudMoneyLabel"
+mouse_filter = 2
+theme_type_variation = &"HudStackBlock"
+
+[node name="MoneyRow" type="HBoxContainer" parent="BottomLeft"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowBlock"
+
+[node name="MoneyLabel" type="Label" parent="BottomLeft/MoneyRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"HudLargeLabel"
 text = "$ 0"
 
-[node name="RewardLabel" type="Label" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 32.0
-offset_top = -200.0
-offset_right = 352.0
-offset_bottom = -124.0
-grow_vertical = 0
-theme_type_variation = &"HudRewardLabel"
-vertical_alignment = 2
+[node name="RewardLabel" type="Label" parent="BottomLeft/MoneyRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"HudDimLabel"
 
-[node name="ArmorIcon" type="Control" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 200.0
-offset_top = -70.0
-offset_right = 232.0
-offset_bottom = -34.0
-grow_vertical = 0
-mouse_filter = 2
-script = ExtResource("armor_icon_script")
-
-[node name="ArmorLabel" type="Label" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 244.0
-offset_top = -80.0
-offset_right = 404.0
-offset_bottom = -24.0
-grow_vertical = 0
-theme_type_variation = &"HudValueLabel"
-text = "0"
-
-[node name="KitIcon" type="TextureRect" parent="."]
+[node name="BuyHint" type="HBoxContainer" parent="BottomLeft/MoneyRow"]
+unique_name_in_owner = true
 visible = false
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 412.0
-offset_top = -68.0
-offset_right = 460.0
-offset_bottom = -36.0
-grow_vertical = 0
+layout_mode = 2
+size_flags_vertical = 8
 mouse_filter = 2
-texture = ExtResource("kit_icon")
+theme_type_variation = &"HudRowStack"
+
+[node name="BuyKey" type="Label" parent="BottomLeft/MoneyRow/BuyHint"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"KeyCapLabel"
+text = "B"
+
+[node name="BuyLabel" type="Label" parent="BottomLeft/MoneyRow/BuyHint"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudSmallLabel"
+text = "Buy"
+
+[node name="StatsRow" type="HBoxContainer" parent="BottomLeft"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowStats"
+
+[node name="HealthColumn" type="VBoxContainer" parent="BottomLeft/StatsRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+
+[node name="HealthRow" type="HBoxContainer" parent="BottomLeft/StatsRow/HealthColumn"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowIcon"
+
+[node name="HealthIcon" type="TextureRect" parent="BottomLeft/StatsRow/HealthColumn/HealthRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
 expand_mode = 1
-stretch_mode = 5
 texture_filter = 1
 
-[node name="DeathLabel" type="Label" parent="."]
-visible = false
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = 40.0
-offset_right = 320.0
-offset_bottom = 120.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"HudDeathLabel"
-horizontal_alignment = 1
+[node name="HealthLabel" type="Label" parent="BottomLeft/StatsRow/HealthColumn/HealthRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudValueLabel"
+text = "100"
 
-[node name="SpectateLabel" type="Label" parent="."]
+[node name="HealthChips" type="HBoxContainer" parent="BottomLeft/StatsRow/HealthColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowChips"
+
+[node name="GearRow" type="HBoxContainer" parent="BottomLeft/StatsRow"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"HudRowIcon"
+
+[node name="ArmorBlock" type="HBoxContainer" parent="BottomLeft/StatsRow/GearRow"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowIcon"
+
+[node name="ArmorIcon" type="TextureRect" parent="BottomLeft/StatsRow/GearRow/ArmorBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="ArmorLabel" type="Label" parent="BottomLeft/StatsRow/GearRow/ArmorBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudLargeLabel"
+text = "0"
+
+[node name="KitIcon" type="TextureRect" parent="BottomLeft/StatsRow/GearRow"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="BottomRight" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -32.0
+offset_top = -32.0
+offset_right = -32.0
+offset_bottom = -32.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+
+[node name="WeaponRow" type="HBoxContainer" parent="BottomRight"]
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_filter = 2
+theme_type_variation = &"HudRowIcon"
+
+[node name="WeaponLabel" type="Label" parent="BottomRight/WeaponRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudSmallLabel"
+
+[node name="WeaponIcon" type="TextureRect" parent="BottomRight/WeaponRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="AmmoRow" type="HBoxContainer" parent="BottomRight"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_filter = 2
+theme_type_variation = &"HudRowIcon"
+
+[node name="MagLabel" type="Label" parent="BottomRight/AmmoRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudValueLabel"
+
+[node name="ReserveLift" type="MarginContainer" parent="BottomRight/AmmoRow"]
+layout_mode = 2
+size_flags_vertical = 8
+mouse_filter = 2
+theme_type_variation = &"HudBaselineLift"
+
+[node name="ReserveLabel" type="Label" parent="BottomRight/AmmoRow/ReserveLift"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HudReserveLabel"
+
+[node name="SpectateBox" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
 visible = false
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -320.0
-offset_top = -72.0
-offset_right = 320.0
-offset_bottom = -24.0
+offset_top = -32.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_type_variation = &"HudSpectateLabel"
+mouse_filter = 2
+theme_type_variation = &"HudStackBlock"
+
+[node name="MiniRow" type="HBoxContainer" parent="SpectateBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"HudRowBarBomb"
+
+[node name="MiniHealth" type="HBoxContainer" parent="SpectateBox/MiniRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowStack"
+
+[node name="MiniHealthIcon" type="TextureRect" parent="SpectateBox/MiniRow/MiniHealth"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="MiniHealthLabel" type="Label" parent="SpectateBox/MiniRow/MiniHealth"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudSmallLabel"
+
+[node name="MiniArmor" type="HBoxContainer" parent="SpectateBox/MiniRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowStack"
+
+[node name="MiniArmorIcon" type="TextureRect" parent="SpectateBox/MiniRow/MiniArmor"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="MiniArmorLabel" type="Label" parent="SpectateBox/MiniRow/MiniArmor"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudSmallLabel"
+
+[node name="MiniGun" type="HBoxContainer" parent="SpectateBox/MiniRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowStack"
+
+[node name="MiniGunIcon" type="TextureRect" parent="SpectateBox/MiniRow/MiniGun"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="MiniGunLabel" type="Label" parent="SpectateBox/MiniRow/MiniGun"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudSmallLabel"
+
+[node name="SpectatePlate" type="PanelContainer" parent="SpectateBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"HudPlate"
+
+[node name="SpectateRow" type="HBoxContainer" parent="SpectateBox/SpectatePlate"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowBlock"
+
+[node name="SpectatingLabel" type="Label" parent="SpectateBox/SpectatePlate/SpectateRow"]
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateDimLabel"
+text = "Spectating"
+
+[node name="SpectateName" type="Label" parent="SpectateBox/SpectatePlate/SpectateRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateNameLabel"
+
+[node name="SpectateDot" type="Label" parent="SpectateBox/SpectatePlate/SpectateRow"]
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateMuteLabel"
+text = "·"
+
+[node name="SpectateHint" type="Label" parent="SpectateBox/SpectatePlate/SpectateRow"]
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateDimLabel"
+text = "Click for next"
+
+[node name="DeathColumn" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 256.0
+offset_right = 400.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"HudStackDeath"
+
+[node name="Countdown" type="Label" parent="DeathColumn"]
+unique_name_in_owner = true
+layout_mode = 2
 horizontal_alignment = 1
-vertical_alignment = 2
+theme_type_variation = &"HudCountdownLabel"
+
+[node name="DeathPlate" type="PanelContainer" parent="DeathColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"HudPlate"
+
+[node name="DeathRow" type="HBoxContainer" parent="DeathColumn/DeathPlate"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowBlock"
+
+[node name="KilledLabel" type="Label" parent="DeathColumn/DeathPlate/DeathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateDimLabel"
+text = "Killed by"
+
+[node name="KillerLabel" type="Label" parent="DeathColumn/DeathPlate/DeathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateLabel"
+
+[node name="KillerIcon" type="TextureRect" parent="DeathColumn/DeathPlate/DeathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="DeathDot" type="Label" parent="DeathColumn/DeathPlate/DeathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateMuteLabel"
+text = "·"
+
+[node name="RespawnLabel" type="Label" parent="DeathColumn/DeathPlate/DeathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateLabel"
+
+[node name="KillerHp" type="Label" parent="DeathColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_type_variation = &"HudSmallLabel"
 
 [node name="FlashOverlay" type="ColorRect" parent="."]
 visible = false

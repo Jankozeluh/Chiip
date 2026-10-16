@@ -316,8 +316,8 @@ func _test_screens_and_freeze() -> void:
 	await get_tree().process_frame
 	var you := Teams.viewer_team
 	var them := Teams.other(you)
-	var hud_yours := (_main.get_node("HUD/RoundHud/TopBar/YourBox/Margin/Content/Score") as Label).text
-	var hud_theirs := (_main.get_node("HUD/RoundHud/TopBar/EnemyBox/Margin/Content/Score") as Label).text
+	var hud_yours := (_main.get_node("HUD/RoundHud") as RoundHud).get_score_text(true)
+	var hud_theirs := (_main.get_node("HUD/RoundHud") as RoundHud).get_score_text(false)
 	_check("The round HUD's score labels show the final score (yours on the left)",
 			hud_yours == str(_rounds.score[you]) and hud_theirs == str(_rounds.score[them]) and you == _player.team,
 			"HUD %s-%s, score %d-%d, you are team %d" % [hud_yours, hud_theirs, _rounds.score[you], _rounds.score[them], you])
