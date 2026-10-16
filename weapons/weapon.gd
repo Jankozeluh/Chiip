@@ -249,6 +249,8 @@ func set_viewmodel_visible(on: bool) -> void:
 ## [code]<class>_arms.glb[/code] and [param material] the class's crew material (the arms share the
 ## body's texture, see [method CrewBody.material_for]). The gun goes on their weapon bone with the
 ## muzzle flash at its muzzle, and the arms draw the gun. Calling it again swaps the arms.
+## Everything in the viewmodel gets its viewmodel material ([method Viewmodel.prepare]), so it never
+## pokes into walls.
 func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 	if not is_node_ready():
 		# Not in the game yet (a character outside the tree got a weapon): put them in on _ready.
@@ -266,7 +268,6 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 	for node in _arms.find_children("*", "MeshInstance3D", true, false):
 		var mesh := node as MeshInstance3D
 		mesh.material_override = material
-		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_arms_meshes.append(mesh)
 	set_arms_team_color(_arms_color)
 	var skeletons := _arms.find_children("*", "Skeleton3D", true, false)
@@ -278,10 +279,10 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 		var gun := model.instantiate() as Node3D
 		gun.transform = data.hold_offset if data != null else Transform3D.IDENTITY
 		mount.add_child(gun)
-		for node in gun.find_children("*", "MeshInstance3D", true, false):
-			(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_muzzle_flash.reparent(mount, false)
 		_muzzle_flash.position = muzzle_point
+	# Its own layer in front of the world, with its own field of view (M11, D-155).
+	Viewmodel.prepare(_viewmodel)
 	var players := _arms.find_children("*", "AnimationPlayer", true, false)
 	_arms_player = players[0] as AnimationPlayer if not players.is_empty() else null
 	if _arms_player != null:

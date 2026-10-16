@@ -1660,6 +1660,17 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** MIT, or source-available only; itch.io with a restricted page; UPnP and direct-IP play (it opens a port on the host's router).
 
+## D-155 — The viewmodel is drawn in its own depth range, by its shaders (2026-10-16)
+
+**Decision:** The first-person arms, gun and muzzle flash keep rendering in the world's own low-res viewport, but with viewmodel shaders (`shaders/viewmodel.gdshaderinc`): in `vertex()` they write `POSITION` themselves, with their own vertical field of view (`Viewmodel.FOV`, 73.74°: the camera's at the default FOV, so the gun looks the same at every FOV setting) and with their depth squeezed into the nearest 2 % of the depth buffer (from 1 cm in front of the eye). Nothing in the world can then cover them: a wall would have to be nearer than the camera's own near plane. `Viewmodel.prepare()` gives every mesh in a viewmodel its viewmodel material: the crew's arms a viewmodel copy of the crew shader (same surface, so the team colour works), every gun surface a gun shader with its own texture, made once per source material. Lighting uses the real position, so the gun is lit by the map where it is.
+
+**Why:** It keeps everything that makes the picture Chiip's: the 480-line world (D-048), the palette effect and the map's lights apply to the gun for free, because it is in the same image. It costs nothing per frame (no second render). The old viewmodel poked into every wall you stood against (the known limitation since M2).
+
+**Alternatives:**
+- **A second camera** for the viewmodel with its own cull layer, in a second SubViewport composited over the world: what Unity tutorials do. It needs a second full render pass at the same low resolution, its own lights or shared ones, and the palette effect would have to run over the composite. More cost and more parts for the same picture.
+- **Godot's own viewmodel options** (`BaseMaterial3D.use_fov_override` and `use_z_clip_scale`, new in 4.x): they exist only on the standard material, not on the crew's custom shader; with two different formulas the arms and the gun could disagree. Our own include does the same for both.
+- **Pulling the gun back** when near a wall (a ray from the eye): many games do it as well, but it changes how the gun looks while you hug walls, and still clips at corners.
+
 ## Open questions
 
 | Question | Decide in |
