@@ -309,6 +309,21 @@ const TRIM_LARGE_BOTTOM := -4
 const TRIM_HERO_TOP := -14
 const TRIM_HERO_BOTTOM := -13
 
+# --- Loading screen (the mockup's "07 Loading / Map change", D-138) ---
+# An INK band across the bottom of the game, with the map's name and the mode on its left and a row of progress
+# squares on its right, both columns the same distance in from their edges.
+
+## The band's height.
+const LOADING_BAND_HEIGHT := 240
+## How far the two columns stand from the side edge and from the bottom edge of the screen.
+const LOADING_MARGIN := 64
+## Between the lines of the left column (the kicker, the map's name, the mode), and between the right column's "Loading" and its squares.
+const LOADING_GAP := 16
+## The side of a progress square (the scene gives each Panel this minimum size; the squares are CHIP_GAP apart).
+const LOADING_CHIP := 12
+## How many progress squares there are: the hold time is shared out between them.
+const LOADING_CHIPS := 12
+
 # --- Developer console (mockup 17) ---
 # A strip across the top of the screen: the output (Silkscreen 16 on a 24 px line, bottom-aligned) over an
 # input row on INK. The strip's colour and its LINE edge are CONSOLE and the ConsolePanel role.

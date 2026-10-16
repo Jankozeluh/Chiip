@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
 [ext_resource type="PackedScene" path="res://ui/class_menu.tscn" id="class_menu_scene"]
 [ext_resource type="PackedScene" path="res://ui/buy_menu.tscn" id="buy_menu_scene"]
+[ext_resource type="PackedScene" path="res://ui/loading_screen.tscn" id="loading_screen_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -62,3 +63,5 @@ mouse_filter = 2
 [node name="BuyMenu" parent="." instance=ExtResource("buy_menu_scene")]
 
 [node name="DevConsole" parent="." instance=ExtResource("console_scene")]
+
+[node name="LoadingScreen" parent="." instance=ExtResource("loading_screen_scene")]

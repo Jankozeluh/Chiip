@@ -2,7 +2,7 @@ extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
 ## the HUD, debug overlay, hold-Tab scoreboard, class menu, buy menu, pause menu, match-end screen,
-## settings menu and developer console on top.
+## settings menu, developer console and loading screen on top.
 ##
 ## The game starts from the main menu (ui/main_menu.tscn, the project's main
 ## scene), which leaves a [GameLaunch] description for [method _load_map] to read
@@ -14,6 +14,12 @@ extends Node
 ## With a map rotation (D-087: match setup's "Rotation", or [code]-- --rotation[/code])
 ## the match-end screen also offers "Next map": [method next_map] plays the
 ## rotation's next map, a fresh match by the same rules.
+##
+## A map that comes from the main menu, and every map of a rotation after the
+## first, is announced by the [LoadingScreen] (D-138): the world and the match
+## stand still behind its band and the HUD is hidden until its hold time is over.
+## Restarting a match, the console's [code]map[/code] and the command-line
+## shortcuts don't show it.
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
@@ -51,6 +57,10 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 ## game starts (unless the main menu already did), and save every change to it.
 ## Tests that load this scene turn it off so they never touch the real file.
 @export var load_settings: bool = true
+## Show the [LoadingScreen] when a map comes from the main menu and when the rotation
+## moves on. Tests that start games that way turn it off, so their game isn't paused
+## and hidden behind it (unless the check is about the loading screen itself).
+@export var loading_screen: bool = true
 
 @onready var _world: SubViewportContainer = $World
 @onready var _viewport: SubViewport = $World/SubViewport
@@ -64,6 +74,7 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
 @onready var _class_menu: ClassMenu = $ClassMenu
 @onready var _buy_menu: BuyMenu = $BuyMenu
+@onready var _loading_screen: LoadingScreen = $LoadingScreen
 
 ## The map currently loaded.
 var _map: Node
@@ -90,6 +101,7 @@ func _ready() -> void:
 	_pause_menu.settings_pressed.connect(open_settings)
 	_pause_menu.leave_pressed.connect(return_to_menu)
 	_settings_menu.closed.connect(_pause_menu.settings_closed)
+	_loading_screen.finished.connect(_on_loading_finished)
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -134,11 +146,25 @@ func restart_match() -> void:
 ## Plays the next map of the rotation, a fresh match by the same rules (the
 ## match-end screen's "Next map"); after the last map comes the first again.
 ## Does nothing without a rotation.
+## With the loading screen (D-138) the band comes first: it is shown, two frames
+## draw it (the first may already be under way when the button is pressed), and
+## only then is the map loaded, which can stall the game for a moment. The band
+## stays for what is left of its hold time.
 func next_map() -> void:
-	if _rotation.is_empty():
+	if _rotation.is_empty() or _loading_screen.visible:
 		return
 	_rotation_index = (_rotation_index + 1) % _rotation.size()
-	change_map(_rotation[_rotation_index])
+	var path := _rotation[_rotation_index]
+	if not _shows_loading_screen():
+		change_map(path)
+		return
+	_show_loading_screen(path, true)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	change_map(path)
+	_loading_screen.map_loaded()
 
 
 ## The scene path of the map [method next_map] would play, or "" without a rotation.
@@ -165,6 +191,8 @@ func return_to_menu() -> void:
 func _load_map() -> void:
 	if GameLaunch.is_pending():
 		_spawn_map(_take_launch())
+		if _shows_loading_screen():
+			_show_loading_screen(_map.scene_file_path)
 		return
 	var scene := map_scene
 	var args := OS.get_cmdline_user_args()
@@ -192,6 +220,23 @@ func _take_launch() -> PackedScene:
 	var scene := load(GameLaunch.map_path) as PackedScene
 	GameLaunch.clear()
 	return scene
+
+
+## True when a map that comes from the menu or the rotation is announced by the loading screen.
+func _shows_loading_screen() -> bool:
+	return loading_screen and LoadingScreen.enabled
+
+
+## Shows the loading screen for the map at [param path] (lines from [MatchText]) and hides the HUD under it.
+## With [param map_follows] the screen waits for [method LoadingScreen.map_loaded].
+func _show_loading_screen(path: String, map_follows: bool = false) -> void:
+	_hud.visible = false
+	_loading_screen.show_screen(MatchText.loading_lines(match_settings, mode == Mode.PRACTICE, path,
+			_rotation_index, _rotation.size()), map_follows)
+
+
+func _on_loading_finished() -> void:
+	_hud.visible = true
 
 
 ## Puts the map into the world viewport, adds the game rules, and connects
@@ -284,6 +329,7 @@ func apply_pixel_settings() -> void:
 	_settings_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_class_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_buy_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_loading_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 
 
 func _on_setting_changed(key: StringName) -> void:

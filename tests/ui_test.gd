@@ -31,6 +31,10 @@ extends Node
 ## roles and their sizes, the Tab scoreboard's panel, header (also in Team Deathmatch), titles, team lines, rows,
 ## class icons and muted dead rows, the pause menu's column and its focus chip, and the match-end screen's page,
 ## result, score line, compact table and buttons, each also at 1.5 times the size.
+## The loading screen (M10 task 15, D-138) is the mockup's: its three lines for a rotation, Bomb and practice, its
+## band, margins, gaps and squares (also at 1.5 times the size), and its behaviour: it shows on a launch from the
+## menu and on the rotation's next map with the game paused and the HUD hidden, swallows Esc, the console key,
+## B, M and Tab, fills its squares and hides itself, and doesn't show on a restart.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -47,6 +51,7 @@ const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const PAUSE_MENU_SCENE := preload("res://ui/pause_menu.tscn")
 const CLASS_MENU_SCENE := preload("res://ui/class_menu.tscn")
+const LOADING_SCENE := preload("res://ui/loading_screen.tscn")
 const THEME_PATH := "res://ui/chiip_theme.tres"
 ## The design tokens the theme is built from (D-131). Checks of the look compare
 ## with them rather than with numbers, so a new look doesn't break them.
@@ -92,6 +97,8 @@ const VARIATIONS := {
 	# error line, the input row (INK, a LINE edge above) and the row's box.
 	"ConsoleBox": "VBoxContainer", "ConsoleOutputMargin": "MarginContainer", "ConsoleLines": "VBoxContainer",
 	"ConsoleErrorLabel": "ConsoleLabel", "ConsoleInputRow": "PanelContainer", "ConsoleInputBox": "HBoxContainer",
+	# M10 task 15 (D-138): the loading screen's progress squares (done, current, still to come) and its two columns.
+	"TextChip": "Panel", "AccentChip": "Panel", "LineChip": "Panel", "LoadingColumn": "VBoxContainer",
 }
 ## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -174,6 +181,9 @@ func _ready() -> void:
 	await _test_pause_esc_rules()
 	await _test_pause_menu_look()
 	await _test_pause_leaves_the_game()
+	_test_loading_texts()
+	await _test_loading_screen_look()
+	await _test_loading_screen_in_the_game()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -1369,11 +1379,19 @@ func _test_menus_have_no_overrides() -> void:
 			"title '%s' %s, yours %s, theirs %s" % [result.text, result.get_theme_color("font_color"), your_score.get_theme_color("font_color"), their_score.get_theme_color("font_color")])
 	remove_child(screen)
 	screen.queue_free()
+	var loading := LOADING_SCENE.instantiate() as LoadingScreen
+	add_child(loading)
+	loading.show_screen(PackedStringArray(["Map 1 of 3 · Rotation", "Depot", "Team Deathmatch · first to 50"]))
+	await get_tree().process_frame
+	found["loading screen (shown)"] = _overrides_below(loading)
+	loading.advance(loading.hold_time)
+	remove_child(loading)
+	loading.queue_free()
 	var offenders := {}
 	for screen_name: String in found:
 		if not (found[screen_name] as Array).is_empty():
 			offenders[screen_name] = found[screen_name]
-	_check("No menu or overlay carries a theme override of its own (colour, font, size, spacing, style or icon): the settings, pause and class menus, the console, the main menu with match setup, the Tab scoreboard and the match-end screen all take their whole look from the theme",
+	_check("No menu or overlay carries a theme override of its own (colour, font, size, spacing, style or icon): the settings, pause and class menus, the console, the main menu with match setup, the Tab scoreboard, the match-end screen and the loading screen all take their whole look from the theme",
 			offenders.is_empty(), "screens checked: %d, overrides found: %s" % [found.size(), offenders])
 
 
@@ -2526,6 +2544,7 @@ func _test_game_launch() -> void:
 	var pending := GameLaunch.is_pending() and not GameLaunch.practice and GameLaunch.match_settings == rules
 	var main := MAIN_SCENE.instantiate()
 	main.load_settings = false
+	main.loading_screen = false
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -2557,6 +2576,7 @@ func _test_game_launch() -> void:
 	GameLaunch.start_practice("res://maps/test_map.tscn", GameLaunch.difficulty_named("hard"))
 	var practice := MAIN_SCENE.instantiate()
 	practice.load_settings = false
+	practice.loading_screen = false
 	add_child(practice)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -2573,6 +2593,7 @@ func _test_game_launch() -> void:
 	GameLaunch.start_match("res://maps/comparison/csg_room.tscn", rules)
 	var other_map := MAIN_SCENE.instantiate()
 	other_map.load_settings = false
+	other_map.loading_screen = false
 	add_child(other_map)
 	await get_tree().process_frame
 	var other_path: String = other_map.get_map().scene_file_path
@@ -2602,6 +2623,8 @@ func _test_game_launch() -> void:
 ## the match-end screen's Main menu button changes back. The settings are loaded
 ## from a temporary file first, so neither scene reads or writes the real one.
 func _test_scene_flow() -> void:
+	# The game scene the menu changes to can't be reached before its _ready: switch its loading screen off for all.
+	LoadingScreen.enabled = false
 	var tree := get_tree()
 	var shared := Settings.get_instance()
 	_remove_temp_file()
@@ -3051,6 +3074,7 @@ func _test_pause_menu_look() -> void:
 ## Leave match (and the console's `disconnect` over the pause menu) change to the
 ## main menu with the game unpaused, in the real flow through the scenes.
 func _test_pause_leaves_the_game() -> void:
+	LoadingScreen.enabled = false
 	var tree := get_tree()
 	var shared := Settings.get_instance()
 	_remove_temp_file()
@@ -3126,6 +3150,269 @@ func _test_pause_leaves_the_game() -> void:
 	shared.reset_to_defaults()
 	shared.save_path = ""
 	_remove_temp_file()
+
+
+# --- The loading screen (M10 task 15, D-138) ---
+
+
+## The three lines, built by [MatchText] from the rules alone: Team Deathmatch in a rotation (the map's number, the
+## kill limit), Bomb (the rounds to win), practice, and a missing rule set.
+func _test_loading_texts() -> void:
+	var deathmatch := MatchSettings.new()
+	deathmatch.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	var bomb := MatchSettings.new()
+	bomb.rounds_to_win = 7
+	var rotation := MatchText.loading_lines(deathmatch, false, "res://maps/square.tscn", 1, 3)
+	_check("A Team Deathmatch in a rotation says \"Map 2 of 3 · Rotation\", the map's title and \"Team Deathmatch · first to 50\" (the kill limit)",
+			rotation == PackedStringArray(["Map 2 of 3 · Rotation", "Square", "Team Deathmatch · first to 50"]), "%s" % [rotation])
+	deathmatch.kill_limit = 25
+	var single := MatchText.loading_lines(bomb, false, "res://maps/depot.tscn")
+	_check("The kill limit and the rounds to win come from the rules: first to 25, first to 7 rounds; without a rotation the first line is the mode's name",
+			MatchText.loading_mode_line(deathmatch, false) == "Team Deathmatch · first to 25"
+					and single == PackedStringArray(["Bomb", "Depot", "Bomb · first to 7 rounds"]) and MatchText.loading_kicker(deathmatch, false) == "Team Deathmatch",
+			"%s, %s" % [MatchText.loading_mode_line(deathmatch, false), single])
+	var practice := MatchText.loading_lines(bomb, true, "res://maps/test_map.tscn")
+	_check("Practice says \"Practice\", the map's title and \"Practice · bots respawn\"; a null rule set doesn't break the lines (Bomb, the default rounds)",
+			practice == PackedStringArray(["Practice", "Test Map", "Practice · bots respawn"])
+					and MatchText.loading_lines(null, false, "res://maps/depot.tscn") == PackedStringArray(["Bomb", "Depot", "Bomb · first to 5 rounds"]),
+			"%s, %s" % [practice, MatchText.loading_lines(null, false, "res://maps/depot.tscn")])
+
+
+## The band, the two columns and the squares, in design size and at 1.5 times (1080p): the sizes are the tokens,
+## the roles carry the tokens' colours, and the squares go done / current / still to come as time passes.
+func _test_loading_screen_look() -> void:
+	LoadingScreen.enabled = true
+	_check("The loading screen's roles carry the tokens: TextChip is the text colour, LineChip the line colour, the column's gap is LOADING_GAP, the squares are CHIP_GAP apart",
+			(_theme.get_stylebox("panel", "TextChip") as StyleBoxFlat).bg_color == Tokens.TEXT
+					and (_theme.get_stylebox("panel", "LineChip") as StyleBoxFlat).bg_color == Tokens.LINE_COLOR
+					and _theme.get_constant("separation", "LoadingColumn") == Tokens.LOADING_GAP and Tokens.CHIP_GAP == 6
+					and _theme.get_constant("separation", "ChipRow") == Tokens.CHIP_GAP,
+			"gap %d, chip gap %d" % [_theme.get_constant("separation", "LoadingColumn"), _theme.get_constant("separation", "ChipRow")])
+	var screen := LOADING_SCENE.instantiate() as LoadingScreen
+	screen.hold_time = 12.0
+	add_child(screen)
+	_check("A new loading screen is hidden, isn't showing and has not paused the game", not screen.visible and not LoadingScreen.is_showing() and not get_tree().paused,
+			"visible %s, showing %s" % [screen.visible, LoadingScreen.is_showing()])
+	screen.show_screen(MatchText.loading_lines(null, false, "res://maps/square.tscn", 1, 3))
+	var view := get_viewport().get_visible_rect().size
+	var rows := {}
+	for factor: float in [1.0, 1.5]:
+		screen.set_ui_scale(factor)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var left := screen.get_left_column()
+		var right := screen.get_right_column()
+		var chips := screen.get_chips()
+		var name_trim := screen.get_map_name_label().get_parent() as Control
+		var kicker := left.get_child(0) as Control
+		var mode_line := left.get_child(2) as Control
+		var status := right.get_child(0) as Control
+		var chip_row := right.get_child(1) as Control
+		var gap := roundf(Tokens.LOADING_GAP * factor)
+		var margin := roundf(Tokens.LOADING_MARGIN * factor)
+		rows[factor] = {
+			"band": screen.get_band().size.y == roundf(Tokens.LOADING_BAND_HEIGHT * factor),
+			"left": left.position.x == margin and left.position.y + left.size.y == view.y - margin,
+			"right": right.position.x + right.size.x == view.x - margin and right.position.y + right.size.y == view.y - margin,
+			"left gaps": name_trim.position.y - (kicker.position.y + kicker.size.y) == gap and mode_line.position.y - (name_trim.position.y + name_trim.size.y) == gap,
+			"right gap": chip_row.position.y - (status.position.y + status.size.y) == gap,
+			"chips": chips.size() == Tokens.LOADING_CHIPS and chips[0].size == Vector2.ONE * roundf(Tokens.LOADING_CHIP * factor)
+					and chips[1].position.x - (chips[0].position.x + chips[0].size.x) == roundf(Tokens.CHIP_GAP * factor),
+			"right aligned": status.position.x + status.size.x == right.size.x and chip_row.position.x + chip_row.size.x == right.size.x,
+			"hero": screen.get_map_name_label().get_theme_font_size("font_size") == roundi(Tokens.TEXT_SIZE_HERO * factor)
+					and absf(name_trim.size.y - Tokens.TEXT_SIZE_HERO * factor) <= 1.0,
+		}
+	for factor: float in rows:
+		var failed: Array = []
+		for part: String in rows[factor]:
+			if not rows[factor][part]:
+				failed.append(part)
+		_check("At %s times the size the band is %d high, the columns stand %d from the side and bottom edges, the lines and the squares %d apart, the squares are %d with %d between them, the map's name is 96 px (trimmed to 96 high) and the right column is right-aligned"
+				% [factor, roundi(Tokens.LOADING_BAND_HEIGHT * factor), roundi(Tokens.LOADING_MARGIN * factor), roundi(Tokens.LOADING_GAP * factor),
+				roundi(Tokens.LOADING_CHIP * factor), roundi(Tokens.CHIP_GAP * factor)], failed.is_empty(), "failed parts %s" % [failed])
+	screen.set_ui_scale(1.0)
+	_check("The band is an ink panel that takes no mouse; the lines are the ones given",
+			screen.get_band().theme_type_variation == &"InkPanel" and screen.get_band().mouse_filter == Control.MOUSE_FILTER_IGNORE
+					and screen.get_lines() == PackedStringArray(["Map 2 of 3 · Rotation", "Square", "Bomb · first to 5 rounds"]),
+			"lines %s" % [screen.get_lines()])
+	# The squares: none done at the start (the first is the current one), then they fill evenly over the hold time.
+	var start_roles := _chip_roles(screen)
+	screen.advance(7.5)
+	var middle_roles := _chip_roles(screen)
+	var middle_done := screen.get_done_chips()
+	var colours_ok := true
+	for chip in screen.get_chips():
+		var expected := Tokens.TEXT if chip.theme_type_variation == &"TextChip" else (Tokens.ACCENT if chip.theme_type_variation == &"AccentChip" else Tokens.LINE_COLOR)
+		colours_ok = colours_ok and (chip.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == expected
+	_check("The squares start with the first one current (lime) and fill with the time: after 7.5 of 12 seconds seven are done (text colour), the eighth is current and four are still to come (line colour)",
+			start_roles == ["AccentChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip", "LineChip"]
+					and middle_done == 7
+					and middle_roles == ["TextChip", "TextChip", "TextChip", "TextChip", "TextChip", "TextChip", "TextChip", "AccentChip", "LineChip", "LineChip", "LineChip", "LineChip"]
+					and colours_ok, "start %s, middle %s (%d done)" % [start_roles, middle_roles, middle_done])
+	screen.advance(100.0)
+	_check("When the hold time is over the screen hides itself and gives the pause back", not screen.visible and not LoadingScreen.is_showing() and not get_tree().paused,
+			"visible %s, paused %s" % [screen.visible, get_tree().paused])
+	remove_child(screen)
+	screen.queue_free()
+	await get_tree().process_frame
+
+
+## The roles of the squares, left to right.
+func _chip_roles(screen: LoadingScreen) -> Array:
+	var roles: Array = []
+	for chip in screen.get_chips():
+		roles.append(String(chip.theme_type_variation))
+	return roles
+
+
+## The loading screen in the real game: a launch from the menu (a rotation's Team Deathmatch) and the next map show it
+## with the game paused and the HUD hidden, the squares fill, it hides and unpauses; a restart doesn't show it; Esc,
+## the console key, B, M and Tab do nothing under it (a Bomb launch), and everything works after; practice's lines.
+func _test_loading_screen_in_the_game() -> void:
+	LoadingScreen.enabled = true
+	var tree := get_tree()
+	var rules := MatchSettings.new()
+	rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	var rotation: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"]
+	GameLaunch.start_match(rotation[0], rules, rotation)
+	var main := MAIN_SCENE.instantiate()
+	main.load_settings = false
+	var screen := main.get_node("LoadingScreen") as LoadingScreen
+	screen.hold_time = 0.5
+	add_child(main)
+	await tree.process_frame
+	await tree.process_frame
+	var hud := main.get_node("HUD") as CanvasLayer
+	var manager := main.get_map().get_node_or_null("RespawnMatch") as RoundManager
+	var first_lines := screen.get_lines()
+	var first_state := LoadingScreen.is_showing() and tree.paused and not hud.visible and screen.get_done_chips() < Tokens.LOADING_CHIPS
+	var clock := manager.time_left if manager != null else -1.0
+	for i in 8:
+		await tree.process_frame
+	var filled := screen.get_done_chips()
+	_check("A map from the menu's launch shows the loading screen over the game: \"Map 1 of 3 · Rotation\", Depot, \"Team Deathmatch · first to 50\"; the tree is paused and the HUD hidden",
+			first_state and first_lines == PackedStringArray(["Map 1 of 3 · Rotation", "Depot", "Team Deathmatch · first to 50"]) and manager != null,
+			"lines %s, showing %s, paused %s, hud visible %s" % [first_lines, LoadingScreen.is_showing(), tree.paused, hud.visible])
+	_check("While it shows the match clock stands still and the squares fill with the time (%d done after a few frames)" % filled,
+			manager != null and manager.time_left == clock and filled > 0 and filled < Tokens.LOADING_CHIPS,
+			"clock %.3f → %.3f, done %d" % [clock, manager.time_left if manager != null else -1.0, filled])
+	for i in 200:
+		if not LoadingScreen.is_showing():
+			break
+		await tree.process_frame
+	_check("After the hold time the screen hides, the game is unpaused and the HUD is back; the class menu that opened at the match start is still open under it, now usable",
+			not LoadingScreen.is_showing() and not tree.paused and hud.visible and (main.get_node("ClassMenu") as ClassMenu).is_open(),
+			"showing %s, paused %s, hud %s" % [LoadingScreen.is_showing(), tree.paused, hud.visible])
+	_close_class_menu(main)
+	# The rotation moves on: the band comes first, then the map is loaded, then the rest of the hold time.
+	var before_map: String = main.get_map().scene_file_path
+	main.next_map()
+	var next_state := LoadingScreen.is_showing() and tree.paused and not hud.visible
+	await tree.process_frame
+	var still_old: bool = main.get_map().scene_file_path == before_map
+	for i in 6:
+		await tree.process_frame
+	var next_lines := screen.get_lines()
+	_check("next_map() shows the screen at once (paused, HUD hidden), lets a frame draw before it loads the map, and then names the new one: \"Map 2 of 3 · Rotation\", Square",
+			next_state and still_old and before_map == "res://maps/depot.tscn" and main.get_map().scene_file_path == "res://maps/square.tscn"
+					and next_lines == PackedStringArray(["Map 2 of 3 · Rotation", "Square", "Team Deathmatch · first to 50"]),
+			"showing %s, old map first %s, map now %s, lines %s" % [next_state, still_old, main.get_map().scene_file_path, next_lines])
+	for i in 200:
+		if not LoadingScreen.is_showing():
+			break
+		await tree.process_frame
+	_check("It hides again after the hold time (unpaused, HUD back)",
+			not LoadingScreen.is_showing() and not tree.paused and hud.visible, "showing %s, paused %s" % [LoadingScreen.is_showing(), tree.paused])
+	main.restart_match()
+	await tree.process_frame
+	await tree.process_frame
+	_check("restart_match() shows no loading screen: the game isn't paused and the HUD stays", not LoadingScreen.is_showing() and not tree.paused and hud.visible,
+			"showing %s, paused %s" % [LoadingScreen.is_showing(), tree.paused])
+	remove_child(main)
+	main.queue_free()
+	await tree.process_frame
+	Teams.friendly_fire = false
+	GameLaunch.clear()
+	MenuState.reset()
+
+	# Bomb on the test map: the lines, and the keys that do nothing while it shows.
+	var bomb := MatchSettings.new()
+	bomb.rounds_to_win = 7
+	GameLaunch.start_match(Settings.DEFAULT_MAP, bomb)
+	var bomb_main := MAIN_SCENE.instantiate()
+	bomb_main.load_settings = false
+	var bomb_screen := bomb_main.get_node("LoadingScreen") as LoadingScreen
+	bomb_screen.hold_time = 100.0
+	add_child(bomb_main)
+	await tree.process_frame
+	await tree.process_frame
+	var bomb_lines := bomb_screen.get_lines()
+	var pause_menu: PauseMenu = bomb_main.get_pause_menu()
+	var buy_menu := bomb_main.get_node("BuyMenu") as BuyMenu
+	var class_menu := bomb_main.get_node("ClassMenu") as ClassMenu
+	var board := bomb_main.get_node("Scoreboard") as Scoreboard
+	# The class menu that opened at the match start would keep the pause menu closed by itself.
+	_close_class_menu(bomb_main)
+	var class_open := class_menu.is_open()
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_send(_action_event("toggle_console"))
+	_send(_action_event("buy_menu"))
+	_send(_action_event("class_menu"))
+	Input.action_press("scoreboard")
+	await tree.process_frame
+	await tree.process_frame
+	var swallowed := not pause_menu.is_open() and not DevConsole.is_open and not buy_menu.is_open() and class_menu.is_open() == class_open and not board.visible \
+			and LoadingScreen.is_showing() and tree.paused
+	Input.action_release("scoreboard")
+	_check("Under the loading screen of a Bomb match (\"Bomb\", \"first to 7 rounds\") Esc, the console key, B, M and Tab do nothing: no pause menu, console, buy menu or scoreboard, and the class menu stays closed",
+			bomb_lines == PackedStringArray(["Bomb", "Test Map", "Bomb · first to 7 rounds"]) and swallowed,
+			"lines %s, pause %s, console %s, buy %s, board %s, class menu %s (was %s)" % [bomb_lines, pause_menu.is_open(), DevConsole.is_open, buy_menu.is_open(), board.visible, class_menu.is_open(), class_open])
+	bomb_screen.advance(100.0)
+	_close_class_menu(bomb_main)
+	_send(_key_event(KEY_ESCAPE))
+	_send(_key_event(KEY_ESCAPE, false))
+	_check("Once it has hidden, Esc opens the pause menu again (and pauses the game by its own right)", not LoadingScreen.is_showing() and pause_menu.is_open() and tree.paused,
+			"showing %s, pause menu %s" % [LoadingScreen.is_showing(), pause_menu.is_open()])
+	pause_menu.close()
+	remove_child(bomb_main)
+	bomb_main.queue_free()
+	await tree.process_frame
+	Teams.friendly_fire = false
+	GameLaunch.clear()
+	MenuState.reset()
+	tree.paused = false
+
+	# Practice, and a game that has the switch off.
+	GameLaunch.start_practice(Settings.DEFAULT_MAP, GameLaunch.difficulty_named("easy"))
+	var practice_main := MAIN_SCENE.instantiate()
+	practice_main.load_settings = false
+	add_child(practice_main)
+	await tree.process_frame
+	var practice_screen := practice_main.get_node("LoadingScreen") as LoadingScreen
+	var practice_lines := practice_screen.get_lines()
+	var practice_showing := LoadingScreen.is_showing()
+	practice_screen.advance(100.0)
+	remove_child(practice_main)
+	practice_main.queue_free()
+	await tree.process_frame
+	GameLaunch.start_match(Settings.DEFAULT_MAP, MatchSettings.new())
+	var quiet := MAIN_SCENE.instantiate()
+	quiet.load_settings = false
+	quiet.loading_screen = false
+	add_child(quiet)
+	await tree.process_frame
+	var quiet_shows := LoadingScreen.is_showing() or tree.paused
+	remove_child(quiet)
+	quiet.queue_free()
+	await tree.process_frame
+	_check("Practice says \"Practice\", Test Map, \"Practice · bots respawn\"; a game with loading_screen off shows nothing and stays unpaused",
+			practice_showing and practice_lines == PackedStringArray(["Practice", "Test Map", "Practice · bots respawn"]) and not quiet_shows,
+			"practice %s, lines %s, quiet shows %s" % [practice_showing, practice_lines, quiet_shows])
+	Teams.friendly_fire = false
+	GameLaunch.clear()
+	MenuState.reset()
+	tree.paused = false
 
 
 ## The real settings file is exactly as it was when the test started.
@@ -3211,6 +3498,7 @@ func _new_game(rounds_to_win: int = 5) -> Node:
 	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
 	var main := MAIN_SCENE.instantiate()
 	main.load_settings = false
+	main.loading_screen = false
 	add_child(main)
 	for i in 3:
 		await get_tree().physics_frame

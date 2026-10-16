@@ -35,7 +35,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Console** (task 13, Sonnet): the mockup's strip, in the pixel font instead of a system monospace; echoes dim, errors in amber; the input row with a lime prompt and block caret; Tab completes command names (a second Tab lists the matches). ui 198 checks pass.
 
-**Next:** loading screen, HUD and kill feed, class-draft cards and buy menu.
+- **Loading screen** (task 15, Sonnet): the mockup's band at the bottom ("Map 2 of 3 · Rotation", the map's name in 96 px, the mode and its limit, 12 chips filling). It shows when a match starts from the menu and when "Next map" moves the rotation on; the game is paused behind it for 1.5 s and keys do nothing. ui 217, rotation 13 and match 13 checks pass.
+
+**Next:** merge main (M9) and restyle the lobby, then the HUD and kill feed, class-draft cards and buy menu.
 
 ## 2026-10-16 — Merges into main: M7 and the M10 map kit
 

@@ -239,6 +239,11 @@ func _panels() -> void:
 	_styles("EnemyChip", {"panel": _box("enemy_chip", Palette.ENEMY)})
 	_variation("AccentChip", "Panel")
 	_styles("AccentChip", {"panel": _box("accent_chip", Palette.ACCENT)})
+	# The loading screen's progress squares: done ones in the text colour, the current one AccentChip, the rest LINE.
+	_variation("TextChip", "Panel")
+	_styles("TextChip", {"panel": _box("text_chip", Palette.TEXT)})
+	_variation("LineChip", "Panel")
+	_styles("LineChip", {"panel": _box("line_chip", Palette.LINE_COLOR)})
 	# The chip on a lit menu item: ink on the accent fill.
 	_variation("InkChip", "Panel")
 	_styles("InkChip", {"panel": _box("ink_chip", Palette.TEXT_ON_FILL)})
@@ -314,6 +319,9 @@ func _containers() -> void:
 	# The brand chips under the game's name, and a team's size chips.
 	_variation("ChipRow", "HBoxContainer")
 	_constants("ChipRow", {"separation": Palette.CHIP_GAP})
+	# The loading screen's two columns (the map's lines; "Loading" over its squares).
+	_variation("LoadingColumn", "VBoxContainer")
+	_constants("LoadingColumn", {"separation": Palette.LOADING_GAP})
 	_variation("TeamChipRow", "HBoxContainer")
 	_constants("TeamChipRow", {"separation": Palette.TEAM_CHIP_GAP})
 	# The settings screen: the gaps between its title, tabs and footer, rows whose parts sit edge to edge

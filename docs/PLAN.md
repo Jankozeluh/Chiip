@@ -462,7 +462,7 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 12. [ ] **Class menu** in the draft's card style (all four classes until M7's draft offers two) (D-137). *(Sonnet)*
 13. [x] **Developer console** (D-137). *(Sonnet)* Built: the mockup's strip in Silkscreen, line colours by kind, the input row with a lime prompt and caret, Tab completes command names.
 14. [ ] **HUD**: the Team Deathmatch and Bomb top bars, banners, the death screen with the big countdown, spectating, health and ammo with icons and chips, kill-feed plates, toasts, hit marker (D-136). *(Opus direction, Sonnet builds; the parts in `hud.gd` and the kill feed wait for M7's merge)*
-15. [ ] **Loading screen** between maps (D-138). *(Sonnet)*
+15. [x] **Loading screen** between maps (D-138). *(Sonnet)* Built: the mockup's band with the map's name, shown when a match starts from the menu and when the rotation moves on; the world stands still behind it for 1.5 s.
 16. [ ] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)*
 
 Not in this branch: the boot screen (it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).

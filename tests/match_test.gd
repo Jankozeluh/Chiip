@@ -98,6 +98,8 @@ func _start_match() -> void:
 	_main = MAIN_SCENE.instantiate()
 	# Never read or write the player's real settings file.
 	_main.load_settings = false
+	# The match plays from its first tick: no loading screen (it pauses the game while it shows).
+	_main.loading_screen = false
 	add_child(_main)
 	_player = _main.get_map().get_node("Player") as Character
 	_rounds = _main.get_map().get_node("RoundManager") as RoundManager

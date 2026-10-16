@@ -689,6 +689,11 @@ content_margin_top = 1.0
 content_margin_right = 0.0
 content_margin_bottom = 4.0
 
+[sub_resource type="StyleBoxFlat" id="line_chip"]
+bg_color = Color(0.2, 0.2509804, 0.3529412, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="line_edit_focus"]
 content_margin_left = 8.0
 content_margin_top = 4.0
@@ -1507,6 +1512,11 @@ content_margin_top = 6.0
 content_margin_right = 8.0
 content_margin_bottom = 6.0
 
+[sub_resource type="StyleBoxFlat" id="text_chip"]
+bg_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="tooltip_panel"]
 content_margin_left = 12.0
 content_margin_top = 8.0
@@ -2035,6 +2045,8 @@ LargeLabel/font_sizes/font_size = 32
 LargeTrim/base_type = &"MarginContainer"
 LargeTrim/constants/margin_bottom = -4
 LargeTrim/constants/margin_top = -5
+LineChip/base_type = &"Panel"
+LineChip/styles/panel = SubResource("line_chip")
 LineEdit/colors/caret_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
 LineEdit/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 LineEdit/colors/font_outline_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
@@ -2060,6 +2072,8 @@ ListeningKeyButton/styles/hover = SubResource("key_slot_lit")
 ListeningKeyButton/styles/hover_pressed = SubResource("key_slot_lit")
 ListeningKeyButton/styles/normal = SubResource("key_slot_lit")
 ListeningKeyButton/styles/pressed = SubResource("key_slot_lit")
+LoadingColumn/base_type = &"VBoxContainer"
+LoadingColumn/constants/separation = 16
 LogoLabel/base_type = &"Label"
 LogoLabel/font_sizes/font_size = 96
 LogoLabel/fonts/font = SubResource("logo_font")
@@ -2354,6 +2368,8 @@ TextButton/styles/hover = SubResource("text_button_hover")
 TextButton/styles/hover_pressed = SubResource("text_button_hover_pressed")
 TextButton/styles/normal = SubResource("text_button_normal")
 TextButton/styles/pressed = SubResource("text_button_pressed")
+TextChip/base_type = &"Panel"
+TextChip/styles/panel = SubResource("text_chip")
 TitleLabel/base_type = &"Label"
 TitleLabel/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 TitleLabel/font_sizes/font_size = 48

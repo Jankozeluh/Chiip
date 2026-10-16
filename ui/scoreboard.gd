@@ -16,7 +16,7 @@ extends CanvasLayer
 ## [PlayerController]). It shows only in a match: [method set_round_manager]
 ## gets the manager from [code]main.gd[/code], or null in practice mode, where
 ## it never appears. It stays hidden while the developer console or a menu is
-## open ([MenuState]) and once the match is over (the [MatchEndScreen] shows
+## open ([MenuState]), under the [LoadingScreen] and once the match is over (the [MatchEndScreen] shows
 ## the final table then).
 ##
 ## It keeps running while the game is paused ([code]process_mode = Always[/code],
@@ -73,6 +73,7 @@ func _should_show() -> bool:
 			and _manager.round_number > 0 \
 			and _manager.phase != RoundManager.Phase.MATCH_END \
 			and not MenuState.blocks_gameplay() \
+			and not LoadingScreen.is_showing() \
 			and Input.is_action_pressed("scoreboard")
 
 

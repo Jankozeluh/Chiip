@@ -1,0 +1,156 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/loading_screen.gd" id="screen_script"]
+
+[node name="LoadingScreen" type="CanvasLayer"]
+process_mode = 3
+layer = 20
+visible = false
+script = ExtResource("screen_script")
+
+[node name="Band" type="Panel" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -240.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"InkPanel"
+
+[node name="Left" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 64.0
+offset_top = -64.0
+offset_right = 64.0
+offset_bottom = -64.0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"LoadingColumn"
+
+[node name="Kicker" type="Label" parent="Left"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Map 2 of 3 · Rotation"
+
+[node name="NameTrim" type="MarginContainer" parent="Left"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HeroTrim"
+
+[node name="MapName" type="Label" parent="Left/NameTrim"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HeroLabel"
+text = "Square"
+
+[node name="ModeLine" type="Label" parent="Left"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Team Deathmatch · first to 50"
+
+[node name="Right" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -64.0
+offset_right = -64.0
+offset_bottom = -64.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"LoadingColumn"
+
+[node name="Status" type="Label" parent="Right"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_type_variation = &"DimLabel"
+text = "Loading"
+
+[node name="Chips" type="HBoxContainer" parent="Right"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_filter = 2
+theme_type_variation = &"ChipRow"
+
+[node name="Chip0" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip1" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip2" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip3" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip4" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip5" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip6" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip7" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip8" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip9" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip10" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"
+
+[node name="Chip11" type="Panel" parent="Right/Chips"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LineChip"

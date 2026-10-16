@@ -4,7 +4,7 @@ extends SceneTree
 ## match on Depot: class menu, HUD in freeze time and in a live round with kills,
 ## the Tab scoreboard, the pause menu, the console and the match-end screen, then
 ## a Team Deathmatch HUD on Square and the same after you die, with the respawn
-## countdown, and its Tab scoreboard), for judging the look before and after a
+## countdown, and its Tab scoreboard, and the loading screen over a rotation's second map), for judging the look before and after a
 ## change (M10). Run with a window (rendering needs one):
 ##
 ##     Godot --path . --resolution 1280x720 --quit-after 20000 --script res://tools/ui_screenshots.gd -- --out <folder>
@@ -38,6 +38,7 @@ func _init() -> void:
 	await _menu_shots()
 	await _match_shots()
 	await _respawn_shots()
+	await _loading_shots()
 	print("Saved %d screenshots to %s" % [_count, _out_folder])
 	quit()
 
@@ -191,9 +192,33 @@ func _skip_freeze_time(manager: RoundManager) -> void:
 		await physics_frame
 
 
-func _start_game() -> Node:
+## The loading screen as the mockup draws it: Square, the rotation's second map, over the game, with seven of the
+## twelve squares done. The game starts on Depot (its launch shows the screen too), the screen is skipped over, and
+## "Next map" moves on, which shows it again; the hold time is long so it waits for the picture.
+func _loading_shots() -> void:
+	var rules := MatchSettings.new()
+	rules.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	GameLaunch.start_match(ROUNDS_MAP, rules, GameLaunch.rotation_maps())
+	var main: Node = await _start_game(true)
+	var screen := main.get_node("LoadingScreen") as LoadingScreen
+	screen.advance(screen.hold_time)
+	await _frames(2)
+	main.call("next_map")
+	await _frames(10)
+	screen.advance(screen.hold_time * 0.59)
+	await _frames(4)
+	await _shot("loading")
+	screen.advance(screen.hold_time)
+	await _stop_game(main)
+
+
+## Starts the game scene with what [GameLaunch] says. With [param loading], its loading screen stays on (a long hold time).
+func _start_game(loading: bool = false) -> Node:
 	var main: Node = load(GameLaunch.GAME_SCENE).instantiate()
 	main.set("load_settings", false)
+	main.set("loading_screen", loading)
+	if loading:
+		(main.get_node("LoadingScreen") as LoadingScreen).hold_time = 100.0
 	root.add_child(main)
 	await _frames(10)
 	return main

@@ -192,6 +192,8 @@ func _start_game(maps: Array[String], rules: MatchSettings, map: String = "") ->
 	_main = MAIN_SCENE.instantiate()
 	# Never read or write the player's real settings file.
 	_main.set("load_settings", false)
+	# The rotation test plays map after map at once: no loading screens (ui_test covers them).
+	_main.set("loading_screen", false)
 	add_child(_main)
 	await _wait_ticks(3)
 	_silence_everyone()
