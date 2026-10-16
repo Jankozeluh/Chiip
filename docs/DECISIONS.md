@@ -1705,6 +1705,25 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - A dictionary from zone to box in `LagCompensation`. A freed zone's memory can be reused by a new one, and the entry would then point at a dead shape.
 - Recording every second tick. That halves the cost, but shots would be checked against poses interpolated over 15.6 ms instead of 7.8 ms, which changes hits.
 
+## D-168 — Limits in the performance test (2026-10-16)
+
+**Decision:** `tests/perf_test` (a seeded bots-only 5v5 on the test map, 20 s with two or three round starts) now checks:
+- the average tick under **2.0 ms** (was 3.9 ms; measured 0.6 ms)
+- 99 ticks in 100 under **3.9 ms** (was 7.8 ms; measured 0.9–1.6 ms)
+- **no tick over 50 ms**, round starts included (new; measured 17–20 ms, and 153 ms before D-166)
+- with `-- --window`, **no shader pipeline compiled in the middle of drawing a frame** (new)
+
+It also prints its five slowest ticks with the round's phase and time, so a failure says where to look.
+
+**Why:**
+- The old limits were about five times what the game uses, so a change could double the cost and still pass.
+- The new ones keep a margin of about three, which covers a busier computer: three sessions running suites at once measured up to 1.2 ms on average.
+- The worst-tick limit is the one that would have caught D-166's 153 ms round start. Neither of the old checks could, because a few slow ticks among 2,560 don't move the average or the 99th percentile.
+
+**Alternatives:**
+- Frame-rate limits: they depend on the monitor and on macOS's V-Sync (D-165).
+- A limit of 25 ms on the worst tick: the round start is 17–20 ms, which leaves too little margin.
+
 ## Open questions
 
 | Question | Decide in |
