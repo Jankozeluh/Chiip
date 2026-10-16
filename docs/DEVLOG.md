@@ -11,7 +11,9 @@
 
 - **Reloads (D-158):** every reload clip is keyed to one timeline; the magazine leaves the gun in the left hand and comes back into its seat (within 0.7 cm), the shotgun's shell sits in the palm and goes into the port, the sounds come on their cues (they were early), the body's reload lasts exactly the reload (its own clip length; a first-shell clip for the shotgun; a 0.05 s fade-out), and a reload cut short stops showing.
 
-**Next:** checks and the full run.
+- **Checks:** the `holds` suite (11 checks) measures all of it; main merged in; all 33 suites pass (1083 checks).
+
+**Next:** your check of the weapons ("Your open checks" in PLAN.md); M11's optimization.
 
 ## 2026-10-16 — M11 UI fit
 
