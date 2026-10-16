@@ -1695,6 +1695,16 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** holding the weapons in `RoundManager`, which helps only offline rounds; a lookup by id in `WeaponData`, which is the weapons session's file.
 
+## D-167 — Lag compensation keeps each zone's box (2026-10-16)
+
+**Decision:** `LagCompensation.record()` finds each hit zone's box shape and half size once and keeps them on the zone as metadata (`lag_compensation_box`). Before, it searched the zone's children every tick. What is recorded is unchanged.
+
+**Why:** On a LAN host, recording took 0.15 ms of every 128 Hz tick (150 zones for ten characters), most of the 0.27 ms that being online adds to a 5v5 frame. Half of that was the search. Now record() takes 0.11 ms instead of 0.24 ms (both measured under the script profiler).
+
+**Alternatives:**
+- A dictionary from zone to box in `LagCompensation`. A freed zone's memory can be reused by a new one, and the entry would then point at a dead shape.
+- Recording every second tick. That halves the cost, but shots would be checked against poses interpolated over 15.6 ms instead of 7.8 ms, which changes hits.
+
 ## Open questions
 
 | Question | Decide in |
