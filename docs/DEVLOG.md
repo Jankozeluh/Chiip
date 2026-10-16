@@ -11,7 +11,13 @@ Started M7 in its own worktree (branch `m7-arsenal`), cut from main with M8's la
 
 - **Task 2, the arsenal's data** (D-091): `WeaponData` holds everything a weapon needs (slot, price, kill reward, armor penetration, draw time, pellets, scope, melee and grenade values, model and icons), and the eleven weapons have their data files with CS-based numbers. `docs/weapons.csv` is the balancing table, exported from those files by `tools/export_weapon_table.gd` (a Sonnet subagent wrote the tool and the new `tests/arsenal_test.tscn`, 28 checks); it uses the new `Armor` class, CS:GO's armor rule, which the characters get in task 4.
 
-**Next:** task 3 (weapon models and icons, a Sonnet subagent is on it) and task 4 (armor).
+- **Task 4, armor and helmet** (D-093): CS:GO's rule in `Character.take_damage()` (hits carry their weapon, the bomb ignores armor), the Bulwark's *Plated* perk on, the armor number and a pixel shield on the HUD, console `armor`. New `tests/gear_test.tscn` (13 checks).
+
+**Where M7 stopped** (2026-10-16, paused for the night at your request):
+- **Done:** tasks 1 (plan), 2 (data files and the balancing table) and 4 (armor). Main (5b1491b, M8 complete) is already in this branch. 19 suites; every suite touched so far passes (weapon, bot, round, class, arsenal, gear).
+- **In progress:** nothing in the working tree. Task 3 (weapon models and icons) was handed to a Sonnet subagent, which stopped on an API timeout before writing any files; it starts again from its brief.
+- **New direction to fold in first** (your answers, relayed by the coordinating session): weapons come mainly from **picking them up**, CS plus Call of Duty, with a **light economy that still matters**. A small buy menu (money from rounds and kills, carried between rounds; fewer, rounder prices than CS); **a fresh loadout every round** (knife and service pistol; bought or picked-up weapons, armor and grenades last one round); dropped weapons can be picked up for the rest of the round, and each map gets a couple of **power-weapon spots** (e.g. a sniper and a shotgun) that refill each round. Team respawn: no money, spawn with the class's signature gun and pistol, pickups as above. D-090's economy, buying and "survivors keep their gear" choices and the M7 task list change accordingly.
+- **Next:** rewrite the M7 plan and D-090 for that direction, then task 3 (models), task 5 (slots, switching, dropping and picking up, now the heart of M7), and on through the list.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 
