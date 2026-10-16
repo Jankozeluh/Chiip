@@ -93,7 +93,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | M13 | Sound design | ⬜ | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
 | M14 | Stats & training | ⬜ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
-| M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, a Czech translation, wallbangs, smarter team bots |
+| M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -547,7 +547,7 @@ The class draft (two random classes offered each match) and the random map weapo
 **Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
 
 - [x] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files (the Divocakos logo and name stay all rights reserved, outside CC BY-NC-SA: docs/CREDITS.md) and the third-party notices (Godot, Silkscreen, FuncGodot) inside the builds and in **Settings → Licences** (D-170); no per-file headers, the folders decide
-- [x] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors (D-171). The history still holds the old paths: your call whether to rewrite it before the first push
+- [x] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors (D-171). The history keeps the old paths and your name as the commit author: you decided not to rewrite it (D-176)
 - [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows. Presets, packaging script and instructions are done (D-172); the builds themselves are made for the release, after your OK
 - [x] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide (D-173). A join over a real Tailscale address is for your playtest
 - [x] **Contributing and credits:** `CONTRIBUTING.md` (how to submit a map as a pull request, how code and art contributions work, under which licence; maps are curated in the repo and ship with the next release) and the credit line "Created by JK · Divocakos" (D-176)
@@ -580,7 +580,6 @@ The class draft (two random classes offered each match) and the random map weapo
 
 - [ ] **A colourblind-safe team-colour option:** a setting that swaps blue and red for a pair that stays apart for the common colour blindnesses, in the HUD, scoreboard, kill feed, outlines and the players' own colours
 - [ ] **Gamepad support:** move, aim (dead zone, sensitivity and response curve), fire, every action, menu navigation, rebinding and prompts that follow the device last used
-- [ ] **A Czech translation:** every text of the game goes through `tr()`, a language setting, a translation file, a test that finds missing or unused keys, and menus that still fit with the longer text
 - [ ] **Wallbangs:** bullets go through thin materials with a damage loss by material (the surface types the footstep sounds already know), for the player and the bots
 - [ ] **Smarter team bots:** callouts, trades, coordinated site takes and grenades thrown together (the Backlog's "smarter team AI")
 
