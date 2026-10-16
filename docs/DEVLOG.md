@@ -19,7 +19,9 @@
 
 - Training on the HUD (D-236): the aim trainer's start panel with 30/60/90 s (each length its own best), the run readout, Esc to stop, the result panel with the best streak, and the spray wall's panel.
 
-**Next:** credits, the pad prompts, the app icon (if the assets file comes).
+- Credits screen to the designer's page (D-237): "Created by JK", the document list with a dot and the licence's name, the text frame, the mono mark and the rights line.
+
+**Next:** the pad prompts, the app icon (if the assets file comes), the bomb timer's colour-blind rule.
 
 ## 2026-10-16 — M15 accessibility & polish
 

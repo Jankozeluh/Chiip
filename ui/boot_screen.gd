@@ -28,6 +28,8 @@ const FADE_IN := 0.3
 const STUDIO_NAME := "Divocakos"
 ## The half-size logo of the main menu's corner mark.
 const SMALL_LOGO_PATH := "res://assets/ui/studio_logo_small.png"
+## The mono mark of the credits' footer (v0.2).
+const MONO_LOGO_PATH := "res://assets/ui/studio_logo_mono.png"
 
 ## Where the studio logo is. Static so a test can point it at another picture.
 static var logo_path: String = "res://assets/ui/studio_logo.png"
@@ -93,6 +95,13 @@ static func load_small_logo() -> Texture2D:
 	if not ResourceLoader.exists(SMALL_LOGO_PATH):
 		return null
 	return load(SMALL_LOGO_PATH) as Texture2D
+
+
+## The 32 × 32 single-colour mark of the credits' footer (white, drawn at 60 %), or null while the file isn't there.
+static func load_mono_logo() -> Texture2D:
+	if not ResourceLoader.exists(MONO_LOGO_PATH):
+		return null
+	return load(MONO_LOGO_PATH) as Texture2D
 
 
 ## Shows the screen and starts counting the hold time.

@@ -2336,6 +2336,14 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** a start key instead of a panel (the page draws a panel, and the length needs a choice); making the result a menu with buttons (it would take the mouse after every run).
 
+## D-237 — The Licences screen is the designer's Credits page (2026-10-16)
+
+**Decision:** The screen the settings footer's Licences button opens (M12, D-170) is now titled **Credits** and follows the designer's page 31: on the left "Game · **Created by JK** · Divocakos" and the list of documents as rows (a dot that is the accent colour on the picked one, the name, its licence in muted text; the picked row raised); on the right the document in a frame with its name and licence above it and "Scroll · mouse wheel or right stick" under it; in the footer the **32 × 32 mono mark** at 60 % and "© Divocakos. All rights reserved.". The documents are the same seven (the overview, the game's GPL, the asset licence, the third-party notices, Silkscreen, FuncGodot, Godot), each file or the engine's own text shown unedited; the page's fourth row "Sounds" has no file: the sounds are generated for Chiip and fall under the asset licence. The Back button is still where Esc leaves.
+
+**Why:** The designer's review of "the licences / credits screen" (D-230). The list stays generated from the build's files, as the page asks ("the developers should generate the list from the build so nothing is missed").
+
+**Alternatives:** a main menu entry for it (the page doesn't draw one; the settings footer reaches it from the main menu and the pause menu).
+
 ## Open questions
 
 | Question | Decide in |

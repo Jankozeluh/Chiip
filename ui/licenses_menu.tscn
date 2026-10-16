@@ -43,7 +43,7 @@ anchor_top = 0.5
 anchor_bottom = 0.5
 grow_vertical = 2
 theme_type_variation = &"TitleLabel"
-text = "Licences"
+text = "Credits"
 
 [node name="Body" type="HBoxContainer" parent="Page/Column"]
 layout_mode = 2
@@ -51,32 +51,99 @@ size_flags_vertical = 3
 mouse_filter = 2
 theme_type_variation = &"RowBox"
 
-[node name="Docs" type="VBoxContainer" parent="Page/Column/Body"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(304, 0)
+[node name="Left" type="VBoxContainer" parent="Page/Column/Body"]
+custom_minimum_size = Vector2(448, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PageColumn"
+
+[node name="Credit" type="VBoxContainer" parent="Page/Column/Body/Left"]
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"ContentBox"
 
+[node name="GameCaption" type="Label" parent="Page/Column/Body/Left/Credit"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Game"
+
+[node name="CreatedBy" type="Label" parent="Page/Column/Body/Left/Credit"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
+text = "Created by JK"
+
+[node name="Studio" type="Label" parent="Page/Column/Body/Left/Credit"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Divocakos"
+
+[node name="ListCaption" type="Label" parent="Page/Column/Body/Left"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Third-party · licences"
+
+[node name="Docs" type="VBoxContainer" parent="Page/Column/Body/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
 [node name="TextPanel" type="PanelContainer" parent="Page/Column/Body"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_type_variation = &"InsetPanel"
+theme_type_variation = &"CreditTextPanel"
 
-[node name="TextMargin" type="MarginContainer" parent="Page/Column/Body/TextPanel"]
+[node name="TextColumn" type="VBoxContainer" parent="Page/Column/Body/TextPanel"]
 layout_mode = 2
-theme_type_variation = &"PanelMargin"
+mouse_filter = 2
+theme_type_variation = &"FormColumn"
 
-[node name="Text" type="RichTextLabel" parent="Page/Column/Body/TextPanel/TextMargin"]
+[node name="Head" type="HBoxContainer" parent="Page/Column/Body/TextPanel/TextColumn"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DocName" type="Label" parent="Page/Column/Body/TextPanel/TextColumn/Head"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Chiip"
+
+[node name="DocKind" type="Label" parent="Page/Column/Body/TextPanel/TextColumn/Head"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+
+[node name="Text" type="RichTextLabel" parent="Page/Column/Body/TextPanel/TextColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
 focus_mode = 2
 selection_enabled = true
+
+[node name="ScrollNote" type="Label" parent="Page/Column/Body/TextPanel/TextColumn"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Scroll · mouse wheel or right stick"
 
 [node name="Footer" type="HBoxContainer" parent="Page/Column"]
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"RowBox"
+
+[node name="Mark" type="TextureRect" parent="Page/Column/Footer"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.6)
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Rights" type="Label" parent="Page/Column/Footer"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "© Divocakos. All rights reserved."
 
 [node name="Spacer" type="Control" parent="Page/Column/Footer"]
 layout_mode = 2

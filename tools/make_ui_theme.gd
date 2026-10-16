@@ -238,6 +238,21 @@ func _panels() -> void:
 	# The spray panel's legend: the pattern's dot (a frame) and yours (the crosshair green).
 	_hud_panel("PatternDot", _box("pattern_dot", Color.TRANSPARENT, Palette.TEXT, Palette.BORDER))
 	_hud_panel("ShotDot", _box("shot_dot", Palette.CROSSHAIR))
+	# The credits' list (v0.2, D-237): a row is nothing at rest and RAISED when picked or under the mouse; the text's frame.
+	_variation("CreditItem", "Button")
+	var credit_row := _even(0)
+	_styles("CreditItem", {
+		"normal": _empty("credit_item_normal", credit_row),
+		"hover": _box("credit_item_hover", Palette.PANEL_RAISED, Color.TRANSPARENT, 0, credit_row),
+		"pressed": _box("credit_item_pressed", Palette.PANEL_RAISED, Color.TRANSPARENT, 0, credit_row),
+		"hover_pressed": _box("credit_item_hover_pressed", Palette.PANEL_RAISED, Color.TRANSPARENT, 0, credit_row),
+		"disabled": _empty("credit_item_disabled", credit_row),
+		"focus": _ring("credit_item_focus", Palette.ACCENT, credit_row),
+	})
+	_variation("CreditMargin", "MarginContainer")
+	_margins("CreditMargin", Palette.CREDIT_ROW_PAD, 0)
+	_variation("CreditTextPanel", "PanelContainer")
+	_styles("CreditTextPanel", {"panel": _box("credit_text_panel", Palette.INSET, Palette.LINE_COLOR, Palette.BORDER, _even(Palette.CREDIT_TEXT_PAD))})
 	# The Stats screen's bars (v0.2, D-235): a RAISED track, a TEXT fill, a MUTE fill (deaths, a K/D below 1), a LINE rule.
 	_variation("StatBarTrack", "Panel")
 	_styles("StatBarTrack", {"panel": _box("stat_bar_track", Palette.PANEL_RAISED)})

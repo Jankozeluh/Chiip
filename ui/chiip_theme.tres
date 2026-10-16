@@ -451,6 +451,72 @@ border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxEmpty" id="credit_item_disabled"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="credit_item_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 0)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="credit_item_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="credit_item_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="credit_item_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="credit_item_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="credit_text_panel"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="dim_key_cap"]
 content_margin_left = 8.0
 content_margin_top = 4.0
@@ -2466,6 +2532,20 @@ ConsolePanel/base_type = &"PanelContainer"
 ConsolePanel/styles/panel = SubResource("console_panel")
 ContentBox/base_type = &"VBoxContainer"
 ContentBox/constants/separation = 8
+CreditItem/base_type = &"Button"
+CreditItem/styles/disabled = SubResource("credit_item_disabled")
+CreditItem/styles/focus = SubResource("credit_item_focus")
+CreditItem/styles/hover = SubResource("credit_item_hover")
+CreditItem/styles/hover_pressed = SubResource("credit_item_hover_pressed")
+CreditItem/styles/normal = SubResource("credit_item_normal")
+CreditItem/styles/pressed = SubResource("credit_item_pressed")
+CreditMargin/base_type = &"MarginContainer"
+CreditMargin/constants/margin_bottom = 0
+CreditMargin/constants/margin_left = 16
+CreditMargin/constants/margin_right = 16
+CreditMargin/constants/margin_top = 0
+CreditTextPanel/base_type = &"PanelContainer"
+CreditTextPanel/styles/panel = SubResource("credit_text_panel")
 DefeatLabel/base_type = &"Label"
 DefeatLabel/colors/font_color = Color(1, 0.3019608, 0.23921569, 1)
 DefeatLabel/font_sizes/font_size = 96

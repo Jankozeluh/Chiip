@@ -299,6 +299,9 @@ const STAT_COLUMN_GAP := 48
 const STAT_SECTION_GAP := 16
 ## The padding inside the Shooting Range's training panels (the start panel and the result).
 const TRAINING_PAD := 32
+## The credits' list rows (sides) and the licence text's panel (all round).
+const CREDIT_ROW_PAD := 16
+const CREDIT_TEXT_PAD := 24
 ## The space between the aim trainer's run readouts, and the padding of the spray panel.
 const HUD_RUN_GAP := 48
 const SPRAY_PAD := 24
