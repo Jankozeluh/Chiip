@@ -71,6 +71,8 @@ var _lobby_opener: Button
 @onready var _join_button: Button = %JoinButton
 @onready var _map_name: Label = %MapName
 @onready var _build_label: Label = %Build
+@onready var _studio_mark: TextureRect = %StudioMark
+@onready var _boot: BootScreen = %BootScreen
 @onready var _setup: MatchSetup = $MatchSetup
 @onready var _lobby: LobbyMenu = $LobbyMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
@@ -98,11 +100,13 @@ func _ready() -> void:
 	_settings_menu.closed.connect(_settings_button.grab_focus)
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
 	_build_label.text = "Build %s" % ProjectSettings.get_setting("application/config/version", "")
+	_show_studio_mark()
 	_build_background()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
 	MenuState.open(self)
 	_play_button.grab_focus()
+	_show_boot_screen()
 	# Back from an online match, or from one that ended: the lobby (or the reason) comes first.
 	var session := NetLobby.find_session(get_tree())
 	if (session != null and session.is_active()) or not GameLaunch.notice.is_empty():
@@ -206,12 +210,31 @@ func start_practice() -> void:
 ## ([PixelView], like main.gd does for the game). Runs at startup, when the
 ## video settings change and when the window is resized.
 func apply_pixel_settings() -> void:
-	var ui_height := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
-	var factor := ui_height / PixelView.UI_DESIGN_HEIGHT
+	var factor := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
 	UiTheme.apply(_page, factor)
 	_setup.set_ui_scale(factor)
 	_lobby.set_ui_scale(factor)
 	_settings_menu.set_ui_scale(factor)
+	_boot.set_ui_scale(factor)
+
+
+## Puts the studio logo in the corner next to the map's name (the mockup's 56 × 56 mark). Without the
+## logo file the mark stays hidden and the name moves to the corner (the scene leaves room for the mark,
+## and the offsets are read at the first [method apply_pixel_settings]).
+func _show_studio_mark() -> void:
+	var logo := BootScreen.load_logo()
+	_studio_mark.texture = logo
+	_studio_mark.visible = logo != null
+	if logo == null:
+		_map_name.offset_left += 72.0
+		_map_name.offset_right += 72.0
+
+
+## The boot screen (D-153) shows once per run, over the menu, when the game starts on the menu.
+func _show_boot_screen() -> void:
+	var args := OS.get_cmdline_user_args()
+	if BootScreen.is_due() and not args.has("--host") and not args.has("--join"):
+		_boot.show_screen()
 
 
 ## Replaces the menu with the game scene.

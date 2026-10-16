@@ -19,6 +19,20 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 
 **Phase 1 done. Next (phase 2, once main has the M11 fixes):** merge main, write docs/RELEASE_CHECKLIST.md, automate bot matches on every mode and map and a two-instance LAN run, fix small bugs, write KNOWN_ISSUES and the v0.1.0 release notes.
 
+## 2026-10-16 — M11 UI fit
+
+**Done**
+- The UI scale is the tighter of width / 1280 and height / 720, in half steps from 1.0 up (D-151): at your 2920 × 1753 it is 2×, and the Play screen is whole. It re-applies on every resize and fullscreen switch (`Window.size_changed`, already wired in the game and the main menu).
+- The Play screen's three cards no longer widen with their text: the page needed 1338 design pixels, now 894. That was the other half of the cut-off.
+
+- The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
+
+- The boot screen exists now (D-153): it shows once per run, any key skips it. The studio logo file was never in the project (the mockup's link was replaced by a placeholder text in the copy), so it shows the game's name until `assets/ui/studio_logo.png` is added; the main menu's small corner mark appears with it.
+
+- New suite `layout` (11 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
+
+**Next:** your check: put the studio logo at `assets/ui/studio_logo.png` (send it, or its link), and look at the Play screen in the editor's game view at 2920 × 1753.
+
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
 **Done**

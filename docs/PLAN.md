@@ -8,6 +8,7 @@
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M11 UI fit and the studio logo.** (1) Open the game in the editor's game view at your 2920 × 1753 (and drag the window narrow, tall and fullscreen): the Play screen, class draft and HUD stay whole; the text is 2× there, crisp. (2) Start a match: the loading band goes first, and then the class draft opens (nothing covers its cards). (3) **Send the studio logo** (a square PNG, a link is fine) for `assets/ui/studio_logo.png`: until then the boot screen shows the game's name (D-153). Say where it is from.
 - [ ] **M7 playtest (arsenal, perks & economy).** Start a match from the menu (Depot, Square or Spillway for the bomb, map weapons and kits). Then:
   1. **Buying:** the freeze time is 15 s. **B** opens the buy menu (from the class menu too): the category's number then the item's, or click; greyed items say why. Round 1 is a pistol round ($1,000). Is it quick to use under time pressure? Are the light economy's numbers right: $3,000 a win, $1,500 → $3,000 for losses, $200 a kill ($500 knife), prices $500 / $1,000 / $2,500 / $4,000 (D-090)? Do saves and force buys feel worth it?
   2. **The guns** (practice: B buys everything free): the Ram as before; the Warden (more accurate, no one-tap through a helmet); the Hornet; the Breaker (9 pellets, a shell at a time, fire to stop the reload); the Heron (right mouse: two zoom steps, a moment to settle, out of the scope after each shot, no crosshair unscoped); the Sparrow and the Verdict (one shot per click); the knife (left slash, right stab, harder from behind). Tell me what feels off.
@@ -520,7 +521,7 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 17. [x] **Multiplayer lobby** (M9's, merged from main) in the mockup's look (D-137). *(Sonnet)* Built: the Lobby page (name, the host's addresses, two team columns with empty "Bot" slots, Switch team, the mode · map · limit footer, Edit setup and Start) and the Join page; match setup opened from the lobby hides Practice.
 18. [x] **Buy menu** (M7's) in the mockup's look, and the HUD hidden behind the class and buy menus (D-137). *(Sonnet)*
 
-Not in this branch: the boot screen (it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
+Not in this branch: the boot screen (built later in M11, D-153: it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
 
 **Done when:** the main menu starts Team Deathmatch in one click, Custom still offers everything match setup did, every screen and the HUD take their look from the theme, all suites pass, and then: every screen matches your mockups.
 
@@ -534,7 +535,7 @@ The class draft (two random classes offered each match) and the random map weapo
 
 **Goal:** fix what playing showed, and make it run smoothly (D-150). Each part is planned in detail by its session.
 
-- [ ] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3)
+- [x] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3). Built: the tighter axis in half steps (D-151, plus the Play cards that were wider than the layout), the class draft opens after the loading band (D-152), the boot screen with a file slot for your studio logo, which you still have to supply as `assets/ui/studio_logo.png` (D-153), and the `layout` suite (D-154)
 - [ ] **Weapons and models** (D-155 to D-164): first-person guns never poke through walls (a separate viewmodel layer, as in CS and CoD); every class holds every weapon correctly (grip and off-hand, pistols, knife, grenades); reloads match each weapon's reload time in first and third person, with the sounds on cue. Checks that measure hand-to-grip distances
 - [ ] **Optimization** (D-165 to D-169): measure every map at 5v5 and as a LAN host (average frame rate and the worst 1 % of frames), find the hot spots (bot AI, vision rays, animation, shadows, physics), fix them, and add limits to the performance test
 

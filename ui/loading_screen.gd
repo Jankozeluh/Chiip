@@ -19,9 +19,10 @@ extends CanvasLayer
 ## [code]main.tscn[/code] and input reaches the nodes at the end of the tree first
 ## (see "Menus and the mouse" in docs/ARCHITECTURE.md), so Esc, the console key,
 ## B, M and the mouse never reach the pause menu, console, buy menu, class menu or
-## the player. It doesn't register with [MenuState] on purpose: that would stop the
-## class menu from opening at a match start under the band, and the mouse isn't its
-## business. Only the polled hold-Tab scoreboard needs to ask [method is_showing].
+## the player. It doesn't register with [MenuState]: the mouse isn't its business.
+## The class draft of a match start waits for it (D-152: [method ClassMenu.open_if_pending]
+## opens it when [signal finished] comes), so nothing is ever drawn under the band. Only the
+## polled hold-Tab scoreboard and the class menu need to ask [method is_showing].
 ##
 ## [code]main.gd[/code] shows it when a map comes from the main menu and when the
 ## rotation moves on ([code]next_map()[/code]), and hides the HUD while it is up.
