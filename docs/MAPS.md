@@ -81,7 +81,7 @@ A freight yard. **Indoor mid, open side lanes.**
 - **West, site A:** an open container yard. Overlapping containers (2.6 m) and crates break up the views. A sits in the north-west corner beside a container.
 - **East, site B:** a boxcar on the track, a small signal hut and a 1.2 m loading dock along the east wall. B is on the dock, with ramps up from the south end and from the west. Pallet stacks on the dock break the view along it.
 - **Spawns:** container stacks (5.2 m) split each spawn yard from the side lanes; wooden stacks in the forecourts give cover and cut the long views across them.
-- **Look (5 materials):** gravel ground, concrete walls and dock, a light plaster warehouse, dark metal containers, wooden stacks. Clear noon (`clear_noon.tres`: today's cool-daylight sky with neutral ambient light), sun 38° high.
+- **Look (6 main materials, dressed with the map kit in M10):** gravel ground, concrete dock and forecourts, grey block yard walls, the light plaster warehouse (windows outside, a ribbed-metal ceiling inside), ribbed containers in green, grey, rust and teal (the same pattern, D-127) and a rusty boxcar, wooden stacks; hazard stripes along the dock's edge. Props and lamps (85 entities in `depot.map`): pendant lamps in the warehouse, floodlights high on the yard walls, a lantern and a door on the signal hut, the boxcar's siding (railway track), signs to A and B on the warehouse and above each site, pipes and cabinets along the walls, a van and a forklift in the dead-end corners behind the spawn stacks, and floor clutter without collision (grass, pallets, debris). Clear noon (`clear_noon.tres`: today's cool-daylight sky with neutral ambient light), sun 38° high.
 
 ## Map 2: Square
 
@@ -136,6 +136,6 @@ The blockouts were generated once from a small layout script (outside the reposi
 ## Next for these maps
 
 - **Your playtest:** how they feel, what to change, and the final names.
-- **Detail pass (M8):** props, trim, signs, lamps. Lighting stays real-time (D-085; comparison: [maps/lighting_depot.jpg](maps/lighting_depot.jpg)).
+- **Detail pass:** done with the map kit in M10 (D-127, D-128): textures, props, signs and lamps, without moving walls or cover; the measurements below were taken again after dressing. Lighting stays real-time (D-085; comparison: [maps/lighting_depot.jpg](maps/lighting_depot.jpg)).
 - **Bomb logic:** done (D-080): plant anywhere on the floor inside a site's area.
 - **Respawn mode (M8):** pick a `respawn_points` marker away from enemies.
