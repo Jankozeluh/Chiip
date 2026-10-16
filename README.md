@@ -149,6 +149,8 @@ Real maps are built in **TrenchBroom**, a free brush-based map editor similar to
 
 3. Play it with `-- --map res://maps/comparison/trenchbroom_room.tscn` (see *Running the game*).
 
+**Textures** come in sets, which TrenchBroom's texture browser shows as collections: the base set (the first eight), `industrial`, `urban`, `interior` and `nature` (D-121, sources in docs/CREDITS.md). `industrial/chainlink` is see-through.
+
 **Scale (same as CS):** 1 TrenchBroom unit = 1 inch = 2.54 cm. The player is 72 units tall (54 crouched). A jump clears 57 units, a crouch-jump 75. The standard crate is 64 units. Doors are 128 units tall and 96 wide in the comparison room. A 64-pixel texture covers 64 units.
 
 **Lighting** is real-time; the maps aren't baked (D-085). To try a bake anyway (e.g. on the comparison room): select the scene's `LightmapGI` node, click **Bake Lightmaps** in the 3D toolbar, and save. Godot can only bake from the editor.

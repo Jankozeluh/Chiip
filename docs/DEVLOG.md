@@ -8,9 +8,10 @@ Runs in its own worktree and branch (`claude/m10-mapkit-dc3914`), alongside M7, 
 
 **Done**
 - **Planned the map kit:** eleven tasks in PLAN.md (M10, "Map kit and environment art"), with provisional decisions D-121 to D-129: the texture sets and how sounds find them, props generated like the crew, collision that is fair to bots (what you see blocks; see-through things block only movement), lamps as entities, gameplay markers placeable in TrenchBroom, performance limits, the look rule of five main materials plus details, dressing that keeps the layouts, and a kit gallery map with its own test.
-- **Picked the textures:** browsed about 300 ambientCG candidates (their preview images) and chose 28 for four sets; the zips are downloaded in task 1.
+- **Picked the textures:** browsed about 300 ambientCG candidates (their preview images) and chose 28 for four sets.
+- **Task 1, the texture library** (D-121): a Sonnet subagent downloaded the 28 zips (173 MB, more than the 2–5 MB per file estimated, because ambientCG's zips hold every map), turned them retro and tuned them against measured targets; I reviewed the contact sheet and darkened the glaring corrugated steel. New `tools/texture_report.gd` measures the look rules (calibrated on the base set: it fails `bricks_red` at 21 % team red, as MAPS.md found). Eight sources needed preparing (`tools/texture_prep.py`): flat colour maps whose relief lives in the displacement map, a rust that counted as team red, and two patterns drawn because they turned to plaid or moiré at 64 × 64. `make_retro_texture.gd` writes into set folders and can cut 1-bit holes from an opacity map (the chain-link). Footsteps and impacts now read words in a texture's name, so `industrial/diamond_plate` sounds like metal with no code change. New `tests/kit_test.tscn`; all 18 suites pass.
 
-**Next:** task 1, the texture library.
+**Next:** task 2, the prop generator.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

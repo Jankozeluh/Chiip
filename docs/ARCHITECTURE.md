@@ -2,7 +2,7 @@
 
 > How the project is organized and which rules the code follows. Updated whenever a folder, system or convention is added.
 >
-> Last updated: 2026-10-15. The Godot project exists; the folders below are created, systems are added milestone by milestone.
+> Last updated: 2026-10-16. The Godot project exists; the folders below are created, systems are added milestone by milestone.
 
 ## Engine
 
@@ -38,8 +38,9 @@ Chiip/
 ├── docs/              All documentation
 ├── addons/            Third-party Godot plugins only (func_godot)
 ├── assets/            Shared raw assets
-│   ├── textures/      Retro 64 × 64 textures (sources in docs/CREDITS.md)
-│   ├── materials/     One material per texture, world triplanar (for CSG geometry)
+│   ├── textures/      Retro 64 × 64 textures (sources in docs/CREDITS.md): the base set at the top,
+│   │                  the kit's sets in industrial/, urban/, interior/, nature/ (D-121)
+│   ├── materials/     One material per texture, world triplanar (for CSG geometry), in the same set folders
 │   ├── environments/  Shared sky / fog / ambient settings
 │   ├── models/
 │   │   └── crew/      Generated class models: .glb + albedo + team mask (tools/modelgen, D-072)
@@ -238,6 +239,8 @@ Physics interpolation (D-010) draws the player's body smoothly between physics t
 
 TrenchBroom axes become Godot axes as (x, y, z) → (y, z, x), divided by 39.37. A 64-pixel texture covers 64 units = 1.63 m, the same density as the CSG materials.
 
+**Textures and materials (D-121):** TrenchBroom lists every image below `assets/textures/` and turns each folder into a collection (the base set at the top, then `industrial`, `urban`, `interior`, `nature`). A face's texture name is its path below that folder without the extension (`industrial/rust_plates`). When building, func_godot looks for a material with the same path and the extension `.tres` next to the image; if there is none it makes one from `assets/materials/map_default.tres` with the image as albedo. So a texture that needs something special (the chain-link's see-through holes: alpha scissor, both sides drawn) gets a hand-made `<name>.tres` beside its PNG. `tools/texture_report.gd` measures textures against the look rules; `tools/texture_prep.py` prepares sources whose colour map alone doesn't work at 64 × 64 (CREDITS).
+
 ## How the screen is put together
 
 The game moves between two scenes (D-064): the **main menu** (`ui/main_menu.tscn`, the project's main scene) and the **game** (`main.tscn`). The menu's Start and Practice leave a `GameLaunch` description in static variables and call `change_scene_to_file()`; `main.gd` reads it once in `_ready()`. The match-end screen's Main menu button and the console's `disconnect` change back with `Main.return_to_menu()`. The command-line shortcuts (`-- --match`, `--practice`, `--map`) skip the menu the first time. Both scenes load the settings if nobody has yet, apply the pixel settings the same way (`PixelView`) and use `MenuState` for the mouse.
@@ -362,7 +365,7 @@ The round manager runs a fixed sequence and asks a few overridable methods for t
 - The 3D listener is the player's camera inside the world `SubViewport` (`audio_listener_enable_3d` is on). While you spectate a teammate that camera sits at their head, so you hear from where they are, as in CS; no sound routing changes.
 - Footsteps play only for loud steps (running). Walking and crouch-walking are silent, matching what bots can hear (D-035).
 - **Buses (D-058).** `default_bus_layout.tres` has Master, Effects and Interface. All six sound players of the game (the character's `FootstepAudio` / `FootstepAudio3D` and the rifle's `ShotAudio`, `HandlingAudio`, `ShotAudio3D`, `HandlingAudio3D`) play on **Effects**; **Interface** is for menu sounds and nothing uses it yet. `Settings` sets the bus volumes from the 0 to 1 sliders (`linear_to_db`; 0 mutes the bus). A new sound goes on a bus by its `bus` property: Effects for the game, Interface for menus.
-- **Surfaces** (D-084): `Surfaces.floor_kind(world, feet)` casts a short ray down and reads the hit brush's texture from func_godot's `func_godot_mesh_data` metadata (`texture_names`, `textures`, `normals`, `collision_shape_to_face_indices_map`), which Chiip's worldspawn class (`maps/fgd/chiip_worldspawn.tres`) stores on every built map body. `Character._play_footstep()` plays `Surfaces.footstep_sound(kind, footstep_sound)`; `Weapon._play_impact_sound()` sets the stream of the impact scene's `Audio` player (`impact_*`, `hit_body`, `hit_head`). Without the metadata (CSG maps, props) everything is hard.
+- **Surfaces** (D-084): `Surfaces.floor_kind(world, feet)` casts a short ray down and reads the hit brush's texture from func_godot's `func_godot_mesh_data` metadata (`texture_names`, `textures`, `normals`, `collision_shape_to_face_indices_map`), which Chiip's worldspawn class (`maps/fgd/chiip_worldspawn.tres`) stores on every built map body. `Character._play_footstep()` plays `Surfaces.footstep_sound(kind, footstep_sound)`; `Weapon._play_impact_sound()` sets the stream of the impact scene's `Audio` player (`impact_*`, `hit_body`, `hit_head`). Without the metadata (CSG maps) everything is hard. Since D-121 `Surfaces.kind_for_texture(name)` decides the kind: the three original names, then words in the file name (`metal`, `steel`, `plate`, `grate`, `rust`, `corrugated` → metal; `wood`, `plank`, `parquet`, `siding` → wood; `gravel`, `dirt`, `grass`, `ground` → gravel), so new textures need no code. Kit props carry a `surface` metadata entry on their body instead (D-122).
 - **Interface sounds** (`UiSounds`, a static class): `attach(menu)` gives every button a hover tick and a click; `play(stream)` plays through one `AudioStreamPlayer` on the *Interface* bus that it adds to the tree root. The round HUD plays the round start and won/lost stingers, the bomb HUD the planted alert. Off in headless runs.
 - **The bomb** (D-080) plays its beep, the plant key presses, the defuse clicks and the explosion through `AudioStreamPlayer3D`s on the bomb (bus `Effects`; a bus that doesn't exist yet falls back to Master). The sounds are generated by `tools/generate_sounds.gd`.
 - Tests set `footstep_sound = null` and use silent weapon data: headless runs have no audio device. The bomb test sets the bomb's four sound exports to null.
@@ -423,6 +426,7 @@ bash tools/run_tests.sh
 | `class_test` | 57 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078) | ~1 s |
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
+| `kit_test` | 6 | The map kit (M10): the texture library's sets, sizes, look rules and materials, see-through chain-link, sounds from texture names (D-121) | under 1 s |
 
 That is 555 checks in about 75 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 
@@ -443,6 +447,7 @@ That is 555 checks in about 75 s on the development Mac. A change to one system 
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 200000 res://tests/class_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/zone_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/kit_test.tscn
 ```
 
 `perf_test` times every physics tick of a seeded bots-only 5v5 (the CPU side: physics, bots, animation, skeletons); with `-- --window` after it (and without `--headless`), it also prints the frame rate from a camera over the map. `zone_test` checks that every class's hit zones follow its animated bones.

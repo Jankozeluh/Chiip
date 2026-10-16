@@ -2,7 +2,7 @@
 
 > Notes on Godot concepts as Chiip uses them. Each milestone adds a section with what was new and where it's used in the project.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## Unity → Godot cheat sheet
 
@@ -611,3 +611,11 @@
 **Playing clips from code, and moving a node to another parent** (`weapons/weapon.gd`)
 - `AnimationPlayer.play("fp_fire", blend, speed)` plays a clip (with a short cross-fade and a speed factor, here to stretch the reload to the weapon's reload time), `seek(0.0, true)` restarts it when the same clip is already playing, and `queue("fp_idle")` plays the idle clip once it ends: Unity's `Animator.Play()` and a transition back, without a state machine. Setting `active = false` stops a player from doing any work, which the hidden arms of every bot use.
 - `node.reparent(new_parent)` moves a node to another parent in one call (Unity: `transform.SetParent()`); with `keep_global_transform = false` it keeps its *local* position instead. The muzzle flash moves onto the gun's bone attachment this way, so it follows the gun's kick and reload.
+
+### M10 — Map kit
+
+**How TrenchBroom finds textures, and how func_godot turns them into materials** (`assets/textures/<set>/`, D-121)
+- TrenchBroom reads every image below the game's texture folder (`assets/textures`, set in the game config that `tools/export_trenchbroom_config.gd` writes) and shows each sub-folder as a *collection* in its texture browser. A face stores the texture's path below that folder, without extension: `industrial/rust_plates`. Unity has no direct equivalent: it's like a material picker that lists a folder of textures.
+- When func_godot builds the map it turns each texture name into a Godot material. First it looks for a material file with the same path and `.tres` next to the image (`assets/textures/industrial/chainlink.tres`); if there is none, it copies the template material from the map settings (`assets/materials/map_default.tres`: rough, no shine, pixel filtering) and puts the image in as albedo. So most textures need no material at all, and a special one (see-through, glowing) gets a hand-made `.tres` beside it, which TrenchBroom ignores because it only lists images.
+- **Alpha scissor** (`transparency = ALPHA_SCISSOR`, `alpha_scissor_threshold = 0.5`) cuts out every pixel below half opacity and draws the rest as solid: Unity's *Alpha Clipping* / cutout shader. It stays sharp, needs no sorting and casts holey shadows, which suits pixel art better than real transparency. `cull_mode = CULL_DISABLED` draws both sides of a face (a fence seen from behind).
+- In a tool script, `Image.load_png_from_buffer(FileAccess.get_file_as_bytes(path))` reads a PNG's pixels straight from the file. `Image.load_from_file()` on a `res://` image works too but warns, because an exported game only has the imported texture, not the PNG (`tools/texture_report.gd`).
