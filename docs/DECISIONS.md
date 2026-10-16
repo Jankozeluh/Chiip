@@ -2018,11 +2018,14 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 - debug commands in the console
 - an architecture review
 - a rule against flaky tests
-From then on, development runs one short branch at a time instead of several parallel ones.
+The new way of working starts once the work in progress (the v0.1.1 hotfix and M13–M15) has finished and been checked:
+- **Code** (game, network, UI, bots): one short branch at a time, merged soon after.
+- **Content** (maps, textures, props, sounds, docs): may run in one extra parallel branch, because it barely touches code.
+- **Inside a session**, cheap subagents (Sonnet, Haiku) still take on the small tasks.
 
 **Why:** v0.1.0 shipped with a bug that existed only in the exported build: shots didn't hit characters. The 1181 checks all run in the editor, so none could catch it. You asked whether the project will stay easy to debug as it grows ("po tomto pridavani po m15 by ses mel zamyslet nad tim, jestli se to takto bude dobre debugovat").
 
-**Alternatives:** Keep working in parallel branches (faster, but each merge mixes many changes, so it's harder to tell which one broke something).
+**Alternatives:** Keep working in parallel branches (2–3× faster, but more tokens, the usage limit runs out sooner, and each merge mixes many changes, so it's harder to tell which one broke something).
 
 ## Open questions
 
