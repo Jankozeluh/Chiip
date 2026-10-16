@@ -285,6 +285,10 @@ func _start_round() -> void:
 	_plan_bots()
 	_set_frozen(true)
 	_set_phase(Phase.FREEZE, _freeze_time())
+	# The bots shop as the freeze time begins, by their team's money (D-099).
+	if settings.bots_buy:
+		for team in Teams.COUNT:
+			BotBuyer.buy_for_team(self, team, _class_rng)
 	round_started.emit(round_number)
 
 
@@ -317,8 +321,9 @@ func _after_round_end() -> void:
 	# Nobody can have won yet at this point, so half time never clashes with a match end.
 	if round_number == settings.rounds_to_win - 1:
 		attacking_team = get_defending_team()
-		# A new half: everyone back to the starting money, as in CS.
+		# A new half: everyone back to the starting money, as in CS, and the bots choose again.
 		_reset_money()
+		_rechoose_bot_classes()
 		sides_swapped.emit()
 	_start_round()
 
@@ -589,6 +594,23 @@ func _join(character: Character) -> void:
 	_money[character] = 0
 	character.damaged.connect(_on_damaged.bind(character))
 	character.died.connect(_on_died.bind(character))
+
+
+## At half time each team's bots pick their classes again (D-099): still one of each before any
+## repeats, from a new random start, so a bot plays the second half as something else.
+func _rechoose_bot_classes() -> void:
+	var classes := ClassData.all()
+	for team in Teams.COUNT:
+		# The same shift for every bot of the team keeps their classes different from each other.
+		var offset := _class_rng.randi_range(1, classes.size() - 1)
+		for member in get_members(team):
+			if member.is_local_player():
+				continue
+			var current := classes.find(member.class_data)
+			var data := classes[(maxi(current, 0) + offset) % classes.size()]
+			if data != member.class_data:
+				member.class_data = data
+				class_changed.emit(member, data)
 
 
 ## Puts every member of [param team] on its own spawn marker of the team's side.

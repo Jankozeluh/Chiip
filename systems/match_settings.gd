@@ -96,3 +96,6 @@ enum GameMode {
 ## For every attacker when the bomb is planted, and for the defender who defuses it.
 @export var plant_money: int = 200
 @export var defuse_money: int = 200
+## The bots shop at the start of each round by their money (D-099). Tests of the money rules turn
+## it off, so only what they do changes the numbers.
+@export var bots_buy: bool = true

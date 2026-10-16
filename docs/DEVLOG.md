@@ -27,7 +27,9 @@
 
 - **Task 13, class perks** (D-099): the Scout's Light Step (running steps carry 70% as far, for bots and for your ears) completes the four perks; the class cards show each class's loadout; in team respawn you can change class any time and get it at your next respawn.
 
-**Next:** task 14 (bots buy, pick up and use the arsenal).
+- **Task 14, bots and the arsenal** (D-099): bots buy as a team (pistol rounds, full buys, force buys, saves) by class taste, change class at half time, keep a gun in hand (the pistol when the rifle runs dry), scope the Heron and wait to be steady, close in with the shotgun, go for better guns and power weapons near them, and throw frags and flashbangs at enemies they heard. A bots-only 5v5 on Depot shows the whole economy cycle and about five grenades a round. New `tests/botgear_test.tscn` (8 checks).
+
+**Next:** task 15 (names, checks and the playtest list).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

@@ -330,7 +330,8 @@ func _test_hud_and_body_follow() -> void:
 	var hud := HUD_SCENE.instantiate()
 	add_child(hud)
 	hud.set_player(_player)
-	var bot := BOT_SCENE.instantiate() as Character
+	# A character without a brain: a bot's would take its pistol back out of the knife (D-099).
+	var bot := CHARACTER_SCENE.instantiate() as Character
 	bot.team = 1
 	bot.position = Vector3(-6, 0, 0)
 	add_child(bot)
@@ -528,6 +529,7 @@ func _settings() -> MatchSettings:
 	settings.round_end_time = 0.5
 	settings.rounds_to_win = 15
 	settings.bomb_rounds = false
+	settings.bots_buy = false
 	return settings
 
 

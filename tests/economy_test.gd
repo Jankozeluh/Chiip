@@ -391,6 +391,7 @@ func _settings() -> MatchSettings:
 	settings.round_time = 30.0
 	settings.round_end_time = 0.3
 	settings.rounds_to_win = 15
+	settings.bots_buy = false  # Only what the checks do changes the money (D-099).
 	return settings
 
 

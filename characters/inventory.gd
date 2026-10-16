@@ -204,6 +204,13 @@ func hold(weapon: Weapon, instant: bool = false) -> void:
 		if _weapons.has(old):
 			_last = old
 	_character.weapon = weapon
+	# A grenade kind thrown to the last one and put away before it left the inventory goes now.
+	if old != null and is_instance_valid(old) and old.data.is_grenade() and old.magazine <= 0 and _weapons.has(old):
+		_weapons.erase(old)
+		if _last == old:
+			_last = null
+		old.get_parent().remove_child(old)
+		old.queue_free()
 	if weapon != null:
 		weapon.process_mode = Node.PROCESS_MODE_INHERIT
 		weapon.visible = _character.is_alive()
