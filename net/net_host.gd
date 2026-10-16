@@ -186,11 +186,6 @@ func get_character(net_id: int) -> Character:
 	return _characters_by_id.get(net_id)
 
 
-## The peer ids of the clients that are in the match (loaded and welcomed).
-func get_ready_peers() -> Array[int]:
-	return _ready_peers.duplicate()
-
-
 ## Lines for the F3 overlay and the console's [code]status[/code]: every friend's ping and
 ## waiting commands, and the traffic sent.
 func get_status_lines() -> Array[String]:

@@ -499,11 +499,6 @@ func _allows_buying() -> bool:
 	return false
 
 
-## True in practice, where nothing costs money.
-func _is_free() -> bool:
-	return not _rules is RoundManager
-
-
 ## Asks the rules to sell [param item_id] to the player; "" when sold, else why not.
 func _request(item_id: StringName) -> String:
 	if _rules is RoundManager:

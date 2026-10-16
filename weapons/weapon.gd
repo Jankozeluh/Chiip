@@ -884,11 +884,6 @@ func correct_ammo(magazine_difference: int, reserve_difference: int) -> void:
 	ammo_changed.emit(magazine, reserve)
 
 
-## The seconds of the current reload still to go (0 when not reloading).
-func get_reload_time_left() -> float:
-	return _reload_time_left
-
-
 ## A puppet weapon's tick: recoil wears off, and a reload plays its sounds and ends on time.
 func _remote_tick(delta: float) -> void:
 	_time_since_shot += delta

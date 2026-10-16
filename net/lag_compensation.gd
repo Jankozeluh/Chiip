@@ -67,20 +67,6 @@ func clamp_view_tick(view_tick: float) -> float:
 	return clampf(view_tick, oldest, newest)
 
 
-## Where [param hitbox]'s box was at [param view_tick] (interpolated between records), or null
-## when it wasn't recorded then.
-func box_at(hitbox: Hitbox, view_tick: float) -> Variant:
-	var pair := _frames_around(clamp_view_tick(view_tick))
-	if pair.is_empty():
-		return null
-	var a: Frame = pair[0]
-	var b: Frame = pair[1]
-	if not a.boxes.has(hitbox) or not b.boxes.has(hitbox):
-		return null
-	var weight: float = pair[2]
-	return (a.boxes[hitbox][0] as Transform3D).interpolate_with(b.boxes[hitbox][0], weight)
-
-
 ## Tests a bullet from [param from] to [param to], fired by [param shooter] at its command's
 ## view tick, against the world as it is and the hit zones as they were then. Zones whose
 ## [method CollisionObject3D.get_rid] is in [param exclude] (the shooter's own, teammates' with

@@ -32,11 +32,6 @@ func set_deadzone(value: float) -> void:
 	queue_redraw()
 
 
-## The dead zone shown, 0 to 1.
-func get_deadzone() -> float:
-	return _deadzone
-
-
 ## Where the right stick is now, -1 to 1 each way (0, 0 with no pad).
 func get_stick() -> Vector2:
 	var pads := Input.get_connected_joypads()

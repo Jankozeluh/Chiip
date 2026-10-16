@@ -34,6 +34,7 @@ func _ready() -> void:
 	_test_issue_template()
 	await _test_pause_menu_footer()
 	await _test_main_menu_footer()
+	await _test_fallback_map()
 	await _test_in_game()
 	await _test_online()
 	_clear_reports()
@@ -159,6 +160,25 @@ func _test_main_menu_footer() -> void:
 	_check("The main menu's footer shows the build", label.text == "Build %s · Divocakos" % BuildInfo.describe(), label.text)
 	remove_child(menu)
 	menu.queue_free()
+	await get_tree().process_frame
+
+
+## The game scene with nothing choosing a map (as `-- --match` starts it) plays the fallback map. A
+## preload of it in main.gd came back empty once `Main` had a class (a load cycle, M16).
+func _test_fallback_map() -> void:
+	GameLaunch.clear()
+	var main := MAIN_SCENE.instantiate() as Main
+	main.load_settings = false
+	main.loading_screen = false
+	add_child(main)
+	for i in 5:
+		await get_tree().physics_frame
+	var map := main.get_map()
+	_check("The game scene started without a map choice plays the fallback map, with its player",
+			map != null and map.scene_file_path == Main.FALLBACK_MAP and main.get_player() != null,
+			map.scene_file_path if map != null else "no map")
+	remove_child(main)
+	main.queue_free()
 	await get_tree().process_frame
 
 

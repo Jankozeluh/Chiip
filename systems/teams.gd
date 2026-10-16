@@ -63,9 +63,6 @@ const ATTACK_SPAWN_GROUP := "attack_spawns"
 ## Group of the spawn markers at the defenders' end of a map.
 const DEFEND_SPAWN_GROUP := "defend_spawns"
 
-## How much [method text_color_for] lightens a team color so text stays readable on a dark panel.
-const TEXT_LIGHTEN := 0.35
-
 ## The share of damage a teammate takes when friendly fire is on (CS competitive: a third).
 const FRIENDLY_FIRE_DAMAGE := 1.0 / 3.0
 
@@ -143,12 +140,6 @@ static func other(team: int) -> int:
 ## viewer's own team, red (orange in the colour-blind scheme) for the other one.
 static func color_for(team: int) -> Color:
 	return friendly_color() if team == viewer_team else enemy_color()
-
-
-## [method color_for] lightened by [constant TEXT_LIGHTEN]: the color for names
-## and messages (kill feed, round HUD) drawn on a dark background.
-static func text_color_for(team: int) -> Color:
-	return color_for(team).lightened(TEXT_LIGHTEN)
 
 
 ## How much of an attack's damage reaches [param victim]: 1.0 for enemies, for

@@ -14,7 +14,9 @@ Branch `m16`, one code branch at a time (D-220). Decisions from D-222. One commi
 
 - Debug commands (D-225): `debug_hitboxes` (offline; the zones half see-through over every body, through walls, and a list that says "no hit zones" for an empty body), `net_stats` (ping, loss, snapshot size on a client; each friend's ping and the snapshot size on the host; a SNAPSHOT row in F3's developer panel), `debug_perf` (F3's developer panel with the frame-time graph for this run, and the engine's timings). The `debug` suite has 23 checks, with a host and a client for `net_stats`.
 
-**Next:** the architecture review.
+- Architecture review (D-226): a systems map at the top of ARCHITECTURE.md (each folder's owner, job, main classes and guard suites; the dependency order and its three known exceptions), the stale systems table gone, the suite table complete without counts; `audio/`, `stats/` and `debug/` moved out of `systems/`; `class_name Main` (typed access instead of `has_method`/`call`), which needed main.gd's map preload gone (a load cycle gave an empty map: `Main.FALLBACK_MAP` is loaded at run time, a `debug` check guards it); 14 dead functions removed after a scan; CLAUDE.md's per-suite command list replaced by a pointer (2,300 characters shorter for every session).
+
+**Next:** M17 Playing with friends (D-221), one branch. Your checks for M16 are in the plan.
 
 ## 2026-10-16 — v0.2 screens
 

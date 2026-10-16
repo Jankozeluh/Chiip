@@ -42,7 +42,7 @@ const BANNER_MILESTONE := "M10"
 static var is_open: bool = false
 
 ## The main scene, set by main.gd. Used to find the current map and change maps.
-var main: Node
+var main: Main
 
 ## Command name → [callable taking the arguments, usage text, description].
 var _commands: Dictionary = {}
@@ -484,7 +484,7 @@ func _cmd_disconnect(_args: Array) -> void:
 	if main == null:
 		print_error("There is no game to leave.")
 		return
-	if main.get("net_session") != null:
+	if main.net_session != null:
 		# Online: leave the session (the host ends it for everyone), like CS's disconnect.
 		main.leave_online()
 		return
@@ -494,7 +494,7 @@ func _cmd_disconnect(_args: Array) -> void:
 ## Online (M9): the session's state, from the network code of the game ([method NetHost.get_status_lines]
 ## or [method NetClient.get_status_lines]).
 func _cmd_status(_args: Array) -> void:
-	var net_game: Node = main.get_net_game() if main != null and main.has_method("get_net_game") else null
+	var net_game: Node = main.get_net_game() if main != null else null
 	if net_game == null:
 		print_line("Not online. Multiplayer is in the main menu.")
 		return
@@ -504,7 +504,7 @@ func _cmd_status(_args: Array) -> void:
 
 ## net_fakelag and net_fakeloss: make this computer's connection worse on purpose, like CS's.
 func _cmd_fake(args: Array, which: String) -> void:
-	var session: NetSession = main.get("net_session") if main != null else null
+	var session: NetSession = main.net_session if main != null else null
 	if session == null or not is_instance_valid(session):
 		print_line("Not online.")
 		return
@@ -546,7 +546,7 @@ func _cmd_debug_hitboxes(_args: Array) -> void:
 ## debug_perf (M16, D-225): shows or hides the developer panel with its frame-time graph (for this
 ## run; the F3 setting stays), and prints the engine's own timings.
 func _cmd_debug_perf(_args: Array) -> void:
-	var overlay: DebugOverlay = main.get_debug_overlay() if main != null and main.has_method("get_debug_overlay") else null
+	var overlay: DebugOverlay = main.get_debug_overlay() if main != null else null
 	if overlay != null:
 		var saved := Settings.get_instance().fps_counter
 		if overlay.get_mode() == "developer":
@@ -562,7 +562,7 @@ func _cmd_debug_perf(_args: Array) -> void:
 
 ## net_stats (M16, D-225): ping, packet loss and snapshot size, from the network code of the game.
 func _cmd_net_stats(_args: Array) -> void:
-	var net_game: Node = main.get_net_game() if main != null and main.has_method("get_net_game") else null
+	var net_game: Node = main.get_net_game() if main != null else null
 	if net_game == null:
 		print_line("Not online. Multiplayer is in the main menu.")
 		return
@@ -572,7 +572,7 @@ func _cmd_net_stats(_args: Array) -> void:
 
 ## bug_report (M16, D-224): main.gd packs the report ([BugReport]); the console says where it is.
 func _cmd_bug_report(_args: Array) -> void:
-	var path: String = main.report_bug() if main != null and main.has_method("report_bug") else BugReport.create()
+	var path: String = main.report_bug() if main != null else BugReport.create()
 	if path.is_empty():
 		print_error("The bug report couldn't be saved.")
 		return
@@ -584,7 +584,7 @@ func _cmd_bug_report(_args: Array) -> void:
 ## Online, a cheat or a change to the match would be unfair or fight the host (D-109): says so
 ## and returns true. Offline returns false.
 func _refuse_online(command_name: String) -> bool:
-	if main != null and main.get("net_session") != null:
+	if main != null and main.net_session != null:
 		print_line("%s only works offline." % command_name)
 		return true
 	return false
@@ -631,7 +631,7 @@ func _get_map() -> Node:
 
 
 func _get_player() -> Character:
-	if main != null and main.has_method("get_player") and main.get_player() != null:
+	if main != null and main.get_player() != null:
 		# Online the player's node is named after them (M9).
 		return main.get_player()
 	var map := _get_map()

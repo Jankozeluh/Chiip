@@ -1,3 +1,4 @@
+class_name Main
 extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
@@ -41,6 +42,9 @@ extends Node
 ## - Sharp HUD: only the world is low-res; the HUD uses the full window resolution.
 
 ## What to play on the map.
+## The map when nothing else says which: the test map (hidden from the player, D-141).
+const FALLBACK_MAP := "res://maps/test_map.tscn"
+
 enum Mode {
 	## Rounds with two teams (you plus bot teammates against bots).
 	MATCH,
@@ -50,8 +54,11 @@ enum Mode {
 
 ## The map to play. The main menu's match setup overrides it with its choice
 ## ([GameLaunch]); from the command line, [code]-- --map <scene>[/code] does:
-## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]
-@export var map_scene: PackedScene = preload("res://maps/test_map.tscn")
+## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]. Empty: the test map
+## ([constant FALLBACK_MAP]), loaded when the game starts. (Not a preload: every map's player reaches
+## this script through [MenuState] → [DevConsole] → [Main], and a preload here would load a map
+## while its own scripts are still loading, M16.)
+@export var map_scene: PackedScene
 ## Match or practice. The menu's Play and Practice choose; [code]-- --practice[/code]
 ## on the command line picks practice (a match is the default).
 @export var mode: Mode = Mode.MATCH
@@ -305,7 +312,7 @@ func _load_map() -> void:
 			_show_loading_screen(launched.resource_path)
 		_spawn_map(launched)
 		return
-	var scene := map_scene
+	var scene := map_scene if map_scene != null else load(FALLBACK_MAP) as PackedScene
 	var args := OS.get_cmdline_user_args()
 	var map_arg := args.find("--map")
 	if map_arg >= 0 and map_arg + 1 < args.size():

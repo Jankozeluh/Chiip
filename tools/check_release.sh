@@ -13,7 +13,7 @@
 #   2. shooting hits in each build (tools/check_export.sh: the game's own --check-hits): the Mac app
 #      itself, and the Windows and Linux builds' embedded game data with this Mac's Godot
 #      (--main-pack; the game data is the part an export converts, the rest is Godot's own template);
-#   3. a full round in the Mac app (--check-round, systems/round_check.gd: the bots walk, round 1
+#   3. a full round in the Mac app (--check-round, debug/round_check.gd: the bots walk, round 1
 #      ends with a winner, round 2 starts);
 #   4. a LAN join with the Mac app (tools/lan_check.sh with GAME=<the app>: a host and two friends
 #      as three processes on 127.0.0.1).

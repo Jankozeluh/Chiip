@@ -51,7 +51,7 @@ func _ready() -> void:
 
 
 func _find_rounds() -> void:
-	var map := get_parent().call("get_map") as Node
+	var map := (get_parent() as Main).get_map()
 	_rounds = map.get_node_or_null("RoundManager") as RoundManager if map != null else null
 	if _rounds == null:
 		_finish(false, "no round manager on the map")
@@ -88,7 +88,7 @@ func _on_round_started(round_number: int) -> void:
 
 ## Adds this tick's steps of every living bot to [member _walks].
 func _track_walks() -> void:
-	var player := get_parent().call("get_player") as Character
+	var player := (get_parent() as Main).get_player()
 	for character in _rounds.get_participants():
 		if character == player or not character.is_alive():
 			continue

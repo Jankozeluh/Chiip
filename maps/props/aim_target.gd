@@ -58,11 +58,6 @@ func _physics_process(delta: float) -> void:
 	age += delta
 
 
-## The target's hit zone (for the tests).
-func get_hitbox() -> Hitbox:
-	return _hitbox
-
-
 ## Pops the ball up: the picture grows from small in a blink (the hit zone is full size at once,
 ## so a flick that lands in that blink still counts).
 func pop() -> void:

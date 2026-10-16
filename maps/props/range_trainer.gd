@@ -187,11 +187,6 @@ func get_run_seconds() -> float:
 	return _run_seconds if _run_seconds > 0.0 else run_time
 
 
-## The length of the run the player chose ([param seconds], 0 for the entity's own) and its personal best key.
-func get_best_key(weapon_id: StringName, seconds: float) -> String:
-	return best_key(weapon_id, seconds)
-
-
 ## Starts a run for [param character] (what shooting the pad does): the countdown first. A run
 ## needs a gun in hand: without one it says so and nothing starts. Returns whether it started.
 func start(character: Character, seconds: float = 0.0) -> bool:

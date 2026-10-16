@@ -10,7 +10,7 @@
 #                                                      # game data (its embedded pack) with this
 #                                                      # Mac's Godot (--main-pack, M16)
 #
-# It runs the game headless with `--check-hits` (systems/hit_check.gd: practice on the Shooting
+# It runs the game headless with `--check-hits` (debug/hit_check.gd: practice on the Shooting
 # Range, an enemy bot 5 m ahead, one shot each way) and exits with its result: 0 when both shots
 # hit and hurt. The temporary build is deleted afterwards; nothing goes into builds/. The game runs
 # with a home folder of its own (an empty user://), so it never touches your settings or logs.

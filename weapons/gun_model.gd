@@ -118,11 +118,6 @@ func update(data: WeaponData, progress: float, left_hand: Transform3D) -> void:
 			_shell.global_transform = left_hand * LEFT_HAND_ON_GRIP.affine_inverse()
 
 
-## True while the magazine is out of the gun, in the hand.
-func is_magazine_in_hand() -> bool:
-	return _held
-
-
 ## The magazine node, or null.
 func get_magazine() -> Node3D:
 	return _magazine

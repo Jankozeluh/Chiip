@@ -178,11 +178,6 @@ func get_logo() -> TextureRect:
 	return _logo
 
 
-## How opaque the logo, the name and the squares are now (0 to 1: they fade in).
-func get_content_alpha() -> float:
-	return _content.modulate.a
-
-
 ## The studio's name under the logo.
 func get_studio_name_label() -> Label:
 	return _studio_name
@@ -191,8 +186,3 @@ func get_studio_name_label() -> Label:
 ## The game's name that stands in for a missing logo.
 func get_wordmark() -> Label:
 	return _wordmark
-
-
-## The row of squares.
-func get_chip_row() -> HBoxContainer:
-	return _chip_row

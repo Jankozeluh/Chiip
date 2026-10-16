@@ -28,8 +28,8 @@ func _ready() -> void:
 func _run() -> void:
 	Weapon.silent = true
 	await _ticks(SETTLE_TICKS)
-	var main := get_parent()
-	var map := main.call("get_map") as Node3D
+	var main := get_parent() as Main
+	var map := main.get_map() as Node3D
 	var player := map.get_node_or_null("Player") as Character if map != null else null
 	if player == null:
 		_finish(false, "no player")

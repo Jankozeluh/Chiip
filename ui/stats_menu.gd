@@ -163,10 +163,6 @@ func get_status() -> String:
 	return _status.text
 
 
-func get_export_button() -> Button:
-	return _export_button
-
-
 func get_reset_button() -> Button:
 	return _reset_button
 

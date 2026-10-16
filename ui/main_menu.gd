@@ -198,13 +198,6 @@ func prepare_mode(mode: String) -> void:
 	prepare_match()
 
 
-## Starts a match in [param mode] with the custom choices (the Team Deathmatch
-## and Bomb buttons).
-func start_mode(mode: String) -> void:
-	prepare_mode(mode)
-	_enter_game()
-
-
 ## Plays the mode picked on the Play screen (its Play button, or a click on the
 ## picked card): practice, or a match with the custom choices.
 func start_picked() -> void:

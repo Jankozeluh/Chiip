@@ -167,8 +167,8 @@ func _pick_from_group(group: String, fallback: Transform3D) -> Transform3D:
 ## A random marker with nobody standing on it (any marker if all are taken).
 func _pick_free_marker(markers: Array[Node]) -> Transform3D:
 	var free: Array[Node] = markers.filter(func(marker: Node) -> bool:
-		for character in get_tree().get_nodes_in_group("characters"):
-			if (character as Character).is_alive() and (character as Node3D).global_position.distance_to((marker as Node3D).global_position) < SPAWN_CLEARANCE:
+		for character in Character.all_in_world(self):
+			if character.is_alive() and character.global_position.distance_to((marker as Node3D).global_position) < SPAWN_CLEARANCE:
 				return false
 		return true)
 	var choices := free if not free.is_empty() else markers
