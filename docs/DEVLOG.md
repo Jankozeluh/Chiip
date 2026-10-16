@@ -17,7 +17,9 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 
 - **Task 5, the mix pass** (D-194): every file the game plays levelled to its category's short-term loudness (34 files, Sonnet; footsteps now equally loud on every floor), the table set from a model of Godot's falloff (no near boost, half the distance filter), and `sound_test`'s mix rules: loudness per category, no gain over 0 dB, own shot against near and far ones, steps in a fight, the beep, nothing louder farther away (+7 checks).
 
-**Next:** menu music and round stingers (task 6).
+- **Task 6, music and stingers** (D-195): a 35 s menu loop and six stingers (round start, won, lost, bomb defused, match won, lost) from `tools/generate_music.gd` (Sonnet); `Music` plays them on the Music bus, with a Music volume in Settings → Audio; M8's three interface stingers are gone, the bomb-planted alert is levelled. `sound_test` +4 checks.
+
+**Next:** tests and docs, the full run, merging main (task 7).
 
 ## 2026-10-16 — M12 share
 

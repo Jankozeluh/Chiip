@@ -35,7 +35,7 @@ const DEFAULTS := {
 	&"sensitivity": 1.0, &"invert_y": false, &"fov": 90.0,
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
 	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0,
-	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
+	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0, &"music_volume": 1.0,
 	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
 	# The last match setup (D-064): D-041's match.
@@ -304,14 +304,16 @@ func _test_engine_settings() -> void:
 	var master := AudioServer.get_bus_index(Settings.BUS_MASTER)
 	var effects := AudioServer.get_bus_index(Settings.BUS_EFFECTS)
 	var interface := AudioServer.get_bus_index(Settings.BUS_INTERFACE)
+	var music := AudioServer.get_bus_index(Settings.BUS_MUSIC)
 	_settings.master_volume = 0.5
 	_settings.effects_volume = 0.25
 	_settings.interface_volume = 0.1
-	_check("Volumes go to their buses as dB: 0.5 on Master, 0.25 on Effects, 0.1 on Interface, none muted",
+	_settings.music_volume = 0.3
+	_check("Volumes go to their buses as dB: 0.5 on Master, 0.25 on Effects, 0.1 on Interface, 0.3 on Music, none muted",
 			is_equal_approx(AudioServer.get_bus_volume_db(master), linear_to_db(0.5)) and is_equal_approx(AudioServer.get_bus_volume_db(effects), linear_to_db(0.25))
-					and is_equal_approx(AudioServer.get_bus_volume_db(interface), linear_to_db(0.1))
-					and not AudioServer.is_bus_mute(master) and not AudioServer.is_bus_mute(effects) and not AudioServer.is_bus_mute(interface),
-			"%.2f / %.2f / %.2f dB" % [AudioServer.get_bus_volume_db(master), AudioServer.get_bus_volume_db(effects), AudioServer.get_bus_volume_db(interface)])
+					and is_equal_approx(AudioServer.get_bus_volume_db(interface), linear_to_db(0.1)) and is_equal_approx(AudioServer.get_bus_volume_db(music), linear_to_db(0.3))
+					and not AudioServer.is_bus_mute(master) and not AudioServer.is_bus_mute(effects) and not AudioServer.is_bus_mute(interface) and not AudioServer.is_bus_mute(music),
+			"%.2f / %.2f / %.2f / %.2f dB" % [AudioServer.get_bus_volume_db(master), AudioServer.get_bus_volume_db(effects), AudioServer.get_bus_volume_db(interface), AudioServer.get_bus_volume_db(music)])
 	_settings.master_volume = 0.0
 	var muted := AudioServer.is_bus_mute(master)
 	_settings.master_volume = 1.0
@@ -419,6 +421,7 @@ func _test_saving() -> void:
 	writer.master_volume = 0.4
 	writer.effects_volume = 0.7
 	writer.interface_volume = 0.1
+	writer.music_volume = 0.3
 	writer.crosshair_color = Color(1.0, 0.5, 0.25, 0.8)
 	writer.crosshair_length = 12.0
 	writer.crosshair_gap = 2.0

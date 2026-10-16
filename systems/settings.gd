@@ -46,10 +46,11 @@ signal changed(key: StringName)
 const SETTINGS_PATH := "user://settings.cfg"
 
 ## The audio buses of [code]default_bus_layout.tres[/code] that have a volume setting. Master is
-## the final mix; Effects (every game sound) and Interface (menus) send to it (D-190).
+## the final mix; Effects (every game sound), Interface (menus) and Music send to it (D-190).
 const BUS_MASTER := &"Master"
 const BUS_EFFECTS := &"Effects"
 const BUS_INTERFACE := &"Interface"
+const BUS_MUSIC := &"Music"
 
 ## The world image heights the pixel resolution can take; other values snap to the nearest.
 const PIXEL_HEIGHTS: Array[int] = [270, 360, 480, 540, 720]
@@ -118,6 +119,7 @@ const SCHEMA := {
 	&"master_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"effects_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"interface_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
+	&"music_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"crosshair_color": {"section": "crosshair", "default": Color("36d07a")},
 	&"crosshair_length": {"section": "crosshair", "default": 7.0, "min": 1.0, "max": 30.0},
 	&"crosshair_gap": {"section": "crosshair", "default": 4.0, "min": 0.0, "max": 20.0},
@@ -244,10 +246,14 @@ var master_volume: float:
 var effects_volume: float:
 	get: return _values[&"effects_volume"]
 	set(value): set_value(&"effects_volume", value)
-## Volume of the Interface bus (menus), 0 to 1. Nothing plays on it yet.
+## Volume of the Interface bus (menu clicks, the bomb-planted alert), 0 to 1.
 var interface_volume: float:
 	get: return _values[&"interface_volume"]
 	set(value): set_value(&"interface_volume", value)
+## Volume of the Music bus (the menu track and the round stingers, M13 D-195), 0 to 1.
+var music_volume: float:
+	get: return _values[&"music_volume"]
+	set(value): set_value(&"music_volume", value)
 
 ## Crosshair line color (the mockup's green, #36D07A, by default); its alpha fades the whole crosshair.
 var crosshair_color: Color:
@@ -603,7 +609,7 @@ func save_to_disk(path: String = "") -> Error:
 ## key bindings), whatever their value. Does nothing on an instance that doesn't
 ## [member applies_to_engine].
 func apply_all() -> void:
-	for key in [&"fullscreen", &"vsync", &"fps_cap", &"master_volume", &"effects_volume", &"interface_volume", &"bindings"]:
+	for key in [&"fullscreen", &"vsync", &"fps_cap", &"master_volume", &"effects_volume", &"interface_volume", &"music_volume", &"bindings"]:
 		_apply(key)
 
 
@@ -630,6 +636,8 @@ func _apply(key: StringName) -> void:
 			_apply_volume(BUS_EFFECTS, effects_volume)
 		&"interface_volume":
 			_apply_volume(BUS_INTERFACE, interface_volume)
+		&"music_volume":
+			_apply_volume(BUS_MUSIC, music_volume)
 		&"bindings":
 			_apply_bindings()
 

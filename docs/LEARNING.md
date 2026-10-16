@@ -795,3 +795,8 @@
 **Asking the physics world questions from code** (`PhysicsDirectSpaceState3D.intersect_ray()`)
 - `get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, mask))` is Unity's `Physics.Raycast` / `Linecast`: it returns a dictionary (`position`, `normal`, `collider`, …), empty when nothing is hit. Only the first hit: to find every wall along a line, cast again from just past the last hit (Unity has `RaycastAll`).
 - `hit_back_faces` (default on) decides whether a trimesh's faces count from behind, and `hit_from_inside` (default off) whether a convex shape you start inside counts. With both off, a ray only reports a surface it *enters*: cast from each end and the entries from one side are the exits for the other, which gives the wall's thickness.
+
+**A looping WAV and a fade** (`.import` loop settings, `Tween` on `volume_db`)
+- A WAV loops when its import settings say so (`edit/loop_mode=2`, forward, in its `.import` file; the Import dock in the editor), like Unity's AudioClip "Loop" on the AudioSource instead. Re-importing keeps it, so the setting lives next to the generated file.
+- A fade is a tween on the player's `volume_db` (`player.create_tween().tween_property(player, "volume_db", -60.0, 1.2)`), like a coroutine lerping `AudioSource.volume`. A tween made from a node stops while that node is paused, so the music's players are `PROCESS_MODE_ALWAYS`.
+- A static class can't add a node to the root from inside another node's `_ready()` (the root is busy adding children): `add_child.call_deferred()` and act on the node's `ready` signal.

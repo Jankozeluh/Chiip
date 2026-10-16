@@ -22,7 +22,9 @@ extends Node
 ## Depot's own rooms and yards; the Effects reverb set to the zone at once, gliding to the next
 ## and put back when the game ends. The mix (D-194): every sound the game plays at its
 ## category's loudness, no gain above 0 dB, and the readability rules (your shot against near and
-## far ones, steps in a fight, the bomb's beep, nothing louder farther away).
+## far ones, steps in a fight, the bomb's beep, nothing louder farther away). The music (D-195):
+## the menu track loops and sits under the menus, six distinct stingers at their loudness, the
+## right one for each round end, the Music volume reaching its bus, no music without a window.
 ## Quits with the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
@@ -44,6 +46,7 @@ func _ready() -> void:
 	_test_buses()
 	_test_signatures()
 	_test_mix()
+	_test_music()
 	_test_floors()
 	_test_footsteps()
 	await _test_impacts()
@@ -199,7 +202,7 @@ func _test_mix() -> void:
 	_add_file(files, bomb.explosion_sound, SoundMix.BOMB_EXPLOSION)
 	_add_file(files, bomb.explosion_far_sound, SoundMix.EXPLOSION_FAR)
 	bomb.free()
-	for sound in [UiSounds.HOVER, UiSounds.CLICK, BuyMenu.BUY_SOUND, BuyMenu.DENIED_SOUND]:
+	for sound in [UiSounds.HOVER, UiSounds.CLICK, UiSounds.BOMB_PLANTED, BuyMenu.BUY_SOUND, BuyMenu.DENIED_SOUND]:
 		_add_file(files, sound, &"interface")
 	var off: Array[String] = []
 	var steps := PackedFloat32Array()
@@ -257,6 +260,49 @@ func _test_mix() -> void:
 				break
 			last = level
 	_check("Nothing gets louder farther away (every category, and a shot with its far crossfade)", rising.is_empty(), str(rising))
+
+
+## The music (M13, D-195): the menu track (30 to 45 s, looping, at the music's loudness), six
+## different stingers (at most 3.5 s, at their loudness), which one a round end picks,
+## the Music volume setting moving the Music bus, and nothing playing without a window.
+func _test_music() -> void:
+	var theme := SoundLevels.measure(Music.MENU_THEME.resource_path)
+	var looping := (Music.MENU_THEME as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD
+	_check("The menu track loops, lasts 30 to 45 s and sits at the music's loudness (±2 dB), peaking below -0.5 dBFS",
+			looping and not theme.is_empty() and theme.seconds >= 30.0 and theme.seconds <= 45.0
+			and absf(theme.short_term_db - SoundMix.MUSIC_FILE_DB) <= 2.0 and theme.peak_db <= -0.5,
+			"loop %s, %.1f s, %.1f dB, peak %.1f" % [looping, theme.get("seconds", 0.0), theme.get("short_term_db", 0.0), theme.get("peak_db", 0.0)])
+	var stingers := [Music.ROUND_START, Music.ROUND_WON, Music.ROUND_LOST, Music.BOMB_DEFUSED, Music.MATCH_WON, Music.MATCH_LOST]
+	var off: Array[String] = []
+	for stinger: AudioStream in stingers:
+		var measured := SoundLevels.measure(stinger.resource_path)
+		if measured.is_empty() or measured.seconds > 3.5 or absf(measured.short_term_db - SoundMix.STINGER_FILE_DB) > 1.5 \
+				or measured.peak_db > -0.5 or measured.end_db > -30.0:
+			off.append(stinger.resource_path.get_file())
+	# Same instruments, different melodies: the bands can't tell them apart, so compare the files.
+	var sums := {}
+	for stinger: AudioStream in stingers:
+		sums[FileAccess.get_md5(stinger.resource_path)] = true
+	_check("Six different stingers, each at most 3.5 s at the stingers' loudness (±1.5 dB), ending quietly",
+			off.is_empty() and sums.size() == stingers.size(), "%s, %d different" % [off, sums.size()])
+	var picks := [Music.stinger_for_round(true, RoundManager.EndReason.ELIMINATION), Music.stinger_for_round(false, RoundManager.EndReason.TIME),
+			Music.stinger_for_round(true, RoundManager.EndReason.BOMB_DEFUSED), Music.stinger_for_round(false, RoundManager.EndReason.BOMB_DEFUSED),
+			Music.stinger_for_round(false, RoundManager.EndReason.BOMB_EXPLODED), Music.stinger_for_match(true), Music.stinger_for_match(false)]
+	_check("Round ends pick their stinger: won, lost, a defused bomb for both teams, an explosion by who won; the match's end by result",
+			picks == [Music.ROUND_WON, Music.ROUND_LOST, Music.BOMB_DEFUSED, Music.BOMB_DEFUSED, Music.ROUND_LOST, Music.MATCH_WON, Music.MATCH_LOST],
+			str(picks.map(func(stream: AudioStream) -> String: return stream.resource_path.get_file())))
+	# The shared settings reach the bus (this test never loads or saves the settings file).
+	var settings := Settings.get_instance()
+	var music_bus := AudioServer.get_bus_index(SoundMix.BUS_MUSIC)
+	settings.music_volume = 0.5
+	var half := AudioServer.get_bus_volume_db(music_bus)
+	settings.music_volume = settings.get_default(&"music_volume")
+	Music.play_menu()
+	Music.play_stinger(Music.ROUND_WON)
+	_check("The Music volume moves the Music bus (0.5 → -6 dB, back to 0 dB); without a window no music plays",
+			is_equal_approx(half, linear_to_db(0.5)) and is_zero_approx(AudioServer.get_bus_volume_db(music_bus)) and not Music.enabled
+			and not Music.is_playing_menu() and get_tree().root.get_node_or_null("MusicTrack") == null,
+			"half %.1f dB, now %.1f dB, enabled %s" % [half, AudioServer.get_bus_volume_db(music_bus), Music.enabled])
 
 
 ## Adds every file of [param stream] (each one of a randomizer) to [param files] as [param category].

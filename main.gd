@@ -121,6 +121,7 @@ func _ready() -> void:
 	_buy_menu.visibility_changed.connect(_update_hud_visibility)
 	# The reverb follows the listener's place: open yard, walled yard, room or hall (M13, D-193).
 	_viewport.add_child(Acoustics.new())
+	Music.stop()
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()

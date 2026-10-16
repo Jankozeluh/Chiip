@@ -98,6 +98,8 @@ func _ready() -> void:
 	_setup.closed.connect(_play_button.grab_focus)
 	_lobby.closed.connect(_on_lobby_closed)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
+	# The menu track (M13, D-195); a game fades it out.
+	Music.play_menu()
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
 	_build_label.text = "Build %s · Divocakos" % ProjectSettings.get_setting("application/config/version", "")
 	_build_background()

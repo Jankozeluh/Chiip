@@ -14,8 +14,9 @@ extends SceneTree
 ## them has its own random generator (`_rng_for`, so no sound depends on the order) and is
 ## brought to a target short-term loudness by `_finish_loudness`; `tools/sound_report.gd`
 ## prints the result. The older sounds (M8 and M7) are levelled the same way, to their
-## category's loudness in `SoundMix.TABLE`, except the stingers, the pickup, the flash's
-## ringing and the rifle's shot, which keep their old finishing.
+## category's loudness in `SoundMix.TABLE`, except the pickup, the flash's ringing and the
+## rifle's shot, which keep their old finishing. The round and match stingers are made by
+## `tools/generate_music.gd` since M13 (D-195); the bomb's alert stays here, at -12 dB.
 ##
 ## Run from the project folder, then let Godot import the new files:
 ##
@@ -66,9 +67,6 @@ func _init() -> void:
 	_save("hit_head.wav", _hit_head(rng))
 	_save("ui_hover.wav", _ui_hover())
 	_save("ui_click.wav", _ui_click(rng))
-	_save("round_start.wav", _round_start())
-	_save("round_won.wav", _round_won())
-	_save("round_lost.wav", _round_lost())
 	_save("bomb_planted_alert.wav", _bomb_planted_alert())
 	# M7: the arsenal. Added last, so everything above stays identical. Guns first
 	# (a shot for each weapon plus its handling sounds), then knife, grenades, interface.
@@ -457,40 +455,13 @@ func _ui_click(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	return _finish_loudness(samples, -12.0)
 
 
-## "Go!": two short square beeps, 880 Hz and then 1320 Hz, with a short gap.
-func _round_start() -> PackedFloat32Array:
-	var samples := _silence(0.45)
-	_add_note(samples, 0.0, 0.13, 880.0, false, 8.0)
-	_add_note(samples, 0.19, 0.24, 1320.0, false, 8.0)
-	return _finish(samples)
-
-
-## A bright happy stinger for winning a round: three quick rising square notes
-## (C5, E5, G5), the last one held a little longer.
-func _round_won() -> PackedFloat32Array:
-	var samples := _silence(0.6)
-	_add_note(samples, 0.0, 0.15, 523.0, false, 10.0)
-	_add_note(samples, 0.15, 0.15, 659.0, false, 10.0)
-	_add_note(samples, 0.3, 0.3, 784.0, false, 7.0)
-	return _finish(samples)
-
-
-## A darker, slower stinger for losing a round: three falling triangle notes (G4, E4, C4).
-func _round_lost() -> PackedFloat32Array:
-	var samples := _silence(0.6)
-	_add_note(samples, 0.0, 0.18, 392.0, true, 6.0)
-	_add_note(samples, 0.18, 0.18, 330.0, true, 6.0)
-	_add_note(samples, 0.36, 0.24, 262.0, true, 6.0)
-	return _finish(samples)
-
-
 ## "The bomb has been planted": a two-tone alarm, four short square tones
-## alternating 740 Hz and 980 Hz.
+## alternating 740 Hz and 980 Hz, levelled to -12 dB short-term like the interface sounds.
 func _bomb_planted_alert() -> PackedFloat32Array:
 	var samples := _silence(0.7)
 	for i in 4:
 		_add_note(samples, i * 0.16, 0.15, 740.0 if i % 2 == 0 else 980.0, false, 3.0)
-	return _finish(samples)
+	return _finish_loudness(samples, -12.0)
 
 
 # ---- M7: the arsenal ------------------------------------------------------------
