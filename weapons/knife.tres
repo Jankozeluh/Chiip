@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
 
+[ext_resource type="PackedScene" path="res://assets/models/weapons/knife.glb" id="model"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/knife.png" id="icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/knife_kill.png" id="kill_icon"]
+
 [resource]
 script = ExtResource("weapon_data_script")
 id = &"knife"
@@ -37,3 +41,6 @@ stab_range = 1.1
 stab_interval = 1.0
 backstab_damage = 90.0
 stab_backstab_damage = 180.0
+model = ExtResource("model")
+icon = ExtResource("icon")
+kill_icon = ExtResource("kill_icon")

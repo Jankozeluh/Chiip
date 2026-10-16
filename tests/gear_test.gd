@@ -355,6 +355,16 @@ func _test_hud_and_body_follow() -> void:
 	_check("The HUD follows the weapon in hand: its ammo, its name and the slot list with it marked",
 			shows_pistol and follows and slots.text.contains("» 2  " + PISTOL.display_name) and slots.text.contains("1  ") and slots.modulate.a > 0.9,
 			"ammo '%s', name '%s', slots '%s'" % [ammo.text, name_label.text, slots.text.replace("\n", " | ")])
+	var feed := KillFeed.new()
+	add_child(feed)
+	feed.add_kill(bot, _player, true, SMG)
+	feed.add_kill(bot, _player, false)
+	var icon := feed.get_child(0).find_child("Weapon", true, false) as TextureRect
+	var plain := feed.get_child(1).find_child("Separator", true, false) as Label
+	_check("The kill feed shows the killing weapon's white icon between the names (\">\" without one)",
+			icon != null and icon.texture == SMG.kill_icon and icon.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST
+					and plain != null and plain.text == ">", "icon %s, plain '%s'" % [icon != null, plain.text if plain else ""])
+	feed.queue_free()
 	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.KNIFE), true)
 	await _wait_ticks(2)
 	_check("...the knife shows no ammo", ammo.text == "" and name_label.text == "Knife", "ammo '%s'" % ammo.text)

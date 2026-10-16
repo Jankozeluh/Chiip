@@ -38,6 +38,7 @@ func _run_all() -> void:
 	_test_table_math()
 	_test_csv_file()
 	_test_csv_content()
+	_test_models_and_icons()
 
 
 func _test_files() -> void:
@@ -296,6 +297,32 @@ func _row(rows: Array[Dictionary], id: StringName) -> Dictionary:
 ## True when two numbers differ by less than 0.01.
 func _near(a: float, b: float) -> bool:
 	return absf(a - b) < 0.01
+
+
+## Every weapon has its generated model, buy-menu icon and kill-feed icon (D-092); the icons have
+## the sizes the menus expect; the guns' muzzles sit at the front of their models.
+func _test_models_and_icons() -> void:
+	var missing: Array[String] = []
+	var sizes_ok := true
+	for data in WeaponData.all():
+		if data.model == null or data.icon == null or data.kill_icon == null:
+			missing.append(String(data.id))
+			continue
+		sizes_ok = sizes_ok and data.icon.get_size() == Vector2(128, 48) and data.kill_icon.get_height() == 16 \
+				and data.kill_icon.get_width() <= 64
+		var model := data.model.instantiate() as Node3D
+		model.free()
+	_check("Every weapon has its model, a 128 × 48 buy icon and a 16 px kill-feed icon", missing.is_empty() and sizes_ok,
+			"missing: %s" % ", ".join(missing))
+	var muzzles_ok := true
+	for id in [&"rifle", &"carbine", &"smg", &"shotgun", &"sniper", &"pistol", &"hand_cannon"]:
+		var data := WeaponData.find(id)
+		muzzles_ok = muzzles_ok and data.muzzle_point.z < -0.1
+	var kit := load("res://assets/models/weapons/defuse_kit.glb") as PackedScene
+	var gear_icons := ResourceLoader.exists("res://assets/ui/weapons/armor.png") and ResourceLoader.exists("res://assets/ui/weapons/armor_helmet.png") \
+			and ResourceLoader.exists("res://assets/ui/weapons/defuse_kit.png")
+	_check("The guns' muzzles are in front of the grip; the defuse kit's model and the gear icons exist", muzzles_ok and kit != null and gear_icons,
+			"muzzles %s, kit %s, gear icons %s" % [muzzles_ok, kit != null, gear_icons])
 
 
 func _check(check_name: String, passed: bool, detail: String) -> void:

@@ -26,8 +26,8 @@ extends Node3D
 const SHADER := preload("res://characters/crew/crew.gdshader")
 ## The animation graph every class shares.
 const ANIMATION_TREE := preload("res://characters/crew/crew_animation_tree.tres")
-## The gun in the hands (the AK-style rifle in M6; the arsenal comes in M7).
-const GUN_SCENE := preload("res://assets/models/weapons/ak_rifle.glb")
+## The gun in the hands before a character is attached (the Ram); then the held weapon's own model.
+const GUN_SCENE := preload("res://assets/models/weapons/rifle.glb")
 ## The third-person muzzle flash.
 const GUN_FLASH_SCENE := preload("res://characters/crew/gun_flash.tscn")
 ## Where the gun's muzzle is, in weapon space (tools/modelgen/weapons.py).

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://df4jbph4xjdiy"
-path="res://.godot/imported/ak_rifle.glb-489c8181e6fc56d9a7108b0fb7289007.scn"
+uid="uid://b2eqb5c6mrgsw"
+path="res://.godot/imported/frag.glb-84a1d84b4cee14cd82ae8469cd8211d9.scn"
 
 [deps]
 
-source_file="res://assets/models/weapons/ak_rifle.glb"
-dest_files=["res://.godot/imported/ak_rifle.glb-489c8181e6fc56d9a7108b0fb7289007.scn"]
+source_file="res://assets/models/weapons/frag.glb"
+dest_files=["res://.godot/imported/frag.glb-84a1d84b4cee14cd82ae8469cd8211d9.scn"]
 
 [params]
 

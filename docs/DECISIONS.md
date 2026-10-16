@@ -1027,6 +1027,20 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** One weapon node that swaps its data (cheaper, but ammo and recoil state per gun would need bookkeeping, and pickups would have to rebuild it); a weapon subclass per kind (the knife and grenades still get their own behaviour in tasks 6 and 8, as branches on the data); physics pickups (rigid bodies that tumble and bounce: nicer, but they block and need syncing in M9); auto-switching to a picked-up gun (CS doesn't; CoD's swap does, which E keeps); keeping the console at 18 lines (help would no longer fit on one screen).
 
+## D-092 — The arsenal's models and icons from the generator (2026-10-16) — *provisional*
+
+**Decision:**
+- **Every weapon is a part list in `tools/modelgen/weapons.py`**, built like the AK (D-075) in weapon space: the Ram (the AK, renamed `rifle`, byte-identical), the Warden (an M4-like carbine with black furniture and a telescoping stock), the Hornet (a boxy SMG with the magazine in the grip and a vertical foregrip), the Breaker (a wooden pump shotgun with a tube magazine), the Heron (an olive thumbhole sniper rifle with a big scope, bolt and folded bipod), the Sparrow (a polymer service pistol), the Verdict (a chunky hand cannon), the knife, the three grenades (a round olive frag, a light grey flashbang with a dark band, a dark smoke can with vents) and the defuse kit. 180–592 triangles each. Each names the points the animations need (`foregrip`, `magazine`, `handle`, `muzzle`, `butt`; the knife's `tip`; the grenades' `pin` and `lever`). `modelgen.py weapons` writes them to `assets/models/weapons/`.
+- **One model per weapon, three uses** (D-090): `WeaponData.model` is the first-person gun on the arms, the gun on a body's weapon bone (`CrewBody` shows the held weapon's) and the gun lying on the floor (`WeaponPickup`).
+- **Icons rendered by the generator** (`tools/modelgen/icons.py`, numpy and Pillow, headless): a 128 × 48 shaded side view with a dark outline for the buy menu (up to 150 px per metre, so a pistol stays smaller than a rifle; 300 for grenades and gear, which would otherwise be a few pixels), and a 16 px tall white silhouette for the kill feed. Also icons for the vest, the vest with a helmet and the kit.
+- **The kill feed shows the killing weapon's icon** between the names, like CS (the victim's `last_damage_source`, D-093); a death without a known weapon keeps the ">".
+
+**Why:** The generator was built for this (D-054): the arsenal stays consistent with the crew's look and a gun changes with a number. One model for all three uses is enough at this polygon count and keeps pickups recognisable from the hands. Rendering icons in Python needs no window (a Godot `SubViewport` render does), and silhouettes are what CS's kill feed uses because they read at a glance.
+
+**Checked:** both contact sheets (side and top views, all icons) looked at: every gun is recognisable by its silhouette. The new rifle mesh and texture are byte-identical to the old AK, and the crew files still regenerate byte for byte. Two new arsenal checks (every weapon has its model and both icons at the right sizes; muzzles in front; the kit and gear icons exist) and a kill-feed check in the gear test. All other suites pass.
+
+**Alternatives:** Separate detailed first-person models (more polygons where they're seen closest; later, if the hands-on look asks for it); icons rendered by Godot through a `SubViewport` in a windowed tool run; text names in the kill feed instead of icons.
+
 ## Open questions
 
 | Question | Decide in |

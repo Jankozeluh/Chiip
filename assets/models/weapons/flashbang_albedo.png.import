@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://brldi21qpt58s"
-path="res://.godot/imported/ak_rifle_albedo.png-13c3b2900306d7b8491ef9cb30b380f1.ctex"
+uid="uid://b1x3epg7mtmaq"
+path="res://.godot/imported/flashbang_albedo.png-93b7b03420635274ab05d8c8c465f137.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/models/weapons/ak_rifle_albedo.png"
-dest_files=["res://.godot/imported/ak_rifle_albedo.png-13c3b2900306d7b8491ef9cb30b380f1.ctex"]
+source_file="res://assets/models/weapons/flashbang_albedo.png"
+dest_files=["res://.godot/imported/flashbang_albedo.png-93b7b03420635274ab05d8c8c465f137.ctex"]
 
 [params]
 

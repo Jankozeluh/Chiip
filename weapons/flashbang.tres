@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
 
+[ext_resource type="PackedScene" path="res://assets/models/weapons/flashbang.glb" id="model"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/flashbang.png" id="icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/flashbang_kill.png" id="kill_icon"]
+
 [resource]
 script = ExtResource("weapon_data_script")
 id = &"flashbang"
@@ -32,3 +36,6 @@ view_punch_fraction = 0.0
 max_carried = 2
 throw_speed = 15.0
 lob_speed = 7.0
+model = ExtResource("model")
+icon = ExtResource("icon")
+kill_icon = ExtResource("kill_icon")

@@ -9,7 +9,9 @@
 
 - **Task 5, slots, loadouts, switching, dropping and picking up** (D-094): an `Inventory` node per character; keys 1–4, Q and G (rebindable), E to swap for a gun on the floor, walking over a gun takes it; draw times (the Rifleman's Quick Hands); guns lie on the floor with their ammo, and the dead drop their best one. Every round starts with the knife and the Sparrow; team respawn and practice give each class its loadout. The HUD, the body and the bots follow the weapon in hand; bots tap semi-automatic pistols. The console shows 24 lines so `help` still fits. `gear_test` has 31 checks; the maps test measures first contact with rifles, as D-061 meant (pistol rounds are about 10% faster).
 
-**Next:** task 3 (weapon models and icons, a Sonnet subagent is building them), then task 6 (how each gun works).
+- **Task 3, weapon models and icons** (D-092): a Sonnet subagent built every weapon as a part list in the generator (the AK became `rifle`, unchanged), with buy-menu and kill-feed icons rendered headless in Python; I checked the contact sheets (every gun reads by its silhouette). The data files point at the models and icons, guns on the floor and in bodies' hands show their own models, and the kill feed shows the killing weapon's icon.
+
+**Next:** task 6 (how each gun works), with generated shot sounds for every gun (a Sonnet subagent is making them).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 
