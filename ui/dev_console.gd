@@ -343,7 +343,8 @@ func _cmd_disconnect(_args: Array) -> void:
 
 
 ## class lists the classes and tells which one you are; class bulwark asks the game rules for
-## that class (a match allows it during freeze time only, practice mode any time).
+## that class (a match allows one of your two drafted classes during freeze time only, practice
+## mode any class any time).
 func _cmd_class(args: Array) -> void:
 	var player := _get_player()
 	if player == null:
@@ -367,6 +368,9 @@ func _cmd_class(args: Array) -> void:
 		player.class_data = data
 	if accepted:
 		print_line("You are the %s now." % data.display_name)
+	elif rules is RoundManager and not (rules as RoundManager).is_drafted(player, data):
+		var draft := (rules as RoundManager).get_draft(player).map(func(c: ClassData) -> String: return c.display_name)
+		print_line("Your draft this match is %s." % " or ".join(draft))
 	else:
 		print_line("You can change class only during freeze time.")
 

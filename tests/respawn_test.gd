@@ -213,7 +213,10 @@ func _test_hunting_groups() -> void:
 		return (member.get_node("BotController") as BotController).role == BotController.Role.HUNT)
 	_check("Every bot hunts, each team in groups of about two (3 bots: a pair and a single)",
 			hunting and sizes == [[1, 2], [1, 2]], "hunting %s, group sizes %s" % [hunting, sizes])
-	# Without enemies to fight, team 0's pair roams the map.
+	# Without enemies to fight, team 0's pair roams the map. No map weapons: this checks that the
+	# pair keeps together, not the detours a bot makes for a gun (D-098, D-099).
+	_rounds.map_weapons.clear()
+	_rounds.map_weapons.count = 0
 	await _go_live(false)
 	_remove_team(1)
 	var plan := _rounds.get_hunt_plan(0)

@@ -45,9 +45,11 @@ extends Node
 ## defuse the defuser. Money carries over between rounds, gear doesn't. [method spend] is how the
 ## buy menu pays (task 11), through [method request_buy].
 ##
-## Classes (D-052, D-078): the bots get a mix when the match starts, the player keeps their own
-## class (or [member MatchSettings.player_class]), and [method request_class] changes a class
-## during freeze time only.
+## Classes (D-052, D-078, D-099): the class draft ([member MatchSettings.class_draft]) offers
+## everyone two random classes when the match starts ([method get_draft]); every offer has a class
+## the team doesn't have yet while there is one, and bots take the one their team has fewer of, so
+## each team gets a mix. You start as your first ([member MatchSettings.player_class] if set), and
+## [method request_class] changes between your two during freeze time only.
 ##
 ## This is authority code (docs/ARCHITECTURE.md, "Keeping multiplayer
 ## possible"): in M9 only the host runs it, and the clients show what it
@@ -80,6 +82,9 @@ signal match_ended(winner: int)
 signal character_killed(victim: Character, killer: Character, headshot: bool)
 ## Emitted when [method request_class] gave [param character] another class.
 signal class_changed(character: Character, data: ClassData)
+## Emitted when the match starts and [param character] has been offered [param classes] (the
+## class draft, two classes).
+signal class_drafted(character: Character, classes: Array[ClassData])
 ## Emitted when [param character]'s money changes by [param amount] (negative when spent), for
 ## [param reason]: "Round won", "Round lost", "Kill", "Teamkill", "Bomb planted", "Bomb defused",
 ## "Bought", "New half". [method get_money] has the new total.
@@ -88,6 +93,8 @@ signal money_changed(character: Character, amount: int, reason: String)
 signal item_bought(character: Character, item_id: StringName)
 
 const BOT_SCENE := preload("res://bots/bot.tscn")
+## How many classes the draft offers each player (D-099).
+const DRAFT_SIZE := 2
 const BOMB_SCENE := preload("res://bomb/bomb.tscn")
 ## Damage a player must deal to an enemy killed by someone else to get an
 ## assist. CS: more than 40.
@@ -138,6 +145,8 @@ var _loss_streak: Array[int] = [0, 0]
 ## Randomness for the bots' class mix. It is seeded from [member rng] without drawing from it,
 ## so the mix doesn't change the spawn spots and the starting sides a seed gives.
 var _class_rng := RandomNumberGenerator.new()
+## The class draft: Character → its two classes this match (Array[ClassData]).
+var _drafts: Dictionary = {}
 
 ## The map's Player node (you), or null on a map without one (then team 0 is all bots).
 var _player: Character
@@ -227,18 +236,32 @@ func is_team_respawn() -> bool:
 
 
 ## Changes the class of [param character] to [param data], if the rules allow it: only during
-## freeze time (and before the first round has started). Returns true if the character now has
-## that class, false when refused (a live round, a round end, the end of the match) or when
-## there is nothing to change to. Emits [signal class_changed] when the class was another one.
+## freeze time (and before the first round has started), and only to a class of its draft
+## ([method get_draft]). Returns true if the character now has that class, false when refused (a
+## live round, a round end, the end of the match, a class it wasn't offered) or when there is
+## nothing to change to. Emits [signal class_changed] when the class was another one.
 ## The class menu and the console's [code]class[/code] command ask here; nobody sets
 ## [member Character.class_data] of a player in a match directly (authority code, D-078).
 func request_class(character: Character, data: ClassData) -> bool:
-	if phase != Phase.FREEZE or data == null or not is_instance_valid(character):
+	if phase != Phase.FREEZE or data == null or not is_instance_valid(character) or not is_drafted(character, data):
 		return false
 	if character.class_data != data:
 		character.class_data = data
 		class_changed.emit(character, data)
 	return true
+
+
+## The classes [param character] was offered this match (the class draft, D-099): two, or every
+## class when the draft is off or it has none.
+func get_draft(character: Character) -> Array[ClassData]:
+	if _drafts.has(character):
+		return _drafts[character]
+	return ClassData.all()
+
+
+## True if [param character] may play [param data] this match (it is one of its draft).
+func is_drafted(character: Character, data: ClassData) -> bool:
+	return get_draft(character).has(data)
 
 
 # --- Match and round flow ---
@@ -247,21 +270,10 @@ func request_class(character: Character, data: ClassData) -> bool:
 func _start_match() -> void:
 	Teams.friendly_fire = settings.friendly_fire
 	_class_rng.seed = rng.seed
-	var classes := ClassData.all()
-	# Each team's bots cycle through the classes from a random one, so three bots are three classes.
-	var class_offsets: Array[int] = []
-	for team in Teams.COUNT:
-		class_offsets.append(_class_rng.randi_range(0, classes.size() - 1))
-	var bots_on_player_team := settings.team_size
-	if _player != null:
-		if settings.player_class != null:
-			_player.class_data = settings.player_class
-		_join(_player)
-		bots_on_player_team -= 1
-	for i in bots_on_player_team:
-		_add_bot(player_team, classes[(class_offsets[player_team] + i) % classes.size()])
-	for i in settings.enemy_team_size:
-		_add_bot(Teams.other(player_team), classes[(class_offsets[Teams.other(player_team)] + i) % classes.size()])
+	if settings.class_draft:
+		_join_drafted()
+	else:
+		_join_in_turn()
 	attacking_team = rng.randi_range(0, Teams.COUNT - 1)
 	score.clear()
 	for team in Teams.COUNT:
@@ -581,7 +593,7 @@ func _pay_kill(victim: Character, killer: Character) -> void:
 # --- Players ---
 
 
-func _add_bot(team: int, data: ClassData) -> void:
+func _add_bot(team: int, data: ClassData) -> Character:
 	var bot: Character = BOT_SCENE.instantiate()
 	_bots_made += 1
 	bot.name = "Bot%d" % _bots_made
@@ -590,6 +602,7 @@ func _add_bot(team: int, data: ClassData) -> void:
 	(bot.get_node("BotController") as BotController).difficulty = settings.bot_difficulty
 	get_parent().add_child(bot)
 	_join(bot)
+	return bot
 
 
 func _join(character: Character) -> void:
@@ -600,9 +613,90 @@ func _join(character: Character) -> void:
 	character.died.connect(_on_died.bind(character))
 
 
-## At half time each team's bots pick their classes again (D-099): still one of each before any
-## repeats, from a new random start, so a bot plays the second half as something else.
+## Without the draft (M6): each team's bots cycle through the classes from a random one, so three
+## bots are three classes; the player keeps the map Player's class or [member MatchSettings.player_class].
+func _join_in_turn() -> void:
+	var classes := ClassData.all()
+	var class_offsets: Array[int] = []
+	for team in Teams.COUNT:
+		class_offsets.append(_class_rng.randi_range(0, classes.size() - 1))
+	var bots_on_player_team := settings.team_size
+	if _player != null:
+		if settings.player_class != null:
+			_player.class_data = settings.player_class
+		_join(_player)
+		bots_on_player_team -= 1
+	for i in bots_on_player_team:
+		_add_bot(player_team, classes[(class_offsets[player_team] + i) % classes.size()])
+	for i in settings.enemy_team_size:
+		_add_bot(Teams.other(player_team), classes[(class_offsets[Teams.other(player_team)] + i) % classes.size()])
+
+
+## The class draft (D-099): you first, then your team's bots, then the enemy's, each offered two
+## classes ([method _draw_offer]). You start as the first of yours (or
+## [member MatchSettings.player_class], which then is one of the two); a bot takes the one its team
+## has fewer of.
+func _join_drafted() -> void:
+	var on_team: Array = [[], []]
+	var bots_on_player_team := settings.team_size
+	if _player != null:
+		var offer := _draw_offer(on_team[player_team])
+		if settings.player_class != null and not offer.has(settings.player_class):
+			offer[1 if offer[0] == settings.player_class else 0] = settings.player_class
+		if settings.player_class != null:
+			_player.class_data = settings.player_class
+		else:
+			_player.class_data = offer[0]
+		on_team[player_team].append(_player.class_data)
+		_drafts[_player] = offer
+		_join(_player)
+		class_drafted.emit(_player, offer)
+		bots_on_player_team -= 1
+	var teams: Array[int] = [player_team, Teams.other(player_team)]
+	var counts: Array[int] = [bots_on_player_team, settings.enemy_team_size]
+	for t in teams.size():
+		var team := teams[t]
+		for i in counts[t]:
+			var offer := _draw_offer(on_team[team])
+			var pick := _less_played(offer, on_team[team])
+			on_team[team].append(pick)
+			var bot := _add_bot(team, pick)
+			_drafts[bot] = offer
+			class_drafted.emit(bot, offer)
+
+
+## Two different random classes, at least one of them a class [param on_team] doesn't have yet
+## (while there is one), so a team always gets a mix.
+func _draw_offer(on_team: Array) -> Array[ClassData]:
+	var classes := ClassData.all()
+	var offer: Array[ClassData] = []
+	while offer.size() < mini(DRAFT_SIZE, classes.size()):
+		var data := classes[_class_rng.randi_range(0, classes.size() - 1)]
+		if not offer.has(data):
+			offer.append(data)
+	var missing := classes.filter(func(data: ClassData) -> bool: return not on_team.has(data))
+	if not missing.is_empty() and not offer.any(func(data: ClassData) -> bool: return missing.has(data)):
+		offer[offer.size() - 1] = missing[_class_rng.randi_range(0, missing.size() - 1)]
+	return offer
+
+
+## The class of [param offer] that [param on_team] has fewer of (the first on a tie).
+func _less_played(offer: Array[ClassData], on_team: Array) -> ClassData:
+	var best := offer[0]
+	for data in offer:
+		if on_team.count(data) < on_team.count(best):
+			best = data
+	return best
+
+
+## At half time a bot may change class (D-099). With the draft, each bot switches to its other
+## drafted class unless a teammate already plays more of that one than of its current class, so
+## the team keeps its mix; without it, still one of each before any repeats, from a new random
+## start. Either way a bot mostly plays the second half as something else.
 func _rechoose_bot_classes() -> void:
+	if not _drafts.is_empty():
+		_redraft_bots()
+		return
 	var classes := ClassData.all()
 	for team in Teams.COUNT:
 		# The same shift for every bot of the team keeps their classes different from each other.
@@ -615,6 +709,21 @@ func _rechoose_bot_classes() -> void:
 			if data != member.class_data:
 				member.class_data = data
 				class_changed.emit(member, data)
+
+
+func _redraft_bots() -> void:
+	for team in Teams.COUNT:
+		var members := get_members(team)
+		for member in members:
+			if member.is_local_player() or not _drafts.has(member):
+				continue
+			var others: Array = members.filter(func(other: Character) -> bool: return other != member).map(
+					func(other: Character) -> ClassData: return other.class_data)
+			for data: ClassData in _drafts[member]:
+				if data != member.class_data and others.count(data) <= others.count(member.class_data):
+					member.class_data = data
+					class_changed.emit(member, data)
+					break
 
 
 ## Puts every member of [param team] on its own spawn marker of the team's side.

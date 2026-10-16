@@ -1,9 +1,10 @@
 class_name ClassMenu
 extends CanvasLayer
-## The class menu (D-052, D-078): four cards side by side, one per class, with its key (1 to 4),
-## name, height, role, perk and signature gun. Click a card or press its key to take that class;
-## the card of your current class is pressed. Esc, or the [code]class_menu[/code] key (M), closes
-## it without a change.
+## The class menu (D-052, D-078, D-099): cards side by side, one per class you may take, with its
+## key, name, height, role, perk and loadout. In a match those are the two classes of your draft
+## ([method RoundManager.get_draft]: keys 1 and 2, the other cards hidden); in practice all four.
+## Click a card or press its key to take that class; the card of your current class is pressed.
+## Esc, or the [code]class_menu[/code] key (M), closes it without a change.
 ##
 ## When it shows: in a match it opens by itself once, when round 1's freeze time begins, and M
 ## opens or closes it during freeze time only; it closes itself when freeze time ends. In
@@ -23,7 +24,7 @@ extends CanvasLayer
 ## The physical keys that pick a class, in menu order.
 const PICK_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4]
 
-## The class resources in menu order (the same order as the cards).
+## The classes on the cards now, in order (your draft in a match, all of them in practice).
 var _classes: Array[ClassData] = []
 ## The rules that decide class changes: a [RoundManager], an [ArenaRules] or null.
 var _rules: Node
@@ -32,16 +33,20 @@ var _player: Character
 var _is_open: bool = false
 
 @onready var _card_row: HBoxContainer = $Panel/Margin/Content/Classes
+@onready var _footer: Label = $Panel/Margin/Content/Footer
 
 
 func _ready() -> void:
 	visible = false
-	_classes = ClassData.all()
 	var cards := _card_row.get_children()
-	for i in mini(cards.size(), _classes.size()):
-		var card := cards[i] as Control
-		_fill_card(card, i, _classes[i])
-		(card.get_node("Select") as Button).pressed.connect(pick.bind(i))
+	for i in cards.size():
+		(cards[i].get_node("Select") as Button).pressed.connect(pick.bind(i))
+	_show_classes()
+
+
+## The classes the menu offers now: the player's draft in a match, every class otherwise.
+func get_classes() -> Array[ClassData]:
+	return _classes
 
 
 func _input(event: InputEvent) -> void:
@@ -74,6 +79,7 @@ func set_rules(rules: Node, player: Character) -> void:
 		old.phase_changed.disconnect(_on_phase_changed)
 	_rules = rules
 	_player = player
+	_show_classes()
 	if rules is RoundManager:
 		var manager := rules as RoundManager
 		manager.round_started.connect(_on_round_started)
@@ -122,6 +128,7 @@ func open() -> bool:
 	var controller := _get_controller()
 	if controller != null:
 		controller.block_shooting()
+	_show_classes()
 	_refresh()
 	return true
 
@@ -151,9 +158,9 @@ func toggle() -> void:
 		open()
 
 
-## Gives the player the class on card [param index] (0 to 3), if the rules allow it, and closes
+## Gives the player the class on card [param index] (from 0), if the rules allow it, and closes
 ## the menu. Returns false, leaving the menu open, when the menu is closed, the index is no
-## class or the rules refuse (not freeze time).
+## card shown or the rules refuse (not freeze time).
 func pick(index: int) -> bool:
 	if not _is_open or index < 0 or index >= _classes.size():
 		return false
@@ -192,6 +199,31 @@ func _fill_card(card: Control, index: int, data: ClassData) -> void:
 			else "Gun: %s" % data.signature_weapon
 	# The look is too long for the card: it is the hover text.
 	(card.get_node("Select") as Button).tooltip_text = data.look
+
+
+## Puts the classes the player may take on the cards (see [method get_classes]), hides the
+## cards left over, and says on the footer when a change is allowed.
+func _show_classes() -> void:
+	if _rules is RoundManager and is_instance_valid(_rules) and is_instance_valid(_player):
+		_classes = (_rules as RoundManager).get_draft(_player)
+	else:
+		_classes = ClassData.all()
+	var cards := _card_row.get_children()
+	for i in cards.size():
+		var card := cards[i] as Control
+		card.visible = i < _classes.size()
+		if card.visible:
+			_fill_card(card, i, _classes[i])
+	if _footer == null:
+		return
+	if _rules is RespawnMatch:
+		_footer.text = "Your two classes this match. M: switch any time; the new class comes with your next respawn."
+	elif _rules is RoundManager and _classes.size() < ClassData.all().size():
+		_footer.text = "Your two classes this match. M: switch between them in any freeze time."
+	elif _rules is RoundManager:
+		_footer.text = "M: change class during freeze time."
+	else:
+		_footer.text = "Practice: any class, any time (M)."
 
 
 ## Marks the player's current class: its card is pressed and says "current".

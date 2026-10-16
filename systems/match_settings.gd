@@ -69,9 +69,14 @@ enum GameMode {
 @export var respawn_delay: float = 3.0
 
 @export_group("Player")
-## The class the player starts the match with. Null keeps the class of the map's [code]Player[/code]
-## character (the Rifleman); the class menu changes it during freeze time (D-052, D-078).
+## The class the player starts the match with. Null takes the first class of your draft (or, with
+## [member class_draft] off, keeps the class of the map's [code]Player[/code] character, the
+## Rifleman); the class menu changes it during freeze time (D-052, D-078). With the draft on, a
+## class set here is one of your two.
 @export var player_class: ClassData
+## The class draft (M7 task 17, D-099): each match offers everyone two random classes to choose
+## from, bots too, with a mix per team. Off: any class, and the bots get one of each in turn (M6).
+@export var class_draft: bool = true
 
 @export_group("Loadout")
 ## What everyone has at the start of every round (D-090: a fresh loadout every round, like CoD's

@@ -204,10 +204,11 @@ func _after_round_end() -> void:
 # --- Helpers ---
 
 
-## In team respawn the class can change any time (D-099): in the freeze time at once, otherwise
-## with the next respawn, which brings the new class's loadout. Returns true when accepted.
+## In team respawn the class can change any time (D-099), to the other class of your draft: in
+## the freeze time at once, otherwise with the next respawn, which brings the new class's loadout.
+## Returns true when accepted.
 func request_class(character: Character, data: ClassData) -> bool:
-	if data == null or not is_instance_valid(character) or phase == Phase.MATCH_END:
+	if data == null or not is_instance_valid(character) or phase == Phase.MATCH_END or not is_drafted(character, data):
 		return false
 	if phase == Phase.FREEZE or not character.is_alive():
 		_pending_class.erase(character)

@@ -56,6 +56,7 @@ func _run_all() -> void:
 	await _test_class_menu()
 	await _test_main_scene()
 	await _test_perks()
+	await _test_class_draft()
 
 
 func _test_class_data() -> void:
@@ -333,7 +334,7 @@ func _test_class_menu() -> void:
 	_check("Each card has the class's height and its perk text, the title and footer are there, and the current card has the focus",
 			focus_on_current and card_text.contains("1.92 m") and card_text.contains("Reloads and weapon switches 15% faster.")
 			and (menu.get_node("Panel/Margin/Content/Title") as Label).text == "Choose your class"
-			and (menu.get_node("Panel/Margin/Content/Footer") as Label).text.begins_with("Perks switch on in M7"),
+			and (menu.get_node("Panel/Margin/Content/Footer") as Label).text == "M: change class during freeze time.",
 			"")
 	var background := menu.get_node("Background") as Control
 	_check("The dimmed background takes every click, and the menu blocks the trigger while it is open",
@@ -536,12 +537,128 @@ func _test_perks() -> void:
 	await _wait_ticks(2)
 
 
+## M7 task 17 (D-099): the class draft. Everyone is offered two classes when the match starts,
+## you start as your first, bots take the one their team has fewer of (every offer has a class the
+## team lacks, so a team of three is three classes), only drafted classes are allowed, the class
+## menu shows your two cards, and at half time the bots switch within their drafts.
+func _test_class_draft() -> void:
+	var settings := _settings()
+	settings.class_draft = true
+	var drafted := {}
+	var menu := MENU_SCENE.instantiate() as ClassMenu
+	add_child(menu)
+	_remove_map()
+	_map = MAP_SCENE.instantiate()
+	add_child(_map)
+	_player = _map.get_node("Player")
+	_silence(_player)
+	_rounds = RoundManager.new()
+	_rounds.settings = settings
+	_rounds.rng.seed = 5
+	_rounds.class_drafted.connect(func(character: Character, classes: Array[ClassData]) -> void: drafted[character] = classes)
+	_map.add_child(_rounds)
+	menu.set_rules(_rounds, _player)
+	await _wait_ticks(2)
+	for character in _rounds.get_participants():
+		_silence(character)
+	var yours := _rounds.get_draft(_player)
+	var everyone_two := _rounds.get_participants().all(func(member: Character) -> bool:
+		var offer := _rounds.get_draft(member)
+		return offer.size() == 2 and offer[0] != offer[1] and offer.has(member.class_data) and drafted.get(member) == offer)
+	_check("The draft offers everyone two different classes (class_drafted tells each), and everyone plays one of theirs; you start as your first",
+			everyone_two and drafted.size() == 6 and _player.class_data == yours[0],
+			"yours %s, everyone ok %s, signals %d" % [_ids(yours), everyone_two, drafted.size()])
+	var teams_mixed := true
+	for team in Teams.COUNT:
+		teams_mixed = teams_mixed and _distinct(_class_ids(_rounds.get_members(team))) == 3
+	_check("Each team of three still has three different classes", teams_mixed,
+			"%s and %s" % [_class_ids(_rounds.get_members(0)), _class_ids(_rounds.get_members(1))])
+	# Only your two.
+	var other := yours[1]
+	var not_offered: ClassData = ClassData.all().filter(func(data: ClassData) -> bool: return not yours.has(data))[0]
+	var refused := not _rounds.request_class(_player, not_offered) and _player.class_data == yours[0]
+	var names: Array = []
+	var cards := menu.get_node("Panel/Margin/Content/Classes").get_children()
+	for card in cards:
+		if (card as Control).visible:
+			names.append((card.get_node("Margin/Content/Name") as Label).text)
+	var footer := (menu.get_node("Panel/Margin/Content/Footer") as Label).text
+	_check("The class menu shows your two cards (the others hidden) and says they're yours this match; a class you weren't offered is refused",
+			menu.is_open() and names == [yours[0].display_name, yours[1].display_name] and footer.begins_with("Your two classes")
+			and menu.get_classes() == yours and refused,
+			"cards %s, footer '%s', refused %s" % [names, footer, refused])
+	_press_key(KEY_3)
+	await _wait_ticks(2)
+	var key_3_nothing := menu.is_open() and _player.class_data == yours[0]
+	_press_key(KEY_2)
+	await _wait_ticks(3)
+	_check("Key 3 does nothing with two cards; key 2 takes your other drafted class",
+			key_3_nothing and not menu.is_open() and _player.class_data == other,
+			"3 did nothing %s, class now %s" % [key_3_nothing, _player.class_data.id])
+	# The same seed gives the same draft; other seeds other drafts.
+	var first_draft := _ids(yours)
+	var seen := {}
+	for seed_value in [1, 2, 3, 4, 5, 6]:
+		await _new_match(settings, true, null, seed_value)
+		seen[seed_value] = _ids(_rounds.get_draft(_player))
+	_check("The draft comes from the seeded generator: seed 5 gives the same draft again, other seeds others",
+			seen[5] == first_draft and _distinct(seen.values()) >= 3, str(seen.values()))
+	# Half time: bots switch within their drafts and the teams stay mixed.
+	settings = _settings()
+	settings.class_draft = true
+	settings.rounds_to_win = 3
+	await _new_match(settings, false, null, 4)
+	var before := {}
+	for member in _rounds.get_participants():
+		before[member] = member.class_data
+	for round_number in 2:
+		await _wait_for_phase(RoundManager.Phase.LIVE)
+		for member in _rounds.get_members(1):
+			member.take_damage(500.0, Hitbox.Zone.CHEST, null)
+		await _wait_for_phase(RoundManager.Phase.FREEZE)
+	var switched := 0
+	var within := true
+	for member in _rounds.get_participants():
+		within = within and _rounds.get_draft(member).has(member.class_data)
+		if member.class_data != before[member]:
+			switched += 1
+	var mixed := _distinct(_class_ids(_rounds.get_members(0))) == 3 and _distinct(_class_ids(_rounds.get_members(1))) == 3
+	_check("At half time bots switch to their other drafted class where the team keeps its mix (most do), never outside their draft",
+			_rounds.round_number == 3 and switched >= 3 and within and mixed,
+			"round %d, %d of 6 switched, within drafts %s, mixed %s" % [_rounds.round_number, switched, within, mixed])
+	# Team respawn: only your two as well.
+	var respawn_settings := _settings()
+	respawn_settings.class_draft = true
+	respawn_settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	_remove_map()
+	_map = MAP_SCENE.instantiate()
+	add_child(_map)
+	_player = _map.get_node("Player")
+	_silence(_player)
+	var respawn := RespawnMatch.new()
+	respawn.settings = respawn_settings
+	respawn.rng.seed = 5
+	_map.add_child(respawn)
+	await _wait_ticks(3)
+	var respawn_draft := respawn.get_draft(_player)
+	var outside: ClassData = ClassData.all().filter(func(data: ClassData) -> bool: return not respawn_draft.has(data))[0]
+	_check("Team respawn drafts too: your other class is accepted, one you weren't offered isn't",
+			respawn.request_class(_player, respawn_draft[1]) and not respawn.request_class(_player, outside),
+			"draft %s" % [_ids(respawn_draft)])
+	menu.queue_free()
+	_remove_map()
+	await _wait_ticks(2)
+
+
 # --- Helpers ---
 
 
 ## Match settings with the short timings of this test: first to 15, so no round ends the match.
+## The class draft is off (the M6 rules: any class, bots one of each in turn); [method _test_class_draft]
+## switches it on.
 func _settings() -> MatchSettings:
 	var settings := MatchSettings.new()
+	settings.class_draft = false
 	settings.freeze_time = FREEZE_TIME
 	settings.round_time = ROUND_TIME
 	settings.round_end_time = ROUND_END_TIME
@@ -587,6 +704,11 @@ func _class_ids(characters: Array) -> Array:
 
 
 ## How many different values there are in [param values].
+## The ids of [param classes] (ClassData resources).
+func _ids(classes: Array) -> Array:
+	return classes.map(func(data: ClassData) -> StringName: return data.id)
+
+
 func _distinct(values: Array) -> int:
 	var seen := {}
 	for value in values:

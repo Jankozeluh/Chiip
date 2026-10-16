@@ -36,7 +36,9 @@
 **Then your new direction (D-120) added tasks 16 to 19** (main merged in first, for the M10 plan):
 - **Task 16, random map weapons** (D-098): the fixed Heron and Breaker spots are gone. `MapWeapons` puts guns out at random places from the navmesh at runtime (on the islands the spawns stand on, never within 15 m of a spawn or on a bomb site, 8 m from respawn points in Team Deathmatch, 15 m apart), a random gun from a weighted pool (the Hornet most often, the Heron rarest), on the gold ring with a new beam of light. Two each round; three at a time in Team Deathmatch, replaced elsewhere 20 s after being taken. The map files are back to main's, so the map-kit session can edit them freely.
 
-**Next:** tasks 17 (class draft), 18 (Team Deathmatch's loadout and pickups) and 19 (checks).
+- **Task 17, the class draft** (D-099): each match offers everyone two random classes. You start as your first and the class menu shows just your two cards (keys 1 and 2). Every offer includes a class the team doesn't have yet, and bots take the one their team has fewer of, so a team of three is still three classes. You switch only between your two (freeze time; any time in Team Deathmatch), and at half time the bots switch within their drafts. `MatchSettings.class_draft` turns it off for M6's rules, which the older class checks use. The respawn suite's check on bots walking in pairs now runs without map weapons (the new classes made a follower detour for a gun).
+
+**Next:** tasks 18 (Team Deathmatch's loadout and pickups) and 19 (checks).
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 
