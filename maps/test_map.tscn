@@ -7,11 +7,33 @@
 [ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="pixel_font"]
 [ext_resource type="Material" path="res://assets/materials/concrete_floor.tres" id="concrete_floor"]
 [ext_resource type="Material" path="res://assets/materials/gravel_grey.tres" id="gravel_grey"]
-[ext_resource type="Material" path="res://assets/materials/bricks_red.tres" id="bricks_red"]
+[ext_resource type="Material" path="res://assets/materials/urban/blocks_grey.tres" id="blocks_grey"]
+[ext_resource type="Material" path="res://assets/materials/industrial/corrugated_grey.tres" id="corrugated_grey"]
 [ext_resource type="Material" path="res://assets/materials/stone_grey.tres" id="stone_grey"]
 [ext_resource type="Material" path="res://assets/materials/wood_planks.tres" id="wood_planks"]
 [ext_resource type="Material" path="res://assets/materials/metal_plates.tres" id="metal_plates"]
 [ext_resource type="Material" path="res://assets/materials/painted_plaster.tres" id="painted_plaster"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_strip.tscn" id="kit_lights/light_strip"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_olive.tscn" id="kit_props/prop_container_olive"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_teal.tscn" id="kit_props/prop_container_teal"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_grey.tscn" id="kit_props/prop_container_grey"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_rust.tscn" id="kit_props/prop_container_rust"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_group.tscn" id="kit_props/prop_barrel_group"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel.tscn" id="kit_props/prop_barrel"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_rust.tscn" id="kit_props/prop_barrel_rust"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet_stack.tscn" id="kit_props/prop_pallet_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_stack.tscn" id="kit_props/prop_crate_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pipe_wall.tscn" id="kit_props/prop_pipe_wall"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_flood.tscn" id="kit_lights/light_flood"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_door_rollup.tscn" id="kit_props/prop_door_rollup"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_door.tscn" id="kit_props/prop_door"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_electric_cabinet.tscn" id="kit_props/prop_electric_cabinet"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_warning.tscn" id="kit_props/prop_sign_warning"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_grass_tuft.tscn" id="kit_props/prop_grass_tuft"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_debris_rubble.tscn" id="kit_props/prop_debris_rubble"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_debris_planks.tscn" id="kit_props/prop_debris_planks"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet.tscn" id="kit_props/prop_pallet"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_trash_bags.tscn" id="kit_props/prop_trash_bags"]
 
 [sub_resource type="StandardMaterial3D" id="firing_line_material"]
 albedo_color = Color(0.92, 0.75, 0.15, 1)
@@ -37,12 +59,6 @@ shadow_enabled = true
 navigation_mesh = ExtResource("navmesh")
 
 [node name="Lamps" type="Node3D" parent="."]
-
-[node name="TunnelLamp" type="OmniLight3D" parent="Lamps"]
-position = Vector3(14, 1.3, -10)
-light_color = Color(1, 0.6, 0.25, 1)
-light_energy = 2.0
-omni_range = 4.0
 
 [node name="PlatformLamp" type="OmniLight3D" parent="Lamps"]
 position = Vector3(-14, 3.2, -10)
@@ -74,25 +90,25 @@ material = ExtResource("gravel_grey")
 position = Vector3(0, 3, -32.5)
 use_collision = true
 size = Vector3(66, 6, 1)
-material = ExtResource("bricks_red")
+material = ExtResource("blocks_grey")
 
 [node name="WallSouth" type="CSGBox3D" parent="Geometry"]
 position = Vector3(0, 3, 88.5)
 use_collision = true
 size = Vector3(66, 6, 1)
-material = ExtResource("bricks_red")
+material = ExtResource("blocks_grey")
 
 [node name="WallWest" type="CSGBox3D" parent="Geometry"]
 position = Vector3(-32.5, 3, 28)
 use_collision = true
 size = Vector3(1, 6, 120)
-material = ExtResource("bricks_red")
+material = ExtResource("blocks_grey")
 
 [node name="WallEast" type="CSGBox3D" parent="Geometry"]
 position = Vector3(32.5, 3, 28)
 use_collision = true
 size = Vector3(1, 6, 120)
-material = ExtResource("bricks_red")
+material = ExtResource("blocks_grey")
 
 [node name="Box32" type="CSGBox3D" parent="Geometry"]
 position = Vector3(-4.5, 0.4064, -4)
@@ -179,7 +195,7 @@ shape = SubResource("stairs_clip_shape")
 position = Vector3(14, 1.5, -10)
 use_collision = true
 size = Vector3(4, 3, 6)
-material = ExtResource("metal_plates")
+material = ExtResource("corrugated_grey")
 
 [node name="Hole" type="CSGBox3D" parent="Geometry/CrouchTunnel"]
 position = Vector3(0, -0.8, 0)
@@ -517,3 +533,131 @@ position = Vector3(21, 0, -4)
 
 [node name="Point5" type="Marker3D" parent="Tactics/RouteEast"]
 position = Vector3(22, 0, -16)
+
+[node name="Kit" type="Node3D" parent="." groups=["navigation_source"]]
+
+[node name="light_strip_0" parent="Kit" instance=ExtResource("kit_lights/light_strip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 14, 1.5, -10)
+light_color = Color(1, 0.6, 0.25, 1)
+light_energy = 2.0
+light_range = 4.0
+
+[node name="prop_container_olive_1" parent="Kit" instance=ExtResource("kit_props/prop_container_olive")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, -30.75, 0, 48)
+
+[node name="prop_container_teal_2" parent="Kit" instance=ExtResource("kit_props/prop_container_teal")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, -30.75, 0, 66)
+
+[node name="prop_container_grey_3" parent="Kit" instance=ExtResource("kit_props/prop_container_grey")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 30.75, 0, 46)
+
+[node name="prop_container_rust_4" parent="Kit" instance=ExtResource("kit_props/prop_container_rust")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 30.75, 0, 70)
+
+[node name="prop_barrel_group_5" parent="Kit" instance=ExtResource("kit_props/prop_barrel_group")]
+transform = Transform3D(0.9397, 0, 0.342, 0, 1, 0, -0.342, 0, 0.9397, -31, 0, 56)
+
+[node name="prop_barrel_6" parent="Kit" instance=ExtResource("kit_props/prop_barrel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 31.2, 0, 56.5)
+
+[node name="prop_barrel_rust_7" parent="Kit" instance=ExtResource("kit_props/prop_barrel_rust")]
+transform = Transform3D(0.766, 0, 0.6428, 0, 1, 0, -0.6428, 0, 0.766, 31.1, 0, 57.4)
+
+[node name="prop_pallet_stack_8" parent="Kit" instance=ExtResource("kit_props/prop_pallet_stack")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, -31, 0, -6)
+
+[node name="prop_crate_stack_9" parent="Kit" instance=ExtResource("kit_props/prop_crate_stack")]
+transform = Transform3D(0.9781, 0, 0.2079, 0, 1, 0, -0.2079, 0, 0.9781, 31, 0, 1.5)
+
+[node name="prop_pipe_wall_10" parent="Kit" instance=ExtResource("kit_props/prop_pipe_wall")]
+transform = Transform3D(-1.837e-16, 0, -1, 0, 1, 0, 1, 0, -1.837e-16, -32, 0, -26)
+
+[node name="prop_pipe_wall_11" parent="Kit" instance=ExtResource("kit_props/prop_pipe_wall")]
+transform = Transform3D(-1.837e-16, 0, -1, 0, 1, 0, 1, 0, -1.837e-16, -32, 0, 20)
+
+[node name="prop_pipe_wall_12" parent="Kit" instance=ExtResource("kit_props/prop_pipe_wall")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 32, 0, -24)
+
+[node name="prop_pipe_wall_13" parent="Kit" instance=ExtResource("kit_props/prop_pipe_wall")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 32, 0, 24)
+
+[node name="light_flood_14" parent="Kit" instance=ExtResource("kit_lights/light_flood")]
+transform = Transform3D(-1.837e-16, 0, -1, 0, 1, 0, 1, 0, -1.837e-16, -32, 5, 0)
+
+[node name="light_flood_15" parent="Kit" instance=ExtResource("kit_lights/light_flood")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 32, 5, -2)
+
+[node name="light_flood_16" parent="Kit" instance=ExtResource("kit_lights/light_flood")]
+transform = Transform3D(-1, 0, 1.225e-16, 0, 1, 0, -1.225e-16, 0, -1, 0, 5, -32)
+
+[node name="light_flood_17" parent="Kit" instance=ExtResource("kit_lights/light_flood")]
+transform = Transform3D(-1.837e-16, 0, -1, 0, 1, 0, 1, 0, -1.837e-16, -32, 5, 40)
+
+[node name="light_flood_18" parent="Kit" instance=ExtResource("kit_lights/light_flood")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 32, 5, 40)
+
+[node name="prop_door_rollup_19" parent="Kit" instance=ExtResource("kit_props/prop_door_rollup")]
+transform = Transform3D(-1, 0, 1.225e-16, 0, 1, 0, -1.225e-16, 0, -1, 12, 0, -32)
+
+[node name="prop_door_20" parent="Kit" instance=ExtResource("kit_props/prop_door")]
+transform = Transform3D(-1, 0, 1.225e-16, 0, 1, 0, -1.225e-16, 0, -1, -12, 0, -32)
+
+[node name="prop_electric_cabinet_21" parent="Kit" instance=ExtResource("kit_props/prop_electric_cabinet")]
+transform = Transform3D(-1, 0, 1.225e-16, 0, 1, 0, -1.225e-16, 0, -1, -8.5, 0, -32)
+
+[node name="prop_sign_warning_22" parent="Kit" instance=ExtResource("kit_props/prop_sign_warning")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, 32, 2.2, 16)
+
+[node name="prop_sign_warning_23" parent="Kit" instance=ExtResource("kit_props/prop_sign_warning")]
+transform = Transform3D(-1.837e-16, 0, -1, 0, 1, 0, 1, 0, -1.837e-16, -32, 2.2, 16)
+
+[node name="prop_grass_tuft_24" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(0.6441, 0, -0.7649, 0, 1, 0, 0.7649, 0, 0.6441, -31.2, 0, -30.5)
+
+[node name="prop_grass_tuft_25" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.3107, 0, 0.9505, 0, 1, 0, -0.9505, 0, -0.3107, 31.3, 0, -30)
+
+[node name="prop_grass_tuft_26" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(0.8813, 0, 0.4726, 0, 1, 0, -0.4726, 0, 0.8813, -31.4, 0, 10)
+
+[node name="prop_grass_tuft_27" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.831, 0, -0.5563, 0, 1, 0, 0.5563, 0, -0.831, 31.4, 0, 12)
+
+[node name="prop_grass_tuft_28" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.3107, 0, -0.9505, 0, 1, 0, 0.9505, 0, -0.3107, -31.3, 0, 30)
+
+[node name="prop_grass_tuft_29" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(0.4003, 0, 0.9164, 0, 1, 0, -0.9164, 0, 0.4003, 31.2, 0, 32)
+
+[node name="prop_grass_tuft_30" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(0.9774, 0, 0.2113, 0, 1, 0, -0.2113, 0, 0.9774, -31.4, 0, 74)
+
+[node name="prop_grass_tuft_31" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.4726, 0, -0.8813, 0, 1, 0, 0.8813, 0, -0.4726, 31.4, 0, 80)
+
+[node name="prop_grass_tuft_32" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(0.9956, 0, -0.09411, 0, 1, 0, 0.09411, 0, 0.9956, -20, 0, -31.4)
+
+[node name="prop_grass_tuft_33" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(0.8231, 0, 0.5678, 0, 1, 0, -0.5678, 0, 0.8231, 20, 0, -31.4)
+
+[node name="prop_grass_tuft_34" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.7242, 0, -0.6896, 0, 1, 0, 0.6896, 0, -0.7242, -20, 0, 87.6)
+
+[node name="prop_grass_tuft_35" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.1115, 0, -0.9938, 0, 1, 0, 0.9938, 0, -0.1115, 20, 0, 87.6)
+
+[node name="prop_grass_tuft_36" parent="Kit" instance=ExtResource("kit_props/prop_grass_tuft")]
+transform = Transform3D(-0.4446, 0, -0.8957, 0, 1, 0, 0.8957, 0, -0.4446, 0, 0, 87.6)
+
+[node name="prop_debris_rubble_37" parent="Kit" instance=ExtResource("kit_props/prop_debris_rubble")]
+transform = Transform3D(6.123e-17, 0, 1, 0, 1, 0, -1, 0, 6.123e-17, -31, 0, 36)
+
+[node name="prop_debris_planks_38" parent="Kit" instance=ExtResource("kit_props/prop_debris_planks")]
+transform = Transform3D(0.1736, 0, 0.9848, 0, 1, 0, -0.9848, 0, 0.1736, 30.8, 0, 62.5)
+
+[node name="prop_pallet_39" parent="Kit" instance=ExtResource("kit_props/prop_pallet")]
+transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, -30.9, 0, 24)
+
+[node name="prop_trash_bags_40" parent="Kit" instance=ExtResource("kit_props/prop_trash_bags")]
+transform = Transform3D(-0.9397, 0, -0.342, 0, 1, 0, 0.342, 0, -0.9397, 30.9, 0, -14)

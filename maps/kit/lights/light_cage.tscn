@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/props/light_cage.glb" id="model"]
+[ext_resource type="Script" path="res://maps/kit/kit_light.gd" id="light_script"]
+
+[node name="LightCage" type="Node3D"]
+script = ExtResource("light_script")
+light_kind = 0
+light_color = Color(1, 0.74, 0.44, 1)
+light_energy = 1.3
+light_range = 6
+light_offset = Vector3(0, -0.8, 0)
+metadata/surface = "metal"
+
+[node name="Model" parent="." instance=ExtResource("model")]

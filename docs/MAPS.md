@@ -27,8 +27,9 @@
 
 Your direction: *"everything should be minimalistic and pixelated, cs/quake/cod like with the characters like I showed you"* (D-063).
 
-- **Minimal and blocky.** Simple box geometry, clean readable spaces, no clutter, nothing detailed or realistic. Props are plain boxes: crates, containers, stalls, tanks.
-- **Few materials: at most 5 per map**, from the existing 64 × 64 retro textures with nearest filtering. The world renders at 480 lines (D-048). Depot and Spillway use 5, Square 4.
+- **Minimal and blocky.** Simple box geometry, clean readable spaces, no clutter, nothing detailed or realistic. Props come from the map kit's generator, in the crew's style.
+- **Textures match the crew** (D-140): drawn like the characters are painted, in the same palette, flat shades with simple pixel patterns (boards, blocks, panels, tiles, ribs) and little noise; no photo textures. Compared with players in the shot: [mapping/players_depot.jpg](mapping/players_depot.jpg) and the other `players_*.jpg`.
+- **Few materials: at most 6 main materials per map** for the big surfaces (D-127, since the map kit; before it, 5 in total, D-063). Variants of one material count once: the same ribbed metal in four colours, pale and olive plaster, cobbles and slabs. Details come on top in small doses: trims, signs, props, lamps. All are 64 × 64 retro textures with nearest filtering; the world renders at 480 lines (D-048). How to build with the kit: [MAPPING.md](MAPPING.md).
 - **Players stand out.** Characters wear their team colour, painted at runtime: your team blue, enemies red (D-042). So no saturated red or blue on large map surfaces: walls, floors and big props are neutral greys (concrete, plaster, stone, gravel, metal), plus wood as the one warm accent. Muted greens or ochres are fine too. `bricks_red` isn't used: on average it's a muted brown, but 21 % of its pixels are strong reds.
 - **Neutral shadows.** The maps' environments light shadows with a neutral grey ambient light instead of the blue sky. With the sky's light, shadowed floors rendered as rgb (43–50, 63–70, 92–100): the same hue as the blue team (215° vs 220°) at 50 % saturation. With grey ambient they render as rgb (63, 64, 65), 3 % saturation, about as bright as before.
 - **Cool daylight, no desert:** neutral white sun, grey-blue sky and haze; warm light only from lamps (D-031).
@@ -73,7 +74,7 @@ The `.map` files in `maps/` are the source: open them in TrenchBroom (README, "M
 1. Rebuild the scene: `tools/build_maps.gd -- res://maps/depot.tscn` (or *Build Map* on the `Map` node).
 2. Bake the navmesh: `tools/bake_navmesh.gd -- res://maps/depot.tscn`.
 3. Check it: `tests/maps_test.tscn` (markers, paths, first contact) and `tools/map_report.gd` (sizes, walks, sightlines). If you moved floor or walls, move any marker that now stands inside them.
-4. Screenshots: `tools/map_screenshots.gd` renders an overview, both spawns, both sites and mid through the real game.
+4. Screenshots: `tools/map_screenshots.gd` renders an overview, both spawns, both sites and the middle of each lane through the real game, with the characters hidden.
 
 The exact commands are in CLAUDE.md. **In TrenchBroom the map is turned:** Godot's x is TrenchBroom's Y and Godot's z is TrenchBroom's X. In TrenchBroom's top view, north (the defenders' end) is on the left and east is at the top.
 
@@ -87,7 +88,7 @@ A freight yard. **Indoor mid, open side lanes.**
 - **West, site A:** an open container yard. Overlapping containers (2.6 m) and crates break up the views. A sits in the north-west corner beside a container.
 - **East, site B:** a boxcar on the track, a small signal hut and a 1.2 m loading dock along the east wall. B is on the dock, with ramps up from the south end and from the west. Pallet stacks on the dock break the view along it.
 - **Spawns:** container stacks (5.2 m) split each spawn yard from the side lanes; wooden stacks in the forecourts give cover and cut the long views across them.
-- **Look (5 materials):** gravel ground, concrete walls and dock, a light plaster warehouse, dark metal containers, wooden stacks. Clear noon (`clear_noon.tres`: today's cool-daylight sky with neutral ambient light), sun 38° high.
+- **Look (6 main materials, dressed with the map kit in M10):** gravel ground, concrete dock and forecourts, grey block yard walls, the light plaster warehouse (windows outside, a ribbed-metal ceiling inside), ribbed containers in green, grey, rust and teal (the same pattern, D-127) and a rusty boxcar, wooden stacks; hazard stripes along the dock's edge. Props and lamps (85 entities in `depot.map`): pendant lamps in the warehouse, floodlights high on the yard walls, a lantern and a door on the signal hut, the boxcar's siding (railway track), signs to A and B on the warehouse and above each site, pipes and cabinets along the walls, a van and a forklift in the dead-end corners behind the spawn stacks, and floor clutter without collision (grass, pallets, debris). Clear noon (`clear_noon.tres`: today's cool-daylight sky with neutral ambient light), sun 38° high.
 
 ## Map 2: Square
 
@@ -99,7 +100,7 @@ An old-town square. **Open mid, tight side lanes.**
 - **West, site A:** a narrow zig-zag alley between houses. The two houses that jut into it overlap, so no straight line runs through. A is a small square with a well at the alley's north end. A covered passage through the houses connects the alley to the plaza.
 - **East, site B:** a long market hall with a roof, stone pillars and stalls. A wall with a gap on the east side splits it in two; B is **indoors** at the north end. An arch through the houses connects the plaza to the hall's north half. The hall's doors are offset from the gap, so you can't see down the whole hall.
 - **Spawns:** a kiosk in front of each spawn breaks the views across the spawn yards.
-- **Look (4 materials):** stone paving, pale plaster houses, stone corner houses and pillars, a gravel alley, wooden stalls, kiosks and hall roof. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky, a little more haze, neutral ambient light).
+- **Look (5 main materials, dressed with the map kit in M10):** cobbled plaza and slabbed yards and hall floor (one paving family), pale and olive plaster houses, rubble-stone alley houses and stone pillars, the gravel alley, wooden stalls, kiosks and an old plank roof over the hall. Props and lamps (86 entities in `square.map`): shuttered windows on two floors all round, wooden doors, lanterns around the plaza, in the passage, the arch and the alley, pendant lamps in the market hall instead of the scene's lamps, signs to A and B, crates on the hall's stalls, a bench, bins, a hydrant and a phone box in the yards' corners. A low morning sun (24° high) with long shadows (`clear_morning.tres`: a slightly paler sky, a little more haze, neutral ambient light).
 
 ## Map 3: Spillway
 
@@ -110,7 +111,7 @@ A dry concrete water works. **Sunken mid, high sides.**
 - **Mid:** a dry channel 3 m deep, with ramps down at both ends and 3 m fences along its edges. A walled footbridge crosses it in the middle; under the bridge the channel narrows to a 2.5 m culvert, and concrete blocks on either side of the bridge stop anyone seeing straight through. Two overlooks with low parapets let the sides shoot down into the channel.
 - **West, site A:** a pump house you can go through (offset doors with a pump in between) or around (two corridors with overlapping blockers). A is in front of its north door.
 - **East, site B:** a tank yard split by a pipe wall with two gaps, each with a tank right behind it, so no view runs through. B is on a 1.5 m terrace with ramps up from the south and the west; a control house blocks the view from the yard up onto the terrace.
-- **Look (5 materials):** concrete, plaster, metal, gravel and a few wooden crates under an overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
+- **Look (6 main materials, dressed with the map kit in M10):** concrete ground, channel walls and terrace, plaster walls and pump house, ribbed metal in grey, teal and green (tanks, the pipe wall, the bridge's walls, the blockers), dirt on the dry channel's bottom, gravel, and a few wooden crates; a grated deck on the footbridge and hazard stripes along the terrace's edge. Props and lamps (67 entities in `spillway.map`): a caged bulb in the culvert, pendants in the pump house, floodlights on the walls, lanterns on the pump and control houses, pipes along the pipe wall and the walls, drain pipes under the channel's rim, valves, windows and a door, signs to A and B on the channel fences' south ends and at each site, cabinets and cylinders in the yards' corners, debris and grass in the channel and along the walls. An overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
 
 ## Measurements
 
@@ -121,15 +122,41 @@ From `tests/maps_test.tscn` (seeded bots-only 3v3, 4 rounds, timed from the roun
 | First contact, each round (median), bomb rounds (D-081) | 5.4, 5.4, 5.5, 6.0 s (5.4 s) | 6.0, 6.2, 7.2, 9.1 s (6.7 s) | 5.5, 5.6, 6.0, 6.7 s (5.8 s) |
 | Round length (bomb rounds; before the bomb all ended by elimination in 9–23 s) | 31–43 s | 19–50 s | 15–31 s |
 | Spawn to spawn, walking (straight line) | 52 m (49 m) | 62 m (50 m) | 52 m (51 m) |
-| Attackers to A / B | 57 m / 52 m | 65 m / 54 m | 51 m / 53 m |
+| Attackers to A / B | 57 m / 52 m | 62 m / 54 m (65 m before M10, see below) | 51 m / 53 m |
 | Defenders to A / B | 25 m / 23 m | 18 m / 20 m | 20 m / 21 m |
 | Routes west / mid / east | 58 / 49 / 68 m | 61 / 51 / 59 m | 57 / 53 / 55 m |
 | Longest sightline | 44 m | 35 m | 38 m |
-| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 | 375 / 0 |
+| Spot pairs that see each other over 30 m / 40 m | 560 / 3 | 79 / 0 | 370 / 0 (375 before M10: props block a few) |
 | Spawn-to-spawn views | 0 | 0 | 0 |
 | Bomb rounds with bots (D-081): plants in 4 rounds, how they ended | 4 plants: 4 defused | 4 plants: 2 defused, 2 elimination | 3 plants: 1 defused, 2 elimination; 1 round decided before a plant |
 
 At 5.5 m/s (rifle in hand) a 52 m walk takes about 9.5 s. Contact comes earlier because defenders move up to their hold spots and toward the sound of footsteps.
+
+After dressing (M10) every number in this table is the same as before, except one: on Square the bots' shortest walk to A is 62 m instead of 65 m. The geometry is identical; the re-baked navmesh now includes the 1.4 m gap between the well crate and the alley house on the west route, which players could always walk through, so bots now find the same way. First contact on Square: 6.1, 6.2, 7.2, 9.1 s (median 6.7 s, as before).
+
+## Before and after the map kit (M10)
+
+Left before, right after dressing (with the textures redrawn like the crew, D-140), the same shots through the real game (`tools/map_screenshots.gd`, characters hidden). How the kit is used: [MAPPING.md](MAPPING.md).
+
+![Depot before and after](mapping/before_after_depot.jpg)
+
+![Square before and after](mapping/before_after_square.jpg)
+
+![Spillway before and after](mapping/before_after_spillway.jpg)
+
+![The test map before and after](mapping/before_after_test_map.jpg)
+
+**With players in view** (`--lineup`: two bots of each team in every shot), left the photo-based textures the dressing first used, right the textures drawn like the crew (D-140):
+
+![Depot: photo textures and crew-style textures, players in view](mapping/players_depot.jpg)
+
+![Square: photo textures and crew-style textures, players in view](mapping/players_square.jpg)
+
+![Spillway: photo textures and crew-style textures, players in view](mapping/players_spillway.jpg)
+
+![The test map: photo textures and crew-style textures, players in view](mapping/players_test_map.jpg)
+
+Measured on the dressed shots with the crew-style textures, below the horizon: strong team-red pixels at most 0.9 % of a shot (before dressing: 1.4 %), strong team-blue at most 0.4 % (before: up to 6 %, from the old blue-grey metal plates on Depot's containers and Spillway's tanks). Average saturation 0.06–0.11 (before 0.06–0.09). Frame times with 10 bots: 120 fps on all three maps (the display's rate), slowest 1 % of frames 9.7 ms on Depot (9.9 ms undressed), 10.2 ms on Square, 11.8 ms on Spillway; about 240 draw calls each (Depot 122 undressed). D-126, D-127.
 
 ## How the layouts were tuned
 
@@ -142,6 +169,6 @@ The blockouts were generated once from a small layout script (outside the reposi
 ## Next for these maps
 
 - **Your playtest:** how they feel, what to change, and the final names.
-- **Detail pass (M8):** props, trim, signs, lamps. Lighting stays real-time (D-085; comparison: [maps/lighting_depot.jpg](maps/lighting_depot.jpg)).
+- **Detail pass:** done with the map kit in M10 (D-127, D-128): textures, props, signs and lamps, without moving walls or cover; the measurements below were taken again after dressing. Lighting stays real-time (D-085; comparison: [maps/lighting_depot.jpg](maps/lighting_depot.jpg)).
 - **Bomb logic:** done (D-080): plant anywhere on the floor inside a site's area.
 - **Respawn mode (M8):** pick a `respawn_points` marker away from enemies.

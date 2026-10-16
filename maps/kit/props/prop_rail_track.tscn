@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/props/rail_track.glb" id="model"]
+
+[node name="PropRailTrack" type="Node3D"]
+metadata/surface = "metal"
+
+[node name="Model" parent="." instance=ExtResource("model")]
