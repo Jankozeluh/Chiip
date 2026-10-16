@@ -11,6 +11,7 @@
 - The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
 
 - The boot screen exists (D-153): once per run, any key skips it. It shows your Divocakos logo (the laughing watermelon, 112 × 112) at whole multiples with the name under it; the main menu has the small mark in the corner and "Build M10 · Divocakos" in the footer. Logo and name: all rights reserved, outside the CC BY-NC-SA plan (docs/CREDITS.md). `tools/make_studio_logo.py` makes the two picture files.
+- A minimal compass on the HUD (D-180): a thin strip at the top centre with N/E/S/W and ticks that turns with your view, and a red square at the bearing of an enemy's shot for about two seconds. It listens to a new `Noises.shot_fired`, which real shots and a client's replayed shots both emit, so it works online. The round top bar and the toasts moved 16 px down for it.
 - New suite `layout` (14 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
 
 **Next:** your check: look at the Play screen in the editor's game view at 2920 × 1753. M12 writes the logo's rights into the licence files.

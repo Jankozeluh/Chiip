@@ -169,6 +169,19 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 		# 2. The HUD alone.
 		await _settle(size)
 		_collect(failures, "HUD at %s" % [size], [hud], size)
+		# 2b. The compass strip stands clear of the top bar, the toasts and the kill feed (D-180).
+		(hud.get_node("Toasts") as ToastStack).show_toast(ToastStack.Kind.MATCH_POINT, "Match point")
+		await _settle(size)
+		var compass := hud.get_node("Compass") as Control
+		var crowded: Array[String] = []
+		if not compass.is_visible_in_tree() or compass.size.x <= 0.0:
+			crowded.append("the compass isn't showing")
+		for other_path in ["RoundHud/TdmBar", "RoundHud/BombBar", "Toasts", "RoundHud/KillFeed", "RoundHud/Center"]:
+			var other := hud.get_node(other_path) as Control
+			if other.is_visible_in_tree() and other.get_global_rect().size.y > 0.0 and other.get_global_rect().intersects(compass.get_global_rect()):
+				crowded.append("%s %s over the compass %s" % [other_path, other.get_global_rect(), compass.get_global_rect()])
+		if not crowded.is_empty():
+			failures["compass at %s" % [size]] = crowded
 		# 3. The buy menu (freeze time), in a match with rounds.
 		if buy_menu.open():
 			await _settle(size)
@@ -196,7 +209,7 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 			await _settle(size)
 			_collect(failures, "match end at %s" % [size], [end_screen], size)
 			end_screen.visible = false
-	_check("%s: the HUD, class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes" % [game_name, SIZES.size()],
+	_check("%s: the HUD (its compass clear of the top bar and the toasts), class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes" % [game_name, SIZES.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(main)
 	main.queue_free()

@@ -1709,6 +1709,22 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** a screenshot comparison per size (heavy, and a human has to look); testing only the scale function (misses a page that is wider than the layout).
 
+## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
+
+**Decision:**
+- **A thin compass strip at the top centre of the HUD** (`ui/compass.gd`, `Compass`): N, E, S and W with small ticks every 15° (taller every 45°), a short pointer in the middle, turning with your view, 120° across 400 design pixels. In the HUD's look: Silkscreen 16 px, hard 2 px shadows, the TEXT, MUTE and enemy colours of the palette. Its sizes are tokens (`HUD_COMPASS_*` in `tools/ui_palette.gd`, the theme's "Hud" type).
+- **Enemies show only when they shoot:** a small red square at the bearing of the shot, fading out over the last second of two. One square per enemy (his next shot moves it); only shots within 60 m (`Noises.GUNSHOT_RANGE`, the range bots hear them from); never your team's or your own; further than 60° to the side it sits on the strip's end, so you know which way to turn. No other markers, and **no A/B site letters** in Bomb (optional in the brief; left out to keep it minimal).
+- **A new signal for it, `Noises.shot_fired`**, emitted by `Noises.announce_shot()` from `Weapon._fire()` (the host's, the bots', single player) **and from `Weapon.play_remote_shot()`** (a client sees other players' shots as replays from the host, D-104). `noise_made` stays as it was. So it works online with nothing new from the host.
+- **The top bar and the toasts moved down 16 px** (bar 24 → 40, toasts 112 → 128) to make room: compass at 8 to 32, the kill feed (32) starts under it. The layout test checks, at all seven window sizes, that the compass lies inside the window and doesn't touch the bar, the toasts, the kill feed or the banners.
+- The compass hides while you are dead (the death view) and shows while you spectate a teammate, with their view.
+
+**Why:** Your words: just a simpler compass, "nothing fancy, very minimal", with enemies on it "when they shoot".
+
+**Alternatives:**
+- **Using `noise_made` itself:** it also carries footsteps, grenade blasts and the bomb's noise, which would need telling apart by their range, and a client never gets a noise for another player's shot (the replay `play_remote_shot()` makes none, on purpose: a global bus is shared by two games in one test process, and bots listen to it).
+- **Marking every enemy continuously, or on sight:** wallhack-like; the point is to answer the shot you heard but couldn't place.
+- **Leaving the bar where it was and putting the compass under the toasts:** the toasts come and go below it and the compass would jump around.
+
 ## Open questions
 
 | Question | Decide in |

@@ -14,7 +14,7 @@ extends CanvasLayer
 ## adds the top bar, banners and kill feed, and in bomb rounds the [BombHud] child the bomb tag,
 ## prompts and news. The hit marker ([HitMarker]) flashes around the crosshair when the weapon on show
 ## hits a character, and the toasts ([ToastStack]: switching sides, match point, the bomb's news, low ammo)
-## stack under the top bar; the HUD hands that stack to its round and bomb parts and adds the low ammo toast itself
+## stack under the top bar; the compass ([Compass], D-180) is the thin strip above the top bar; the HUD hands that stack to its round and bomb parts and adds the low ammo toast itself
 ## (once per magazine, when it first drops to [constant LOW_AMMO_FRACTION] of a full one).
 ##
 ## A pure view: it only reads the game's state. The look comes from the UI theme (D-133, D-141):
@@ -127,6 +127,7 @@ var _magazine_seen: int = -1
 @onready var _scope_overlay: ScopeOverlay = $ScopeOverlay
 @onready var _smoke_overlay: ColorRect = $SmokeOverlay
 @onready var _flash_overlay: ColorRect = $FlashOverlay
+@onready var _compass: Compass = %Compass
 @onready var _round_hud: RoundHud = $RoundHud
 @onready var _bomb_hud: BombHud = $BombHud
 
@@ -190,6 +191,7 @@ func set_view_target(target: Character) -> void:
 		shown.gear_changed.disconnect(_update_armor)
 		shown.inventory.changed.disconnect(_update_slots)
 	shown = target
+	_compass.set_view_target(target)
 	_bomb_hud.set_view_target(target)
 	_watch_weapon(shown.weapon)
 	shown.weapon_changed.connect(_on_shown_weapon_changed)
@@ -206,8 +208,9 @@ func set_view_target(target: Character) -> void:
 ## Scales the HUD layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
 func set_ui_scale(factor: float) -> void:
 	_ui_scale = factor
-	for root: Control in [_bottom_left, _bottom_right, _spectate_box, _death_column, _slots_label]:
+	for root: Control in [_bottom_left, _bottom_right, _spectate_box, _death_column, _slots_label, _compass]:
 		UiScale.apply_tree(root, factor)
+	_compass.set_ui_scale(factor)
 	_crosshair.set_ui_scale(factor)
 	_hit_marker.set_ui_scale(factor)
 	_toasts.set_ui_scale(factor)
@@ -479,6 +482,7 @@ func _update_view() -> void:
 	_bottom_right.visible = not spectating and not _player_dead
 	_spectate_box.visible = spectating
 	_dead_tint.visible = dead_view
+	_compass.visible = not dead_view
 	_death_column.visible = dead_view
 	if spectating:
 		_update_spectate_name()

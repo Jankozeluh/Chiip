@@ -533,6 +533,7 @@ func _fire() -> void:
 		_cycle_sound_left = data.cycle_sound_delay
 	_play_shot_effects()
 	Noises.make_noise(_wielder.get_eye_position(), Noises.GUNSHOT_RANGE, _wielder)
+	Noises.announce_shot(_wielder.get_eye_position(), _wielder)
 	# Online, a player's numbered command rolls the shot's spread (every pellet's) from its number,
 	# so the shooter's computer and the host roll the same (D-103). Bots and single-player use the
 	# generator as it is.
@@ -702,6 +703,7 @@ func play_remote_shot(hit: bool, hit_position: Vector3) -> void:
 	_spray_position += 1.0
 	_time_since_shot = 0.0
 	fired.emit(spray_shot)
+	Noises.announce_shot(_wielder.get_eye_position(), _wielder)
 	if not hit:
 		return
 	var from := _wielder.get_eye_position()

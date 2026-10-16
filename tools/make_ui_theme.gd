@@ -439,6 +439,10 @@ func _hud() -> void:
 		"prompt_bar_width": Palette.HUD_PROMPT_BAR.x, "prompt_bar_height": Palette.HUD_PROMPT_BAR.y,
 		"hit_inner": Palette.HUD_HIT_INNER, "hit_length": Palette.HUD_HIT_LENGTH, "hit_thickness": Palette.HUD_HIT_THICKNESS,
 		"hit_time_ms": Palette.HUD_HIT_TIME_MS, "shadow_offset": Palette.SHADOW_OFFSET,
+		"compass_arc": Palette.HUD_COMPASS_ARC, "compass_tick_step": Palette.HUD_COMPASS_TICK_STEP,
+		"compass_tick_small": Palette.HUD_COMPASS_TICK_SMALL, "compass_tick_large": Palette.HUD_COMPASS_TICK_LARGE,
+		"compass_thickness": Palette.HUD_COMPASS_THICKNESS, "compass_marker": Palette.HUD_COMPASS_MARKER,
+		"compass_marker_time_ms": Palette.HUD_COMPASS_MARKER_TIME_MS, "compass_fade_ms": Palette.HUD_COMPASS_FADE_MS,
 	})
 	var regular: Font = load(Palette.FONT)
 	var bold: Font = load(Palette.FONT_BOLD)
