@@ -261,8 +261,9 @@ Bomb rounds are the round mode on every map with bomb sites (the three quick map
 
 In a tactical shooter, sound is part of the gameplay. Footsteps and gunshots must be directional and easy to read. They are retro-styled but clear.
 
-- **Your own footsteps** are clearly audible (−12 dB), so you always know when you're making noise, but quieter than enemy steps.
-- **Enemy footsteps** are loud and directional and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
+- **Your own footsteps** are clearly audible, so you always know when you're making noise, but quieter than an enemy's steps 5 m away.
+- **The mix** (M13, D-194): every sound of a kind is equally loud, so loudness tells distance and nothing else. Your own rifle shot sounds like an enemy's 10 m away; an enemy's shot at 40 m is 14 dB quieter. In a fight an enemy's step 8 m away stays within 8 dB of your own shot. The bomb's beep is clearly above the steps around it. Nothing plays louder than its file, and a limiter keeps a big fight from clipping.
+- **Enemy footsteps** are loud and directional (a step at your side is 14 dB louder in the near ear, D-190) and fade out at 30 m, a bit beyond the 25 m at which bots hear you. Hearing is symmetric: you can hear them as far as they can hear you (D-038).
 - **Footsteps are bright** (most energy around 1–6 kHz), so they carry on laptop speakers too.
 - Walking (Shift) and crouch-walking are silent for everyone.
 - While you spectate a teammate (see 4.5) you hear from where they are, as in CS: the listener is the camera, which sits at their head.

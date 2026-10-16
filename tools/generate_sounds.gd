@@ -13,7 +13,9 @@ extends SceneTree
 ## its own pitch, scrape and timing) and far variants of the frag and bomb explosions. Each of
 ## them has its own random generator (`_rng_for`, so no sound depends on the order) and is
 ## brought to a target short-term loudness by `_finish_loudness`; `tools/sound_report.gd`
-## prints the result.
+## prints the result. The older sounds (M8 and M7) are levelled the same way, to their
+## category's loudness in `SoundMix.TABLE`, except the stingers, the pickup, the flash's
+## ringing and the rifle's shot, which keep their old finishing.
 ##
 ## Run from the project folder, then let Godot import the new files:
 ##
@@ -157,7 +159,7 @@ func _footstep(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var toe := bright * exp(-(t - toe_delay) * 70.0) * 0.6 if t >= toe_delay else 0.0
 		var tap := sin(TAU * tap_pitch * t) * exp(-t * 45.0)
 		samples[i] = heel + toe + tap * 0.5
-	return _finish(samples)
+	return _finish_loudness(samples, -15.0)
 
 
 ## The click of pulling the trigger on an empty gun.
@@ -166,7 +168,7 @@ func _click(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	for i in samples.size():
 		var t := float(i) / MIX_RATE
 		samples[i] = rng.randf_range(-1.0, 1.0) * exp(-t * 400.0) * 0.6 + sin(TAU * 3200.0 * t) * exp(-t * 250.0) * 0.5
-	return _finish(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## A metallic clack for each reload step: two quick hits of bright noise and a ring.
@@ -192,7 +194,7 @@ func _bomb_beep() -> PackedFloat32Array:
 		var square := signf(sin(TAU * 1950.0 * t)) * 0.6 + sin(TAU * 1950.0 * t) * 0.4
 		var envelope := minf(t / 0.004, 1.0) * exp(-maxf(t - 0.05, 0.0) * 120.0)
 		samples[i] = square * envelope
-	return _finish(samples)
+	return _finish_loudness(samples, -6.0)
 
 
 ## One key press while planting: a plastic click and a keypad blip.
@@ -215,7 +217,7 @@ func _wire_click(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var noise := rng.randf_range(-1.0, 1.0)
 		low_pass += (noise - low_pass) * 0.35
 		samples[i] = (noise - low_pass) * exp(-t * 300.0) + sin(TAU * 3400.0 * t) * exp(-t * 90.0) * 0.35
-	return _finish(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## The bomb going off: a crack, a roar of low noise that rolls off slowly and
@@ -258,7 +260,7 @@ func _footstep_gravel(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		if rng.randf() < grain_density * minf(envelope, 1.0):
 			grain += rng.randf_range(-1.0, 1.0) * 1.6
 		samples[i] = bright * envelope * 0.5 + grain * envelope
-	return _finish(samples)
+	return _finish_loudness(samples, -15.0)
 
 
 ## A boot on a metal plate: a sharp heel tick, a quieter toe tick and a short
@@ -282,7 +284,7 @@ func _footstep_metal(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		ring += sin(TAU * mid_ring * t) * exp(-t * 30.0) * 0.6
 		ring += sin(TAU * high_ring * t) * exp(-t * 36.0) * 0.5
 		samples[i] = tick * 0.9 + ring
-	return _finish(samples)
+	return _finish_loudness(samples, -15.0)
 
 
 ## A boot on wooden planks or a crate: a hollow knock, made of a low-mid thump,
@@ -309,7 +311,7 @@ func _footstep_wood(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var contact := band * exp(-t * 130.0)
 		var toe := sin(TAU * box_pitch * 0.8 * t) * exp(-(t - toe_delay) * 90.0) * 0.3 if t >= toe_delay else 0.0
 		samples[i] = thump * 0.35 + box * 0.6 + box_overtone * 0.35 + contact + toe
-	return _finish(samples)
+	return _finish_loudness(samples, -15.0)
 
 
 ## A bullet into concrete or stone: a very sharp crack that dies in a few
@@ -327,7 +329,7 @@ func _impact_hard(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		if t > 0.004 and rng.randf() < 0.008 * exp(-t * 18.0):
 			debris += rng.randf_range(-1.0, 1.0) * 0.8
 		samples[i] = crack + debris * 0.7
-	return _finish(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## A bullet into dirt or gravel: a dull thud of low-passed noise and a short
@@ -345,7 +347,7 @@ func _impact_gravel(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		if t > 0.01 and rng.randf() < 0.03 * exp(-t * 22.0):
 			grain += rng.randf_range(-1.0, 1.0)
 		samples[i] = thud + grain * 1.2 * exp(-t * 15.0)
-	return _finish(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## A bullet into metal: a sharp transient and a bright ricochet "ping" of three
@@ -369,7 +371,7 @@ func _impact_metal(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		ping += sin(phase_b) * exp(-t * 15.0) * 0.45
 		ping += sin(phase_c) * exp(-t * 20.0) * 0.35
 		samples[i] = tick * 0.9 + ping
-	return _finish(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## A bullet into wood: a mid "thock" that drops in pitch (300-600 Hz) and a
@@ -431,14 +433,14 @@ func _hit_head(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	return _finish(samples)
 
 
-## A menu hover: a tiny soft triangle-wave tick around 2 kHz. Like every sound
-## it is normalised to the same peak, so play it with a lower volume.
+## A menu hover: a tiny soft triangle-wave tick around 2 kHz, levelled to the
+## interface loudness (`SoundMix.INTERFACE_FILE_DB`).
 func _ui_hover() -> PackedFloat32Array:
 	var samples := _silence(0.03)
 	for i in samples.size():
 		var t := float(i) / MIX_RATE
 		samples[i] = _triangle(2000.0 * t) * minf(t / 0.002, 1.0) * exp(-t * 110.0)
-	return _finish(samples)
+	return _finish_loudness(samples, -12.0)
 
 
 ## A menu button press: a short square blip around 1.2 kHz with a little noise click.
@@ -452,7 +454,7 @@ func _ui_click(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var blip := _square(1200.0 * t) * minf(t / 0.002, 1.0) * exp(-t * 55.0)
 		var click := (noise - low_pass) * exp(-t * 500.0)
 		samples[i] = blip * 0.6 + click * 0.5
-	return _finish(samples)
+	return _finish_loudness(samples, -12.0)
 
 
 ## "Go!": two short square beeps, 880 Hz and then 1320 Hz, with a short gap.
@@ -503,9 +505,9 @@ func _bomb_planted_alert() -> PackedFloat32Array:
 #   shotgun      a wide blast: lots of low rumble and a long roll
 #   sniper       a very sharp crack with long echoes (the loudest gun)
 #
-# Like every sound they are normalised to the same peak, so how loud a weapon is
-# comes from the playback volume. Only the two sounds that should always stay
-# quiet (the pistol reload and the flash's ringing) are made quieter in the file.
+# Every sound is levelled to its category's loudness in `SoundMix.TABLE` (D-194), so how
+# loud a weapon is comes from its category and the playback volume, not from the file's
+# peak. The only sound left quiet in its file is the flash's ringing.
 
 
 ## The pistol: a light, snappy, high crack (most energy above 1 kHz), a small "tok"
@@ -517,7 +519,7 @@ func _pistol_shot(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_tone(samples, 0.0, 0.8, 430.0, 200.0, 0.03, 40.0)
 	_add_tone(samples, 0.0, 0.2, 200.0, 100.0, 0.05, 30.0)
 	_add_noise(samples, rng, 0.01, 0.45, 14.0, 2500.0, 350.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -9.0)
 
 
 ## The hand cannon (M13 redesign): one heavy boom with a hard crack on top. A sharp
@@ -565,7 +567,7 @@ func _carbine_shot(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_noise(samples, rng, 0.0, 1.5, 22.0, 1500.0, 250.0)
 	_add_tone(samples, 0.0, 1.1, 165.0, 85.0, 0.05, 28.0, 0.001, 0.2)
 	_add_noise(samples, rng, 0.01, 0.35, 11.0, 1800.0, 300.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -9.0)
 
 
 ## The shotgun: a big, wide blast. Three crack bursts a few milliseconds apart (the
@@ -593,7 +595,7 @@ func _shotgun_pump(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_clack(samples, rng, 0.03, 0.9, 700.0, 150.0)
 	_add_noise(samples, rng, 0.14, 0.2, 40.0, 3500.0, 900.0, 0.01)
 	_add_clack(samples, rng, 0.2, 1.0, 1100.0, 190.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## A shell going into the shotgun: a metallic click, the brass ring of the case
@@ -631,17 +633,17 @@ func _sniper_bolt(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_clack(samples, rng, 0.33, 1.0, 1000.0, 170.0)
 	_add_clack(samples, rng, 0.48, 0.85, 1500.0, 120.0)
 	_add_tone(samples, 0.48, 0.5, 150.0, 85.0, 0.04, 50.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## Reloading the pistol: the magazine clicks in, then the slide snaps shut (a
-## sharper, higher hit). Made 6 dB quieter than the rifle's reload, in the file.
+## sharper, higher hit). Levelled to the handling loudness like the rifle's reload.
 func _pistol_reload(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	var samples := _silence(0.4)
 	_add_clack(samples, rng, 0.0, 0.8, 1400.0, 220.0)
 	_add_clack(samples, rng, 0.24, 1.0, 2200.0, 300.0)
 	_add_tone(samples, 0.24, 0.3, 2800.0, 2700.0, 0.1, 45.0)
-	return _finish_arsenal(samples, 0.5)
+	return _finish_loudness(samples, -14.0)
 
 
 ## The knife through the air: a quick, bright whoosh of noise whose cutoff sweeps up
@@ -649,7 +651,7 @@ func _pistol_reload(rng: RandomNumberGenerator) -> PackedFloat32Array:
 func _knife_swing(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	var samples := _silence(0.2)
 	_add_whoosh(samples, rng, 0.0, 0.2, 1.0, 500.0, 4200.0, 1200.0, 0.4)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -12.0)
 
 
 ## The knife going in: a dull stab thud (a low sinking thump and a muffled slap)
@@ -660,7 +662,7 @@ func _knife_hit(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_noise(samples, rng, 0.0, 1.3, 55.0, 700.0)
 	_add_noise(samples, rng, 0.0, 0.5, 160.0, 9000.0, 3000.0)
 	_add_whoosh(samples, rng, 0.0, 0.06, 0.35, 3500.0, 6500.0, 3000.0, 0.3)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## Pulling the grenade's pin: a small metallic ping (3.9 kHz and a partial above it)
@@ -671,7 +673,7 @@ func _grenade_pin(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_tone(samples, 0.0, 0.55, 3900.0, 3800.0, 0.1, 38.0)
 	_add_tone(samples, 0.0, 0.3, 5700.0, 5700.0, 1.0, 55.0)
 	_add_clack(samples, rng, 0.11, 0.7, 1500.0, 200.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## Throwing a grenade: a soft, low whoosh of the arm (the cutoff sweeps between 250
@@ -680,7 +682,7 @@ func _grenade_throw(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	var samples := _silence(0.25)
 	_add_whoosh(samples, rng, 0.0, 0.25, 1.0, 250.0, 1500.0, 400.0, 0.45)
 	_add_noise(samples, rng, 0.0, 0.25, 20.0, 1500.0, 400.0, 0.03)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## A grenade bouncing on a hard floor: a hollow metallic clink, three inharmonic
@@ -706,7 +708,7 @@ func _frag_explosion(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_noise(samples, rng, 0.0, 2.4, 4.5, 320.0)
 	_add_tone(samples, 0.0, 2.4, 88.0, 36.0, 0.3, 5.0, 0.001, 0.25)
 	_add_crackle(samples, rng, 0.05, 1.0, 0.55, 0.09, 3.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -8.0)
 
 
 ## The flashbang: a very sharp, bright bang. A hard crack above 3.5 kHz, a mid
@@ -719,7 +721,7 @@ func _flash_pop(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	_add_tone(samples, 0.0, 0.5, 6800.0, 6300.0, 0.1, 40.0)
 	_add_tone(samples, 0.0, 0.7, 320.0, 150.0, 0.04, 40.0)
 	_add_noise(samples, rng, 0.01, 0.35, 9.0, 6000.0, 1200.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -10.0)
 
 
 ## The ringing in your ears after a flash: a near-pure tone at 3.5 kHz with a slight
@@ -755,7 +757,7 @@ func _smoke_hiss(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var envelope := minf(t / 0.02, 1.0) * level * (1.0 + flutter * 14.0) * clampf((2.0 - t) / 0.6, 0.0, 1.0)
 		samples[i] = (fast - slow) * envelope * 1.6
 	_add_tone(samples, 0.0, 0.8, 120.0, 60.0, 0.1, 25.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -14.0)
 
 
 ## Buying something: a pleasant two-note blip, C6 then G6 (a fifth up), soft
@@ -765,7 +767,7 @@ func _buy() -> PackedFloat32Array:
 	_add_note(samples, 0.0, 0.09, 1047.0, true, 14.0)
 	_add_note(samples, 0.085, 0.115, 1568.0, true, 12.0)
 	_add_tone(samples, 0.085, 0.12, 3136.0, 3136.0, 1.0, 30.0)
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -12.0)
 
 
 ## "Can't buy that": a short low buzz, two pulses that fall from 165 Hz to 125 Hz,
@@ -785,7 +787,7 @@ func _buy_denied() -> PackedFloat32Array:
 		var wave := pulse * 0.8 + (fposmod(frequency * 1.03 * t, 1.0) * 2.0 - 1.0) * 0.25
 		low_pass += (wave - low_pass) * alpha
 		samples[i] = low_pass * envelope
-	return _finish_arsenal(samples)
+	return _finish_loudness(samples, -12.0)
 
 
 ## Picking a gun up off the floor: a rustle of cloth (soft band noise) with a small

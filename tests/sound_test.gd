@@ -20,7 +20,9 @@ extends Node
 ## the bomb's beep only half and never heavy, and a real shot behind a wall played muffled. The
 ## listener's zone (D-193): a room, a hall, a walled yard and the open, built by the test, and
 ## Depot's own rooms and yards; the Effects reverb set to the zone at once, gliding to the next
-## and put back when the game ends.
+## and put back when the game ends. The mix (D-194): every sound the game plays at its
+## category's loudness, no gain above 0 dB, and the readability rules (your shot against near and
+## far ones, steps in a fight, the bomb's beep, nothing louder farther away).
 ## Quits with the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
@@ -41,6 +43,7 @@ func _ready() -> void:
 	await _wait_ticks(30)
 	_test_buses()
 	_test_signatures()
+	_test_mix()
 	_test_floors()
 	_test_footsteps()
 	await _test_impacts()
@@ -163,6 +166,107 @@ func _test_routing(bot: Character) -> void:
 	own.stop()
 	shot.stop()
 	handling.stop()
+
+
+## The mix (M13, D-194). Every sound file the game plays, found from the game's own data (the
+## arsenal, the floors, the impacts, grenades, the bomb, the menus), is within 1.5 dB of its
+## category's loudness, peaks below -0.5 dBFS, has no DC and ends quietly; no category plays
+## louder than its file; and the readability rules hold by [method SoundMix.level_at].
+func _test_mix() -> void:
+	var files := {}
+	for data in WeaponData.all():
+		var shot := SoundMix.MELEE if data.is_melee() else (SoundMix.HANDLING if data.is_grenade() else SoundMix.SHOT)
+		_add_file(files, data.shot_sound, shot)
+		_add_file(files, data.shot_far_sound, SoundMix.SHOT_FAR)
+		for sound in [data.dry_fire_sound, data.reload_sound, data.cycle_sound, data.pin_sound, data.hit_sound]:
+			_add_file(files, sound, SoundMix.HANDLING)
+		for sound in data.reload_sounds:
+			_add_file(files, sound, SoundMix.HANDLING)
+	for kind in Surfaces.Kind.values():
+		_add_file(files, Surfaces.footstep_sound(kind, preload("res://assets/sounds/footsteps.tres")), SoundMix.FOOTSTEP)
+		_add_file(files, Surfaces.impact_sound(kind), SoundMix.IMPACT)
+	_add_file(files, Weapon.HIT_BODY_SOUND, SoundMix.HIT)
+	_add_file(files, Weapon.HIT_HEAD_SOUND, SoundMix.HEADSHOT)
+	_add_file(files, Grenade.BOUNCE_SOUND, SoundMix.BOUNCE)
+	_add_file(files, Explosion.FRAG_SOUND, SoundMix.EXPLOSION)
+	_add_file(files, Explosion.FRAG_FAR_SOUND, SoundMix.EXPLOSION_FAR)
+	_add_file(files, Explosion.FLASH_SOUND, SoundMix.FLASH)
+	_add_file(files, Explosion.SMOKE_SOUND, SoundMix.SMOKE)
+	var bomb := Bomb.new()
+	_add_file(files, bomb.beep_sound, SoundMix.BOMB_BEEP)
+	_add_file(files, bomb.plant_sound, SoundMix.BOMB_ACTION)
+	_add_file(files, bomb.defuse_sound, SoundMix.BOMB_ACTION)
+	_add_file(files, bomb.explosion_sound, SoundMix.BOMB_EXPLOSION)
+	_add_file(files, bomb.explosion_far_sound, SoundMix.EXPLOSION_FAR)
+	bomb.free()
+	for sound in [UiSounds.HOVER, UiSounds.CLICK, BuyMenu.BUY_SOUND, BuyMenu.DENIED_SOUND]:
+		_add_file(files, sound, &"interface")
+	var off: Array[String] = []
+	var steps := PackedFloat32Array()
+	for path: String in files:
+		var category: StringName = files[path]
+		var target: float = SoundMix.INTERFACE_FILE_DB if category == &"interface" else SoundMix.TABLE[category].file_db
+		var levels := SoundLevels.measure(path)
+		if levels.is_empty() or absf(levels.short_term_db - target) > 1.5 or levels.peak_db > -0.5 or absf(levels.dc) > 0.005 or levels.end_db > -30.0:
+			off.append("%s (%s): %s" % [path.get_file(), category, "unreadable" if levels.is_empty() else "%.1f dB (target %.0f), peak %.1f, dc %.3f, end %.0f" % [
+				levels.short_term_db, target, levels.peak_db, levels.dc, levels.end_db]])
+		elif category == SoundMix.FOOTSTEP:
+			steps.append(levels.short_term_db)
+	_check("Every sound the game plays (%d files) is at its category's loudness (±1.5 dB), peaks below -0.5 dBFS, no DC, ends quietly" % files.size(),
+			off.is_empty() and files.size() >= 60, "%d off: %s" % [off.size(), "; ".join(off.slice(0, 12))])
+	steps.sort()
+	_check("Footsteps are equally loud on every floor (within 1.5 dB of each other)",
+			steps.size() >= 12 and steps[steps.size() - 1] - steps[0] <= 1.5, "%d steps, %s" % [steps.size(), steps])
+	# No gain above 0 dB, and no boost up close: a single sound never plays louder than its file.
+	var loud: Array[String] = []
+	for category: StringName in SoundMix.TABLE:
+		var values: Dictionary = SoundMix.TABLE[category]
+		if values.volume_db > 0.0 or values.get("own_db", 0.0) > 0.0:
+			loud.append(String(category))
+	for data in WeaponData.all():
+		if SoundMix.TABLE[SoundMix.SHOT].volume_db + data.shot_volume_db > 0.0 or SoundMix.TABLE[SoundMix.SHOT].own_db + data.shot_volume_db > 0.0:
+			loud.append(String(data.id))
+	var probe := AudioStreamPlayer3D.new()
+	SoundMix.apply_3d(probe, SoundMix.SHOT)
+	_check("No category or gun plays above 0 dB and 3D sounds get no boost up close, so nothing alone can clip",
+			loud.is_empty() and probe.max_db == 0.0, "%s, max_db %.1f" % [loud, probe.max_db])
+	probe.free()
+	# Readability, by the model of Godot's falloff.
+	var own_shot := SoundMix.own_level(SoundMix.SHOT)
+	var near_shot := SoundMix.shot_level_at(10.0)
+	var far_shot := SoundMix.shot_level_at(40.0)
+	_check("Your own rifle shot is within 3 dB of an enemy's at 10 m, and at least 10 dB louder than one at 40 m",
+			absf(own_shot - near_shot) <= 3.0 and own_shot - far_shot >= 10.0,
+			"own %.1f, 10 m %.1f, 40 m %.1f dB" % [own_shot, near_shot, far_shot])
+	var step_8 := SoundMix.level_at(SoundMix.FOOTSTEP, 8.0)
+	var own_step := SoundMix.own_level(SoundMix.FOOTSTEP)
+	_check("In a fight an enemy's step 8 m away is at most 10 dB below your own shot; your own steps are quieter than an enemy's at 5 m",
+			own_shot - step_8 <= 10.0 and own_step < SoundMix.level_at(SoundMix.FOOTSTEP, 5.0),
+			"step at 8 m %.1f, own step %.1f, step at 5 m %.1f dB" % [step_8, own_step, SoundMix.level_at(SoundMix.FOOTSTEP, 5.0)])
+	var beep_15 := SoundMix.level_at(SoundMix.BOMB_BEEP, 15.0)
+	_check("The bomb's beep is 6 dB above a step at 15 m and still audible at 50 m",
+			beep_15 - SoundMix.level_at(SoundMix.FOOTSTEP, 15.0) >= 6.0 and SoundMix.level_at(SoundMix.BOMB_BEEP, 50.0) > -50.0,
+			"beep %.1f at 15 m, %.1f at 50 m; step at 15 m %.1f dB" % [beep_15, SoundMix.level_at(SoundMix.BOMB_BEEP, 50.0), SoundMix.level_at(SoundMix.FOOTSTEP, 15.0)])
+	var rising: Array[String] = []
+	for category: StringName in SoundMix.TABLE:
+		var last := INF
+		for metres in range(1, int(SoundMix.TABLE[category].max_distance)):
+			var level := SoundMix.shot_level_at(metres) if category == SoundMix.SHOT else SoundMix.level_at(category, metres)
+			if level > last + 0.25:
+				rising.append("%s at %d m" % [category, metres])
+				break
+			last = level
+	_check("Nothing gets louder farther away (every category, and a shot with its far crossfade)", rising.is_empty(), str(rising))
+
+
+## Adds every file of [param stream] (each one of a randomizer) to [param files] as [param category].
+func _add_file(files: Dictionary, stream: AudioStream, category: StringName) -> void:
+	if stream is AudioStreamRandomizer:
+		var randomizer := stream as AudioStreamRandomizer
+		for index in randomizer.streams_count:
+			_add_file(files, randomizer.get_stream(index), category)
+	elif stream != null and stream.resource_path.ends_with(".wav"):
+		files[stream.resource_path] = category
 
 
 ## Every gun family sounds like itself (M13, D-191), measured from the files: any two close

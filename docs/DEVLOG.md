@@ -15,7 +15,9 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 
 - **Task 4, reverb by zone** (D-193): an `Acoustics` node in the game scene probes the camera's surroundings with 13 rays four times a second, names the zone (open, yard, room, hall) and glides the Effects reverb to its preset; no map edits. The quick maps come out as yards with some rooms. `sound_test` +3 checks.
 
-**Next:** the mix pass (task 5).
+- **Task 5, the mix pass** (D-194): every file the game plays levelled to its category's short-term loudness (34 files, Sonnet; footsteps now equally loud on every floor), the table set from a model of Godot's falloff (no near boost, half the distance filter), and `sound_test`'s mix rules: loudness per category, no gain over 0 dB, own shot against near and far ones, steps in a fight, the beep, nothing louder farther away (+7 checks).
+
+**Next:** menu music and round stingers (task 6).
 
 ## 2026-10-16 — M12 share
 
