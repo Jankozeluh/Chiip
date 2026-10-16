@@ -50,6 +50,7 @@ func _init() -> void:
 	_hud()
 	_console()
 	_class_draft()
+	_buy_menu()
 	_buttons()
 	_toggles()
 	_line_edit()
@@ -576,6 +577,41 @@ func _class_draft() -> void:
 	_constants("ClassDraft", {
 		"card_width": Palette.CLASS_CARD_WIDTH, "card_height": Palette.CLASS_CARD_HEIGHT,
 		"card_width_compact": Palette.CLASS_CARD_WIDTH_COMPACT, "row_max_width": Palette.CLASS_ROW_MAX_WIDTH,
+	})
+
+
+## The buy menu (mockup 14): the sizes code reads (the custom type "BuyMenu": a column header's and an item's height and the box
+## an item's icon stands in), the column (a header, [constant Palette.BUY_HEADER_GAP] of space, the items), the header's line (LINE,
+## or the accent for the selected column) and the four looks of an item, a button that is only a frame: ok, focused, owned, poor.
+## Each look covers every state of the button, so that the menu changes an item's look by changing its type variation alone.
+func _buy_menu() -> void:
+	_constants("BuyMenu", {
+		"header_height": Palette.BUY_HEADER_HEIGHT, "item_height": Palette.BUY_ITEM_HEIGHT,
+		"icon_box_width": Palette.BUY_ICON_BOX.x, "icon_box_height": Palette.BUY_ICON_BOX.y,
+	})
+	_variation("BuyColumn", "VBoxContainer")
+	_constants("BuyColumn", {"separation": Palette.BUY_HEADER_GAP})
+	_variation("ColumnHeaderPanel", "PanelContainer")
+	_styles("ColumnHeaderPanel", {"panel": _underline("column_header_panel", Palette.LINE_COLOR)})
+	_variation("ColumnHeaderLitPanel", "PanelContainer")
+	_styles("ColumnHeaderLitPanel", {"panel": _underline("column_header_lit_panel", Palette.ACCENT)})
+	var pad := _even(0)
+	var ok := _box("buy_item_ok", Palette.PANEL, Palette.PANEL, Palette.BORDER, pad)
+	var ok_hover := _box("buy_item_ok_hover", Palette.PANEL, Palette.ACCENT, Palette.BORDER, pad)
+	_buy_item_look("BuyItemOk", ok, ok_hover)
+	var focused := _box("buy_item_focused", Palette.PANEL_RAISED, Palette.ACCENT, Palette.BORDER, pad)
+	_buy_item_look("BuyItemFocused", focused, focused)
+	var owned := _box("buy_item_owned", Color.TRANSPARENT, Palette.LINE_COLOR, Palette.BORDER, pad)
+	_buy_item_look("BuyItemOwned", owned, owned)
+	var poor := _box("buy_item_poor", Palette.INK, Palette.INK, Palette.BORDER, pad)
+	_buy_item_look("BuyItemPoor", poor, poor)
+
+
+## One look of a buy-menu item: [param rest] in every state but hovered and focused, which show [param lit].
+func _buy_item_look(role: String, rest: StyleBoxFlat, lit: StyleBoxFlat) -> void:
+	_variation(role, "Button")
+	_styles(role, {
+		"normal": rest, "pressed": rest, "disabled": rest, "hover": lit, "hover_pressed": lit, "focus": lit,
 	})
 
 

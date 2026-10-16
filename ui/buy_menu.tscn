@@ -8,65 +8,102 @@ layer = 4
 visible = false
 script = ExtResource("menu_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
-color = Color(0, 0, 0, 0.62)
+theme_type_variation = &"BackdropPanel"
 
-[node name="Panel" type="PanelContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-theme_type_variation = &"ModalPanel"
+mouse_filter = 2
+theme_type_variation = &"PageMargin"
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Page" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_type_variation = &"PanelMarginWide"
+mouse_filter = 2
+theme_type_variation = &"PageColumn"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+[node name="Header" type="HBoxContainer" parent="Margin/Page"]
 layout_mode = 2
-theme_type_variation = &"ContentBox"
+mouse_filter = 2
+theme_type_variation = &"FlushRow"
 
-[node name="TopRow" type="HBoxContainer" parent="Panel/Margin/Content"]
+[node name="Left" type="HBoxContainer" parent="Margin/Page/Header"]
 layout_mode = 2
-theme_type_variation = &"FormRow"
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ScoreRow"
 
-[node name="Title" type="Label" parent="Panel/Margin/Content/TopRow"]
+[node name="TitleTrim" type="MarginContainer" parent="Margin/Page/Header/Left"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TitleTrim"
+
+[node name="Title" type="Label" parent="Margin/Page/Header/Left/TitleTrim"]
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 text = "Buy"
 
-[node name="Money" type="Label" parent="Panel/Margin/Content/TopRow"]
+[node name="Situation" type="Label" parent="Margin/Page/Header/Left"]
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"DimLabel"
+
+[node name="MoneyTrim" type="MarginContainer" parent="Margin/Page/Header"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TitleTrim"
+
+[node name="Money" type="Label" parent="Margin/Page/Header/MoneyTrim"]
+layout_mode = 2
+theme_type_variation = &"ScoreLabel"
+text = "$0"
+horizontal_alignment = 2
+
+[node name="Columns" type="HBoxContainer" parent="Margin/Page"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"CardRow"
+
+[node name="Spacer" type="Control" parent="Margin/Page"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Footer" type="PanelContainer" parent="Margin/Page"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassFooterPanel"
+
+[node name="FooterRow" type="HBoxContainer" parent="Margin/Page/Footer"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"FlushRow"
+
+[node name="Hold" type="HBoxContainer" parent="Margin/Page/Footer/FooterRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_type_variation = &"BrightLabel"
-text = "$ 0"
-horizontal_alignment = 2
-vertical_alignment = 1
+mouse_filter = 2
+theme_type_variation = &"ScoreRow"
 
-[node name="BuyTime" type="Label" parent="Panel/Margin/Content/TopRow"]
+[node name="HoldLabel" type="Label" parent="Margin/Page/Footer/FooterRow/Hold"]
 layout_mode = 2
+size_flags_vertical = 4
 theme_type_variation = &"DimLabel"
-text = "Buy time 0 s"
-vertical_alignment = 1
+text = "You hold"
 
-[node name="Columns" type="HBoxContainer" parent="Panel/Margin/Content"]
+[node name="Hint" type="Label" parent="Margin/Page/Footer/FooterRow"]
 layout_mode = 2
-theme_type_variation = &"FormRow"
-
-[node name="Message" type="Label" parent="Panel/Margin/Content"]
-layout_mode = 2
-theme_type_variation = &"DimLabel"
-horizontal_alignment = 1
+size_flags_vertical = 4
+theme_type_variation = &"MuteLabel"
 
 [node name="Sound" type="AudioStreamPlayer" parent="."]
 process_mode = 3

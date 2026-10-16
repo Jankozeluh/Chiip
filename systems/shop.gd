@@ -8,8 +8,9 @@ extends RefCounted
 ## Items are the arsenal's weapons by their ids (rifle, carbine, pistol, frag...) plus the gear:
 ## [constant VEST], [constant VEST_HELMET] and [constant KIT].
 
-## The buy menu's categories, in order (keys 1 to 5).
-enum Category { PISTOLS, MID_TIER, RIFLES, GEAR, GRENADES }
+## The buy menu's categories, in order (keys 1 to 4). Primaries is every long gun (the mockup's second column), cheapest first:
+## the SMG and the shotgun, the rifles, the sniper rifle.
+enum Category { PISTOLS, PRIMARIES, GEAR, GRENADES }
 
 const VEST := &"vest"
 const VEST_HELMET := &"vest_helmet"
@@ -19,11 +20,11 @@ const KIT := &"kit"
 const VEST_PRICE := 500
 const VEST_HELMET_PRICE := 800
 const KIT_PRICE := 300
-const CATEGORY_NAMES: Array[String] = ["Pistols", "Mid-tier", "Rifles", "Gear", "Grenades"]
+const CATEGORY_NAMES: Array[String] = ["Pistols", "Primaries", "Gear", "Grenades"]
 
 
 ## Every item for sale, in menu order: [code]{id, name, price, category, icon, data}[/code]
-## ([code]data[/code] is the [WeaponData], null for gear).
+## ([code]data[/code] is the [WeaponData], null for gear). The "Vest + helm" is short for its 16 px name to fit an item of the menu.
 static func items() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for data in WeaponData.all():
@@ -33,7 +34,7 @@ static func items() -> Array[Dictionary]:
 				"icon": data.icon, "data": data})
 	out.append({"id": VEST, "name": "Vest", "price": VEST_PRICE, "category": Category.GEAR,
 			"icon": load("res://assets/ui/weapons/armor.png"), "data": null})
-	out.append({"id": VEST_HELMET, "name": "Vest + helmet", "price": VEST_HELMET_PRICE, "category": Category.GEAR,
+	out.append({"id": VEST_HELMET, "name": "Vest + helm", "price": VEST_HELMET_PRICE, "category": Category.GEAR,
 			"icon": load("res://assets/ui/weapons/armor_helmet.png"), "data": null})
 	out.append({"id": KIT, "name": "Defuse kit", "price": KIT_PRICE, "category": Category.GEAR,
 			"icon": load("res://assets/ui/weapons/defuse_kit.png"), "data": null})
@@ -53,11 +54,42 @@ static func category_of(data: WeaponData) -> Category:
 	match data.category:
 		WeaponData.Category.PISTOL:
 			return Category.PISTOLS
-		WeaponData.Category.SMG, WeaponData.Category.SHOTGUN:
-			return Category.MID_TIER
 		WeaponData.Category.GRENADE:
 			return Category.GRENADES
-	return Category.RIFLES
+	return Category.PRIMARIES
+
+
+## The UI icon slot ([UiIcons]) of [param item_id]: a weapon's slot is its id, the gear's are
+## the vest ([code]armor[/code]), the vest with a helmet ([code]helmet[/code]) and the kit ([code]defuse_kit[/code]).
+static func icon_slot(item_id: StringName) -> StringName:
+	match item_id:
+		VEST:
+			return &"armor"
+		VEST_HELMET:
+			return &"helmet"
+		KIT:
+			return &"defuse_kit"
+	return item_id
+
+
+## True if [param character] already has all of [param item_id] and buying it again would add nothing: the weapon
+## (any grenade only when it carries as many of that kind as it may), the vest, the vest with a helmet, the kit.
+static func is_owned(character: Character, item_id: StringName) -> bool:
+	match item_id:
+		VEST:
+			return character.armor >= Armor.MAX_ARMOR
+		VEST_HELMET:
+			return character.armor >= Armor.MAX_ARMOR and character.has_helmet
+		KIT:
+			return character.has_defuse_kit
+	var item := find(item_id)
+	if item.is_empty():
+		return false
+	var data: WeaponData = item.data
+	var carried := character.inventory.find(data)
+	if carried == null:
+		return false
+	return not data.is_grenade() or carried.magazine >= data.max_carried
 
 
 ## What [param item_id] costs [param character] now: the helmet alone when it wears a vest.

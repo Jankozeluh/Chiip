@@ -189,45 +189,50 @@ func _test_buy_menu() -> void:
 	var menu := load("res://ui/buy_menu.tscn").instantiate() as BuyMenu
 	add_child(menu)
 	menu.set_rules(_rounds, _player)
-	var money_label := menu.get_node("Panel/Margin/Content/TopRow/Money") as Label
-	var time_label := menu.get_node("Panel/Margin/Content/TopRow/BuyTime") as Label
-	var message_label := menu.get_node("Panel/Margin/Content/Message") as Label
-	var columns := menu.get_node("Panel/Margin/Content/Columns") as HBoxContainer
+	var money_label := menu.get_money_label()
+	var time_label := menu.get_situation_label()
+	var message_label := menu.get_hint_label()
+	var columns := menu.get_columns_row()
 
 	# 1. B opens it in freeze time.
 	var closed_before := not menu.is_open() and menu.can_open()
 	_press_action("buy_menu")
 	await _wait_ticks(3)
-	_check("B opens the buy menu in freeze time: registered as a menu, with your money and the buy time",
-			closed_before and menu.is_open() and MenuState.is_open(menu) and money_label.text == "$ 1000" and time_label.visible
-			and time_label.text.begins_with("Buy time"),
+	_check("B opens the buy menu in freeze time: registered as a menu, with your money and your side and the buy time",
+			closed_before and menu.is_open() and MenuState.is_open(menu) and money_label.text == "$1000"
+			and time_label.text.contains(" · closes in "),
 			"open %s, money '%s', time '%s'" % [menu.is_open(), money_label.text, time_label.text])
 
-	# 2. Every shop item is there with its price, in five columns.
+	# 2. Every shop item is there with its price, in four columns.
 	var listed := true
 	var in_columns := columns.get_child_count() == Shop.CATEGORY_NAMES.size()
 	var pistol_ids: Array[StringName] = []
 	for item in Shop.items():
 		var button := menu.get_item_button(item.id)
-		listed = listed and button != null and button.text.contains("$%d" % item.price) and button.text.contains(item.name) \
-				and button.icon != null
+		var price_text := (menu.get_item_part(item.id, "Price") as Label).text
+		var name_text := (menu.get_item_part(item.id, "Name") as Label).text
+		var owned := price_text == "Owned"
+		listed = listed and button != null and (price_text == "$%d" % item.price or owned) and name_text == item.name \
+				and (menu.get_item_part(item.id, "Icon") as TextureRect).texture != null
 		if item.category == Shop.Category.PISTOLS:
 			pistol_ids.append(item.id)
 	for category in Shop.CATEGORY_NAMES.size():
 		var expected := Shop.items().filter(func(item: Dictionary) -> bool: return item.category == category).size()
-		var buttons := columns.get_child(category).get_children().filter(func(node: Node) -> bool: return node is Button).size()
+		var buttons := columns.get_child(category).find_children("Select", "Button", true, false).size()
 		in_columns = in_columns and buttons == expected
-	_check("It lists every shop item with its icon and price (the Ram's $2500) in five columns",
-			listed and in_columns and menu.get_item_button(&"rifle").text.contains("$2500"),
-			"%d columns, Ram button '%s'" % [columns.get_child_count(), menu.get_item_button(&"rifle").text.replace("\n", " | ")])
+	var ram_price := menu.get_item_part(&"rifle", "Price") as Label
+	_check("It lists every shop item with its icon and price (the Ram's $2500) in four columns",
+			listed and in_columns and ram_price.text == "$2500",
+			"%d columns, Ram price '%s'" % [columns.get_child_count(), ram_price.text])
 
 	# 3. The Verdict ($500) by keys: the category, then its number in the category.
 	var verdict_key := (KEY_1 + pistol_ids.find(&"hand_cannon")) as Key
 	var sparrow_before := _player.inventory.get_in_slot(WeaponData.Slot.PISTOL).data.id == &"pistol"
 	_tap_key(KEY_1)
 	await _wait_ticks(2)
-	var pistols_header := columns.get_child(Shop.Category.PISTOLS).get_child(0) as Label
-	var selected := menu.get_selected_category() == Shop.Category.PISTOLS and pistols_header.theme_type_variation == &"BrightLabel"
+	var pistols_name := menu.get_column_part(Shop.Category.PISTOLS, "Name") as Label
+	var selected := menu.get_selected_category() == Shop.Category.PISTOLS and pistols_name.theme_type_variation == &"BrightLabel" \
+			and menu.get_column_part(Shop.Category.PISTOLS, "Header").theme_type_variation == &"ColumnHeaderLitPanel"
 	_tap_key(verdict_key)
 	await _wait_ticks(2)
 	var pistol := _player.inventory.get_in_slot(WeaponData.Slot.PISTOL)
@@ -244,9 +249,10 @@ func _test_buy_menu() -> void:
 	var clicked_reason := menu.get_message()
 	var clicked_line := message_label.text
 	var reason := menu.buy(&"rifle")
-	_check("A purchase you can't afford fails with 'Not enough money': shown at the bottom, the Ram's button disabled, money unchanged",
+	_check("A purchase you can't afford fails with 'Not enough money': shown in the footer, the Ram's item poor and disabled, money unchanged",
 			reason == "Not enough money" and clicked_reason == "Not enough money" and clicked_line == "Not enough money"
 			and ram.disabled and ram.tooltip_text == "Not enough money" and _rounds.get_money(_player) == 500
+			and menu.get_item_state(&"rifle") == BuyMenu.ItemState.POOR and message_label.theme_type_variation == &"AlertLabel"
 			and _player.inventory.get_in_slot(WeaponData.Slot.PRIMARY) == null,
 			"answer '%s', line '%s', disabled %s, $%d" % [reason, clicked_line, ram.disabled, _rounds.get_money(_player)])
 
@@ -257,7 +263,8 @@ func _test_buy_menu() -> void:
 	_check("A vest buys $500 of armor and its button is disabled afterwards (the menu stays open)",
 			vest_was_enabled and vest_reason == "" and _player.armor == Armor.MAX_ARMOR and vest.disabled
 			and vest.tooltip_text == "You have a vest" and _rounds.get_money(_player) == 0 and menu.is_open()
-			and money_label.text == "$ 0",
+			and money_label.text == "$0" and menu.get_item_state(&"vest") == BuyMenu.ItemState.OWNED
+			and (menu.get_item_part(&"vest", "Price") as Label).text == "Owned",
 			"armor %.0f, vest disabled %s ('%s'), $%d" % [_player.armor, vest.disabled, vest.tooltip_text, _rounds.get_money(_player)])
 
 	# 6. It closes when the round goes live, and B then does nothing.
@@ -307,9 +314,8 @@ func _test_buy_menu() -> void:
 	menu.set_rules(arena, _player)
 	_press_action("buy_menu")
 	await _wait_ticks(3)
-	var ram_text := menu.get_item_button(&"rifle").text
-	var free_prices := ram_text.contains("FREE") and not ram_text.contains("$") and not time_label.visible \
-			and money_label.text == "Free in practice"
+	var ram_text := (menu.get_item_part(&"carbine", "Price") as Label).text
+	var free_prices := ram_text == "FREE" and time_label.text == "Practice · any time" and money_label.text == "Free"
 	var sniper_bought := menu.buy(&"sniper")
 	var primary := _player.inventory.get_in_slot(WeaponData.Slot.PRIMARY)
 	var again := menu.buy(&"sniper")
@@ -317,22 +323,22 @@ func _test_buy_menu() -> void:
 	_check("In practice the menu opens at any time, prices say FREE, and the Heron is yours for nothing",
 			menu.is_open() and free_prices and sniper_bought == "" and primary != null and primary.data.id == &"sniper"
 			and again == "You have it" and menu.get_item_button(&"sniper").disabled and shown_again,
-			"open %s, Ram '%s', bought '%s', primary %s, again '%s'" % [menu.is_open(), ram_text.replace("\n", " | "), sniper_bought,
+			"open %s, Warden '%s', bought '%s', primary %s, again '%s'" % [menu.is_open(), ram_text, sniper_bought,
 					primary.data.id if primary != null else &"none", again])
 	# The reason goes away by itself after a couple of seconds.
 	var waited := 0
 	while menu.get_message() != "" and waited < 128 * 4:
 		await get_tree().physics_frame
 		waited += 1
-	_check("A refusal's reason leaves the bottom line by itself after about two seconds",
-			menu.get_message() == "" and waited > 128 and waited < 128 * 3 and message_label.text != "You have it",
+	_check("A refusal's reason leaves the footer by itself after about two seconds, and the keys' hint is back",
+			menu.get_message() == "" and waited > 128 and waited < 128 * 3 and message_label.text == "Click, or 1-4 then 1-5 · B closes",
 			"gone after %d ticks, line '%s'" % [waited, message_label.text])
 	_press_action("buy_menu")
 	await _wait_ticks(3)
 	_check("B closes it again", not menu.is_open() and not MenuState.is_any_open(), "open %s" % menu.is_open())
 	# M10's UI refresh restyles it through the theme alone (D-057, D-120).
 	var overrides := _theme_overrides(menu)
-	_check("The buy menu (its columns and item buttons too) has no style, font or color overrides and no tint: the theme's type variations decide its look",
+	_check("The buy menu (its columns and item buttons too) has no style, font or color overrides and no tint but its icons' (the palette's colours): the theme's type variations decide its look",
 			overrides.is_empty(), "overrides on: %s" % [overrides])
 
 	# Leave nothing open behind.
@@ -358,7 +364,8 @@ func _theme_overrides(root: Node) -> Array[String]:
 			for color in ["font_color", "font_disabled_color", "font_hover_color", "font_pressed_color"]:
 				own = own or control.has_theme_color_override(color)
 			own = own or control.has_theme_font_override("font") or control.has_theme_font_size_override("font_size")
-			own = own or control.modulate != Color.WHITE or control.self_modulate != Color.WHITE
+			# An icon is tinted with a colour of the theme's palette (white icons, like the class menu's).
+			own = own or (not control is TextureRect and control.modulate != Color.WHITE) or control.self_modulate != Color.WHITE
 			if own:
 				found.append(String(control.name))
 		found.append_array(_theme_overrides(child))

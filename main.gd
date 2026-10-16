@@ -93,6 +93,8 @@ var _map: Node
 var _player: Character
 ## Online: the [NetHost] or [NetClient] of the current map, or null offline.
 var _net_game: Node
+## True while the loading screen covers the game (it hides the HUD, see [method _update_hud_visibility]).
+var _loading_hides_hud: bool = false
 ## The maps of the rotation (empty without one), and which of them is playing.
 var _rotation: Array[String] = []
 var _rotation_index: int = 0
@@ -117,6 +119,9 @@ func _ready() -> void:
 	_pause_menu.leave_pressed.connect(return_to_menu)
 	_settings_menu.closed.connect(_pause_menu.settings_closed)
 	_loading_screen.finished.connect(_on_loading_finished)
+	# The class menu and the buy menu show only the dimmed world (mockups 08 and 14): the HUD steps aside while one is open.
+	_class_menu.visibility_changed.connect(_update_hud_visibility)
+	_buy_menu.visibility_changed.connect(_update_hud_visibility)
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -296,13 +301,21 @@ func _shows_loading_screen() -> bool:
 ## Shows the loading screen for the map at [param path] (lines from [MatchText]) and hides the HUD under it.
 ## With [param map_follows] the screen waits for [method LoadingScreen.map_loaded].
 func _show_loading_screen(path: String, map_follows: bool = false) -> void:
-	_hud.visible = false
+	_loading_hides_hud = true
+	_update_hud_visibility()
 	_loading_screen.show_screen(MatchText.loading_lines(match_settings, mode == Mode.PRACTICE, path,
 			_rotation_index, _rotation.size()), map_follows)
 
 
 func _on_loading_finished() -> void:
-	_hud.visible = true
+	_loading_hides_hud = false
+	_update_hud_visibility()
+
+
+## Shows the HUD (with its crosshair) unless the loading screen, the class menu or the buy menu is up. This is the one place
+## that decides: the pause menu, the scoreboard and the console leave the HUD where it is.
+func _update_hud_visibility() -> void:
+	_hud.visible = not _loading_hides_hud and not _class_menu.is_open() and not _buy_menu.is_open()
 
 
 ## Puts the map into the world viewport, adds the game rules, and connects

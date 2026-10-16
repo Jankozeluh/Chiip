@@ -60,6 +60,7 @@ const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const PAUSE_MENU_SCENE := preload("res://ui/pause_menu.tscn")
 const CLASS_MENU_SCENE := preload("res://ui/class_menu.tscn")
+const BUY_MENU_SCENE := preload("res://ui/buy_menu.tscn")
 ## The window height the menus are laid out for (720p).
 const DESIGN_HEIGHT := 720.0
 const LOADING_SCENE := preload("res://ui/loading_screen.tscn")
@@ -122,6 +123,10 @@ const VARIATIONS := {
 	"LargeInkLabel": "Label", "PerkLabel": "Label", "ClassHeaderBox": "VBoxContainer", "FrameMargin": "MarginContainer",
 	"ClassBodyMargin": "MarginContainer", "ClassBodyBox": "VBoxContainer", "ClassTextBox": "VBoxContainer",
 	"ClassRow": "HBoxContainer", "ClassRowCompact": "HBoxContainer",
+	# M10 task 12b (D-143): the buy menu as in mockup 14: the column (its header with a LINE edge, or the accent's for the selected
+	# column) and the four looks of an item.
+	"BuyColumn": "VBoxContainer", "ColumnHeaderPanel": "PanelContainer", "ColumnHeaderLitPanel": "PanelContainer",
+	"BuyItemOk": "Button", "BuyItemFocused": "Button", "BuyItemOwned": "Button", "BuyItemPoor": "Button",
 }
 ## The roles the HUD uses (M10 task 6, D-133; the mockups' look, task 14, D-141): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -221,6 +226,8 @@ func _ready() -> void:
 	await _test_lobby_menu()
 	_test_class_draft_roles()
 	await _test_class_draft_look()
+	_test_buy_menu_roles()
+	await _test_buy_menu_look()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -1406,6 +1413,12 @@ func _test_menus_have_no_overrides() -> void:
 	found["class menu"] = _overrides_below(class_menu)
 	remove_child(class_menu)
 	class_menu.queue_free()
+	var buy_menu := BUY_MENU_SCENE.instantiate() as BuyMenu
+	add_child(buy_menu)
+	await get_tree().process_frame
+	found["buy menu"] = _overrides_below(buy_menu)
+	remove_child(buy_menu)
+	buy_menu.queue_free()
 	var console := CONSOLE_SCENE.instantiate() as DevConsole
 	add_child(console)
 	await get_tree().process_frame
@@ -3479,10 +3492,11 @@ func _test_loading_screen_in_the_game() -> void:
 		if not LoadingScreen.is_showing():
 			break
 		await tree.process_frame
-	_check("After the hold time the screen hides, the game is unpaused and the HUD is back; the class menu that opened at the match start is still open under it, now usable",
-			not LoadingScreen.is_showing() and not tree.paused and hud.visible and (main.get_node("ClassMenu") as ClassMenu).is_open(),
+	_check("After the hold time the screen hides and the game is unpaused; the class menu that opened at the match start is still open under it, now usable, and keeps the HUD hidden (mockup 08)",
+			not LoadingScreen.is_showing() and not tree.paused and not hud.visible and (main.get_node("ClassMenu") as ClassMenu).is_open(),
 			"showing %s, paused %s, hud %s" % [LoadingScreen.is_showing(), tree.paused, hud.visible])
 	_close_class_menu(main)
+	_check("Closing the class menu brings the HUD back", hud.visible, "hud %s" % hud.visible)
 	# The rotation moves on: the band comes first, then the map is loaded, then the rest of the hold time.
 	var before_map: String = main.get_map().scene_file_path
 	main.next_map()
@@ -3500,11 +3514,14 @@ func _test_loading_screen_in_the_game() -> void:
 		if not LoadingScreen.is_showing():
 			break
 		await tree.process_frame
-	_check("It hides again after the hold time (unpaused, HUD back)",
+	_close_class_menu(main)
+	_check("It hides again after the hold time (unpaused, HUD back once the new map's class menu is closed)",
 			not LoadingScreen.is_showing() and not tree.paused and hud.visible, "showing %s, paused %s" % [LoadingScreen.is_showing(), tree.paused])
 	main.restart_match()
 	await tree.process_frame
 	await tree.process_frame
+	# The new match's class menu opens by itself and hides the HUD, as it does; the loading screen hides nothing.
+	_close_class_menu(main)
 	_check("restart_match() shows no loading screen: the game isn't paused and the HUD stays", not LoadingScreen.is_showing() and not tree.paused and hud.visible,
 			"showing %s, paused %s" % [LoadingScreen.is_showing(), tree.paused])
 	remove_child(main)
@@ -4278,6 +4295,253 @@ func _test_class_draft_look() -> void:
 		await get_tree().process_frame
 		MenuState.reset()
 		GameLaunch.clear()
+
+
+## The buy menu's roles (mockup 14): the four looks of an item cover every state of the button (a 2 px frame, no corner), the
+## column header's edge is LINE or, for the selected column, the accent, and the sizes the menu reads are the tokens.
+func _test_buy_menu_roles() -> void:
+	var looks := {}
+	for role in ["BuyItemOk", "BuyItemFocused", "BuyItemOwned", "BuyItemPoor"]:
+		looks[role] = _theme.get_stylebox("normal", role) as StyleBoxFlat
+	var hover := _theme.get_stylebox("hover", "BuyItemOk") as StyleBoxFlat
+	var every_state := true
+	for role: String in looks:
+		for state in ["normal", "pressed", "disabled", "hover", "hover_pressed", "focus"]:
+			var box := _theme.get_stylebox(state, role) as StyleBoxFlat
+			every_state = every_state and box != null and box.border_width_left == Tokens.BORDER and box.border_width_bottom == Tokens.BORDER \
+					and box.corner_radius_top_left == 0 and not box.anti_aliasing
+	_check("The four looks of a buy item are frames of %d px in every button state: ok a PANEL fill and frame (the accent frame on hover), focused RAISED with the accent frame, owned no fill and a LINE frame, poor INK all over" % Tokens.BORDER,
+			every_state and (looks["BuyItemOk"] as StyleBoxFlat).bg_color == Tokens.PANEL and (looks["BuyItemOk"] as StyleBoxFlat).border_color == Tokens.PANEL
+					and hover.border_color == Tokens.ACCENT and hover.bg_color == Tokens.PANEL
+					and (looks["BuyItemFocused"] as StyleBoxFlat).bg_color == Tokens.PANEL_RAISED and (looks["BuyItemFocused"] as StyleBoxFlat).border_color == Tokens.ACCENT
+					and (looks["BuyItemOwned"] as StyleBoxFlat).bg_color.a == 0.0 and (looks["BuyItemOwned"] as StyleBoxFlat).border_color == Tokens.LINE_COLOR
+					and (looks["BuyItemPoor"] as StyleBoxFlat).bg_color == Tokens.INK and (looks["BuyItemPoor"] as StyleBoxFlat).border_color == Tokens.INK,
+			"ok %s, focused %s, owned %s, poor %s" % [(looks["BuyItemOk"] as StyleBoxFlat).bg_color, (looks["BuyItemFocused"] as StyleBoxFlat).bg_color,
+					(looks["BuyItemOwned"] as StyleBoxFlat).border_color, (looks["BuyItemPoor"] as StyleBoxFlat).bg_color])
+	var edge := _theme.get_stylebox("panel", "ColumnHeaderPanel") as StyleBoxFlat
+	var lit := _theme.get_stylebox("panel", "ColumnHeaderLitPanel") as StyleBoxFlat
+	_check("A column header has a 2 px bottom edge in LINE (the accent when its column is selected) and nothing else; the column leaves %d px between the header and its items" % Tokens.BUY_HEADER_GAP,
+			edge.border_width_bottom == Tokens.LINE and edge.border_width_top == 0 and edge.border_color == Tokens.LINE_COLOR and edge.bg_color.a == 0.0
+					and lit.border_width_bottom == Tokens.LINE and lit.border_color == Tokens.ACCENT
+					and _theme.get_constant("separation", "BuyColumn") == Tokens.BUY_HEADER_GAP and Tokens.BUY_HEADER_GAP == 16 and Tokens.LINE == 2,
+			"edge %s, lit %s" % [edge.border_color, lit.border_color])
+	_check("The sizes the menu reads are the tokens: a column header 32 high, an item 64 high, its icon box 64 x 32 (the 32 x 16 icons at scale 2)",
+			_theme.get_constant("header_height", "BuyMenu") == Tokens.BUY_HEADER_HEIGHT and Tokens.BUY_HEADER_HEIGHT == 32
+					and _theme.get_constant("item_height", "BuyMenu") == Tokens.BUY_ITEM_HEIGHT and Tokens.BUY_ITEM_HEIGHT == 64
+					and _theme.get_constant("icon_box_width", "BuyMenu") == Tokens.BUY_ICON_BOX.x and _theme.get_constant("icon_box_height", "BuyMenu") == Tokens.BUY_ICON_BOX.y
+					and Tokens.BUY_ICON_BOX == Vector2i(64, 32),
+			"")
+
+
+## The buy menu as in the mockup's "14 Buy menu", at 720p and at 1.5 times (1080p): the header, the four columns (their keys,
+## names and items), the four looks of an item with their icons (by id) and texts, the footer with what you hold, and the
+## HUD that steps aside while the buy menu or the class menu is open (and only then).
+func _test_buy_menu_look() -> void:
+	GameLaunch.clear()
+	MenuState.reset()
+	var main := await _class_draft_game(true)
+	var menu := main.get_node("BuyMenu") as BuyMenu
+	var class_menu := main.get_node("ClassMenu") as ClassMenu
+	var hud := main.get_node("HUD") as CanvasLayer
+	var crosshair := hud.get_node("Crosshair") as Control
+	var pause_menu: PauseMenu = main.get_pause_menu()
+	var view := get_viewport().get_visible_rect().size
+
+	# The HUD steps aside for the class menu and the buy menu, and for nothing else.
+	var hidden_for_class := class_menu.is_open() and not hud.visible and not crosshair.is_visible_in_tree()
+	menu.open()
+	await get_tree().process_frame
+	var hidden_for_buy := menu.is_open() and not class_menu.is_open() and not hud.visible and not crosshair.is_visible_in_tree()
+	menu.close()
+	var back_after_buy := not menu.is_open() and hud.visible and crosshair.is_visible_in_tree()
+	pause_menu.open()
+	await get_tree().process_frame
+	var stays_for_pause := pause_menu.is_open() and hud.visible
+	pause_menu.close()
+	get_tree().paused = false
+	_check("While the class menu or the buy menu is open the HUD and its crosshair are hidden (the mockups 08 and 14 show only the dimmed world) and they are back when it closes; the pause menu leaves them",
+			hidden_for_class and hidden_for_buy and back_after_buy and stays_for_pause,
+			"class %s, buy %s, back %s, pause %s" % [hidden_for_class, hidden_for_buy, back_after_buy, stays_for_pause])
+	_close_class_menu(main)
+
+	# The state to look at: $2400 less a vest and two flashbangs; the sniper rifle is too dear, the Verdict has the focus.
+	_rounds.add_money(_player, 3000, "test")
+	_rounds.request_buy(_player, Shop.VEST)
+	_rounds.request_buy(_player, &"flashbang")
+	_rounds.request_buy(_player, &"flashbang")
+	_rounds.add_money(_player, 2400 - _rounds.get_money(_player), "test")
+	menu.open()
+	await get_tree().process_frame
+	menu.get_item_button(&"hand_cannon").mouse_entered.emit()
+	await get_tree().process_frame
+	var columns := [[&"pistol", &"hand_cannon"], [&"smg", &"shotgun", &"rifle", &"carbine", &"sniper"], [&"vest", &"vest_helmet", &"kit"], [&"frag", &"flashbang", &"smoke"]]
+	var names := ["Pistols", "Primaries", "Gear", "Grenades"]
+	var side := "Defending" if _rounds.get_side(_player.team) == Teams.Side.DEFENDING else "Attacking"
+	var texts_ok := menu.get_title_label().text == "Buy" and menu.get_money_label().text == "$2400" \
+			and menu.get_situation_label().text.begins_with("%s · closes in " % side) \
+			and menu.get_hint_label().text == "Click, or 1-4 then 1-5 · B closes" and menu.get_hint_label().theme_type_variation == &"MuteLabel" \
+			and menu.get_hint_label().get_theme_color("font_color") == Tokens.MUTE
+	var columns_ok := menu.get_columns_row().get_child_count() == 4
+	var items_ok := true
+	var looks_ok := true
+	var states_seen := {}
+	var expected_roles := {BuyMenu.ItemState.OK: &"BuyItemOk", BuyMenu.ItemState.FOCUSED: &"BuyItemFocused", BuyMenu.ItemState.OWNED: &"BuyItemOwned", BuyMenu.ItemState.POOR: &"BuyItemPoor"}
+	var expected_text := {BuyMenu.ItemState.OK: &"BrightLabel", BuyMenu.ItemState.FOCUSED: &"BrightLabel", BuyMenu.ItemState.OWNED: &"DimLabel", BuyMenu.ItemState.POOR: &"MuteLabel"}
+	var expected_price := {BuyMenu.ItemState.OK: &"BrightLabel", BuyMenu.ItemState.FOCUSED: &"HeaderLabel", BuyMenu.ItemState.OWNED: &"DimLabel", BuyMenu.ItemState.POOR: &"MuteLabel"}
+	var expected_tint := {BuyMenu.ItemState.OK: Tokens.TEXT, BuyMenu.ItemState.FOCUSED: Tokens.TEXT, BuyMenu.ItemState.OWNED: Tokens.TEXT_DIM, BuyMenu.ItemState.POOR: Tokens.MUTE}
+	var expected_color := {BuyMenu.ItemState.OK: Tokens.TEXT, BuyMenu.ItemState.FOCUSED: Tokens.TEXT, BuyMenu.ItemState.OWNED: Tokens.TEXT_DIM, BuyMenu.ItemState.POOR: Tokens.MUTE}
+	for column in 4:
+		columns_ok = columns_ok and (menu.get_column_part(column, "Key") as Label).text == str(column + 1) and (menu.get_column_part(column, "Name") as Label).text == names[column] \
+				and menu.get_column_part(column, "Header").theme_type_variation == &"ColumnHeaderPanel" and menu.get_column_part(column, "Key").theme_type_variation == &"MuteLabel" \
+				and menu.get_column_part(column, "Name").theme_type_variation == &"BrightLabel"
+		for id: StringName in columns[column]:
+			var button := menu.get_item_button(id)
+			var state := menu.get_item_state(id)
+			states_seen[state] = true
+			var icon := menu.get_item_part(id, "Icon") as TextureRect
+			var price := menu.get_item_part(id, "Price") as Label
+			var name_label := menu.get_item_part(id, "Name") as Label
+			items_ok = items_ok and button != null and menu.get_columns_row().get_child(column).find_child(String(id), true, false) != null \
+					and name_label.text == Shop.find(id).name \
+					and icon.texture != null and icon.texture == UiIcons.get_icon(icon, Shop.icon_slot(id))
+			# The slot is the weapon's id, or the gear's: armor, helmet, defuse_kit.
+			items_ok = items_ok and (Shop.icon_slot(id) == id or id in [Shop.VEST, Shop.VEST_HELMET, Shop.KIT])
+			var expected_state := BuyMenu.ItemState.OWNED if Shop.is_owned(_player, id) else (BuyMenu.ItemState.POOR if _rounds.get_buy_refusal(_player, id) != "" \
+					else (BuyMenu.ItemState.FOCUSED if id == &"hand_cannon" else BuyMenu.ItemState.OK))
+			looks_ok = looks_ok and state == expected_state and button.theme_type_variation == expected_roles[state] \
+					and name_label.theme_type_variation == expected_text[state] and price.theme_type_variation == expected_price[state] \
+					and icon.modulate == expected_tint[state] and name_label.get_theme_color("font_color") == expected_color[state] \
+					and button.disabled == (state == BuyMenu.ItemState.OWNED or state == BuyMenu.ItemState.POOR) \
+					and (price.text == "Owned") == (state == BuyMenu.ItemState.OWNED) and (state == BuyMenu.ItemState.OWNED or price.text == "$%d" % _rounds.get_price(_player, id)) \
+					and (state != BuyMenu.ItemState.FOCUSED or price.get_theme_color("font_color") == Tokens.ACCENT)
+	_check("The buy menu says \"Buy\", your side and the buy time, $2400, and the keys' hint; it has four columns (1 Pistols, 2 Primaries, 3 Gear, 4 Grenades: key MUTE, name TEXT) with the shop's items in order",
+			texts_ok and columns_ok and items_ok, "texts %s (%s, '%s'), columns %s, items %s" % [texts_ok, menu.get_money_label().text, menu.get_situation_label().text, columns_ok, items_ok])
+	_check("Each item has the role of its state (ok, focused, owned, poor: button, name, price, icon tint; \"Owned\" in place of the price, owned and poor ones disabled) and all four are on show",
+			looks_ok and states_seen.size() == 4, "looks %s, states seen %s" % [looks_ok, states_seen.keys()])
+
+	# What you hold: the long gun and the pistol, the vest, the grenades (the flashbang twice), at scale 2.
+	var held := menu.get_held_slots()
+	var flashbangs := _player.inventory.find(WeaponData.find(&"flashbang")).magazine
+	var held_ok := held.has(&"armor") and held.count(&"flashbang") == flashbangs and flashbangs >= 1 and held.size() == menu.get_held_icons().size() and not held.has(&"knife")
+	var weapon_order: Array[StringName] = []
+	for slot in [WeaponData.Slot.PRIMARY, WeaponData.Slot.PISTOL]:
+		var weapon := _player.inventory.get_in_slot(slot)
+		if weapon != null:
+			weapon_order.append(weapon.data.id)
+	held_ok = held_ok and held.slice(0, weapon_order.size()) == weapon_order
+	for i in menu.get_held_icons().size():
+		var rect := menu.get_held_icons()[i]
+		held_ok = held_ok and rect.texture == UiIcons.get_icon(rect, held[i]) and rect.texture != null and rect.modulate == Tokens.TEXT
+	_check("The footer's \"You hold\" shows the icons of the weapons, the vest and the grenades you carry, in that order (a grenade once for each)",
+			held_ok and (menu.get_hold_row().get_child(0) as Label).text == "You hold", "held %s" % [held])
+
+	# The layout, at 720p and at 1.5 times: the mockup's numbers times the scale.
+	var area := Rect2()
+	for factor: float in [1.0, 1.5]:
+		menu.set_ui_scale(factor)
+		for i in 4:
+			await get_tree().process_frame
+		area = (menu.get_node("Margin") as Control).get_global_rect()
+		var parts := {}
+		var inset := roundf(32.0 * factor)
+		var title_trim := menu.get_title_label().get_parent() as Control
+		var money_trim := menu.get_money_label().get_parent() as Control
+		parts["header"] = title_trim.get_global_rect().position == area.position + Vector2.ONE * inset and absf(title_trim.get_global_rect().size.y - Tokens.TEXT_SIZE_TITLE * factor) <= 1.0 \
+				and menu.get_title_label().get_theme_font_size("font_size") == roundi(Tokens.TEXT_SIZE_TITLE * factor) \
+				and money_trim.get_global_rect().end.x == area.end.x - inset and absf(money_trim.get_global_rect().end.y - title_trim.get_global_rect().end.y) <= 1.0
+		# The line beside the title stands 24 right of it, on the same baseline (their bottoms are the same distance below it).
+		parts["situation"] = absf(menu.get_situation_label().get_global_rect().position.x - title_trim.get_global_rect().end.x - roundf(Tokens.SCORE_GAP * factor)) <= 1.0 \
+				and absf(menu.get_situation_label().get_global_rect().end.y - title_trim.get_global_rect().end.y) <= 1.0
+		var row := menu.get_columns_row().get_global_rect()
+		var width := (area.size.x - 2.0 * inset - 3.0 * roundf(Tokens.CARD_GAP * factor)) / 4.0
+		parts["row"] = row.position.x == area.position.x + inset and row.end.x == area.end.x - inset and absf(row.position.y - area.position.y - roundf(112.0 * factor)) <= 1.0 \
+				and absf(menu.get_title_label().get_parent().get_global_rect().end.y + roundf(Tokens.PAGE_GAP * factor) - row.position.y) <= 1.0
+		var column_ok := true
+		var item_ok := true
+		var inner_ok := true
+		for column in 4:
+			var rect := menu.get_column_part(column, "Column").get_global_rect()
+			var header := menu.get_column_part(column, "Header").get_global_rect()
+			column_ok = column_ok and absf(rect.size.x - width) <= 1.0 and absf(rect.position.x - (row.position.x + column * (width + roundf(Tokens.CARD_GAP * factor)))) <= 1.0 \
+					and header.size == Vector2(rect.size.x, roundf(Tokens.BUY_HEADER_HEIGHT * factor)) and header.position == rect.position
+			var key := menu.get_column_part(column, "Key").get_global_rect()
+			var label := menu.get_column_part(column, "Name").get_global_rect()
+			column_ok = column_ok and key.position.x == header.position.x and absf(label.position.x - key.end.x - roundf(Tokens.LOBBY_SIDE_GAP * factor)) <= 1.0
+			var top := header.end.y + roundf(Tokens.BUY_HEADER_GAP * factor)
+			for index in (columns[column] as Array).size():
+				var id: StringName = columns[column][index]
+				var holder := menu.get_item_part(id, "Holder").get_global_rect()
+				var icon := menu.get_item_part(id, "Icon").get_global_rect()
+				var name_rect := menu.get_item_part(id, "Name").get_global_rect()
+				var price_rect := menu.get_item_part(id, "Price").get_global_rect()
+				var pad := roundf((Tokens.BORDER + Tokens.LOBBY_SLOT_PAD_X) * factor)
+				item_ok = item_ok and holder.position.y == top + index * (roundf(Tokens.BUY_ITEM_HEIGHT * factor) + roundf(Tokens.CONTENT_GAP * factor)) \
+						and holder.size == Vector2(rect.size.x, roundf(Tokens.BUY_ITEM_HEIGHT * factor)) and holder.position.x == rect.position.x
+				inner_ok = inner_ok and icon.position.x == holder.position.x + pad and icon.size == Vector2(Tokens.BUY_ICON_BOX) * factor \
+						and absf(icon.get_center().y - holder.get_center().y) <= 1.0 \
+						and name_rect.position.x == icon.end.x + roundf(Tokens.LOBBY_SIDE_GAP * factor) and price_rect.end.x == holder.end.x - pad \
+						and price_rect.position.x - name_rect.end.x == roundf(Tokens.LOBBY_SIDE_GAP * factor)
+		parts["columns"] = column_ok
+		parts["items"] = item_ok
+		parts["inner"] = inner_ok
+		# An item's icon is its box's width and the icon at scale 2: the 32 x 16 weapon is 64 x 32, the 16 x 16 vest 32 x 32.
+		var pistol_icon := menu.get_item_part(&"hand_cannon", "Icon") as TextureRect
+		var vest_icon := menu.get_item_part(&"vest", "Icon") as TextureRect
+		parts["icon scale"] = pistol_icon.texture.get_size() * 2.0 == Vector2(Tokens.BUY_ICON_BOX) * factor and vest_icon.texture.get_size() * 2.0 == Vector2(32, 32) * factor
+		# The footer: its LINE edge, 16 above the icons, the keys' hint at the right edge, 32 from the bottom of the page.
+		var footer := menu.get_footer().get_global_rect()
+		var hint := menu.get_hint_label().get_global_rect()
+		var footer_style := menu.get_footer().get_theme_stylebox("panel") as StyleBoxFlat
+		var held_icons := menu.get_held_icons()
+		var first := held_icons[0].get_global_rect()
+		parts["footer"] = footer.position.x == area.position.x + inset and footer.end.x == area.end.x - inset and absf(footer.end.y - (area.end.y - inset)) <= 1.0 \
+				and footer_style.border_width_top == roundi(Tokens.LINE * factor) and footer_style.border_color == Tokens.LINE_COLOR \
+				and absf(first.position.y - (footer.position.y + roundf((Tokens.LINE + Tokens.CLASS_FOOTER_PAD_TOP) * factor))) <= 1.0 \
+				and hint.end.x == footer.end.x and held_icons[0].get_global_rect().size == held_icons[0].texture.get_size() * 2.0 \
+				and absf((menu.get_hold_row().get_child(1) as Control).get_global_rect().position.x - (menu.get_hold_row().get_child(0) as Control).get_global_rect().end.x - roundf(Tokens.SCORE_GAP * factor)) <= 1.0
+		if factor == 1.0:
+			parts["fits the window"] = area == Rect2(Vector2.ZERO, view) and footer.end.y == view.y - 32.0 and row.position.y == 112.0
+		var failed: Array = []
+		for part: String in parts:
+			if not parts[part]:
+				failed.append(part)
+		_check("At %s times the size the header, the four columns (a header 32 and items 64 high 8 apart, an icon box 64 x 32, texts at the mockup's gaps), the icons at scale 2 and the footer are where the mockup has them times the scale" % factor,
+				failed.is_empty(), "failed parts %s" % [failed])
+		print("  [buy at %s] area %s, columns %s, footer %s, first held %s" % [factor, area, menu.get_columns_row().get_global_rect(), menu.get_footer().get_global_rect(), first])
+	menu.set_ui_scale(1.0)
+	await get_tree().process_frame
+
+	# The keys and the mouse: a number selects a column (its key and edge light up, the others' names dim), the hover moves the focus.
+	menu.select_category(Shop.Category.GEAR)
+	var gear_lit := menu.get_column_part(2, "Header").theme_type_variation == &"ColumnHeaderLitPanel" and menu.get_column_part(2, "Key").theme_type_variation == &"HeaderLabel" \
+			and menu.get_column_part(2, "Name").theme_type_variation == &"BrightLabel" and menu.get_column_part(0, "Name").theme_type_variation == &"DimLabel" \
+			and menu.get_column_part(0, "Key").theme_type_variation == &"MuteLabel" and menu.get_column_part(0, "Header").theme_type_variation == &"ColumnHeaderPanel"
+	menu.select_category(-1)
+	var all_rest := menu.get_column_part(0, "Name").theme_type_variation == &"BrightLabel" and menu.get_column_part(2, "Header").theme_type_variation == &"ColumnHeaderPanel"
+	var before := menu.get_item_state(&"hand_cannon")
+	var other_id: StringName = &""
+	var poor_id: StringName = &""
+	for id in [&"smg", &"shotgun", &"frag", &"smoke", &"vest_helmet"]:
+		if other_id == &"" and menu.get_item_state(id) == BuyMenu.ItemState.OK:
+			other_id = id
+	for id in [&"sniper", &"carbine", &"rifle"]:
+		if poor_id == &"" and menu.get_item_state(id) == BuyMenu.ItemState.POOR:
+			poor_id = id
+	menu.get_item_button(other_id).mouse_entered.emit()
+	menu.get_item_button(poor_id).mouse_entered.emit()
+	await get_tree().process_frame
+	var moved := before == BuyMenu.ItemState.FOCUSED and other_id != &"" and poor_id != &"" and menu.get_item_state(other_id) == BuyMenu.ItemState.FOCUSED \
+			and menu.get_item_state(&"hand_cannon") == BuyMenu.ItemState.OK and menu.get_item_state(poor_id) == BuyMenu.ItemState.POOR and not menu.get_item_button(poor_id).has_focus()
+	_check("A selected column lights its key and edge in the accent and dims the others' names; hovering an item that can be bought gives it the focus look (and takes it from the one before), a poor item takes none",
+			gear_lit and all_rest and moved, "gear lit %s, rest %s, moved %s" % [gear_lit, all_rest, moved])
+	_check("Nothing in the buy menu, in a game, carries a theme override (the item looks and the footer's icons come from the theme's roles and palette)",
+			_overrides_below(menu).is_empty(), "%s" % [_overrides_below(menu)])
+	menu.close()
+	remove_child(main)
+	main.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
+	GameLaunch.clear()
 
 
 ## Hovering a card lights it (the focus follows the mouse and the lime key chip with it), and the number keys pick.

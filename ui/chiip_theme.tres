@@ -223,6 +223,71 @@ border_width_bottom = 2
 border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="buy_item_focused"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.10980392, 0.14509805, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="buy_item_ok"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="buy_item_ok_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="buy_item_owned"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="buy_item_poor"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxEmpty" id="check_box_disabled"]
 content_margin_left = 8.0
 content_margin_top = 4.0
@@ -349,6 +414,20 @@ anti_aliasing = false
 content_margin_top = 18.0
 bg_color = Color(1, 1, 1, 0)
 border_width_top = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="column_header_lit_panel"]
+content_margin_top = 0.0
+bg_color = Color(1, 1, 1, 0)
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="column_header_panel"]
+content_margin_top = 0.0
+bg_color = Color(1, 1, 1, 0)
+border_width_bottom = 2
 border_color = Color(0.2, 0.2509804, 0.3529412, 1)
 anti_aliasing = false
 
@@ -1984,6 +2063,40 @@ Button/styles/normal = SubResource("button_normal")
 Button/styles/pressed = SubResource("button_pressed")
 ButtonRow/base_type = &"HBoxContainer"
 ButtonRow/constants/separation = 16
+BuyColumn/base_type = &"VBoxContainer"
+BuyColumn/constants/separation = 16
+BuyItemFocused/base_type = &"Button"
+BuyItemFocused/styles/disabled = SubResource("buy_item_focused")
+BuyItemFocused/styles/focus = SubResource("buy_item_focused")
+BuyItemFocused/styles/hover = SubResource("buy_item_focused")
+BuyItemFocused/styles/hover_pressed = SubResource("buy_item_focused")
+BuyItemFocused/styles/normal = SubResource("buy_item_focused")
+BuyItemFocused/styles/pressed = SubResource("buy_item_focused")
+BuyItemOk/base_type = &"Button"
+BuyItemOk/styles/disabled = SubResource("buy_item_ok")
+BuyItemOk/styles/focus = SubResource("buy_item_ok_hover")
+BuyItemOk/styles/hover = SubResource("buy_item_ok_hover")
+BuyItemOk/styles/hover_pressed = SubResource("buy_item_ok_hover")
+BuyItemOk/styles/normal = SubResource("buy_item_ok")
+BuyItemOk/styles/pressed = SubResource("buy_item_ok")
+BuyItemOwned/base_type = &"Button"
+BuyItemOwned/styles/disabled = SubResource("buy_item_owned")
+BuyItemOwned/styles/focus = SubResource("buy_item_owned")
+BuyItemOwned/styles/hover = SubResource("buy_item_owned")
+BuyItemOwned/styles/hover_pressed = SubResource("buy_item_owned")
+BuyItemOwned/styles/normal = SubResource("buy_item_owned")
+BuyItemOwned/styles/pressed = SubResource("buy_item_owned")
+BuyItemPoor/base_type = &"Button"
+BuyItemPoor/styles/disabled = SubResource("buy_item_poor")
+BuyItemPoor/styles/focus = SubResource("buy_item_poor")
+BuyItemPoor/styles/hover = SubResource("buy_item_poor")
+BuyItemPoor/styles/hover_pressed = SubResource("buy_item_poor")
+BuyItemPoor/styles/normal = SubResource("buy_item_poor")
+BuyItemPoor/styles/pressed = SubResource("buy_item_poor")
+BuyMenu/constants/header_height = 32
+BuyMenu/constants/icon_box_height = 32
+BuyMenu/constants/icon_box_width = 64
+BuyMenu/constants/item_height = 64
 CardRow/base_type = &"HBoxContainer"
 CardRow/constants/separation = 24
 CellMargin/base_type = &"MarginContainer"
@@ -2070,6 +2183,10 @@ ClassRowCompact/base_type = &"HBoxContainer"
 ClassRowCompact/constants/separation = 16
 ClassTextBox/base_type = &"VBoxContainer"
 ClassTextBox/constants/separation = 8
+ColumnHeaderLitPanel/base_type = &"PanelContainer"
+ColumnHeaderLitPanel/styles/panel = SubResource("column_header_lit_panel")
+ColumnHeaderPanel/base_type = &"PanelContainer"
+ColumnHeaderPanel/styles/panel = SubResource("column_header_panel")
 ConsoleBox/base_type = &"VBoxContainer"
 ConsoleBox/constants/separation = 0
 ConsoleErrorLabel/base_type = &"ConsoleLabel"

@@ -106,6 +106,17 @@ func _match_shots() -> void:
 	await _frames(4)
 	await _shot("class_menu")
 	class_menu.close()
+	# The buy menu in freeze time with all four looks: $1800 left after a vest and a flashbang (owned, and the Ram, Warden
+	# and Heron too dear), the Hornet's item with the focus.
+	manager.add_money(player, 1500, "screenshot")
+	manager.request_buy(player, Shop.VEST)
+	manager.request_buy(player, &"flashbang")
+	var buy_menu := main.get_node("BuyMenu") as BuyMenu
+	buy_menu.open()
+	buy_menu.get_item_button(&"smg").grab_focus()
+	await _frames(4)
+	await _shot("buy_menu")
+	buy_menu.close()
 	_block_input = true
 	await _frames(20)
 	await _shot("hud_freeze")

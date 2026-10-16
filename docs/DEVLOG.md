@@ -47,7 +47,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Class draft** (task 12, Sonnet): the mockup's two big cards with the class picture, key chip, height, role, perk in lime and the signature gun with its icon; compact cards when all four show. ui 268, class 68, crew 54 checks pass.
 
-**Next:** the buy menu.
+- **Buy menu** (Sonnet): your mockup 14: "Buy" with your side and the seconds left, the money, four columns (Pistols, Primaries, Gear, Grenades) of 64 px items with icons, owned and too-expensive looks, "You hold" at the bottom; the HUD hides behind the buy and class menus. ui 280, economy 26, gear 39, arsenal 30, class 68 checks pass.
+
+**Next:** merge main once more (the Shooting Range), the side-by-sides with your mockups, one full test run.
 
 ## 2026-10-16 — M9 multiplayer
 

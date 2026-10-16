@@ -385,6 +385,23 @@ const CLASS_GUN_ICON := Vector2i(64, 32)
 ## The hint at the bottom: its distance from the bottom edge.
 const CLASS_HINT_BOTTOM := 24
 
+# --- Buy menu (the mockup's "14 Buy menu", M7's buy menu on the M10 look) ---
+# The world dimmed behind it, a header 32 from the top and the sides (the title with how long the buy time lasts, the money), four
+# columns of the same width from 112 down (PAGE_GAP under the header, CARD_GAP apart), and a footer 32 from the bottom (what you hold,
+# the keys). A column is a 32 high header (its key and name, a 2 px LINE edge under them) and, 16 below it, items CONTENT_GAP apart.
+# An item is a 64 high button: a 64 wide box with the weapon's or gear's icon at scale 2, its name (fills) and its price, SLOT padding
+# either side and SlotRow's gap between them. Four looks (D-142): ok (a PANEL fill and frame, the accent frame on hover), focused
+# (RAISED, the accent frame, the price in the accent), owned (no fill, a LINE frame, DIM) and poor (INK, MUTE: too expensive, or not for
+# your side). The footer is the class card's: a LINE edge and 16 under it.
+
+## The column header's height (its 2 px edge included) and the space between it and the first item.
+const BUY_HEADER_HEIGHT := 32
+const BUY_HEADER_GAP := 16
+## An item's height (its 2 px frame included).
+const BUY_ITEM_HEIGHT := 64
+## The box an item's icon stands in: 64 wide, 32 high, the 32 x 16 weapon icons and the 16 x 16 gear icons at scale 2 and centred in it.
+const BUY_ICON_BOX := Vector2i(64, 32)
+
 # --- Developer console (mockup 17) ---
 # A strip across the top of the screen: the output (Silkscreen 16 on a 24 px line, bottom-aligned) over an
 # input row on INK. The strip's colour and its LINE edge are CONSOLE and the ConsolePanel role.
