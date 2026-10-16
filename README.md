@@ -17,7 +17,7 @@ A single-player tactical FPS in the spirit of Counter-Strike, played against bot
    **Play** opens the Play screen: **Team Deathmatch** (the default, framed in lime: **one click on it starts the match**), **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway or the rotation of all three), the teams (click a chip: 1–5 each, you included in yours), the bots' difficulty (Easy, Normal, Hard), the length (Team Deathmatch: first to 25, 50, 75 or 100 kills, or 5, 10 or 15 minutes; Bomb: first to 5, 10 or 15 rounds) and friendly fire. In a rotation the end screen offers **Next map**. The defaults are Team Deathmatch, 3v3, Normal bots, first to 50 kills or 10 minutes, friendly fire off, on the rotation starting on Depot, and the game remembers your last choices. The big **Play** button (or a click on the picked card) begins the match: you and your bot teammates (blue) against the bots (red). After 5 s of freeze time the round goes live; eliminate the other team, or hold out until time runs out if your team defends.
    The top bar shows the score (yours blue on the left, theirs red), the round timer and who is alive; the kill feed is at the top right.
    If you die, you watch a living teammate through their eyes until the next round (left click for the next teammate).
-   At the start of the match a class menu opens: pick Rifleman, Bulwark, Marksman or Scout (click a card, or press 1 to 4; Esc closes it). **M** opens it again during freeze time. For now the classes differ in looks and hit zones; the perks switch on in M7. Bots get a mix of classes.
+   At the start of the match a class menu opens with **your two drafted classes** for this match (each match offers two of Rifleman, Bulwark, Marksman and Scout at random): click a card or press 1 or 2; Esc closes it. **M** opens it again during freeze time (any time in Team Deathmatch). Each class has its own perk and loadout. Bots draft too, and each team gets a mix of classes.
    A match is first to 5 rounds; the sides swap at half time (after round 4), and when a team wins its 5th round an end screen shows Victory or Defeat, the score and a scoreboard, with **Play again** and **Main menu** buttons.
    **Esc** during a game opens the **pause menu**, which pauses everything (the round timer, the bots, the sounds): **Resume**, **Settings** and **Leave match** (back to the main menu). Esc again resumes.
 3. **Practice** in the main menu (or running with `-- --practice`, see below) is the old bot arena without rounds (bots respawn; good for warm-ups and the shooting range), with the bots' difficulty you last chose in match setup. To leave a game for the menu, use the end screen's **Main menu** button or type `disconnect` in the console.
@@ -52,7 +52,7 @@ For practice mode (also straight into the game), add `-- --practice`:
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 blockouts, see [docs/MAPS.md](docs/MAPS.md)), and the test map (the default). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
+**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 layouts, dressed with the map kit in M10, see [docs/MAPS.md](docs/MAPS.md)), the test map (the default) and the kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`, everything in the map kit). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
 
 To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:
 
@@ -71,17 +71,30 @@ To play a different map (also straight into the game, as a match where the map a
 | Walk (silent) | Shift |
 | Pause menu (pauses the game and frees the mouse; Esc again resumes) | Esc |
 | Capture the mouse again (after alt-tab, with no menu open) | Click in the window |
-| Shoot | Left mouse button |
+| Shoot (the knife: slash; a grenade: throw) | Left mouse button |
+| Scope in two steps (Heron), stab (knife), lob (grenade) | Right mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Weapons: primary, pistol, knife, grenades (4 again: the next grenade) | 1, 2, 3, 4 |
+| Last weapon / drop the gun in hand | Q / G |
+| Pick up a gun: walk over it (into a free slot), or look at it and press E to swap | E |
+| Buy menu (during the 15 s freeze time; any time in practice): the category's number then the item's, or click | B |
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
-| Class menu (opens by itself at the start of a match; during freeze time, any time in practice mode; then click a card or press 1 to 4) | M |
+| Class menu (opens by itself at the start of a match with your two drafted classes; during freeze time, any time in Team Deathmatch and practice mode; then click a card or press 1 or 2, 1 to 4 in practice) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
 | Debug overlay (speed, jump peak, inaccuracy, recoil, last hit; hidden at start) | F3 |
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+
+## Weapons, money and buying (M7)
+
+- **Every round starts with the knife and the Sparrow** (a pistol); whatever you buy or pick up lasts that round. Money carries over: $1,000 at the start of each half, $3,000 for a win, $1,500 rising to $3,000 for losses in a row, $200 a kill ($500 with the knife).
+- **B** opens the buy menu during the 15 s freeze time (in practice any time, free): the category's number, then the item's, or click.
+- **Pick guns up:** walk over one to take it into a free slot, or look at it and press **E** to swap. Each quick map has a **Heron** (sniper rifle) and a **Breaker** (shotgun) on gold rings.
+- **Team respawn** has no money: you spawn with your class's loadout.
+- The weapons' numbers are in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (4.3, 4.6, 4.10, 4.11) and in the spreadsheet **[docs/weapons.csv](docs/weapons.csv)**, exported from the data files (`tools/export_weapon_table.gd`, see CLAUDE.md).
 
 ## Settings
 
@@ -149,6 +162,10 @@ Real maps are built in **TrenchBroom**, a free brush-based map editor similar to
 
 3. Play it with `-- --map res://maps/comparison/trenchbroom_room.tscn` (see *Running the game*).
 
+**Textures** come in sets, which TrenchBroom's texture browser shows as collections: the base set (the first eight), `industrial`, `urban`, `interior` and `nature` (D-121). They are drawn in the crew's palette by `tools/make_world_textures.py` (D-140). `industrial/chainlink` is see-through.
+
+**A new map** can be built entirely in TrenchBroom from Chiip's kit: textures, props, lamps, and entities for spawns, bomb sites, routes and the other markers. `tools/new_map.gd` turns the `.map` into a playable scene (docs/MAPPING.md). The kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`) shows everything in the kit.
+
 **Scale (same as CS):** 1 TrenchBroom unit = 1 inch = 2.54 cm. The player is 72 units tall (54 crouched). A jump clears 57 units, a crouch-jump 75. The standard crate is 64 units. Doors are 128 units tall and 96 wide in the comparison room. A 64-pixel texture covers 64 units.
 
 **Lighting** is real-time; the maps aren't baked (D-085). To try a bake anyway (e.g. on the comparison room): select the scene's `LightmapGI` node, click **Bake Lightmaps** in the 3D toolbar, and save. Godot can only bake from the editor.
@@ -203,7 +220,7 @@ Run all the automated checks with one command (no window, about a minute and a q
 cd /Users/kozeluhj/Documents/Games/Chiip && bash tools/run_tests.sh
 ```
 
-It runs the sixteen suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the twenty-four suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
@@ -281,6 +298,12 @@ The maps test plays bot rounds on all three quick maps and takes a minute or two
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/perf_test.tscn
 ```
 
+The M7 suites (the arsenal's data, gear and inventory, how each gun works, grenades, money and the buy menu, bots and the arsenal) run the same way: `arsenal_test`, `gear_test`, `guns_test` and `grenade_test` with `--quit-after 60000`, `economy_test` and `botgear_test` with `--quit-after 100000`, for example:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/kozeluhj/Documents/Games/Chiip --fixed-fps 128 --quit-after 100000 res://tests/economy_test.tscn
+```
+
 To see the frame rate with ten animated characters, run the performance test in a window (it prints FPS after 15 s):
 
 ```bash
@@ -299,6 +322,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
 | [MAPS.md](docs/MAPS.md) | The quick maps: plans, layouts, map rules, measurements |
+| [MAPPING.md](docs/MAPPING.md) | Building a map from the map kit: TrenchBroom workflow, rules, every texture, prop, lamp and entity, limits |
 | [DEVLOG.md](docs/DEVLOG.md) | Diary of each work session: what changed and what's next |
 | [LEARNING.md](docs/LEARNING.md) | Godot concepts learned along the way, compared to Unity |
 | [CREDITS.md](docs/CREDITS.md) | Third-party assets and tools, with sources and licenses |

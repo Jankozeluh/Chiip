@@ -5,6 +5,12 @@
 [ext_resource type="Resource" path="res://assets/models/crew/bulwark_hit_zones.tres" id="hit_zones"]
 [ext_resource type="PackedScene" path="res://assets/models/crew/bulwark_arms.glb" id="arms_model"]
 
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="Resource" path="res://weapons/shotgun.tres" id="loadout_shotgun"]
+[ext_resource type="Resource" path="res://weapons/pistol.tres" id="loadout_pistol"]
+[ext_resource type="Resource" path="res://weapons/knife.tres" id="loadout_knife"]
+[ext_resource type="Resource" path="res://weapons/flashbang.tres" id="loadout_flashbang"]
+
 [resource]
 script = ExtResource("class_script")
 id = &"bulwark"
@@ -14,9 +20,10 @@ height = 1.92
 model = ExtResource("model")
 hit_zones = ExtResource("hit_zones")
 arms_model = ExtResource("arms_model")
-signature_weapon = "Pump shotgun"
+signature_weapon = "Breaker (pump shotgun)"
 look = "Closed helmet with a team stripe over a gas mask, big grey shoulder plates edged in team colour, front plates, team-colour sleeves, ammo pack."
 perk_name = "Plated"
 perk_description = "With armor on, takes 10% less damage and the armor wears down 30% slower."
 armor_damage_factor = 0.9
 armor_wear_factor = 0.7
+loadout = Array[ExtResource("weapon_data_script")]([ExtResource("loadout_shotgun"), ExtResource("loadout_pistol"), ExtResource("loadout_knife"), ExtResource("loadout_flashbang")])

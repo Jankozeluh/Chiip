@@ -35,6 +35,9 @@ func _ready() -> void:
 	_build_level()
 	_player = PLAYER_SCENE.instantiate()
 	_player.footstep_sound = null  # No audio device in headless runs.
+	# The Scout: its perk has nothing to do with guns, so the rifle's own numbers show
+	# (the default Rifleman reloads 15% faster since M7, D-095).
+	_player.class_data = ClassData.find(&"scout")
 	add_child(_player)
 	_near_dummy = _add_dummy(NEAR_DUMMY_SPOT)
 	_far_dummy = _add_dummy(FAR_DUMMY_SPOT)

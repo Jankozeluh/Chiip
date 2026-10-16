@@ -48,7 +48,7 @@ func _physics_process(delta: float) -> void:
 			_update_label()
 
 
-func _on_hit(damage: float, zone: Hitbox.Zone, hit_position: Vector3, _attacker: Node) -> void:
+func _on_hit(damage: float, zone: Hitbox.Zone, hit_position: Vector3, _attacker: Node, _penetration: float, _source: WeaponData) -> void:
 	_total_damage += damage
 	_hit_count += 1
 	_time_since_hit = 0.0

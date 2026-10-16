@@ -781,6 +781,8 @@ func _default_bindings() -> Dictionary:
 		&"jump": [_k(KEY_SPACE), _m(MOUSE_BUTTON_WHEEL_DOWN)], &"crouch": [_k(KEY_CTRL), ""], &"walk": [_k(KEY_SHIFT), ""],
 		&"shoot": [_m(MOUSE_BUTTON_LEFT), ""], &"aim": [_m(MOUSE_BUTTON_RIGHT), ""], &"reload": [_k(KEY_R), ""], &"use": [_k(KEY_E), ""],
 		&"scoreboard": [_k(KEY_TAB), ""], &"class_menu": [_k(KEY_M), ""], &"toggle_debug": [_k(KEY_F3), ""], &"toggle_console": [_k(KEY_QUOTELEFT), ""],
+		&"slot_primary": [_k(KEY_1), ""], &"slot_pistol": [_k(KEY_2), ""], &"slot_knife": [_k(KEY_3), ""], &"slot_grenade": [_k(KEY_4), ""],
+		&"last_weapon": [_k(KEY_Q), ""], &"drop_weapon": [_k(KEY_G), ""], &"buy_menu": [_k(KEY_B), ""],
 	}
 
 

@@ -61,4 +61,5 @@ theme_type_variation = &"EnemyScoreLabel"
 text = "0"
 
 [node name="Table" parent="Center/Panel/Margin/Content" instance=ExtResource("table_scene")]
+show_money = true
 layout_mode = 2

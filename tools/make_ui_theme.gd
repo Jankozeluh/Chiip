@@ -328,6 +328,10 @@ func _hud() -> void:
 	_hud_label("HudValueLabel", Palette.HUD_SIZE_VALUE, Palette.HUD_OUTLINE_VALUE, Palette.HUD_TEXT)
 	_hud_label("HudDeathLabel", Palette.HUD_SIZE_HEADLINE, Palette.HUD_OUTLINE_HEADLINE, Palette.HUD_ALERT)
 	_hud_label("HudSpectateLabel", Palette.HUD_SIZE_SPECTATE, Palette.HUD_OUTLINE_SPECTATE, Palette.HUD_TEXT)
+	# M7's lines: the weapon slots, the money and the reward under it.
+	_hud_label("HudSlotsLabel", Palette.HUD_SIZE_SMALL, Palette.HUD_OUTLINE_SMALL, Palette.HUD_TEXT)
+	_hud_label("HudMoneyLabel", Palette.HUD_SIZE_SCORE, Palette.HUD_OUTLINE_TEXT, Palette.HUD_MONEY)
+	_hud_label("HudRewardLabel", Palette.HUD_SIZE_SMALL, Palette.HUD_OUTLINE_SMALL, Palette.HUD_MONEY)
 	# Under the death message in a respawning match: "Respawning in 3".
 	_hud_label("HudRespawnLabel", Palette.HUD_SIZE_TEXT, Palette.HUD_OUTLINE_TEXT, Palette.HUD_TEXT_BRIGHT)
 	# The top bar: scores, the timer (game states recolour it) and the line under it.

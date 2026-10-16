@@ -336,6 +336,10 @@ const HUD_OUTLINE_TITLE := 10
 const HUD_SIZE_SCORE := 32
 const HUD_OUTLINE_SCORE := 0
 const HUD_SIZE_SMALL := 16
+## M7's small HUD lines (the weapon slots, the money reward): 16 px with a 4 px outline.
+const HUD_OUTLINE_SMALL := 4
+## The money and its rewards (M7): a soft green.
+const HUD_MONEY := Color(0.55, 0.9, 0.55)
 
 ## Side of a player's square in the top bar.
 const HUD_PIP_SIZE := 12

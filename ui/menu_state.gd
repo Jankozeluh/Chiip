@@ -77,6 +77,12 @@ static func is_any_open() -> bool:
 	return not _open.is_empty()
 
 
+## The menu opened last (on top), or null when none is open.
+static func get_top() -> Node:
+	_drop_freed()
+	return _open[-1] if not _open.is_empty() else null
+
+
 ## True if [param menu] is the one opened last, the one on top. Only that menu
 ## should react to Esc.
 static func is_top(menu: Node) -> bool:

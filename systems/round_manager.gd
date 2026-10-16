@@ -33,9 +33,23 @@ extends Node
 ## the groups from [method Teams.spawn_group]; each team spawns at its side's
 ## end of the map.
 ##
-## Classes (D-052, D-078): the bots get a mix when the match starts, the player keeps their own
-## class (or [member MatchSettings.player_class]), and [method request_class] changes a class
-## during freeze time only.
+## Loadouts (D-090, D-094): every round starts with a fresh loadout for everyone,
+## [member MatchSettings.round_loadout] (the knife and the Sparrow), no armor and no kit, and the
+## guns left on the floor last round are gone. Whatever is bought or picked up lasts one round.
+##
+## Money (D-090, D-098), when [member MatchSettings.economy] is on: everyone starts each half
+## with [member MatchSettings.start_money]; a round pays the winners
+## [member MatchSettings.win_money] and the losers by how many rounds in a row they have lost
+## ([member MatchSettings.loss_money]); a kill pays its weapon's [member WeaponData.kill_reward]
+## (a teamkill costs [member MatchSettings.teamkill_penalty]); the plant pays every attacker and the
+## defuse the defuser. Money carries over between rounds, gear doesn't. [method spend] is how the
+## buy menu pays (task 11), through [method request_buy].
+##
+## Classes (D-052, D-078, D-099): the class draft ([member MatchSettings.class_draft]) offers
+## everyone two random classes when the match starts ([method get_draft]); every offer has a class
+## the team doesn't have yet while there is one, and bots take the one their team has fewer of, so
+## each team gets a mix. You start as your first ([member MatchSettings.player_class] if set), and
+## [method request_class] changes between your two during freeze time only.
 ##
 ## This is authority code (docs/ARCHITECTURE.md, "Keeping multiplayer
 ## possible"): in M9 only the host runs it, and the clients show what it
@@ -68,8 +82,19 @@ signal match_ended(winner: int)
 signal character_killed(victim: Character, killer: Character, headshot: bool)
 ## Emitted when [method request_class] gave [param character] another class.
 signal class_changed(character: Character, data: ClassData)
+## Emitted when the match starts and [param character] has been offered [param classes] (the
+## class draft, two classes).
+signal class_drafted(character: Character, classes: Array[ClassData])
+## Emitted when [param character]'s money changes by [param amount] (negative when spent), for
+## [param reason]: "Round won", "Round lost", "Kill", "Teamkill", "Bomb planted", "Bomb defused",
+## "Bought", "New half". [method get_money] has the new total.
+signal money_changed(character: Character, amount: int, reason: String)
+## Emitted when [param character] bought [param item_id] ([Shop]).
+signal item_bought(character: Character, item_id: StringName)
 
 const BOT_SCENE := preload("res://bots/bot.tscn")
+## How many classes the draft offers each player (D-099).
+const DRAFT_SIZE := 2
 const BOMB_SCENE := preload("res://bomb/bomb.tscn")
 ## Damage a player must deal to an enemy killed by someone else to get an
 ## assist. CS: more than 40.
@@ -109,10 +134,19 @@ var rng := RandomNumberGenerator.new()
 ## [member MatchSettings.bomb_rounds] off): rounds are then won by elimination
 ## and time only.
 var bomb: Bomb
+## The guns that appear at random places on the map (D-098): a child of this node, made when the
+## match starts.
+var map_weapons: MapWeapons
 
+## Every participant's money: Character → int.
+var _money: Dictionary = {}
+## Rounds lost in a row by each team (index = team number), for the loss money.
+var _loss_streak: Array[int] = [0, 0]
 ## Randomness for the bots' class mix. It is seeded from [member rng] without drawing from it,
 ## so the mix doesn't change the spawn spots and the starting sides a seed gives.
 var _class_rng := RandomNumberGenerator.new()
+## The class draft: Character → its two classes this match (Array[ClassData]).
+var _drafts: Dictionary = {}
 
 ## The map's Player node (you), or null on a map without one (then team 0 is all bots).
 var _player: Character
@@ -202,18 +236,32 @@ func is_team_respawn() -> bool:
 
 
 ## Changes the class of [param character] to [param data], if the rules allow it: only during
-## freeze time (and before the first round has started). Returns true if the character now has
-## that class, false when refused (a live round, a round end, the end of the match) or when
-## there is nothing to change to. Emits [signal class_changed] when the class was another one.
+## freeze time (and before the first round has started), and only to a class of its draft
+## ([method get_draft]). Returns true if the character now has that class, false when refused (a
+## live round, a round end, the end of the match, a class it wasn't offered) or when there is
+## nothing to change to. Emits [signal class_changed] when the class was another one.
 ## The class menu and the console's [code]class[/code] command ask here; nobody sets
 ## [member Character.class_data] of a player in a match directly (authority code, D-078).
 func request_class(character: Character, data: ClassData) -> bool:
-	if phase != Phase.FREEZE or data == null or not is_instance_valid(character):
+	if phase != Phase.FREEZE or data == null or not is_instance_valid(character) or not is_drafted(character, data):
 		return false
 	if character.class_data != data:
 		character.class_data = data
 		class_changed.emit(character, data)
 	return true
+
+
+## The classes [param character] was offered this match (the class draft, D-099): two, or every
+## class when the draft is off or it has none.
+func get_draft(character: Character) -> Array[ClassData]:
+	if _drafts.has(character):
+		return _drafts[character]
+	return ClassData.all()
+
+
+## True if [param character] may play [param data] this match (it is one of its draft).
+func is_drafted(character: Character, data: ClassData) -> bool:
+	return get_draft(character).has(data)
 
 
 # --- Match and round flow ---
@@ -222,27 +270,18 @@ func request_class(character: Character, data: ClassData) -> bool:
 func _start_match() -> void:
 	Teams.friendly_fire = settings.friendly_fire
 	_class_rng.seed = rng.seed
-	var classes := ClassData.all()
-	# Each team's bots cycle through the classes from a random one, so three bots are three classes.
-	var class_offsets: Array[int] = []
-	for team in Teams.COUNT:
-		class_offsets.append(_class_rng.randi_range(0, classes.size() - 1))
-	var bots_on_player_team := settings.team_size
-	if _player != null:
-		if settings.player_class != null:
-			_player.class_data = settings.player_class
-		_join(_player)
-		bots_on_player_team -= 1
-	for i in bots_on_player_team:
-		_add_bot(player_team, classes[(class_offsets[player_team] + i) % classes.size()])
-	for i in settings.enemy_team_size:
-		_add_bot(Teams.other(player_team), classes[(class_offsets[Teams.other(player_team)] + i) % classes.size()])
+	if settings.class_draft:
+		_join_drafted()
+	else:
+		_join_in_turn()
 	attacking_team = rng.randi_range(0, Teams.COUNT - 1)
 	score.clear()
 	for team in Teams.COUNT:
 		score.append(0)
 	winner = -1
+	_reset_money()
 	_add_bomb()
+	_add_map_weapons()
 	_start_round()
 
 
@@ -252,11 +291,20 @@ func _start_round() -> void:
 	_damage_this_life.clear()
 	for team in Teams.COUNT:
 		_spawn_team(team)
+	_clear_floor()
+	_place_map_weapons()
+	for character in _participants:
+		if is_instance_valid(character):
+			_give_loadout(character)
 	if bomb != null:
 		bomb.start_round(_pick_bomb_carrier(), attacking_team)
 	_plan_bots()
 	_set_frozen(true)
-	_set_phase(Phase.FREEZE, settings.freeze_time)
+	_set_phase(Phase.FREEZE, _freeze_time())
+	# The bots shop as the freeze time begins, by their team's money (D-099).
+	if settings.bots_buy:
+		for team in Teams.COUNT:
+			BotBuyer.buy_for_team(self, team, _class_rng)
 	round_started.emit(round_number)
 
 
@@ -273,6 +321,7 @@ func _end_round(round_winner: int, reason: EndReason) -> void:
 		bomb.active = false
 	# Count the round first, so everyone listening to the signals sees the new score.
 	_score_round(round_winner)
+	_pay_round(round_winner)
 	_set_phase(Phase.ROUND_END, settings.round_end_time)
 	round_ended.emit(round_winner, reason)
 
@@ -288,6 +337,9 @@ func _after_round_end() -> void:
 	# Nobody can have won yet at this point, so half time never clashes with a match end.
 	if round_number == settings.rounds_to_win - 1:
 		attacking_team = get_defending_team()
+		# A new half: everyone back to the starting money, as in CS, and the bots choose again.
+		_reset_money()
+		_rechoose_bot_classes()
 		sides_swapped.emit()
 	_start_round()
 
@@ -298,6 +350,16 @@ func _after_round_end() -> void:
 ## Gives the bots their orders for the round that is starting.
 func _plan_bots() -> void:
 	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng, settings.round_time)
+
+
+## The weapons [param character] gets at a round start: the same fresh loadout for everyone.
+func _loadout_for(_character: Character) -> Array[WeaponData]:
+	return settings.round_loadout
+
+
+## Seconds of freeze time at a round start (the buy time, D-098).
+func _freeze_time() -> float:
+	return settings.freeze_time
 
 
 ## Seconds the live part of a round lasts.
@@ -376,6 +438,8 @@ func _add_bomb() -> void:
 	bomb.planted.connect(_on_bomb_planted)
 	bomb.exploded.connect(_on_bomb_exploded)
 	bomb.defused.connect(_on_bomb_defused)
+	# A defuse kit halves the defuse (D-080's hook, filled in M7: D-098).
+	bomb.kit_check = func(defuser: Character) -> bool: return defuser.has_defuse_kit
 
 
 ## A random attacker, as in CS (seeded, so tests can repeat it).
@@ -387,6 +451,8 @@ func _pick_bomb_carrier() -> Character:
 
 
 func _on_bomb_planted(_site: Area3D, _planter: Character) -> void:
+	for attacker in get_members(attacking_team):
+		add_money(attacker, settings.plant_money, "Bomb planted")
 	# If the attackers were already all dead, nothing changes: the defenders must defuse.
 	_check_elimination.call_deferred()
 
@@ -396,15 +462,138 @@ func _on_bomb_exploded() -> void:
 		_end_round(attacking_team, EndReason.BOMB_EXPLODED)
 
 
-func _on_bomb_defused(_defuser: Character) -> void:
+func _on_bomb_defused(defuser: Character) -> void:
+	add_money(defuser, settings.defuse_money, "Bomb defused")
 	if phase == Phase.LIVE:
 		_end_round(get_defending_team(), EndReason.BOMB_DEFUSED)
+
+
+# --- Money (D-098) ---
+
+
+## True if [param character] may shop now: a match with money, in freeze time (D-098), alive.
+## The buy menu asks before it opens.
+func can_buy_now(character: Character) -> bool:
+	return has_economy() and phase == Phase.FREEZE and round_number > 0 and is_instance_valid(character) \
+			and character.is_alive() and _participants.has(character)
+
+
+## Seconds of buy time left (the freeze time's), 0 when buying is over.
+func get_buy_time_left() -> float:
+	return time_left if phase == Phase.FREEZE else 0.0
+
+
+## What [param item_id] costs [param character] now ([method Shop.price_for]).
+func get_price(character: Character, item_id: StringName) -> int:
+	return Shop.price_for(character, item_id)
+
+
+## Why [param character] can't buy [param item_id] now, or "" if it can: the time, the money, or
+## what it carries ([method Shop.refusal]; a kit is for defenders on a map with the bomb).
+func get_buy_refusal(character: Character, item_id: StringName) -> String:
+	if not has_economy():
+		return "No buying in this mode"
+	if not can_buy_now(character):
+		return "Buying is over" if phase != Phase.FREEZE else "You can't buy now"
+	var reason := Shop.refusal(character, item_id, get_side(character.team) == Teams.Side.DEFENDING, bomb != null)
+	if reason != "":
+		return reason
+	if get_money(character) < get_price(character, item_id):
+		return "Not enough money"
+	return ""
+
+
+## Buys [param item_id] for [param character] if the rules allow it: pays and hands it over
+## ([method Shop.give]). Returns "" when bought, else why not. The buy menu and the bots ask here
+## (authority code: in M9 the host decides every purchase).
+func request_buy(character: Character, item_id: StringName) -> String:
+	var reason := get_buy_refusal(character, item_id)
+	if reason != "":
+		return reason
+	spend(character, get_price(character, item_id))
+	Shop.give(character, item_id)
+	item_bought.emit(character, item_id)
+	return ""
+
+
+## True if this match has money (rounds with [member MatchSettings.economy] on).
+func has_economy() -> bool:
+	return settings.economy and not is_team_respawn()
+
+
+## How much money [param character] has (0 without an economy).
+func get_money(character: Character) -> int:
+	return _money.get(character, 0)
+
+
+## Gives [param character] [param amount] (negative takes it away), capped at
+## [member MatchSettings.max_money] and never below 0, and says why. Does nothing without an
+## economy. Returns the change actually made.
+func add_money(character: Character, amount: int, reason: String) -> int:
+	if not has_economy() or not _money.has(character):
+		return 0
+	var before: int = _money[character]
+	var after := clampi(before + amount, 0, settings.max_money)
+	_money[character] = after
+	if after != before:
+		money_changed.emit(character, after - before, reason)
+	return after - before
+
+
+## Takes [param amount] from [param character] if it has that much. Returns true if it paid.
+func spend(character: Character, amount: int) -> bool:
+	if not has_economy() or get_money(character) < amount:
+		return false
+	add_money(character, -amount, "Bought")
+	return true
+
+
+## How much [param team] gets for losing the next round now (by its losses in a row).
+func get_loss_money(team: int) -> int:
+	var table := settings.loss_money
+	if table.is_empty():
+		return 0
+	return table[mini(_loss_streak[team], table.size() - 1)]
+
+
+## Everyone back to the starting money, no losses in a row (the match start and half time).
+func _reset_money() -> void:
+	_loss_streak = [0, 0]
+	if not has_economy():
+		return
+	for character in _participants:
+		var before: int = _money.get(character, 0)
+		_money[character] = settings.start_money
+		money_changed.emit(character, settings.start_money - before, "New half")
+
+
+## Pays a round: the winners the win money, the losers by their losses in a row.
+func _pay_round(round_winner: int) -> void:
+	var loser := Teams.other(round_winner)
+	var loss := get_loss_money(loser)
+	for character in get_members(round_winner):
+		add_money(character, settings.win_money, "Round won")
+	for character in get_members(loser):
+		add_money(character, loss, "Round lost")
+	_loss_streak[loser] += 1
+	_loss_streak[round_winner] = 0
+
+
+## A kill pays the killer its weapon's reward ($200, $500 with the knife); a teamkill costs.
+func _pay_kill(victim: Character, killer: Character) -> void:
+	if killer == null or killer == victim or not _money.has(killer) or phase == Phase.MATCH_END:
+		return
+	if killer.team == victim.team:
+		add_money(killer, -settings.teamkill_penalty, "Teamkill")
+		return
+	var weapon := victim.last_damage_source
+	add_money(killer, weapon.kill_reward if weapon != null else 200, "Kill")
 
 
 # --- Players ---
 
 
-func _add_bot(team: int, data: ClassData) -> void:
+func _add_bot(team: int, data: ClassData) -> Character:
 	var bot: Character = BOT_SCENE.instantiate()
 	_bots_made += 1
 	bot.name = "Bot%d" % _bots_made
@@ -413,13 +602,128 @@ func _add_bot(team: int, data: ClassData) -> void:
 	(bot.get_node("BotController") as BotController).difficulty = settings.bot_difficulty
 	get_parent().add_child(bot)
 	_join(bot)
+	return bot
 
 
 func _join(character: Character) -> void:
 	_participants.append(character)
 	_stats[character] = Stats.new()
+	_money[character] = 0
 	character.damaged.connect(_on_damaged.bind(character))
 	character.died.connect(_on_died.bind(character))
+
+
+## Without the draft (M6): each team's bots cycle through the classes from a random one, so three
+## bots are three classes; the player keeps the map Player's class or [member MatchSettings.player_class].
+func _join_in_turn() -> void:
+	var classes := ClassData.all()
+	var class_offsets: Array[int] = []
+	for team in Teams.COUNT:
+		class_offsets.append(_class_rng.randi_range(0, classes.size() - 1))
+	var bots_on_player_team := settings.team_size
+	if _player != null:
+		if settings.player_class != null:
+			_player.class_data = settings.player_class
+		_join(_player)
+		bots_on_player_team -= 1
+	for i in bots_on_player_team:
+		_add_bot(player_team, classes[(class_offsets[player_team] + i) % classes.size()])
+	for i in settings.enemy_team_size:
+		_add_bot(Teams.other(player_team), classes[(class_offsets[Teams.other(player_team)] + i) % classes.size()])
+
+
+## The class draft (D-099): you first, then your team's bots, then the enemy's, each offered two
+## classes ([method _draw_offer]). You start as the first of yours (or
+## [member MatchSettings.player_class], which then is one of the two); a bot takes the one its team
+## has fewer of.
+func _join_drafted() -> void:
+	var on_team: Array = [[], []]
+	var bots_on_player_team := settings.team_size
+	if _player != null:
+		var offer := _draw_offer(on_team[player_team])
+		if settings.player_class != null and not offer.has(settings.player_class):
+			offer[1 if offer[0] == settings.player_class else 0] = settings.player_class
+		if settings.player_class != null:
+			_player.class_data = settings.player_class
+		else:
+			_player.class_data = offer[0]
+		on_team[player_team].append(_player.class_data)
+		_drafts[_player] = offer
+		_join(_player)
+		class_drafted.emit(_player, offer)
+		bots_on_player_team -= 1
+	var teams: Array[int] = [player_team, Teams.other(player_team)]
+	var counts: Array[int] = [bots_on_player_team, settings.enemy_team_size]
+	for t in teams.size():
+		var team := teams[t]
+		for i in counts[t]:
+			var offer := _draw_offer(on_team[team])
+			var pick := _less_played(offer, on_team[team])
+			on_team[team].append(pick)
+			var bot := _add_bot(team, pick)
+			_drafts[bot] = offer
+			class_drafted.emit(bot, offer)
+
+
+## Two different random classes, at least one of them a class [param on_team] doesn't have yet
+## (while there is one), so a team always gets a mix.
+func _draw_offer(on_team: Array) -> Array[ClassData]:
+	var classes := ClassData.all()
+	var offer: Array[ClassData] = []
+	while offer.size() < mini(DRAFT_SIZE, classes.size()):
+		var data := classes[_class_rng.randi_range(0, classes.size() - 1)]
+		if not offer.has(data):
+			offer.append(data)
+	var missing := classes.filter(func(data: ClassData) -> bool: return not on_team.has(data))
+	if not missing.is_empty() and not offer.any(func(data: ClassData) -> bool: return missing.has(data)):
+		offer[offer.size() - 1] = missing[_class_rng.randi_range(0, missing.size() - 1)]
+	return offer
+
+
+## The class of [param offer] that [param on_team] has fewer of (the first on a tie).
+func _less_played(offer: Array[ClassData], on_team: Array) -> ClassData:
+	var best := offer[0]
+	for data in offer:
+		if on_team.count(data) < on_team.count(best):
+			best = data
+	return best
+
+
+## At half time a bot may change class (D-099). With the draft, each bot switches to its other
+## drafted class unless a teammate already plays more of that one than of its current class, so
+## the team keeps its mix; without it, still one of each before any repeats, from a new random
+## start. Either way a bot mostly plays the second half as something else.
+func _rechoose_bot_classes() -> void:
+	if not _drafts.is_empty():
+		_redraft_bots()
+		return
+	var classes := ClassData.all()
+	for team in Teams.COUNT:
+		# The same shift for every bot of the team keeps their classes different from each other.
+		var offset := _class_rng.randi_range(1, classes.size() - 1)
+		for member in get_members(team):
+			if member.is_local_player():
+				continue
+			var current := classes.find(member.class_data)
+			var data := classes[(maxi(current, 0) + offset) % classes.size()]
+			if data != member.class_data:
+				member.class_data = data
+				class_changed.emit(member, data)
+
+
+func _redraft_bots() -> void:
+	for team in Teams.COUNT:
+		var members := get_members(team)
+		for member in members:
+			if member.is_local_player() or not _drafts.has(member):
+				continue
+			var others: Array = members.filter(func(other: Character) -> bool: return other != member).map(
+					func(other: Character) -> ClassData: return other.class_data)
+			for data: ClassData in _drafts[member]:
+				if data != member.class_data and others.count(data) <= others.count(member.class_data):
+					member.class_data = data
+					class_changed.emit(member, data)
+					break
 
 
 ## Puts every member of [param team] on its own spawn marker of the team's side.
@@ -433,6 +737,48 @@ func _spawn_team(team: int) -> void:
 	for i in members.size():
 		var marker := markers[i % markers.size()] as Node3D
 		members[i].respawn(marker.global_position, marker.global_rotation.y)
+
+
+## Gives [param character] its loadout ([method _loadout_for]) and takes away armor and kit.
+func _give_loadout(character: Character) -> void:
+	var loadout := _loadout_for(character)
+	if not loadout.is_empty():
+		character.inventory.set_loadout(loadout)
+	character.set_armor(0.0, false)
+	character.set_defuse_kit(false)
+
+
+## Makes [member map_weapons] (D-098): [member MatchSettings.map_weapons] guns each round, away
+## from the team spawns and off the bomb sites, drawn from a generator seeded from [member rng]
+## (so placing them doesn't change the spawn spots a seed gives).
+func _add_map_weapons() -> void:
+	map_weapons = MapWeapons.new()
+	map_weapons.name = "MapWeapons"
+	map_weapons.rng.seed = rng.seed + 7919
+	_set_up_map_weapons(map_weapons)
+	add_child(map_weapons)
+
+
+## The rounds' map weapons: a new set every round, none replaced during it.
+func _set_up_map_weapons(weapons: MapWeapons) -> void:
+	weapons.count = settings.map_weapons
+	weapons.replace_time = -1.0
+	weapons.avoid_bomb_sites = bomb != null
+
+
+## Every round start: the last round's map weapons go, new ones appear somewhere else.
+func _place_map_weapons() -> void:
+	if map_weapons != null:
+		map_weapons.replace_all()
+
+
+## Removes every gun lying on the map's floor (a new round starts clean).
+func _clear_floor() -> void:
+	var map := get_parent()
+	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
+		if map.is_ancestor_of(node) and not (node as WeaponPickup).spot:
+			node.remove_from_group(WeaponPickup.GROUP)
+			node.queue_free()
 
 
 func _set_frozen(frozen: bool) -> void:
@@ -471,6 +817,7 @@ func _on_died(killer: Character, victim: Character) -> void:
 		if attacker != killer and dealt[attacker] >= ASSIST_DAMAGE and _stats.has(attacker):
 			(_stats[attacker] as Stats).assists += 1
 	_damage_this_life.erase(victim)
+	_pay_kill(victim, killer)
 	_score_kill(victim, killer)
 	character_killed.emit(victim, killer, _last_hit_zone.get(victim, -1) == Hitbox.Zone.HEAD)
 	_check_elimination.call_deferred()

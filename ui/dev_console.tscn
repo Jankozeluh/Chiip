@@ -11,7 +11,7 @@ script = ExtResource("console_script")
 anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
-custom_minimum_size = Vector2(0, 360)
+custom_minimum_size = Vector2(0, 480)
 theme_type_variation = &"ConsolePanel"
 
 [node name="Margin" type="MarginContainer" parent="Panel"]

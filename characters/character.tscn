@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://characters/character.gd" id="character_script"]
 [ext_resource type="PackedScene" path="res://characters/crew/crew_body.tscn" id="body_scene"]
 [ext_resource type="Resource" path="res://characters/crew/classes/rifleman.tres" id="rifleman_class"]
+[ext_resource type="Script" path="res://characters/inventory.gd" id="inventory_script"]
 
 [sub_resource type="CapsuleShape3D" id="standing_shape"]
 radius = 0.4
@@ -41,3 +42,6 @@ volume_db = 2.0
 unit_size = 10.0
 max_distance = 30.0
 bus = &"Effects"
+
+[node name="Inventory" type="Node" parent="."]
+script = ExtResource("inventory_script")

@@ -30,6 +30,13 @@ extends CharacterController
 ## the map's patrol points, and the others follow a few metres behind,
 ## watching the flanks. Every bot reports what it sees and hears to the plan.
 ##
+## The arsenal (M7, D-099): a bot keeps a gun in hand (the primary, or the pistol when the primary
+## is empty, or when its magazine runs dry up close), scopes the Heron before it shoots and only
+## shoots it scoped and settled, closes in with the shotgun, fetches a better gun or a power weapon
+## lying close to its way, and throws frags and flashbangs at enemies it knows about but can't
+## see (looking away from its own flash). It switches, drops, swaps and throws through the same
+## commands as you ([CharacterInput]).
+##
 ## What it knows comes from its [BotSenses]; how well it fights comes from its
 ## [BotDifficulty]. Movement uses a [NavigationAgent3D] (sibling node).
 
@@ -48,6 +55,29 @@ enum Role {
 
 ## The fastest the bot turns its view while walking, in degrees per second.
 const WALK_TURN_SPEED := 200.0
+## The arsenal (D-099): how far a bot goes out of its way for a better gun on the floor (metres;
+## farther for a power weapon), how long it tries, and how often it looks.
+const PICKUP_REACH := 10.0
+const SPOT_REACH := 15.0
+const PICKUP_TIME := 4.0
+const PICKUP_CHECK := 0.5
+## Only a gun worth at least this much more (by price) than its own is worth the detour.
+const PICKUP_MIN_GAIN := 500
+## Beyond this distance (metres) a shotgun doesn't shoot: it closes in.
+const SHOTGUN_RANGE := 18.0
+## Up to this distance it switches to the pistol instead of reloading an empty primary.
+const PISTOL_SWITCH_RANGE := 15.0
+## A scoped shot waits until the cone is this small (degrees).
+const SCOPED_READY := 0.15
+## Grenades: thrown at enemies known to be this far away (metres), at most once every
+## [constant GRENADE_WAIT] seconds (not in the first [constant GRENADE_FIRST_WAIT] of a life).
+const GRENADE_MIN := 6.0
+const GRENADE_MAX := 24.0
+const GRENADE_WAIT := 8.0
+const GRENADE_FIRST_WAIT := 4.0
+## How long it holds the pin before letting go (seconds), and looks away from its own flash.
+const GRENADE_HOLD := 0.4
+const LOOK_AWAY_TIME := 1.8
 ## How quickly the view eases toward where the bot wants to look (per second).
 ## Turning eases in and out like a hand on a mouse, instead of snapping at a
 ## constant speed. Small corrections are gentle, so moving targets are harder.
@@ -187,6 +217,27 @@ var _hunt_plan: HuntPlan
 var _roam_look_left: float = 0.0
 ## Randomness for aim error and decisions. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
+## The weapon in hand whose shots this brain counts.
+var _weapon: Weapon
+## Seconds before the next weapon switch it may ask for (no flicking back and forth).
+var _switch_wait: float = 0.0
+## The aim button was pressed last tick (the scope needs a fresh press each step).
+var _aim_pressed_last: bool = false
+## A gun on the floor it's going for, and how long it has left to get it.
+var _pickup_target: WeaponPickup
+var _pickup_left: float = 0.0
+var _pickup_check_left: float = 0.0
+## A grenade throw in progress: where to (INF: none), how long the pin has been pulled, and the
+## time until the next throw it may start.
+var _throw_at: Vector3 = Vector3.INF
+var _throw_hold: float = 0.0
+var _throw_wait: float = 0.0
+var _grenade_wait: float = 0.0
+## After throwing a flashbang: seconds to keep looking away from it, and from where.
+var _look_away_left: float = 0.0
+var _look_away_from: Vector3 = Vector3.ZERO
+## The trigger was held last tick: a semi-automatic weapon needs it let go between shots.
+var _trigger_was_held: bool = false
 
 @onready var _agent: NavigationAgent3D = get_parent().get_node("NavigationAgent3D")
 @onready var _senses: BotSenses = get_parent().get_node("BotSenses")
@@ -194,7 +245,8 @@ var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_senses.enemy_spotted.connect(_on_enemy_spotted)
-	character.weapon.fired.connect(_on_weapon_fired)
+	character.weapon_changed.connect(_on_weapon_changed)
+	_on_weapon_changed(character.weapon)
 
 
 ## Walks to a point on the map along the navigation mesh.
@@ -216,6 +268,10 @@ func on_respawned() -> void:
 	state = State.PATROL
 	_target = null
 	_close_in_left = 0.0
+	_pickup_target = null
+	_throw_at = Vector3.INF
+	_look_away_left = 0.0
+	_grenade_wait = GRENADE_FIRST_WAIT
 	_senses.reset()
 	patrol()
 
@@ -295,6 +351,7 @@ func get_input(delta: float) -> CharacterInput:
 				input.shoot = false
 		State.SEARCH:
 			_search(input, delta)
+	_use_arsenal(input, delta)
 	input.yaw = _yaw
 	input.pitch = _pitch
 	return input
@@ -332,9 +389,10 @@ func _update_state() -> void:
 
 
 ## True while an attacker closes in on [param enemy] instead of trading shots
-## with it at long range (see [constant LONG_DUEL_PATIENCE]).
+## with it at long range (see [constant LONG_DUEL_PATIENCE]); with a shotgun, beyond its reach.
 func _closing_in_on(enemy: Character) -> bool:
-	return _close_in_left > 0.0 and character.global_position.distance_to(enemy.global_position) > LONG_RANGE
+	var reach := SHOTGUN_RANGE if character.weapon != null and character.weapon.data.pellets > 1 else LONG_RANGE
+	return _close_in_left > 0.0 and character.global_position.distance_to(enemy.global_position) > reach
 
 
 ## Whether the bot leaves its orders to check on an enemy last seen or heard at [param point].
@@ -485,6 +543,8 @@ func _search(input: CharacterInput, delta: float) -> void:
 
 
 func _engage(input: CharacterInput, delta: float) -> void:
+	if character.weapon == null:
+		return
 	_time_on_target += delta
 	_reaction_left -= delta
 	_pause_left -= delta
@@ -521,6 +581,19 @@ func _engage(input: CharacterInput, delta: float) -> void:
 	input.shoot = (_reaction_left <= 0.0 and stopped and off_target <= ON_TARGET_DEGREES
 			and _pause_left <= 0.0 and not character.weapon.is_reloading()
 			and not _teammate_in_line_of_fire())
+	# The Heron only shoots scoped and settled; the shotgun not beyond its reach (D-099).
+	if character.weapon.data.has_scope() and (not character.weapon.is_scoped() or character.weapon.get_inaccuracy() > SCOPED_READY):
+		input.shoot = false
+	if character.weapon.data.pellets > 1 and character.global_position.distance_to(_target.global_position) > SHOTGUN_RANGE:
+		input.shoot = false
+		if role != Role.DEFEND:
+			_close_in_left = CLOSE_IN_TIME
+	if character.weapon.data.is_melee() or character.weapon.data.is_grenade():
+		input.shoot = false
+	# A semi-automatic weapon (the pistols) fires once per pull: let go every other tick.
+	if input.shoot and not character.weapon.data.automatic and _trigger_was_held:
+		input.shoot = false
+	_trigger_was_held = input.shoot
 
 
 ## True when a living teammate stands close to the line from the bot's eyes to
@@ -544,6 +617,15 @@ func _teammate_in_line_of_fire() -> bool:
 	return false
 
 
+## Listens to the weapon in hand (it changes with every switch, D-094).
+func _on_weapon_changed(weapon: Weapon) -> void:
+	if _weapon != null and is_instance_valid(_weapon) and _weapon.fired.is_connected(_on_weapon_fired):
+		_weapon.fired.disconnect(_on_weapon_fired)
+	_weapon = weapon
+	if weapon != null:
+		weapon.fired.connect(_on_weapon_fired)
+
+
 func _on_weapon_fired(_spray_shot: int) -> void:
 	if state != State.ENGAGE or _target == null:
 		return
@@ -553,6 +635,191 @@ func _on_weapon_fired(_spray_shot: int) -> void:
 	if _shots_in_burst >= limit:
 		_shots_in_burst = 0
 		_pause_left = difficulty.burst_pause
+
+
+# --- The arsenal (D-099) ---
+
+
+## Runs after the state's own input: weapon choice, the scope, a pickup on the way, grenades.
+func _use_arsenal(input: CharacterInput, delta: float) -> void:
+	_switch_wait = maxf(_switch_wait - delta, 0.0)
+	_grenade_wait = maxf(_grenade_wait - delta, 0.0)
+	if character.frozen or character.busy:
+		_throw_at = Vector3.INF
+		return
+	if _throw_at != Vector3.INF:
+		_throw_grenade(input, delta)
+		return
+	if _look_away_left > 0.0:
+		_look_away_left -= delta
+		var away := character.get_eye_position() * 2.0 - _look_away_from
+		_turn_toward_point(away, difficulty.aim_turn_speed, delta)
+	_choose_weapon(input)
+	_work_scope(input)
+	if state == State.PATROL:
+		_go_for_pickup(input, delta)
+	elif state == State.SEARCH:
+		_maybe_throw(input)
+
+
+## Keeps a gun in hand: the primary while it has ammo, else the pistol; the pistol instead of a
+## reload when the primary runs dry close to an enemy; never the knife or a grenade in a fight.
+func _choose_weapon(input: CharacterInput) -> void:
+	var inventory := character.inventory
+	var held := character.weapon
+	var primary := inventory.get_in_slot(WeaponData.Slot.PRIMARY)
+	var pistol := inventory.get_in_slot(WeaponData.Slot.PISTOL)
+	var primary_ok := primary != null and (primary.magazine > 0 or primary.reserve > 0)
+	var pistol_ok := pistol != null and (pistol.magazine > 0 or pistol.reserve > 0)
+	var want: Weapon = primary if primary_ok else (pistol if pistol_ok else held)
+	if state == State.ENGAGE and primary_ok and primary.magazine == 0 and pistol_ok and pistol.magazine > 0 \
+			and _target != null and character.global_position.distance_to(_target.global_position) <= PISTOL_SWITCH_RANGE:
+		want = pistol
+	elif held == pistol and state == State.ENGAGE and pistol_ok and pistol.magazine > 0:
+		want = pistol  # Finish the fight with it.
+	if want == null or want == held or _switch_wait > 0.0:
+		return
+	input.weapon_slot = want.data.slot
+	_switch_wait = 0.5
+
+
+## Scopes the Heron in a fight (one step: the first zoom), and out of the scope otherwise.
+func _work_scope(input: CharacterInput) -> void:
+	var weapon := character.weapon
+	if weapon == null or not weapon.data.has_scope() or weapon.is_drawing():
+		_aim_pressed_last = false
+		return
+	var want := 1 if state == State.ENGAGE else 0
+	if weapon.zoom_level != want and not _aim_pressed_last and not weapon.is_reloading():
+		input.aim = true
+	_aim_pressed_last = input.aim
+
+
+## How much a bot of this class wants [param data]: by price, the Heron only for the Marksman.
+func _weapon_value(data: WeaponData) -> int:
+	if data == null:
+		return 0
+	if data.has_scope() and character.class_data != null and character.class_data.id != &"marksman":
+		return 2000
+	return data.price
+
+
+## A better gun lying near its way (or a power weapon a bit farther): it goes and takes it
+## (walking over it, or E to swap), then carries on with its orders.
+func _go_for_pickup(input: CharacterInput, delta: float) -> void:
+	# The bomb comes first: the carrier, a bot fetching it, and everyone once it's planted.
+	if _objective_live() and (_bomb.carrier == character or _is_fetching() or _bomb.is_planted()):
+		_pickup_target = null
+		return
+	if _pickup_target != null:
+		_pickup_left -= delta
+		if not is_instance_valid(_pickup_target) or not _pickup_target.is_in_group(WeaponPickup.GROUP) or _pickup_left <= 0.0:
+			_pickup_target = null
+			_resume_orders()
+			return
+		var to := _pickup_target.global_position - character.get_eye_position()
+		_go_to(_pickup_target.global_position)
+		_walk(input, delta, to.length() > Inventory.SWAP_REACH)
+		if to.length() <= Inventory.SWAP_REACH - 0.2:
+			# Close enough: look at it and press Use (a swap if the slot is taken).
+			_turn_toward_point(_pickup_target.global_position, difficulty.aim_turn_speed, delta)
+			if rad_to_deg(Vector2(angle_difference(_yaw, atan2(-to.x, -to.z)), _pitch - asin(to.normalized().y)).length()) < 10.0:
+				input.use = not character.is_holding_use()
+		return
+	_pickup_check_left -= delta
+	if _pickup_check_left > 0.0:
+		return
+	_pickup_check_left = PICKUP_CHECK
+	var best: WeaponPickup = null
+	var best_gain := 0
+	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
+		var pickup := node as WeaponPickup
+		if pickup == null or pickup.data.is_grenade() or not pickup.can_be_taken_by(character):
+			continue
+		var reach := SPOT_REACH if pickup.spot != null else PICKUP_REACH
+		if character.global_position.distance_to(pickup.global_position) > reach:
+			continue
+		var current := character.inventory.get_in_slot(pickup.data.slot)
+		var gain := _weapon_value(pickup.data) - (_weapon_value(current.data) if current != null else 0)
+		if gain >= PICKUP_MIN_GAIN and gain > best_gain:
+			best = pickup
+			best_gain = gain
+	if best != null:
+		_pickup_target = best
+		_pickup_left = PICKUP_TIME
+		move_to(best.global_position)
+
+
+## In a search for an enemy it can't see but knows about, a frag or a flashbang goes their way.
+func _maybe_throw(input: CharacterInput) -> void:
+	if _grenade_wait > 0.0 or not _senses.has_lead():
+		return
+	var distance := character.global_position.distance_to(_senses.last_known_position)
+	if distance < GRENADE_MIN or distance > GRENADE_MAX:
+		return
+	var grenade: Weapon = null
+	for kind in [&"frag", &"flashbang"]:
+		for carried in character.inventory.get_grenades():
+			if carried.data.id == kind and carried.magazine > 0:
+				grenade = carried
+				break
+		if grenade != null:
+			break
+	if grenade == null:
+		return
+	_throw_at = _senses.last_known_position + Vector3.UP * 0.5
+	_throw_hold = 0.0
+	_throw_wait = 1.0
+	if character.weapon == null or not character.weapon.data.is_grenade():
+		input.weapon_slot = WeaponData.Slot.GRENADE
+
+
+## Aims a throw at [member _throw_at] (the arc solved for the throw speed), pulls the pin, lets go.
+func _throw_grenade(input: CharacterInput, delta: float) -> void:
+	var weapon := character.weapon
+	if state == State.ENGAGE:
+		_throw_at = Vector3.INF
+		return
+	if weapon == null or not weapon.data.is_grenade():
+		# Still taking it out (the switch command goes through next tick).
+		_throw_wait -= delta
+		if _throw_wait <= 0.0:
+			_throw_at = Vector3.INF
+		return
+	var aim := throw_aim(character.get_eye_position(), _throw_at, weapon.data.throw_speed)
+	_turn_toward(aim.x, aim.y, difficulty.aim_turn_speed, delta)
+	if weapon.is_drawing():
+		return
+	var on_target := rad_to_deg(Vector2(angle_difference(_yaw, aim.x), _pitch - aim.y).length()) < 3.0
+	if _throw_hold < GRENADE_HOLD or not on_target:
+		input.shoot = true
+		_throw_hold += delta
+		return
+	# Let go: the grenade leaves the hand.
+	if weapon.data.id == &"flashbang":
+		_look_away_left = LOOK_AWAY_TIME
+		_look_away_from = _throw_at
+	_throw_at = Vector3.INF
+	_grenade_wait = GRENADE_WAIT
+
+
+## The view angles (yaw, pitch in radians) that throw a grenade from [param from] to land at
+## [param to] at [param speed] m/s: the low arc of the throw's ballistics under [Grenade]'s gravity,
+## turned back into a view pitch (a throw leaves 10° above a level view, see
+## [method Grenade.throw_velocity]). Out of reach: the 45° throw.
+static func throw_aim(from: Vector3, to: Vector3, speed: float) -> Vector2:
+	var offset := to - from
+	var flat := Vector2(offset.x, offset.z).length()
+	var yaw := atan2(-offset.x, -offset.z)
+	var g := Grenade.GRAVITY
+	var v2 := speed * speed
+	var root := v2 * v2 - g * (g * flat * flat + 2.0 * offset.y * v2)
+	var angle := deg_to_rad(45.0)
+	if root >= 0.0 and flat > 0.01:
+		angle = atan((v2 - sqrt(root)) / (g * flat))
+	var thrown := rad_to_deg(angle)
+	var pitch := (thrown - 10.0) * (90.0 / 80.0 if thrown >= 10.0 else 90.0 / 100.0)
+	return Vector2(yaw, deg_to_rad(clampf(pitch, -89.0, 89.0)))
 
 
 # --- Team respawn: hunting in groups ---

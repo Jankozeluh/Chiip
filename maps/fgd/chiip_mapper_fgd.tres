@@ -1,0 +1,140 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="solid_class"]
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="point_class"]
+[ext_resource type="Script" path="res://maps/kit/kit_bomb_site.gd" id="bomb_site_script"]
+[ext_resource type="Script" path="res://maps/kit/kit_route_point.gd" id="route_point_script"]
+
+[sub_resource type="Resource" id="func_glass"]
+script = ExtResource("solid_class")
+collision_layer = 4
+collision_mask = 0
+classname = "func_glass"
+description = "See-through brush for windows (use interior/glass): stops players and bots, but bullets and sight pass through (D-123). Glass doesn't break."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.75, 0.75, 1)
+})
+node_class = "StaticBody3D"
+
+[sub_resource type="Resource" id="func_fence"]
+script = ExtResource("solid_class")
+collision_layer = 4
+collision_mask = 0
+classname = "func_fence"
+description = "See-through brush for chain-link, grates and mesh (use industrial/chainlink): stops players and bots, but bullets and sight pass through (D-123)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.6, 1)
+})
+node_class = "StaticBody3D"
+
+[sub_resource type="Resource" id="func_clip"]
+script = ExtResource("solid_class")
+build_visuals = false
+collision_layer = 4
+collision_mask = 0
+classname = "func_clip"
+description = "Invisible wall that stops players and bots, but not bullets or sight: keeps players off roofs and out of gaps (D-123). Any texture; it isn't drawn."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.8, 0.5, 0.8, 1)
+})
+node_class = "StaticBody3D"
+
+[sub_resource type="Resource" id="trigger_bombsite"]
+script = ExtResource("solid_class")
+build_visuals = false
+collision_layer = 16
+collision_mask = 6
+script_class = ExtResource("bomb_site_script")
+classname = "trigger_bombsite"
+description = "Bomb site A or B (D-125): draw one brush over the whole site, from the floor to about 3 m, with its middle on open floor. Set 'site' to A or B. Invisible in the game except for its floating letter."
+class_properties = Dictionary[String, Variant]({
+"site": "A"
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"site": "Which site: A or B"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.82, 0.35, 1)
+})
+node_class = "Area3D"
+node_groups = Array[String](["bomb_sites"])
+
+[sub_resource type="Resource" id="info_attack_spawn"]
+script = ExtResource("point_class")
+classname = "info_attack_spawn"
+description = "Where an attacker starts a round, facing the entity's angle. Put 5 per map, 3 m apart (MAPS.md)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.5, 0.2, 1),
+"size": AABB(-16, -16, 0, 16, 16, 72)
+})
+node_class = "Marker3D"
+node_groups = Array[String](["attack_spawns"])
+
+[sub_resource type="Resource" id="info_defend_spawn"]
+script = ExtResource("point_class")
+classname = "info_defend_spawn"
+description = "Where a defender starts a round, facing the entity's angle. Put 5 per map, 3 m apart (MAPS.md)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.3, 0.5, 0.9, 1),
+"size": AABB(-16, -16, 0, 16, 16, 72)
+})
+node_class = "Marker3D"
+node_groups = Array[String](["defend_spawns"])
+
+[sub_resource type="Resource" id="info_respawn"]
+script = ExtResource("point_class")
+classname = "info_respawn"
+description = "A spawn point for team respawn and practice: the game picks the one safest from enemies. Put about 12, in four zones (MAPS.md)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.8, 0.5, 1),
+"size": AABB(-16, -16, 0, 16, 16, 72)
+})
+node_class = "Marker3D"
+node_groups = Array[String](["respawn_points", "bot_spawns", "player_spawns"])
+
+[sub_resource type="Resource" id="info_patrol"]
+script = ExtResource("point_class")
+classname = "info_patrol"
+description = "A place bots wander to in practice and when hunting in team respawn. Put 14 or so, all over the map."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.7, 0.7, 0.7, 1),
+"size": AABB(-8, -8, 0, 8, 8, 16)
+})
+node_class = "Marker3D"
+node_groups = Array[String](["patrol_points"])
+
+[sub_resource type="Resource" id="info_hold"]
+script = ExtResource("point_class")
+classname = "info_hold"
+description = "A spot defenders hold, facing the entity's angle (the angle to watch). Put 5 to 7 near the bomb sites."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.8, 0.3, 1),
+"size": AABB(-12, -12, 0, 12, 12, 24)
+})
+node_class = "Marker3D"
+node_groups = Array[String](["hold_points"])
+
+[sub_resource type="Resource" id="info_route"]
+script = ExtResource("point_class")
+script_class = ExtResource("route_point_script")
+classname = "info_route"
+description = "A waypoint of a bot attack route. Points with the same 'route' name form one route, walked in 'order' (1, 2, 3...) from the attackers' spawn to the defenders' end. Make three routes (west, mid, east) of 4-6 points each."
+class_properties = Dictionary[String, Variant]({
+"route": "mid",
+"order": 1
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"route": "Route name, e.g. west, mid, east",
+"order": "Place along the route, from 1 at the attackers' spawn"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.8, 0.4, 0.8, 1),
+"size": AABB(-8, -8, 0, 8, 8, 32)
+})
+node_class = "Marker3D"
+
+[resource]
+script = ExtResource("fgd_file")
+fgd_name = "ChiipMapper"
+entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route")])

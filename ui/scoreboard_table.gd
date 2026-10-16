@@ -29,6 +29,9 @@ const STAT_TITLES: Array[String] = ["Kills", "Deaths", "Assists", "Damage"]
 ## Dim the rows of players who are dead. The hold-Tab overlay wants that (who is
 ## still alive this round); the match-end screen shows final numbers and turns it off.
 @export var dim_dead: bool = true
+## Show a money column for your own team (the Tab overlay in a match with an economy, D-098); the
+## enemy's money stays hidden, as in CS.
+@export var show_money: bool = false
 
 var _manager: RoundManager
 var _ui_scale: float = 1.0
@@ -69,7 +72,7 @@ func refresh() -> void:
 		for member in members:
 			var stats := _manager.get_stats(member)
 			signature.append([member, String(member.name), stats.kills, stats.deaths, stats.assists,
-					roundi(stats.damage), member.is_alive(), member.is_local_player()])
+					roundi(stats.damage), member.is_alive(), member.is_local_player(), _money_text(member), member.has_defuse_kit])
 	signature.append(order)
 	if signature == _signature:
 		return
@@ -134,6 +137,8 @@ func _add_team(team: int, members: Array[Character]) -> void:
 	var title := "Your team" if team == Teams.viewer_team else "Enemy team"
 	var header_cells: Array[String] = [title]
 	header_cells.append_array(STAT_TITLES)
+	if _shows_money():
+		header_cells.append("Money" if team == Teams.viewer_team else "")
 	# Blue for your team, red for the enemy, as Teams.color_for() says (the theme copies those colors).
 	var header := _make_row(header_cells,
 			&"TeamHeaderFriendly" if team == Teams.viewer_team else &"TeamHeaderEnemy", &"BrightLabel")
@@ -143,15 +148,33 @@ func _add_team(team: int, members: Array[Character]) -> void:
 	for member in members:
 		var stats := _manager.get_stats(member)
 		var is_you := member.is_local_player()
-		var row := _make_row([
-				"%s (you)" % member.name if is_you else String(member.name),
-				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))],
-				&"YouRowPanel" if is_you else &"RowPanel", &"BrightLabel" if is_you else &"")
+		var shown_name := "%s (you)" % member.name if is_you else String(member.name)
+		# Your team's defuse kits show, as in CS (D-098).
+		if member.has_defuse_kit and team == Teams.viewer_team:
+			shown_name += "  · kit"
+		var cells: Array[String] = [
+				shown_name,
+				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))]
+		if _shows_money():
+			cells.append(_money_text(member))
+		var row := _make_row(cells, &"YouRowPanel" if is_you else &"RowPanel", &"BrightLabel" if is_you else &"")
 		row.name = String(member.name)
 		if dim_dead and not member.is_alive():
 			row.modulate = get_theme_color("dead_row", "Palette")
 		box.add_child(row)
 		_rows[member] = row
+
+
+## True if the table has a money column (the overlay, in a match with money).
+func _shows_money() -> bool:
+	return show_money and is_instance_valid(_manager) and _manager.has_economy()
+
+
+## A player's money as the table shows it: yours and your teammates', empty for the enemy.
+func _money_text(member: Character) -> String:
+	if not _shows_money() or member.team != Teams.viewer_team:
+		return ""
+	return "$%d" % _manager.get_money(member)
 
 
 ## One line: a background, then the [param cells] side by side. The first cell

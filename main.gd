@@ -1,7 +1,7 @@
 extends Node
 ## The game's root scene: loads a map, renders the 3D world at a low
 ## resolution inside a SubViewport and scales it up with sharp pixels, with
-## the HUD, debug overlay, hold-Tab scoreboard, class menu, pause menu, match-end screen,
+## the HUD, debug overlay, hold-Tab scoreboard, class menu, buy menu, pause menu, match-end screen,
 ## settings menu and developer console on top.
 ##
 ## The game starts from the main menu (ui/main_menu.tscn, the project's main
@@ -63,6 +63,7 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
 @onready var _class_menu: ClassMenu = $ClassMenu
+@onready var _buy_menu: BuyMenu = $BuyMenu
 
 ## The map currently loaded.
 var _map: Node
@@ -211,6 +212,8 @@ func _spawn_map(scene: PackedScene) -> void:
 	_scoreboard.set_round_manager(rules as RoundManager)
 	# The class menu opens at the start of a match, and on M during freeze time (any time in practice).
 	_class_menu.set_rules(rules, player)
+	# The buy menu opens on B in freeze time (any time in practice); team respawn has no money.
+	_buy_menu.set_rules(rules, player)
 	_hud.set_player(player)
 	# Practice and team respawn bring you back; in rounds the dead watch a teammate instead.
 	var respawning := rules is ArenaRules or rules is RespawnMatch
@@ -280,6 +283,7 @@ func apply_pixel_settings() -> void:
 	_pause_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_settings_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 	_class_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	_buy_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
 
 
 func _on_setting_changed(key: StringName) -> void:

@@ -308,6 +308,6 @@ autowrap_mode = 3
 [node name="Footer" type="Label" parent="Panel/Margin/Content"]
 layout_mode = 2
 theme_type_variation = &"DimLabel"
-text = "Perks switch on in M7: until then the classes differ in looks and hit zones. Everyone carries the AK-style rifle for now. M: change class during freeze time."
+text = "M: change class during freeze time."
 horizontal_alignment = 1
 autowrap_mode = 3

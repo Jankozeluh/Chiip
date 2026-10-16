@@ -265,7 +265,7 @@ func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 
 
 func _on_character_killed(victim: Character, killer: Character, headshot: bool) -> void:
-	_kill_feed.add_kill(victim, killer, headshot)
+	_kill_feed.add_kill(victim, killer, headshot, victim.last_damage_source)
 	_refresh()
 
 

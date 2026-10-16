@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/props/crate_wood_small.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="box_0"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[node name="PropCrateWoodSmall" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+metadata/surface = "wood"
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Box0" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0.4, 0)
+shape = SubResource("box_0")

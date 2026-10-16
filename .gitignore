@@ -6,3 +6,6 @@
 
 # macOS
 .DS_Store
+
+# Python caches of the tools (tools/modelgen, tools/concept)
+__pycache__/

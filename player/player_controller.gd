@@ -46,6 +46,8 @@ const MAX_PITCH_DEGREES := 89.0
 var sensitivity: float = 1.0
 ## Flip vertical mouse look. Copied from [Settings] like [member sensitivity].
 var invert_y: bool = false
+## The field of view setting (CS's degrees across 4:3), copied from [Settings]. A scope narrows it.
+var fov_setting: float = 90.0
 
 ## Horizontal look angle (left/right) in radians.
 var _yaw: float = 0.0
@@ -55,6 +57,10 @@ var _pitch: float = 0.0
 var _jump_queued: bool = false
 ## Set when reload is pressed and used up by the next command.
 var _reload_queued: bool = false
+## A weapon slot (keys 1 to 4), Q or G pressed, used up by the next command (D-094).
+var _slot_queued: int = -1
+var _last_weapon_queued: bool = false
+var _drop_queued: bool = false
 ## True while a click shouldn't shoot: for the click that captures a free mouse
 ## again, and after the game is resumed with the fire button still held, until
 ## the button is released.
@@ -84,9 +90,8 @@ func _notification(what: int) -> void:
 	# its _process and get_input() don't run meanwhile, so what they would clear
 	# when a menu closes is done here, when the pause starts and ends.
 	if what == NOTIFICATION_PAUSED:
-		# A jump or reload pressed just before Esc shouldn't happen after Resume.
-		_jump_queued = false
-		_reload_queued = false
+		# A jump, reload or weapon switch pressed just before Esc shouldn't happen after Resume.
+		_clear_queued()
 	elif what == NOTIFICATION_UNPAUSED:
 		# A fire button still held (Esc pressed mid-burst) waits until it is let go.
 		_shooting_blocked = Input.is_action_pressed("shoot")
@@ -103,6 +108,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_jump_queued = true
 	elif event.is_action_pressed("reload"):
 		_reload_queued = true
+	elif event.is_action_pressed("slot_primary"):
+		_slot_queued = WeaponData.Slot.PRIMARY
+	elif event.is_action_pressed("slot_pistol"):
+		_slot_queued = WeaponData.Slot.PISTOL
+	elif event.is_action_pressed("slot_knife"):
+		_slot_queued = WeaponData.Slot.KNIFE
+	elif event.is_action_pressed("slot_grenade"):
+		_slot_queued = WeaponData.Slot.GRENADE
+	elif event.is_action_pressed("last_weapon"):
+		_last_weapon_queued = true
+	elif event.is_action_pressed("drop_weapon"):
+		_drop_queued = true
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		# This click only captures the mouse; it shouldn't also fire a shot.
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -122,8 +139,7 @@ func get_input(_delta: float) -> CharacterInput:
 	if MenuState.blocks_gameplay():
 		# Typing in the console or clicking in a menu shouldn't move or shoot,
 		# and a jump or reload pressed just before it opened shouldn't happen after.
-		_jump_queued = false
-		_reload_queued = false
+		_clear_queued()
 		input.yaw = _yaw
 		input.pitch = _pitch
 		return input
@@ -132,11 +148,14 @@ func get_input(_delta: float) -> CharacterInput:
 	input.pitch = _pitch
 	input.jump = _jump_queued
 	input.reload = _reload_queued
-	_jump_queued = false
-	_reload_queued = false
+	input.weapon_slot = _slot_queued
+	input.last_weapon = _last_weapon_queued
+	input.drop = _drop_queued
+	_clear_queued()
 	input.crouch = Input.is_action_pressed("crouch")
 	input.walk = Input.is_action_pressed("walk")
 	input.use = Input.is_action_pressed("use")
+	input.aim = Input.is_action_pressed("aim")
 	input.shoot = Input.is_action_pressed("shoot") and not _shooting_blocked
 	return input
 
@@ -155,8 +174,7 @@ func is_local() -> bool:
 
 
 func on_respawned() -> void:
-	_jump_queued = false
-	_reload_queued = false
+	_clear_queued()
 	# A new round: back to your own eyes, with your rifle in hand again.
 	_set_view_target(null)
 	if character.weapon != null:
@@ -237,6 +255,16 @@ func _process(_delta: float) -> void:
 		angles = head.basis.get_euler()
 	var punch := source.weapon.view_punch if source.weapon != null else Vector2.ZERO
 	camera.global_rotation = Vector3(angles.x + deg_to_rad(punch.y), angles.y - deg_to_rad(punch.x), 0.0)
+	# Through a scope the view narrows: the zoom step's fraction of the normal field of view (D-095).
+	camera.fov = Settings.vertical_fov(fov_setting * get_zoom_fraction(source))
+
+
+## The field of view of whoever's eyes the camera shows, as a fraction of the normal one: their
+## scope's zoom step, 1.0 unscoped.
+func get_zoom_fraction(source: Character = null) -> float:
+	if source == null:
+		source = get_view_target()
+	return source.weapon.get_zoom_fraction() if source.weapon != null else 1.0
 
 
 ## Takes the mouse sensitivity, Y inversion and field of view from the settings.
@@ -245,7 +273,8 @@ func _apply_settings() -> void:
 	var settings := Settings.get_instance()
 	sensitivity = settings.sensitivity
 	invert_y = settings.invert_y
-	camera.fov = Settings.vertical_fov(settings.fov)
+	fov_setting = settings.fov
+	camera.fov = Settings.vertical_fov(fov_setting)
 
 
 func _on_setting_changed(key: StringName) -> void:
@@ -253,9 +282,25 @@ func _on_setting_changed(key: StringName) -> void:
 		_apply_settings()
 
 
+## Forgets the key presses waiting for the next command (jump, reload, a weapon slot, Q, G).
+func _clear_queued() -> void:
+	_jump_queued = false
+	_reload_queued = false
+	_slot_queued = -1
+	_last_weapon_queued = false
+	_drop_queued = false
+
+
 ## Turns the view by a mouse movement measured in mouse counts.
 func _look(mouse_motion: Vector2) -> void:
 	var radians_per_count := deg_to_rad(sensitivity * DEGREES_PER_MOUSE_COUNT)
+	# Scoped, the mouse turns the view less, by how much the scope narrows it (CS's
+	# zoom_sensitivity_ratio 1.0: the same mouse movement crosses the same part of the screen).
+	var zoom := get_zoom_fraction(character)
+	if zoom < 1.0:
+		var normal := deg_to_rad(Settings.vertical_fov(fov_setting))
+		var zoomed := deg_to_rad(Settings.vertical_fov(fov_setting * zoom))
+		radians_per_count *= tan(zoomed / 2.0) / tan(normal / 2.0)
 	var vertical_sign := -1.0 if invert_y else 1.0
 	_yaw -= mouse_motion.x * radians_per_count
 	_pitch -= mouse_motion.y * radians_per_count * vertical_sign

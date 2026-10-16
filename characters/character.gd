@@ -26,6 +26,15 @@ signal died(killer: Character)
 signal footstep(loud: bool)
 ## Emitted after [method respawn] brings the character back.
 signal respawned
+## Emitted when a flashbang blinds the character: fully white for [param full] seconds, then
+## fading for [param fade] (D-097).
+signal flashed(full: float, fade: float)
+## Emitted when the weapon in hand changes ([member weapon]; null when there is none). Whatever
+## follows the held weapon (HUD, body, bot brain) reconnects to the new one.
+signal weapon_changed(weapon: Weapon)
+## Emitted when [member armor], [member has_helmet] or [member has_defuse_kit] change (bought,
+## worn down by a hit, lost on death).
+signal gear_changed
 
 ## CS/Source distance units to metres (1 unit ≈ 1 inch).
 const UNITS_TO_METRES := 0.0254
@@ -33,6 +42,8 @@ const UNITS_TO_METRES := 0.0254
 const STEP_DISTANCE := 1.8
 ## Where the eyes (and a player's camera) end up after dying: close to the floor.
 const DEAD_EYE_HEIGHT := 0.35
+## How far other characters' footsteps can be heard, in metres (the FootstepAudio3D node's range).
+const FOOTSTEP_AUDIO_RANGE := 30.0
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -107,7 +118,8 @@ const DEAD_EYE_HEIGHT := 0.35
 @export var footstep_sound: AudioStream = preload("res://assets/sounds/footsteps.tres")
 
 @export_group("")
-## The gun this character holds.
+## The weapon in hand (null when there is none). The scene's own weapon is the first one the
+## [member inventory] carries; from M7 the inventory changes it ([signal weapon_changed]).
 @export var weapon: Weapon
 
 ## Current health; 0 means dead. Read-only for other scripts (use [method take_damage]).
@@ -117,12 +129,31 @@ var god_mode: bool = false
 ## Flies through walls in the direction it looks, ignoring gravity (console: noclip).
 var noclip: bool = false
 ## Set by the game rules during freeze time: the character can look around,
-## crouch and reload, but not move, jump or shoot. The rule is applied here,
+## crouch, reload and zoom a scope, but not move, jump, shoot, stab or throw. The rule is applied here,
 ## to whatever the controller sends, so it holds for every kind of controller.
 var frozen: bool = false
 ## Set by the bomb while this character plants or defuses it (D-080): like
 ## [member frozen], it can look around and crouch but not move, jump or shoot.
 var busy: bool = false
+
+## Armor points, 0 to [constant Armor.MAX_ARMOR] (D-093). Covered hits lose part of their damage
+## to it and wear it down ([Armor]). Bought in the buy menu; lost on death. Set it with
+## [method set_armor].
+var armor: float = 0.0
+## Wears a helmet: head hits count as armored while [member armor] lasts.
+var has_helmet: bool = false
+## Carries a defuse kit (defenders: the bomb defuses in half the time).
+var has_defuse_kit: bool = false
+## The weapon of the last hit this character took (null for the bomb or a hit without a gun).
+## Set before [signal damaged] and [signal died] are emitted, so their listeners can read it
+## (kill rewards and the kill feed's icon).
+var last_damage_source: WeaponData
+
+## Blindness from a flashbang (D-097): seconds of full white left, then seconds of fading left
+## out of how long the fade is. Counted in physics ticks.
+var _flash_full_left: float = 0.0
+var _flash_fade_left: float = 0.0
+var _flash_fade_time: float = 0.0
 
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
@@ -149,6 +180,8 @@ var _respawned_this_tick: bool = false
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
+## The weapons carried, in slots (D-094).
+@onready var inventory: Inventory = $Inventory
 ## The visible body with its hit zones and animations (characters/crew/crew_body.tscn, a
 ## generated class model from M6). It paints its team parts through
 ## [method CrewBody.set_team_color] and animates from this character's state.
@@ -181,14 +214,14 @@ func _ready() -> void:
 			break
 	if _controller != null:
 		_controller.set_look_angles(_input.yaw, _input.pitch)
-	if weapon != null:
-		weapon.equip(self)
+	inventory.set_up(self, weapon, head)
 	_set_up_arms()
 	# Only the player at this computer looks through these eyes; everyone else sees the body.
 	set_first_person(is_local_player())
 
 
 func _physics_process(delta: float) -> void:
+	_update_flash(delta)
 	if _respawned_this_tick:
 		_respawned_this_tick = false
 		return
@@ -204,6 +237,13 @@ func _physics_process(delta: float) -> void:
 		_input.move = Vector2.ZERO
 		_input.jump = false
 		_input.shoot = false
+		# Aim attacks too (the knife's stab, a lobbed grenade); a scope may still zoom, as in CS.
+		if weapon == null or not weapon.data.has_scope():
+			_input.aim = false
+	if is_alive():
+		# Switching, dropping and swapping for a gun on the floor; then walking over guns takes them.
+		inventory.handle_input(_input)
+		inventory.update_pickups()
 	# Face where the command looks, so "forward" is where you look. The head
 	# tilts up and down, which points a third-person gun (bots) at the target.
 	rotation.y = _input.yaw
@@ -212,6 +252,7 @@ func _physics_process(delta: float) -> void:
 		# The weapon processes after the character (children run after their
 		# parent), so it sees this tick's trigger state.
 		weapon.trigger_held = _input.shoot
+		weapon.aim_held = _input.aim
 		if _input.reload:
 			weapon.reload()
 	if noclip:
@@ -252,19 +293,67 @@ func is_alive() -> bool:
 
 ## Lowers health and reports it; at 0 the character dies. [param attacker] may be null.
 ## Damage from a teammate is scaled by [method Teams.damage_factor] (nothing
-## unless friendly fire is on). The rule lives here, in the code that owns the
-## health, so a network client can't skip it.
-func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
+## unless friendly fire is on). Then armor takes its share (CS:GO's rule, [Armor]):
+## [param armor_penetration] is the share of a covered hit that reaches health (1.0: armor
+## doesn't help, as for the bomb), and the class's perk can soften it (the Bulwark's Plated).
+## [param source] is the weapon that hit, if any. The rules live here, in the code that owns
+## the health, so a network client can't skip them.
+func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character, armor_penetration: float = 1.0,
+		source: WeaponData = null) -> void:
 	if not is_alive() or god_mode:
 		return
 	var factor := Teams.damage_factor(self, attacker)
 	if factor <= 0.0:
 		return
-	var lost := minf(amount * factor, health)
+	amount *= factor
+	if armor > 0.0:
+		var damage_factor := class_data.armor_damage_factor if class_data != null else 1.0
+		var wear_factor := class_data.armor_wear_factor if class_data != null else 1.0
+		var result := Armor.apply(amount, armor_penetration, armor, has_helmet, zone, damage_factor, wear_factor)
+		amount = result.health
+		_set_armor_points(result.armor)
+	last_damage_source = source
+	var lost := minf(amount, health)
 	health -= lost
 	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## Blinds the character for [param full] seconds of white and [param fade] more seconds of fading,
+## unless it's already blind for longer (a flashbang, D-097). Bots see nothing while it's thick.
+func flash(full: float, fade: float) -> void:
+	if not is_alive() or full + fade <= _flash_full_left + _flash_fade_left:
+		return
+	_flash_full_left = full
+	_flash_fade_left = fade
+	_flash_fade_time = fade
+	flashed.emit(full, fade)
+
+
+## How white the view is: 1 fully blind, fading to 0.
+func get_flash_alpha() -> float:
+	if _flash_full_left > 0.0:
+		return 1.0
+	if _flash_fade_left > 0.0 and _flash_fade_time > 0.0:
+		return _flash_fade_left / _flash_fade_time
+	return 0.0
+
+
+## Gives the character [param points] of armor (clamped to 0–100) and, with [param helmet], a
+## helmet. Armor at 0 loses the helmet too. The buy menu, the respawn mode and the console use it.
+func set_armor(points: float, helmet: bool) -> void:
+	armor = clampf(points, 0.0, Armor.MAX_ARMOR)
+	has_helmet = helmet and armor > 0.0
+	gear_changed.emit()
+
+
+## Gives or takes away a defuse kit.
+func set_defuse_kit(on: bool) -> void:
+	if has_defuse_kit == on:
+		return
+	has_defuse_kit = on
+	gear_changed.emit()
 
 
 ## True while this tick's command holds Use (plant or defuse the bomb) and the
@@ -279,8 +368,7 @@ func is_holding_use() -> bool:
 ## teammate switches that teammate too. The hit zones stay active either way.
 func set_first_person(on: bool) -> void:
 	(get_node("Body") as Node3D).visible = not on
-	if weapon != null:
-		weapon.set_viewmodel_visible(on)
+	inventory.set_first_person(on)
 
 
 ## True for the player at this computer (see [method CharacterController.is_local]).
@@ -318,8 +406,9 @@ func get_chest_position() -> Vector3:
 ## viewer sees it (see [method Teams.color_for]). Call it after the viewer's team changes.
 func update_team_color() -> void:
 	body.set_team_color(Teams.color_for(team))
-	if weapon != null:
-		weapon.set_arms_team_color(Teams.color_for(team))
+	if inventory != null:
+		for carried in inventory.get_weapons():
+			carried.set_arms_team_color(Teams.color_for(team))
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -359,6 +448,8 @@ func aim_at(target: Vector3) -> void:
 ## or [member max_speed] with nothing in hand.
 func get_max_speed() -> float:
 	if weapon != null and weapon.data != null:
+		if weapon.is_scoped():
+			return weapon.data.scoped_max_speed_units * UNITS_TO_METRES
 		return weapon.data.max_speed_units * UNITS_TO_METRES
 	return max_speed
 
@@ -385,8 +476,16 @@ func _update_footsteps(on_ground: bool, delta: float) -> void:
 	var loud := not is_crouching and speed > get_max_speed() * walk_speed_factor * 1.05
 	footstep.emit(loud)
 	if loud:
-		Noises.make_noise(global_position, Noises.FOOTSTEP_RANGE, self)
+		Noises.make_noise(global_position, get_footstep_range(), self)
 		_play_footstep()
+
+
+## How far (metres) this character's running steps can be heard: [constant Noises.FOOTSTEP_RANGE],
+## 70% of it for the Scout's Light Step (D-052, D-099). Bots hear it that far and the sound fades
+## out there for you too, so hearing stays symmetric (D-038's rule, with the Scout's exception).
+func get_footstep_range() -> float:
+	var factor := class_data.running_footstep_range_factor if class_data != null else 1.0
+	return Noises.FOOTSTEP_RANGE * factor
 
 
 ## Your own steps play in both ears; everyone else's come from where they are.
@@ -401,6 +500,8 @@ func _play_footstep() -> void:
 		_footstep_audio.play()
 	else:
 		_footstep_audio_3d.stream = sound
+		# The steps fade out where bots stop hearing them (shorter for the Scout's Light Step).
+		_footstep_audio_3d.max_distance = FOOTSTEP_AUDIO_RANGE * get_footstep_range() / Noises.FOOTSTEP_RANGE
 		_footstep_audio_3d.play()
 
 
@@ -413,6 +514,8 @@ func respawn(at: Vector3, yaw: float) -> void:
 	velocity = Vector3.ZERO
 	health = max_health
 	busy = false
+	_flash_full_left = 0.0
+	_flash_fade_left = 0.0
 	is_crouching = false
 	_set_crouch_hull(false)
 	_eye_height = stand_eye_height
@@ -425,15 +528,28 @@ func respawn(at: Vector3, yaw: float) -> void:
 	if _controller != null:
 		_controller.set_look_angles(yaw, 0.0)
 		_controller.on_respawned()
-	if weapon != null:
-		weapon.refill()
+	inventory.refill()
 	reset_physics_interpolation()
 	respawned.emit()
+
+
+func _update_flash(delta: float) -> void:
+	if _flash_full_left > 0.0:
+		_flash_full_left = maxf(_flash_full_left - delta, 0.0)
+	elif _flash_fade_left > 0.0:
+		_flash_fade_left = maxf(_flash_fade_left - delta, 0.0)
 
 
 func _die(killer: Character) -> void:
 	if weapon != null:
 		weapon.trigger_held = false
+	# The best gun falls to the floor (D-090), once this hit has been fully dealt with.
+	inventory.drop_on_death.call_deferred()
+	# The dead lose their armor, helmet and kit (CS): they start the next round without them.
+	armor = 0.0
+	has_helmet = false
+	has_defuse_kit = false
+	gear_changed.emit()
 	# Dead bodies can't be hit again, and don't block anyone.
 	for hitbox in _hitboxes:
 		hitbox.set_deferred("collision_layer", 0)
@@ -481,17 +597,35 @@ func _apply_class() -> void:
 			hitbox.collision_layer = 0
 
 
-## Puts the class's first-person arms into the weapon's viewmodel (D-079): its own sleeves
-## and gloves, painted with the class's material in this character's team colour.
+## Puts the class's first-person arms into every carried weapon's viewmodel (D-079): its own
+## sleeves and gloves, painted with the class's material in this character's team colour.
 func _set_up_arms() -> void:
-	if weapon == null or class_data == null or class_data.arms_model == null:
+	for carried in inventory.get_weapons():
+		set_up_arms_for(carried)
+
+
+## Puts the class's first-person arms into [param carried]'s viewmodel. The [Inventory] calls it
+## for every weapon it adds.
+func set_up_arms_for(carried: Weapon) -> void:
+	if carried == null or class_data == null or class_data.arms_model == null:
 		return
-	weapon.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
-	weapon.set_arms_team_color(Teams.color_for(team))
+	carried.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
+	carried.set_arms_team_color(Teams.color_for(team))
 
 
-func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node) -> void:
-	take_damage(damage, zone, attacker as Character)
+func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node,
+		armor_penetration: float, source: WeaponData) -> void:
+	take_damage(damage, zone, attacker as Character, armor_penetration, source)
+
+
+## Sets the armor points; at 0 the helmet goes too (it only protects while there is armor).
+func _set_armor_points(points: float) -> void:
+	var before := armor
+	armor = clampf(points, 0.0, Armor.MAX_ARMOR)
+	if armor <= 0.0:
+		has_helmet = false
+	if not is_equal_approx(before, armor):
+		gear_changed.emit()
 
 
 ## Returns the horizontal direction the movement keys point to, relative to where you look.

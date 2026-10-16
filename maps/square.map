@@ -44,7 +44,7 @@
 }
 // brush 4
 {
-( -1104 -904 0 ) ( -1104 904 0 ) ( -784 904 0 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -1104 -904 0 ) ( -1104 904 0 ) ( -784 904 0 ) urban/slabs [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -1104 -904 -16 ) ( -784 904 -16 ) ( -1104 904 -16 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -1104 -904 -16 ) ( -1104 -904 0 ) ( -784 -904 0 ) stone_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -1104 904 -16 ) ( -784 904 0 ) ( -1104 904 0 ) stone_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -53,7 +53,7 @@
 }
 // brush 5
 {
-( 784 -904 0 ) ( 784 904 0 ) ( 1104 904 0 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 784 -904 0 ) ( 784 904 0 ) ( 1104 904 0 ) urban/slabs [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 784 -904 -16 ) ( 1104 904 -16 ) ( 784 904 -16 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 784 -904 -16 ) ( 784 -904 0 ) ( 1104 -904 0 ) stone_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( 784 904 -16 ) ( 1104 904 0 ) ( 784 904 0 ) stone_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -71,7 +71,7 @@
 }
 // brush 7
 {
-( -784 -592 0 ) ( -784 472 0 ) ( 784 472 0 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -784 -592 0 ) ( -784 472 0 ) ( 784 472 0 ) urban/cobbles [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -784 -592 -16 ) ( 784 472 -16 ) ( -784 472 -16 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -784 -592 -16 ) ( -784 -592 0 ) ( 784 -592 0 ) stone_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -784 472 -16 ) ( 784 472 0 ) ( -784 472 0 ) stone_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -80,7 +80,7 @@
 }
 // brush 8
 {
-( -784 472 0 ) ( -784 904 0 ) ( 784 904 0 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -784 472 0 ) ( -784 904 0 ) ( 784 904 0 ) urban/slabs [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -784 472 -16 ) ( 784 904 -16 ) ( -784 904 -16 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -784 472 -16 ) ( -784 472 0 ) ( 784 472 0 ) stone_grey [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -784 904 -16 ) ( 784 904 0 ) ( -784 904 0 ) stone_grey [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -136,37 +136,37 @@
 {
 ( 352 -312 272 ) ( 352 160 272 ) ( 784 160 272 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 352 -312 0 ) ( 784 160 0 ) ( 352 160 0 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 352 -312 0 ) ( 352 -312 272 ) ( 784 -312 272 ) painted_plaster [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 352 160 0 ) ( 784 160 272 ) ( 352 160 272 ) painted_plaster [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 352 -312 0 ) ( 352 160 0 ) ( 352 160 272 ) painted_plaster [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 784 -312 0 ) ( 784 160 272 ) ( 784 160 0 ) painted_plaster [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 -312 0 ) ( 352 -312 272 ) ( 784 -312 272 ) urban/plaster_olive [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 160 0 ) ( 784 160 272 ) ( 352 160 272 ) urban/plaster_olive [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 352 -312 0 ) ( 352 160 0 ) ( 352 160 272 ) urban/plaster_olive [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 784 -312 0 ) ( 784 160 272 ) ( 784 160 0 ) urban/plaster_olive [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 15
 {
 ( -784 -592 272 ) ( -784 -312 272 ) ( 120 -312 272 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -784 -592 0 ) ( 120 -312 0 ) ( -784 -312 0 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -784 -592 0 ) ( -784 -592 272 ) ( 120 -592 272 ) painted_plaster [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -784 -312 0 ) ( 120 -312 272 ) ( -784 -312 272 ) painted_plaster [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -784 -592 0 ) ( -784 -312 0 ) ( -784 -312 272 ) painted_plaster [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 120 -592 0 ) ( 120 -312 272 ) ( 120 -312 0 ) painted_plaster [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -784 -592 0 ) ( -784 -592 272 ) ( 120 -592 272 ) urban/plaster_olive [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -784 -312 0 ) ( 120 -312 272 ) ( -784 -312 272 ) urban/plaster_olive [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -784 -592 0 ) ( -784 -312 0 ) ( -784 -312 272 ) urban/plaster_olive [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 120 -592 0 ) ( 120 -312 272 ) ( 120 -312 0 ) urban/plaster_olive [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 16
 {
 ( 120 -592 272 ) ( 120 -312 272 ) ( 240 -312 272 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 120 -592 120 ) ( 240 -312 120 ) ( 120 -312 120 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 120 -592 120 ) ( 120 -592 272 ) ( 240 -592 272 ) painted_plaster [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 120 -312 120 ) ( 240 -312 272 ) ( 120 -312 272 ) painted_plaster [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 120 -592 120 ) ( 120 -312 120 ) ( 120 -312 272 ) painted_plaster [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 240 -592 120 ) ( 240 -312 272 ) ( 240 -312 120 ) painted_plaster [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 120 -592 120 ) ( 120 -592 272 ) ( 240 -592 272 ) urban/plaster_olive [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 120 -312 120 ) ( 240 -312 272 ) ( 120 -312 272 ) urban/plaster_olive [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 120 -592 120 ) ( 120 -312 120 ) ( 120 -312 272 ) urban/plaster_olive [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 240 -592 120 ) ( 240 -312 272 ) ( 240 -312 120 ) urban/plaster_olive [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 17
 {
 ( 240 -592 272 ) ( 240 -312 272 ) ( 784 -312 272 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 240 -592 0 ) ( 784 -312 0 ) ( 240 -312 0 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 240 -592 0 ) ( 240 -592 272 ) ( 784 -592 272 ) painted_plaster [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 240 -312 0 ) ( 784 -312 272 ) ( 240 -312 272 ) painted_plaster [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 240 -592 0 ) ( 240 -312 0 ) ( 240 -312 272 ) painted_plaster [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 784 -592 0 ) ( 784 -312 272 ) ( 784 -312 0 ) painted_plaster [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 240 -592 0 ) ( 240 -592 272 ) ( 784 -592 272 ) urban/plaster_olive [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 240 -312 0 ) ( 784 -312 272 ) ( 240 -312 272 ) urban/plaster_olive [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 240 -592 0 ) ( 240 -312 0 ) ( 240 -312 272 ) urban/plaster_olive [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 784 -592 0 ) ( 784 -312 272 ) ( 784 -312 0 ) urban/plaster_olive [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 18
 {
@@ -199,19 +199,19 @@
 {
 ( 160 -904 272 ) ( 160 -712 272 ) ( 392 -712 272 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( 160 -904 0 ) ( 392 -712 0 ) ( 160 -712 0 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 160 -904 0 ) ( 160 -904 272 ) ( 392 -904 272 ) painted_plaster [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 160 -712 0 ) ( 392 -712 272 ) ( 160 -712 272 ) painted_plaster [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 160 -904 0 ) ( 160 -712 0 ) ( 160 -712 272 ) painted_plaster [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 392 -904 0 ) ( 392 -712 272 ) ( 392 -712 0 ) painted_plaster [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 160 -904 0 ) ( 160 -904 272 ) ( 392 -904 272 ) urban/rubble_wall [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 160 -712 0 ) ( 392 -712 272 ) ( 160 -712 272 ) urban/rubble_wall [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 160 -904 0 ) ( 160 -712 0 ) ( 160 -712 272 ) urban/rubble_wall [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 392 -904 0 ) ( 392 -712 272 ) ( 392 -712 0 ) urban/rubble_wall [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 22
 {
 ( -352 -784 272 ) ( -352 -592 272 ) ( -120 -592 272 ) stone_grey [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -352 -784 0 ) ( -120 -592 0 ) ( -352 -592 0 ) stone_grey [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -352 -784 0 ) ( -352 -784 272 ) ( -120 -784 272 ) painted_plaster [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -352 -592 0 ) ( -120 -592 272 ) ( -352 -592 272 ) painted_plaster [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -352 -784 0 ) ( -352 -592 0 ) ( -352 -592 272 ) painted_plaster [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( -120 -784 0 ) ( -120 -592 272 ) ( -120 -592 0 ) painted_plaster [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -352 -784 0 ) ( -352 -784 272 ) ( -120 -784 272 ) urban/rubble_wall [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -352 -592 0 ) ( -120 -592 272 ) ( -352 -592 272 ) urban/rubble_wall [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -352 -784 0 ) ( -352 -592 0 ) ( -352 -592 272 ) urban/rubble_wall [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -120 -784 0 ) ( -120 -592 272 ) ( -120 -592 0 ) urban/rubble_wall [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
 // brush 23
 {
@@ -423,7 +423,7 @@
 // brush 46
 {
 ( -864 472 216 ) ( -864 904 216 ) ( 784 904 216 ) wood_planks [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( -864 472 200 ) ( 784 904 200 ) ( -864 904 200 ) wood_planks [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -864 472 200 ) ( 784 904 200 ) ( -864 904 200 ) interior/planks_old [ -1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
 ( -864 472 200 ) ( -864 472 216 ) ( 784 472 216 ) wood_planks [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -864 904 200 ) ( 784 904 216 ) ( -864 904 216 ) wood_planks [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -864 472 200 ) ( -864 904 200 ) ( -864 904 216 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -582,4 +582,522 @@
 ( -752 656 0 ) ( -752 728 0 ) ( -752 728 48 ) wood_planks [ 0 -1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( -704 656 0 ) ( -704 728 48 ) ( -704 728 0 ) wood_planks [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 }
+}
+// entity 1
+{
+"classname" "prop_window_shutters"
+"origin" "-610 -312 189"
+"angle" "90"
+}
+// entity 2
+{
+"classname" "prop_window_shutters"
+"origin" "-374 -312 189"
+"angle" "90"
+}
+// entity 3
+{
+"classname" "prop_window_shutters"
+"origin" "-79 -312 189"
+"angle" "90"
+}
+// entity 4
+{
+"classname" "prop_window_shutters"
+"origin" "433 -312 189"
+"angle" "90"
+}
+// entity 5
+{
+"classname" "prop_window_shutters"
+"origin" "650 -312 189"
+"angle" "90"
+}
+// entity 6
+{
+"classname" "prop_window_shutters"
+"origin" "-610 312 189"
+"angle" "270"
+}
+// entity 7
+{
+"classname" "prop_window_shutters"
+"origin" "-433 312 189"
+"angle" "270"
+}
+// entity 8
+{
+"classname" "prop_window_shutters"
+"origin" "0 312 189"
+"angle" "270"
+}
+// entity 9
+{
+"classname" "prop_window_shutters"
+"origin" "256 312 189"
+"angle" "270"
+}
+// entity 10
+{
+"classname" "prop_window_shutters"
+"origin" "492 312 189"
+"angle" "270"
+}
+// entity 11
+{
+"classname" "prop_window_shutters"
+"origin" "669 312 189"
+"angle" "270"
+}
+// entity 12
+{
+"classname" "prop_window_shutters"
+"origin" "-352 -79 189"
+"angle" "0"
+}
+// entity 13
+{
+"classname" "prop_window_shutters"
+"origin" "-352 98 189"
+"angle" "0"
+}
+// entity 14
+{
+"classname" "prop_window_shutters"
+"origin" "-352 236 189"
+"angle" "0"
+}
+// entity 15
+{
+"classname" "prop_window_shutters"
+"origin" "352 -236 189"
+"angle" "180"
+}
+// entity 16
+{
+"classname" "prop_window_shutters"
+"origin" "352 -79 189"
+"angle" "180"
+}
+// entity 17
+{
+"classname" "prop_window_shutters"
+"origin" "352 79 189"
+"angle" "180"
+}
+// entity 18
+{
+"classname" "prop_window_shutters"
+"origin" "784 -236 189"
+"angle" "0"
+}
+// entity 19
+{
+"classname" "prop_window_shutters"
+"origin" "784 79 189"
+"angle" "0"
+}
+// entity 20
+{
+"classname" "prop_window_shutters"
+"origin" "-784 -59 189"
+"angle" "180"
+}
+// entity 21
+{
+"classname" "prop_window_shutters"
+"origin" "-784 197 189"
+"angle" "180"
+}
+// entity 22
+{
+"classname" "prop_window_shutters"
+"origin" "-630 -592 189"
+"angle" "270"
+}
+// entity 23
+{
+"classname" "prop_window_shutters"
+"origin" "-453 -592 189"
+"angle" "270"
+}
+// entity 24
+{
+"classname" "prop_window_shutters"
+"origin" "472 -592 189"
+"angle" "270"
+}
+// entity 25
+{
+"classname" "prop_window_shutters"
+"origin" "669 -592 189"
+"angle" "270"
+}
+// entity 26
+{
+"classname" "prop_window_shutters"
+"origin" "-1104 -551 189"
+"angle" "0"
+}
+// entity 27
+{
+"classname" "prop_window_shutters"
+"origin" "-1104 -157 189"
+"angle" "0"
+}
+// entity 28
+{
+"classname" "prop_window_shutters"
+"origin" "-1104 157 189"
+"angle" "0"
+}
+// entity 29
+{
+"classname" "prop_window_shutters"
+"origin" "-1104 591 189"
+"angle" "0"
+}
+// entity 30
+{
+"classname" "prop_window_shutters"
+"origin" "-1104 787 189"
+"angle" "0"
+}
+// entity 31
+{
+"classname" "prop_window_shutters"
+"origin" "1104 -709 189"
+"angle" "180"
+}
+// entity 32
+{
+"classname" "prop_window_shutters"
+"origin" "1104 -551 189"
+"angle" "180"
+}
+// entity 33
+{
+"classname" "prop_window_shutters"
+"origin" "1104 -157 189"
+"angle" "180"
+}
+// entity 34
+{
+"classname" "prop_window_shutters"
+"origin" "1104 157 189"
+"angle" "180"
+}
+// entity 35
+{
+"classname" "prop_window_shutters"
+"origin" "1104 591 189"
+"angle" "180"
+}
+// entity 36
+{
+"classname" "prop_window_shutters"
+"origin" "1104 748 189"
+"angle" "180"
+}
+// entity 37
+{
+"classname" "prop_window_shutters"
+"origin" "-551 -904 189"
+"angle" "90"
+}
+// entity 38
+{
+"classname" "prop_window_shutters"
+"origin" "0 -904 189"
+"angle" "90"
+}
+// entity 39
+{
+"classname" "prop_window_shutters"
+"origin" "512 -904 189"
+"angle" "90"
+}
+// entity 40
+{
+"classname" "prop_window_shutters"
+"origin" "748 -904 189"
+"angle" "90"
+}
+// entity 41
+{
+"classname" "prop_window"
+"origin" "-352 177 91"
+"angle" "0"
+}
+// entity 42
+{
+"classname" "prop_window"
+"origin" "352 20 91"
+"angle" "180"
+}
+// entity 43
+{
+"classname" "prop_door_wood"
+"origin" "-492 -312 0"
+"angle" "90"
+}
+// entity 44
+{
+"classname" "prop_door_wood"
+"origin" "118 312 0"
+"angle" "270"
+}
+// entity 45
+{
+"classname" "prop_door_wood"
+"origin" "-352 24 0"
+"angle" "0"
+}
+// entity 46
+{
+"classname" "prop_door_wood"
+"origin" "352 -181 0"
+"angle" "180"
+}
+// entity 47
+{
+"classname" "prop_door_wood"
+"origin" "-551 -592 0"
+"angle" "270"
+}
+// entity 48
+{
+"classname" "prop_door_wood"
+"origin" "-1104 -118 0"
+"angle" "0"
+}
+// entity 49
+{
+"classname" "prop_door"
+"origin" "1104 551 0"
+"angle" "180"
+}
+// entity 50
+{
+"classname" "light_wall"
+"origin" "240 -453 94"
+"angle" "180"
+}
+// entity 51
+{
+"classname" "light_wall"
+"origin" "-312 394 94"
+"angle" "0"
+}
+// entity 52
+{
+"classname" "light_ceiling"
+"origin" "-689 610 200"
+"light_range" "7.0"
+"light_energy" "1.4"
+}
+// entity 53
+{
+"classname" "light_ceiling"
+"origin" "-276 768 200"
+"light_range" "7.0"
+"light_energy" "1.4"
+}
+// entity 54
+{
+"classname" "light_ceiling"
+"origin" "236 610 200"
+"light_range" "7.0"
+"light_energy" "1.4"
+}
+// entity 55
+{
+"classname" "light_ceiling"
+"origin" "591 768 200"
+"light_range" "7.0"
+"light_energy" "1.4"
+}
+// entity 56
+{
+"classname" "light_wall"
+"origin" "-217 -312 130"
+"angle" "90"
+}
+// entity 57
+{
+"classname" "light_wall"
+"origin" "-98 312 130"
+"angle" "270"
+}
+// entity 58
+{
+"classname" "light_wall"
+"origin" "-352 -138 130"
+"angle" "0"
+}
+// entity 59
+{
+"classname" "light_wall"
+"origin" "352 59 130"
+"angle" "180"
+}
+// entity 60
+{
+"classname" "light_wall"
+"origin" "-650 -592 130"
+"angle" "270"
+}
+// entity 61
+{
+"classname" "light_wall"
+"origin" "551 -592 130"
+"angle" "270"
+}
+// entity 62
+{
+"classname" "prop_sign_a_left"
+"origin" "784 -118 102"
+"angle" "0"
+}
+// entity 63
+{
+"classname" "prop_sign_b_right"
+"origin" "784 39 102"
+"angle" "0"
+}
+// entity 64
+{
+"classname" "prop_sign_a"
+"origin" "-1104 -669 94"
+"angle" "0"
+}
+// entity 65
+{
+"classname" "prop_sign_b"
+"origin" "-848 689 110"
+"angle" "0"
+}
+// entity 66
+{
+"classname" "prop_trash_can"
+"origin" "-1079 878 0"
+}
+// entity 67
+{
+"classname" "prop_hydrant"
+"origin" "-1089 827 0"
+"angle" "0"
+}
+// entity 68
+{
+"classname" "prop_bench"
+"origin" "1087 -728 0"
+"angle" "180"
+}
+// entity 69
+{
+"classname" "prop_trash_can"
+"origin" "1079 -862 0"
+}
+// entity 70
+{
+"classname" "prop_phone_box"
+"origin" "1075 878 0"
+"angle" "180"
+}
+// entity 71
+{
+"classname" "prop_trash_bags"
+"origin" "-378 -878 0"
+"angle" "260"
+}
+// entity 72
+{
+"classname" "prop_debris_boxes"
+"origin" "449 -874 0"
+"angle" "290"
+}
+// entity 73
+{
+"classname" "prop_crate_wood_small"
+"origin" "433 539 88"
+"angle" "188"
+}
+// entity 74
+{
+"classname" "prop_crate_wood_small"
+"origin" "189 701 88"
+"angle" "174"
+}
+// entity 75
+{
+"classname" "prop_crate_wood_small"
+"origin" "654 850 88"
+"angle" "200"
+}
+// entity 76
+{
+"classname" "prop_crate_wood_small"
+"origin" "-264 539 88"
+"angle" "184"
+}
+// entity 77
+{
+"classname" "prop_grass_tuft"
+"origin" "-630 -882 0"
+"angle" "93.6"
+}
+// entity 78
+{
+"classname" "prop_grass_tuft"
+"origin" "118 -882 0"
+"angle" "226.6"
+}
+// entity 79
+{
+"classname" "prop_grass_tuft"
+"origin" "315 -614 0"
+"angle" "112.4"
+}
+// entity 80
+{
+"classname" "prop_grass_tuft"
+"origin" "728 -882 0"
+"angle" "335.1"
+}
+// entity 81
+{
+"classname" "prop_grass_tuft"
+"origin" "1087 -335 0"
+"angle" "109.7"
+}
+// entity 82
+{
+"classname" "prop_grass_tuft"
+"origin" "-1087 335 0"
+"angle" "250.3"
+}
+// entity 83
+{
+"classname" "prop_grass_tuft"
+"origin" "945 882 0"
+"angle" "322.4"
+}
+// entity 84
+{
+"classname" "prop_grass_tuft"
+"origin" "-1083 -453 0"
+"angle" "351"
+}
+// entity 85
+{
+"classname" "prop_grass_tuft"
+"origin" "1083 457 0"
+"angle" "12.1"
+}
+// entity 86
+{
+"classname" "prop_grass_tuft"
+"origin" "-1024 -882 0"
+"angle" "23.6"
 }

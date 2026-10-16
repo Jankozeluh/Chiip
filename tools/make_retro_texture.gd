@@ -3,11 +3,12 @@ extends SceneTree
 ##
 ## Run from the project folder, then let Godot import the result:
 ##
-##     Godot --headless --path . --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast] [brightness] [saturation]
+##     Godot --headless --path . --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast] [brightness] [saturation] [opacity image]
 ##     Godot --headless --path . --import
 ##
 ## - <source image>: path to a PNG or JPG anywhere on disk.
 ## - <name>: output file name without extension; saved as res://assets/textures/<name>.png.
+##   It may include a set folder, e.g. "industrial/corrugated_grey" (D-121).
 ## - [size]: output width and height in pixels (default 64, Quake-style).
 ## - [colors]: how many colors the texture keeps (default 16).
 ## - [contrast]: how far colors are pushed away from the average (default 1.0 =
@@ -17,6 +18,10 @@ extends SceneTree
 ##   surfaces that would glare in sunlight, such as white plaster.
 ## - [saturation]: color strength (default 1.0). 0 is fully grey; low values
 ##   turn warm, sandy photos into neutral greys.
+## - [opacity image]: a greyscale image of the same photo (ambientCG's
+##   "_Opacity" map) for see-through textures such as chain-link. It is shrunk
+##   the same way and cut at 50 %, so every pixel is either solid or a hole:
+##   1-bit transparency keeps the pixel look sharp (use alpha scissor).
 ##
 ## Steps: crop to a square, shrink in halving steps (like mipmaps, so detail
 ## averages out instead of flickering), boost contrast, reduce to a small
@@ -38,6 +43,7 @@ func _init() -> void:
 	var contrast := float(args[4]) if args.size() > 4 else 1.0
 	var brightness := float(args[5]) if args.size() > 5 else 1.0
 	var saturation := float(args[6]) if args.size() > 6 else 1.0
+	var opacity_path: String = args[7] if args.size() > 7 else ""
 	var image := Image.load_from_file(args[0])
 	if image == null:
 		printerr("Could not load ", args[0])
@@ -50,11 +56,20 @@ func _init() -> void:
 	if not is_equal_approx(brightness, 1.0) or not is_equal_approx(saturation, 1.0):
 		image.adjust_bcs(brightness, 1.0, saturation)
 	_reduce_colors(image, color_count)
+	if not opacity_path.is_empty():
+		var opacity := Image.load_from_file(opacity_path)
+		if opacity == null:
+			printerr("Could not load ", opacity_path)
+			quit(1)
+			return
+		image = _apply_opacity(image, opacity, size)
 	var path := OUTPUT_FOLDER + args[1] + ".png"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
 	var error := image.save_png(path)
 	_write_import_settings(path)
-	print("%s: %s (%d × %d, %d colors, contrast %.1f, brightness %.2f, saturation %.2f)" % [
-			path, error_string(error), size, size, color_count, contrast, brightness, saturation])
+	print("%s: %s (%d × %d, %d colors, contrast %.1f, brightness %.2f, saturation %.2f%s)" % [
+			path, error_string(error), size, size, color_count, contrast, brightness, saturation,
+			", with holes" if not opacity_path.is_empty() else ""])
 	quit(0 if error == OK else 1)
 
 
@@ -70,6 +85,20 @@ func _shrink(image: Image, size: int) -> void:
 		image.resize(image.get_width() / 2, image.get_height() / 2, Image.INTERPOLATE_BILINEAR)
 	if image.get_width() != size:
 		image.resize(size, size, Image.INTERPOLATE_BILINEAR)
+
+
+## Adds 1-bit transparency from [param opacity] (shrunk like the colors, cut at 50 %).
+func _apply_opacity(image: Image, opacity: Image, size: int) -> Image:
+	opacity.convert(Image.FORMAT_L8)
+	opacity = _crop_to_square(opacity)
+	_shrink(opacity, size)
+	var result := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var color := image.get_pixel(x, y)
+			color.a = 1.0 if opacity.get_pixel(x, y).r >= 0.5 else 0.0
+			result.set_pixel(x, y, color)
+	return result
 
 
 ## Moves every pixel's color away from the image's average color by [param amount].

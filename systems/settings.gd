@@ -89,6 +89,7 @@ const REFERENCE_ASPECT := 4.0 / 3.0
 const BINDABLE_ACTIONS: Array[StringName] = [
 	&"move_forward", &"move_back", &"move_left", &"move_right", &"jump", &"crouch", &"walk",
 	&"shoot", &"aim", &"reload", &"use", &"scoreboard", &"class_menu", &"toggle_debug", &"toggle_console",
+	&"slot_primary", &"slot_pistol", &"slot_knife", &"slot_grenade", &"last_weapon", &"drop_weapon", &"buy_menu",
 ]
 
 ## Every setting: its section in the file, its default and its limits. The

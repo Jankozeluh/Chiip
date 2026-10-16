@@ -101,6 +101,8 @@ func _new_match(rounds_to_win: int, round_time: float = ROUND_TIME, round_end_ti
 	settings.round_time = round_time
 	settings.round_end_time = round_end_time
 	settings.rounds_to_win = rounds_to_win
+	# Round flow, not money: bots that bought vests would change the damage numbers (M7).
+	settings.bots_buy = false
 	_rounds = RoundManager.new()
 	_rounds.settings = settings
 	_rounds.rng.seed = 7

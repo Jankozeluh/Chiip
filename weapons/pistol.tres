@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/pistol_shot.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/pistol_reload.wav" id="reload_sound"]
+
+[ext_resource type="PackedScene" path="res://assets/models/weapons/pistol.glb" id="model"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/pistol.png" id="icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapons/pistol_kill.png" id="kill_icon"]
+
+[resource]
+script = ExtResource("weapon_data_script")
+id = &"pistol"
+display_name = "Sparrow"
+slot = 1
+category = 4
+hold = 1
+max_speed_units = 240.0
+draw_time = 0.6
+price = 200
+kill_reward = 200
+damage = 32.0
+range_modifier = 0.9
+armor_penetration = 0.5
+magazine_size = 15
+reserve_ammo = 45
+fire_rate_rpm = 400.0
+reload_time = 2.2
+automatic = false
+standing_inaccuracy = 0.25
+crouching_inaccuracy = 0.2
+moving_inaccuracy = 1.4
+air_inaccuracy = 5.0
+spray_inaccuracy_per_shot = 0.35
+max_spray_inaccuracy = 2.5
+spray_pattern = PackedVector2Array(0, 0, 0.05, 0.9, 0.1, 1.8, 0, 2.6, -0.1, 3.3, -0.15, 3.9, -0.1, 4.4, 0, 4.8, 0.1, 5.1, 0.1, 5.3)
+view_punch_fraction = 0.6
+recoil_recovery_rate = 8.0
+shot_sound = ExtResource("shot_sound")
+dry_fire_sound = ExtResource("dry_fire_sound")
+reload_sound = ExtResource("reload_sound")
+model = ExtResource("model")
+muzzle_point = Vector3(0, 0.02, -0.162)
+icon = ExtResource("icon")
+kill_icon = ExtResource("kill_icon")
