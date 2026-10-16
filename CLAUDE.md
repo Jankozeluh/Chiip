@@ -98,6 +98,7 @@ Godot binary: `/Applications/Godot.app/Contents/MacOS/Godot`
 - TrenchBroom maps are built with Chiip's worldspawn class (`maps/fgd/`, set in `maps/chiip_map_settings.tres`), which stores each face's texture for footstep and impact sounds (`Surfaces`). Keep it when changing map settings, or every floor sounds like concrete.
 - A built TrenchBroom map scene stores references to its textures. Rebuild the map (tools/build_maps.gd) *before* deleting or renaming a texture it uses, or the scene can't be loaded anymore.
 - Multiplayer comes in M9 (D-033). Follow "Keeping multiplayer possible" in docs/ARCHITECTURE.md in all gameplay code.
+- Export a build (`--export-release`) only when the user asks for one.
 - Keep Chiip visually distinct from Counter-Strike: no desert/dust palettes, no CS-like map layouts or names (D-031).
 - Headless runs use a dummy audio driver where sounds never finish; anything still "playing" at exit is reported as leaked. Tests use silent weapon data.
 - In an exported game scenes are stored converted (`depot.tscn` becomes `depot.tscn.remap`): list resources with `ResourceLoader.list_directory()`, not `DirAccess`, and load them by their `.tscn` path as usual.

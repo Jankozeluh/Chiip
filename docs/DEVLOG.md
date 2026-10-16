@@ -10,7 +10,7 @@
   - the M10 Shooting Range: Practice opens it, and the test map is hidden from the player
   - the M10 UI: your Claude Design mockups for the menus, HUD, kill feed, class draft, buy menu and lobby
 - Main passes all 31 suites, 1056 checks.
-- The exported app is rebuilt at `builds/macos/Chiip.app` (171 MB) and starts without errors.
+- An export was made and then moved to the Trash at your request: export only when you say.
 - M0 to M10 are all built. Steam lobbies stay in the Backlog: GodotSteam wasn't downloaded, at your request.
 
 **Next:** your playtest, from "Your open checks" in PLAN.md.
