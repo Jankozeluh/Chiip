@@ -1,253 +1,370 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://ui/lobby_menu.gd" id="lobby_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/chip.png" id="chip"]
 
 [node name="LobbyMenu" type="CanvasLayer"]
 layer = 2
 visible = false
 script = ExtResource("lobby_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-color = Color(0, 0, 0, 0.62)
+theme_type_variation = &"InkPanel"
 
-[node name="Panel" type="PanelContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+[node name="Page" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-custom_minimum_size = Vector2(780, 0)
-mouse_filter = 0
-theme_type_variation = &"ModalPanel"
+mouse_filter = 2
+theme_type_variation = &"PageMargin"
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Column" type="VBoxContainer" parent="Page"]
 layout_mode = 2
-theme_type_variation = &"PanelMarginWide"
+mouse_filter = 2
+theme_type_variation = &"PageColumn"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+[node name="Header" type="HBoxContainer" parent="Page/Column"]
 layout_mode = 2
-theme_type_variation = &"ContentBox"
+mouse_filter = 2
+theme_type_variation = &"RowBox"
 
-[node name="Title" type="Label" parent="Panel/Margin/Content"]
+[node name="TitleTrim" type="MarginContainer" parent="Page/Column/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"TitleTrim"
+
+[node name="Title" type="Label" parent="Page/Column/Header/TitleTrim"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
-text = "Multiplayer"
-horizontal_alignment = 1
-
-[node name="ConnectPage" type="VBoxContainer" parent="Panel/Margin/Content"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"ContentBox"
-
-[node name="NameRow" type="HBoxContainer" parent="Panel/Margin/Content/ConnectPage"]
-layout_mode = 2
-theme_type_variation = &"FormRow"
-
-[node name="NameLabel" type="Label" parent="Panel/Margin/Content/ConnectPage/NameRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(200, 0)
-mouse_filter = 1
-tooltip_text = "The name the other players see (at most 16 characters)."
-text = "Name"
-vertical_alignment = 1
-
-[node name="NameField" type="LineEdit" parent="Panel/Margin/Content/ConnectPage/NameRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "Player"
-max_length = 16
-
-[node name="AddressRow" type="HBoxContainer" parent="Panel/Margin/Content/ConnectPage"]
-layout_mode = 2
-theme_type_variation = &"FormRow"
-
-[node name="AddressLabel" type="Label" parent="Panel/Margin/Content/ConnectPage/AddressRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(200, 0)
-mouse_filter = 1
-tooltip_text = "The IP address (or name) of the computer that hosts the game, for Join."
-text = "Host's address"
-vertical_alignment = 1
-
-[node name="AddressField" type="LineEdit" parent="Panel/Margin/Content/ConnectPage/AddressRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "127.0.0.1"
-
-[node name="PortRow" type="HBoxContainer" parent="Panel/Margin/Content/ConnectPage"]
-layout_mode = 2
-theme_type_variation = &"FormRow"
-
-[node name="PortLabel" type="Label" parent="Panel/Margin/Content/ConnectPage/PortRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(200, 0)
-mouse_filter = 1
-tooltip_text = "The UDP port: the one you host on, and the one you join at. 26000 unless you changed it."
-text = "Port"
-vertical_alignment = 1
-
-[node name="PortField" type="LineEdit" parent="Panel/Margin/Content/ConnectPage/PortRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "26000"
-max_length = 5
-
-[node name="Status" type="Label" parent="Panel/Margin/Content/ConnectPage"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
-theme_type_variation = &"DimLabel"
-autowrap_mode = 3
-
-[node name="ConnectButtons" type="HBoxContainer" parent="Panel/Margin/Content/ConnectPage"]
-layout_mode = 2
-theme_type_variation = &"ButtonRow"
-alignment = 1
-
-[node name="BackButton" type="Button" parent="Panel/Margin/Content/ConnectPage/ConnectButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
-text = "Back"
-
-[node name="JoinButton" type="Button" parent="Panel/Margin/Content/ConnectPage/ConnectButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
 text = "Join"
 
-[node name="HostButton" type="Button" parent="Panel/Margin/Content/ConnectPage/ConnectButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
-text = "Host game"
-
-[node name="LobbyPage" type="VBoxContainer" parent="Panel/Margin/Content"]
+[node name="Info" type="Label" parent="Page/Column/Header"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_type_variation = &"ContentBox"
-
-[node name="Info" type="Label" parent="Panel/Margin/Content/LobbyPage"]
-unique_name_in_owner = true
-layout_mode = 2
+size_flags_vertical = 4
 theme_type_variation = &"DimLabel"
-horizontal_alignment = 1
-autowrap_mode = 3
 
-[node name="Teams" type="HBoxContainer" parent="Panel/Margin/Content/LobbyPage"]
+[node name="Esc" type="Label" parent="Page/Column/Header"]
 layout_mode = 2
-theme_type_variation = &"FormRow"
+size_flags_vertical = 4
+theme_type_variation = &"DimKeyCapLabel"
+text = "Esc"
 
-[node name="Team0" type="VBoxContainer" parent="Panel/Margin/Content/LobbyPage/Teams"]
-layout_mode = 2
-custom_minimum_size = Vector2(300, 0)
-size_flags_horizontal = 3
-theme_type_variation = &"ContentBox"
-
-[node name="Header0" type="PanelContainer" parent="Panel/Margin/Content/LobbyPage/Teams/Team0"]
+[node name="BackButton" type="Button" parent="Page/Column/Header"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TeamHeaderFriendly"
+size_flags_vertical = 4
+theme_type_variation = &"TextButton"
+text = "Back"
 
-[node name="HeaderMargin0" type="MarginContainer" parent="Panel/Margin/Content/LobbyPage/Teams/Team0/Header0"]
-layout_mode = 2
-theme_type_variation = &"RowMargin"
-
-[node name="HeaderLabel0" type="Label" parent="Panel/Margin/Content/LobbyPage/Teams/Team0/Header0/HeaderMargin0"]
-layout_mode = 2
-theme_type_variation = &"BrightLabel"
-text = "Team 1"
-
-[node name="List0" type="VBoxContainer" parent="Panel/Margin/Content/LobbyPage/Teams/Team0"]
+[node name="LeaveButton" type="Button" parent="Page/Column/Header"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
-theme_type_variation = &"TeamBox"
-
-[node name="JoinTeamButton0" type="Button" parent="Panel/Margin/Content/LobbyPage/Teams/Team0"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Join Team 1"
-
-[node name="Team1" type="VBoxContainer" parent="Panel/Margin/Content/LobbyPage/Teams"]
-layout_mode = 2
-custom_minimum_size = Vector2(300, 0)
-size_flags_horizontal = 3
-theme_type_variation = &"ContentBox"
-
-[node name="Header1" type="PanelContainer" parent="Panel/Margin/Content/LobbyPage/Teams/Team1"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"TeamHeaderEnemy"
-
-[node name="HeaderMargin1" type="MarginContainer" parent="Panel/Margin/Content/LobbyPage/Teams/Team1/Header1"]
-layout_mode = 2
-theme_type_variation = &"RowMargin"
-
-[node name="HeaderLabel1" type="Label" parent="Panel/Margin/Content/LobbyPage/Teams/Team1/Header1/HeaderMargin1"]
-layout_mode = 2
-theme_type_variation = &"BrightLabel"
-text = "Team 2"
-
-[node name="List1" type="VBoxContainer" parent="Panel/Margin/Content/LobbyPage/Teams/Team1"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"TeamBox"
-
-[node name="JoinTeamButton1" type="Button" parent="Panel/Margin/Content/LobbyPage/Teams/Team1"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Join Team 2"
-
-[node name="Summary" type="Label" parent="Panel/Margin/Content/LobbyPage"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"DimLabel"
-horizontal_alignment = 1
-autowrap_mode = 3
-
-[node name="Waiting" type="Label" parent="Panel/Margin/Content/LobbyPage"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"BrightLabel"
-text = "Waiting for the host to start the match…"
-horizontal_alignment = 1
-
-[node name="Spacer" type="Control" parent="Panel/Margin/Content/LobbyPage"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-
-[node name="LobbyButtons" type="HBoxContainer" parent="Panel/Margin/Content/LobbyPage"]
-layout_mode = 2
-theme_type_variation = &"ButtonRow"
-alignment = 1
-
-[node name="LeaveButton" type="Button" parent="Panel/Margin/Content/LobbyPage/LobbyButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+size_flags_vertical = 4
+theme_type_variation = &"TextButton"
 text = "Leave"
 
-[node name="SettingsButton" type="Button" parent="Panel/Margin/Content/LobbyPage/LobbyButtons"]
-unique_name_in_owner = true
+[node name="Body" type="HBoxContainer" parent="Page/Column"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
-text = "Match settings…"
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"PageRow"
 
-[node name="StartButton" type="Button" parent="Panel/Margin/Content/LobbyPage/LobbyButtons"]
+[node name="Side" type="VBoxContainer" parent="Page/Column/Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(336, 0)
+mouse_filter = 2
+theme_type_variation = &"SideColumn"
+
+[node name="NameGroup" type="VBoxContainer" parent="Page/Column/Body/Side"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SideBox"
+
+[node name="NameLabel" type="Label" parent="Page/Column/Body/Side/NameGroup"]
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"DimLabel"
+tooltip_text = "The name the other players see (at most 16 characters)."
+text = "Your name"
+
+[node name="NameField" type="LineEdit" parent="Page/Column/Body/Side/NameGroup"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
-text = "Start match"
+custom_minimum_size = Vector2(0, 40)
+placeholder_text = "Player"
+max_length = 16
+
+[node name="ConnectBox" type="VBoxContainer" parent="Page/Column/Body/Side"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SideColumn"
+
+[node name="JoinGroup" type="VBoxContainer" parent="Page/Column/Body/Side/ConnectBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SideBox"
+
+[node name="JoinLabel" type="Label" parent="Page/Column/Body/Side/ConnectBox/JoinGroup"]
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"DimLabel"
+tooltip_text = "The IP address (or name) of the computer that hosts the game, and the UDP port (26000 unless the host changed it)."
+text = "Join by IP"
+
+[node name="JoinRow" type="HBoxContainer" parent="Page/Column/Body/Side/ConnectBox/JoinGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"FieldRow"
+
+[node name="AddressField" type="LineEdit" parent="Page/Column/Body/Side/ConnectBox/JoinGroup/JoinRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 40)
+placeholder_text = "IP"
+
+[node name="PortField" type="LineEdit" parent="Page/Column/Body/Side/ConnectBox/JoinGroup/JoinRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(88, 40)
+placeholder_text = "Port"
+max_length = 5
+
+[node name="JoinButton" type="Button" parent="Page/Column/Body/Side/ConnectBox/JoinGroup/JoinRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join"
+
+[node name="Status" type="Label" parent="Page/Column/Body/Side/ConnectBox/JoinGroup"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+autowrap_mode = 3
+
+[node name="HostGroup" type="VBoxContainer" parent="Page/Column/Body/Side/ConnectBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SideBox"
+
+[node name="HostLabel" type="Label" parent="Page/Column/Body/Side/ConnectBox/HostGroup"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Or host a game"
+
+[node name="HostButton" type="Button" parent="Page/Column/Body/Side/ConnectBox/HostGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Host game"
+
+[node name="FriendsBox" type="VBoxContainer" parent="Page/Column/Body/Side"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SideBox"
+
+[node name="FriendsLabel" type="Label" parent="Page/Column/Body/Side/FriendsBox"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Friends join at"
+
+[node name="Addresses" type="VBoxContainer" parent="Page/Column/Body/Side/FriendsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="Teams" type="VBoxContainer" parent="Page/Column/Body"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"PageColumn"
+
+[node name="TeamRow" type="HBoxContainer" parent="Page/Column/Body/Teams"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PageRow"
+
+[node name="Team0" type="VBoxContainer" parent="Page/Column/Body/Teams/TeamRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Header0" type="PanelContainer" parent="Page/Column/Body/Teams/TeamRow/Team0"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TeamTitleFriendly"
+
+[node name="HeaderRow0" type="HBoxContainer" parent="Page/Column/Body/Teams/TeamRow/Team0/Header0"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+mouse_filter = 2
+
+[node name="HeaderName0" type="Label" parent="Page/Column/Body/Teams/TeamRow/Team0/Header0/HeaderRow0"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_type_variation = &"FriendlyLabel"
+text = "Your team"
+
+[node name="HeaderCount0" type="Label" parent="Page/Column/Body/Teams/TeamRow/Team0/Header0/HeaderRow0"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"FriendlyLabel"
+
+[node name="List0" type="VBoxContainer" parent="Page/Column/Body/Teams/TeamRow/Team0"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="Team1" type="VBoxContainer" parent="Page/Column/Body/Teams/TeamRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="Header1" type="PanelContainer" parent="Page/Column/Body/Teams/TeamRow/Team1"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TeamTitleEnemy"
+
+[node name="HeaderRow1" type="HBoxContainer" parent="Page/Column/Body/Teams/TeamRow/Team1/Header1"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+mouse_filter = 2
+
+[node name="HeaderName1" type="Label" parent="Page/Column/Body/Teams/TeamRow/Team1/Header1/HeaderRow1"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_type_variation = &"EnemyLabel"
+text = "Enemy team"
+
+[node name="HeaderCount1" type="Label" parent="Page/Column/Body/Teams/TeamRow/Team1/Header1/HeaderRow1"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"EnemyLabel"
+
+[node name="List1" type="VBoxContainer" parent="Page/Column/Body/Teams/TeamRow/Team1"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="SwitchButton" type="Button" parent="Page/Column/Body/Teams"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Switch team"
+
+[node name="Footer" type="PanelContainer" parent="Page/Column"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"FooterPanel"
+
+[node name="Items" type="HBoxContainer" parent="Page/Column/Footer"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PageRow"
+
+[node name="ModePair" type="VBoxContainer" parent="Page/Column/Footer/Items"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="ModeCaption" type="Label" parent="Page/Column/Footer/Items/ModePair"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Mode"
+
+[node name="ModeValue" type="Label" parent="Page/Column/Footer/Items/ModePair"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MapPair" type="VBoxContainer" parent="Page/Column/Footer/Items"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="MapCaption" type="Label" parent="Page/Column/Footer/Items/MapPair"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Map"
+
+[node name="MapValue" type="Label" parent="Page/Column/Footer/Items/MapPair"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LimitPair" type="VBoxContainer" parent="Page/Column/Footer/Items"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="LimitCaption" type="Label" parent="Page/Column/Footer/Items/LimitPair"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+text = "Limit"
+
+[node name="LimitValue" type="Label" parent="Page/Column/Footer/Items/LimitPair"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="EditButton" type="Button" parent="Page/Column/Footer/Items"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"DimButton"
+text = "Edit setup"
+
+[node name="Waiting" type="Label" parent="Page/Column/Footer/Items"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"MuteLabel"
+text = "Waiting for the host to start"
+
+[node name="Spacer" type="Control" parent="Page/Column/Footer/Items"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="StartButton" type="Button" parent="Page/Column/Footer/Items"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"BigPrimaryButton"
+text = "Start"
+icon = ExtResource("chip")

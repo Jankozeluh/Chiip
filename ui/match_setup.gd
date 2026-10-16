@@ -13,7 +13,8 @@ extends CanvasLayer
 ## It only collects the choices and reports [signal started] and
 ## [signal closed]; the main menu starts the game ([GameLaunch]) for
 ## [method get_picked_mode]; the online lobby ([LobbyMenu]) holds one too, for the host's
-## match settings. Every choice is written to [Settings] (its
+## match settings, in [method set_online] mode (no Practice card; the picked card says "Picked"
+## and a click on it only picks). Every choice is written to [Settings] (its
 ## [code][match][/code] section) the moment it changes, so the next start offers
 ## the same match; picking Team Deathmatch or Bomb stores the mode too. The
 ## screen follows [signal Settings.changed]. [member settings] is the shared
@@ -40,8 +41,9 @@ const MODES := {
 	"rounds": {"name": "Bomb", "title": "Bomb", "text": "One life a round. Plant or defuse."},
 	"practice": {"name": "Practice", "title": "Practice", "text": "Bot arena. No rounds, no clock."},
 }
-## What the picked card's last line says.
+## What the picked card's last line says (offline: a click on it plays; online, in the lobby, it is only picked).
 const PLAY_HINT := "Click to play"
+const PICKED_HINT := "Picked"
 ## The value of the map row that stands for the rotation of the quick maps.
 const ROTATION := "rotation"
 ## The height of a mode card and of a custom row (at 720p; the screen scales them).
@@ -61,7 +63,10 @@ var settings: Settings
 
 ## The picked mode: "respawn", "rounds" or "practice".
 var _picked: String = "respawn"
-## Mode → its card's button, and its last line.
+## True in the online lobby's match settings: see [method set_online].
+var _online: bool = false
+## Mode → its card (the container that holds the button and the labels), its card's button, and its last line.
+var _card_boxes: Dictionary = {}
 var _cards: Dictionary = {}
 var _card_lines: Dictionary = {}
 ## Setting key → the buttons of its row, in the order of [member _segment_values].
@@ -137,6 +142,22 @@ func set_start_text(text: String) -> void:
 	_start_button.text = text
 
 
+## The online lobby's host edits the match here ([LobbyMenu]): with [param online] the Practice card
+## is hidden (there is no practice online), the picked card's last line says "Picked" instead of
+## "Click to play" and a click on it does not start anything, it only picks. Offline is the default.
+func set_online(online: bool) -> void:
+	_online = online
+	(_card_boxes["practice"] as Control).visible = not online
+	if online and _picked == "practice":
+		_picked = settings.match_mode
+	_refresh()
+
+
+## True after [method set_online] with true.
+func is_online() -> bool:
+	return _online
+
+
 ## Scales the screen; 1.0 is the size it is designed for (a 720-pixel-tall
 ## window). Hands it the theme scaled for the window ([UiTheme]).
 func set_ui_scale(factor: float) -> void:
@@ -146,6 +167,8 @@ func set_ui_scale(factor: float) -> void:
 ## Picks [param mode] ("respawn", "rounds" or "practice"): its card is framed,
 ## Custom shows its rows, and a match mode is stored as the last one chosen.
 func pick(mode: String) -> void:
+	if _online and mode == "practice":
+		return
 	_picked = mode
 	if mode != "practice":
 		settings.match_mode = mode
@@ -199,6 +222,7 @@ func _build_cards() -> void:
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.custom_minimum_size = Vector2(0, CARD_HEIGHT)
 		_cards_box.add_child(card)
+		_card_boxes[mode] = card
 		var button := Button.new()
 		button.name = "Button"
 		button.theme_type_variation = &"ModeButton"
@@ -371,7 +395,7 @@ func _refresh() -> void:
 		var picked := mode == _picked
 		(_cards[mode] as Button).theme_type_variation = &"ModeButtonPicked" if picked else &"ModeButton"
 		var line := _card_lines[mode] as Label
-		line.text = PLAY_HINT if picked else _card_line(mode)
+		line.text = (PICKED_HINT if _online else PLAY_HINT) if picked else _card_line(mode)
 		line.theme_type_variation = &"HeaderLabel" if picked else &"MuteLabel"
 	_mode_name.text = MODES[_picked]["title"]
 	var shown: Array = MODE_ROWS[_picked]
@@ -441,7 +465,8 @@ static func _bots_text(count: int) -> String:
 
 func _on_card_pressed(mode: String) -> void:
 	if mode == _picked:
-		started.emit()
+		if not _online:
+			started.emit()
 	else:
 		pick(mode)
 

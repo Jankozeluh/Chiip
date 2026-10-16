@@ -309,6 +309,25 @@ const TRIM_LARGE_BOTTOM := -4
 const TRIM_HERO_TOP := -14
 const TRIM_HERO_BOTTOM := -13
 
+# --- The multiplayer lobby (the mockup's "06 Lobby", M9 on the M10 look) ---
+# A page like the Play screen: a left column (336 wide, your name and the way in) and, 64 further right, the two
+# teams side by side (a 32 high header with a 2 px team line, then 40 high rows 4 apart), a "Switch team" button,
+# and a footer (a LINE edge, then the match's facts, "Edit setup" and "Start").
+
+## Between a label and the field or buttons under it in the left column (the mockup's flex gap of 12), and between the
+## parts of a lobby row (a chip, a name, "Host": the mockup's gap of 12).
+const LOBBY_SIDE_GAP := 12
+## Between the left column's groups ("Your name", "Join by IP", "Or host a game"): the 12 above plus the mockup's margin of 24.
+const LOBBY_GROUP_GAP := 36
+## Between a team's rows, and between the two lines of a footer pair (a caption over its value).
+const LOBBY_ROW_GAP := 4
+## Between a field and the button beside it ("Join by IP": address, port, Join).
+const LOBBY_FIELD_GAP := 8
+## Inside a lobby row (the mockup's "padding 0 12"): left and right.
+const LOBBY_SLOT_PAD_X := 12
+## Above the footer's items, under its LINE edge.
+const LOBBY_FOOTER_PAD_TOP := 24
+
 # --- Loading screen (the mockup's "07 Loading / Map change", D-138) ---
 # An INK band across the bottom of the game, with the map's name and the mode on its left and a row of progress
 # squares on its right, both columns the same distance in from their edges.

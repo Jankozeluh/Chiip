@@ -29,7 +29,9 @@ signal match_starting
 ## The session this lobby belongs to.
 var session: NetSession
 ## The host's description of the coming match: [code]summary[/code] (a line for people),
-## [code]slots[/code] ([team 0, team 1]), [code]map[/code] (a scene path). Empty until published.
+## [code]slots[/code] ([team 0, team 1]), [code]map[/code] (a scene path), and optionally
+## [code]facts[/code] (the lobby footer's [code]mode[/code], [code]map[/code] and [code]limit[/code]
+## as ready-made texts). Empty until published.
 var info: Dictionary = {}
 ## True between a match's start and the return to the lobby.
 var in_game: bool = false
@@ -70,13 +72,13 @@ func _ready() -> void:
 
 
 ## The host only: tells everyone what the coming match is: [param summary] (a line for the lobby
-## screen), [param slots] per team ([team 0, team 1]) and the [param map]. The slots also limit
-## who can join which team.
-func publish(summary: String, slots: Array, map: String) -> void:
+## screen), [param slots] per team ([team 0, team 1]), the [param map] and the [param facts] the
+## lobby footer shows (ready-made texts, may be empty). The slots also limit who can join which team.
+func publish(summary: String, slots: Array, map: String, facts: Dictionary = {}) -> void:
 	if not session.is_host():
 		return
 	session.team_limits = [int(slots[0]), int(slots[1])]
-	session.send_to_all({"lobby": {"summary": summary, "slots": [int(slots[0]), int(slots[1])], "map": map}})
+	session.send_to_all({"lobby": {"summary": summary, "slots": [int(slots[0]), int(slots[1])], "map": map, "facts": facts}})
 
 
 ## The host only: starts a match on [param map] by [param rules] on every computer (and the

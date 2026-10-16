@@ -35,13 +35,15 @@ extends Node
 ## band, margins, gaps and squares (also at 1.5 times the size), and its behaviour: it shows on a launch from the
 ## menu and on the rotation's next map with the game paused and the HUD hidden, swallows Esc, the console key,
 ## B, M and Tab, fills its squares and hides itself, and doesn't show on a restart.
-## The multiplayer lobby (M9, D-108) adds checks for the main menu's Host and Join items and the
-## connect page (fields from and to the settings, Esc, look and scaling), hosting (the lobby page with
-## you as "(you)" and "(host)", bot rows from the published slots, headers colored relative to you,
-## the summary line, Join Team and full teams, the match settings panel over it, Start match,
-## Leave and Esc), a real friend joining the host, joining a port where nothing listens, a port in
-## use, a client's view of a host's lobby and its host leaving, and the main menu opening the lobby
-## by itself with a running session or with the reason an online game ended.
+## The multiplayer lobby (M9, D-108, restyled as the mockup's "06 Lobby" in M10) adds checks for the main
+## menu's Host and Join items and the connect page (fields from and to the settings, Esc, look), hosting
+## (the lobby page: "Hosted by you", the addresses friends join at, you as "You" with the Host mark,
+## "Empty / Bot" rows from the published slots, team headers colored relative to you with their counts,
+## the footer's mode, map and limit, Switch team and full teams, Edit setup opening the online match
+## setup over it, Start, Leave and Esc), the layout in pixels and at 1.5 times, a real friend joining the
+## host, joining a port where nothing listens, a port in use, a client's view of a host's lobby and its
+## host leaving, and the main menu opening the lobby by itself with a running session or with the reason
+## an online game ended.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -106,6 +108,11 @@ const VARIATIONS := {
 	"ConsoleErrorLabel": "ConsoleLabel", "ConsoleInputRow": "PanelContainer", "ConsoleInputBox": "HBoxContainer",
 	# M10 task 15 (D-138): the loading screen's progress squares (done, current, still to come) and its two columns.
 	"TextChip": "Panel", "AccentChip": "Panel", "LineChip": "Panel", "LoadingColumn": "VBoxContainer",
+	# M10 task 17 (D-139): the multiplayer lobby as in mockup 06: the team header with its line, an empty slot's frame,
+	# the footer's edge, the page's side-by-side rows and the lobby's boxes, rows and margins, the alert-coloured text.
+	"AlertLabel": "Label", "TeamTitleFriendly": "PanelContainer", "TeamTitleEnemy": "PanelContainer", "EmptySlotPanel": "PanelContainer",
+	"FooterPanel": "PanelContainer", "PageRow": "HBoxContainer", "SideColumn": "VBoxContainer", "SideBox": "VBoxContainer",
+	"TightBox": "VBoxContainer", "FieldRow": "HBoxContainer", "SlotRow": "HBoxContainer", "SlotMargin": "MarginContainer",
 }
 ## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -156,6 +163,7 @@ func _ready() -> void:
 	_test_settings_roles()
 	_test_restyle_roles()
 	await _test_mockup_roles()
+	await _test_lobby_roles()
 	_test_icon_slots()
 	_test_scaled_theme()
 	await _test_scaling_a_menu()
@@ -344,6 +352,54 @@ func _test_tokens() -> void:
 			and (_theme.get_stylebox("panel", "PanelContainer") as StyleBoxFlat).bg_color == Tokens.PANEL
 	_check("The tokens arrive in the theme (font, sizes, button colours and padding, accent, text, spacing, panels); rerun tools/make_ui_theme.gd if this fails",
 			arrived, "button fill %s, padding %.0f, accent %s" % [button.bg_color, button.content_margin_left, _theme.get_color("accent", "Palette")])
+
+
+## The multiplayer lobby's roles (M10, the mockup's "06 Lobby"): the team header's line, an empty slot's frame,
+## the footer's edge, the gaps of its boxes and rows, a row's margin and the alert-coloured text.
+func _test_lobby_roles() -> void:
+	var holder := Control.new()
+	add_child(holder)
+	var friendly_title := _variation_node(PanelContainer.new(), "TeamTitleFriendly", holder)
+	var enemy_title := _variation_node(PanelContainer.new(), "TeamTitleEnemy", holder)
+	var empty_slot := _variation_node(PanelContainer.new(), "EmptySlotPanel", holder)
+	var footer := _variation_node(PanelContainer.new(), "FooterPanel", holder)
+	var slot_margin := _variation_node(MarginContainer.new(), "SlotMargin", holder)
+	var alert := _variation_node(Label.new(), "AlertLabel", holder)
+	await get_tree().process_frame
+	var friendly_box := friendly_title.get_theme_stylebox("panel") as StyleBoxFlat
+	var enemy_box := enemy_title.get_theme_stylebox("panel") as StyleBoxFlat
+	_check("A lobby team's header is a panel with nothing behind it and a 2 px line under it in the UI's team colour (blue for yours, red for the enemy's), no space above the line (unlike the scoreboard's enemy line)",
+			friendly_box.border_width_bottom == Tokens.LINE and friendly_box.border_width_top == 0 and friendly_box.border_color == Tokens.FRIENDLY and friendly_box.bg_color.a == 0.0
+					and enemy_box.border_width_bottom == Tokens.LINE and enemy_box.border_width_top == 0 and enemy_box.border_color == Tokens.ENEMY and enemy_box.bg_color.a == 0.0
+					and friendly_title.get_combined_minimum_size().y == float(Tokens.LINE) and enemy_title.get_combined_minimum_size().y == float(Tokens.LINE),
+			"friendly line %d %s, enemy line %d %s, heights %.0f / %.0f" % [friendly_box.border_width_bottom, friendly_box.border_color, enemy_box.border_width_bottom,
+					enemy_box.border_color, friendly_title.get_combined_minimum_size().y, enemy_title.get_combined_minimum_size().y])
+	var empty_box := empty_slot.get_theme_stylebox("panel") as StyleBoxFlat
+	var footer_box := footer.get_theme_stylebox("panel") as StyleBoxFlat
+	_check("An empty slot is framed in a 2 px LINE colour with nothing inside (the mockup's is dashed, a StyleBox has no dashes); the footer has a 2 px LINE edge along its top only and its items start %d px under it" % Tokens.LOBBY_FOOTER_PAD_TOP,
+			empty_box.border_width_left == Tokens.BORDER and empty_box.border_width_top == Tokens.BORDER and empty_box.border_width_right == Tokens.BORDER
+					and empty_box.border_width_bottom == Tokens.BORDER and empty_box.border_color == Tokens.LINE_COLOR and empty_box.bg_color.a == 0.0
+					and footer_box.border_width_top == Tokens.LINE and footer_box.border_width_bottom == 0 and footer_box.border_width_left == 0
+					and footer_box.border_color == Tokens.LINE_COLOR and footer_box.bg_color.a == 0.0
+					and footer_box.content_margin_top == float(Tokens.LINE + Tokens.LOBBY_FOOTER_PAD_TOP) and Tokens.LOBBY_FOOTER_PAD_TOP == 24,
+			"empty frame %d %s, footer edge %d, space %.0f" % [empty_box.border_width_left, empty_box.border_color, footer_box.border_width_top, footer_box.content_margin_top])
+	var gaps := {"PageRow": [HBoxContainer, Tokens.PAGE_GAP, 32], "SideColumn": [VBoxContainer, Tokens.LOBBY_GROUP_GAP, 36],
+			"SideBox": [VBoxContainer, Tokens.LOBBY_SIDE_GAP, 12], "TightBox": [VBoxContainer, Tokens.LOBBY_ROW_GAP, 4],
+			"FieldRow": [HBoxContainer, Tokens.LOBBY_FIELD_GAP, 8], "SlotRow": [HBoxContainer, Tokens.LOBBY_SIDE_GAP, 12]}
+	var gap_problems: Array[String] = []
+	for role: String in gaps:
+		var entry: Array = gaps[role]
+		var box := _variation_node(entry[0].new(), role, holder)
+		if box.get_theme_constant("separation") != int(entry[1]) or int(entry[1]) != int(entry[2]):
+			gap_problems.append("%s %d (token %d, mockup %d)" % [role, box.get_theme_constant("separation"), entry[1], entry[2]])
+	_check("The lobby's boxes are the mockup's gaps apart: page parts 32, the left column's groups 36 (12 + the margin of 24), a label and its field 12, a team's rows and a footer pair's lines 4, a field and its button 8, the parts of a row 12; a row's margin is 12 at the sides and none above and below",
+			gap_problems.is_empty() and slot_margin.get_theme_constant("margin_left") == Tokens.LOBBY_SLOT_PAD_X and slot_margin.get_theme_constant("margin_right") == Tokens.LOBBY_SLOT_PAD_X
+					and slot_margin.get_theme_constant("margin_top") == 0 and slot_margin.get_theme_constant("margin_bottom") == 0 and Tokens.LOBBY_SLOT_PAD_X == 12,
+			"problems %s, margin %d" % [gap_problems, slot_margin.get_theme_constant("margin_left")])
+	_check("Text that needs attention (a connection error) is the ALERT colour",
+			alert.get_theme_color("font_color") == Tokens.ALERT, "colour %s" % [alert.get_theme_color("font_color")])
+	remove_child(holder)
+	holder.queue_free()
 
 
 ## The roles added for the mode choice and the new screens (D-131, D-132).
@@ -3425,6 +3481,32 @@ func _test_loading_screen_in_the_game() -> void:
 # --- The multiplayer lobby (M9, D-108) ---
 
 
+## The distances that make the lobby page's layout (pixels, in the window's own scale): where the left column and
+## the teams start (from the page's left edge) and how wide the column is, the heights of a team header, a row and the Start button, the gaps
+## between rows, under the header, between the two columns and under the columns (Switch team), the footer's edge
+## and the space under it. Read after the layout has settled.
+func _lobby_geometry(lobby: LobbyMenu) -> Dictionary:
+	var side := lobby.get_node("Page/Column/Body/Side") as Control
+	var column := lobby.get_team_column(0)
+	var rows := lobby.get_team_list(0).get_children()
+	var header := lobby.get_team_header(0)
+	var items := lobby.get_node("Page/Column/Footer/Items") as Control
+	var footer := lobby.get_footer()
+	var edge := (footer.get_theme_stylebox("panel") as StyleBoxFlat).border_width_top
+	var list_end := maxf(lobby.get_team_list(0).get_global_rect().end.y, lobby.get_team_list(1).get_global_rect().end.y)
+	# From the page's own corner: a headless window is 64 px wide, much narrower than the page, which then grows to both sides.
+	var origin := (lobby.get_node("Page") as Control).global_position
+	return {
+		"side_x": side.global_position.x - origin.x, "side_width": side.size.x, "column_x": column.global_position.x - origin.x,
+		"column_gap": lobby.get_team_column(1).global_position.x - column.get_global_rect().end.x,
+		"header_height": header.size.y, "row_height": (rows[0] as Control).size.y,
+		"row_gap": (rows[1] as Control).global_position.y - (rows[0] as Control).get_global_rect().end.y,
+		"first_row_gap": (rows[0] as Control).global_position.y - header.get_global_rect().end.y,
+		"switch_gap": lobby.get_switch_team_button().global_position.y - list_end,
+		"footer_edge": float(edge), "footer_item_gap": items.global_position.y - (footer.global_position.y + edge),
+	}
+
+
 ## The multiplayer lobby: opened from the main menu on its own [Settings], hosting on a random port
 ## with a real friend (a second session in the same process, [NetHarness]) joining it, and a
 ## client's view of a host's lobby. Every session is closed again at the end.
@@ -3464,14 +3546,16 @@ func _test_lobby_menu() -> void:
 	join_item.pressed.emit()
 	var fields := [lobby.get_name_field().text, lobby.get_address_field().text, lobby.get_port_field().text]
 	var connect_buttons := [lobby.get_host_button().text, lobby.get_join_button().text, lobby.get_back_button().text]
-	_check("The main menu's Join item (the small one under the line) opens the lobby on its connect page with the address field focused: titled Multiplayer, over the menu with the mouse free, the name (at most 16 characters), host's address and port filled in from the settings, the buttons Host game, Join and Back, and no status text",
+	_check("The main menu's Join item (the small one under the line) opens the lobby on its connect page with the address field focused: titled Join, over the menu with the mouse free, the name (at most 16 characters), host's address and port filled in from the settings (placeholders IP and Port), the buttons Host game, Join and Back, no status text and none of the lobby's teams and footer",
 			join_item.text == "Join" and join_item.theme_type_variation == &"SmallItemButton" and hidden_before and lobby.is_open()
 					and lobby.get_address_field().has_focus()
 					and MenuState.is_top(lobby) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and lobby.get_page() == LobbyMenu.Page.CONNECT
-					and (lobby.get_node("Panel/Margin/Content/Title") as Label).text == "Multiplayer"
-					and fields == ["Jan", "10.1.2.3", "27123"] and lobby.get_name_field().max_length == 16
-					and connect_buttons == ["Host game", "Join", "Back"] and lobby.get_status_label().text == ""
-					and not lobby.get_node("Panel/Margin/Content/LobbyPage").visible and lobby.get_session() == null,
+					and lobby.get_title_label().text == "Join"
+					and fields == ["Jan", "10.1.2.3", "27123"] and lobby.get_name_field().max_length == 16 and lobby.get_name_field().editable
+					and lobby.get_address_field().placeholder_text == "IP" and lobby.get_port_field().placeholder_text == "Port"
+					and connect_buttons == ["Host game", "Join", "Back"] and lobby.get_status_label().text == "" and not lobby.get_status_label().visible
+					and lobby.get_connect_box().visible and lobby.get_back_button().visible and not lobby.get_leave_button().visible and not lobby.get_info_label().visible
+					and not lobby.get_teams_box().visible and not lobby.get_footer().visible and not lobby.get_friends_box().visible and lobby.get_session() == null,
 			"fields %s, buttons %s, page %d, top %s" % [fields, connect_buttons, lobby.get_page(), MenuState.is_top(lobby)])
 
 	# Editing a field writes to the settings; the port takes digits only.
@@ -3487,18 +3571,18 @@ func _test_lobby_menu() -> void:
 			"name '%s', address '%s', port %d, field '%s', shared name '%s'" % [stored.online_name, stored.online_address, stored.online_port,
 					lobby.get_port_field().text, shared.online_name])
 
-	# Looks: modal, themed, no overrides, scales by 1.5, the background blocks clicks.
-	var panel := lobby.get_node("Panel") as PanelContainer
-	var background := lobby.get_node("Background") as ColorRect
-	lobby.set_ui_scale(1.5)
-	var scaled_width := panel.custom_minimum_size.x
-	lobby.set_ui_scale(1.0)
-	var lobby_overrides := _own_overrides(lobby)
-	_check("The lobby is a themed modal panel (780 wide, 1170 at 1.5×) over a click-blocking background, with no stylebox or font-size override of its own",
-			panel.theme_type_variation == &"ModalPanel" and panel.custom_minimum_size.x == 780.0 and scaled_width == 1170.0
-					and background.mouse_filter == Control.MOUSE_FILTER_STOP and lobby.layer == 2 and lobby_overrides.is_empty(),
-			"variation %s, width %s then %s, background filter %d, layer %d, overrides %s" % [panel.theme_type_variation, panel.custom_minimum_size.x,
-					scaled_width, background.mouse_filter, lobby.layer, lobby_overrides])
+	# Looks: an ink page like the Play screen (header, columns, footer), themed, no overrides, the background blocks clicks.
+	var background := lobby.get_node("Background") as Panel
+	var page := lobby.get_node("Page") as MarginContainer
+	var esc_cap := lobby.get_node("Page/Column/Header/Esc") as Label
+	var lobby_overrides := _overrides_below(lobby)
+	_check("The lobby is a themed full-screen page as the Play screen is (an InkPanel that blocks the clicks, a PageMargin, a header with the title, the Esc key cap and a text button) with no theme override of its own",
+			background.theme_type_variation == &"InkPanel" and background.mouse_filter == Control.MOUSE_FILTER_STOP and page.theme_type_variation == &"PageMargin"
+					and page.mouse_filter == Control.MOUSE_FILTER_IGNORE and lobby.layer == 2 and lobby.get_title_label().theme_type_variation == &"TitleLabel"
+					and esc_cap.theme_type_variation == &"DimKeyCapLabel" and esc_cap.text == "Esc" and lobby.get_back_button().theme_type_variation == &"TextButton"
+					and lobby.get_leave_button().theme_type_variation == &"TextButton" and lobby.get_leave_button().text == "Leave"
+					and lobby.get_host_button().theme_type_variation == &"" and lobby.get_join_button().theme_type_variation == &"" and lobby_overrides.is_empty(),
+			"background %s (filter %d), page %s, layer %d, overrides %s" % [background.theme_type_variation, background.mouse_filter, page.theme_type_variation, lobby.layer, lobby_overrides])
 
 	# Esc closes the connect page and gives the menu back its focus.
 	_send(_key_event(KEY_ESCAPE))
@@ -3515,7 +3599,7 @@ func _test_lobby_menu() -> void:
 	host_item.pressed.emit()
 	var host_item_session := lobby.get_session()
 	var hosted_by_item := lobby.is_open() and host_item_session != null and host_item_session.is_host() and host_item_session.is_active() \
-			and lobby.get_page() == LobbyMenu.Page.LOBBY and lobby.get_info_label().text.begins_with("Hosting on port %d" % host_item_port)
+			and lobby.get_page() == LobbyMenu.Page.LOBBY and lobby.get_info_label().text.begins_with("Hosted by you · ") and lobby.get_info_label().text.ends_with(str(host_item_port))
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	_send(_key_event(KEY_ESCAPE))
@@ -3538,25 +3622,67 @@ func _test_lobby_menu() -> void:
 	var default_summary := "Rounds · Test Map · first to 5 rounds · Normal bots"
 	var team_0 := lobby.get_team_texts(0)
 	var team_1 := lobby.get_team_texts(1)
-	_check("Host game opens a session as the host on the port in the field and shows the lobby page: titled Lobby, one line saying where friends join, you in Team 1 as \"(you) (host)\" and \"Bot\" rows for the other slots of both teams, the match's summary line, Match settings and Start match (no waiting line)",
+	var addresses := LobbyMenu.local_addresses()
+	var address_lines: Array[String] = []
+	for address in addresses:
+		address_lines.append("%s:%d" % [address, port])
+	var hosted_text := "Hosted by you · %s" % address_lines[0] if not address_lines.is_empty() else "Hosted by you · port %d" % port
+	var default_facts := {"Mode": "Bomb", "Map": "Test Map", "Limit": "First to 5 rounds"}
+	_check("Host game opens a session as the host on the port in the field and shows the lobby page: titled Lobby, \"Hosted by you · address:port\" in the header with Leave in place of Back, your name fixed, the addresses friends join at (with the port) under Friends join at, you as \"You\" with the Host mark and \"Empty / Bot\" rows for the other slots of both teams, the match's mode, map and limit in the footer, Edit setup and Start (no waiting line)",
 			result == OK and session != null and session.is_host() and session.is_active() and NetLobby.find_session(tree) == session
-					and lobby.get_page() == LobbyMenu.Page.LOBBY and (lobby.get_node("Panel/Margin/Content/Title") as Label).text == "Lobby"
-					and lobby.get_info_label().text.begins_with("Hosting on port %d" % port) and stored.online_port == port
-					and team_0 == ["Jan (you) (host)", "Bot", "Bot"] and team_1 == ["Bot", "Bot", "Bot"]
+					and lobby.get_page() == LobbyMenu.Page.LOBBY and lobby.get_title_label().text == "Lobby"
+					and lobby.get_info_label().visible and lobby.get_info_label().text == hosted_text and stored.online_port == port
+					and lobby.get_leave_button().visible and lobby.get_leave_button().text == "Leave" and not lobby.get_back_button().visible
+					and not lobby.get_name_field().editable and lobby.get_name_field().text == "Jan"
+					and lobby.get_address_texts() == address_lines and lobby.get_friends_box().visible == not address_lines.is_empty()
+					and not lobby.get_connect_box().visible and lobby.get_teams_box().visible and lobby.get_footer().visible
+					and team_0 == ["You Host", "Empty Bot", "Empty Bot"] and team_1 == ["Empty Bot", "Empty Bot", "Empty Bot"]
 					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MAP
-					and lobby.get_summary_label().text == default_summary and lobby_node.info.get("summary", "") == default_summary
-					and lobby.get_settings_button().visible and lobby.get_start_button().visible and lobby.get_start_button().text == "Start match"
-					and not lobby.get_waiting_label().visible and not lobby.get_node("Panel/Margin/Content/ConnectPage").visible,
-			"result %d, team 1 %s, team 2 %s, info '%s', summary '%s', info line '%s'" % [result, team_0, team_1, lobby_node.info if lobby_node != null else "none",
-					lobby.get_summary_label().text, lobby.get_info_label().text])
-	_check("Colors are relative to you: your team's header is the blue (friendly) bar and the other the red one, each titled Team 1 and Team 2; your Join Team button is off, the other one on",
-			lobby.get_team_header(0).theme_type_variation == &"TeamHeaderFriendly" and lobby.get_team_header(1).theme_type_variation == &"TeamHeaderEnemy"
-					and (lobby.get_team_header(0).find_children("*", "Label", true, false)[0] as Label).text == "Team 1"
-					and (lobby.get_team_header(1).find_children("*", "Label", true, false)[0] as Label).text == "Team 2"
-					and lobby.get_join_team_button(0).text == "Join Team 1" and lobby.get_join_team_button(1).text == "Join Team 2"
-					and lobby.get_join_team_button(0).disabled and not lobby.get_join_team_button(1).disabled,
-			"headers %s / %s, buttons disabled %s / %s" % [lobby.get_team_header(0).theme_type_variation, lobby.get_team_header(1).theme_type_variation,
-					lobby.get_join_team_button(0).disabled, lobby.get_join_team_button(1).disabled])
+					and lobby.build_summary() == default_summary and lobby_node.info.get("summary", "") == default_summary
+					and lobby.get_footer_facts() == default_facts and lobby_node.info.get("facts", {}) == lobby.build_facts()
+					and lobby.get_settings_button().visible and lobby.get_settings_button().text == "Edit setup" and lobby.get_settings_button().theme_type_variation == &"DimButton"
+					and lobby.get_start_button().visible and lobby.get_start_button().text == "Start" and lobby.get_start_button().theme_type_variation == &"BigPrimaryButton"
+					and lobby.get_start_button().icon != null and not lobby.get_waiting_label().visible,
+			"result %d, team 1 %s, team 2 %s, info '%s', header '%s', addresses %s, facts %s" % [result, team_0, team_1, lobby_node.info if lobby_node != null else "none",
+					lobby.get_info_label().text, lobby.get_address_texts(), lobby.get_footer_facts()])
+	_check("Colors are relative to you: your team's header is \"Your team\" with the blue (friendly) line and the other \"Enemy team\" with the red one, each with its players out of its slots (1 / 3 and 0 / 3), your row is the raised one with a lime chip and the empty slots are framed; Switch team (one button, in place of a Join Team button per team) is on",
+			lobby.get_team_header(0).theme_type_variation == &"TeamTitleFriendly" and lobby.get_team_header(1).theme_type_variation == &"TeamTitleEnemy"
+					and lobby.get_team_header_texts(0) == ["Your team", "1 / 3"] and lobby.get_team_header_texts(1) == ["Enemy team", "0 / 3"]
+					and lobby.get_team_list(0).get_child(0).theme_type_variation == &"RaisedPanel" and lobby.get_team_list(0).get_child(1).theme_type_variation == &"EmptySlotPanel"
+					and not lobby.get_team_list(0).get_child(0).find_children("*", "Panel", true, false).filter(func(chip: Node) -> bool: return chip.theme_type_variation == &"AccentChip").is_empty()
+					and lobby.get_team_list(1).get_child(0).find_children("*", "Panel", true, false).is_empty()
+					and lobby.get_switch_team_button().text == "Switch team" and lobby.get_switch_team_button().theme_type_variation == &""
+					and not lobby.get_switch_team_button().disabled,
+			"headers %s / %s, texts %s / %s, switch disabled %s" % [lobby.get_team_header(0).theme_type_variation, lobby.get_team_header(1).theme_type_variation,
+					lobby.get_team_header_texts(0), lobby.get_team_header_texts(1), lobby.get_switch_team_button().disabled])
+	var hosted_overrides := _overrides_below(lobby)
+	_check("The lobby page's rows, headers and footer take everything from the theme too: no override on any control of it", hosted_overrides.is_empty(), "overrides %s" % [hosted_overrides])
+
+	# The layout as the mockup draws it, and exactly 1.5 times as big at 1080p.
+	await tree.process_frame
+	await tree.process_frame
+	var at_one := _lobby_geometry(lobby)
+	lobby.set_ui_scale(1.5)
+	await tree.process_frame
+	await tree.process_frame
+	var at_one_and_a_half := _lobby_geometry(lobby)
+	lobby.set_ui_scale(1.0)
+	await tree.process_frame
+	await tree.process_frame
+	var back_to_one := _lobby_geometry(lobby)
+	var scaled_ok := true
+	for key: String in at_one:
+		scaled_ok = scaled_ok and is_equal_approx(float(at_one_and_a_half[key]), float(at_one[key]) * 1.5)
+	var start_height := lobby.get_start_button().size.y
+	_check("The lobby's layout is the mockup's at 720p: the left column at x 32 and 336 wide, the teams from x 400 (32 on) with a 34 high header (32 + its 2 px line), rows 40 high 4 apart and 8 under the header, Switch team 32 under the longest column, the footer's items 24 under its 2 px edge",
+			at_one["side_x"] == 32.0 and at_one["side_width"] == 336.0 and at_one["column_x"] == 400.0 and at_one["header_height"] == 34.0
+					and at_one["row_height"] == 40.0 and at_one["row_gap"] == 4.0 and at_one["first_row_gap"] == 8.0 and at_one["switch_gap"] == 32.0
+					and at_one["column_gap"] == 32.0 and at_one["footer_edge"] == 2.0 and at_one["footer_item_gap"] == 24.0 and start_height == 56.0,
+			"%s, Start %.0f high" % [at_one, start_height])
+	_check("At 1080p (scale 1.5) every one of those is exactly 1.5 times as big (column x 400 to 600, row height 40 to 60, the left column 336 to 504) and back at 720p they are the same again",
+			scaled_ok and at_one_and_a_half["column_x"] == 600.0 and at_one_and_a_half["row_height"] == 60.0 and at_one_and_a_half["side_width"] == 504.0
+					and back_to_one == at_one,
+			"1.0: %s, 1.5: %s" % [at_one, at_one_and_a_half])
 
 	# A real friend joins: they take a slot of the smaller team and get the host's info.
 	harness.port = port
@@ -3565,54 +3691,70 @@ func _test_lobby_menu() -> void:
 	# Without this the friend's lobby would really change this test's scene when the match starts.
 	friend_lobby.change_scene = func(_path: String) -> void: pass
 	await harness.wait_until(func() -> bool: return session.get_players().size() == 2 and not friend_lobby.info.is_empty(), 640)
-	_check("A friend joining takes a bot's slot in the smaller team (their name replaces one \"Bot\" row there) and receives the host's lobby info and the team limits",
-			lobby.get_team_texts(0) == ["Jan (you) (host)", "Bot", "Bot"] and lobby.get_team_texts(1) == ["Anna", "Bot", "Bot"]
-					and friend_lobby.info.get("summary", "") == default_summary and session.team_limits == [3, 3],
+	_check("A friend joining takes a bot's slot in the smaller team (their name replaces one \"Empty / Bot\" row there, and its header counts them: 1 / 3 and 1 / 3) and receives the host's lobby info and the team limits",
+			lobby.get_team_texts(0) == ["You Host", "Empty Bot", "Empty Bot"] and lobby.get_team_texts(1) == ["Anna", "Empty Bot", "Empty Bot"]
+					and lobby.get_team_header_texts(1) == ["Enemy team", "1 / 3"] and lobby.get_team_list(1).get_child(0).theme_type_variation == &"RowPanel"
+					and friend_lobby.info.get("summary", "") == default_summary and friend_lobby.info.get("facts", {}) == lobby_node.info.get("facts", {}) and session.team_limits == [3, 3],
 			"team 1 %s, team 2 %s, friend's summary '%s'" % [lobby.get_team_texts(0), lobby.get_team_texts(1), friend_lobby.info.get("summary", "")])
 
 	# The summary and the slots follow the match settings; the host's team gets "your team"'s size.
 	stored.match_team_size = 2
 	stored.match_enemy_team_size = 4
 	var sized := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), session.team_limits.duplicate()]
-	_check("Changing the team sizes republishes at once: the host's team has \"your team\"'s slots (2) and the other the enemy team's (4), the rows follow, and the slots become the limits",
-			sized[0] == ["Jan (you) (host)", "Bot"] and sized[1] == ["Anna", "Bot", "Bot", "Bot"] and sized[2] == [2, 4] and sized[3] == [2, 4],
+	_check("Changing the team sizes republishes at once: the host's team has \"your team\"'s slots (2) and the other the enemy team's (4), the rows and the headers' counts (1 / 2, 1 / 4) follow, and the slots become the limits",
+			sized[0] == ["You Host", "Empty Bot"] and sized[1] == ["Anna", "Empty Bot", "Empty Bot", "Empty Bot"] and sized[2] == [2, 4] and sized[3] == [2, 4]
+					and lobby.get_team_header_texts(0) == ["Your team", "1 / 2"] and lobby.get_team_header_texts(1) == ["Enemy team", "1 / 4"],
 			"team 1 %s, team 2 %s, slots %s, limits %s" % sized)
 	stored.match_mode = "respawn"
 	stored.match_kill_limit = 75
 	stored.match_friendly_fire = true
 	stored.match_difficulty = "hard"
-	var respawn_summary := lobby.get_summary_label().text
+	var respawn_summary := lobby.build_summary()
+	var respawn_published := String(lobby_node.info.get("summary", ""))
+	var respawn_facts := lobby.get_footer_facts()
 	stored.match_mode = "rounds"
 	stored.match_friendly_fire = false
 	stored.match_difficulty = "easy"
 	stored.match_rotation = true
 	stored.match_map = "res://maps/square.tscn"
-	var rotation_summary := lobby.get_summary_label().text
+	var rotation_summary := lobby.build_summary()
+	var rotation_facts := lobby.get_footer_facts()
 	await harness.wait_until(func() -> bool: return friend_lobby.info.get("summary", "") == rotation_summary, 320)
 	_check("The summary line is built from the choices: mode, map or rotation (starting at the chosen map), length, bot difficulty and friendly fire, and the friend sees the same line",
-			respawn_summary == "Team respawn · Test Map · first to 75 kills · Hard bots · friendly fire"
+			respawn_summary == "Team respawn · Test Map · first to 75 kills · Hard bots · friendly fire" and respawn_published == respawn_summary
 					and rotation_summary == "Rounds · Rotation: Square, Spillway, Depot · first to 5 rounds · Easy bots"
 					and friend_lobby.info.get("summary", "") == rotation_summary and lobby_node.info.get("map", "") == "res://maps/square.tscn",
 			"respawn '%s', rotation '%s', friend sees '%s'" % [respawn_summary, rotation_summary, friend_lobby.info.get("summary", "")])
+	_check("The footer follows the same choices, mode over its name, map (\"Rotation · \" and the map it starts at for the rotation) and limit (kills and minutes, or the rounds to win), and the friend gets the same facts",
+			respawn_facts == {"Mode": "Team Deathmatch", "Map": "Test Map", "Limit": "75 kills · 10 min"}
+					and rotation_facts == {"Mode": "Bomb", "Map": "Rotation · Square", "Limit": "First to 5 rounds"}
+					and friend_lobby.info.get("facts", {}) == {"mode": "Bomb", "map": "Rotation · Square", "limit": "First to 5 rounds"},
+			"respawn %s, rotation %s, friend %s" % [respawn_facts, rotation_facts, friend_lobby.info.get("facts", {})])
 	stored.match_rotation = false
 	stored.match_map = Settings.DEFAULT_MAP
 
-	# Join Team moves you (the host) and swaps the slots and the colors.
-	lobby.get_join_team_button(1).pressed.emit()
+	# Switch team moves you (the host) to the other team and swaps the slots and the colors; Join Team is still there for code.
+	lobby.get_switch_team_button().pressed.emit()
 	var moved := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), session.get_team(1)]
-	_check("Join Team 2 moves the host to Team 2: the rows follow, the slots swap with the host (4 and 2), your team's header is the blue one now and the Join buttons flip",
-			moved[3] == 1 and moved[0] == ["Bot", "Bot", "Bot", "Bot"] and moved[1] == ["Jan (you) (host)", "Anna"] and moved[2] == [4, 2]
-					and lobby.get_team_header(1).theme_type_variation == &"TeamHeaderFriendly" and lobby.get_team_header(0).theme_type_variation == &"TeamHeaderEnemy"
-					and not lobby.get_join_team_button(0).disabled and lobby.get_join_team_button(1).disabled,
+	_check("Switch team moves the host to the other team: the rows follow, the slots swap with the host (4 and 2), your team's header (\"Your team\", 2 / 2) is the blue one now and the other (\"Enemy team\", 0 / 4) the red one, and the button stays on",
+			moved[3] == 1 and moved[0] == ["Empty Bot", "Empty Bot", "Empty Bot", "Empty Bot"] and moved[1] == ["You Host", "Anna"] and moved[2] == [4, 2]
+					and lobby.get_team_header(1).theme_type_variation == &"TeamTitleFriendly" and lobby.get_team_header(0).theme_type_variation == &"TeamTitleEnemy"
+					and lobby.get_team_header_texts(1) == ["Your team", "2 / 2"] and lobby.get_team_header_texts(0) == ["Enemy team", "0 / 4"]
+					and not lobby.get_switch_team_button().disabled,
 			"team 1 %s, team 2 %s, slots %s, host team %d" % [moved[0], moved[1], moved[2], moved[3]])
+	lobby.join_team(0)
+	var joined_back := session.get_team(1) == 0 and lobby.get_team_texts(0)[0] == "You Host"
+	lobby.get_switch_team_button().pressed.emit()
+	_check("join_team(team) still moves you to that team (Switch team is the same call with the other team), and Switch team from team 1 goes back to team 2",
+			joined_back and session.get_team(1) == 1, "back in team 1 %s, host team %d" % [joined_back, session.get_team(1)])
 
-	# A full team: the Join Team button is off.
+	# A full team: the Switch team button is off.
 	stored.match_team_size = 1
 	stored.match_enemy_team_size = 1
 	session.set_player_team(friend.local_peer_id, 0)
-	var full := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), lobby.get_join_team_button(0).disabled]
-	_check("A team with all its slots taken has its Join Team button off (1 slot, Anna in it; you are on the other team)",
-			full[0] == ["Anna"] and full[1] == ["Jan (you) (host)"] and full[2] == [1, 1] and full[3],
+	var full := [lobby.get_team_texts(0), lobby.get_team_texts(1), lobby_node.info.get("slots", []), lobby.get_switch_team_button().disabled]
+	_check("When the other team has all its slots taken (1 slot, Anna in it; you are on the other team) Switch team is off",
+			full[0] == ["Anna"] and full[1] == ["You Host"] and full[2] == [1, 1] and full[3],
 			"team 1 %s, team 2 %s, slots %s, button off %s" % full)
 	stored.match_team_size = 2
 	stored.match_enemy_team_size = 4
@@ -3620,16 +3762,50 @@ func _test_lobby_menu() -> void:
 	# The match settings over the lobby: Done instead of Start, Esc closes only that panel.
 	lobby.get_settings_button().pressed.emit()
 	var setup := lobby.get_match_setup()
-	var setup_open := setup.is_open() and MenuState.is_top(setup) and setup.get_start_button().text == "Done"
+	var setup_open := setup.is_open() and MenuState.is_top(setup) and setup.get_start_button().text == "Done" and setup.is_online()
 	_send(_key_event(KEY_ESCAPE))
 	_send(_key_event(KEY_ESCAPE, false))
 	var esc_closed_setup := not setup.is_open() and lobby.is_open() and MenuState.is_top(lobby) and lobby.get_page() == LobbyMenu.Page.LOBBY and session.is_active()
 	lobby.get_settings_button().pressed.emit()
 	setup.get_start_button().pressed.emit()
 	var done_closed_setup := not setup.is_open() and lobby.is_open() and MenuState.is_top(lobby) and lobby.get_settings_button().has_focus()
-	_check("Match settings opens the same match setup panel over the lobby with its Start button reading Done; Esc closes just that panel, Done closes it as well, and the lobby stays open with the session running",
+	_check("Edit setup opens the same match setup panel over the lobby with its Start button reading Done; Esc closes just that panel, Done closes it as well, and the lobby stays open with the session running",
 			setup_open and esc_closed_setup and done_closed_setup and setup.get_start_button().text == "Done",
 			"open with Done %s, Esc %s, Done %s" % [setup_open, esc_closed_setup, done_closed_setup])
+
+	# The match setup over the lobby is the online one: no Practice card, "Picked" in place of "Click to play", and a click on the
+	# picked card only picks (it does not start anything); a click on the other card picks it and the lobby follows.
+	lobby.get_settings_button().pressed.emit()
+	var online_cards := setup.get_mode_cards()
+	var started_clicks := [0]
+	setup.started.connect(func() -> void: started_clicks[0] += 1, CONNECT_ONE_SHOT)
+	var picked_line := setup.get_card_line("rounds")
+	online_cards[1].pressed.emit()
+	var still_picked: bool = setup.get_picked_mode() == "rounds" and started_clicks[0] == 0 and setup.is_open()
+	online_cards[0].pressed.emit()
+	var other_line := setup.get_card_line("respawn")
+	var lobby_followed: bool = stored.match_mode == "respawn" and lobby.get_footer_facts()["Mode"] == "Team Deathmatch" \
+			and lobby_node.info.get("facts", {}).get("mode", "") == "Team Deathmatch"
+	online_cards[1].pressed.emit()
+	var practice_click := setup.get_mode_cards()[2]
+	practice_click.pressed.emit()
+	setup.close()
+	var offline := MATCH_SETUP_SCENE.instantiate() as MatchSetup
+	offline.settings = Settings.new()
+	add_child(offline)
+	await tree.process_frame
+	var offline_started := [0]
+	offline.started.connect(func() -> void: offline_started[0] += 1)
+	offline.get_mode_cards()[0].pressed.emit()
+	var offline_ok: bool = (offline.get_mode_cards()[2].get_parent() as Control).visible and not offline.is_online() \
+			and offline.get_card_line("respawn") == "Click to play" and offline_started[0] == 1
+	remove_child(offline)
+	offline.queue_free()
+	_check("In the lobby the match setup is the online one (set_online): the Practice card is hidden, the picked card's last line reads \"Picked\" and a click on it starts nothing and keeps it picked, a click on the other card picks it (the lobby's footer and published facts follow) and Practice cannot be picked; the Play screen's own is unchanged (Practice shown, \"Click to play\", a click on the picked card plays)",
+			setup.is_online() and not (setup.get_mode_cards()[2].get_parent() as Control).visible and picked_line == "Picked" and still_picked
+					and other_line == "Picked" and lobby_followed and setup.get_picked_mode() == "rounds" and stored.match_mode == "rounds" and offline_ok,
+			"picked line '%s', still picked %s, other line '%s', lobby followed %s, mode %s, offline %s" % [picked_line, still_picked, other_line, lobby_followed,
+					stored.match_mode, offline_ok])
 
 	# Start match: the host's choices become the game description on this computer (the scene change is faked).
 	var scenes := []
@@ -3642,7 +3818,7 @@ func _test_lobby_menu() -> void:
 			and started_rules != null and started_rules.team_size == 2 and started_rules.enemy_team_size == 4 \
 			and started_rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and started_rules.kill_limit == 25 and lobby_node.in_game
 	var friend_started := await harness.wait_until(func() -> bool: return friend_lobby.in_game, 320)
-	_check("Start match asks the lobby to start the match: this computer's game description has the stored map and rules and the session, the game scene is the next scene, and the friend's lobby starts too",
+	_check("Start asks the lobby to start the match: this computer's game description has the stored map and rules and the session, the game scene is the next scene, and the friend's lobby starts too",
 			started and friend_started,
 			"pending %s, map %s, scenes %s, rules %s, friend started %s" % [GameLaunch.is_pending(), GameLaunch.map_path, scenes,
 					started_rules.team_size if started_rules != null else "none", friend_started])
@@ -3691,7 +3867,8 @@ func _test_lobby_menu() -> void:
 	var busy := lobby.host_game()
 	var busy_status := lobby.get_status_label().text
 	var busy_ok := busy == ERR_CANT_CREATE and lobby.get_session() == null and NetLobby.find_session(tree) == null \
-			and busy_status == "Port %d is in use." % harness.port and lobby.get_page() == LobbyMenu.Page.CONNECT
+			and busy_status == "Port %d is in use." % harness.port and lobby.get_page() == LobbyMenu.Page.CONNECT \
+			and lobby.get_status_label().theme_type_variation == &"AlertLabel"
 	lobby.get_address_field().text = "   "
 	var empty := lobby.join_game()
 	var empty_ok := empty != OK and lobby.get_session() == null and lobby.get_status_label().text != "" and lobby.get_page() == LobbyMenu.Page.CONNECT
@@ -3709,7 +3886,8 @@ func _test_lobby_menu() -> void:
 	var connecting_text := lobby.get_status_label().text
 	var connecting_ok := joined_result == OK and connecting_text == "Connecting to 127.0.0.1:%d…" % silent_port and lobby.get_host_button().disabled \
 			and lobby.get_join_button().disabled and not lobby.get_back_button().disabled and lobby.get_page() == LobbyMenu.Page.CONNECT \
-			and lobby.get_session() != null and not lobby.get_session().is_active() and stored.online_address == "127.0.0.1"
+			and lobby.get_session() != null and not lobby.get_session().is_active() and stored.online_address == "127.0.0.1" \
+			and lobby.get_status_label().visible and lobby.get_status_label().theme_type_variation == &"DimLabel" and not lobby.get_name_field().editable
 	var connecting_session := lobby.get_session()
 	lobby.get_back_button().pressed.emit()
 	await tree.process_frame
@@ -3723,32 +3901,38 @@ func _test_lobby_menu() -> void:
 	harness.port = 28000 + randi() % 900
 	var remote := harness.start_host("RemoteHost", "Host")
 	var remote_lobby := NetLobby.of(remote)
-	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn")
+	var remote_facts := {"mode": "Bomb", "map": "Depot", "limit": "First to 5 rounds"}
+	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn", remote_facts)
 	lobby.get_address_field().text = "127.0.0.1"
 	lobby.get_port_field().text = str(harness.port)
 	lobby.get_name_field().text = "Jan"
 	lobby.join_game()
+	var joining_editable := lobby.get_name_field().editable
 	var in_lobby := await harness.wait_until(func() -> bool: return lobby.get_page() == LobbyMenu.Page.LOBBY, 640)
-	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn")
-	await harness.wait_until(func() -> bool: return lobby.get_summary_label().text != "", 320)
+	remote_lobby.publish("Rounds · Depot · first to 5 rounds · Normal bots", [1, 2], "res://maps/depot.tscn", remote_facts)
+	await harness.wait_until(func() -> bool: return not lobby.get_footer_facts()["Mode"].is_empty(), 320)
 	var client_session := lobby.get_session()
-	_check("Joining a host shows the lobby page as a client: \"Connected to\" the address, you as \"(you)\" and the host as \"(host)\", Bot rows for the free slots of the host's info, its summary, the line \"Waiting for the host to start the match…\" and neither Match settings nor Start match; a full team's Join button is off",
-			in_lobby and client_session != null and not client_session.is_host() and lobby.get_info_label().text == "Connected to 127.0.0.1"
-					and lobby.get_team_texts(0) == ["Host (host)"] and lobby.get_team_texts(1) == ["Jan (you)", "Bot"]
-					and lobby.get_summary_label().text == "Rounds · Depot · first to 5 rounds · Normal bots"
-					and lobby.get_waiting_label().visible and lobby.get_waiting_label().text == "Waiting for the host to start the match…"
+	_check("Joining a host shows the lobby page as a client: \"Connected to address:port\" in the header, you as \"You\" and the host with its name and the Host mark, \"Empty / Bot\" rows for the free slots of the host's info with the headers' counts (1 / 1, 1 / 2), the host's mode, map and limit in the footer, the line \"Waiting for the host to start\" and neither Edit setup nor Start, no addresses to give out, and Switch team off while the other team is full",
+			in_lobby and not joining_editable and client_session != null and not client_session.is_host() and lobby.get_info_label().text == "Connected to 127.0.0.1:%d" % harness.port
+					and lobby.get_team_texts(0) == ["Host Host"] and lobby.get_team_texts(1) == ["You", "Empty Bot"]
+					and lobby.get_team_header_texts(0) == ["Enemy team", "1 / 1"] and lobby.get_team_header_texts(1) == ["Your team", "1 / 2"]
+					and lobby.get_footer_facts() == {"Mode": "Bomb", "Map": "Depot", "Limit": "First to 5 rounds"}
+					and lobby.get_waiting_label().visible and lobby.get_waiting_label().text == "Waiting for the host to start"
+					and lobby.get_waiting_label().theme_type_variation == &"MuteLabel"
 					and not lobby.get_settings_button().visible and not lobby.get_start_button().visible
-					and lobby.get_join_team_button(0).disabled and lobby.get_join_team_button(1).disabled
-					and lobby.get_team_header(1).theme_type_variation == &"TeamHeaderFriendly",
-			"in lobby %s, info '%s', team 1 %s, team 2 %s, summary '%s'" % [in_lobby, lobby.get_info_label().text, lobby.get_team_texts(0), lobby.get_team_texts(1),
-					lobby.get_summary_label().text])
+					and not lobby.get_friends_box().visible and lobby.get_leave_button().visible and not lobby.get_name_field().editable
+					and lobby.get_switch_team_button().disabled
+					and lobby.get_team_header(1).theme_type_variation == &"TeamTitleFriendly" and lobby.get_team_header(0).theme_type_variation == &"TeamTitleEnemy",
+			"in lobby %s, info '%s', team 1 %s, team 2 %s, facts %s" % [in_lobby, lobby.get_info_label().text, lobby.get_team_texts(0), lobby.get_team_texts(1),
+					lobby.get_footer_facts()])
 
 	# The host goes away: back to the connect page with the reason, shown once.
 	GameLaunch.notice = ""
 	remote.close()
 	var dropped := await harness.wait_until(func() -> bool: return lobby.get_page() == LobbyMenu.Page.CONNECT, 1500)
-	_check("When the host leaves, the client's lobby goes back to the connect page and says why (the reason is also taken off the notice the main menu would show again), with no session left",
-			dropped and lobby.get_status_label().text != "" and GameLaunch.notice == "" and lobby.get_session() == null and NetLobby.find_session(tree) == null,
+	_check("When the host leaves, the client's lobby goes back to the connect page and says why in the alert colour (the reason is also taken off the notice the main menu would show again), with no session left and the name editable again",
+			dropped and lobby.get_status_label().text != "" and lobby.get_status_label().visible and lobby.get_status_label().theme_type_variation == &"AlertLabel"
+					and lobby.get_name_field().editable and GameLaunch.notice == "" and lobby.get_session() == null and NetLobby.find_session(tree) == null,
 			"dropped %s, status '%s', notice '%s'" % [dropped, lobby.get_status_label().text, GameLaunch.notice])
 	lobby.close()
 
@@ -3767,7 +3951,7 @@ func _test_lobby_menu() -> void:
 	await tree.process_frame
 	var back_lobby := back.get_lobby_menu()
 	var reopened := back_lobby.is_open() and back_lobby.get_page() == LobbyMenu.Page.LOBBY and back_lobby.get_session() == kept_session \
-			and back_lobby.get_team_texts(0).has("Jan (you) (host)") and MenuState.is_top(back_lobby)
+			and back_lobby.get_team_texts(0).has("You Host") and MenuState.is_top(back_lobby)
 	kept_session.close()
 	await tree.process_frame
 	remove_child(back)

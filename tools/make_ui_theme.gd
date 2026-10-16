@@ -110,6 +110,9 @@ func _labels() -> void:
 	_colors("MuteLabel", {"font_color": Palette.MUTE})
 	_variation("BrightLabel", "Label")
 	_colors("BrightLabel", {"font_color": Palette.TEXT})
+	# Something went wrong or needs attention (ALERT): the lobby's connection errors.
+	_variation("AlertLabel", "Label")
+	_colors("AlertLabel", {"font_color": Palette.ALERT})
 	# 32 px text: a card's or a section's name.
 	_variation("LargeLabel", "Label")
 	_font_sizes("LargeLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
@@ -232,6 +235,20 @@ func _panels() -> void:
 	_styles("TeamHeaderEnemy", {"panel": _underline("team_header_enemy", Palette.ENEMY, Palette.TEAM_LINE_GAP)})
 	_variation("TeamHeaderEnemyTight", "PanelContainer")
 	_styles("TeamHeaderEnemyTight", {"panel": _underline("team_header_enemy_tight", Palette.ENEMY, Palette.TEAM_LINE_GAP_TIGHT)})
+	# The lobby's team header (the mockup's "YOUR TEAM 3 / 5"): a row of text with the 2 px team line under it, no space above.
+	_variation("TeamTitleFriendly", "PanelContainer")
+	_styles("TeamTitleFriendly", {"panel": _underline("team_title_friendly", Palette.FRIENDLY)})
+	_variation("TeamTitleEnemy", "PanelContainer")
+	_styles("TeamTitleEnemy", {"panel": _underline("team_title_enemy", Palette.ENEMY)})
+	# A lobby slot nobody has taken: a 2 px LINE frame, nothing inside (the mockup's is dashed; a StyleBox has no dashes).
+	_variation("EmptySlotPanel", "PanelContainer")
+	_styles("EmptySlotPanel", {"panel": _box("empty_slot_panel", Color.TRANSPARENT, Palette.LINE_COLOR, Palette.BORDER)})
+	# The lobby's footer: a 2 px LINE edge along its top, and the space between that line and its items.
+	_variation("FooterPanel", "PanelContainer")
+	var footer := _box("footer_panel", Color.TRANSPARENT, Palette.LINE_COLOR)
+	footer.border_width_top = Palette.LINE
+	footer.content_margin_top = Palette.LINE + Palette.LOBBY_FOOTER_PAD_TOP
+	_styles("FooterPanel", {"panel": footer})
 	# The chips (Foundations: "one square pixel is the whole brand"): flat squares in a team colour or the accent.
 	_variation("FriendlyChip", "Panel")
 	_styles("FriendlyChip", {"panel": _box("friendly_chip", Palette.FRIENDLY)})
@@ -316,6 +333,23 @@ func _containers() -> void:
 	_margins("DividerMargin", Palette.DIVIDER_MARGIN_X, Palette.DIVIDER_MARGIN_Y)
 	_variation("LineSeparator", "HSeparator")
 	_constants("LineSeparator", {"separation": Palette.LINE})
+	# A full-screen page's parts side by side, 32 apart (the lobby's left column and teams, its two teams, its footer).
+	_variation("PageRow", "HBoxContainer")
+	_constants("PageRow", {"separation": Palette.PAGE_GAP})
+	# The lobby's left column: its groups apart, a label and its field close, a field and its button, a team's rows,
+	# the parts of a row, and a row's own margin.
+	_variation("SideColumn", "VBoxContainer")
+	_constants("SideColumn", {"separation": Palette.LOBBY_GROUP_GAP})
+	_variation("SideBox", "VBoxContainer")
+	_constants("SideBox", {"separation": Palette.LOBBY_SIDE_GAP})
+	_variation("TightBox", "VBoxContainer")
+	_constants("TightBox", {"separation": Palette.LOBBY_ROW_GAP})
+	_variation("FieldRow", "HBoxContainer")
+	_constants("FieldRow", {"separation": Palette.LOBBY_FIELD_GAP})
+	_variation("SlotRow", "HBoxContainer")
+	_constants("SlotRow", {"separation": Palette.LOBBY_SIDE_GAP})
+	_variation("SlotMargin", "MarginContainer")
+	_constants("SlotMargin", {"margin_left": Palette.LOBBY_SLOT_PAD_X, "margin_right": Palette.LOBBY_SLOT_PAD_X})
 	# The brand chips under the game's name, and a team's size chips.
 	_variation("ChipRow", "HBoxContainer")
 	_constants("ChipRow", {"separation": Palette.CHIP_GAP})

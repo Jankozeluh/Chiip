@@ -1,23 +1,30 @@
 class_name LobbyMenu
 extends CanvasLayer
-## The multiplayer screens (M9, D-108): the main menu's Host and Join items open this panel,
-## where you host a game or join one, and then wait in the lobby for the match to start.
+## The multiplayer screens (M9, D-108; the mockup's "06 Lobby" since M10): the main menu's Host and
+## Join items open this page, where you host a game or join one, and then wait in the lobby for the
+## match to start.
 ##
-## [b]Two pages[/b] in one panel, one shown at a time. The [b]connect page[/b] has your name, the
-## host's address and the port (each written to [Settings] the moment you edit it, like the other
-## menus: [code]online_name[/code], [code]online_address[/code], [code]online_port[/code]) and the
-## buttons Host game, Join and Back, with a status line for "Connecting to ...", errors and the
-## reason the last online game ended ([member GameLaunch.notice], shown once). The [b]lobby page[/b]
-## shows the two teams side by side with the players in each (you are "(you)", the host
-## "(host)"), "Bot" rows for the slots nobody has taken, a Join Team button under each team, and
-## the host's summary of the match. The host also gets Match settings (the [MatchSetup] panel,
-## whose Start button reads "Done" here) and Start match; a client sees "Waiting for the host to
-## start the match...". Leave ends your part of the session (the host ends it for everyone).
+## [b]Two pages[/b] in one frame (an ink page like the Play screen: the title and Esc / Back or Leave
+## in the header, a left column, the teams, a footer), one shown at a time. The [b]connect page[/b]
+## ("Join") has the left column only: your name, "Join by IP" (the host's address and the port, each
+## written to [Settings] the moment you edit it, like the other menus: [code]online_name[/code],
+## [code]online_address[/code], [code]online_port[/code]) with the Join button, a status line under it
+## for "Connecting to ...", errors and the reason the last online game ended
+## ([member GameLaunch.notice], shown once), and "Or host a game" with the Host game button. The
+## [b]lobby page[/b] ("Lobby") shows "Hosted by you · address:port" or "Connected to address:port" in
+## the header, your name and (for the host) the addresses friends join at on the left, the two teams
+## side by side (a header with the team's name and its players out of its slots, then a row per player:
+## you on a raised row with a lime chip, the host marked "Host", and an "Empty / Bot" row for every
+## slot nobody has taken), a Switch team button, and the footer: the match's mode, map and limit as the
+## host published them, then for the host Edit setup (the [MatchSetup] panel, whose Start button reads
+## "Done" and which offers no Practice) and Start; a client sees "Waiting for the host to start". Leave
+## ends your part of the session (the host ends it for everyone). There is no Ready state: the host
+## starts when it likes.
 ##
 ## The panel only drives a [NetSession] and its [NetLobby]: [method host_game] and
 ## [method join_game] open the session at the root of the tree ([method NetSession.open]), the
-## host publishes the lobby's info (summary, slots, map) whenever the lobby opens, somebody
-## joins or leaves, a team changes or a match setting changes, and [method start_match] asks
+## host publishes the lobby's info (summary, slots, map, footer facts) whenever the lobby opens,
+## somebody joins or leaves, a team changes or a match setting changes, and [method start_match] asks
 ## [method NetLobby.start_match], after which every computer changes to the game scene by itself.
 ## Coming back from an online match the main menu opens this panel again: on the lobby page when
 ## the session is still up, otherwise on the connect page with the reason. The panel registers with
@@ -38,6 +45,11 @@ enum Page {
 }
 
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
+## The height of a lobby row (the mockup's 40; the page scales it) and the side of the lime chip on your row.
+const ROW_HEIGHT := 40.0
+const CHIP_SIZE := 8.0
+## The facts the footer shows, in order: the keys of the lobby info's [code]facts[/code] (see [method build_facts]).
+const FACT_KEYS: Array[String] = ["mode", "map", "limit"]
 
 ## Where the choices are stored. The shared [Settings] when null (set before the panel is in the tree).
 var settings: Settings
@@ -64,23 +76,29 @@ var _closing_session: NetSession
 var _published_host_team: int = -1
 
 @onready var _title: Label = %Title
-@onready var _connect_page: Control = %ConnectPage
-@onready var _lobby_page: Control = %LobbyPage
+@onready var _info_label: Label = %Info
+@onready var _back_button: Button = %BackButton
+@onready var _leave_button: Button = %LeaveButton
 @onready var _name_field: LineEdit = %NameField
+@onready var _connect_box: Control = %ConnectBox
 @onready var _address_field: LineEdit = %AddressField
 @onready var _port_field: LineEdit = %PortField
-@onready var _status: Label = %Status
-@onready var _back_button: Button = %BackButton
 @onready var _join_button: Button = %JoinButton
+@onready var _status: Label = %Status
 @onready var _host_button: Button = %HostButton
-@onready var _info_label: Label = %Info
+@onready var _friends_box: Control = %FriendsBox
+@onready var _addresses_box: VBoxContainer = %Addresses
+@onready var _teams_box: Control = %Teams
+@onready var _columns: Array[Control] = [%Team0, %Team1]
 @onready var _header_panels: Array[PanelContainer] = [%Header0, %Header1]
+@onready var _header_names: Array[Label] = [%HeaderName0, %HeaderName1]
+@onready var _header_counts: Array[Label] = [%HeaderCount0, %HeaderCount1]
 @onready var _lists: Array[Control] = [%List0, %List1]
-@onready var _join_team_buttons: Array[Button] = [%JoinTeamButton0, %JoinTeamButton1]
-@onready var _summary_label: Label = %Summary
+@onready var _switch_button: Button = %SwitchButton
+@onready var _footer: Control = %Footer
+@onready var _fact_labels: Array[Label] = [%ModeValue, %MapValue, %LimitValue]
+@onready var _edit_button: Button = %EditButton
 @onready var _waiting_label: Label = %Waiting
-@onready var _leave_button: Button = %LeaveButton
-@onready var _settings_button: Button = %SettingsButton
 @onready var _start_button: Button = %StartButton
 
 
@@ -97,10 +115,9 @@ func _ready() -> void:
 	_join_button.pressed.connect(join_game)
 	_back_button.pressed.connect(close)
 	_leave_button.pressed.connect(leave)
-	_settings_button.pressed.connect(open_match_settings)
+	_edit_button.pressed.connect(open_match_settings)
 	_start_button.pressed.connect(start_match)
-	for team in Teams.COUNT:
-		_join_team_buttons[team].pressed.connect(join_team.bind(team))
+	_switch_button.pressed.connect(switch_team)
 	_refresh_fields()
 	_show_connect_page()
 	UiSounds.attach(self)
@@ -228,7 +245,8 @@ func join_game() -> Error:
 	_connecting = true
 	_adopt(session)
 	_set_connect_enabled(false)
-	_set_status("Connecting to %s:%d…" % [address, port])
+	_name_field.editable = false
+	_set_status("Connecting to %s:%d…" % [address, port], false)
 	# The buttons are off; Back cancels.
 	_back_button.grab_focus()
 	return OK
@@ -253,6 +271,12 @@ func leave() -> void:
 func join_team(team: int) -> void:
 	if _session != null:
 		_session.request_team(team)
+
+
+## Moves you to the other team (the Switch team button); the host decides, so a full team refuses.
+func switch_team() -> void:
+	if _session != null:
+		join_team(Teams.other(_session.get_team(_session.local_peer_id)))
 
 
 ## Host only: opens the match settings (the [MatchSetup] panel, its Start button reads "Done").
@@ -286,6 +310,21 @@ func build_summary() -> String:
 	if settings.match_friendly_fire:
 		parts.append("friendly fire")
 	return " · ".join(PackedStringArray(parts))
+
+
+## The facts of the match the stored choices make, as the footer shows them (ready-made texts the host
+## publishes with the lobby info, so a client shows the same): [code]mode[/code] ("Team Deathmatch" or
+## "Bomb"), [code]map[/code] ("Depot", or "Rotation · Depot" for the rotation starting there) and
+## [code]limit[/code] ("50 kills · 10 min", or "First to 5 rounds").
+func build_facts() -> Dictionary:
+	var respawn := settings.match_mode == "respawn"
+	var rotation := _chosen_rotation()
+	return {
+		"mode": MatchSetup.MODES["respawn" if respawn else "rounds"]["title"],
+		"map": "Rotation · %s" % GameLaunch.map_title(rotation[0]) if not rotation.is_empty() else GameLaunch.map_title(_chosen_map()),
+		"limit": "%d kills · %d min" % [settings.match_kill_limit, settings.match_time_limit] if respawn
+				else "First to %d rounds" % settings.match_rounds_to_win,
+	}
 
 
 ## The scene path of the map the stored choices name: the stored map, or the default one when it
@@ -323,9 +362,16 @@ static func local_addresses() -> Array[String]:
 
 func _show_connect_page() -> void:
 	_page = Page.CONNECT
-	_title.text = "Multiplayer"
-	_connect_page.visible = true
-	_lobby_page.visible = false
+	_title.text = "Join"
+	_info_label.visible = false
+	_back_button.visible = true
+	_leave_button.visible = false
+	_connect_box.visible = true
+	_friends_box.visible = false
+	_teams_box.visible = false
+	_footer.visible = false
+	# Your name is the one the session was opened with: it can only be changed before connecting.
+	_name_field.editable = not _connecting
 	_set_connect_enabled(not _connecting)
 	_set_status("")
 	if visible:
@@ -335,18 +381,38 @@ func _show_connect_page() -> void:
 func _show_lobby_page() -> void:
 	_page = Page.LOBBY
 	_title.text = "Lobby"
-	_connect_page.visible = false
-	_lobby_page.visible = true
+	_info_label.visible = true
+	_back_button.visible = false
+	_leave_button.visible = true
+	_connect_box.visible = false
+	_teams_box.visible = true
+	_footer.visible = true
+	_name_field.editable = false
+	_set_status("")
 	var host := _session.is_host()
-	_settings_button.visible = host
+	_edit_button.visible = host
 	_start_button.visible = host
 	_waiting_label.visible = not host
 	if host:
 		_addresses = local_addresses()
+		_fill_addresses()
 		_publish()
+	_friends_box.visible = host and not _addresses.is_empty()
 	_refresh_lobby()
 	if visible:
 		(_start_button if host else _leave_button).grab_focus()
+
+
+## The host's addresses under "Friends join at", one line each, with the port.
+func _fill_addresses() -> void:
+	for line in _addresses_box.get_children():
+		_addresses_box.remove_child(line)
+		line.queue_free()
+	for address in _addresses:
+		var label := Label.new()
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.text = "%s:%d" % [address, settings.online_port]
+		_addresses_box.add_child(label)
 
 
 ## Fills the lobby page from the session's roster and the host's published info.
@@ -354,62 +420,104 @@ func _refresh_lobby() -> void:
 	if _page != Page.LOBBY or _session == null:
 		return
 	var host := _session.is_host()
+	var port := settings.online_port
 	if host:
-		_info_label.text = "Hosting on port %d" % settings.online_port
-		if not _addresses.is_empty():
-			_info_label.text += " · friends join at %s" % ", ".join(PackedStringArray(_addresses))
+		_info_label.text = "Hosted by you · %s:%d" % [_addresses[0], port] if not _addresses.is_empty() else "Hosted by you · port %d" % port
 	else:
-		_info_label.text = "Connected to %s" % settings.online_address
+		_info_label.text = "Connected to %s:%d" % [settings.online_address, port]
 	var info := NetLobby.of(_session).info
 	var slots: Array = info.get("slots", [])
-	_summary_label.text = String(info.get("summary", ""))
+	var known := slots.size() == Teams.COUNT
+	var facts: Dictionary = info.get("facts", {})
+	for index in FACT_KEYS.size():
+		_fact_labels[index].text = String(facts.get(FACT_KEYS[index], ""))
+		(_fact_labels[index].get_parent() as Control).visible = not facts.is_empty()
 	var my_team := _session.get_team(_session.local_peer_id)
 	var players := _session.get_players()
+	var members_of: Array[int] = [0, 0]
 	for team in Teams.COUNT:
 		# Colors are relative to you: your team is blue, the other one red.
-		_header_panels[team].theme_type_variation = &"TeamHeaderFriendly" if team == my_team else &"TeamHeaderEnemy"
+		var yours := team == my_team
+		_header_panels[team].theme_type_variation = &"TeamTitleFriendly" if yours else &"TeamTitleEnemy"
+		_header_names[team].text = "Your team" if yours else "Enemy team"
+		for label in [_header_names[team], _header_counts[team]]:
+			(label as Label).theme_type_variation = &"FriendlyLabel" if yours else &"EnemyLabel"
 		var list := _lists[team]
 		for row in list.get_children():
 			list.remove_child(row)
 			row.queue_free()
-		var members := 0
 		for player in players:
 			if int(player["team"]) != team:
 				continue
-			members += 1
+			members_of[team] += 1
 			var is_you := int(player["peer_id"]) == _session.local_peer_id
-			var text := String(player["name"])
-			if is_you:
-				text += " (you)"
-			if int(player["peer_id"]) == 1:
-				text += " (host)"
-			_add_row(list, text, &"YouRowPanel" if is_you else &"RowPanel", &"BrightLabel" if is_you else &"")
-		var known := slots.size() == Teams.COUNT
+			_add_player_row(list, "You" if is_you else String(player["name"]), is_you, int(player["peer_id"]) == 1)
 		if known:
-			for _bot in maxi(0, int(slots[team]) - members):
-				_add_row(list, "Bot", &"RowPanel", &"DimLabel")
+			for _bot in maxi(0, int(slots[team]) - members_of[team]):
+				_add_empty_row(list)
+		_header_counts[team].text = "%d / %d" % [members_of[team], int(slots[team])] if known else str(members_of[team])
 		UiTheme.apply_sizes(list, _ui_scale)
-		_join_team_buttons[team].text = "Join Team %d" % (team + 1)
-		_join_team_buttons[team].disabled = team == my_team or (known and members >= int(slots[team]))
+	var other := Teams.other(my_team)
+	_switch_button.disabled = known and members_of[other] >= int(slots[other])
 
 
-## One line of a team's list: a panel row with the [param text] in it.
-func _add_row(list: Control, text: String, panel_variation: StringName, label_variation: StringName) -> void:
+## A row of a team's list: a panel, [constant ROW_HEIGHT] high, with its parts in a row.
+## Returns the row of parts to fill.
+func _add_row(list: Control, panel_variation: StringName) -> HBoxContainer:
 	var row := PanelContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.theme_type_variation = panel_variation
+	row.custom_minimum_size = Vector2(0, ROW_HEIGHT)
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.theme_type_variation = &"RowMargin"
+	margin.theme_type_variation = &"SlotMargin"
 	row.add_child(margin)
+	var parts := HBoxContainer.new()
+	parts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parts.theme_type_variation = &"SlotRow"
+	margin.add_child(parts)
+	list.add_child(row)
+	return parts
+
+
+## A player's row: you on a raised row with a lime chip before the name, the others on a plain row
+## with room for the chip, and "Host" at the end of the host's.
+func _add_player_row(list: Control, text: String, is_you: bool, is_host: bool) -> void:
+	var parts := _add_row(list, &"RaisedPanel" if is_you else &"RowPanel")
+	var chip: Control
+	if is_you:
+		chip = Panel.new()
+		chip.theme_type_variation = &"AccentChip"
+	else:
+		chip = Control.new()
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip.custom_minimum_size = Vector2(CHIP_SIZE, CHIP_SIZE)
+	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	parts.add_child(chip)
+	var name_label := _add_label(parts, text, &"")
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# A long name is cut instead of widening its column.
+	name_label.clip_text = true
+	if is_host:
+		_add_label(parts, "Host", &"DimLabel")
+
+
+## A slot nobody has taken: "Empty" on the left, "Bot" on the right (a bot plays it), in a LINE frame.
+func _add_empty_row(list: Control) -> void:
+	var parts := _add_row(list, &"EmptySlotPanel")
+	_add_label(parts, "Empty", &"MuteLabel").size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_add_label(parts, "Bot", &"MuteLabel")
+
+
+## A label in [param parts], centred in the row's height.
+func _add_label(parts: Control, text: String, variation: StringName) -> Label:
 	var label := Label.new()
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.theme_type_variation = label_variation
+	label.theme_type_variation = variation
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	label.text = text
-	# A long name is cut instead of widening its column.
-	label.clip_text = true
-	margin.add_child(label)
-	list.add_child(row)
+	parts.add_child(label)
+	return label
 
 
 # --- The session ---
@@ -471,7 +579,7 @@ func _publish() -> void:
 	var slots: Array = [0, 0]
 	slots[host_team] = settings.match_team_size
 	slots[Teams.other(host_team)] = settings.match_enemy_team_size
-	NetLobby.of(_session).publish(build_summary(), slots, _chosen_map())
+	NetLobby.of(_session).publish(build_summary(), slots, _chosen_map(), build_facts())
 
 
 func _on_joined() -> void:
@@ -482,6 +590,7 @@ func _on_joined() -> void:
 func _on_join_failed(reason: String) -> void:
 	_connecting = false
 	_join_failure = reason
+	_name_field.editable = true
 	_set_connect_enabled(true)
 	_set_status(reason)
 
@@ -523,7 +632,7 @@ func _on_setting_changed(key: StringName) -> void:
 
 
 ## The match settings panel, made when first needed: the same [MatchSetup] as the main menu's
-## Play, with its Start button reading "Done".
+## Play, online (no Practice, "Picked" instead of "Click to play") and with its Start button reading "Done".
 func _get_setup() -> MatchSetup:
 	if _setup == null:
 		_setup = MATCH_SETUP_SCENE.instantiate() as MatchSetup
@@ -531,6 +640,7 @@ func _get_setup() -> MatchSetup:
 		# Above this panel.
 		_setup.layer = layer + 1
 		add_child(_setup)
+		_setup.set_online(true)
 		_setup.set_start_text("Done")
 		_setup.started.connect(_on_setup_done)
 		_setup.closed.connect(_on_setup_closed)
@@ -546,7 +656,7 @@ func _on_setup_done() -> void:
 func _on_setup_closed() -> void:
 	_publish()
 	if visible and _page == Page.LOBBY:
-		_settings_button.grab_focus()
+		_edit_button.grab_focus()
 
 
 # --- The connect page's fields ---
@@ -593,8 +703,12 @@ static func _digits_only(text: String) -> String:
 	return digits
 
 
-func _set_status(text: String) -> void:
+## Shows [param text] under Join by IP (nothing hides the line): in the ALERT colour when it is a problem,
+## dim when it is only news ("Connecting to ...").
+func _set_status(text: String, alert: bool = true) -> void:
 	_status.text = text
+	_status.visible = not text.is_empty()
+	_status.theme_type_variation = &"AlertLabel" if alert else &"DimLabel"
 
 
 ## Host game and Join are off while a connection attempt is under way, or the last session is closing.
@@ -642,9 +756,14 @@ func get_port_field() -> LineEdit:
 	return _port_field
 
 
-## The status line of the connect page.
+## The status line of the connect page (hidden while empty).
 func get_status_label() -> Label:
 	return _status
+
+
+## The page's title ("Join" or "Lobby").
+func get_title_label() -> Label:
+	return _title
 
 
 ## The "Host game" button.
@@ -657,14 +776,42 @@ func get_join_button() -> Button:
 	return _join_button
 
 
-## The connect page's "Back" button.
+## The connect page's "Back" button (in the header; the lobby page has Leave there instead).
 func get_back_button() -> Button:
 	return _back_button
 
 
-## The line under the lobby's title (where the host's friends can join, or who you are connected to).
+## The text at the right of the header: "Hosted by you · address:port" or "Connected to address:port".
 func get_info_label() -> Label:
 	return _info_label
+
+
+## The addresses under "Friends join at" (the host's own, with the port), top to bottom.
+func get_address_texts() -> Array[String]:
+	var texts: Array[String] = []
+	for line in _addresses_box.get_children():
+		texts.append((line as Label).text)
+	return texts
+
+
+## The "Friends join at" group (a host with a network address sees it).
+func get_friends_box() -> Control:
+	return _friends_box
+
+
+## The left column's connect group (Join by IP and Or host a game), shown on the connect page.
+func get_connect_box() -> Control:
+	return _connect_box
+
+
+## The two teams' area (the columns and Switch team), shown on the lobby page.
+func get_teams_box() -> Control:
+	return _teams_box
+
+
+## The whole column of [param team] (0 or 1): its header and its rows.
+func get_team_column(team: int) -> Control:
+	return _columns[team]
 
 
 ## The rows of [param team]'s column (0 or 1), top to bottom.
@@ -672,45 +819,63 @@ func get_team_list(team: int) -> Control:
 	return _lists[team]
 
 
-## The texts of the rows of [param team]'s column ("Jan (you) (host)", "Bot").
+## The texts of the rows of [param team]'s column, the parts of a row joined by a space: "You Host",
+## "Anna", "Empty Bot".
 func get_team_texts(team: int) -> Array[String]:
 	var texts: Array[String] = []
 	for row in _lists[team].get_children():
-		texts.append((row.find_children("*", "Label", true, false)[0] as Label).text)
+		var parts: Array[String] = []
+		for label in row.find_children("*", "Label", true, false):
+			parts.append((label as Label).text)
+		texts.append(" ".join(PackedStringArray(parts)))
 	return texts
 
 
-## The header bar of [param team]'s column.
+## The header of [param team]'s column (the line under it is the team's colour).
 func get_team_header(team: int) -> PanelContainer:
 	return _header_panels[team]
 
 
-## The "Join Team" button under [param team]'s column.
-func get_join_team_button(team: int) -> Button:
-	return _join_team_buttons[team]
+## The texts of [param team]'s header: its name ("Your team", "Enemy team") and its count ("3 / 5").
+func get_team_header_texts(team: int) -> Array[String]:
+	return [_header_names[team].text, _header_counts[team].text]
 
 
-## The line with the host's summary of the match.
-func get_summary_label() -> Label:
-	return _summary_label
+## The "Switch team" button under the columns.
+func get_switch_team_button() -> Button:
+	return _switch_button
 
 
-## The "Waiting for the host..." line a client sees.
+## The footer's facts as caption → text ("Mode" → "Team Deathmatch", "Map", "Limit").
+func get_footer_facts() -> Dictionary:
+	var facts := {}
+	for index in FACT_KEYS.size():
+		var pair := _fact_labels[index].get_parent()
+		facts[(pair.get_child(0) as Label).text] = _fact_labels[index].text
+	return facts
+
+
+## The footer, shown on the lobby page.
+func get_footer() -> Control:
+	return _footer
+
+
+## The "Waiting for the host to start" line a client sees.
 func get_waiting_label() -> Label:
 	return _waiting_label
 
 
-## The "Leave" button.
+## The "Leave" button in the header of the lobby page.
 func get_leave_button() -> Button:
 	return _leave_button
 
 
-## The host's "Match settings…" button.
+## The host's "Edit setup" button.
 func get_settings_button() -> Button:
-	return _settings_button
+	return _edit_button
 
 
-## The host's "Start match" button.
+## The host's "Start" button.
 func get_start_button() -> Button:
 	return _start_button
 

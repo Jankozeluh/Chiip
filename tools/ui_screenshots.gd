@@ -4,7 +4,8 @@ extends SceneTree
 ## match on Depot: class menu, HUD in freeze time and in a live round with kills,
 ## the Tab scoreboard, the pause menu, the console and the match-end screen, then
 ## a Team Deathmatch HUD on Square and the same after you die, with the respawn
-## countdown, and its Tab scoreboard, and the loading screen over a rotation's second map), for judging the look before and after a
+## countdown, and its Tab scoreboard, the loading screen over a rotation's second map, and the multiplayer
+## lobby (the connect page, then hosting: this opens a real UDP port for a moment), for judging the look before and after a
 ## change (M10). Run with a window (rendering needs one):
 ##
 ##     Godot --path . --resolution 1280x720 --quit-after 20000 --script res://tools/ui_screenshots.gd -- --out <folder>
@@ -39,6 +40,7 @@ func _init() -> void:
 	await _match_shots()
 	await _respawn_shots()
 	await _loading_shots()
+	await _lobby_shots()
 	print("Saved %d screenshots to %s" % [_count, _out_folder])
 	quit()
 
@@ -210,6 +212,32 @@ func _loading_shots() -> void:
 	await _shot("loading")
 	screen.advance(screen.hold_time)
 	await _stop_game(main)
+
+
+## The multiplayer lobby as the mockup's "06 Lobby" draws it: hosting on a random port (nobody joins, so every other
+## slot shows as "Empty / Bot"), then the connect page ("Join") once the session has closed.
+func _lobby_shots() -> void:
+	var menu: Node = load(GameLaunch.MENU_SCENE).instantiate()
+	menu.set("load_settings", false)
+	root.add_child(menu)
+	await _frames(10)
+	menu.call("open_lobby")
+	var lobby := menu.call("get_lobby_menu") as LobbyMenu
+	lobby.get_name_field().text = "Mara"
+	lobby.get_port_field().text = str(28000 + randi() % 900)
+	lobby.host_game()
+	await _frames(10)
+	await _shot("lobby")
+	lobby.leave()
+	await _frames(60)
+	lobby.get_address_field().text = "192.168.1.24"
+	await _shot("join")
+	lobby.close()
+	await _frames(4)
+	root.remove_child(menu)
+	menu.free()
+	MenuState.reset()
+	await _frames(2)
 
 
 ## Starts the game scene with what [GameLaunch] says. With [param loading], its loading screen stays on (a long hold time).

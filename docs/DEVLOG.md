@@ -39,7 +39,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 **Merged main (M9):** the main menu keeps the mockup's column, and Host and Join (no longer "Soon") open M9's lobby (Host hosts at once, Join focuses the address); Join and Host give the focus back when the lobby closes. The online pause menu shows "Online · the match keeps running" and the title "Menu"; the match-end screen keeps M9's online buttons in the mockup's look; online games skip the loading screen (it pauses the tree, D-138). The M9 tests were adapted to the new menu, the console's 11 lines (`help` scrolls), the 25 kill limit and Team Deathmatch on the rotation as the default.
 
-**Next:** restyle the lobby, then the HUD and kill feed, class-draft cards and buy menu.
+- **Merged main (M9)** and restyled its lobby (Sonnet): the main menu's Host and Join items open it (Host hosts at once); the Lobby page and the Join page follow your mockup "06 Lobby"; online the loading screen is skipped (it pauses, and an online game never pauses). ui 249, net 25, netjoin 6, netplay 42 checks pass.
+
+**Next:** the HUD and kill feed, class-draft cards and buy menu.
 
 ## 2026-10-16 — M9 multiplayer
 
