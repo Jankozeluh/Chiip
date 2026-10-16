@@ -94,7 +94,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M11 | Polish | 🟨 built, waiting for your checks | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
 | M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | M13 | Sound design | ⬜ | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
-| M14 | Stats & training | ⬜ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
+| M14 | Stats & training | 🟨 | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
 | M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | — | Backlog | — | Ideas for later |
 
@@ -578,7 +578,7 @@ The class draft (two random classes offered each match) and the random map weapo
 - [ ] **Menu music and round stingers:** a short looping menu track and stingers for round start, round won and lost, bomb planted, bomb defused and match end, made for Chiip (their licence follows D-170)
 - [ ] **Tests and docs:** `sound_test` checks the new sounds, the muffling and the zones; GAME_DESIGN and CREDITS updated
 
-## M14 — Stats & training ⬜
+## M14 — Stats & training 🟨
 
 **Goal:** see how you are doing and practise on purpose (D-177, after v0.1).
 
@@ -587,6 +587,15 @@ The class draft (two random classes offered each match) and the random map weapo
 - [ ] **Aim trainer** in the Shooting Range: flick targets and a tracking target, with a score and a personal best
 - [ ] **Spray practice:** the spray wall shows each weapon's pattern, and your own spray is drawn against it
 - [ ] **Tests and docs:** the stats maths and the history file are tested (a damaged file falls back safely)
+
+Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
+
+1. [ ] **Stats model and the history file** (D-200, D-201). `systems/stats_book.gd` (a [StatsBook] with a shared instance like Settings; match records, lifetime totals, personal bests), the maths in `systems/stats_math.gd` (K/D, ADR, HS %, accuracy per weapon, hits by zone, wins per mode and map), saved as JSON in `user://stats.json`; a damaged file is kept aside and replaced by an empty book. New suite `stats`
+2. [ ] **Recording from matches** (D-202, D-203). `systems/stats_recorder.gd` follows your own shots and hits and RoundManager's numbers; saves one record when a match ends; online it reads what the host announces (its `DAMAGED` event now names the weapon). `RoundManager.get_rounds_played()` and an ADR column on the scoreboards of round matches
+3. [ ] **The Stats screen** (D-204). `ui/stats_menu.tscn`, opened by a Stats button in the main menu, in the theme and the mockups' style: Overview, Weapons, History, Training
+4. [ ] **Aim trainer** (D-205 to D-207). Flick targets pop up at random spots within reach for a timed run, a score and personal bests (kept in the stats file); a `range_trainer` entity on the Shooting Range; the scoring is a pure class with its own checks
+5. [ ] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
+6. [ ] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once
 
 ## M15 — Accessibility & polish ⬜
 
