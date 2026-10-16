@@ -23,6 +23,7 @@ import os
 import numpy as np
 
 import props
+import props_lights  # noqa: F401  (registers the lamps)
 import props_urban  # noqa: F401  (registers the urban, interior, nature and debris props)
 from geometry import Atlas, PieceMesh
 from gltf import Glb

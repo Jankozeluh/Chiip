@@ -11,8 +11,10 @@ extends Node
 ## the kit's FGD with its display model; and props placed in a .map file
 ## (tests/maps/kit_props.map) build into the map where they were put, stop
 ## rays like walls do (or not, for decoration), sound like what they're made
-## of, and are cut out of a navmesh baked around them. Quits with the number
-## of failed checks as the exit code.
+## of, and are cut out of a navmesh baked around them.
+## The lamps (D-124): every lamp makes its light and has a glowing part, and a
+## lamp placed in a .map takes the colour, brightness and range set there.
+## Quits with the number of failed checks as the exit code.
 
 const TextureReport := preload("res://tools/texture_report.gd")
 const TEXTURE_SETS := ["industrial", "urban", "interior", "nature"]
@@ -34,6 +36,7 @@ func _ready() -> void:
 	_test_texture_sounds()
 	_test_prop_scenes()
 	_test_prop_entities()
+	await _test_lamps()
 	await _test_props_in_a_map()
 	await get_tree().process_frame
 	if _failures == 0:
@@ -201,6 +204,40 @@ func _test_prop_entities() -> void:
 			problems.is_empty(), "; ".join(problems) if problems else "%d entities" % definitions.size())
 
 
+# --- Lamps (D-124) ---
+
+
+func _test_lamps() -> void:
+	var problems: Array[String] = []
+	var count := 0
+	for file in ResourceLoader.list_directory("res://maps/kit/lights"):
+		if not file.ends_with(".tscn"):
+			continue
+		count += 1
+		var lamp := (load("res://maps/kit/lights/" + file) as PackedScene).instantiate() as KitLight
+		if lamp == null:
+			problems.append(file + " isn't a KitLight")
+			continue
+		add_child(lamp)
+		var light := lamp.get_light()
+		var glows := false
+		for mesh: MeshInstance3D in lamp.find_children("*", "MeshInstance3D", true, false):
+			for surface in mesh.mesh.get_surface_count():
+				var material := mesh.mesh.surface_get_material(surface) as BaseMaterial3D
+				glows = glows or (material != null and material.emission_enabled)
+		if light == null or not is_equal_approx(light.light_energy, lamp.light_energy) or light.shadow_enabled:
+			problems.append(file + ": no light, or not as set, or with shadows")
+		elif (lamp.light_kind == KitLight.Kind.SPOT) != (light is SpotLight3D):
+			problems.append(file + ": wrong kind of light")
+		elif not glows:
+			problems.append(file + ": nothing glows")
+		elif light.light_color.r < light.light_color.b:
+			problems.append(file + ": a cold light (D-031)")
+		lamp.free()
+	_check("Every lamp makes its light (no shadows by default, warm or neutral) and has a glowing part",
+			count >= 5 and problems.is_empty(), ", ".join(problems) if problems else "%d lamps" % count)
+
+
 func _test_props_in_a_map() -> void:
 	var map := FuncGodotMap.new()
 	map.local_map_file = FIXTURE_MAP
@@ -252,6 +289,16 @@ func _test_props_in_a_map() -> void:
 			navigation.get_polygon_count() > 0 and not crate_walkable and pallet_walkable and floor_walkable,
 			"%d polygons; under the crate %s, under the pallet %s" % [
 				navigation.get_polygon_count(), "walkable" if crate_walkable else "cut out", "walkable" if pallet_walkable else "cut out"])
+	var wall_lamp := _built(map, "light_wall") as KitLight
+	var street_lamp := _built(map, "light_street") as KitLight
+	var wall_light := wall_lamp.get_light() if wall_lamp else null
+	_check("A lamp placed in a .map takes its colour, brightness and range from the entity; one without keeps its defaults",
+			wall_light != null and wall_light.light_color.is_equal_approx(Color.WHITE) and is_equal_approx(wall_light.light_energy, 2.5)
+			and is_equal_approx((wall_light as OmniLight3D).omni_range, 9.0)
+			and street_lamp != null and street_lamp.get_light() != null and is_equal_approx(street_lamp.light_energy, 2.0),
+			"wall lamp %s, energy %.1f; street lamp energy %.1f" % [
+				wall_light.light_color if wall_light else "none", wall_light.light_energy if wall_light else 0.0,
+				street_lamp.light_energy if street_lamp else 0.0])
 	map.queue_free()
 	await get_tree().process_frame
 

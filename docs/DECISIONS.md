@@ -1026,6 +1026,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Decision:** Lamp props (`light_wall`, `light_ceiling`, `light_flood`, `light_street`, `light_strip`) are point entities whose scene holds the lamp's model and a real-time light: an `OmniLight3D` for most, a `SpotLight3D` for the floodlight. Colour, brightness, range and shadows are entity properties set in TrenchBroom, with warm defaults (D-031: warm light only from lamps). Shadows are off by default. The bulb is a glowing material, so a lamp reads as on even where its light is weak.
 
+**Built:** caged wall bulkhead, caged bulb, pendant, fluorescent strip, wall floodlight (a spot aimed 30° down), street lamp on a 5 m pole, tripod work light (a wide spot). The light comes from `maps/kit/kit_light.gd` (`KitLight`) and fades out beyond 45 m from the camera.
+
 **Why:** A lamp you can see explains the light in a room, and placing one in TrenchBroom puts the light where the model is. Shadowless omni lights are cheap in Godot's clustered renderer.
 
 **Alternatives:** Lights placed separately in the Godot scene, as today's maps do (two places to edit); Quake-style `light` entities with no model (lights from nowhere); baked light (D-085 keeps lighting real-time).

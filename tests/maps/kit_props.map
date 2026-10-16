@@ -39,3 +39,18 @@
 "origin" "0 160 0"
 "angle" "45"
 }
+// entity 5
+{
+"classname" "light_wall"
+"origin" "-160 -160 80"
+"angle" "0"
+"light_color" "255 255 255"
+"light_energy" "2.5"
+"light_range" "9"
+}
+// entity 6
+{
+"classname" "light_street"
+"origin" "160 -160 0"
+"angle" "90"
+}

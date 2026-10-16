@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=161 format=3]
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=175 format=3]
 
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="point_class"]
@@ -81,6 +81,13 @@
 [ext_resource type="PackedScene" path="res://maps/kit/props/prop_door_wood.tscn" id="scene_prop_door_wood"]
 [ext_resource type="PackedScene" path="res://maps/kit/props/prop_window.tscn" id="scene_prop_window"]
 [ext_resource type="PackedScene" path="res://maps/kit/props/prop_window_shutters.tscn" id="scene_prop_window_shutters"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_cage.tscn" id="scene_light_cage"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_ceiling.tscn" id="scene_light_ceiling"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_flood.tscn" id="scene_light_flood"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_street.tscn" id="scene_light_street"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_strip.tscn" id="scene_light_strip"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_wall.tscn" id="scene_light_wall"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_worklight.tscn" id="scene_light_worklight"]
 
 [sub_resource type="Resource" id="prop_crate_metal"]
 script = ExtResource("point_class")
@@ -951,7 +958,168 @@ meta_properties = Dictionary[String, Variant]({
 })
 scene_file = ExtResource("scene_prop_window_shutters")
 
+[sub_resource type="Resource" id="light_cage"]
+script = ExtResource("point_class")
+classname = "light_cage"
+description = "Bare bulb in a wire cage hanging 0.8 m from the ceiling, warm light reaching 6 m. Origin on the ceiling."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_cage.glb\"",
+"size": AABB(-3, -3, -34, 3, 3, 0)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.74, 0.44, 1),
+"light_energy": 1.30,
+"light_range": 6.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_cage")
+
+[sub_resource type="Resource" id="light_ceiling"]
+script = ExtResource("point_class")
+classname = "light_ceiling"
+description = "Industrial pendant lamp with a dark shade, hanging 0.75 m from the ceiling, warm light reaching 8 m. Origin on the ceiling."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_ceiling.glb\"",
+"size": AABB(-12, -12, -31, 12, 12, 0)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.74, 0.44, 1),
+"light_energy": 1.60,
+"light_range": 8.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_ceiling")
+
+[sub_resource type="Resource" id="light_flood"]
+script = ExtResource("point_class")
+classname = "light_flood"
+description = "Floodlight on a wall bracket, aimed 30 degrees down: a bright spot light reaching 18 m. Origin on the wall face."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_flood.glb\"",
+"size": AABB(0, -9, -7, 21, 9, 7)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.94, 0.84, 1),
+"light_energy": 3.00,
+"light_range": 18.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_flood")
+
+[sub_resource type="Resource" id="light_street"]
+script = ExtResource("point_class")
+classname = "light_street"
+description = "Street lamp, 5 m pole with an arm, warm light reaching 10 m. Stands on the floor; the arm points to the front."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_street.glb\"",
+"size": AABB(-6, -6, 0, 52, 6, 191)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.8, 0.55, 1),
+"light_energy": 2.00,
+"light_range": 10.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_street")
+
+[sub_resource type="Resource" id="light_strip"]
+script = ExtResource("point_class")
+classname = "light_strip"
+description = "Fluorescent tube fitting for a ceiling, 1.25 m long, neutral light reaching 6 m. Origin on the ceiling."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_strip.glb\"",
+"size": AABB(-4, -25, -5, 4, 25, 0)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.94, 0.84, 1),
+"light_energy": 1.00,
+"light_range": 6.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_strip")
+
+[sub_resource type="Resource" id="light_wall"]
+script = ExtResource("point_class")
+classname = "light_wall"
+description = "Caged bulkhead lamp for a wall, warm light reaching 7 m. Origin on the wall face, at the lamp."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_wall.glb\"",
+"size": AABB(-1, -5, -6, 7, 5, 6)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.74, 0.44, 1),
+"light_energy": 1.40,
+"light_range": 7.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_wall")
+
+[sub_resource type="Resource" id="light_worklight"]
+script = ExtResource("point_class")
+classname = "light_worklight"
+description = "Two work lights on a tripod, 2.1 m, aimed 25 degrees down: a wide spot light reaching 14 m. See-through: it stops you, not bullets or sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_worklight.glb\"",
+"size": AABB(-18, -17, -1, 9, 17, 85)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.94, 0.84, 1),
+"light_energy": 2.50,
+"light_range": 14.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_worklight")
+
 [resource]
 script = ExtResource("fgd_file")
 fgd_name = "ChiipKit"
-entity_definitions = Array[Resource]([SubResource("prop_crate_metal"), SubResource("prop_crate_stack"), SubResource("prop_crate_wood"), SubResource("prop_crate_wood_small"), SubResource("prop_pallet"), SubResource("prop_pallet_load"), SubResource("prop_pallet_stack"), SubResource("prop_ac_unit"), SubResource("prop_barrel"), SubResource("prop_barrel_group"), SubResource("prop_barrel_hazard"), SubResource("prop_barrel_rust"), SubResource("prop_cable_spool"), SubResource("prop_container_grey"), SubResource("prop_container_olive"), SubResource("prop_container_rust"), SubResource("prop_container_teal"), SubResource("prop_electric_cabinet"), SubResource("prop_gas_cylinders"), SubResource("prop_generator"), SubResource("prop_pipe_floor"), SubResource("prop_pipe_valve"), SubResource("prop_pipe_wall"), SubResource("prop_tank"), SubResource("prop_barrier_concrete"), SubResource("prop_barrier_road"), SubResource("prop_fence_boards"), SubResource("prop_fence_wood"), SubResource("prop_railing"), SubResource("prop_railing_yellow"), SubResource("prop_sandbags"), SubResource("prop_tire_stack"), SubResource("prop_bench"), SubResource("prop_bollard"), SubResource("prop_dumpster"), SubResource("prop_hydrant"), SubResource("prop_phone_box"), SubResource("prop_planter"), SubResource("prop_traffic_cone"), SubResource("prop_trash_can"), SubResource("prop_cabinet"), SubResource("prop_chair"), SubResource("prop_desk"), SubResource("prop_locker"), SubResource("prop_potted_plant"), SubResource("prop_shelf"), SubResource("prop_table"), SubResource("prop_sign_a"), SubResource("prop_sign_a_left"), SubResource("prop_sign_a_right"), SubResource("prop_sign_arrow_left"), SubResource("prop_sign_arrow_right"), SubResource("prop_sign_b"), SubResource("prop_sign_b_left"), SubResource("prop_sign_b_right"), SubResource("prop_sign_exit"), SubResource("prop_sign_warning"), SubResource("prop_car"), SubResource("prop_car_wreck"), SubResource("prop_forklift"), SubResource("prop_van"), SubResource("prop_bush"), SubResource("prop_grass_tuft"), SubResource("prop_hedge"), SubResource("prop_log"), SubResource("prop_rock"), SubResource("prop_tree_leafy"), SubResource("prop_tree_pine"), SubResource("prop_debris_boxes"), SubResource("prop_debris_bricks"), SubResource("prop_debris_planks"), SubResource("prop_debris_rubble"), SubResource("prop_trash_bags"), SubResource("prop_door"), SubResource("prop_door_double"), SubResource("prop_door_rollup"), SubResource("prop_door_wood"), SubResource("prop_window"), SubResource("prop_window_shutters")])
+entity_definitions = Array[Resource]([SubResource("prop_crate_metal"), SubResource("prop_crate_stack"), SubResource("prop_crate_wood"), SubResource("prop_crate_wood_small"), SubResource("prop_pallet"), SubResource("prop_pallet_load"), SubResource("prop_pallet_stack"), SubResource("prop_ac_unit"), SubResource("prop_barrel"), SubResource("prop_barrel_group"), SubResource("prop_barrel_hazard"), SubResource("prop_barrel_rust"), SubResource("prop_cable_spool"), SubResource("prop_container_grey"), SubResource("prop_container_olive"), SubResource("prop_container_rust"), SubResource("prop_container_teal"), SubResource("prop_electric_cabinet"), SubResource("prop_gas_cylinders"), SubResource("prop_generator"), SubResource("prop_pipe_floor"), SubResource("prop_pipe_valve"), SubResource("prop_pipe_wall"), SubResource("prop_tank"), SubResource("prop_barrier_concrete"), SubResource("prop_barrier_road"), SubResource("prop_fence_boards"), SubResource("prop_fence_wood"), SubResource("prop_railing"), SubResource("prop_railing_yellow"), SubResource("prop_sandbags"), SubResource("prop_tire_stack"), SubResource("prop_bench"), SubResource("prop_bollard"), SubResource("prop_dumpster"), SubResource("prop_hydrant"), SubResource("prop_phone_box"), SubResource("prop_planter"), SubResource("prop_traffic_cone"), SubResource("prop_trash_can"), SubResource("prop_cabinet"), SubResource("prop_chair"), SubResource("prop_desk"), SubResource("prop_locker"), SubResource("prop_potted_plant"), SubResource("prop_shelf"), SubResource("prop_table"), SubResource("prop_sign_a"), SubResource("prop_sign_a_left"), SubResource("prop_sign_a_right"), SubResource("prop_sign_arrow_left"), SubResource("prop_sign_arrow_right"), SubResource("prop_sign_b"), SubResource("prop_sign_b_left"), SubResource("prop_sign_b_right"), SubResource("prop_sign_exit"), SubResource("prop_sign_warning"), SubResource("prop_car"), SubResource("prop_car_wreck"), SubResource("prop_forklift"), SubResource("prop_van"), SubResource("prop_bush"), SubResource("prop_grass_tuft"), SubResource("prop_hedge"), SubResource("prop_log"), SubResource("prop_rock"), SubResource("prop_tree_leafy"), SubResource("prop_tree_pine"), SubResource("prop_debris_boxes"), SubResource("prop_debris_bricks"), SubResource("prop_debris_planks"), SubResource("prop_debris_rubble"), SubResource("prop_trash_bags"), SubResource("prop_door"), SubResource("prop_door_double"), SubResource("prop_door_rollup"), SubResource("prop_door_wood"), SubResource("prop_window"), SubResource("prop_window_shutters"), SubResource("light_cage"), SubResource("light_ceiling"), SubResource("light_flood"), SubResource("light_street"), SubResource("light_strip"), SubResource("light_wall"), SubResource("light_worklight")])
