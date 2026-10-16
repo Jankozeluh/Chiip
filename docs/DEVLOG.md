@@ -16,6 +16,8 @@ Branch `m16`, one code branch at a time (D-220). Decisions from D-222. One commi
 
 - Architecture review (D-226): a systems map at the top of ARCHITECTURE.md (each folder's owner, job, main classes and guard suites; the dependency order and its three known exceptions), the stale systems table gone, the suite table complete without counts; `audio/`, `stats/` and `debug/` moved out of `systems/`; `class_name Main` (typed access instead of `has_method`/`call`), which needed main.gd's map preload gone (a load cycle gave an empty map: `Main.FALLBACK_MAP` is loaded at run time, a `debug` check guards it); 14 dead functions removed after a scan; CLAUDE.md's per-suite command list replaced by a pointer (2,300 characters shorter for every session).
 
+- Final runs on the finished branch: the full suite three times in a row, 44 suites and 1472 checks each, no failure; `tools/check_release.sh` 8 of 8 on fresh exports. One open finding: `netrespawn` played a match without a single kill in 2 of 46 runs (none in 25 on main); its checks stay and now report why (D-222).
+
 **Next:** M17 Playing with friends (D-221), one branch. Your checks for M16 are in the plan.
 
 ## 2026-10-16 — v0.2 screens
