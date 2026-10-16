@@ -184,7 +184,7 @@
 
 **Consequence:** Counter-strafing with the rifle reaches accurate speed in 70 ms.
 
-## D-024 — Textures: CC0 photo textures turned retro by our own tool (2026-10-15)
+## D-024 — Textures: CC0 photo textures turned retro by our own tool (2026-10-15) — *Replaced by D-140*
 
 **Decision:** Textures start as free CC0 (public domain) photo textures from ambientCG. A tool script shrinks them to 64 × 64 and reduces their colors. Each download happens only after the user approves it. Sources are listed in `docs/CREDITS.md`.
 
@@ -978,7 +978,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Everything generated, with no downloads (textures look more synthetic). Ready-made CC0 model packs (style may clash with the crew). A random mode-and-map button, and random match twists.
 
-## D-121 — The texture library: 28 ambientCG textures in four sets, found by folder (2026-10-16) — *provisional*
+## D-121 — The texture library: 28 ambientCG textures in four sets, found by folder (2026-10-16) — *provisional; the textures are redrawn in D-140, the sets, folders and sound names stay*
 
 **Decision:**
 - **28 more CC0 textures from ambientCG**, turned retro by `tools/make_retro_texture.gd` like the first eight (64 × 64, 16 colours, D-024), in four sets that TrenchBroom shows as collections: `assets/textures/industrial/` (corrugated steel, diamond plate, rusty plates, grating, chain-link, perforated sheet, worn concrete), `urban/` (asphalt, cobbles, slabs, blocks, rubble wall, slate roof, wood siding, olive plaster), `interior/` (two wood floors, white, dark and checker tiles, ceiling tiles, terrazzo, old planks) and `nature/` (grass, dirt, mossy rock, bark).
@@ -1086,6 +1086,24 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 **Why:** A kit nobody can see is hard to use, and generated files need a check that they still fit together after the next run of the generator.
 
 **Alternatives:** Pictures only (no check); checking props inside the maps test (slower, and mixes kit and maps).
+
+## D-140 — Map textures are drawn like the crew, not made from photos (2026-10-16) — *provisional; replaces D-024 and the photo sources of D-121*
+
+**Decision:**
+- **Every map texture is drawn by `tools/make_world_textures.py`**, the way the crew is painted (D-054, `tools/modelgen/paint.py`): a base shade on one of the crew's 16-shade ramps (or the props' ramps), a pattern that says what the surface is (boards, blocks, bricks, stones, panels, tiles, ribs, gravel, grass blades) with one-texel joints, and only ±1-shade grain. Big wooden and green surfaces are muted toward grey, like the crew's kit. Same names, folders, sizes (64 × 64 for 1.63 m) and sound words as before (D-121), so no map had to be rebuilt.
+- **No photo texture ships any more:** the 36 ambientCG-based textures (the M3 eight and the kit's 28) and the five recoloured or drawn ones are replaced by 41 generated ones, the chain-link and the glass included. `tools/texture_prep.py` and `tools/make_kit_textures.py` are gone (their work is in the new tool); `tools/make_retro_texture.gd` stays for a mapper who wants a photo texture on a map of their own.
+- **A new texture is a painter function** in the tool's table (a ramp, a base shade, a pattern), not a download.
+
+**Why:** Your feedback: *"I dont like the texturing of maps, it doesnt match the players design, that should be fixed"*. The crew is flat, low-poly and palette-limited, with clean shapes and little noise; photo textures, even shrunk to 64 × 64, kept their blotches (the plaster's camouflage pattern, mottled concrete, photo wood grain) and looked busier and more realistic next to the players.
+
+**Compared** in the real game with two bots of each team standing in every shot (new `--lineup` option of `tools/map_screenshots.gd`), on Depot, Square and Spillway:
+1. **Generated like the crew** (chosen): clean boards, blocks, ribs and stones that read as the same world as the players; the players still stand out.
+2. **The photo textures quantized onto the crew's ramps** (blurred, about five shades): flatter, but the photo blotches became mush at 480 lines.
+3. **A mix** (generated walls, floors and metal, quantized photos for stones, rock, bark, grass, dirt, gravel): the natural surfaces kept the mush.
+
+**Checked:** all 41 pass `tools/texture_report.gd` (no team red or blue; average saturation at most 0.45, wood the warmest); in the screenshots below the horizon, team red at most 0.9 % and team blue at most 0.4 % of a shot (the photo textures: 1.3 % and 0.5 %). The rusty ribbed metal had to be muted further: its darkest shades turned reddish in shade after lighting and the palette effect (3 % of a shot on Depot's boxcar).
+
+**Alternatives:** the two other directions above; hand-drawn pixel art (better ceiling, but no artist and nothing to regenerate); keeping photos for a "realistic" look (what you asked to fix).
 
 ## Open questions
 

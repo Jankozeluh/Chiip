@@ -10,7 +10,7 @@ The kit is everything you need to make a whole map in **TrenchBroom** without to
 
 | Part | What it is | Where |
 |---|---|---|
-| Textures | 41 retro 64 × 64 textures in five sets: the base set (8) and `industrial`, `urban`, `interior`, `nature` | `assets/textures/` |
+| Textures | 41 pixel textures drawn like the crew (D-140), in five sets: the base set (8) and `industrial`, `urban`, `interior`, `nature` | `assets/textures/` |
 | Props | 80 props in ten categories (crates, containers, fences, doors, signs, cars, trees...) | `maps/kit/props/` |
 | Lamps | 7 lamps that are real lights | `maps/kit/lights/` |
 | Brush entities | See-through glass and fences, invisible clip walls, bomb sites, and func_godot's detail and illusionary brushes | `maps/fgd/` |
@@ -251,7 +251,7 @@ Measure with the maps test (first contact) and the map report (distances and sig
 
 ## Textures
 
-TrenchBroom lists every image below `assets/textures/` and turns each folder into a collection (D-121). A face's texture name is its path without the extension, for example `industrial/rust_plates`. All textures are 64 × 64 with 16 colours, made from CC0 photos by `tools/make_retro_texture.gd` (sources and settings in [CREDITS.md](CREDITS.md)).
+TrenchBroom lists every image below `assets/textures/` and turns each folder into a collection (D-121). A face's texture name is its path without the extension, for example `industrial/rust_plates`. All textures are 64 × 64 and cover 1.63 m. They are **drawn by `tools/make_world_textures.py` the way the crew is painted** (D-140): a flat base shade from the crew's 16-shade palette, a simple pixel pattern for what the surface is (boards, blocks, stones, panels, tiles, ribs, gravel) with one-texel joints, and very little grain. So the world and the players look like one game.
 
 ![The textures, labelled](mapping/textures.png)
 
@@ -263,67 +263,67 @@ TrenchBroom lists every image below `assets/textures/` and turns each folder int
 
 | Texture | What it looks like | Sound |
 |---|---|---|
-| `concrete_floor` | Mid-grey concrete. Floors and walls of the quick maps. | hard |
-| `plaster_wall` | Light, blotchy plaster | hard |
-| `painted_plaster` | Pale, smooth painted plaster | hard |
-| `stone_grey` | Grey stone blocks | hard |
+| `concrete_floor` | Plain mid-grey concrete with one slab joint per tile. Floors, docks, channel walls. | hard |
+| `plaster_wall` | Smooth light plaster | hard |
+| `painted_plaster` | Smooth pale painted plaster | hard |
+| `stone_grey` | Grey stone blocks in courses (pillars, corner houses) | hard |
 | `gravel_grey` | Fine grey gravel | gravel |
-| `metal_plates` | Dark metal with a scale-like pattern | metal |
-| `wood_planks` | Dark brown planks: the warm accent | wood |
-| `bricks_red` | Red brick. **Don't use it.** 21 % of its pixels are strong reds, which breaks the look rules. It stays for old scenes. | hard |
+| `metal_plates` | Dark grey riveted panels | metal |
+| `wood_planks` | Brown horizontal boards: the warm accent (crates, stacks) | wood |
+| `bricks_red` | Muted brown bricks with light mortar. It passes the look rules now, but the quick maps don't use it. | hard |
 
 ### `industrial/`
 
 | Texture | What it looks like | Sound |
 |---|---|---|
-| `industrial/chainlink` | Diamond-lattice fence with see-through holes. For `func_fence`. | metal |
-| `industrial/concrete_worn` | Worn concrete with stains and marks | hard |
-| `industrial/corrugated_green` | Olive corrugated steel with vertical ribs | metal |
-| `industrial/corrugated_grey` | Grey corrugated steel | metal |
-| `industrial/corrugated_rust` | The grey ribs recoloured rusty brown (kept off the team red's hue) | metal |
-| `industrial/corrugated_teal` | The grey ribs recoloured grey-green, like the props' paint | metal |
-| `industrial/diamond_plate` | Metal floor plate with raised lugs | metal |
-| `industrial/floor_line` | The base concrete floor with a painted yellow line. A trim. | hard |
-| `industrial/grate` | Dark metal walkway grating | metal |
-| `industrial/hazard_stripes` | Worn yellow and charcoal diagonal stripes. A trim: edges, in small doses. | hard |
-| `industrial/perforated` | Dark perforated sheet metal | metal |
-| `industrial/rust_plates` | Brown rusty plates (brown, not red) | metal |
+| `industrial/chainlink` | Diamond wire lattice with see-through holes. For `func_fence`. | metal |
+| `industrial/concrete_worn` | Concrete with formwork seams and tie holes | hard |
+| `industrial/corrugated_green` | Olive ribbed sheet metal | metal |
+| `industrial/corrugated_grey` | Grey ribbed sheet metal | metal |
+| `industrial/corrugated_rust` | Rusty brown ribbed sheet metal | metal |
+| `industrial/corrugated_teal` | Grey-green ribbed sheet metal | metal |
+| `industrial/diamond_plate` | Floor plate with raised lugs | metal |
+| `industrial/floor_line` | The concrete floor with a painted yellow line. A trim. | hard |
+| `industrial/grate` | Square steel grating over a dark gap | metal |
+| `industrial/hazard_stripes` | Chipped yellow and charcoal diagonal stripes. A trim: edges, in small doses. | hard |
+| `industrial/perforated` | Grey sheet with rows of small holes | metal |
+| `industrial/rust_plates` | Dark brown riveted plates | metal |
 
 ### `urban/`
 
 | Texture | What it looks like | Sound |
 |---|---|---|
-| `urban/asphalt` | Dark grey road | hard |
-| `urban/blocks_grey` | Grey brick blocks | hard |
-| `urban/cobbles` | Grey cobblestones | hard |
-| `urban/plaster_olive` | Muted olive plaster | hard |
-| `urban/roof_slate` | Dark grey slate shingles | hard |
-| `urban/rubble_wall` | Rough old stone wall | hard |
-| `urban/slabs` | Grey paving slabs | hard |
-| `urban/wood_siding` | Brown horizontal wood siding | wood |
+| `urban/asphalt` | Dark charcoal road with light specks | hard |
+| `urban/blocks_grey` | Small grey concrete blocks in a running bond | hard |
+| `urban/cobbles` | Grey cobblestones with dark gaps | hard |
+| `urban/plaster_olive` | Smooth muted olive plaster | hard |
+| `urban/roof_slate` | Dark overlapping slates | hard |
+| `urban/rubble_wall` | Big irregular stones with dark joints | hard |
+| `urban/slabs` | Large grey paving slabs | hard |
+| `urban/wood_siding` | Dark lapped wooden boards | wood |
 
 ### `interior/`
 
 | Texture | What it looks like | Sound |
 |---|---|---|
-| `interior/ceiling_tiles` | Pale office ceiling tiles with dark dots | hard |
-| `interior/glass` | Dark grey, see-through, with two diagonal streaks. For `func_glass`. | hard |
-| `interior/parquet` | Herringbone wood floor | wood |
-| `interior/planks_old` | Grey-brown old planks | wood |
-| `interior/terrazzo` | Light grey speckled stone floor | hard |
-| `interior/tiles_checker` | Black and grey checkerboard tiles | hard |
+| `interior/ceiling_tiles` | Pale ceiling panels with dotted perforation | hard |
+| `interior/glass` | See-through grey glass with two light streaks. For `func_glass`. | hard |
+| `interior/parquet` | Basket-weave wooden floor | wood |
+| `interior/planks_old` | Grey-brown old boards with nails | wood |
+| `interior/terrazzo` | Pale speckled stone floor | hard |
+| `interior/tiles_checker` | Charcoal and pale checkerboard tiles | hard |
 | `interior/tiles_dark` | Dark grey square tiles | hard |
-| `interior/tiles_white` | Pale grey tiles | hard |
-| `interior/wood_floor_dark` | Dark brown wood floor | wood |
+| `interior/tiles_white` | Pale square tiles | hard |
+| `interior/wood_floor_dark` | Narrow dark wooden floorboards | wood |
 
 ### `nature/`
 
 | Texture | What it looks like | Sound |
 |---|---|---|
-| `nature/bark` | Tree bark | wood |
-| `nature/dirt` | Grey-brown dirt | gravel |
-| `nature/grass` | Muted green grass | gravel |
-| `nature/rock_moss` | Rock with olive moss | hard |
+| `nature/bark` | Tree bark with wavy furrows | wood |
+| `nature/dirt` | Grey-brown earth with small stones | gravel |
+| `nature/grass` | Muted green grass with light blades | gravel |
+| `nature/rock_moss` | Big stones, some with moss | hard |
 
 ### The special ones
 
@@ -333,33 +333,27 @@ TrenchBroom lists every image below `assets/textures/` and turns each folder int
 | `interior/glass` | On a `func_glass` brush. Alpha-blended. |
 | `industrial/hazard_stripes`, `industrial/floor_line` | Trims and edges, in small doses. |
 
-`glass`, `hazard_stripes`, `floor_line`, `corrugated_rust` and `corrugated_teal` are made for the kit by `tools/make_kit_textures.py`, not from photos (the two corrugated ones are `corrugated_grey` recoloured, so containers come in four colours with the same ribs). Chain-link and glass have their own `.tres` material next to the PNG (`assets/textures/industrial/chainlink.tres`, `assets/textures/interior/glass.tres`).
+Chain-link and glass have their own `.tres` material next to the PNG (`assets/textures/industrial/chainlink.tres`, `assets/textures/interior/glass.tres`).
 
 ### Add your own texture
 
-1. **Pick a source image.** Use only images whose licence allows it (the kit uses CC0 photos from ambientCG). Note the source, licence and settings in [CREDITS.md](CREDITS.md).
-2. **Make it retro.** `<name>` may start with a set folder (`my_set/blue_metal`); it is saved as `assets/textures/<name>.png`:
+To fit the kit, **draw it like the others**: add a line to `TABLE` in `tools/make_world_textures.py` (the texture's name, a ramp from the crew's or the props' palette, a base shade 0–15, a painter function and, for warm or green surfaces, how much to mute it toward grey). Copy the closest painter and change it: the helpers draw boards, running bonds, stones, grids, ribs and specks. Then:
+
+1. **Draw it** (or only some: add their names after the command):
 
    ```bash
-   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 100 --script res://tools/make_retro_texture.gd -- <source image> <name> [size] [colors] [contrast] [brightness] [saturation] [opacity image]
+   ~/miniconda3/envs/chiip/bin/python -I tools/make_world_textures.py
    ```
 
-   | Option | Default | What it does |
-   |---|---|---|
-   | size | 64 | Width and height in pixels |
-   | colors | 16 | How many colours it keeps |
-   | contrast | 1.0 | Smooth photos turn flat at 64 × 64; 2–3 brings back the punchy look |
-   | brightness | 1.0 | Below 1 darkens surfaces that would glare in sunlight |
-   | saturation | 1.0 | 0 is grey; low values turn warm, sandy photos neutral |
-   | opacity image | none | A greyscale image for see-through textures; cut at 50 % |
+   A new texture in one of the four set folders also gets its world-triplanar material in `assets/materials/<set>/` (for CSG maps and props).
+2. **Import** it: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import`
+3. **Check the look rules** with the texture report from "Look rules". Fix a failure with a calmer ramp, a lower base shade or more mute.
+4. **Name it for sound.** Put one of the sound words in the file name (`blue_metal` steps like metal), as described above.
+5. **See-through or special?** Put a `<name>.tres` material next to the PNG (copy `chainlink.tres` or `glass.tres`). func_godot uses it instead of making one.
+6. **Rebuild before you delete or rename.** A built map scene stores references to its textures: rebuild every map that uses a texture *before* you rename or delete it, or the scene can't load.
+7. **For everyone (the kit's sets):** add it to `WALL_TEXTURES` or `FLOOR_TEXTURES` in `tools/make_kit_gallery.py` and regenerate the gallery. `tests/kit_test.tscn` checks that every set texture has its material and shows in the gallery.
 
-3. **Import** it: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import`
-4. **Check the look rules** with the texture report from "Look rules" (point it at your folder or PNG). Fix a failure with a lower saturation or another source.
-5. **Name it for sound.** Put one of the sound words in the file name (`blue_metal` steps like metal), as described above.
-6. **See-through or special?** Put a `<name>.tres` material next to the PNG (copy `chainlink.tres` or `glass.tres`). func_godot uses it instead of making one. Without it, func_godot makes a plain material from `assets/materials/map_default.tres`.
-7. **Rebuild before you delete or rename.** A built map scene stores references to its textures: rebuild every map that uses a texture *before* you rename or delete it, or the scene can't load.
-
-8. **Adding it to the kit itself** (one of the four set folders, for everyone): also give it a world-triplanar material for CSG maps, `assets/materials/<set>/<name>.tres` (copy a sibling in that folder and change the texture's path), add it to `WALL_TEXTURES` or `FLOOR_TEXTURES` in `tools/make_kit_gallery.py` and regenerate the gallery, and list it in CREDITS. `tests/kit_test.tscn` checks all of that. A texture used only by your own map can live in a folder of its own and needs none of it.
+**A photo texture for a map of your own** is still possible with `tools/make_retro_texture.gd` (it shrinks any image to 64 × 64 with 16 colours; options in CLAUDE.md), but it will look busier than the crew and the kit (D-140). Use only images whose licence allows it and note the source in [CREDITS.md](CREDITS.md).
 
 ## Props
 
@@ -725,7 +719,7 @@ So nobody wastes time:
 - [ ] The maps test passes on your map (markers, navmesh, paths, first contact 5–10 s).
 - [ ] The map report shows no spawn-to-spawn views and sightlines of about 40 m or less.
 - [ ] At most 6 main materials, no saturated red or blue on surfaces, a neutral-shadow environment, warm light only from lamps.
-- [ ] Any texture you added passes `texture_report`.
+- [ ] Any texture you added passes `texture_report` and is drawn like the kit's (or you know why not).
 - [ ] Anything third-party (textures, models) has an entry in [CREDITS.md](CREDITS.md) with source and licence.
 - [ ] Props, lamps and shadowed lamps are within the limits; frame times checked.
 - [ ] Screenshots taken with `map_screenshots.gd`: overview, spawns, sites, lanes.

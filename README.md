@@ -149,7 +149,7 @@ Real maps are built in **TrenchBroom**, a free brush-based map editor similar to
 
 3. Play it with `-- --map res://maps/comparison/trenchbroom_room.tscn` (see *Running the game*).
 
-**Textures** come in sets, which TrenchBroom's texture browser shows as collections: the base set (the first eight), `industrial`, `urban`, `interior` and `nature` (D-121, sources in docs/CREDITS.md). `industrial/chainlink` is see-through.
+**Textures** come in sets, which TrenchBroom's texture browser shows as collections: the base set (the first eight), `industrial`, `urban`, `interior` and `nature` (D-121). They are drawn in the crew's palette by `tools/make_world_textures.py` (D-140). `industrial/chainlink` is see-through.
 
 **A new map** can be built entirely in TrenchBroom from Chiip's kit: textures, props, lamps, and entities for spawns, bomb sites, routes and the other markers. `tools/new_map.gd` turns the `.map` into a playable scene (docs/MAPPING.md). The kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`) shows everything in the kit.
 

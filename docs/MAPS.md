@@ -27,7 +27,8 @@
 
 Your direction: *"everything should be minimalistic and pixelated, cs/quake/cod like with the characters like I showed you"* (D-063).
 
-- **Minimal and blocky.** Simple box geometry, clean readable spaces, no clutter, nothing detailed or realistic. Props are plain boxes: crates, containers, stalls, tanks.
+- **Minimal and blocky.** Simple box geometry, clean readable spaces, no clutter, nothing detailed or realistic. Props come from the map kit's generator, in the crew's style.
+- **Textures match the crew** (D-140): drawn like the characters are painted, in the same palette, flat shades with simple pixel patterns (boards, blocks, panels, tiles, ribs) and little noise; no photo textures. Compared with players in the shot: [mapping/players_depot.jpg](mapping/players_depot.jpg) and the other `players_*.jpg`.
 - **Few materials: at most 6 main materials per map** for the big surfaces (D-127, since the map kit; before it, 5 in total, D-063). Variants of one material count once: the same ribbed metal in four colours, pale and olive plaster, cobbles and slabs. Details come on top in small doses: trims, signs, props, lamps. All are 64 × 64 retro textures with nearest filtering; the world renders at 480 lines (D-048). How to build with the kit: [MAPPING.md](MAPPING.md).
 - **Players stand out.** Characters wear their team colour, painted at runtime: your team blue, enemies red (D-042). So no saturated red or blue on large map surfaces: walls, floors and big props are neutral greys (concrete, plaster, stone, gravel, metal), plus wood as the one warm accent. Muted greens or ochres are fine too. `bricks_red` isn't used: on average it's a muted brown, but 21 % of its pixels are strong reds.
 - **Neutral shadows.** The maps' environments light shadows with a neutral grey ambient light instead of the blue sky. With the sky's light, shadowed floors rendered as rgb (43–50, 63–70, 92–100): the same hue as the blue team (215° vs 220°) at 50 % saturation. With grey ambient they render as rgb (63, 64, 65), 3 % saturation, about as bright as before.
@@ -129,7 +130,7 @@ After dressing (M10) every number in this table is the same as before, except on
 
 ## Before and after the map kit (M10)
 
-Left before, right after dressing, the same shots through the real game (`tools/map_screenshots.gd`, characters hidden). How the kit is used: [MAPPING.md](MAPPING.md).
+Left before, right after dressing (with the textures redrawn like the crew, D-140), the same shots through the real game (`tools/map_screenshots.gd`, characters hidden). How the kit is used: [MAPPING.md](MAPPING.md).
 
 ![Depot before and after](mapping/before_after_depot.jpg)
 
@@ -139,7 +140,17 @@ Left before, right after dressing, the same shots through the real game (`tools/
 
 ![The test map before and after](mapping/before_after_test_map.jpg)
 
-Measured on these shots, below the horizon: strong team-red pixels at most 1.3 % of a shot (before: 1.4 %), strong team-blue at most 0.5 % (before: up to 6 %, from the old blue-grey metal plates on Depot's containers and Spillway's tanks). Average saturation 0.06–0.11 (before 0.06–0.09). Frame times with 10 bots: 120 fps on all three maps (the display's rate), slowest 1 % of frames 9.7 ms on Depot (9.9 ms undressed), 10.2 ms on Square, 11.8 ms on Spillway; about 240 draw calls each (Depot 122 undressed). D-126, D-127.
+**With players in view** (`--lineup`: two bots of each team in every shot), left the photo-based textures the dressing first used, right the textures drawn like the crew (D-140):
+
+![Depot: photo textures and crew-style textures, players in view](mapping/players_depot.jpg)
+
+![Square: photo textures and crew-style textures, players in view](mapping/players_square.jpg)
+
+![Spillway: photo textures and crew-style textures, players in view](mapping/players_spillway.jpg)
+
+![The test map: photo textures and crew-style textures, players in view](mapping/players_test_map.jpg)
+
+Measured on the dressed shots with the crew-style textures, below the horizon: strong team-red pixels at most 0.9 % of a shot (before dressing: 1.4 %), strong team-blue at most 0.4 % (before: up to 6 %, from the old blue-grey metal plates on Depot's containers and Spillway's tanks). Average saturation 0.06–0.11 (before 0.06–0.09). Frame times with 10 bots: 120 fps on all three maps (the display's rate), slowest 1 % of frames 9.7 ms on Depot (9.9 ms undressed), 10.2 ms on Square, 11.8 ms on Spillway; about 240 draw calls each (Depot 122 undressed). D-126, D-127.
 
 ## How the layouts were tuned
 
