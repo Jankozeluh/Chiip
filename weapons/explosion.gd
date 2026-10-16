@@ -35,13 +35,13 @@ func _ready() -> void:
 			_add_ball(Color(1.0, 0.65, 0.2), 0.6)
 			_add_particles(24, Color(0.18, 0.17, 0.16), Vector2(5.0, 10.0), 0.9, Vector3(0.06, 0.06, 0.06), true)
 			_add_particles(10, Color(0.32, 0.31, 0.3, 0.85), Vector2(0.8, 2.0), 1.6, Vector3(0.7, 0.7, 0.7), false)
-			_play(FRAG_SOUND, 0.0, 20.0, 120.0)
+			_play(FRAG_SOUND, SoundMix.EXPLOSION)
 		Kind.FLASH:
 			_add_light(Color(1.0, 1.0, 0.95), 12.0, 16.0)
 			_add_ball(Color(1.0, 1.0, 1.0), 0.35)
-			_play(FLASH_SOUND, 0.0, 15.0, 100.0)
+			_play(FLASH_SOUND, SoundMix.FLASH)
 		Kind.SMOKE:
-			_play(SMOKE_SOUND, -12.0, 4.0, 25.0)
+			_play(SMOKE_SOUND, SoundMix.SMOKE)
 
 
 func _physics_process(delta: float) -> void:
@@ -115,14 +115,9 @@ func _add_particles(amount: int, color: Color, speed: Vector2, lifetime: float, 
 	add_child(particles)
 
 
-func _play(stream: AudioStream, volume: float, unit_size: float, max_distance: float) -> void:
+func _play(stream: AudioStream, category: StringName) -> void:
 	if silent:
 		return
 	var audio := AudioStreamPlayer3D.new()
-	audio.stream = stream
-	audio.volume_db = volume
-	audio.unit_size = unit_size
-	audio.max_distance = max_distance
-	audio.bus = &"Effects"
 	add_child(audio)
-	audio.play()
+	Acoustics.play(audio, stream, category)

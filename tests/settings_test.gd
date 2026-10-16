@@ -127,7 +127,8 @@ func _test_defaults() -> void:
 			"90 → %.4f°, back → %.4f°, 110 → %.2f°, 70 → %.2f°" % [fov, Settings.horizontal_fov(fov), Settings.vertical_fov(110.0), Settings.vertical_fov(70.0)])
 
 
-## The bus layout has the three buses, sends the other two to Master and ships with nothing muted.
+## The bus layout has its six buses (M13, D-190; `sound_test` checks their effects and the
+## muffled buses' sends), sends Effects and Interface to Master and ships with nothing muted.
 func _test_audio_layout() -> void:
 	var names: Array[String] = []
 	var problems: Array[String] = []
@@ -137,8 +138,8 @@ func _test_audio_layout() -> void:
 			problems.append("%s: mute %s, %.1f dB" % [AudioServer.get_bus_name(bus), AudioServer.is_bus_mute(bus), AudioServer.get_bus_volume_db(bus)])
 	var sends := (AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_EFFECTS)) == Settings.BUS_MASTER
 			and AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_INTERFACE)) == Settings.BUS_MASTER)
-	_check("The audio buses are Master, Effects and Interface, both sending to Master, none muted, all at 0 dB",
-			names == ["Master", "Effects", "Interface"] and sends and problems.is_empty(),
+	_check("The audio buses are Master, Effects, Muffled, MuffledHeavy, Interface and Music, Effects and Interface sending to Master, none muted, all at 0 dB",
+			names == ["Master", "Effects", "Muffled", "MuffledHeavy", "Interface", "Music"] and sends and problems.is_empty(),
 			"buses %s, sends to Master %s%s" % [names, sends, "" if problems.is_empty() else ", problems: " + ", ".join(problems)])
 
 

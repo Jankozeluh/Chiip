@@ -777,3 +777,17 @@
 
 **Time in a test that runs at a fixed frame rate** (`Time.get_ticks_msec()` against `SceneTreeTimer`)
 - `--fixed-fps 128` makes every frame exactly 1/128 s of *game* time however fast it really runs, so `create_timer(1.5)` fires after 192 frames in a fraction of a second of wall-clock time. `Time.get_ticks_msec()` is the wall clock: a "Copied" label that reset itself by comparing ticks never reset in the test. The Copy button counts presses instead. (This is also why CLAUDE.md says to count time in deltas.)
+
+## M13: sound design
+
+**Audio buses and their effects** (`AudioBusLayout`, `AudioEffect*`, `AudioServer`)
+- Godot's buses are Unity's **AudioMixer groups**: each bus has a volume, a chain of effects (a reverb, a low-pass, a limiter…) and sends its output to one other bus, ending at Master. `default_bus_layout.tres` is the mixer asset; the editor's Audio panel at the bottom edits it (and saves it, so never save it with a bus muted).
+- A bus can only send to a bus *above* it in the list, so Muffled sits below Effects to feed it.
+- Effects are resources: `AudioServer.get_bus_effect(bus, index)` returns the live one, and changing its properties (the reverb's `wet`, a filter's `cutoff_hz`) is heard at once, like Unity's exposed mixer parameters.
+- There are no effects on a single player (Unity can't either, apart from the AudioSource's own filters); to filter one sound you play it on another bus. That's how sounds behind walls are muffled.
+- `AudioEffectHardLimiter` (Godot 4.3+) is a brick-wall limiter: last on Master, the mix never goes over its ceiling.
+
+**How a 3D sound gets quieter with distance** (`AudioStreamPlayer3D`)
+- Unity's AudioSource has a rolloff curve between Min and Max Distance; Godot's default model (`ATTENUATION_INVERSE_DISTANCE`) is full volume within `unit_size` metres and −6 dB for every doubling beyond, capped at `max_db` (+3 dB by default, which is why close sounds can get *louder* than their `volume_db`). `max_distance` then fades the result linearly to silence, which acts like Unity's Max Distance.
+- `panning_strength` (times the project setting `audio/general/3d_panning_strength`, 0.5) is how hard a sound pans between the ears: Unity's Spread and Stereo Pan in one number.
+- A centred 3D sound is 3 dB quieter than the same sound on a plain `AudioStreamPlayer` (equal-power panning), measured with an `AudioEffectCapture` on Master. A headless run (`--headless`) uses a dummy audio driver that mixes nothing; `--display-driver headless --audio-driver CoreAudio` mixes for real without a window.

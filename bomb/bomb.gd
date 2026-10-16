@@ -429,8 +429,7 @@ func _continue_action(amount: float) -> void:
 	var sound := plant_sound if state == State.CARRIED else defuse_sound
 	if sound != null:
 		_action_audio.global_position = actor.get_visibility_points()[1]
-		_action_audio.stream = sound
-		_action_audio.play()
+		Acoustics.play(_action_audio, sound, SoundMix.BOMB_ACTION)
 
 
 ## Ends a plant or defuse, finished or not; an unfinished one starts over next time.
@@ -445,9 +444,7 @@ func _beep() -> void:
 	beeped.emit()
 	_set_lit(true)
 	_blink_left = BLINK_TIME
-	if beep_sound != null:
-		_beep_audio.stream = beep_sound
-		_beep_audio.play()
+	Acoustics.play(_beep_audio, beep_sound, SoundMix.BOMB_BEEP)
 
 
 func _set_lit(lit: bool) -> void:
@@ -470,9 +467,7 @@ func _play_explosion() -> void:
 	tween.tween_property(material, "albedo_color:a", 0.0, 0.6)
 	tween.tween_property(_blast_light, "light_energy", 0.0, 0.8)
 	tween.chain().tween_callback(func() -> void: _explosion.visible = false)
-	if explosion_sound != null:
-		_explosion_audio.stream = explosion_sound
-		_explosion_audio.play()
+	Acoustics.play(_explosion_audio, explosion_sound, SoundMix.BOMB_EXPLOSION)
 
 
 # --- Online: the replica on a client (M9, D-105) ---
@@ -557,6 +552,5 @@ func _replica_tick(delta: float) -> void:
 			var sound := plant_sound if state == State.CARRIED else defuse_sound
 			if sound != null:
 				_action_audio.global_position = actor.get_visibility_points()[1]
-				_action_audio.stream = sound
-				_action_audio.play()
+				Acoustics.play(_action_audio, sound, SoundMix.BOMB_ACTION)
 

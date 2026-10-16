@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M13 sound
+
+Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the sound generators, Haiku for test runs), in parallel with M14 and M15. Decisions D-190 to D-199.
+
+**Done**
+- **Task 1, the sound routing and the mix table** (D-190): every game sound plays through `Acoustics.play()` / `play_2d()` from one table (`SoundMix`); new buses Muffled, MuffledHeavy and Music, a hard limiter on Master; stronger panning (measured with the real audio driver). `tools/sound_report.gd` measures every sound file. `sound_test` has 4 new checks (13 in all).
+
+**Next:** the gun signatures (task 2).
+
 ## 2026-10-16 — M12 share
 
 Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessions. Decisions D-170 to D-179.

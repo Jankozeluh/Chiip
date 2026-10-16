@@ -9,7 +9,12 @@ extends Node
 ## sound of each surface, and the sounds of the real rifle's bullets hitting
 ## gravel, a body and a head (a headshot is louder and carries farther), with a
 ## silent weapon making no impact sounds. Also that menu buttons get their sounds and interface sounds
-## are off without a window. Quits with the number of failed checks as the exit code.
+## are off without a window.
+##
+## M13 (D-190 to D-199): the bus layout (a limiter last on Master, the muffled buses feeding the
+## reverb on Effects) and the mix table, and that guns, steps and impacts play by the table, your
+## own without position and everyone else's from where they are.
+## Quits with the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
 const BOT_SCENE := preload("res://bots/bot.tscn")
@@ -25,6 +30,7 @@ func _ready() -> void:
 	_player = _map.get_node("Player")
 	_player.footstep_sound = preload("res://assets/sounds/footsteps.tres")
 	await _wait_ticks(30)
+	_test_buses()
 	_test_floors()
 	_test_footsteps()
 	await _test_impacts()
@@ -79,6 +85,7 @@ func _test_impacts() -> void:
 	bot.respawn(spawn + Vector3(0.0, 0.0, -6.0), 0.0)
 	(bot.get_node("BotSenses") as BotSenses).process_mode = Node.PROCESS_MODE_DISABLED
 	await _wait_ticks(4)
+	_test_routing(bot)
 	var results := {}
 	results["gravel"] = await _shoot_at(spawn + Vector3(1.5, 0.0, -3.0))
 	results["body"] = await _shoot_at(bot.global_position + Vector3.UP * 1.1)
@@ -104,6 +111,70 @@ func _test_impacts() -> void:
 	weapon.data = loud
 	_check("A silent weapon (tests) makes no impact sounds", quiet[0] == null, str(quiet))
 	bot.queue_free()
+
+
+## Your own gun plays without position at the table's own level; a bot's from where it is, with
+## the table's level, range and panning (M13, D-190).
+func _test_routing(bot: Character) -> void:
+	var own := _player.weapon.get_node("ShotAudio") as AudioStreamPlayer
+	_player.weapon.call("_play", _player.weapon.data.shot_sound, false)
+	var own_shot: bool = own.volume_db == SoundMix.TABLE[SoundMix.SHOT].own_db and own.bus == SoundMix.BUS_EFFECTS
+	bot.weapon.call("_play", bot.weapon.data.shot_sound, false)
+	bot.weapon.call("_play", bot.weapon.data.reload_sound, true)
+	var shot := bot.weapon.get_node("ShotAudio3D") as AudioStreamPlayer3D
+	var handling := bot.weapon.get_node("HandlingAudio3D") as AudioStreamPlayer3D
+	var values: Dictionary = SoundMix.TABLE[SoundMix.SHOT]
+	var bot_shot: bool = shot.stream == bot.weapon.data.shot_sound and shot.volume_db == values.volume_db and shot.unit_size == values.unit_size \
+			and shot.max_distance == values.max_distance and is_equal_approx(shot.panning_strength, SoundMix.PANNING_STRENGTH)
+	var bot_handling: bool = handling.stream == bot.weapon.data.reload_sound and handling.unit_size == SoundMix.TABLE[SoundMix.HANDLING].unit_size
+	_check("Guns play by the mix table: yours without position, a bot's shot and reload from where it is",
+			own_shot and bot_shot and bot_handling, "own %.1f dB on %s; bot shot %.1f dB, %.0f m unit, %.0f m max, pan %.1f; reload unit %.0f m" % [
+				own.volume_db, own.bus, shot.volume_db, shot.unit_size, shot.max_distance, shot.panning_strength, handling.unit_size])
+	own.stop()
+	shot.stop()
+	handling.stop()
+
+
+## The bus layout (M13, D-190): a limiter last on Master so the mix can't clip, the reverb on
+## Effects, the two muffled buses low-passing into Effects (the heavy one lower), Interface and
+## Music straight to Master; and every category of the mix table complete.
+func _test_buses() -> void:
+	var master := AudioServer.get_bus_index(&"Master")
+	var last := AudioServer.get_bus_effect_count(master) - 1
+	var limiter := AudioServer.get_bus_effect(master, last) as AudioEffectHardLimiter if last >= 0 else null
+	_check("A hard limiter is the last effect on Master, below full scale, so the mix never clips",
+			limiter != null and limiter.ceiling_db < 0.0 and AudioServer.is_bus_effect_enabled(master, last),
+			"ceiling %s dB" % (str(limiter.ceiling_db) if limiter != null else "none"))
+	var sends := {}
+	for bus in AudioServer.bus_count:
+		sends[AudioServer.get_bus_name(bus)] = AudioServer.get_bus_send(bus)
+	var muffled := _low_pass_of(SoundMix.BUS_MUFFLED)
+	var heavy := _low_pass_of(SoundMix.BUS_MUFFLED_HEAVY)
+	var effects := AudioServer.get_bus_index(SoundMix.BUS_EFFECTS)
+	var reverb := AudioServer.get_bus_effect(effects, 0) is AudioEffectReverb if AudioServer.get_bus_effect_count(effects) > 0 else false
+	_check("The buses: reverb on Effects, Muffled and MuffledHeavy low-pass into Effects (heavy lower), Interface and Music to Master",
+			reverb and sends.get(&"Effects") == &"Master" and sends.get(&"Muffled") == &"Effects" and sends.get(&"MuffledHeavy") == &"Effects"
+			and sends.get(&"Interface") == &"Master" and sends.get(&"Music") == &"Master" and muffled > heavy and heavy > 0.0,
+			"%s, low-pass %.0f / %.0f Hz, reverb %s" % [sends, muffled, heavy, reverb])
+	var broken: Array[String] = []
+	for category: StringName in SoundMix.TABLE:
+		var values: Dictionary = SoundMix.TABLE[category]
+		if not (values.has("volume_db") and values.get("unit_size", 0.0) > 0.0 and values.get("max_distance", 0.0) > values.unit_size
+				and values.get("occlusion", -1.0) >= 0.0 and values.occlusion <= 1.0):
+			broken.append(String(category))
+	_check("Every category of the mix table has a volume, a range beyond its unit size and an occlusion share", broken.is_empty(), str(broken))
+
+
+## The cutoff of the low-pass filter on the bus named [param bus_name] (0 if none).
+func _low_pass_of(bus_name: StringName) -> float:
+	var bus := AudioServer.get_bus_index(bus_name)
+	if bus < 0:
+		return 0.0
+	for index in AudioServer.get_bus_effect_count(bus):
+		var effect := AudioServer.get_bus_effect(bus, index) as AudioEffectLowPassFilter
+		if effect != null:
+			return effect.cutoff_hz
+	return 0.0
 
 
 func _test_ui_sounds() -> void:

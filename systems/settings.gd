@@ -45,8 +45,8 @@ signal changed(key: StringName)
 ## [code]~/Library/Application Support/Godot/app_userdata/Chiip/settings.cfg[/code]).
 const SETTINGS_PATH := "user://settings.cfg"
 
-## The audio buses of [code]default_bus_layout.tres[/code]. Master is the final
-## mix, Effects (footsteps, shots) and Interface (menus) send to it.
+## The audio buses of [code]default_bus_layout.tres[/code] that have a volume setting. Master is
+## the final mix; Effects (every game sound) and Interface (menus) send to it (D-190).
 const BUS_MASTER := &"Master"
 const BUS_EFFECTS := &"Effects"
 const BUS_INTERFACE := &"Interface"
