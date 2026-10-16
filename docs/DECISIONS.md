@@ -978,6 +978,53 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Everything generated, with no downloads (textures look more synthetic). Ready-made CC0 model packs (style may clash with the crew). A random mode-and-map button, and random match twists.
 
+## D-130 — The UI's look comes from your mockups; until then, build what holds whatever the look (2026-10-16) — *provisional*
+
+**Decision:**
+- **You design the look** in Claude Design, screen by screen ([UI_MOCKUPS.md](UI_MOCKUPS.md) lists the screens and the ground rules). When a mockup arrives it is the source of truth for that screen: its colours, sizes and spacing go into the theme's tokens, and its layout into the scene.
+- **Until then, today's look stays** (D-057). No palette, borders or card style is chosen on your behalf.
+- **Meanwhile the UI part of M10 builds what any look needs:** the simpler mode choice and its flow (D-132), the HUD's layout and readability (D-133), a theme where every visual value is a named token and every screen picks roles instead of styling itself (D-131), slots for a pixel icon set, and a screenshot tool that pictures every screen through the real game for before/after comparisons (`tools/ui_screenshots.gd`).
+
+**Why:** Your words: "I'll try to design the UI a bit … its going to be design in claude design". A look chosen now would be thrown away when your mockups come, while the flow, the layout rules and a theme that restyles in one place are needed whatever they show. With every value a token and every screen built from roles, a mockup becomes a set of numbers and a layout, not a rewrite.
+
+**Alternatives:** Pick a modern look now and adjust it to the mockups later (two rounds of restyling, and the first one biases your design); wait and build nothing (the mode choice and HUD layout don't depend on the look); build each screen straight from a mockup without tokens (every screen would carry its own copy of the colours, and the next change would mean editing all of them).
+
+## D-131 — Theme tokens, roles and icon slots (2026-10-16) — *provisional*
+
+**Decision:**
+- **Tokens:** every visual value the theme uses (colours, the fonts, text sizes, borders, paddings, margins, spacings) is a named constant in `tools/ui_palette.gd`. `tools/make_ui_theme.gd` uses only tokens, never a number of its own. A mockup's hex colours, sizes and spacing go there, and the two theme tools run again (CLAUDE.md, Commands).
+- **Roles:** screens pick *type variations* (D-057) and never set a colour, font, size or stylebox of their own. New roles are added for what the mockups list (a primary button, a text button, the big mode choices, team-coloured text, the HUD's numbers and labels), in today's look until a mockup says otherwise. The existing role names stay, so M7's buy menu and M9's lobby, built on them, follow along.
+- **Icon slots:** the icons the mockups ask for (8 weapons, 3 grenades, armor, helmet, defuse kit, bomb, 4 classes, headshot, health) are looked up by name through the theme (a custom theme type, so they scale with the UI like the other icons). A PNG named after its slot in `assets/ui/icons/` fills it when the theme is rebuilt; an empty slot makes the screen show text instead, as today ("HS", "+").
+- **The theme must come out unchanged** by this task: the same look, from tokens.
+
+**Why:** It is what makes D-130 work: one file holds the look, and the screens don't have to be touched to change it. Looking icons up through the theme reuses the scaling that keeps pixel art crisp (D-057) and lets the icon set arrive later without changing code.
+
+**Alternatives:** Tokens in a JSON file read at runtime (the theme is generated anyway, and GDScript constants are checked by the editor); one theme file per look (two copies to keep in step); icons loaded by path in each screen (every screen would need to know the file names and scale them itself).
+
+## D-132 — Team Deathmatch first, one click to play, the details behind "Custom match" (2026-10-16) — *provisional*
+
+**Decision:**
+- **The main menu's page is the mode choice.** Under the game's name, three big choices: **Team Deathmatch** (first, focused when the menu opens, the default), **Bomb** and **Practice**. Each has a line saying what you'll get, built from your last custom choices: "3v3 · Normal bots · first to 50 kills · Depot, Square, Spillway". **One click (or Enter) starts it.** Below them: **Custom match**, **Settings** and **Quit**, and room for M9's Host and Join.
+- **Team Deathmatch** is the team respawn mode (D-082), **Bomb** the rounds mode with the bomb (D-080). The settings file keeps the old keys (`respawn`, `rounds`), so saved choices still load. **Practice** is the respawning bot arena, as before.
+- **Custom match** is today's match setup, opened over the menu: the mode (Team Deathmatch or Bomb), team sizes, bot difficulty, length, friendly fire, one map or the rotation, the map, a summary, Back and Start. Its choices are what the big buttons use.
+- **New defaults** for a fresh settings file: Team Deathmatch, on the rotation of the three quick maps starting on Depot (instead of bomb rounds on the test map). The command-line shortcuts (`-- --match`, `--practice`, `--respawn`) stay as they are, so tests and smoke runs don't change.
+
+**Why:** You asked for modes that are "much more simple to choose" and for Team Deathmatch as the primary mode (D-120). One click from the first screen is as simple as it gets, and the line under each choice tells you what it starts without opening a panel. The details stay one click away. The test map is a range, not a match map, so the default match is on the quick maps, where both modes have spawns, bomb sites and respawn points. Whatever your mockup of the mode choice looks like, this flow is what it shows.
+
+**Alternatives:** A Play button that opens a mode screen (two clicks, and the first screen says nothing about the modes); choosing the mode in a row of toggles and pressing Start (today's match setup, which you found too complicated); a Custom panel per mode (two panels with the same rows); a random-mode button (ruled out in D-120).
+
+## D-133 — The HUD: layout and readability first, look from the theme (2026-10-16) — *provisional*
+
+**Decision:**
+- **Layout rules** that hold whatever the look: every HUD element is anchored to an edge or the centre of the screen, so it sits right on 16:9, 16:10, 4:3 and ultrawide; the crosshair area stays clear; the information you glance at in a fight (health, ammo, timer, score) is at the screen's edges and big; messages (freeze time, round end, respawn) are centred above the crosshair and short.
+- **What it shows**, from UI_MOCKUPS.md: in Team Deathmatch the kills of both teams against the limit and the time left, and after you die "Killed by Bot2 · respawning in 3" with the countdown; in Bomb what it shows today. **Slots for M7**: armor next to health, money, and a pickup prompt ("Hold E · pick up SMG"), empty until M7 fills them.
+- **The look comes from the theme:** the HUD's colours, sizes, outlines and shadows become roles and tokens like the menus', so a mockup restyles it in the same place.
+- **The F3 debug overlay starts hidden** (F3 shows it), so a first look at the game shows the game.
+
+**Why:** Anchoring and size are what make a HUD readable in a fight, and they don't depend on colours. Today the HUD sets its colours and sizes in its own scenes and code, so a mockup couldn't restyle it from the theme. The respawn countdown and the M7 slots are on your mockup list, so the layout must have room for them. The debug overlay is a developer tool; shown by default it covers a quarter of the screen.
+
+**Alternatives:** Leave the HUD outside the theme (two places to restyle, and they drift); wait for the HUD mockups before touching it (the layout and slots are needed anyway, and M7 builds on them); keep the overlay on by default.
+
 ## Open questions
 
 | Question | Decide in |

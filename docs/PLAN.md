@@ -1,8 +1,8 @@
 # Chiip — Plan & Roadmap
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
-> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". In progress: M7 — Arsenal, perks & economy, M9 — Multiplayer, and M10 — Look & feel (map kit and a modern UI), each in its own branch.
+> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". In progress: M7 — Arsenal, perks & economy, M9 — Multiplayer, and M10 — Look & feel (map kit and a modern UI), each in its own branch. M10's UI part builds the mode choice, HUD layout and a restylable theme while you design the look (D-130).
 
 ## Your open checks
 
@@ -345,6 +345,24 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 **Modern, minimal UI and simpler modes** (decisions D-130 to D-139):
 - [ ] A UI refresh: minimal and more modern, with clear hierarchy, spacing and fewer boxes, keeping the pixel font and the pixelated look, nothing childish. Main menu, match setup, settings, pause, HUD, scoreboard, match-end screen and kill feed
 - [ ] A simpler mode choice: **Team Deathmatch is the primary mode** (first and the default), then Bomb and Practice; one click to play, with the details behind "Custom"
+
+*Planned 2026-10-16 in the `claude/m10-ui-f5de0b` branch, in parallel with the map kit, M7 and M9.* **You design the look** in Claude Design ([UI_MOCKUPS.md](UI_MOCKUPS.md) lists the screens), and your mockups are the source of truth (D-130). Until they arrive, this part builds what holds whatever the look: the simpler mode choice, the HUD's layout and readability, a theme that takes a new palette, sizes and spacing in minutes, and slots for a pixel icon set. Today's look stays meanwhile.
+
+**Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"):
+
+1. [ ] **Plan.** This list and the provisional decisions D-130 to D-133. *(Opus)*
+2. [ ] **A screenshot tool for the UI.** `tools/ui_screenshots.gd` walks through every screen in the real scenes (main menu, match setup, settings, class menu, HUD in freeze time and in a live round, Tab scoreboard, pause menu, console, match-end screen, a Team Deathmatch HUD) and saves a picture of each, without taking your mouse. Used for before/after pictures of every visual change. *(Opus)*
+3. [ ] **Theme tokens, roles and icon slots.** Every colour, font, text size, border, padding and spacing the theme uses becomes a named token in `tools/ui_palette.gd`, so a mockup's values go in one file. New type variations for the roles the mockups need (a primary button, a text button, the mode choices, team-coloured text, the HUD's numbers and labels), in today's look for now. Icon slots: named icons (weapons, grenades, armor, helmet, defuse kit, bomb, classes, headshot, health) are looked up through the theme, and a PNG dropped into `assets/ui/icons/` fills its slot; until then the screens show text. The theme comes out unchanged. *(Opus)*
+4. [ ] **Main menu: one click to play.** The main page shows **Team Deathmatch** (first, focused, the default), **Bomb** and **Practice** as big choices, each with a line saying what you'll get ("3v3 · Normal bots · first to 50 kills · Depot, Square, Spillway"); one click starts it. Below them **Custom match** (today's match setup: mode, team sizes, difficulty, length, friendly fire, maps, map, Start), **Settings** and **Quit**, with room for M9's Host and Join. New defaults: Team Deathmatch on the rotation of the quick maps (D-132). *(Opus)*
+5. [ ] **Every menu restyles from the theme.** The last per-node colours, fonts and spacings in the menus (team-coloured scores and titles, the console's font, button strips) become type variations, so the settings menu, pause menu, class menu, match-end screen, scoreboard and console change with the theme alone. *(Sonnet)*
+6. [ ] **HUD layout and readability.** The HUD moves onto the theme (roles and tokens instead of colours and sizes in its scenes), keeps working at every window size including ultrawide (anchored to the edges and the centre), shows the respawn countdown in Team Deathmatch ("Killed by Bot2 · respawning in 3"), has slots M7 fills (armor, money, pickup prompt), and the F3 overlay starts hidden (D-133). *(Opus direction, Sonnet builds)*
+7. [ ] **Ready for the mockups.** A table in [UI_MOCKUPS.md](UI_MOCKUPS.md) from each mockup to its scene, roles and tokens; all suites pass; screenshots; a UI check in "Your open checks". *(Haiku runs the suites, Opus judges the pictures)*
+
+**When your mockups arrive** (tasks added then, one per screen or group): the palette, sizes and spacing go into the tokens, each screen's layout follows its mockup, and the icon set goes into its slots. Before/after screenshots for each.
+
+**Done when:** the main menu starts Team Deathmatch in one click, Custom still offers everything match setup did, every screen and the HUD take their look from the theme, all suites pass, and then: every screen matches your mockups.
+
+**You learn:** design tokens in a generated Theme, type variations as roles, building a button out of several labels, keyboard focus (`grab_focus()`, focus neighbours), anchoring a HUD for any aspect ratio.
 
 The class draft (two random classes offered each match) and the random map weapons belong to M7.
 
