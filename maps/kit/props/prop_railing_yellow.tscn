@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/props/railing_yellow.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="box_0"]
+size = Vector3(2.06, 1.06, 0.1)
+
+[node name="PropRailingYellow" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+metadata/surface = "metal"
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Box0" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0.53, 0)
+shape = SubResource("box_0")

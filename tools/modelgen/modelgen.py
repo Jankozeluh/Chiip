@@ -10,6 +10,10 @@ Usage (from the project folder, in the chiip conda environment, D-071):
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py rifleman     one class
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py weapons      the arsenal only
     ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py all          every class and the arsenal
+    ~/miniconda3/envs/chiip/bin/python tools/modelgen/modelgen.py props [prop names]   the map kit's props
+
+"props" builds the map kit's props instead (props.py, written by kit.py, D-122): models,
+scenes and their TrenchBroom entities. Without names it builds every prop.
 
 `weapons` builds every item of weapons.py (rifle, carbine, smg, shotgun, sniper, pistol,
 hand_cannon, knife, frag, flashbang, smoke, defuse_kit) and writes, without touching the crew:
@@ -355,11 +359,15 @@ def write_texture(image, path):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Generate Chiip crew models and the arsenal (.glb + textures + icons).')
-    ap.add_argument('targets', nargs='+', help="class names (rifleman, bulwark, ...), 'weapons' (the arsenal), or 'all' (both)")
+    ap = argparse.ArgumentParser(description='Generate Chiip crew models, the arsenal (.glb + textures + icons) or map-kit props.')
+    ap.add_argument('targets', nargs='+', help="class names (rifleman, bulwark, ...), 'weapons' (the arsenal), 'all' (both), or 'props [names]' (the map kit)")
     ap.add_argument('--out', default=OUT_DIR)
     ap.add_argument('--sheets', default=None, help='folder for the icon and gun overview images (outside the project)')
     a = ap.parse_args()
+    if a.targets[0] == 'props':
+        import kit
+        kit.main(a.targets[1:])
+        return
     names = []
     for t in a.targets:
         names += list(crew.CLASSES) + ['weapons'] if t == 'all' else [t]

@@ -8,9 +8,10 @@ extends SceneTree
 ## It doesn't react to the mouse: the developer console is flagged open every
 ## frame (the player controller then ignores all input) and the mouse is kept
 ## free. The image is read straight from the World SubViewport, set to a fixed
-## size, so the HUD isn't in it. Shots are taken during the first round's
+## size, so the HUD isn't in it, and characters are hidden (since M10), so
+## shots show the map alone. Shots are taken during the first round's
 ## freeze time, from places every map has: an overview from above the
-## attackers' end, each spawn, each bomb site and the middle of the mid route.
+## attackers' end, each spawn, each bomb site and the middle of each lane's route.
 ## Each is saved as a PNG scaled up 2× with sharp pixels.
 ##
 ## [code]--lighting ssao[/code] or [code]--lighting sdfgi[/code] renders the same shots with
@@ -18,6 +19,10 @@ extends SceneTree
 ## compare lighting options (D-085): screen-space ambient occlusion (darker
 ## corners and contact shadows), or that plus SDFGI (real-time bounce light).
 ## Without it the map's own environment is used.
+##
+## [code]--lineup[/code] (M10) stands two bots of each team in every shot, 5 to 15 m in
+## front of the camera and facing it, to judge the map's look next to the
+## crew (blue and red as the player sees them). Without it characters are hidden.
 
 ## Size of the world image: the game's 480 lines at 16:9 (D-048).
 const WORLD_SIZE := Vector2i(854, 480)
@@ -52,9 +57,15 @@ func _init() -> void:
 	camera.fov = 73.74
 	map.add_child(camera)
 	camera.make_current()
+	var lineup := args.has("--lineup")
 	for shot in _plan_shots(map):
+		# The map, not the players: bots standing at a spawn would fill the shot (and your gun shows).
+		for character in get_nodes_in_group("characters"):
+			(character as Node3D).visible = false
 		camera.fov = shot[3]
 		camera.look_at_from_position(shot[1], shot[2])
+		if lineup:
+			await _line_up(map, camera)
 		for i in 3:
 			await process_frame
 		await RenderingServer.frame_post_draw
@@ -64,6 +75,42 @@ func _init() -> void:
 		image.save_png(path)
 		print("Saved ", path)
 	quit()
+
+
+## Stands two bots of each team in front of [param camera], on the floor and facing it.
+func _line_up(map: Node3D, camera: Camera3D) -> void:
+	var by_team := {}
+	for node in get_nodes_in_group("characters"):
+		var character := node as Character
+		if character == null or character.get_node_or_null("BotController") == null:
+			continue
+		by_team.get_or_add(character.team, []).append(character)
+	var picks: Array[Character] = []
+	for i in 2:
+		for team in by_team:
+			if i < by_team[team].size():
+				picks.append(by_team[team][i])
+	var forward := -camera.global_basis.z
+	forward.y = 0.0
+	forward = forward.normalized()
+	var right := forward.cross(Vector3.UP)
+	var space := map.get_world_3d().direct_space_state
+	for i in picks.size():
+		var distance := 5.0 + i * 3.3
+		var side := 1.3 if i % 2 == 0 else -1.3
+		var eye := camera.global_position
+		var wanted := eye + forward * distance + right * side
+		# Stop short of a wall between the camera and the spot.
+		var view := space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, wanted, PhysicsLayers.WORLD))
+		if not view.is_empty():
+			wanted = eye + (view.position - eye) * 0.85
+		var down := space.intersect_ray(PhysicsRayQueryParameters3D.create(wanted + Vector3.UP, wanted + Vector3.DOWN * 6.0, PhysicsLayers.WORLD))
+		var feet: Vector3 = down.position if not down.is_empty() else Vector3(wanted.x, 0.0, wanted.z)
+		var to_camera := eye - feet
+		picks[i].respawn(feet, atan2(-to_camera.x, -to_camera.z))
+		picks[i].visible = true
+	for i in 4:
+		await physics_frame
 
 
 ## Switches real-time lighting extras on in a copy of [param map]'s environment:
@@ -109,12 +156,14 @@ func _plan_shots(map: Node3D) -> Array:
 		var toward_middle := Vector3(-floor_centre.x, 0, -floor_centre.z).normalized()
 		var eye := floor_centre + toward_middle * 8.0 + Vector3.UP * (EYE_HEIGHT + 0.6)
 		shots.append(["site_" + site.name.trim_prefix("BombSite").to_lower(), eye, floor_centre + Vector3.UP, 73.74])
+	# The middle of each lane, looking along its attack route (mid, and since M10 the west and east lanes).
 	for route in _in_map(map, "attack_routes"):
-		if route.name == "RouteMid" and route.get_child_count() >= 2:
+		var lane := String(route.name).trim_prefix("Route").to_lower()
+		if lane in ["mid", "west", "east"] and route.get_child_count() >= 2:
 			var middle := route.get_child_count() / 2
 			var from := (route.get_child(middle - 1) as Node3D).global_position + Vector3.UP * EYE_HEIGHT
 			var to := (route.get_child(middle) as Node3D).global_position + Vector3.UP * EYE_HEIGHT
-			shots.append(["mid", from, to, 73.74])
+			shots.append(["mid" if lane == "mid" else "lane_" + lane, from, to, 73.74])
 	return shots
 
 

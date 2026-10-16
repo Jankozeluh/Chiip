@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/props/debris_planks.glb" id="model"]
+
+[node name="PropDebrisPlanks" type="Node3D"]
+metadata/surface = "wood"
+
+[node name="Model" parent="." instance=ExtResource("model")]

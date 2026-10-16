@@ -52,7 +52,7 @@ For practice mode (also straight into the game), add `-- --practice`:
 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/kozeluhj/Documents/Games/Chiip -- --practice
 ```
 
-**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 blockouts, see [docs/MAPS.md](docs/MAPS.md)), and the test map (the default). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
+**Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 layouts, dressed with the map kit in M10, see [docs/MAPS.md](docs/MAPS.md)), the test map (the default) and the kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`, everything in the map kit). In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
 
 To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:
 
@@ -162,6 +162,10 @@ Real maps are built in **TrenchBroom**, a free brush-based map editor similar to
 
 3. Play it with `-- --map res://maps/comparison/trenchbroom_room.tscn` (see *Running the game*).
 
+**Textures** come in sets, which TrenchBroom's texture browser shows as collections: the base set (the first eight), `industrial`, `urban`, `interior` and `nature` (D-121). They are drawn in the crew's palette by `tools/make_world_textures.py` (D-140). `industrial/chainlink` is see-through.
+
+**A new map** can be built entirely in TrenchBroom from Chiip's kit: textures, props, lamps, and entities for spawns, bomb sites, routes and the other markers. `tools/new_map.gd` turns the `.map` into a playable scene (docs/MAPPING.md). The kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`) shows everything in the kit.
+
 **Scale (same as CS):** 1 TrenchBroom unit = 1 inch = 2.54 cm. The player is 72 units tall (54 crouched). A jump clears 57 units, a crouch-jump 75. The standard crate is 64 units. Doors are 128 units tall and 96 wide in the comparison room. A 64-pixel texture covers 64 units.
 
 **Lighting** is real-time; the maps aren't baked (D-085). To try a bake anyway (e.g. on the comparison room): select the scene's `LightmapGI` node, click **Bake Lightmaps** in the 3D toolbar, and save. Godot can only bake from the editor.
@@ -216,7 +220,7 @@ Run all the automated checks with one command (no window, about a minute and a q
 cd /Users/kozeluhj/Documents/Games/Chiip && bash tools/run_tests.sh
 ```
 
-It runs the twenty-three suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
+It runs the twenty-four suites one after another and prints a table of how many checks passed and failed in each. It exits with the number of failed suites, so 0 means everything passed. A suite also counts as failed when it prints no PASS line or a script error, which is how a typo in a test shows up. `bash tools/run_tests.sh round ui` runs only the suites you name.
 
 To run a single suite on its own (about a second each, the match test about twenty), use its command:
 
@@ -318,6 +322,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
 | [MAPS.md](docs/MAPS.md) | The quick maps: plans, layouts, map rules, measurements |
+| [MAPPING.md](docs/MAPPING.md) | Building a map from the map kit: TrenchBroom workflow, rules, every texture, prop, lamp and entity, limits |
 | [DEVLOG.md](docs/DEVLOG.md) | Diary of each work session: what changed and what's next |
 | [LEARNING.md](docs/LEARNING.md) | Godot concepts learned along the way, compared to Unity |
 | [CREDITS.md](docs/CREDITS.md) | Third-party assets and tools, with sources and licenses |

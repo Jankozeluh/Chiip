@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://5j5h7mltk7id"
+path="res://.godot/imported/kit_props.map-fda562c4614370af98de0f09214b1dae.tres"
+
+[deps]
+
+source_file="res://tests/maps/kit_props.map"
+dest_files=["res://.godot/imported/kit_props.map-fda562c4614370af98de0f09214b1dae.tres"]
+
+[params]
+

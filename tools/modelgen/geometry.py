@@ -266,7 +266,8 @@ def side_mapping(lo, hi, face):
 class PieceMesh:
     """a piece turned into triangles in its shape frame, with an atlas rectangle per side."""
 
-    def __init__(self, piece, atlas):
+    def __init__(self, piece, atlas, density=TEXEL_DENSITY):
+        """density: atlas texels per metre (map props use fewer than the crew)."""
         self.piece = piece
         polys = shape_polys(piece)
         tris = []
@@ -285,8 +286,8 @@ class PieceMesh:
         self.sides = []
         for f in range(6):
             (eu, ev), to_uv, to_point = side_mapping(self.lo, self.hi, f)
-            w = max(1, int(math.ceil(eu * TEXEL_DENSITY - 0.25)))
-            h = max(1, int(math.ceil(ev * TEXEL_DENSITY - 0.25)))
+            w = max(1, int(math.ceil(eu * density - 0.25)))
+            h = max(1, int(math.ceil(ev * density - 0.25)))
             self.sides.append(dict(rect=atlas.add(w, h), to_uv=to_uv, to_point=to_point, size=(w, h)))
         self.tris = tris
 

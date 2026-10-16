@@ -1,0 +1,1137 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=177 format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="point_class"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_metal.tscn" id="scene_prop_crate_metal"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_stack.tscn" id="scene_prop_crate_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_wood.tscn" id="scene_prop_crate_wood"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_crate_wood_small.tscn" id="scene_prop_crate_wood_small"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet.tscn" id="scene_prop_pallet"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet_load.tscn" id="scene_prop_pallet_load"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pallet_stack.tscn" id="scene_prop_pallet_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_ac_unit.tscn" id="scene_prop_ac_unit"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel.tscn" id="scene_prop_barrel"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_group.tscn" id="scene_prop_barrel_group"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_hazard.tscn" id="scene_prop_barrel_hazard"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrel_rust.tscn" id="scene_prop_barrel_rust"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_cable_spool.tscn" id="scene_prop_cable_spool"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_grey.tscn" id="scene_prop_container_grey"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_olive.tscn" id="scene_prop_container_olive"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_rust.tscn" id="scene_prop_container_rust"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_container_teal.tscn" id="scene_prop_container_teal"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_electric_cabinet.tscn" id="scene_prop_electric_cabinet"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_gas_cylinders.tscn" id="scene_prop_gas_cylinders"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_generator.tscn" id="scene_prop_generator"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pipe_floor.tscn" id="scene_prop_pipe_floor"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pipe_valve.tscn" id="scene_prop_pipe_valve"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_pipe_wall.tscn" id="scene_prop_pipe_wall"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_rail_track.tscn" id="scene_prop_rail_track"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_tank.tscn" id="scene_prop_tank"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrier_concrete.tscn" id="scene_prop_barrier_concrete"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_barrier_road.tscn" id="scene_prop_barrier_road"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_fence_boards.tscn" id="scene_prop_fence_boards"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_fence_wood.tscn" id="scene_prop_fence_wood"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_railing.tscn" id="scene_prop_railing"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_railing_yellow.tscn" id="scene_prop_railing_yellow"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sandbags.tscn" id="scene_prop_sandbags"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_tire_stack.tscn" id="scene_prop_tire_stack"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_bench.tscn" id="scene_prop_bench"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_bollard.tscn" id="scene_prop_bollard"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_dumpster.tscn" id="scene_prop_dumpster"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_hydrant.tscn" id="scene_prop_hydrant"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_phone_box.tscn" id="scene_prop_phone_box"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_planter.tscn" id="scene_prop_planter"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_traffic_cone.tscn" id="scene_prop_traffic_cone"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_trash_can.tscn" id="scene_prop_trash_can"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_cabinet.tscn" id="scene_prop_cabinet"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_chair.tscn" id="scene_prop_chair"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_desk.tscn" id="scene_prop_desk"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_locker.tscn" id="scene_prop_locker"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_potted_plant.tscn" id="scene_prop_potted_plant"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_shelf.tscn" id="scene_prop_shelf"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_table.tscn" id="scene_prop_table"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_a.tscn" id="scene_prop_sign_a"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_a_left.tscn" id="scene_prop_sign_a_left"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_a_right.tscn" id="scene_prop_sign_a_right"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_arrow_left.tscn" id="scene_prop_sign_arrow_left"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_arrow_right.tscn" id="scene_prop_sign_arrow_right"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_b.tscn" id="scene_prop_sign_b"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_b_left.tscn" id="scene_prop_sign_b_left"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_b_right.tscn" id="scene_prop_sign_b_right"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_exit.tscn" id="scene_prop_sign_exit"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_sign_warning.tscn" id="scene_prop_sign_warning"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_car.tscn" id="scene_prop_car"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_car_wreck.tscn" id="scene_prop_car_wreck"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_forklift.tscn" id="scene_prop_forklift"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_van.tscn" id="scene_prop_van"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_bush.tscn" id="scene_prop_bush"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_grass_tuft.tscn" id="scene_prop_grass_tuft"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_hedge.tscn" id="scene_prop_hedge"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_log.tscn" id="scene_prop_log"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_rock.tscn" id="scene_prop_rock"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_tree_leafy.tscn" id="scene_prop_tree_leafy"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_tree_pine.tscn" id="scene_prop_tree_pine"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_debris_boxes.tscn" id="scene_prop_debris_boxes"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_debris_bricks.tscn" id="scene_prop_debris_bricks"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_debris_planks.tscn" id="scene_prop_debris_planks"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_debris_rubble.tscn" id="scene_prop_debris_rubble"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_trash_bags.tscn" id="scene_prop_trash_bags"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_door.tscn" id="scene_prop_door"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_door_double.tscn" id="scene_prop_door_double"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_door_rollup.tscn" id="scene_prop_door_rollup"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_door_wood.tscn" id="scene_prop_door_wood"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_window.tscn" id="scene_prop_window"]
+[ext_resource type="PackedScene" path="res://maps/kit/props/prop_window_shutters.tscn" id="scene_prop_window_shutters"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_cage.tscn" id="scene_light_cage"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_ceiling.tscn" id="scene_light_ceiling"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_flood.tscn" id="scene_light_flood"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_street.tscn" id="scene_light_street"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_strip.tscn" id="scene_light_strip"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_wall.tscn" id="scene_light_wall"]
+[ext_resource type="PackedScene" path="res://maps/kit/lights/light_worklight.tscn" id="scene_light_worklight"]
+
+[sub_resource type="Resource" id="prop_crate_metal"]
+script = ExtResource("point_class")
+classname = "prop_crate_metal"
+description = "Olive steel transport box, 1.2 x 0.8 x 0.9 m, with handles and latches: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_metal.glb\"",
+"size": AABB(-18, -26, 0, 18, 26, 33)
+})
+scene_file = ExtResource("scene_prop_crate_metal")
+
+[sub_resource type="Resource" id="prop_crate_stack"]
+script = ExtResource("point_class")
+classname = "prop_crate_stack"
+description = "Two 1.2 m crates stacked, the top one turned a little: tall cover (2.4 m)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_stack.glb\"",
+"size": AABB(-26, -29, 0, 29, 26, 95)
+})
+scene_file = ExtResource("scene_prop_crate_stack")
+
+[sub_resource type="Resource" id="prop_crate_wood"]
+script = ExtResource("point_class")
+classname = "prop_crate_wood"
+description = "Wooden crate, 1.2 m: low cover you can jump onto and shoot over."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_wood.glb\"",
+"size": AABB(-24, -24, 0, 24, 24, 48)
+})
+scene_file = ExtResource("scene_prop_crate_wood")
+
+[sub_resource type="Resource" id="prop_crate_wood_small"]
+script = ExtResource("point_class")
+classname = "prop_crate_wood_small"
+description = "Small wooden crate, 0.8 m: a step up onto bigger crates."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/crate_wood_small.glb\"",
+"size": AABB(-16, -16, 0, 16, 16, 32)
+})
+scene_file = ExtResource("scene_prop_crate_wood_small")
+
+[sub_resource type="Resource" id="prop_pallet"]
+script = ExtResource("point_class")
+classname = "prop_pallet"
+description = "A wooden pallet lying flat (0.12 m). Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/pallet.glb\"",
+"size": AABB(-20, -24, 0, 20, 24, 5)
+})
+scene_file = ExtResource("scene_prop_pallet")
+
+[sub_resource type="Resource" id="prop_pallet_load"]
+script = ExtResource("point_class")
+classname = "prop_pallet_load"
+description = "A pallet of strapped cardboard boxes, 1.2 m tall: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/pallet_load.glb\"",
+"size": AABB(-20, -24, 0, 20, 24, 48)
+})
+scene_file = ExtResource("scene_prop_pallet_load")
+
+[sub_resource type="Resource" id="prop_pallet_stack"]
+script = ExtResource("point_class")
+classname = "prop_pallet_stack"
+description = "Four pallets stacked, 0.46 m: low clutter you jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.65, 0.48, 0.3, 1),
+"model": "\"assets/models/props/pallet_stack.glb\"",
+"size": AABB(-22, -27, 0, 22, 26, 19)
+})
+scene_file = ExtResource("scene_prop_pallet_stack")
+
+[sub_resource type="Resource" id="prop_ac_unit"]
+script = ExtResource("point_class")
+classname = "prop_ac_unit"
+description = "Air-conditioning condenser, 1.0 x 0.9 x 0.7 m, with a fan grille: low clutter."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/ac_unit.glb\"",
+"size": AABB(-30, -20, 0, 15, 20, 35)
+})
+scene_file = ExtResource("scene_prop_ac_unit")
+
+[sub_resource type="Resource" id="prop_barrel"]
+script = ExtResource("point_class")
+classname = "prop_barrel"
+description = "Olive steel drum, 0.9 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel.glb\"",
+"size": AABB(-12, -12, 0, 12, 12, 36)
+})
+scene_file = ExtResource("scene_prop_barrel")
+
+[sub_resource type="Resource" id="prop_barrel_group"]
+script = ExtResource("point_class")
+classname = "prop_barrel_group"
+description = "Three drums in a cluster, about 1.2 m across: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel_group.glb\"",
+"size": AABB(-20, -25, 0, 25, 24, 36)
+})
+scene_file = ExtResource("scene_prop_barrel_group")
+
+[sub_resource type="Resource" id="prop_barrel_hazard"]
+script = ExtResource("point_class")
+classname = "prop_barrel_hazard"
+description = "Yellow drum with a black band, 0.9 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel_hazard.glb\"",
+"size": AABB(-12, -12, 0, 12, 12, 36)
+})
+scene_file = ExtResource("scene_prop_barrel_hazard")
+
+[sub_resource type="Resource" id="prop_barrel_rust"]
+script = ExtResource("point_class")
+classname = "prop_barrel_rust"
+description = "Rusty steel drum, 0.9 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/barrel_rust.glb\"",
+"size": AABB(-12, -12, 0, 12, 12, 36)
+})
+scene_file = ExtResource("scene_prop_barrel_rust")
+
+[sub_resource type="Resource" id="prop_cable_spool"]
+script = ExtResource("point_class")
+classname = "prop_cable_spool"
+description = "Wooden cable drum on its side, 1.2 m tall: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/cable_spool.glb\"",
+"size": AABB(-19, -23, 0, 19, 23, 47)
+})
+scene_file = ExtResource("scene_prop_cable_spool")
+
+[sub_resource type="Resource" id="prop_container_grey"]
+script = ExtResource("point_class")
+classname = "prop_container_grey"
+description = "Grey 20-foot shipping container, 6.1 x 2.6 x 2.4 m: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/container_grey.glb\"",
+"size": AABB(-49, -122, 0, 49, 120, 102)
+})
+scene_file = ExtResource("scene_prop_container_grey")
+
+[sub_resource type="Resource" id="prop_container_olive"]
+script = ExtResource("point_class")
+classname = "prop_container_olive"
+description = "Olive 20-foot shipping container, 6.1 x 2.6 x 2.4 m, doors at one end: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/container_olive.glb\"",
+"size": AABB(-49, -122, 0, 49, 120, 102)
+})
+scene_file = ExtResource("scene_prop_container_olive")
+
+[sub_resource type="Resource" id="prop_container_rust"]
+script = ExtResource("point_class")
+classname = "prop_container_rust"
+description = "Rusty 20-foot shipping container, 6.1 x 2.6 x 2.4 m: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/container_rust.glb\"",
+"size": AABB(-49, -122, 0, 49, 120, 102)
+})
+scene_file = ExtResource("scene_prop_container_rust")
+
+[sub_resource type="Resource" id="prop_container_teal"]
+script = ExtResource("point_class")
+classname = "prop_container_teal"
+description = "Grey-green 20-foot shipping container, 6.1 x 2.6 x 2.4 m: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/container_teal.glb\"",
+"size": AABB(-49, -122, 0, 49, 120, 102)
+})
+scene_file = ExtResource("scene_prop_container_teal")
+
+[sub_resource type="Resource" id="prop_electric_cabinet"]
+script = ExtResource("point_class")
+classname = "prop_electric_cabinet"
+description = "Floor-standing electrical cabinet, 1.0 x 2.2 x 0.45 m, with a warning plate: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/electric_cabinet.glb\"",
+"size": AABB(-10, -21, 0, 11, 21, 87)
+})
+scene_file = ExtResource("scene_prop_electric_cabinet")
+
+[sub_resource type="Resource" id="prop_gas_cylinders"]
+script = ExtResource("point_class")
+classname = "prop_gas_cylinders"
+description = "Three gas cylinders chained in a steel stand, 1.0 x 1.55 x 0.45 m."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/gas_cylinders.glb\"",
+"size": AABB(-9, -21, 0, 9, 21, 61)
+})
+scene_file = ExtResource("scene_prop_gas_cylinders")
+
+[sub_resource type="Resource" id="prop_generator"]
+script = ExtResource("point_class")
+classname = "prop_generator"
+description = "Diesel generator on a skid, 1.8 x 1.15 x 1.0 m, with an exhaust stack: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/generator.glb\"",
+"size": AABB(-21, -38, 0, 21, 38, 66)
+})
+scene_file = ExtResource("scene_prop_generator")
+
+[sub_resource type="Resource" id="prop_pipe_floor"]
+script = ExtResource("point_class")
+classname = "prop_pipe_floor"
+description = "Big pipe on two concrete saddles, 4 m long and 1.1 m high: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/pipe_floor.glb\"",
+"size": AABB(-20, -81, 0, 20, 79, 45)
+})
+scene_file = ExtResource("scene_prop_pipe_floor")
+
+[sub_resource type="Resource" id="prop_pipe_valve"]
+script = ExtResource("point_class")
+classname = "prop_pipe_valve"
+description = "Upright pipe with a flange and a valve wheel, 2.6 m, standing against a wall (origin on the wall face, at the floor)."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/pipe_valve.glb\"",
+"size": AABB(0, -8, 0, 24, 8, 103)
+})
+scene_file = ExtResource("scene_prop_pipe_valve")
+
+[sub_resource type="Resource" id="prop_pipe_wall"]
+script = ExtResource("point_class")
+classname = "prop_pipe_wall"
+description = "Two pipes on brackets along a wall at 2.5-2.8 m, 3 m long. Origin on the wall face, at the floor. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/pipe_wall.glb\"",
+"size": AABB(0, -60, 93, 12, 60, 114)
+})
+scene_file = ExtResource("scene_prop_pipe_wall")
+
+[sub_resource type="Resource" id="prop_rail_track"]
+script = ExtResource("point_class")
+classname = "prop_rail_track"
+description = "A 6 m piece of railway track along its length (front to back): two steel rails on wooden sleepers, 0.2 m high. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/rail_track.glb\"",
+"size": AABB(-119, -50, 0, 119, 50, 8)
+})
+scene_file = ExtResource("scene_prop_rail_track")
+
+[sub_resource type="Resource" id="prop_tank"]
+script = ExtResource("point_class")
+classname = "prop_tank"
+description = "Upright storage tank, 2.2 m across and 3.7 m tall, on a concrete pad: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.58, 0.6, 1),
+"model": "\"assets/models/props/tank.glb\"",
+"size": AABB(-46, -46, 0, 60, 46, 150)
+})
+scene_file = ExtResource("scene_prop_tank")
+
+[sub_resource type="Resource" id="prop_barrier_concrete"]
+script = ExtResource("point_class")
+classname = "prop_barrier_concrete"
+description = "Concrete road barrier (Jersey barrier), 2 x 0.85 x 0.6 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/barrier_concrete.glb\"",
+"size": AABB(-12, -40, -1, 12, 40, 34)
+})
+scene_file = ExtResource("scene_prop_barrier_concrete")
+
+[sub_resource type="Resource" id="prop_barrier_road"]
+script = ExtResource("point_class")
+classname = "prop_barrier_road"
+description = "Striped road barrier on folding legs, 1.6 x 1.0 m. See-through: it stops you, not bullets or sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/barrier_road.glb\"",
+"size": AABB(-9, -32, -1, 9, 32, 39)
+})
+scene_file = ExtResource("scene_prop_barrier_road")
+
+[sub_resource type="Resource" id="prop_fence_boards"]
+script = ExtResource("point_class")
+classname = "prop_fence_boards"
+description = "Solid board fence, 2 m long and 2.2 m high: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/fence_boards.glb\"",
+"size": AABB(-4, -40, 0, 2, 40, 87)
+})
+scene_file = ExtResource("scene_prop_fence_boards")
+
+[sub_resource type="Resource" id="prop_fence_wood"]
+script = ExtResource("point_class")
+classname = "prop_fence_wood"
+description = "Wooden rail fence, 2 m long and 1.2 m high. See-through: it stops you, not bullets or sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/fence_wood.glb\"",
+"size": AABB(-2, -40, 0, 4, 40, 48)
+})
+scene_file = ExtResource("scene_prop_fence_wood")
+
+[sub_resource type="Resource" id="prop_railing"]
+script = ExtResource("point_class")
+classname = "prop_railing"
+description = "Steel railing, 2 m long and 1.05 m high. See-through: it stops you, not bullets or sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/railing.glb\"",
+"size": AABB(-2, -40, 0, 2, 40, 43)
+})
+scene_file = ExtResource("scene_prop_railing")
+
+[sub_resource type="Resource" id="prop_railing_yellow"]
+script = ExtResource("point_class")
+classname = "prop_railing_yellow"
+description = "Yellow safety railing, 2 m long and 1.05 m high. See-through: it stops you, not bullets or sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/railing_yellow.glb\"",
+"size": AABB(-2, -40, 0, 2, 40, 43)
+})
+scene_file = ExtResource("scene_prop_railing_yellow")
+
+[sub_resource type="Resource" id="prop_sandbags"]
+script = ExtResource("point_class")
+classname = "prop_sandbags"
+description = "A wall of sandbags, 1.8 x 0.85 x 0.45 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/sandbags.glb\"",
+"size": AABB(-9, -36, 0, 9, 36, 33)
+})
+scene_file = ExtResource("scene_prop_sandbags")
+
+[sub_resource type="Resource" id="prop_tire_stack"]
+script = ExtResource("point_class")
+classname = "prop_tire_stack"
+description = "Three old tyres stacked, 0.75 m: low clutter you jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.75, 0.7, 0.35, 1),
+"model": "\"assets/models/props/tire_stack.glb\"",
+"size": AABB(-14, -15, 0, 15, 14, 30)
+})
+scene_file = ExtResource("scene_prop_tire_stack")
+
+[sub_resource type="Resource" id="prop_bench"]
+script = ExtResource("point_class")
+classname = "prop_bench"
+description = "Park bench, 2 m: low cover you can jump onto, with a backrest to shoot over."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/bench.glb\"",
+"size": AABB(-11, -39, 0, 13, 39, 35)
+})
+scene_file = ExtResource("scene_prop_bench")
+
+[sub_resource type="Resource" id="prop_bollard"]
+script = ExtResource("point_class")
+classname = "prop_bollard"
+description = "Steel bollard, 0.95 m with a yellow band: a post you can strafe around."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/bollard.glb\"",
+"size": AABB(-5, -6, 0, 5, 6, 38)
+})
+scene_file = ExtResource("scene_prop_bollard")
+
+[sub_resource type="Resource" id="prop_dumpster"]
+script = ExtResource("point_class")
+classname = "prop_dumpster"
+description = "Olive steel dumpster, 1.9 x 1.1 m, one lid ajar: tall cover you can jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/dumpster.glb\"",
+"size": AABB(-25, -38, 0, 26, 38, 48)
+})
+scene_file = ExtResource("scene_prop_dumpster")
+
+[sub_resource type="Resource" id="prop_hydrant"]
+script = ExtResource("point_class")
+classname = "prop_hydrant"
+description = "Fire hydrant, 0.75 m: a squat obstacle, low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/hydrant.glb\"",
+"size": AABB(-6, -12, 0, 10, 12, 30)
+})
+scene_file = ExtResource("scene_prop_hydrant")
+
+[sub_resource type="Resource" id="prop_phone_box"]
+script = ExtResource("point_class")
+classname = "prop_phone_box"
+description = "Phone booth, 1 x 2.3 m, grey frame and glass: tall cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/phone_box.glb\"",
+"size": AABB(-21, -21, 0, 21, 21, 91)
+})
+scene_file = ExtResource("scene_prop_phone_box")
+
+[sub_resource type="Resource" id="prop_planter"]
+script = ExtResource("point_class")
+classname = "prop_planter"
+description = "Concrete planter with a shrub, 1.2 x 1.1 m: chest-high cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/planter.glb\"",
+"size": AABB(-13, -25, 0, 13, 25, 44)
+})
+scene_file = ExtResource("scene_prop_planter")
+
+[sub_resource type="Resource" id="prop_traffic_cone"]
+script = ExtResource("point_class")
+classname = "prop_traffic_cone"
+description = "Traffic cone, 0.6 m. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/traffic_cone.glb\"",
+"size": AABB(-8, -8, 0, 8, 8, 24)
+})
+scene_file = ExtResource("scene_prop_traffic_cone")
+
+[sub_resource type="Resource" id="prop_trash_can"]
+script = ExtResource("point_class")
+classname = "prop_trash_can"
+description = "Street litter bin, 0.95 m: a small obstacle, low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.6, 0.55, 1),
+"model": "\"assets/models/props/trash_can.glb\"",
+"size": AABB(-11, -11, 0, 11, 11, 38)
+})
+scene_file = ExtResource("scene_prop_trash_can")
+
+[sub_resource type="Resource" id="prop_cabinet"]
+script = ExtResource("point_class")
+classname = "prop_cabinet"
+description = "Steel filing cabinet, 0.5 x 1.3 m: chest-high cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/cabinet.glb\"",
+"size": AABB(-13, -11, 0, 14, 11, 52)
+})
+scene_file = ExtResource("scene_prop_cabinet")
+
+[sub_resource type="Resource" id="prop_chair"]
+script = ExtResource("point_class")
+classname = "prop_chair"
+description = "Wooden chair, 0.85 m: clutter you can jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/chair.glb\"",
+"size": AABB(-9, -9, 0, 11, 9, 34)
+})
+scene_file = ExtResource("scene_prop_chair")
+
+[sub_resource type="Resource" id="prop_desk"]
+script = ExtResource("point_class")
+classname = "prop_desk"
+description = "Office desk with a drawer pedestal, 1.4 x 0.75 m: low cover you can jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/desk.glb\"",
+"size": AABB(-14, -28, 0, 14, 28, 30)
+})
+scene_file = ExtResource("scene_prop_desk")
+
+[sub_resource type="Resource" id="prop_locker"]
+script = ExtResource("point_class")
+classname = "prop_locker"
+description = "Bank of three steel lockers, 0.9 x 1.9 m: tall cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/locker.glb\"",
+"size": AABB(-10, -18, 0, 12, 18, 75)
+})
+scene_file = ExtResource("scene_prop_locker")
+
+[sub_resource type="Resource" id="prop_potted_plant"]
+script = ExtResource("point_class")
+classname = "prop_potted_plant"
+description = "Potted plant, 1.2 m: leafy cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/potted_plant.glb\"",
+"size": AABB(-11, -10, 0, 11, 10, 49)
+})
+scene_file = ExtResource("scene_prop_potted_plant")
+
+[sub_resource type="Resource" id="prop_shelf"]
+script = ExtResource("point_class")
+classname = "prop_shelf"
+description = "Steel storage rack, 2 x 2.2 m, stocked with boxes: tall cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/shelf.glb\"",
+"size": AABB(-12, -40, 0, 12, 40, 87)
+})
+scene_file = ExtResource("scene_prop_shelf")
+
+[sub_resource type="Resource" id="prop_table"]
+script = ExtResource("point_class")
+classname = "prop_table"
+description = "Wooden table, 1.4 x 0.75 m: low cover you can jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.55, 0.5, 0.45, 1),
+"model": "\"assets/models/props/table.glb\"",
+"size": AABB(-16, -28, 0, 16, 28, 30)
+})
+scene_file = ExtResource("scene_prop_table")
+
+[sub_resource type="Resource" id="prop_sign_a"]
+script = ExtResource("point_class")
+classname = "prop_sign_a"
+description = "Bomb site A sign, 0.7 m square. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_a.glb\"",
+"size": AABB(0, -14, -14, 2, 14, 14)
+})
+scene_file = ExtResource("scene_prop_sign_a")
+
+[sub_resource type="Resource" id="prop_sign_a_left"]
+script = ExtResource("point_class")
+classname = "prop_sign_a_left"
+description = "Sign pointing left to bomb site A, 1.1 x 0.5 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_a_left.glb\"",
+"size": AABB(0, -22, -10, 2, 22, 10)
+})
+scene_file = ExtResource("scene_prop_sign_a_left")
+
+[sub_resource type="Resource" id="prop_sign_a_right"]
+script = ExtResource("point_class")
+classname = "prop_sign_a_right"
+description = "Sign pointing right to bomb site A, 1.1 x 0.5 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_a_right.glb\"",
+"size": AABB(0, -22, -10, 2, 22, 10)
+})
+scene_file = ExtResource("scene_prop_sign_a_right")
+
+[sub_resource type="Resource" id="prop_sign_arrow_left"]
+script = ExtResource("point_class")
+classname = "prop_sign_arrow_left"
+description = "Arrow sign pointing left, 0.6 x 0.35 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_arrow_left.glb\"",
+"size": AABB(0, -12, -7, 2, 12, 7)
+})
+scene_file = ExtResource("scene_prop_sign_arrow_left")
+
+[sub_resource type="Resource" id="prop_sign_arrow_right"]
+script = ExtResource("point_class")
+classname = "prop_sign_arrow_right"
+description = "Arrow sign pointing right, 0.6 x 0.35 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_arrow_right.glb\"",
+"size": AABB(0, -12, -7, 2, 12, 7)
+})
+scene_file = ExtResource("scene_prop_sign_arrow_right")
+
+[sub_resource type="Resource" id="prop_sign_b"]
+script = ExtResource("point_class")
+classname = "prop_sign_b"
+description = "Bomb site B sign, 0.7 m square. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_b.glb\"",
+"size": AABB(0, -14, -14, 2, 14, 14)
+})
+scene_file = ExtResource("scene_prop_sign_b")
+
+[sub_resource type="Resource" id="prop_sign_b_left"]
+script = ExtResource("point_class")
+classname = "prop_sign_b_left"
+description = "Sign pointing left to bomb site B, 1.1 x 0.5 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_b_left.glb\"",
+"size": AABB(0, -22, -10, 2, 22, 10)
+})
+scene_file = ExtResource("scene_prop_sign_b_left")
+
+[sub_resource type="Resource" id="prop_sign_b_right"]
+script = ExtResource("point_class")
+classname = "prop_sign_b_right"
+description = "Sign pointing right to bomb site B, 1.1 x 0.5 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_b_right.glb\"",
+"size": AABB(0, -22, -10, 2, 22, 10)
+})
+scene_file = ExtResource("scene_prop_sign_b_right")
+
+[sub_resource type="Resource" id="prop_sign_exit"]
+script = ExtResource("point_class")
+classname = "prop_sign_exit"
+description = "Green exit sign, 0.9 x 0.36 m. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_exit.glb\"",
+"size": AABB(0, -18, -8, 2, 18, 8)
+})
+scene_file = ExtResource("scene_prop_sign_exit")
+
+[sub_resource type="Resource" id="prop_sign_warning"]
+script = ExtResource("point_class")
+classname = "prop_sign_warning"
+description = "Yellow warning sign, 0.5 m square. For a wall: the origin is on the wall face, at the middle of the sign. No collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.9, 0.9, 0.85, 1),
+"model": "\"assets/models/props/sign_warning.glb\"",
+"size": AABB(0, -10, -10, 2, 10, 10)
+})
+scene_file = ExtResource("scene_prop_sign_warning")
+
+[sub_resource type="Resource" id="prop_car"]
+script = ExtResource("point_class")
+classname = "prop_car"
+description = "Grey compact car, 4.2 x 1.45 x 1.75 m, nose to the front: low cover you can shoot over."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.55, 0.5, 1),
+"model": "\"assets/models/props/car.glb\"",
+"size": AABB(-85, -37, 0, 85, 37, 57)
+})
+scene_file = ExtResource("scene_prop_car")
+
+[sub_resource type="Resource" id="prop_car_wreck"]
+script = ExtResource("point_class")
+classname = "prop_car_wreck"
+description = "Burnt-out car on its rims, rusty and without glass, 4.2 x 1.3 x 1.75 m: low cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.55, 0.5, 1),
+"model": "\"assets/models/props/car_wreck.glb\"",
+"size": AABB(-87, -42, 0, 87, 42, 51)
+})
+scene_file = ExtResource("scene_prop_car_wreck")
+
+[sub_resource type="Resource" id="prop_forklift"]
+script = ExtResource("point_class")
+classname = "prop_forklift"
+description = "Yellow forklift, 3.0 x 2.2 x 1.2 m, forks to the front."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.55, 0.5, 1),
+"model": "\"assets/models/props/forklift.glb\"",
+"size": AABB(-62, -24, 0, 83, 24, 87)
+})
+scene_file = ExtResource("scene_prop_forklift")
+
+[sub_resource type="Resource" id="prop_van"]
+script = ExtResource("point_class")
+classname = "prop_van"
+description = "Light grey panel van, 5 x 2.2 x 2 m, nose to the front: tall cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.55, 0.5, 1),
+"model": "\"assets/models/props/van.glb\"",
+"size": AABB(-101, -41, 0, 102, 41, 89)
+})
+scene_file = ExtResource("scene_prop_van")
+
+[sub_resource type="Resource" id="prop_bush"]
+script = ExtResource("point_class")
+classname = "prop_bush"
+description = "Bush, 1.5 x 1.1 m: leafy cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/bush.glb\"",
+"size": AABB(-21, -29, 0, 26, 29, 44)
+})
+scene_file = ExtResource("scene_prop_bush")
+
+[sub_resource type="Resource" id="prop_grass_tuft"]
+script = ExtResource("point_class")
+classname = "prop_grass_tuft"
+description = "Tuft of grass, 0.4 m. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/grass_tuft.glb\"",
+"size": AABB(-6, -5, -1, 6, 4, 16)
+})
+scene_file = ExtResource("scene_prop_grass_tuft")
+
+[sub_resource type="Resource" id="prop_hedge"]
+script = ExtResource("point_class")
+classname = "prop_hedge"
+description = "Trimmed hedge, 2 x 1.3 m: solid, chest-high cover that blocks sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/hedge.glb\"",
+"size": AABB(-16, -40, 0, 16, 40, 52)
+})
+scene_file = ExtResource("scene_prop_hedge")
+
+[sub_resource type="Resource" id="prop_log"]
+script = ExtResource("point_class")
+classname = "prop_log"
+description = "Fallen log, 2.4 m long with a branch stub: low cover you can jump onto."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/log.glb\"",
+"size": AABB(-10, -48, 0, 16, 48, 30)
+})
+scene_file = ExtResource("scene_prop_log")
+
+[sub_resource type="Resource" id="prop_rock"]
+script = ExtResource("point_class")
+classname = "prop_rock"
+description = "Boulder, 1 m: solid, chest-high cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/rock.glb\"",
+"size": AABB(-22, -27, -3, 20, 25, 33)
+})
+scene_file = ExtResource("scene_prop_rock")
+
+[sub_resource type="Resource" id="prop_tree_leafy"]
+script = ExtResource("point_class")
+classname = "prop_tree_leafy"
+description = "Leafy tree, 5 m: the trunk and crown are solid cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/tree_leafy.glb\"",
+"size": AABB(-54, -93, 0, 54, 89, 199)
+})
+scene_file = ExtResource("scene_prop_tree_leafy")
+
+[sub_resource type="Resource" id="prop_tree_pine"]
+script = ExtResource("point_class")
+classname = "prop_tree_pine"
+description = "Pine tree, 6 m: the trunk and crown are solid cover."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.4, 0.6, 0.35, 1),
+"model": "\"assets/models/props/tree_pine.glb\"",
+"size": AABB(-57, -57, 0, 57, 57, 237)
+})
+scene_file = ExtResource("scene_prop_tree_pine")
+
+[sub_resource type="Resource" id="prop_debris_boxes"]
+script = ExtResource("point_class")
+classname = "prop_debris_boxes"
+description = "Squashed cardboard boxes, 0.4 m. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.45, 0.4, 1),
+"model": "\"assets/models/props/debris_boxes.glb\"",
+"size": AABB(-27, -29, -1, 16, 22, 18)
+})
+scene_file = ExtResource("scene_prop_debris_boxes")
+
+[sub_resource type="Resource" id="prop_debris_bricks"]
+script = ExtResource("point_class")
+classname = "prop_debris_bricks"
+description = "Loose bricks in a low pile, 0.2 m. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.45, 0.4, 1),
+"model": "\"assets/models/props/debris_bricks.glb\"",
+"size": AABB(-10, -20, -1, 11, 20, 10)
+})
+scene_file = ExtResource("scene_prop_debris_bricks")
+
+[sub_resource type="Resource" id="prop_debris_planks"]
+script = ExtResource("point_class")
+classname = "prop_debris_planks"
+description = "Loose wooden planks, 0.25 m high. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.45, 0.4, 1),
+"model": "\"assets/models/props/debris_planks.glb\"",
+"size": AABB(-25, -22, -1, 20, 29, 9)
+})
+scene_file = ExtResource("scene_prop_debris_planks")
+
+[sub_resource type="Resource" id="prop_debris_rubble"]
+script = ExtResource("point_class")
+classname = "prop_debris_rubble"
+description = "Pile of concrete rubble, 0.35 m. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.45, 0.4, 1),
+"model": "\"assets/models/props/debris_rubble.glb\"",
+"size": AABB(-19, -22, -1, 15, 22, 14)
+})
+scene_file = ExtResource("scene_prop_debris_rubble")
+
+[sub_resource type="Resource" id="prop_trash_bags"]
+script = ExtResource("point_class")
+classname = "prop_trash_bags"
+description = "Three black rubbish bags, 0.5 m. Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.5, 0.45, 0.4, 1),
+"model": "\"assets/models/props/trash_bags.glb\"",
+"size": AABB(-12, -21, 0, 23, 23, 20)
+})
+scene_file = ExtResource("scene_prop_trash_bags")
+
+[sub_resource type="Resource" id="prop_door"]
+script = ExtResource("point_class")
+classname = "prop_door"
+description = "Grey steel door in its frame, 1.2 x 2.2 m, for a wall (origin on the wall face, at the floor). Does not open."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.55, 0.5, 1),
+"model": "\"assets/models/props/door.glb\"",
+"size": AABB(0, -23, 0, 6, 23, 86)
+})
+scene_file = ExtResource("scene_prop_door")
+
+[sub_resource type="Resource" id="prop_door_double"]
+script = ExtResource("point_class")
+classname = "prop_door_double"
+description = "Double steel doors with push bars and small windows, 2.2 x 2.5 m, for a wall (origin on the wall face, at the floor). Do not open."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.55, 0.5, 1),
+"model": "\"assets/models/props/door_double.glb\"",
+"size": AABB(0, -43, 0, 5, 43, 98)
+})
+scene_file = ExtResource("scene_prop_door_double")
+
+[sub_resource type="Resource" id="prop_door_rollup"]
+script = ExtResource("point_class")
+classname = "prop_door_rollup"
+description = "Roller shutter door, 3.3 x 3.45 m, for a wall (origin on the wall face, at the floor). Does not open."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.55, 0.5, 1),
+"model": "\"assets/models/props/door_rollup.glb\"",
+"size": AABB(0, -65, 0, 17, 65, 136)
+})
+scene_file = ExtResource("scene_prop_door_rollup")
+
+[sub_resource type="Resource" id="prop_door_wood"]
+script = ExtResource("point_class")
+classname = "prop_door_wood"
+description = "Wooden door in its frame, 1.2 x 2.2 m, for a wall (origin on the wall face, at the floor). Does not open."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.55, 0.5, 1),
+"model": "\"assets/models/props/door_wood.glb\"",
+"size": AABB(0, -23, 0, 6, 23, 86)
+})
+scene_file = ExtResource("scene_prop_door_wood")
+
+[sub_resource type="Resource" id="prop_window"]
+script = ExtResource("point_class")
+classname = "prop_window"
+description = "Window with a white frame and dark glass, 1.2 x 1.3 m, for a wall (origin on the wall face, at the middle of the window). Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.55, 0.5, 1),
+"model": "\"assets/models/props/window.glb\"",
+"size": AABB(0, -27, -28, 8, 27, 26)
+})
+scene_file = ExtResource("scene_prop_window")
+
+[sub_resource type="Resource" id="prop_window_shutters"]
+script = ExtResource("point_class")
+classname = "prop_window_shutters"
+description = "Window with open wooden shutters, 2.4 x 1.3 m, for old-town walls (origin on the wall face, at the middle of the window). Decoration: no collision."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(0.6, 0.55, 0.5, 1),
+"model": "\"assets/models/props/window_shutters.glb\"",
+"size": AABB(0, -48, -28, 8, 48, 26)
+})
+scene_file = ExtResource("scene_prop_window_shutters")
+
+[sub_resource type="Resource" id="light_cage"]
+script = ExtResource("point_class")
+classname = "light_cage"
+description = "Bare bulb in a wire cage hanging 0.8 m from the ceiling, warm light reaching 6 m. Origin on the ceiling."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_cage.glb\"",
+"size": AABB(-3, -3, -34, 3, 3, 0)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.74, 0.44, 1),
+"light_energy": 1.30,
+"light_range": 6.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_cage")
+
+[sub_resource type="Resource" id="light_ceiling"]
+script = ExtResource("point_class")
+classname = "light_ceiling"
+description = "Industrial pendant lamp with a dark shade, hanging 0.75 m from the ceiling, warm light reaching 8 m. Origin on the ceiling."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_ceiling.glb\"",
+"size": AABB(-12, -12, -31, 12, 12, 0)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.74, 0.44, 1),
+"light_energy": 1.60,
+"light_range": 8.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_ceiling")
+
+[sub_resource type="Resource" id="light_flood"]
+script = ExtResource("point_class")
+classname = "light_flood"
+description = "Floodlight on a wall bracket, aimed 30 degrees down: a bright spot light reaching 18 m. Origin on the wall face."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_flood.glb\"",
+"size": AABB(0, -9, -7, 21, 9, 7)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.94, 0.84, 1),
+"light_energy": 3.00,
+"light_range": 18.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_flood")
+
+[sub_resource type="Resource" id="light_street"]
+script = ExtResource("point_class")
+classname = "light_street"
+description = "Street lamp, 5 m pole with an arm, warm light reaching 10 m. Stands on the floor; the arm points to the front."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_street.glb\"",
+"size": AABB(-6, -6, 0, 52, 6, 191)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.8, 0.55, 1),
+"light_energy": 2.00,
+"light_range": 10.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_street")
+
+[sub_resource type="Resource" id="light_strip"]
+script = ExtResource("point_class")
+classname = "light_strip"
+description = "Fluorescent tube fitting for a ceiling, 1.25 m long, neutral light reaching 6 m. Origin on the ceiling."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_strip.glb\"",
+"size": AABB(-4, -25, -5, 4, 25, 0)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.94, 0.84, 1),
+"light_energy": 1.00,
+"light_range": 6.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_strip")
+
+[sub_resource type="Resource" id="light_wall"]
+script = ExtResource("point_class")
+classname = "light_wall"
+description = "Caged bulkhead lamp for a wall, warm light reaching 7 m. Origin on the wall face, at the lamp."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_wall.glb\"",
+"size": AABB(-1, -5, -6, 7, 5, 6)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.74, 0.44, 1),
+"light_energy": 1.40,
+"light_range": 7.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_wall")
+
+[sub_resource type="Resource" id="light_worklight"]
+script = ExtResource("point_class")
+classname = "light_worklight"
+description = "Two work lights on a tripod, 2.1 m, aimed 25 degrees down: a wide spot light reaching 14 m. See-through: it stops you, not bullets or sight."
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.8, 0.4, 1),
+"model": "\"assets/models/props/light_worklight.glb\"",
+"size": AABB(-18, -17, -1, 9, 17, 85)
+})
+class_properties = Dictionary[String, Variant]({
+"light_color": Color(1, 0.94, 0.84, 1),
+"light_energy": 2.50,
+"light_range": 14.0,
+"shadows": false
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"light_color": "Colour of the light. Keep it warm or neutral (D-031).",
+"light_energy": "Brightness (1 = a normal lamp).",
+"light_range": "How far the light reaches, in metres.",
+"shadows": "Casts shadows. Costly: only a few lamps per map (MAPPING.md)."
+})
+scene_file = ExtResource("scene_light_worklight")
+
+[resource]
+script = ExtResource("fgd_file")
+fgd_name = "ChiipKit"
+entity_definitions = Array[Resource]([SubResource("prop_crate_metal"), SubResource("prop_crate_stack"), SubResource("prop_crate_wood"), SubResource("prop_crate_wood_small"), SubResource("prop_pallet"), SubResource("prop_pallet_load"), SubResource("prop_pallet_stack"), SubResource("prop_ac_unit"), SubResource("prop_barrel"), SubResource("prop_barrel_group"), SubResource("prop_barrel_hazard"), SubResource("prop_barrel_rust"), SubResource("prop_cable_spool"), SubResource("prop_container_grey"), SubResource("prop_container_olive"), SubResource("prop_container_rust"), SubResource("prop_container_teal"), SubResource("prop_electric_cabinet"), SubResource("prop_gas_cylinders"), SubResource("prop_generator"), SubResource("prop_pipe_floor"), SubResource("prop_pipe_valve"), SubResource("prop_pipe_wall"), SubResource("prop_rail_track"), SubResource("prop_tank"), SubResource("prop_barrier_concrete"), SubResource("prop_barrier_road"), SubResource("prop_fence_boards"), SubResource("prop_fence_wood"), SubResource("prop_railing"), SubResource("prop_railing_yellow"), SubResource("prop_sandbags"), SubResource("prop_tire_stack"), SubResource("prop_bench"), SubResource("prop_bollard"), SubResource("prop_dumpster"), SubResource("prop_hydrant"), SubResource("prop_phone_box"), SubResource("prop_planter"), SubResource("prop_traffic_cone"), SubResource("prop_trash_can"), SubResource("prop_cabinet"), SubResource("prop_chair"), SubResource("prop_desk"), SubResource("prop_locker"), SubResource("prop_potted_plant"), SubResource("prop_shelf"), SubResource("prop_table"), SubResource("prop_sign_a"), SubResource("prop_sign_a_left"), SubResource("prop_sign_a_right"), SubResource("prop_sign_arrow_left"), SubResource("prop_sign_arrow_right"), SubResource("prop_sign_b"), SubResource("prop_sign_b_left"), SubResource("prop_sign_b_right"), SubResource("prop_sign_exit"), SubResource("prop_sign_warning"), SubResource("prop_car"), SubResource("prop_car_wreck"), SubResource("prop_forklift"), SubResource("prop_van"), SubResource("prop_bush"), SubResource("prop_grass_tuft"), SubResource("prop_hedge"), SubResource("prop_log"), SubResource("prop_rock"), SubResource("prop_tree_leafy"), SubResource("prop_tree_pine"), SubResource("prop_debris_boxes"), SubResource("prop_debris_bricks"), SubResource("prop_debris_planks"), SubResource("prop_debris_rubble"), SubResource("prop_trash_bags"), SubResource("prop_door"), SubResource("prop_door_double"), SubResource("prop_door_rollup"), SubResource("prop_door_wood"), SubResource("prop_window"), SubResource("prop_window_shutters"), SubResource("light_cage"), SubResource("light_ceiling"), SubResource("light_flood"), SubResource("light_street"), SubResource("light_strip"), SubResource("light_wall"), SubResource("light_worklight")])

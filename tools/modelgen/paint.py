@@ -73,9 +73,9 @@ def _luma(rgb_lin):
 SLOT_DEFAULTS = {'GLOVE': ('grey', 0, 15)}
 
 
-def material_ramp(mat, kit, skin):
+def material_ramp(mat, kit, skin, materials=None):
     """(ramp name, lo, hi, is_team) for a material under a class kit."""
-    md = MATERIALS[mat]
+    md = (MATERIALS if materials is None else materials)[mat]
     if 'ramp' in md:
         return md['ramp'], 0, 15, False
     slot = md['slot']
@@ -88,8 +88,13 @@ def material_ramp(mat, kit, skin):
 
 
 class Painter:
-    def __init__(self, kit, skin, seed=1):
+    """paints an atlas. `materials` and `ramps` replace the crew's material table and add
+    ramps (name -> 16 sRGB colours) beyond the concept palette; map props use both (props.py)."""
+
+    def __init__(self, kit, skin, seed=1, materials=None, ramps=None):
         self.kit, self.skin = kit, skin
+        self.materials = MATERIALS if materials is None else materials
+        self.ramps = ramps or {}
         self.rng = np.random.default_rng(seed)
         team = _srgb_to_lin(concept.PAL8[concept.RAMP_ID[TEAM_RAMP] * 16:(concept.RAMP_ID[TEAM_RAMP] + 1) * 16] / 255.0)
         self.team_luma = _luma(team)
@@ -125,8 +130,8 @@ class Painter:
         rel_y = (P[..., 1] - lo[1]) / height              # 0 at the bottom of the piece, 1 at the top
         for mat in sorted(set(mats.ravel())):     # sorted: the same grain on every run
             sel = mats == mat
-            md = MATERIALS[mat]
-            ramp, rlo, rhi, team = material_ramp(mat, self.kit, self.skin)
+            md = self.materials[mat]
+            ramp, rlo, rhi, team = material_ramp(mat, self.kit, self.skin, self.materials)
             shade = np.full(U.shape, float(md['base']))
             # baked light: lighter top, darker bottom, a soft gradient down the sides
             if name == '+y':
@@ -135,7 +140,7 @@ class Painter:
                 shade -= 2
             else:
                 shade += np.where(rel_y > 0.8, 1, 0) - np.where(rel_y < 0.15, 1, 0)
-            if piece.shape == 'box' and md.get('pattern') != 'plate' and w > 3 and h > 3:
+            if piece.shape == 'box' and md.get('pattern') != 'plate' and md.get('edges', True) and w > 3 and h > 3:
                 edge = (Ic == 0) | (Jc == 0) | (Ic == w - 1) | (Jc == h - 1)
                 shade -= 1.0 * edge
             grain = md.get('grain', 0.0)
@@ -145,7 +150,7 @@ class Painter:
             shade += self._pattern(md.get('pattern'), Ic, Jc, w, h, P)
             shade = np.clip(np.round(shade), 0, 15)
             idx = np.round(rlo + (rhi - rlo) * shade / 15.0).astype(int)
-            rgb = concept.PAL8[concept.RAMP_ID[ramp] * 16 + idx]
+            rgb = self.ramps[ramp][idx] if ramp in self.ramps else concept.PAL8[concept.RAMP_ID[ramp] * 16 + idx]
             if team:
                 grey = TEAM_BASE * self.team_luma[idx] / self.team_luma[md['base']]
                 g = np.round(_lin_to_srgb(grey) * 255).astype(np.uint8)
@@ -171,4 +176,10 @@ class Painter:
             return rim * 1.0 - rivet * 3.0
         if pattern == 'glint':
             return ((I == 1) & (J == 1)) * 4.0
+        if pattern in PATTERNS:           # map props' patterns (props.py), in metres
+            return PATTERNS[pattern](self.rng, I, J, w, h, P)
         return 0.0
+
+
+# Extra patterns, registered by other modules (props.py): name -> f(rng, I, J, w, h, P) -> shade offsets.
+PATTERNS = {}

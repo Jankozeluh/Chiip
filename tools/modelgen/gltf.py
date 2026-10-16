@@ -89,11 +89,16 @@ class Glb:
                                              wrapS=CLAMP_TO_EDGE, wrapT=CLAMP_TO_EDGE))
         return self._add('textures', dict(source=image, sampler=sampler))
 
-    def material(self, name, texture=None):
+    def material(self, name, texture=None, emissive=False):
+        """emissive: the texture also glows at full strength (lamp bulbs, lit signs)."""
         pbr = dict(metallicFactor=0.0, roughnessFactor=1.0)
         if texture is not None:
             pbr['baseColorTexture'] = dict(index=texture)
-        return self._add('materials', dict(name=name, pbrMetallicRoughness=pbr))
+        mat = dict(name=name, pbrMetallicRoughness=pbr)
+        if emissive and texture is not None:
+            mat['emissiveTexture'] = dict(index=texture)
+            mat['emissiveFactor'] = [1.0, 1.0, 1.0]
+        return self._add('materials', mat)
 
     def mesh(self, name, positions, normals, uvs, indices, material, joints=None, weights=None):
         """one triangle-list primitive. joints/weights: (N, 4) arrays for a skinned mesh."""
@@ -107,6 +112,18 @@ class Glb:
         prim = dict(attributes=attrs, indices=self.accessor(indices, 'SCALAR', component, ELEMENT_ARRAY_BUFFER),
                     material=material, mode=4)
         return self._add('meshes', dict(name=name, primitives=[prim]))
+
+    def static_mesh(self, name, primitives):
+        """a mesh of several unskinned triangle-list primitives: (positions, normals, uvs, indices, material)."""
+        prims = []
+        for positions, normals, uvs, indices, material in primitives:
+            attrs = dict(POSITION=self.accessor(positions, 'VEC3', target=ARRAY_BUFFER, bounds=True),
+                         NORMAL=self.accessor(normals, 'VEC3', target=ARRAY_BUFFER),
+                         TEXCOORD_0=self.accessor(uvs, 'VEC2', target=ARRAY_BUFFER))
+            component = UNSIGNED_SHORT if len(positions) < 65536 else UNSIGNED_INT
+            prims.append(dict(attributes=attrs, indices=self.accessor(indices, 'SCALAR', component, ELEMENT_ARRAY_BUFFER),
+                              material=material, mode=4))
+        return self._add('meshes', dict(name=name, primitives=prims))
 
     def skin(self, name, joint_nodes, inverse_bind_matrices, skeleton_root):
         """inverse_bind_matrices: (J, 4, 4) row-major numpy matrices; glTF stores them column-major."""
