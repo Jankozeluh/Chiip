@@ -40,7 +40,10 @@ const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const PAUSE_MENU_SCENE := preload("res://ui/pause_menu.tscn")
 const THEME_PATH := "res://ui/chiip_theme.tres"
-const FONT_PATH := "res://assets/fonts/Silkscreen-Regular.ttf"
+## The design tokens the theme is built from (D-131). Checks of the look compare
+## with them rather than with numbers, so a new look doesn't break them.
+const Tokens := preload("res://tools/ui_palette.gd")
+const FONT_PATH: String = Tokens.FONT
 ## The file the match setup and scene-change checks store settings in instead of the real one.
 const TEMP_PATH := "user://test_ui_settings.cfg"
 ## Every type variation the menus use: name → the type it varies. Menus may rely on these.
@@ -54,6 +57,10 @@ const VARIATIONS := {
 	"ContentBox": "VBoxContainer", "TableBox": "VBoxContainer", "TeamBox": "VBoxContainer",
 	"ScoreRow": "HBoxContainer", "FormRow": "HBoxContainer", "ButtonRow": "HBoxContainer",
 	"BigButton": "Button",
+	# M10 (D-131): roles for the mode choice, primary and text buttons, the biggest text.
+	"HeroLabel": "Label", "ModeTitleLabel": "Label", "ModeDetailLabel": "Label",
+	"PrimaryButton": "Button", "ModeButton": "Button", "TextButton": "Button",
+	"SegmentRow": "HBoxContainer", "ModeList": "VBoxContainer", "ModeText": "VBoxContainer",
 }
 
 var _failures: int = 0
@@ -71,6 +78,9 @@ func _ready() -> void:
 	_test_project_theme()
 	_test_styles_in_the_tree()
 	_test_variations()
+	_test_tokens()
+	_test_new_roles()
+	_test_icon_slots()
 	_test_scaled_theme()
 	await _test_scaling_a_menu()
 	await _test_preview()
@@ -113,8 +123,8 @@ func _test_project_theme() -> void:
 			"setting '%s', loaded %s, project theme '%s'" % [
 					ProjectSettings.get_setting("gui/theme/custom"), _theme != null,
 					project_theme.resource_path if project_theme != null else "none"])
-	_check("Its default font is Silkscreen at 16 px (the size every font size is built on)",
-			_theme.default_font != null and _theme.default_font.resource_path == FONT_PATH and _theme.default_font_size == 16,
+	_check("Its default font is the font token at the body text size (the size every font size is built on)",
+			_theme.default_font != null and _theme.default_font.resource_path == FONT_PATH and _theme.default_font_size == Tokens.TEXT_SIZE,
 			"font '%s', size %d" % [_theme.default_font.resource_path if _theme.default_font != null else "none", _theme.default_font_size])
 
 
@@ -134,19 +144,19 @@ func _test_styles_in_the_tree() -> void:
 		holder.add_child(control)
 	var normal := button.get_theme_stylebox("normal") as StyleBoxFlat
 	var theme_normal := _theme.get_stylebox("normal", "Button") as StyleBoxFlat
-	_check("A Button gets the theme's square 2 px framed look in every state, with the pixel font at 16 px",
-			normal != null and normal.bg_color == theme_normal.bg_color and normal.border_width_left == 2
+	_check("A Button gets the theme's square look with the border token in every state, with the pixel font at the body size",
+			normal != null and normal.bg_color == theme_normal.bg_color and normal.border_width_left == Tokens.BORDER
 					and normal.corner_radius_top_left == 0
 					and button.get_theme_stylebox("hover") is StyleBoxFlat and button.get_theme_stylebox("pressed") is StyleBoxFlat
 					and button.get_theme_stylebox("focus") is StyleBoxFlat and button.get_theme_stylebox("disabled") is StyleBoxFlat
-					and button.get_theme_font("font").resource_path == FONT_PATH and button.get_theme_font_size("font_size") == 16,
+					and button.get_theme_font("font").resource_path == FONT_PATH and button.get_theme_font_size("font_size") == Tokens.TEXT_SIZE,
 			"normal fill %s, border %d, corner %d, font '%s' %d px" % [
 					normal.bg_color if normal != null else "none", normal.border_width_left if normal != null else -1,
 					normal.corner_radius_top_left if normal != null else -1,
 					button.get_theme_font("font").resource_path, button.get_theme_font_size("font_size")])
 	_check("A Label gets the theme's text color and font, and a slider its sunken track and pixel-art knob",
 			label.get_theme_color("font_color") == _theme.get_color("font_color", "Label")
-					and label.get_theme_font("font").resource_path == FONT_PATH and label.get_theme_font_size("font_size") == 16
+					and label.get_theme_font("font").resource_path == FONT_PATH and label.get_theme_font_size("font_size") == Tokens.TEXT_SIZE
 					and slider.get_theme_stylebox("slider") is StyleBoxFlat and slider.get_theme_stylebox("grabber_area") is StyleBoxFlat
 					and slider.get_theme_icon("grabber").get_size() == Vector2(12, 24)
 					and slider.get_theme_icon("grabber").resource_path.begins_with("res://assets/ui/"),
@@ -194,9 +204,9 @@ func _test_variations() -> void:
 	var header := _variation_node(Label.new(), "HeaderLabel", holder)
 	var plain := Label.new()
 	holder.add_child(plain)
-	_check("Label variations change only what they should: title 48 px, score 32 px, dim and header colors; all keep the pixel font",
-			title.get_theme_font_size("font_size") == 48 and score.get_theme_font_size("font_size") == 32
-					and dim.get_theme_font_size("font_size") == 16 and dim.get_theme_color("font_color") == _theme.get_color("text_dim", "Palette")
+	_check("Label variations change only what they should: title and score sizes, dim and header colors; all keep the pixel font",
+			title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+					and dim.get_theme_font_size("font_size") == Tokens.TEXT_SIZE and dim.get_theme_color("font_color") == _theme.get_color("text_dim", "Palette")
 					and header.get_theme_color("font_color") == _theme.get_color("accent", "Palette")
 					and plain.get_theme_color("font_color") != dim.get_theme_color("font_color")
 					and title.get_theme_font("font").resource_path == FONT_PATH,
@@ -220,9 +230,9 @@ func _test_variations() -> void:
 	var plain_margin := MarginContainer.new()
 	for control: Control in [plain_box, plain_row, plain_margin]:
 		holder.add_child(control)
-	_check("Other variations work: a big button is 32 px, PanelMargin pads 16 / 12, ContentBox spaces by 8, and plain containers keep Godot's spacing (the HUD relies on that)",
-			button.get_theme_font_size("font_size") == 32 and margin.get_theme_constant("margin_left") == 16
-					and margin.get_theme_constant("margin_top") == 12 and box.get_theme_constant("separation") == 8
+	_check("Other variations work: a big button has the large size, PanelMargin and ContentBox their tokens, and plain containers keep Godot's spacing (the HUD relies on that)",
+			button.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and margin.get_theme_constant("margin_left") == Tokens.PANEL_MARGIN_X
+					and margin.get_theme_constant("margin_top") == Tokens.PANEL_MARGIN_Y and box.get_theme_constant("separation") == Tokens.CONTENT_GAP
 					and plain_box.get_theme_constant("separation") == 4
 					and plain_row.get_theme_constant("separation") == 4 and plain_margin.get_theme_constant("margin_left") == 0,
 			"big button %d px, margin %d / %d, content box %d" % [
@@ -230,6 +240,98 @@ func _test_variations() -> void:
 					margin.get_theme_constant("margin_top"), box.get_theme_constant("separation")])
 	remove_child(holder)
 	holder.queue_free()
+
+
+## The theme is built from the design tokens (D-131): the theme tool has no
+## numbers of its own, and the tokens arrive in the theme.
+func _test_tokens() -> void:
+	var numbers := _literal_numbers(FileAccess.get_file_as_string("res://tools/make_ui_theme.gd"))
+	_check("The theme tool has no numbers of its own: every size and spacing is a token in tools/ui_palette.gd (D-131)",
+			numbers.is_empty(), "numbers in tools/make_ui_theme.gd: %s" % [numbers])
+	var button := _theme.get_stylebox("normal", "Button") as StyleBoxFlat
+	var arrived := _theme.default_font.resource_path == Tokens.FONT and _theme.default_font_size == Tokens.TEXT_SIZE \
+			and button.bg_color == Tokens.BUTTON and button.border_color == Tokens.BUTTON_BORDER \
+			and button.content_margin_left == Tokens.BUTTON_PAD_X and button.border_width_top == Tokens.BORDER \
+			and _theme.get_color("accent", "Palette") == Tokens.ACCENT and _theme.get_color("font_color", "Label") == Tokens.TEXT \
+			and _theme.get_constant("separation", "FormRow") == Tokens.FORM_GAP \
+			and _theme.get_constant("margin_top", "PanelMarginWide") == Tokens.PANEL_MARGIN_WIDE_Y \
+			and (_theme.get_stylebox("panel", "PanelContainer") as StyleBoxFlat).bg_color == Tokens.PANEL
+	_check("The tokens arrive in the theme (font, sizes, button colours and padding, accent, text, spacing, panels); rerun tools/make_ui_theme.gd if this fails",
+			arrived, "button fill %s, padding %.0f, accent %s" % [button.bg_color, button.content_margin_left, _theme.get_color("accent", "Palette")])
+
+
+## The roles added for the mode choice and the new screens (D-131, D-132).
+func _test_new_roles() -> void:
+	var holder := Control.new()
+	add_child(holder)
+	var hero := _variation_node(Label.new(), "HeroLabel", holder)
+	var mode_title := _variation_node(Label.new(), "ModeTitleLabel", holder)
+	var mode_detail := _variation_node(Label.new(), "ModeDetailLabel", holder)
+	var primary := _variation_node(Button.new(), "PrimaryButton", holder)
+	var text_button := _variation_node(Button.new(), "TextButton", holder)
+	var mode_button := _variation_node(Button.new(), "ModeButton", holder)
+	var segments := _variation_node(HBoxContainer.new(), "SegmentRow", holder)
+	var modes := _variation_node(VBoxContainer.new(), "ModeList", holder)
+	_check("The new roles take their tokens: the hero and mode titles' sizes, the dim mode detail, a primary button framed in its colour, a text button with no box at rest, the mode button's padding, the segment and mode spacing",
+			hero.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and mode_title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+					and mode_detail.get_theme_color("font_color") == Tokens.TEXT_DIM
+					and (primary.get_theme_stylebox("normal") as StyleBoxFlat).border_color == Tokens.PRIMARY_BORDER
+					and text_button.get_theme_stylebox("normal") is StyleBoxEmpty and text_button.get_theme_color("font_color") == Tokens.TEXT_DIM
+					and text_button.get_theme_stylebox("focus") is StyleBoxFlat
+					and mode_button.get_theme_stylebox("normal").content_margin_left == Tokens.MODE_BUTTON_PAD_X
+					and segments.get_theme_constant("separation") == Tokens.SEGMENT_GAP and modes.get_theme_constant("separation") == Tokens.MODE_GAP,
+			"hero %d px, primary border %s, text button rest %s" % [hero.get_theme_font_size("font_size"),
+					(primary.get_theme_stylebox("normal") as StyleBoxFlat).border_color, text_button.get_theme_stylebox("normal").get_class()])
+	_check("The palette has team-coloured text for dark panels: the team colours lightened like Teams.text_color_for()",
+			_theme.get_color("friendly_text", "Palette") == Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+					and _theme.get_color("enemy_text", "Palette") == Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN),
+			"friendly %s, enemy %s" % [_theme.get_color("friendly_text", "Palette"), _theme.get_color("enemy_text", "Palette")])
+	remove_child(holder)
+	holder.queue_free()
+
+
+## The icon slots (D-131): named, filled from assets/ui/icons/ through the theme, scaled like any theme icon.
+func _test_icon_slots() -> void:
+	var slots := UiIcons.all_slots()
+	var unique := {}
+	for slot in slots:
+		unique[slot] = true
+	var class_ids: Array = ClassData.all().map(func(data: ClassData) -> StringName: return data.id)
+	_check("There are 21 icon slots with unique names (8 weapons, 3 grenades, armor, helmet, defuse kit, bomb, the 4 classes by their ids, headshot, health)",
+			slots.size() == 21 and unique.size() == 21 and UiIcons.CLASSES.all(func(id: StringName) -> bool: return class_ids.has(id))
+					and slots.has(&"headshot") and slots.has(&"health"),
+			"%d slots, %d unique, class ids %s" % [slots.size(), unique.size(), class_ids])
+	var holder := Label.new()
+	add_child(holder)
+	var mismatched: Array[String] = []
+	for slot in slots:
+		if ResourceLoader.exists(UiIcons.path_for(slot)) != UiIcons.has_icon(holder, slot) \
+				or (UiIcons.get_icon(holder, slot) == null) == UiIcons.has_icon(holder, slot):
+			mismatched.append(String(slot))
+	_check("A slot holds an icon exactly when its PNG is in assets/ui/icons/; an empty slot answers null, so the screen shows text",
+			mismatched.is_empty(), "slots that disagree with the folder: %s" % [mismatched])
+	remove_child(holder)
+	holder.queue_free()
+	# A theme with one slot filled, as the theme tool makes it when a PNG exists.
+	var image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	var icon := ImageTexture.create_from_image(image)
+	var with_icon := Theme.new()
+	with_icon.set_icon(&"headshot", UiIcons.THEME_TYPE, icon)
+	var menu := Control.new()
+	menu.theme = with_icon
+	var inside := Label.new()
+	menu.add_child(inside)
+	add_child(menu)
+	var found := UiIcons.get_icon(inside, &"headshot")
+	var empty := UiIcons.get_icon(inside, &"bomb")
+	menu.theme = UiTheme.scale_theme(with_icon, 1.5)
+	var scaled := UiIcons.get_icon(inside, &"headshot")
+	_check("A filled slot gives its icon to every control under the theme, an unfilled one null, and in a theme scaled by 1.5 the 16 px icon is 24 px",
+			found == icon and empty == null and scaled != null and scaled.get_size() == Vector2(24, 24),
+			"found %s, empty %s, scaled %s" % [found, empty, scaled.get_size() if scaled != null else "none"])
+	remove_child(menu)
+	menu.queue_free()
 
 
 ## UiTheme.scaled(): everything the theme holds, multiplied.
@@ -241,9 +343,10 @@ func _test_scaled_theme() -> void:
 		for item in _theme.get_font_size_list(type):
 			if scaled.get_font_size(item, type) != roundi(_theme.get_font_size(item, type) * 1.5):
 				unscaled_sizes.append("%s/%s" % [type, item])
-	_check("Scaling the theme by 1.5 multiplies every font size (16 → 24, 32 → 48, 48 → 72), and 1.0 is the theme itself; a factor is built once",
-			unscaled_sizes.is_empty() and scaled.default_font_size == 24 and scaled.get_font_size("font_size", "TitleLabel") == 72
-					and scaled.get_font_size("font_size", "ScoreLabel") == 48 and UiTheme.scaled(1.0) == _theme and scaled == twice
+	_check("Scaling the theme by 1.5 multiplies every font size (16 → 24, 32 → 48, 48 → 72 today), and 1.0 is the theme itself; a factor is built once",
+			unscaled_sizes.is_empty() and scaled.default_font_size == _x(Tokens.TEXT_SIZE, 1.5)
+					and scaled.get_font_size("font_size", "TitleLabel") == _x(Tokens.TEXT_SIZE_TITLE, 1.5)
+					and scaled.get_font_size("font_size", "ScoreLabel") == _x(Tokens.TEXT_SIZE_LARGE, 1.5) and UiTheme.scaled(1.0) == _theme and scaled == twice
 					and scaled != _theme,
 			"mismatches: %s, default size %d" % [unscaled_sizes, scaled.default_font_size])
 	var base_normal := _theme.get_stylebox("normal", "Button") as StyleBoxFlat
@@ -252,11 +355,13 @@ func _test_scaled_theme() -> void:
 	var scaled_tab := scaled.get_stylebox("tab_selected", "TabContainer") as StyleBoxFlat
 	var base_line := _theme.get_stylebox("separator", "HSeparator") as StyleBoxLine
 	var scaled_line := scaled.get_stylebox("separator", "HSeparator") as StyleBoxLine
-	_check("Styleboxes scale too: the button's border 2 → 3 and padding 14 / 8 → 21 / 12, a tab's covering edge 2 → 3, a separator 2 → 3; the colors stay, and the original is untouched",
-			scaled_normal.border_width_left == 3 and scaled_normal.content_margin_left == 21.0 and scaled_normal.content_margin_top == 12.0
-					and scaled_normal.bg_color == base_normal.bg_color and base_normal.border_width_left == 2 and base_normal.content_margin_left == 14.0
-					and scaled_tab.expand_margin_bottom == 3.0 and base_tab.expand_margin_bottom == 2.0
-					and scaled_line.thickness == 3 and base_line.thickness == 2,
+	_check("Styleboxes scale too: the button's border and padding (2 → 3, 14 / 8 → 21 / 12 today), a tab's covering edge, a separator; the colors stay, and the original is untouched",
+			scaled_normal.border_width_left == _x(Tokens.BORDER, 1.5) and scaled_normal.content_margin_left == _x(Tokens.BUTTON_PAD_X, 1.5)
+					and scaled_normal.content_margin_top == _x(Tokens.BUTTON_PAD_Y, 1.5)
+					and scaled_normal.bg_color == base_normal.bg_color and base_normal.border_width_left == Tokens.BORDER
+					and base_normal.content_margin_left == Tokens.BUTTON_PAD_X
+					and scaled_tab.expand_margin_bottom == _x(Tokens.BORDER, 1.5) and base_tab.expand_margin_bottom == Tokens.BORDER
+					and scaled_line.thickness == _x(Tokens.LINE, 1.5) and base_line.thickness == Tokens.LINE,
 			"button border %d, padding %.0f / %.0f, tab edge %.0f, separator %d" % [
 					scaled_normal.border_width_left, scaled_normal.content_margin_left, scaled_normal.content_margin_top,
 					scaled_tab.expand_margin_bottom, scaled_line.thickness])
@@ -285,10 +390,11 @@ func _test_scaled_theme() -> void:
 	switches.set_constant("center_grabber", "HSlider", 1)
 	switches.set_constant("separation", "VBoxContainer", 8)
 	var scaled_switches := UiTheme.scale_theme(switches, 1.5)
-	var constants_ok := scaled.get_constant("margin_left", "PanelMargin") == 24 and scaled.get_constant("separation", "ContentBox") == 12 \
-			and scaled.get_constant("separation", "ScoreRow") == 21 \
+	var constants_ok := scaled.get_constant("margin_left", "PanelMargin") == _x(Tokens.PANEL_MARGIN_X, 1.5) \
+			and scaled.get_constant("separation", "ContentBox") == _x(Tokens.CONTENT_GAP, 1.5) \
+			and scaled.get_constant("separation", "ScoreRow") == _x(Tokens.SCORE_GAP, 1.5) \
 			and scaled_switches.get_constant("center_grabber", "HSlider") == 1 and scaled_switches.get_constant("separation", "VBoxContainer") == 12
-	_check("Spacing scales (margin 16 → 24, separation 8 → 12, 14 → 21) but a yes/no setting such as the slider's center_grabber doesn't (1 stays 1)",
+	_check("Spacing scales (margin 16 → 24, separation 8 → 12, 14 → 21 today) but a yes/no setting such as the slider's center_grabber doesn't (1 stays 1)",
 			constants_ok, "margin %d, separation %d, center_grabber %d" % [
 					scaled.get_constant("margin_left", "PanelMargin"), scaled.get_constant("separation", "ContentBox"),
 					scaled_switches.get_constant("center_grabber", "HSlider")])
@@ -310,15 +416,12 @@ func _test_scaling_a_menu() -> void:
 	UiTheme.apply(menu, 1.0)
 	await get_tree().process_frame
 	var back := _menu_sizes(menu)
-	_check("A menu at 1.0 uses the theme as designed: body 16 px, title 48 px, padding 16, button minimum 200 × 40, a one-off spacing override of 10 and font override of 20",
-			layout == {"body": 16, "title": 48, "margin": 16, "button_min": Vector2(200, 40), "override_separation": 10, "override_font": 20, "popup": 16, "panel_border": 2},
-			"%s" % [layout])
-	_check("Scaled by 1.5 every size is exactly 1.5 times as big: fonts 24 / 72, padding 24, minimum 300 × 60, the overrides 15 and 30, the drop-down's font, the panel border 3",
-			at_one_and_a_half == {"body": 24, "title": 72, "margin": 24, "button_min": Vector2(300, 60), "override_separation": 15, "override_font": 30, "popup": 24, "panel_border": 3},
-			"%s" % [at_one_and_a_half])
+	_check("A menu at 1.0 uses the theme as designed: body and title sizes, padding and panel border from the tokens, button minimum 200 × 40, a one-off spacing override of 10 and font override of 20",
+			layout == _expected_menu_sizes(1.0), "%s" % [layout])
+	_check("Scaled by 1.5 every size is exactly 1.5 times as big: fonts, padding, minimum 300 × 60, the overrides 15 and 30, the drop-down's font, the panel border",
+			at_one_and_a_half == _expected_menu_sizes(1.5), "%s" % [at_one_and_a_half])
 	_check("Applying the same factor again changes nothing, 2.0 doubles everything, and 1.0 puts the original sizes back",
-			again == at_one_and_a_half and at_two == {"body": 32, "title": 96, "margin": 32, "button_min": Vector2(400, 80), "override_separation": 20, "override_font": 40, "popup": 32, "panel_border": 4}
-					and back == layout,
+			again == at_one_and_a_half and at_two == _expected_menu_sizes(2.0) and back == layout,
 			"2.0: %s, back: %s" % [at_two, back])
 	# The pixels really are laid out bigger: the panel grows by 1.5 as a whole.
 	var panel := menu.get_node("Panel") as Control
@@ -337,8 +440,8 @@ func _test_scaling_a_menu() -> void:
 	UiTheme.apply(inner, 1.5)
 	UiTheme.apply(menu, 1.0)
 	var inner_size := inner.get_theme_font_size("font_size")
-	_check("A part scaled on its own doesn't keep its theme: scaling the whole menu back to 1.0 puts it at 16 px again",
-			inner_size == 16, "inner label %d px" % inner_size)
+	_check("A part scaled on its own doesn't keep its theme: scaling the whole menu back to 1.0 puts it at the body size again",
+			inner_size == Tokens.TEXT_SIZE, "inner label %d px" % inner_size)
 	# A CanvasLayer root (the match-end screen, the HUD) hands the theme to its controls.
 	var layer := CanvasLayer.new()
 	var layer_control := Label.new()
@@ -346,8 +449,8 @@ func _test_scaling_a_menu() -> void:
 	add_child(layer)
 	UiTheme.apply(layer, 1.5)
 	var layer_size := layer_control.get_theme_font_size("font_size")
-	_check("A CanvasLayer isn't a Control, so UiTheme gives the theme to the controls under it (a label there gets 24 px at 1.5)",
-			layer_size == 24 and layer_control.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
+	_check("A CanvasLayer isn't a Control, so UiTheme gives the theme to the controls under it (a label there gets 1.5 times the body size)",
+			layer_size == _x(Tokens.TEXT_SIZE, 1.5) and layer_control.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
 			"label %d px, filter %d" % [layer_size, layer_control.texture_filter])
 	remove_child(layer)
 	layer.queue_free()
@@ -406,10 +509,11 @@ func _test_console() -> void:
 	var scaled_size := output.get_theme_font_size("font_size")
 	var scaled_input := input.get_theme_font_size("font_size")
 	console.set_ui_scale(1.0)
-	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), 16 px at 1.0 and 24 px at 1.5, its panel 360 → 540 px minimum height (18 lines, D-065)",
+	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), the body size at 1.0 and 1.5 times it at 1.5, its panel 360 → 540 px minimum height (18 lines, D-065)",
 			panel.theme_type_variation == &"ConsolePanel" and style != null and style.border_color == _theme.get_color("accent", "Palette")
 					and not output.has_theme_font_size_override("font_size") and not panel.has_theme_stylebox_override("panel")
-					and base_size == 16 and scaled_size == 24 and scaled_input == 24 and panel.custom_minimum_size.y == 360.0
+					and base_size == Tokens.TEXT_SIZE and scaled_size == _x(Tokens.TEXT_SIZE, 1.5) and scaled_input == _x(Tokens.TEXT_SIZE, 1.5)
+					and panel.custom_minimum_size.y == 360.0
 					and (input.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == _theme.get_stylebox("normal", "LineEdit").bg_color,
 			"font %d → %d, input %d, panel minimum back at %.0f" % [base_size, scaled_size, scaled_input, panel.custom_minimum_size.y])
 	remove_child(console)
@@ -2128,6 +2232,37 @@ func _make_menu() -> Control:
 	custom.text = "One-off"
 	row.add_child(custom)
 	return menu
+
+
+## The numbers written in GDScript [param source] outside comments and strings,
+## other than 0 and 1 (and the 1 of -1), which are switches and "unset", not sizes.
+func _literal_numbers(source: String) -> Array[String]:
+	var strings := RegEx.create_from_string("\"(?:[^\"\\\\]|\\\\.)*\"")
+	var comments := RegEx.create_from_string("#.*")
+	var numbers := RegEx.create_from_string("(?<![A-Za-z_0-9.])[0-9]+(?:\\.[0-9]+)?")
+	var found: Array[String] = []
+	for line in source.split("\n"):
+		var code := comments.sub(strings.sub(line, "\"\"", true), "", true)
+		for result in numbers.search_all(code):
+			var number := result.get_string()
+			if number != "0" and number != "1":
+				found.append(number)
+	return found
+
+
+## What [method _menu_sizes] should read for a [method _make_menu] menu scaled by [param factor].
+func _expected_menu_sizes(factor: float) -> Dictionary:
+	return {
+		"body": _x(Tokens.TEXT_SIZE, factor), "title": _x(Tokens.TEXT_SIZE_TITLE, factor),
+		"margin": _x(Tokens.PANEL_MARGIN_X, factor), "button_min": Vector2(200, 40) * factor,
+		"override_separation": _x(10, factor), "override_font": _x(20, factor),
+		"popup": _x(Tokens.TEXT_SIZE, factor), "panel_border": _x(Tokens.BORDER, factor),
+	}
+
+
+## [param pixels] scaled by [param factor] the way the theme scales it (whole pixels).
+func _x(pixels: int, factor: float) -> int:
+	return UiTheme.scale_pixels(pixels, factor)
 
 
 ## The sizes of a [method _make_menu] menu that scaling must change, by name.

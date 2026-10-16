@@ -2,7 +2,7 @@
 
 > Living document: it changes as the game is built and playtested. Values marked *(tune)* are starting points, not final numbers.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## 1. Pitch
 
@@ -261,7 +261,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 - Characters and weapons: minimalistic and pixelated, in a CS/Quake/CoD-like style. Low-poly models built from rigid pieces, like late-90s shooters, with palette-limited pixel textures, made by a generator (D-054). First person shows 3D arms and gun (D-051).
 - World image limited to 16 shades per color channel with light ordered dithering (D-030, D-048).
 - Lighting: cool daylight (D-031): neutral white sun, long shadows, light grey-blue haze, warm accents only from lamps and wood. Deliberately *not* a desert/dust look, so Chiip doesn't read as a Counter-Strike copy. Lighting is real-time, with no baked lightmaps (D-085): flat, readable light that keeps the maps editable.
-- **Menus and UI** (D-057): one pixel-art look for every menu, the Silkscreen font with square panels and buttons, crisp 2 px borders and no rounded corners or smoothing. Cool dark blue-grey panels, light text and a single icy cyan accent for focus, selection and sliders; team blue and red only mark teams. Deliberately not Counter-Strike's orange and yellow on black. Everything is drawn for a 720-pixel-tall window and scales by the window height (exactly 1.5× at 1080, 2× at 1440), and text sizes sit on the font's pixel grid (16 / 32 / 48 px) so pixels stay whole. The in-game HUD keeps its own simple look.
+- **Menus and UI** (D-057): one pixel-art look for every menu, the Silkscreen font with square panels and buttons, crisp 2 px borders and no rounded corners or smoothing. Cool dark blue-grey panels, light text and a single icy cyan accent for focus, selection and sliders; team blue and red only mark teams. Deliberately not Counter-Strike's orange and yellow on black. Everything is drawn for a 720-pixel-tall window and scales by the window height (exactly 1.5× at 1080, 2× at 1440), and text sizes sit on the font's pixel grid (16 / 32 / 48 px) so pixels stay whole. The in-game HUD keeps its own simple look. **M10 (D-130):** the look is being redesigned from your mockups (UI_MOCKUPS.md), minimal and modern but still pixelated; until they arrive this look stays, and every value of it is a named token in one file (D-131), so the new look goes in quickly.
 - **Clarity rule:** enemies must always stand out from the background.
 
 ## 6. Controls (default)

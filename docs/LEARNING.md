@@ -2,7 +2,7 @@
 
 > Notes on Godot concepts as Chiip uses them. Each milestone adds a section with what was new and where it's used in the project.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## Unity → Godot cheat sheet
 
@@ -611,3 +611,12 @@
 **Playing clips from code, and moving a node to another parent** (`weapons/weapon.gd`)
 - `AnimationPlayer.play("fp_fire", blend, speed)` plays a clip (with a short cross-fade and a speed factor, here to stretch the reload to the weapon's reload time), `seek(0.0, true)` restarts it when the same clip is already playing, and `queue("fp_idle")` plays the idle clip once it ends: Unity's `Animator.Play()` and a transition back, without a state machine. Setting `active = false` stops a player from doing any work, which the hidden arms of every bot use.
 - `node.reparent(new_parent)` moves a node to another parent in one call (Unity: `transform.SetParent()`); with `keep_global_transform = false` it keeps its *local* position instead. The muzzle flash moves onto the gun's bone attachment this way, so it follows the gun's kick and reload.
+
+### M10 — UI refresh
+
+**Design tokens for a generated theme** (`tools/ui_palette.gd`, D-131)
+- A *design token* is a named value of a look (a colour, a text size, a padding), the way web and Figma designs hand over a style. Godot has no token system of its own, but a script full of `const` values that a tool reads works the same: `tools/make_ui_theme.gd` builds every stylebox, font size and spacing of the `Theme` from those names, so restyling is editing values in one file and running the tool. In Unity terms it's a USS file's variables (`--accent-color`), only checked by the editor because they are GDScript constants.
+- A test can read a script's source with `FileAccess.get_file_as_string()` and search it with `RegEx` (Godot's regular expressions are PCRE2, lookbehind included); `ui_test` uses that to make sure the theme tool never gets a number of its own again.
+
+**Custom theme types for icons** (`ui/ui_icons.gd`)
+- A theme type doesn't have to be a class: the theme can hold items under any name you choose, like our `Palette` (colours) and `Icons` (textures). Any control under the theme asks with `get_theme_icon(&"headshot", &"Icons")`, and `has_theme_icon()` says whether the item exists, so a missing icon can fall back to text instead of Godot's "missing icon" placeholder. Because the icon lives in the theme, `UiTheme`'s scaled copies resize it with the rest of the UI (nearest-neighbor), which loading the PNG by path in each screen wouldn't do. Unity's nearest equivalent is a sprite atlas referenced by name from a style sheet.

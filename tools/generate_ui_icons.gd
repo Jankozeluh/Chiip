@@ -142,9 +142,9 @@ func _slider_grabbers() -> void:
 		"#HHHH#",
 		"######",
 	]
-	_save("slider_grabber", grabber, {"#": Palette.INSET, "H": Palette.HANDLE, "G": Palette.HANDLE.darkened(0.3)})
+	_save("slider_grabber", grabber, {"#": Palette.INSET, "H": Palette.HANDLE, "G": Palette.HANDLE.darkened(Palette.HANDLE_GROOVE_DARKEN)})
 	_save("slider_grabber_highlight", grabber, {"#": Palette.INSET, "H": Palette.ACCENT_BRIGHT, "G": Palette.ACCENT})
-	_save("slider_grabber_disabled", grabber, {"#": Palette.INSET, "H": Palette.HANDLE_DISABLED, "G": Palette.HANDLE_DISABLED.darkened(0.3)})
+	_save("slider_grabber_disabled", grabber, {"#": Palette.INSET, "H": Palette.HANDLE_DISABLED, "G": Palette.HANDLE_DISABLED.darkened(Palette.HANDLE_GROOVE_DARKEN)})
 
 
 ## Triangles: the drop-down arrow of an option button, and the arrows of a tab bar that is too narrow.

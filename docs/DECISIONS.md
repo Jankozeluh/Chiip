@@ -4,7 +4,7 @@
 >
 > Decisions can be revisited. When one changes, add a new entry that replaces the old one instead of rewriting history, and mark the old one as *Replaced by D-xxx*.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## D-001 — Engine: Godot 4.7.2 with GDScript (2026-10-15)
 
@@ -999,7 +999,9 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Why:** It is what makes D-130 work: one file holds the look, and the screens don't have to be touched to change it. Looking icons up through the theme reuses the scaling that keeps pixel art crisp (D-057) and lets the icon set arrive later without changing code.
 
-**Alternatives:** Tokens in a JSON file read at runtime (the theme is generated anyway, and GDScript constants are checked by the editor); one theme file per look (two copies to keep in step); icons loaded by path in each screen (every screen would need to know the file names and scale them itself).
+**Built** (M10 task 3): 85 tokens in `tools/ui_palette.gd` in six groups (colours, fonts, text sizes, lines, paddings, spacing); the regenerated theme differs from the old one only by additions (no line removed or changed; the icons are byte-identical). New roles: `HeroLabel`, `ModeButton` + `ModeTitleLabel` / `ModeDetailLabel` + `ModeList` / `ModeText`, `PrimaryButton`, `TextButton`, `SegmentRow`, and `friendly_text` / `enemy_text` in `Palette`. The 21 slots are named after M7's weapon ids (`rifle`, `frag`...) and the class ids, so M7's rendered weapon icons and a drawn set use the same names. `ui_test` (139 checks): the theme tool has no numbers of its own (a mutation with one literal fails it), the tokens arrive in the theme, the new roles, the slots, and the old theme checks now compare with the tokens.
+
+**Alternatives:** Tokens in a JSON file read at runtime (the theme is generated anyway, and GDScript constants are checked by the editor); one theme file per look (two copies to keep in step); icons loaded by path in each screen (every screen would need to know the file names and scale them itself); placeholder icons drawn now (they would show up on screen and be thrown away; text is today's look).
 
 ## D-132 — Team Deathmatch first, one click to play, the details behind "Custom match" (2026-10-16) — *provisional*
 
