@@ -21,7 +21,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Ready for the mockups** (task 7): UI_MOCKUPS.md now has a table from each mockup to its scene and roles, and how a mockup's values reach the game. Before/after pictures at 720p and 1080p; a check for you in "Your open checks".
 
-**Next:** your mockups, screen by screen: the Foundations file into the tokens and theme, the Menus and Match files into the screens and HUD, the icon set into its slots. Blocked until this session can read the Claude Design project (`/design-login` once in a terminal Claude Code session, or the files exported to a folder).
+- **Your mockups are readable now** (after `/design-login`): Foundations, Menus, Match + HUD and the icon set. They are the source of truth; the plan has a task per screen (8–16) and decisions D-134 to D-139.
+
+**Next:** the Foundations into the theme and the icon PNGs, then the main menu and Play screen.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

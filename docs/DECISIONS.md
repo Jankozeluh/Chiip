@@ -1033,6 +1033,52 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Leave the HUD outside the theme (two places to restyle, and they drift); wait for the HUD mockups before touching it (the layout and slots are needed anyway, and M7 builds on them); keep the overlay on by default.
 
+## D-134 — The mockups' Foundations become the theme (2026-10-16) — *provisional*
+
+**Decision:**
+- **Your Claude Design mockups are the look** (D-130): the Foundations sheet goes into the tokens and the theme, the Menus and Match sheets into the screens and the HUD.
+- **Palette:** VOID `#07090D`, INK `#0B1017`, PANEL `#141B25` at 94%, RAISED `#1C2533`, LINE `#33405A`, MUTE `#5F6C80`, DIM `#9AA8BD`, TEXT `#E6ECF5`; **one lime accent `#C8F03C`, for focus only**; the UI's team colours `#5A94FF` (yours) and `#FF4D3D` (enemy) with fills `#1F4A9E` and `#8F2216`; ALERT `#FFB02E` (bomb, low health and ammo).
+- **Type:** Silkscreen at 16, 32, 48 and 96 px; titles (48 and 96) in **Silkscreen Bold**. **8 px grid, 32 px from every screen edge, square corners, 2 px lines.**
+- **HUD text gets a hard 2 px shadow** (down and right, in VOID) instead of an outline.
+- **Components → roles:** menu items (48 high, 32 px; focus = lime fill, ink text and the 8 px "chip"); buttons (40 high: a 2 px MUTE frame, focus lime, the primary one filled lime with a hard shadow, disabled LINE); segments (a 2 px LINE frame around the choices, the chosen one filled TEXT with ink text); sliders (a 4 px LINE track, a 16 px square knob); value boxes; tabs underlined in lime; key caps.
+- **Deliberate differences:** the team colours in the 3D world (the crew's shader, D-073) stay as they are; the mockup's team colours are for the UI only, where they read better on dark ink. A menu item keeps its text in place when it gets the focus chip (Godot's button draws its icon in a fixed slot), where the mockup shifts it right.
+
+**Why:** Your mockups ("I'll try to design the UI … in claude design"). The lime accent, the ink surfaces and the chip are your design; the theme from tasks 3–6 takes them in one place.
+
+**Alternatives:** Re-colouring the 3D teams to the mockup's colours too (a gameplay readability change for the bots and players, not a UI one; can follow if you want it).
+
+## D-135 — Main menu and Play screen as in the mockup (2026-10-16) — *provisional; replaces the one-page mode choice of D-132*
+
+**Decision:**
+- **Main menu:** a dark column on the left over the camera flight: CHIIP in 96 px Bold with three chips (blue, red, lime), the menu items **Play** (focused), **Practice**, **Settings**, **Quit**, a line, then **Host** and **Join** marked "soon" (M9 fills them). The build at the bottom left, the background's map name at the bottom right.
+- **Play** opens the **Play screen**: three mode cards, **Team Deathmatch** (first, focused, marked DEFAULT), **Bomb** and **Practice**. A click on the focused card plays it ("click to play"), a click on another card picks it; the big **Play** button plays the picked mode. Under the cards, **Custom** shows the picked mode's options as rows of segments: map (Depot, Square, Spillway, Rotation), kill limit (25, 50, 75, 100) or rounds (first to 5, 10, 15), teams (chips for both sides), match length (5, 10, 15 min, Team Deathmatch), bots (Easy, Normal, Hard), friendly fire. Remembered, as before. Esc goes back.
+- **New options from the mockup:** the kill limit offers 25 and 100 too (30 is gone), and Team Deathmatch's time limit (10 min until now) can be 5, 10 or 15 min.
+- One click still plays Team Deathmatch from the Play screen; from the start of the game it is two (Play, then the card), as the mockup has it.
+
+**Why:** Your mockup's Menus sheet. It keeps the mode choice simple (D-120) while the main menu stays a short list.
+
+**Alternatives:** Keeping D-132's one-page choice (it is not what you designed).
+
+## D-136 — The HUD as in the mockup (2026-10-16) — *provisional*
+
+**Decision:** The Match sheet's HUD: Team Deathmatch's top bar (both scores in 48 px team colours, each with a bar filling toward the kill limit, the clock and "First to 50"); Bomb's (squares for players alive, filled or framed, the scores, the clock or the amber BOMB plate, the round); banners centred 96 px from the top ("Round won" 48 px Bold in your colour, the reason under it); the death screen in Team Deathmatch (a grey tint, the countdown in 96 px Bold, a plate "Killed by Bot4 [gun] · Respawning in 3" and the killer's health left); spectating as a plate at the bottom; health with its icon, 48 px and ten chips, ammo 48 px with the reserve in 32 px; kill-feed plates (72% ink; your kills framed white, your deaths framed red; gun icons, the headshot mark; 6 s); toasts under the top bar (switching sides, match point, bomb planted, low ammo; 2.5 s); a hit marker (four corners, white, amber on a headshot, 150 ms). Exact values in the tokens when built. Armor, money, the weapon slots and pickups are M7's, built to the same mockup there.
+
+**Why:** Your mockup; it also fixes what D-133 left open (the look).
+
+## D-137 — Settings, pause, scoreboard, match end, class menu and console as in the mockup (2026-10-16) — *provisional*
+
+**Decision:** Settings becomes a full ink screen with underlined tabs, 48 px rows (label 400 px), segments for on/off and for short choices, sliders with value boxes, the crosshair preview on a dark and a light square, a controls table (key caps, "Press a key…" in lime), Reset and Back at the bottom. The pause menu is a centred list over the dimmed game. The Tab scoreboard and the match-end screen get the mockup's table (class icon, player, K, D, A, DMG; team lines; your row framed in lime; dead rows muted) and header (scores, mode and map, the clock). The class menu gets the draft's cards (the class's icon large in your colour, the key, height, role, perk in lime, the gun with its icon). The console becomes a VOID strip with a lime prompt and Silkscreen text. Details and any differences are recorded when each is built.
+
+## D-138 — A loading screen between maps; the boot screen waits for a logo (2026-10-16) — *provisional*
+
+**Decision:** When a match starts or the rotation moves on, the mockup's loading screen shows the map's name in 96 px Bold, "Map 2 of 3 · Rotation", the mode and the limit, and a row of chips while the map loads. The boot screen with the studio logo is left out until the logo exists as a file in the project (the mockup links an image on the web, and a download needs your OK).
+
+## D-139 — The icon set comes from the mockup's drawing, as PNGs (2026-10-16) — *provisional*
+
+**Decision:** The mockup draws its 21 icons as rectangles on a 32 × 16 (weapons) or 16 × 16 grid in one colour. `tools/generate_ui_icons.gd` draws the same rectangles into white PNGs in `assets/ui/icons/`, one pixel per grid cell, named after the icon slots (D-131; the mockup's `handcannon`, `he`, `flash`, `kit` are the slots `hand_cannon`, `frag`, `flashbang`, `defuse_kit`). Screens tint them (white → any colour) and scale them by whole steps with nearest filtering, as the mockup shows them at 1×, 2× and 10×.
+
+**Why:** One source for the drawings (the mockup), crisp at every scale, and one PNG per slot so the theme picks them up as designed in D-131.
+
 ## Open questions
 
 | Question | Decide in |

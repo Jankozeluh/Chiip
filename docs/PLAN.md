@@ -360,7 +360,19 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 6. [x] **HUD layout and readability.** The HUD's labels, top bar, centre messages and bomb HUD move onto the theme (roles and tokens instead of colours and sizes in their scenes and scripts); it keeps working at every window size including ultrawide (anchored to the edges and the centre); Team Deathmatch shows a respawn countdown under "Killed by Bot2" ("Respawning in 3"); the F3 overlay starts hidden (D-133). M7 is rebuilding the HUD script and the kill feed in its branch (armor, weapon slots, kill icons, pickups), so those two follow once M7 is merged, to keep the merge clean. *(Opus direction, Sonnet builds)* Built: 38 HUD tokens and 25 HUD roles, no overrides left in the HUD scenes, "Respawning in 3" under "Killed by", the F3 overlay hidden at start; checked at 1280 × 720, 2560 × 1080 and 1440 × 1080 (614 checks).
 7. [x] **Ready for the mockups.** A table in [UI_MOCKUPS.md](UI_MOCKUPS.md) from each mockup to its scene, roles and tokens; all suites pass; screenshots; a UI check in "Your open checks". *(Haiku runs the suites, Opus judges the pictures)* Done: the table lists every mockup's scene and roles; 614 checks pass; before/after pictures at 720p and 1080p; the check is at the top of this file.
 
-**When your mockups arrive** (tasks added then, one per screen or group): the palette, sizes and spacing go into the tokens, each screen's layout follows its mockup, and the icon set goes into its slots. Before/after screenshots for each.
+**Your mockups** arrived on 2026-10-16 (Claude Design project "Chiip FPS UI system": Foundations, Menus, Match + HUD, Icon). They are the source of truth (D-134 to D-139). One task per screen or group, each with before/after pictures and a side-by-side with the mockup:
+
+8. [ ] **Foundations into the theme, and the icon set.** The mockup's palette (ink surfaces, lime accent for focus only, the UI's own team blue and red, amber alert), type (Silkscreen Bold for 48 and 96 px titles), 8 px grid, 2 px lines, hard 2 px shadows and its components (menu items with the focus chip, outlined and primary buttons, segments, slim sliders, value boxes, underlined tabs, key caps) become tokens and roles; the 21 pixel icons become PNGs in `assets/ui/icons/` (D-134, D-139). *(Opus)*
+9. [ ] **Main menu and Play screen.** The left column (CHIIP with its three chips; Play, Practice, Settings, Quit; Host and Join marked "soon"), and Play as its own screen: three mode cards (Team Deathmatch first and focused, one click plays it), the Custom rows of the chosen mode and a big Play button (D-135). *(Opus)*
+10. [ ] **Settings** as a full screen: underlined tabs, 48 px rows, segments for on/off, slim sliders with value boxes, the crosshair preview, the controls table, Reset and Back (D-137). *(Sonnet)*
+11. [ ] **Pause menu, Tab scoreboard and match-end screen** (D-137). *(Sonnet)*
+12. [ ] **Class menu** in the draft's card style (all four classes until M7's draft offers two) (D-137). *(Sonnet)*
+13. [ ] **Developer console** (D-137). *(Sonnet)*
+14. [ ] **HUD**: the Team Deathmatch and Bomb top bars, banners, the death screen with the big countdown, spectating, health and ammo with icons and chips, kill-feed plates, toasts, hit marker (D-136). *(Opus direction, Sonnet builds; the parts in `hud.gd` and the kill feed wait for M7's merge)*
+15. [ ] **Loading screen** between maps (D-138). *(Sonnet)*
+16. [ ] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)*
+
+Not in this branch: the boot screen (it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
 
 **Done when:** the main menu starts Team Deathmatch in one click, Custom still offers everything match setup did, every screen and the HUD take their look from the theme, all suites pass, and then: every screen matches your mockups.
 
