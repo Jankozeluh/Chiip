@@ -39,6 +39,8 @@ func _ready() -> void:
 	_test_export_safe_defaults()
 	_test_hit_check_guards_releases()
 	await _test_hit_check()
+	_test_release_check_covers_builds()
+	await _test_round_check()
 	MenuState.reset()
 	await get_tree().process_frame
 	if _failures == 0:
@@ -434,8 +436,8 @@ func _test_release_routine() -> void:
 			changelog.contains("## [%s] - " % version) and exit_code == 0 and notes.length() > 500 and not notes.contains("## [") and notes.contains("Created by JK · Divocakos")
 					and missing_exit == 1,
 			"exit %d, %d characters, missing version exit %d" % [exit_code, notes.length(), missing_exit])
-	_check("docs/RELEASING.md gives the routine: bump version and changelog, run the suite, export, zip, gh release create; the site follows by itself",
-			releasing.contains("project.godot") and releasing.contains("CHANGELOG.md") and releasing.contains("tools/run_tests.sh") and releasing.contains("--export-release")
+	_check("docs/RELEASING.md gives the routine: bump version and changelog, run the suite, export and test the builds, zip, gh release create; the site follows by itself",
+			releasing.contains("project.godot") and releasing.contains("CHANGELOG.md") and releasing.contains("tools/run_tests.sh") and releasing.contains("tools/check_release.sh")
 					and releasing.contains("tools/package_release.sh") and releasing.contains("gh release create") and releasing.contains("site"),
 			"%d characters" % releasing.length())
 
@@ -664,6 +666,45 @@ func _test_hit_check() -> void:
 			break
 		await get_tree().physics_frame
 	_check("The shooting self-check (--check-hits) passes: a shot hurts a bot and a bot's shot the player",
+			not result.is_empty() and result[0], str(result[1]) if result.size() > 1 else "no result")
+	remove_child(main)
+	main.queue_free()
+	GameLaunch.clear()
+	await get_tree().process_frame
+
+
+## The release routine's build check (M16, D-223) exports all three builds and runs the smoke checks
+## on them: shooting in each, a full round and a LAN join in the Mac app; the releasing guide and
+## the checklist run it.
+func _test_release_check_covers_builds() -> void:
+	var script := FileAccess.get_file_as_string("res://tools/check_release.sh")
+	var releasing := FileAccess.get_file_as_string("res://docs/RELEASING.md")
+	var checklist := FileAccess.get_file_as_string("res://docs/RELEASE_CHECKLIST.md")
+	var presets := ["Windows", "Linux", "macOS"].all(func(preset: String) -> bool: return script.contains("export_one %s " % preset))
+	_check("tools/check_release.sh exports the three builds and checks shooting in each, a round and a LAN join; RELEASING.md and the checklist run it",
+			presets and script.contains("tools/check_export.sh") and script.contains("PACK=") and script.contains(RoundCheck.FLAG)
+					and script.contains("tools/lan_check.sh") and releasing.contains("tools/check_release.sh")
+					and checklist.contains("tools/check_release.sh"), "")
+
+
+## The game's own round self-check ([RoundCheck], what tools/check_release.sh runs in an export)
+## passes in the editor's build: the bots walk, round 1 ends with a winner and round 2 starts.
+func _test_round_check() -> void:
+	GameLaunch.start_match(Settings.DEFAULT_MATCH_MAP, RoundCheck.rules())
+	var main := (load("res://main.tscn") as PackedScene).instantiate()
+	main.load_settings = false
+	main.loading_screen = false
+	var check := RoundCheck.new()
+	check.quit_when_done = false
+	var result := []
+	check.finished.connect(func(passed: bool, detail: String) -> void: result.append_array([passed, detail]))
+	add_child(main)
+	main.add_child(check)
+	for i in roundi(RoundCheck.MAX_SECONDS + 10.0) * Engine.physics_ticks_per_second:
+		if not result.is_empty():
+			break
+		await get_tree().physics_frame
+	_check("The round self-check (--check-round) passes: the bots walk, a round ends with a winner and the next starts",
 			not result.is_empty() and result[0], str(result[1]) if result.size() > 1 else "no result")
 	remove_child(main)
 	main.queue_free()

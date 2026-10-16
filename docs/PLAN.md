@@ -619,7 +619,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 
 **Goal:** bugs are easy to find, reproduce and fix, including ones that show up only in exported builds (D-220). Starts after M15.
 
-- [ ] **Release-build tests:** before every release, export the builds and run smoke checks on the exported release build (shooting hits, a full round, a LAN join), as part of `docs/RELEASING.md` and the release checklist
+- [x] **Release-build tests** (D-223): before every release, export the builds and run smoke checks on the exported release build (shooting hits, a full round, a LAN join), as part of `docs/RELEASING.md` and the release checklist: `tools/check_release.sh`, the game's new `--check-round`
 - [ ] **Logs and bug reports:** the game writes a log file in its user folder; the version and build show in the menu; a "Report a bug" action zips the log, the version and the settings for a friend to send; a GitHub Issue template (steps, version, platform)
 - [ ] **Debug commands** in the console: for example `debug_hitboxes` (draw the hit zones) and `net_stats` (ping, packet loss, snapshot size), so problems can be seen rather than guessed
 - [ ] **Architecture review:** after 15 milestones, map the systems, remove dead code, make the patterns consistent, give each folder a clear owner, and keep ARCHITECTURE.md as the single source of truth

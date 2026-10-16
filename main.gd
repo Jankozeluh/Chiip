@@ -281,6 +281,12 @@ func _load_map() -> void:
 	if args.has(HitCheck.FLAG):
 		# The shooting self-check (v0.1.1, D-159): practice on the range, with the check running.
 		add_child(HitCheck.new())
+	if args.has(RoundCheck.FLAG):
+		# The round self-check (M16, D-223): a short 2v2 match on Depot, with the check running.
+		add_child(RoundCheck.new())
+		match_settings = RoundCheck.rules()
+		if map_arg < 0:
+			scene = load(Settings.DEFAULT_MATCH_MAP)
 	if args.has("--practice") or args.has(HitCheck.FLAG):
 		mode = Mode.PRACTICE
 		# Practice plays the Shooting Range unless --map says otherwise (D-141).

@@ -8,8 +8,9 @@ Branch `m16`, one code branch at a time (D-220). Decisions from D-222. One commi
 
 **Done**
 - No flaky tests (D-222): each suite runs with its own empty `user://` (a home folder of its own in `tools/run_tests.sh`); `perf` checks the median of five 20 s stretches; `netplay`'s lag-compensation lane starts on a spawn marker; `netjoin` gives a bot that took over a player 20 s to move or turn, and the joining player walks the most open way. The full suite passed three times in a row.
+- Release-build tests (D-223): `tools/check_release.sh` exports Windows, Linux and macOS and checks shooting in each (the Windows and Linux game data in the Mac's Godot), a full round (`--check-round`, new `RoundCheck`) and a LAN join with three copies of the Mac app; RELEASING.md step 3 and checklist line 0.5 run it. First run: 8 of 8 PASS in 71 s.
 
-**Next:** release-build tests, logs and bug reports, debug commands, the architecture review.
+**Next:** logs and bug reports, debug commands, the architecture review.
 
 ## 2026-10-16 — v0.2 screens
 

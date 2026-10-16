@@ -4,6 +4,8 @@
 #
 #     bash tools/lan_check.sh                  # joins the host at this computer's LAN address
 #     bash tools/lan_check.sh 127.0.0.1 28800  # another address and port
+#     GAME=builds/macos/Chiip.app/Contents/MacOS/Chiip bash tools/lan_check.sh   # an exported build
+#                                              # (tools/check_release.sh does this, M16)
 #
 # It runs headless and takes about a minute. The friends join through a real network address, not
 # in-process like the netplay suites, so it is what two computers do, minus the network cable (and
@@ -11,6 +13,8 @@
 # "Chiip online" log lines: the match starts with the first friend loaded, the first friend is
 # welcomed, the second friend is welcomed into the running match after the first left, and no game
 # printed a SCRIPT ERROR. Exit code = the number of failed checks. Logs: ${TMPDIR:-/tmp}/chiip-lan/.
+# Each game runs with a home folder of its own (an empty user://, deleted at the end), so none of
+# them reads or writes your settings, stats or logs.
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -27,11 +31,20 @@ fi
 mkdir -p "$LOGS"
 cd "$PROJECT" || exit 64
 rm -f "$LOGS"/*.log
+HOMES="$(mktemp -d "${TMPDIR:-/tmp}/chiip-lan-home.XXXXXX")" || exit 64
+trap 'rm -rf "$HOMES"' EXIT
+# The game: an exported build ($GAME), or this project in the editor's binary.
+if [ -n "${GAME:-}" ]; then
+	GAME_COMMAND=("$GAME")
+else
+	GAME_COMMAND=("$GODOT" --path .)
+fi
 
 run() { # name, frames, extra game arguments...
 	local name="$1" frames="$2"
 	shift 2
-	"$GODOT" --headless --verbose --path . --quit-after "$frames" -- --no-settings --name "$name" --port "$PORT" "$@" > "$LOGS/$name.log" 2>&1
+	mkdir -p "$HOMES/$name"
+	HOME="$HOMES/$name" "${GAME_COMMAND[@]}" --headless --verbose --quit-after "$frames" -- --no-settings --name "$name" --port "$PORT" "$@" > "$LOGS/$name.log" 2>&1
 }
 
 echo "Host on port $PORT, friends join at $ADDRESS ..."

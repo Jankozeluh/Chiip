@@ -16,7 +16,7 @@ How to read it: **Auto** lines are commands that exit with the number of failure
 | 0.2 | `bash tools/lan_check.sh` | 4 PASS: a host, a friend who joins and leaves, a second friend who joins the running match, over this computer's LAN address, in three real processes |
 | 0.3 | `"$GODOT" --headless --path "$PROJECT" --quit-after 400 -- --no-settings --match` (and `--practice`, `--match --respawn`, `--map res://maps/depot.tscn`, `--match --rotation`) | no `SCRIPT ERROR` line |
 | 0.4 | `git status` is clean and `git grep -n -i "<your home folder>"` finds nothing | `release_test` does the second part |
-| 0.5 | `bash tools/check_export.sh` | `Chiip hit check: PASS`: in an exported release build a shot hurts a bot and a bot's shot you (v0.1.0 shipped without hit zones, D-159). `tools/package_release.sh` runs it on `builds/macos` too |
+| 0.5 | `bash tools/check_release.sh` (about two minutes; `BUILDS=builds` keeps the builds for step 7) | 9 PASS (M16, D-223): the three release builds export; in each, a shot hurts a bot and a bot's shot you (v0.1.0 shipped without hit zones, D-159; the Windows and Linux builds' game data runs in this Mac's Godot); in the Mac app a full round plays (`--check-round`: the bots walk, a round ends with a winner, the next starts) and two friends join a host (`tools/lan_check.sh` with the app, three processes). `tools/package_release.sh` checks shooting in `builds/macos` once more |
 
 If `tools/run_tests.sh` is run while another copy of the game runs on the same computer, use `TMPDIR=<some folder> bash tools/run_tests.sh` so two runs don't share log files. A test never touches the player's `settings.cfg` (`Settings.real_file_accesses`); another running game may change that file without making a test fail.
 
@@ -119,7 +119,7 @@ Auto: `net`, `netplay`, `netjoin`, `netstress`, `netrespawn`, `netarsenal` (in o
 
 ## 7. The builds (each platform, from the release zips)
 
-Make the builds only when asked (CLAUDE.md): export, then `bash tools/package_release.sh`. Check each zip on its own system where possible; the author has only a Mac, so Windows and Linux need a friend with that computer.
+Make the builds only when asked (CLAUDE.md): `BUILDS=builds bash tools/check_release.sh` exports all three and runs the smoke checks of 0.5 on them, then `bash tools/package_release.sh`. Check each zip on its own system where possible; the author has only a Mac, so Windows and Linux need a friend with that computer.
 
 | # | Do | Expect |
 |---|---|---|
@@ -130,7 +130,7 @@ Make the builds only when asked (CLAUDE.md): export, then `bash tools/package_re
 | 7.5 | Practice → console → `map depot`, `map square` | The map list works in an export (it uses `ResourceLoader`) |
 | 7.6 | Settings are saved between runs; the file is at the path in the README | Yes |
 | 7.7 | Host from the build and join from the editor build (same version) | They connect (6.1) |
-| 7.8 | `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --no-settings --match` (and `--practice`) | No error. (The test export of 2026-10-16 passed: D-172) |
+| 7.8 | `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --no-settings --match` (and `--practice`) | No error. (The test export of 2026-10-16 passed: D-172.) Shooting, a round and a LAN join in the builds are 0.5 |
 | 7.9 | File sizes and the zip names | `Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip`, `…-macos-universal.zip`; each under GitHub's 2 GB limit |
 
 ## 8. Before it goes public

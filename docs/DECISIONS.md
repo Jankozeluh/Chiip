@@ -2270,6 +2270,14 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** A custom user folder in `project.godot` for tests (it would apply to the player's game too). Higher limits (would miss real regressions). Re-running a failed suite in the runner (hides a real one-in-ten bug). Quarantining the four checks (they test real things: lag compensation, the round start's cost, taking over a bot).
 
+## D-223 — M16: every release build is tested by machine before it ships (2026-10-16)
+
+**Decision:** `tools/check_release.sh` exports the three release builds and runs smoke checks on what was exported: shooting hits in each build (`--check-hits` through `tools/check_export.sh`; the Mac app itself, and the Windows and Linux builds' game data in this Mac's Godot with `--main-pack`), a full round in the Mac app (a new self-check, `--check-round`: a 2v2 match on Depot in which every bot walks at least 5 m, round 1 ends with a winner and round 2 starts) and a LAN join with the Mac app (`tools/lan_check.sh` with `GAME=<the app>`: a host and two friends, three processes). The release routine runs it (docs/RELEASING.md step 3 with `BUILDS=builds`; checklist line 0.5). It exits with the number of failed checks and takes about 70 s.
+
+**Why:** v0.1.0 shipped with a bug that existed only in the exported build (D-159, D-220). An exported game can't run `--script`, so the checks are the game's own flags, as `--check-hits` already was. The pack is the part an export converts (scenes and resources to binary), and the Windows and Linux packs run in the Mac's Godot, so their conversion is checked without a Windows or Linux computer. The round check asks for walking, not kills: a round with one or no kills happens (a defender that holds until the clock runs out), but bots that stand still mean they lost their navigation, a likely export-only bug.
+
+**Alternatives:** Running the Windows build in Wine or a VM (a download, slow, and the engine part is Godot's own tested template). A whole match instead of a round (minutes instead of seconds; the suites play whole matches in the editor build). Requiring a kill in the round check (flaky: one run in three had a single kill). A CI job that exports on every push (needs export templates in CI and doubles the minutes; the releases are rare).
+
 ## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
 
 **Decision:**

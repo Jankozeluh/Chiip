@@ -82,6 +82,8 @@ mkdir -p builds/windows builds/linux builds/macos && touch builds/.gdignore
 "$GODOT" --headless --path "$PROJECT" --export-release "macOS" builds/macos/Chiip.app
 ```
 
+**Test the builds** (M16, D-223): `BUILDS=builds bash tools/check_release.sh` exports all three into `builds/` and checks them (shooting in each build, a full round and a LAN join in the Mac app; about 70 s; it must end with `0 check(s) failed`). Without `BUILDS` it exports into a temporary folder and deletes it afterwards; with `SKIP_EXPORT=1` it checks builds you exported with the commands above. A round on its own: add `-- --no-settings --check-round` (and `--fixed-fps 128` before `--` to play it in seconds) to the game's command line.
+
 Smoke-test the Mac build headless: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`. Command-line options work as for the editor build, after the app's binary. In the editor: *Project → Export…*, pick a preset, *Export Project*.
 
 Then `bash tools/package_release.sh` makes the three zip files for the GitHub Release in `builds/release/` (`Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip`, `…-macos-universal.zip`), each a folder with the game and `LICENSE`, `LICENSE-ASSETS` and `THIRD_PARTY_NOTICES.md` next to it. The version is `config/version` in `project.godot`; the Mac preset's `short_version` and `version` must match it (`release_test` checks).

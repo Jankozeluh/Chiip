@@ -18,19 +18,21 @@ You need once per computer: the Godot 4.7.2 export templates ([DEVELOPING.md](DE
 - Commit: `Release 0.2.0`.
 
 **2. Run the checks.**
-- `bash tools/run_tests.sh` (all suites must pass; use `TMPDIR=<folder>` if another game runs on the computer) and `bash tools/lan_check.sh`.
+- `bash tools/run_tests.sh` (all suites must pass; each suite runs with an empty user folder of its own) and `bash tools/lan_check.sh`.
 - Walk through [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md): sections 1 to 6 for what changed, 7 for the builds.
 
-**3. Export the three builds** (only when asked):
+**3. Export the three builds and test them** (only when asked):
 
 ```bash
-mkdir -p builds/windows builds/linux builds/macos && touch builds/.gdignore
-"$GODOT" --headless --path "$PROJECT" --export-release "Windows" builds/windows/Chiip.exe
-"$GODOT" --headless --path "$PROJECT" --export-release "Linux" builds/linux/Chiip.x86_64
-"$GODOT" --headless --path "$PROJECT" --export-release "macOS" builds/macos/Chiip.app
+BUILDS=builds bash tools/check_release.sh
 ```
 
-Smoke-test the Mac build: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`, and check that shooting works in it: `APP=builds/macos/Chiip.app bash tools/check_export.sh` must print `Chiip hit check: PASS` (step 4 runs it again and stops if it fails; v0.1.0 shipped without hit zones, D-159). Start it once with a window and look at **Settings → Licences** (every document must show its text).
+It exports the Windows, Linux and macOS builds into `builds/` and runs the smoke checks on what was exported (M16, D-223), because some bugs exist only in an export (v0.1.0 shipped without hit zones, D-159). It must end with `0 check(s) failed`:
+- shooting hits in each build (`tools/check_export.sh`, the game's own `--check-hits`; the Windows and Linux builds' game data runs in this Mac's Godot with `--main-pack`);
+- a full round in the Mac app (`--check-round`: the bots walk, round 1 ends with a winner, round 2 starts);
+- a LAN join with the Mac app (`tools/lan_check.sh` with `GAME=` the app: a host and two friends in three processes).
+
+Logs are in `$TMPDIR/chiip-release-check/`. To export by hand instead, the commands are in [DEVELOPING.md](DEVELOPING.md), "Exporting the game"; then `SKIP_EXPORT=1 BUILDS=builds bash tools/check_release.sh` checks them. Start the Mac app once with a window and look at **Settings → Licences** (every document must show its text). Step 4 checks shooting in `builds/macos` once more and stops if it fails.
 
 **4. Zip them:** `bash tools/package_release.sh` (`BUILDS=<folder>` if you exported somewhere else) writes `builds/release/Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each with the licences next to the game, and `SHA256SUMS.txt` with each zip's SHA-256 checksum. (The site finds the right file by the words `windows`, `mac` and `linux` in the file names: keep them.)
 
