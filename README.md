@@ -2,7 +2,7 @@
 
 A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game: you and your bot teammates against a team of bots, bomb rounds or team deathmatch, on three small maps. Play it alone against bots, or with friends online (they take the bots' places). Free, for Windows, macOS and Linux. **Created by JK · Divocakos.** Built with [Godot](https://godotengine.org) 4.7.2.
 
-> **Version 0.1.0, the first public playtest.** Website: <https://jankozeluh.github.io/Chiip/>. Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
+> **Version 0.1.1, the first public playtest** (0.1.0 with bullets that hit again). Website: <https://jankozeluh.github.io/Chiip/>. Expect rough edges; [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) lists the ones we know about. Tell us what you find.
 
 ## Download and run
 
@@ -35,14 +35,17 @@ Every download has the licences next to the game (`LICENSE`, `LICENSE-ASSETS`, `
 
 ## Playing
 
-The main menu offers **Play**, **Practice**, **Settings**, **Quit**, and **Host** and **Join** for online games.
+The main menu offers **Play**, **Practice**, **Stats**, **Settings**, **Quit**, and **Host** and **Join** for online games.
 
 - **Play** opens the Play screen: **Team Deathmatch** (one click on its card starts the match), **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway, or the rotation of all three), team sizes (1 to 5 each, you included), the bots' difficulty (Easy, Normal, Hard), the match length and friendly fire. The game remembers your last choices.
 - **Team Deathmatch** is respawning: first team to the kill limit (or the most kills when the time is up) wins.
 - **Bomb** is CS-style rounds: one attacker carries the bomb; hold **E** inside site A or B to plant it, and defenders hold E next to it to defuse. A match is first to 5 rounds (sides swap at half time), with freeze time to buy (**B**), and money that carries over.
 - At the start of a match a **class menu** offers two classes drawn for that match (Rifleman, Bulwark, Marksman, Scout), each with its own perk and loadout. **M** opens it again during freeze time.
 - If you die in a round-based match you watch a teammate through their eyes (left click for the next one).
-- **Practice** is the Shooting Range: targets at 5, 10, 20 and 40 m, a stand for every gun and grenade, and no bots until you add some with the console (`bot_add [easy|normal|hard] [ally|enemy]`).
+- **Practice** is the Shooting Range: targets at 5, 10, 20 and 40 m, a stand for every gun and grenade, and no bots until you add some with the console (`bot_add [easy|normal|hard] [ally|enemy]`). It has two training tools:
+  - **The aim trainer:** shoot the gold coin by the start (or type `aim`) for a 30-second run of flick targets: one lime ball at a time pops up around you; the faster you hit it the more points, and a shot that misses costs points. Your best score is kept for each gun.
+  - **The spray wall** (the westmost lane): the pattern of the gun in your hand hangs on the wall as grey dots; your own bullet holes are lime. Pull against the recoil, and the sign shows your **control** (0 for holding still, near 100 for a perfect pull). Shoot the orange plate (or type `spray_reset`) to clear it.
+- **Stats** shows your numbers: K/D, ADR, headshot %, accuracy per weapon, wins per mode and map, your last 100 matches and your training bests. Every finished match is saved on your computer in a text file (`stats.json` in the game's user folder; nothing is sent anywhere), and **Export CSV** writes the history for a spreadsheet.
 - **Esc** opens the pause menu (Resume, Settings, Leave match). Online, the game doesn't pause.
 
 ## Controls
@@ -73,7 +76,7 @@ The main menu offers **Play**, **Practice**, **Settings**, **Quit**, and **Host*
 
 **Gamepad** (any controller your computer sees; plug it in and press a button, then prompts show its buttons): left stick moves, right stick looks, **RT** shoots, **LT** aims, **A** jumps, **B** crouches, **X** reloads, **Y** last weapon, **LB** uses (plant, defuse, pick up), **RB** buy menu, **R3** class menu, **L3** walks (silent), **Back** the scoreboard, **Start** pauses, the **D-pad** picks weapon 1 to 4 (up, right, down, left). In menus the D-pad or left stick moves, **A** presses and **B** goes back. Settings → Game has the pad's sensitivity, dead zone, look curve and Y inversion; Settings → Controls has a **Pad** column to rebind every button.
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `aim [stop]` (the Shooting Range's aim trainer), `spray_reset` (clears the spray wall), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 
 
 ## Weapons, money and buying
@@ -99,7 +102,7 @@ Open the **settings menu** with **Settings** in the main menu, or by typing `set
 
 - **Game:** mouse sensitivity (CS's scale: a slider and a number field you can type an exact value into), invert Y, field of view (90 across a 4:3 screen, like CS).
 - **Video:** fullscreen, V-Sync, frame rate limit, pixel resolution (270 to 720 lines), palette effect, pixelated HUD, team colours (standard blue/red, or a colour-blind-safe blue/orange).
-- **Audio:** master, effects and interface volume.
+- **Audio:** master, effects, interface and music volume.
 - **Crosshair:** color (swatches or a `#RRGGBB` code), opacity, size, gap, thickness, outline, center dot and dynamic, with a live preview on a dark and a light background.
 - **Controls:** click a slot, then press the new key or mouse button (Esc cancels, Backspace clears the slot). Every action has a primary and a secondary slot. A key belongs to one action: if it was in use, the other action loses it and the menu tells you which.
 
@@ -113,7 +116,7 @@ Open the **settings menu** with **Settings** in the main menu, or by typing `set
 | `fps_max [0\|30-1000]` | Frame rate limit, 0 = unlimited | 0 |
 | `settings_reset` | Everything back to its default, key bindings and the remembered match setup included | |
 
-The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (mode, team sizes, difficulty, match length or kill limit, friendly fire, rotation and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
+The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects, interface and music volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (mode, team sizes, difficulty, match length or kill limit, friendly fire, rotation and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
 
 
 ## Playing with friends

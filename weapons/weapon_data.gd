@@ -184,10 +184,20 @@ const PATHS: Array[String] = [
 @export_group("Sounds")
 ## Played for every shot.
 @export var shot_sound: AudioStream
+## The same shot heard from far away (M13, D-191): duller, with a longer echo. Others' shots
+## crossfade from [member shot_sound] to this one with distance; none = only the close one.
+@export var shot_far_sound: AudioStream
+## How much louder this weapon's shots are than the mix's shot level, in dB (D-194): the sniper
+## rifle carries more than a pistol.
+@export var shot_volume_db: float = 0.0
 ## Played when you pull the trigger on an empty magazine.
 @export var dry_fire_sound: AudioStream
-## Played at each step of a reload (magazine out, magazine in, bolt).
+## Played at each step of a reload (magazine out, magazine in, bolt) when [member reload_sounds]
+## has no sound for that step; for a shotgun, at every shell.
 @export var reload_sound: AudioStream
+## One sound per reload step (M13, D-191): magazine out, magazine in, then the bolt or slide
+## (the cues of [constant GunModel.MAGAZINE_SOUNDS]).
+@export var reload_sounds: Array[AudioStream] = []
 ## Played when a melee attack lands on someone (the knife).
 @export var hit_sound: AudioStream
 ## Played a moment after each shot (the shotgun's pump, the sniper rifle's bolt), at

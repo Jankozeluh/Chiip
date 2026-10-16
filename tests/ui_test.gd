@@ -199,6 +199,7 @@ func _ready() -> void:
 	await _test_scoreboard_header_in_team_deathmatch()
 	await _test_match_end_screen()
 	await _test_menus_have_no_overrides()
+	await _test_stats_menu()
 	_test_hud_roles()
 	_test_hud_scenes_use_the_theme()
 	await _test_debug_overlay()
@@ -1058,16 +1059,16 @@ func _test_scoreboard() -> void:
 
 	# The column titles: an empty 32 px column for the class icon, PLAYER, K, D, A (64 px each) and DMG (96), right-aligned, in MUTE, 32 high.
 	var title_labels := titles.find_children("*", "Label", true, false)
-	var expected_titles: Array = ["Player", "K", "D", "A", "DMG"]
+	var expected_titles: Array = ["Player", "K", "D", "A", "DMG", "ADR"]
 	if _rounds.has_economy():
 		expected_titles.append("Money")
 	var title_texts: Array = title_labels.map(func(label: Node) -> String: return (label as Label).text)
 	var title_widths: Array = title_labels.map(func(label: Node) -> float: return (label as Label).size.x)
 	var title_icon := titles.find_child("Icon", true, false) as Control
-	_check("The column titles are 32 high and in MUTE: a 32 px column for the class icon, then PLAYER, K, D, A and DMG; K, D and A are 64 px wide and DMG 96 (Money, 96, is M7's, for your team's cash), numbers right-aligned",
+	_check("The column titles are 32 high and in MUTE: a 32 px column for the class icon, then PLAYER, K, D, A and DMG; K, D and A are 64 px wide and DMG 96 (ADR, 64, is M14's, for rounds matches; Money, 96, is M7's, for your team's cash), numbers right-aligned",
 			title_texts == expected_titles and titles.size.y == 32.0 and title_icon.size.x == 32.0
 					and title_labels.all(func(label: Node) -> bool: return (label as Label).theme_type_variation == &"MuteLabel" and (label as Label).get_theme_color("font_color") == Tokens.MUTE)
-					and title_widths.slice(1, 4) == [64.0, 64.0, 64.0] and title_widths[4] == 96.0
+					and title_widths.slice(1, 4) == [64.0, 64.0, 64.0] and title_widths[4] == 96.0 and title_widths[5] == 64.0
 					and title_labels.slice(1).all(func(label: Node) -> bool: return (label as Label).horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT),
 			"titles %s, widths %s, height %.0f" % [title_texts, title_widths, titles.size.y])
 
@@ -1288,9 +1289,9 @@ func _test_match_end_screen() -> void:
 	var all_rows: Array = rows0 + rows1
 	var muted := _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
 	var title_labels := titles.find_children("*", "Label", true, false)
-	_check("The table is the mockup's compact one: 800 wide, centred, 224 from the top, titles 28 high (PLAYER, K, D, A, DMG: no money column here), a 2 px line in your colour and 36 high rows with nothing between them, a 2 px line in the enemy's colour 12 px under your last row, and nobody muted although the three enemies are dead",
+	_check("The table is the mockup's compact one: 800 wide, centred, 224 from the top, titles 28 high (PLAYER, K, D, A, DMG, ADR: no money column here), a 2 px line in your colour and 36 high rows with nothing between them, a 2 px line in the enemy's colour 12 px under your last row, and nobody muted although the three enemies are dead",
 			table.size.x == 800.0 and absf(table.get_global_rect().get_center().x - view.x / 2.0) <= 0.5 and table.global_position.y == 224.0
-					and titles.size.y == 28.0 and title_labels.map(func(label: Node) -> String: return (label as Label).text) == ["Player", "K", "D", "A", "DMG"]
+					and titles.size.y == 28.0 and title_labels.map(func(label: Node) -> String: return (label as Label).text) == ["Player", "K", "D", "A", "DMG", "ADR"]
 					and friendly_line.size.y == 2.0 and enemy_line.size.y == 14.0
 					and friendly_line.global_position.y == titles.global_position.y + 28.0
 					and all_rows.all(func(row: Control) -> bool: return row.size.y == 36.0)
@@ -2394,10 +2395,10 @@ func _test_main_menu() -> void:
 	var title := menu.get_node("Page/Logo/Title") as Label
 	var side := menu.get_node("Page/Side") as Panel
 	var chips: Array = menu.get_node("Page/Logo/Chips").get_children().map(func(chip: Node) -> String: return String((chip as Control).theme_type_variation))
-	_check("The main menu is the mockup's column (D-135): CHIIP with a blue, a red and a lime chip; Play (focused), Practice, Settings and Quit as menu items with the focus chip; Host and Join enabled, small items with no \"Soon\" label (M9); the mouse is free",
+	_check("The main menu is the mockup's column (D-135): CHIIP with a blue, a red and a lime chip; Play (focused), Practice, Stats, Settings and Quit as menu items with the focus chip; Host and Join enabled, small items with no \"Soon\" label (M9); the mouse is free",
 			title.text == "CHIIP" and title.theme_type_variation == &"LogoLabel" and side.theme_type_variation == &"SidePanel"
 					and chips == ["FriendlyChip", "EnemyChip", "AccentChip"]
-					and texts == ["Play", "Practice", "Settings", "Quit"] and online == ["Host", "Join"] and items_ok
+					and texts == ["Play", "Practice", "Stats", "Settings", "Quit"] and online == ["Host", "Join"] and items_ok
 					and menu.get_buttons()[0].has_focus() and MenuState.is_top(menu) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
 			"title '%s', chips %s, items %s, online %s, focus on Play %s" % [title.text, chips, texts, online, menu.get_buttons()[0].has_focus()])
 	var map_name := menu.get_node("Page/MapName") as Label
@@ -5018,6 +5019,113 @@ func _override_names(control: Control) -> Array[String]:
 			if (by_name[kind] as Callable).call(item) and not found.has(override_name):
 				found.append(override_name)
 	return found
+
+
+## The Stats screen (M14, D-204): opened by the main menu's Stats button, four tabs built from a
+## book of three matches (an empty book shows a note on each), the Overview's tiles and win bars,
+## the weapons table, the history newest first, the training bests, no theme override anywhere
+## (the rows are built in code), Reset asking twice and Esc closing it.
+func _test_stats_menu() -> void:
+	MenuState.reset()
+	var menu := MAIN_MENU_SCENE.instantiate() as MainMenu
+	menu.load_settings = false
+	add_child(menu)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var stats := menu.get_stats_menu()
+	var empty := StatsBook.new()
+	stats.book = empty
+	_check("The Stats button sits between Practice and Settings and opens the Stats screen over the menu: four tabs (Overview, Weapons, History, Training), the screen on top",
+			menu.get_buttons()[2] == menu.get_stats_button() and menu.get_stats_button().text == "Stats" and not stats.is_open(), "closed at the start")
+	menu.get_stats_button().pressed.emit()
+	await get_tree().process_frame
+	var tabs := stats.get_tabs()
+	var names: Array[String] = []
+	for index in tabs.get_tab_count():
+		names.append(tabs.get_tab_title(index))
+	_check("It opens with the four tabs and the Back button focused",
+			stats.is_open() and MenuState.is_top(stats) and names == StatsMenu.TAB_NAMES and stats.get_back_button().has_focus(),
+			"open %s, tabs %s" % [stats.is_open(), names])
+	var notes := 0
+	for index in 4:
+		var column := tabs.get_child(index).get_child(0)
+		notes += 1 if column.get_child_count() == 1 and column.get_child(0).theme_type_variation == &"DimLabel" else 0
+	_check("With no matches every tab shows one note saying what will appear there", notes == 4, "%d of 4 tabs" % notes)
+	# Three matches: a bomb win and a loss on Depot, a Team Deathmatch win on Square.
+	var populated := StatsBook.new()
+	for sample: Array in [["rounds", "depot", "win", 14, 9, 1800.0, 20, 300, 90, 5], ["rounds", "depot", "loss", 9, 14, 1200.0, 18, 250, 60, 2], ["respawn", "square", "win", 25, 20, 3300.0, 0, 500, 130, 7]]:
+		var record := StatsMatch.new()
+		record.date = 1_792_000_000 + 1000 * populated.history.size()
+		record.mode = sample[0]
+		record.map = sample[1]
+		record.result = sample[2]
+		record.kills = sample[3]
+		record.deaths = sample[4]
+		record.damage = sample[5]
+		record.rounds = sample[6]
+		record.duration = 600.0
+		record.headshot_kills = sample[9]
+		var gun := StatsWeapon.new()
+		gun.add_shots(sample[7])
+		for hit in sample[8]:
+			gun.add_hit(Hitbox.Zone.HEAD if hit < 10 else Hitbox.Zone.CHEST)
+		record.weapons["rifle"] = gun
+		populated.add_match(record)
+	populated.submit_best("aim_flick_rifle", 4200.0, {"hits": 31})
+	stats.book = populated
+	stats.refresh()
+	await get_tree().process_frame
+	var overview := tabs.get_child(0).get_child(0)
+	var tiles := overview.find_children("*", "PanelContainer", true, false).filter(func(node: Node) -> bool: return node.theme_type_variation == &"InsetPanel")
+	var tile_texts: Array = tiles.map(func(tile: Node) -> String: return "%s %s" % [tile.find_child("Caption", true, false).text, tile.find_child("Value", true, false).text])
+	var bars := overview.find_children("*", "ProgressBar", true, false)
+	_check("The Overview has ten tiles from the lifetime numbers and a bar for each mode and map won (2 modes, 2 maps)",
+			tiles.size() == 10 and tile_texts[0] == "K/D 1.12" and tile_texts[1] == "ADR 79" and tile_texts[5] == "Matches 3" and tile_texts[6] == "Kills 48"
+			and bars.size() == 4, "tiles %s, %d bars" % [tile_texts, bars.size()])
+	var weapons := tabs.get_child(1).get_child(0)
+	var history := tabs.get_child(2).get_child(0)
+	var training := tabs.get_child(3).get_child(0)
+	var first_row := (history.get_child(2).find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text))
+	_check("Weapons has the title, the header and a row for the one gun; History a title, a header and a row per match with the newest first; Training a title, a header and one best",
+			weapons.get_child_count() >= 3 and history.get_child_count() == 5 and training.get_child_count() == 3
+			and first_row[1] == "Team Deathmatch · Square" and first_row[2] == "Win" and first_row[4] == "25" and first_row[7] == "-",
+			"weapons %d, history %d (first row %s), training %d" % [weapons.get_child_count(), history.get_child_count(), first_row, training.get_child_count()])
+	var overrides := _overrides_below(stats)
+	_check("Nothing on the Stats screen, the rows built in code included, carries a theme override", overrides.is_empty(), "%s" % [overrides])
+	# Scaled to 2x the rows are twice as high.
+	stats.set_ui_scale(2.0)
+	await get_tree().process_frame
+	var scaled_row := (tabs.get_child(2).get_child(0).get_child(2) as Control).custom_minimum_size.y
+	stats.set_ui_scale(1.0)
+	_check("Scaled by 2 the History rows are twice as high (64 instead of 32)", is_equal_approx(scaled_row, 64.0), "%.0f" % scaled_row)
+	# Export CSV.
+	stats.export_csv()
+	var csv_lines := FileAccess.get_file_as_string(StatsMenu.EXPORT_PATH).strip_edges().split("\n")
+	DirAccess.remove_absolute(StatsMenu.EXPORT_PATH)
+	_check("Export CSV writes the history (a header and three rows) and says where", csv_lines.size() == 4 and stats.get_status().begins_with("Saved "), "%d lines, '%s'" % [csv_lines.size(), stats.get_status()])
+	# Reset asks twice.
+	stats.get_reset_button().pressed.emit()
+	var armed := stats.is_reset_armed() and stats.get_reset_button().text == StatsMenu.RESET_CONFIRM_TEXT and populated.history.size() == 3
+	stats.get_reset_button().pressed.emit()
+	await get_tree().process_frame
+	_check("Reset stats asks again on the first press and deletes everything on the second",
+			armed and not stats.is_reset_armed() and populated.history.is_empty() and populated.lifetime.matches == 0 and populated.training.is_empty()
+			and stats.get_reset_button().text == StatsMenu.RESET_TEXT and stats.get_status() == "Stats deleted.", "armed %s, %d matches left" % [armed, populated.history.size()])
+	# The first press is forgotten when the screen closes; Esc closes the screen and gives the focus back.
+	stats.get_reset_button().pressed.emit()
+	var esc := InputEventAction.new()
+	esc.action = &"pause"
+	esc.pressed = true
+	Input.parse_input_event(esc)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("Esc closes the Stats screen, forgets a first press of Reset and puts the focus back on the Stats button",
+			not stats.is_open() and not stats.is_reset_armed() and MenuState.is_top(menu) and menu.get_stats_button().has_focus(),
+			"open %s, armed %s, focus %s" % [stats.is_open(), stats.is_reset_armed(), menu.get_stats_button().has_focus()])
+	remove_child(menu)
+	menu.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
 
 
 ## The controls in [param root] and below it (the ones a scene or a script added, not the engine's own

@@ -36,7 +36,7 @@ const DEFAULTS := {
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
 	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0, &"team_colors": "standard",
 	&"pad_sensitivity": 1.0, &"pad_deadzone": 0.15, &"pad_curve": 1.5, &"pad_invert_y": false,
-	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
+	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0, &"music_volume": 1.0,
 	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
 	# The last match setup (D-064): D-041's match.
@@ -128,7 +128,8 @@ func _test_defaults() -> void:
 			"90 → %.4f°, back → %.4f°, 110 → %.2f°, 70 → %.2f°" % [fov, Settings.horizontal_fov(fov), Settings.vertical_fov(110.0), Settings.vertical_fov(70.0)])
 
 
-## The bus layout has the three buses, sends the other two to Master and ships with nothing muted.
+## The bus layout has its seven buses (M13, D-190; `sound_test` checks their effects and the
+## muffled buses' sends), sends Effects and Interface to Master and ships with nothing muted.
 func _test_audio_layout() -> void:
 	var names: Array[String] = []
 	var problems: Array[String] = []
@@ -138,8 +139,8 @@ func _test_audio_layout() -> void:
 			problems.append("%s: mute %s, %.1f dB" % [AudioServer.get_bus_name(bus), AudioServer.is_bus_mute(bus), AudioServer.get_bus_volume_db(bus)])
 	var sends := (AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_EFFECTS)) == Settings.BUS_MASTER
 			and AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_INTERFACE)) == Settings.BUS_MASTER)
-	_check("The audio buses are Master, Effects and Interface, both sending to Master, none muted, all at 0 dB",
-			names == ["Master", "Effects", "Interface"] and sends and problems.is_empty(),
+	_check("The audio buses are Master, Effects, MuffledLight, Muffled, MuffledHeavy, Interface and Music, Effects and Interface sending to Master, none muted, all at 0 dB",
+			names == ["Master", "Effects", "MuffledLight", "Muffled", "MuffledHeavy", "Interface", "Music"] and sends and problems.is_empty(),
 			"buses %s, sends to Master %s%s" % [names, sends, "" if problems.is_empty() else ", problems: " + ", ".join(problems)])
 
 
@@ -247,15 +248,16 @@ func _test_player() -> void:
 	_check("Resetting gives the camera its 73.74° and the mouse its sensitivity back",
 			absf(camera.fov - SCENE_CAMERA_FOV) < 0.01 and controller.sensitivity == 1.0 and not controller.invert_y,
 			"camera %.3f°, sensitivity %s" % [camera.fov, controller.sensitivity])
-	# The players' sounds: every audio player of the character and its rifle plays on Effects.
+	# The players' sounds: every audio player of the character and its rifle starts on Effects (walls
+	# move a sound to a muffled bus as it plays, M13 D-192; those send into Effects).
 	var players: Array[Node] = player.find_children("*", "AudioStreamPlayer", true, false)
 	players.append_array(player.find_children("*", "AudioStreamPlayer3D", true, false))
 	var off_bus: Array[String] = []
 	for audio in players:
 		if audio.get("bus") != Settings.BUS_EFFECTS:
 			off_bus.append("%s on %s" % [audio.name, audio.get("bus")])
-	_check("Every sound player of a character and its rifle (6: footsteps, shots, handling, 2D and 3D) plays on the Effects bus",
-			players.size() == 6 and off_bus.is_empty(), "%d players%s" % [players.size(), "" if off_bus.is_empty() else ", not on Effects: " + ", ".join(off_bus)])
+	_check("Every sound player of a character and its rifle (7: footsteps, shots, far shots, handling, 2D and 3D) starts on the Effects bus",
+			players.size() == 7 and off_bus.is_empty(), "%d players%s" % [players.size(), "" if off_bus.is_empty() else ", not on Effects: " + ", ".join(off_bus)])
 	player.free()
 
 
@@ -303,14 +305,16 @@ func _test_engine_settings() -> void:
 	var master := AudioServer.get_bus_index(Settings.BUS_MASTER)
 	var effects := AudioServer.get_bus_index(Settings.BUS_EFFECTS)
 	var interface := AudioServer.get_bus_index(Settings.BUS_INTERFACE)
+	var music := AudioServer.get_bus_index(Settings.BUS_MUSIC)
 	_settings.master_volume = 0.5
 	_settings.effects_volume = 0.25
 	_settings.interface_volume = 0.1
-	_check("Volumes go to their buses as dB: 0.5 on Master, 0.25 on Effects, 0.1 on Interface, none muted",
+	_settings.music_volume = 0.3
+	_check("Volumes go to their buses as dB: 0.5 on Master, 0.25 on Effects, 0.1 on Interface, 0.3 on Music, none muted",
 			is_equal_approx(AudioServer.get_bus_volume_db(master), linear_to_db(0.5)) and is_equal_approx(AudioServer.get_bus_volume_db(effects), linear_to_db(0.25))
-					and is_equal_approx(AudioServer.get_bus_volume_db(interface), linear_to_db(0.1))
-					and not AudioServer.is_bus_mute(master) and not AudioServer.is_bus_mute(effects) and not AudioServer.is_bus_mute(interface),
-			"%.2f / %.2f / %.2f dB" % [AudioServer.get_bus_volume_db(master), AudioServer.get_bus_volume_db(effects), AudioServer.get_bus_volume_db(interface)])
+					and is_equal_approx(AudioServer.get_bus_volume_db(interface), linear_to_db(0.1)) and is_equal_approx(AudioServer.get_bus_volume_db(music), linear_to_db(0.3))
+					and not AudioServer.is_bus_mute(master) and not AudioServer.is_bus_mute(effects) and not AudioServer.is_bus_mute(interface) and not AudioServer.is_bus_mute(music),
+			"%.2f / %.2f / %.2f / %.2f dB" % [AudioServer.get_bus_volume_db(master), AudioServer.get_bus_volume_db(effects), AudioServer.get_bus_volume_db(interface), AudioServer.get_bus_volume_db(music)])
 	_settings.master_volume = 0.0
 	var muted := AudioServer.is_bus_mute(master)
 	_settings.master_volume = 1.0
@@ -423,6 +427,7 @@ func _test_saving() -> void:
 	writer.master_volume = 0.4
 	writer.effects_volume = 0.7
 	writer.interface_volume = 0.1
+	writer.music_volume = 0.3
 	writer.crosshair_color = Color(1.0, 0.5, 0.25, 0.8)
 	writer.crosshair_length = 12.0
 	writer.crosshair_gap = 2.0

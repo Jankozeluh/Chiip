@@ -13,7 +13,7 @@ extends Node
 ## - The UI scale is the tighter of width / 1280 and height / 720 ([method PixelView.ui_scale_for]),
 ##   so a window narrower than 16:9 still gets the whole 1280-wide layout.
 ## - Every visible control of every menu and of the HUD lies inside the window. Menus are opened one
-##   at a time (main page, Play with each mode, every settings tab, the Licences screen, the lobby; class draft, buy menu,
+##   at a time (main page, Play with each mode, every settings tab, the Licences screen, the Stats screen, the lobby; class draft, buy menu,
 ##   pause, scoreboard, match end, console, loading, boot); a scroll box's contents may run past its
 ##   edge, the box itself may not.
 ## - After loading nothing covers the class draft: the loading screen is gone (and the game
@@ -142,9 +142,19 @@ func _test_main_menu(pixelated: bool) -> void:
 			_collect(failures, "licences (%s) at %s" % [document, size], [menu], size)
 		licences.close()
 		settings_menu.close()
+		# The Stats screen (M14) with a book of matches: every tab (the History table is the widest).
+		var stats_menu := menu.get_stats_menu()
+		stats_menu.book = _sample_book()
+		stats_menu.open()
+		for tab in stats_menu.get_tabs().get_tab_count():
+			stats_menu.get_tabs().current_tab = tab
+			await _settle(size)
+			_collect(failures, "stats tab %d at %s" % [tab, size], [menu], size)
+		stats_menu.close()
+		stats_menu.book = null
 		menu.get_match_setup().close()
 	var label := "pixelated HUD, " if pixelated else ""
-	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
+	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen, the Stats tabs) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(menu)
 	menu.queue_free()
@@ -550,3 +560,31 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	if not passed:
 		_failures += 1
 
+
+## A book of twelve matches (bomb and Team Deathmatch, wins and losses, six guns) and two training
+## bests, for the Stats screen to lay out: every tab has its widest content.
+func _sample_book() -> StatsBook:
+	var book := StatsBook.new()
+	var guns := ["rifle", "carbine", "smg", "shotgun", "sniper", "pistol"]
+	for index in 12:
+		var record := StatsMatch.new()
+		record.date = 1_792_000_000 + index * 5000
+		record.mode = StatsMatch.MODE_ROUNDS if index % 2 == 0 else StatsMatch.MODE_RESPAWN
+		record.map = ["depot", "square", "spillway"][index % 3]
+		record.result = StatsMatch.WIN if index % 3 != 0 else StatsMatch.LOSS
+		record.kills = 10 + index
+		record.deaths = 8 + index % 5
+		record.damage = 1500.0 + index * 40.0
+		record.rounds = 20 if index % 2 == 0 else 0
+		record.duration = 900.0
+		record.headshot_kills = index
+		for gun: String in guns:
+			var weapon := StatsWeapon.new()
+			weapon.add_shots(100 + index)
+			for hit in 30 + index:
+				weapon.add_hit(Hitbox.Zone.values()[hit % Hitbox.Zone.size()])
+			record.weapons[gun] = weapon
+		book.add_match(record)
+	book.submit_best("aim_flick_rifle", 4200.0, {"hits": 31, "accuracy": 62.5})
+	book.submit_best("aim_flick_smg", 3900.0, {"hits": 28})
+	return book

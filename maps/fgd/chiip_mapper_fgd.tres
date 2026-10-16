@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=24 format=3]
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="solid_class"]
@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://maps/props/target_dummy.tscn" id="target_dummy_scene"]
 [ext_resource type="Script" path="res://maps/kit/kit_weapon_stand.gd" id="weapon_stand_script"]
 [ext_resource type="Script" path="res://maps/kit/kit_text_sign.gd" id="text_sign_script"]
+[ext_resource type="Script" path="res://maps/props/range_trainer.gd" id="range_trainer_script"]
+[ext_resource type="Script" path="res://maps/props/range_spray_wall.gd" id="range_spray_wall_script"]
 
 [sub_resource type="Resource" id="func_glass"]
 script = ExtResource("solid_class")
@@ -221,7 +223,51 @@ meta_properties = Dictionary[String, Variant]({
 })
 node_class = "Label3D"
 
+[sub_resource type="Resource" id="range_trainer"]
+script = ExtResource("point_class")
+script_class = ExtResource("range_trainer_script")
+classname = "range_trainer"
+description = "The aim trainer's pad for ranges (M14, D-207): a gold coin that, when shot, starts a timed run of flick targets in front of whoever shot it (shot again, it stops the run). The balls pop up one at a time at random spots in plain view, 7 to 20 m away, and the score and your best per gun show on screen and in the Stats screen. Put it on a wall or a post off to the side of the shooting lanes (a ball is never put where the pad is in the way), about 1.3 m up; the coin faces the entity's angle."
+class_properties = Dictionary[String, Variant]({
+"run_time": 30.0,
+"target_lifetime": 1.5,
+"min_distance": 7.0,
+"max_distance": 20.0,
+"half_angle": 45.0
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"run_time": "Seconds a run lasts",
+"target_lifetime": "Seconds a ball stays up if nobody hits it",
+"min_distance": "The nearest a ball appears from the shooter's eyes, in metres",
+"max_distance": "The farthest a ball appears, in metres",
+"half_angle": "How far to each side of the shooter's starting view a ball can appear, in degrees"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.78, 0.25, 1),
+"size": AABB(-12, -12, -12, 12, 12, 12)
+})
+node_class = "Node3D"
+
+[sub_resource type="Resource" id="range_spray_wall"]
+script = ExtResource("point_class")
+script_class = ExtResource("range_spray_wall_script")
+classname = "range_spray_wall"
+description = "The spray wall of a range (M14, D-209): draws the pattern of the gun in the player's hand (grey numbered dots, from the first shot) next to the player's own bullet holes (lime dots) on the wall, with the drift and a control percentage on a sign, and a personal best per gun. Put it at the middle of the face of a flat wall, about 3 m wide and 3 m tall, with the angle pointing away from the wall, toward the shooters (like a sign). A small orange plate in the wall's top corner resets it when shot. It needs a plain wall to draw on; it works for one bullet at a time (a shotgun has no pattern)."
+class_properties = Dictionary[String, Variant]({
+"width": 3.2,
+"height": 3.0
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"width": "How wide the wall is, in metres (the marks and the reset plate stay inside it)",
+"height": "How tall the wall is, in metres"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.78, 0.25, 1),
+"size": AABB(-4, -16, -16, 4, 32, 32)
+})
+node_class = "Node3D"
+
 [resource]
 script = ExtResource("fgd_file")
 fgd_name = "ChiipMapper"
-entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route"), SubResource("info_bot_spawn"), SubResource("range_target"), SubResource("range_weapon"), SubResource("sign_text")])
+entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route"), SubResource("info_bot_spawn"), SubResource("range_target"), SubResource("range_weapon"), SubResource("range_trainer"), SubResource("range_spray_wall"), SubResource("sign_text")])

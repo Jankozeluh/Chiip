@@ -47,8 +47,6 @@ const UNITS_TO_METRES := 0.0254
 const STEP_DISTANCE := 1.8
 ## Where the eyes (and a player's camera) end up after dying: close to the floor.
 const DEAD_EYE_HEIGHT := 0.35
-## How far other characters' footsteps can be heard, in metres (the FootstepAudio3D node's range).
-const FOOTSTEP_AUDIO_RANGE := 30.0
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -665,13 +663,10 @@ func _play_footstep() -> void:
 		return
 	var sound := Surfaces.footstep_sound(Surfaces.floor_kind(get_world_3d(), global_position), footstep_sound)
 	if is_local_player():
-		_footstep_audio.stream = sound
-		_footstep_audio.play()
+		Acoustics.play_2d(_footstep_audio, sound, SoundMix.FOOTSTEP)
 	else:
-		_footstep_audio_3d.stream = sound
 		# The steps fade out where bots stop hearing them (shorter for the Scout's Light Step).
-		_footstep_audio_3d.max_distance = FOOTSTEP_AUDIO_RANGE * get_footstep_range() / Noises.FOOTSTEP_RANGE
-		_footstep_audio_3d.play()
+		Acoustics.play(_footstep_audio_3d, sound, SoundMix.FOOTSTEP, 0.0, get_footstep_range() / Noises.FOOTSTEP_RANGE)
 
 
 ## Brings the character back at [param at], facing [param yaw], with full

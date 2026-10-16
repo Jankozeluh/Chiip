@@ -91,6 +91,9 @@ signal character_killed(victim: Character, killer: Character, headshot: bool)
 signal callout(team: int, text: String)
 ## Emitted when [method request_class] gave [param character] another class.
 signal class_changed(character: Character, data: ClassData)
+## Emitted when someone joins the match (a bot, a friend arriving), on the host and on a client
+## (the stats recorder, M14, follows everyone's damage through it).
+signal participant_joined(character: Character)
 ## Emitted when the match starts and [param character] has been offered [param classes] (the
 ## class draft, two classes).
 signal class_drafted(character: Character, classes: Array[ClassData])
@@ -261,6 +264,17 @@ func get_participants() -> Array[Character]:
 ## The scoreboard numbers of [param character].
 func get_stats(character: Character) -> Stats:
 	return _stats.get(character)
+
+
+## Rounds played so far: the rounds won by both teams. 0 in Team respawn, which is one long round
+## (no ADR there, D-201).
+func get_rounds_played() -> int:
+	if is_team_respawn():
+		return 0
+	var played := 0
+	for won in score:
+		played += won
+	return played
 
 
 ## True while this round's bomb is planted and ticking.
@@ -667,6 +681,7 @@ func _join(character: Character) -> void:
 	var brain := character.get_node_or_null("BotController") as BotController
 	if brain != null:
 		brain.called_out.connect(_on_called_out.bind(character))
+	participant_joined.emit(character)
 
 
 ## Without the draft (M6): each team's bots cycle through the classes from a random one, so three
@@ -940,6 +955,7 @@ func replica_join(character: Character) -> void:
 		_participants.append(character)
 		_stats[character] = Stats.new()
 		_money[character] = 0
+		participant_joined.emit(character)
 
 
 ## The host's money of [param character]: [param total] now, changed by [param amount] for

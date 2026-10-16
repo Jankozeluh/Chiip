@@ -30,7 +30,7 @@ mkdir -p builds/windows builds/linux builds/macos && touch builds/.gdignore
 "$GODOT" --headless --path "$PROJECT" --export-release "macOS" builds/macos/Chiip.app
 ```
 
-Smoke-test the Mac build: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`. Start it once with a window and look at **Settings → Licences** (every document must show its text).
+Smoke-test the Mac build: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`, and check that shooting works in it: `APP=builds/macos/Chiip.app bash tools/check_export.sh` must print `Chiip hit check: PASS` (step 4 runs it again and stops if it fails; v0.1.0 shipped without hit zones, D-159). Start it once with a window and look at **Settings → Licences** (every document must show its text).
 
 **4. Zip them:** `bash tools/package_release.sh` (`BUILDS=<folder>` if you exported somewhere else) writes `builds/release/Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each with the licences next to the game, and `SHA256SUMS.txt` with each zip's SHA-256 checksum. (The site finds the right file by the words `windows`, `mac` and `linux` in the file names: keep them.)
 

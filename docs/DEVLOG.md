@@ -16,7 +16,60 @@ Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 s
 - **Smarter team bots** (D-216, D-217; one Opus subagent designed and built it, `bots/bot_squad.gd`, 132 lines): one "call" mechanism. A killed teammate (a **trade**) and a bot that first spots an enemy while not fighting (a **callout**, at most one per bot per 6 s) send a position to the team; at most 2 free bots (PATROL, not busy with the bomb) within 25 m of navmesh path answer, by a difficulty chance (`team_play`: easy 0.4, normal 0.75, hard 1.0), with a 6 s lead into the existing search state. The player's team sees a toast ("Enemy spotted near A" within 15 m of a bomb site, else "Enemy spotted north-west" relative to you). **Spreading:** the second bot to answer comes in through a point 7 m to the side, and a retaking defender team no longer runs one path (the nearest goes straight in, the others from alternating sides). Not done: callout toasts on online clients (they need a network event; host and offline only), and respawn-mode group leaders can still converge on one sighting. New `squad` suite (14 checks).
 - **A tool:** `tools/map_screenshots.gd --team-colors colorblind` (a look at the colour-blind colours on the models; checked on Depot: blue and orange read clearly).
 
-**Next:** merge main, one full run of every suite; then your playtest of M15 (the "Your open checks" entry in PLAN.md).
+- **Merged main** (v0.1.1, M13 sound, M14 stats and training, the M16 plan): conflicts only in docs, the suite lists (the union: 43 suites), `Settings` (`music_volume` and `team_colors` both applied) and one line in `RoundManager`. The Stats screen and the training use no team colours, so nothing needed recolouring. Wallbangs broke M14's `spray` suite (the range's walls are thin, so the bullet went through and the spray wall saw the exit point): `last_hit` now has `first_position`, the first surface the bullet met, which the spray wall uses.
+
+**Next:** your playtest of M15 (the "Your open checks" entry in PLAN.md).
+## 2026-10-16 — M14 stats & training
+
+Branch `claude/m14-stats-f32137` (Sonnet), in parallel with the M13 and M15 sessions, while the user plays v0.1.0. Decisions D-200 to D-209. Six tasks, one commit each.
+
+**Done**
+- **The stats file and its maths** (D-200, D-201): `StatsBook` saves `user://stats.json` (the last 300 matches, lifetime totals that keep counting after old matches drop out, and the training bests); `StatsMatch`, `StatsWeapon`, `StatsTotals` and `StatsMath` hold the data and the definitions (K/D with deaths counted as at least 1, ADR for round matches only, HS % as headshot kills over kills, accuracy by bullets with a shotgun's pellets counted one by one). A file that can't be read is kept as `stats.json.bad` and an empty book starts; one bad match is skipped; every number is cleaned on reading. It saves only after something loaded it, like the settings (found the hard way: `ui_test`'s real-flow check wrote to the real file until the load moved inside the settings' own guard).
+- **Recording** (D-202, D-203): `StatsRecorder` follows your own bullets and hits (`Weapon.fired`, `Character.damaged` of everyone else, by zone and by gun), your headshot kills and the time, and reads kills, deaths, assists and damage from the rules' own scoreboard numbers when `match_ended` comes. Online it is the same code fed by the host's announcements: the `DAMAGED` event now carries the weapon's index (read only when present, like `KILLED`'s). Practice and a match you leave record nothing. `RoundManager` got `participant_joined` and `get_rounds_played()`; bomb matches' scoreboards got an **ADR** column (the `ui`, `round` and `economy` suites were updated for it).
+- **The Stats screen** (D-204): a **Stats** item in the main menu (between Practice and Settings) opening `StatsMenu`: Overview (ten tiles, wins per mode and map as bars), Weapons, History (the last 100 matches) and Training; **Export CSV** and a **Reset stats** that asks twice. Theme type variations only (`ui_test` and `layout_test` check it at 32 window sizes). `tools/ui_screenshots.gd --stats-only` pictures the four tabs.
+- **The aim trainer** (D-205 to D-207): a `range_trainer` entity (a gold coin by the start) that you shoot to start a 30 s run; one lime ball at a time in plain view (7 to 20 m, 45° each side, at least 12° from the last, 3.2° across at any distance), 100 + up to 100 points for speed, 25 off for a miss (`AimScore`); a best per gun in the stats file; the readout is a fixed-size `Label3D` on your camera (the countdown, time and score, the result); `aim [stop]` in the console. A ball something walks in front of (the moving dummy) moves to a spot in view. Found by the first test: scaling the ball's root also shrank its hit zone for the first 80 ms.
+- **Spray practice** (D-208, D-209): a `range_spray_wall` entity on the existing wall: the held gun's pattern as numbered grey dots (from your first hole once you shoot), your holes in lime (earlier sprays dim), and a **control** percentage (`100 × (1 − your drift ÷ the pattern's drift)`; the test's perfect pull scores 99.7, holding still 0.1); a finished spray of 10 shots or more is a best per gun when control is at least 1 %; an orange plate (or `spray_reset`) clears the wall. `SprayChart` is the maths.
+- **Tests:** four new suites (`stats` 49 checks, `statsrec` 21, `aim` 28, `spray` 22) and additions to `ui` and `layout`; 40 suites now. The full run passes: 1311 checks.
+
+**Decisions:** D-200 stats storage, D-201 definitions, D-202 what is recorded, D-203 online, D-204 the Stats screen, D-205 the aim trainer, D-206 its score, D-207 its entity and bests, D-208 spray practice, D-209 its entity.
+
+**Next**
+- Your checks (in "Your open checks"): play a match and read the Stats screen; play one online with a friend (each of you has your own numbers); try the aim trainer and the spray wall with a few guns.
+- Possible later: a tracking run for the aim trainer (a moving ball with its own score), a magnified chart next to the spray wall (a spray's pattern is only about 60 px tall on a 720p screen), charts of K/D over time on the Stats screen, the stats and training in the next release's notes (`CHANGELOG.md` is the release routine's, left alone).
+- Left alone as asked: audio (M13), bots, colour options and gamepad (M15).
+
+## 2026-10-16 — v0.1.1 hotfix: bullets hit again
+
+**Done**
+- Your report from the v0.1.0 build: bullets fly through enemies to the wall, nobody takes damage. Reproduced in a release export (the editor build hits). The cause: the hit-zone files lost their boxes in the export (an Array-literal default on their packed arrays, D-159), so the bodies had no hit zones.
+- Fixed with typed defaults; the hit-zone files name themselves, so a stale export cache converts them again.
+- New `--check-hits` self-check in the game (`systems/hit_check.gd`), `tools/check_export.sh` (exports a release build into a temporary folder and runs it), and `tools/package_release.sh` refuses to pack a build that fails it. The `release` suite runs the self-check and forbids the pattern. Version 0.1.1, CHANGELOG section.
+
+**Next:** your OK to release v0.1.1 (export, package, GitHub Release).
+
+## 2026-10-16 — M13 sound
+
+Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the sound generators, Haiku for test runs), in parallel with M14 and M15. Decisions D-190 to D-199.
+
+**Done**
+- **Task 1, the sound routing and the mix table** (D-190): every game sound plays through `Acoustics.play()` / `play_2d()` from one table (`SoundMix`); new buses Muffled, MuffledHeavy and Music, a hard limiter on Master; stronger panning (measured with the real audio driver). `tools/sound_report.gd` measures every sound file. `sound_test` has 4 new checks (13 in all).
+
+- **Task 2, gun signatures** (D-191): every gun has a close and a far shot (crossfaded from 15 to 40 m), its own three reload sounds and a loudness of its own; the SMG and hand cannon shots were redone so all seven differ; far explosions for the frag and the bomb. 27 new or redesigned sounds (Sonnet subagent), all at their target loudness. `sound_test` +4 checks.
+
+- **Task 3, muffling through walls** (D-192): rays from the sound to the camera count walls and metres of wall (from both ends), a bent path finds corners; three low-pass buses (MuffledLight, Muffled, MuffledHeavy) and a loss in dB, shared out per category. 15–17 µs per sound on the quick maps. `sound_test` +2 checks on walls it builds (a box and a trimesh).
+
+- **Task 4, reverb by zone** (D-193): an `Acoustics` node in the game scene probes the camera's surroundings with 13 rays four times a second, names the zone (open, yard, room, hall) and glides the Effects reverb to its preset; no map edits. The quick maps come out as yards with some rooms. `sound_test` +3 checks.
+
+- **Task 5, the mix pass** (D-194): every file the game plays levelled to its category's short-term loudness (34 files, Sonnet; footsteps now equally loud on every floor), the table set from a model of Godot's falloff (no near boost, half the distance filter), and `sound_test`'s mix rules: loudness per category, no gain over 0 dB, own shot against near and far ones, steps in a fight, the beep, nothing louder farther away (+7 checks).
+
+- **Task 6, music and stingers** (D-195): a 35 s menu loop and six stingers (round start, won, lost, bomb defused, match won, lost) from `tools/generate_music.gd` (Sonnet); `Music` plays them on the Music bus, with a Music volume in Settings → Audio; M8's three interface stingers are gone, the bomb-planted alert is levelled. `sound_test` +4 checks.
+
+- **Task 7, tests and docs:** `sound_test` has 32 checks (it had 8); GAME_DESIGN, CREDITS, ARCHITECTURE, LEARNING, README and CLAUDE.md follow; main merged in (the M16 plan); the full run below.
+
+**Not heard yet:** nobody has listened; the sounds, the mix and the music are checked by numbers only. Your listen is in "Your open checks" (PLAN.md).
+
+**Next:** your listen, then tuning `systems/sound_mix.gd` from what you hear. Possible later steps: sound through doorways (path-based, D-192), a front/back cue, a first-person mechanical layer on your own shots (D-191).
+
 
 ## 2026-10-16 — M12 share
 

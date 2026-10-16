@@ -352,7 +352,7 @@ func _team_color(team: int) -> Color:
 func _on_phase_changed(_phase: RoundManager.Phase) -> void:
 	if _manager.phase == RoundManager.Phase.LIVE:
 		_just_swapped = false
-		UiSounds.play(UiSounds.ROUND_START)
+		Music.play_stinger(Music.ROUND_START)
 	_refresh()
 	_show_phase_message()
 
@@ -369,7 +369,7 @@ func _on_sides_swapped() -> void:
 
 func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 	var won := winner == Teams.viewer_team
-	UiSounds.play(UiSounds.ROUND_WON if won else UiSounds.ROUND_LOST)
+	Music.play_stinger(Music.stinger_for_round(won, reason))
 	_clear_messages()
 	if _manager.is_team_respawn():
 		_set_tinted_message(_title, "Your team wins" if won else "The enemy team wins", _team_color(winner))

@@ -147,8 +147,9 @@ func _test_holes() -> void:
 	_shoot_target_default(target)
 	var through_holes := _weapon._impacts.size() - before
 	var through_hit: Dictionary = landed.back() if not landed.is_empty() else {}
-	_check("A bullet through a wall into the target leaves three holes (near side, far side, the body) and reports one wall",
-			through_holes == 3 and through_hit.get("walls", 0) == 1 and through_hit.get("zone", "") != "",
+	var first: Vector3 = through_hit.get("first_position", Vector3.INF)
+	_check("A bullet through a wall into the target leaves three holes (near side, far side, the body), reports one wall and the near face as where it first hit (what a spray wall wants)",
+			through_holes == 3 and through_hit.get("walls", 0) == 1 and through_hit.get("zone", "") != "" and absf(first.z - (WALL_Z + 0.05)) < 0.02,
 			"%d holes, hit %s" % [through_holes, through_hit])
 	# The same shot replayed on another computer from the host's report: the same three holes.
 	var replay_before := _weapon._impacts.size()

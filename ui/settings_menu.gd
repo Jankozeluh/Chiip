@@ -426,11 +426,12 @@ func _build_video_tab() -> void:
 func _build_audio_tab() -> void:
 	_tab_name = "Audio"
 	var tips := {
-		&"master_volume": "Scales both of the others.",
-		&"effects_volume": "Footsteps and shots.",
-		&"interface_volume": "Menu sounds (there are none yet).",
+		&"master_volume": "Scales all of the others.",
+		&"effects_volume": "Footsteps, shots and everything else in the game.",
+		&"interface_volume": "Menu clicks and the bomb-planted alert.",
+		&"music_volume": "The menu music and the round stingers.",
 	}
-	for entry: Array in [[&"master_volume", "Master"], [&"effects_volume", "Effects"], [&"interface_volume", "Interface"]]:
+	for entry: Array in [[&"master_volume", "Master"], [&"effects_volume", "Effects"], [&"interface_volume", "Interface"], [&"music_volume", "Music"]]:
 		_add_slider_row(_audio_rows, entry[0], {"label": entry[1], "step": 0.01, "scale": 100.0, "format": "%d", "tip": tips[entry[0]]})
 
 
