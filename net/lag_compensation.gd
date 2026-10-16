@@ -21,6 +21,8 @@ extends RefCounted
 const MAX_REWIND := 0.4
 ## Ticks of history kept: a second at 128 Hz.
 const HISTORY := 128
+## The metadata name under which a zone keeps its box ([method _cached_box]).
+const BOX_META := &"lag_compensation_box"
 
 ## One recorded tick: the host tick and every zone's box then.
 class Frame:
@@ -39,11 +41,12 @@ func record(tick: int, characters: Array[Character]) -> void:
 	for character in characters:
 		if character.body == null:
 			continue
+		var alive := character.is_alive()
 		for hitbox in character.body.get_hitboxes():
-			var shape := _box_of(hitbox)
-			if shape == null:
+			var box := _cached_box(hitbox)
+			if box.is_empty():
 				continue
-			frame.boxes[hitbox] = [shape.global_transform, (shape.shape as BoxShape3D).size * 0.5, character.is_alive()]
+			frame.boxes[hitbox] = [(box[0] as CollisionShape3D).global_transform, box[1], alive]
 	_frames.append(frame)
 	while _frames.size() > HISTORY:
 		_frames.pop_front()
@@ -126,7 +129,7 @@ func trace_at(shooter: Character, view_tick: float, from: Vector3, to: Vector3, 
 	if best == null:
 		return wall
 	var position := from + direction * best_distance
-	var now := _box_of(best).global_transform
+	var now := (_cached_box(best)[0] as CollisionShape3D).global_transform
 	var local := best_box.affine_inverse() * position
 	return {
 		"position": position,
@@ -194,6 +197,18 @@ func _frames_around(tick: float) -> Array:
 			var b := _frames[i + 1]
 			return [a, b, clampf((tick - a.tick) / float(maxi(b.tick - a.tick, 1)), 0.0, 1.0)]
 	return [_frames[0], _frames[0], 0.0]
+
+
+## [param hitbox]'s box shape and half its size, kept on the zone (as metadata, so it goes when
+## the zone does): [method record] needs them for 150 zones every tick, and searching the zone's
+## children each time was half of its cost (D-167). Empty if the zone has no box.
+static func _cached_box(hitbox: Hitbox) -> Array:
+	if hitbox.has_meta(BOX_META):
+		return hitbox.get_meta(BOX_META)
+	var shape := _box_of(hitbox)
+	var box: Array = [shape, (shape.shape as BoxShape3D).size * 0.5] if shape != null else []
+	hitbox.set_meta(BOX_META, box)
+	return box
 
 
 static func _box_of(hitbox: Hitbox) -> CollisionShape3D:

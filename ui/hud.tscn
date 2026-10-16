@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://ui/scope_overlay.gd" id="scope_overlay_script"]
 [ext_resource type="Script" path="res://ui/hit_marker.gd" id="hit_marker_script"]
 [ext_resource type="Script" path="res://ui/toast_stack.gd" id="toast_stack_script"]
+[ext_resource type="Script" path="res://ui/compass.gd" id="compass_script"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
@@ -64,13 +65,26 @@ theme_type_variation = &"HudDeadTint"
 
 [node name="BombHud" parent="." instance=ExtResource("bomb_hud_scene")]
 
+[node name="Compass" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 8.0
+offset_right = 200.0
+offset_bottom = 32.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("compass_script")
+
 [node name="Toasts" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_top = 112.0
-offset_bottom = 112.0
+offset_top = 128.0
+offset_bottom = 128.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"HudStack"

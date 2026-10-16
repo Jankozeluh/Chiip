@@ -22,6 +22,38 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 
 **Phase 1 done. Next (phase 2, once main has the M11 fixes):** merge main, write docs/RELEASE_CHECKLIST.md, automate bot matches on every mode and map and a two-instance LAN run, fix small bugs, write KNOWN_ISSUES and the v0.1.0 release notes.
 
+## 2026-10-16 — M11 optimization
+
+**Done**
+- **Measuring (D-165):** `tools/frame_timing.gd` now splits each frame into its parts (physics, scripts, drawing, the rest). It lists every spike with what was added to the scene in that frame and counts pipelines compiled while drawing (none). It also runs headless (a minute of play in ten seconds) and as a LAN host with a client it starts itself.
+- Found that all earlier frame timings had been taken during freeze time: the tool stopped waiting for the round at once.
+- **Round starts (D-166):** the bots' shopping reloaded every weapon file 83 times (`WeaponData.all()`). The shop and the network code now keep the arsenal loaded. perf_test's worst tick went from 106–153 ms to 18 ms. In a real match the buy menu already held the weapons, so there the round start stays at 14–20 ms (`Weapon.create()`, reported to the weapons session).
+- **LAN host (D-167):** lag compensation records the hit zones in 0.11 ms instead of 0.24 ms per tick.
+- **Limits in perf_test (D-168):** average tick under 2 ms, 99th percentile under 3.9 ms, no tick over 50 ms, and no pipeline compiled while drawing.
+- **Measured and left as is (D-169):** animation trees (0.15 ms per tick), sun shadows (no measurable GPU change), vision (0.01 ms), the client's traffic (23 KB/s up, 30 KB/s down), draw calls.
+- **Numbers** (Apple M5 on battery, 5v5, windowed runs with the window in front):
+  - Uncapped: 340–410 fps on every map at 1080p and at 2294 × 960 (the same world as 3440 × 1440), before and after alike.
+  - CPU per frame with a window: 0.4–0.6 ms on average, 2.5–3.3 ms at the 99th percentile.
+  - Headless: 0.6–0.8 ms per frame.
+  - The merge with main (viewmodel layer, left-hand IK) added 15–65 draw calls per map and no measurable CPU.
+- Merged main (the UI fit and the weapons and models). All 33 suites pass, 1084 checks.
+- Flaky under load from parallel sessions: netplay's spectating check once, and netrespawn's 240 s match once ended at 9–7 before reaching 15 kills. Both passed on rerun.
+
+**Next:** your check on the 3440 × 1440 monitor ("Your open checks"). The round start's weapon building is for the weapons session.
+
+## 2026-10-16 — M11 weapons & models
+
+**Done**
+- **Guns never poke through walls (D-155):** the viewmodel (arms, gun, muzzle flash) is drawn by viewmodel shaders with its own field of view and in the nearest sliver of the depth buffer, in the same low-res image as the world, so it keeps the pixel look, the palette effect and the map's lighting. New `weapons/viewmodel.gd` (`Viewmodel`), `shaders/viewmodel.gdshaderinc`, `characters/crew/crew_viewmodel.gdshader`, `weapons/viewmodel_gun.gdshader`, `weapons/viewmodel_flash.gdshader`; the crew's surface moved to `crew_surface.gdshaderinc`. New suite `holds` (viewmodel layer and the wall check).
+- New tool `tools/hold_sheet.gd`: a contact sheet per weapon with the four classes in several poses.
+- **Holds (D-156, D-157):** the guns' points are nodes in their models now (`point_foregrip`...; the magazine and the shotgun's shell are nodes of their own too). Third person: a left-hand IK (`characters/crew/hand_ik.gd`) on every body, and aim poses every 20°: the left hand was up to 34.6 cm off the gun when the game blended poses, now at most 0.9 cm. First person: the left arm didn't reach the long guns (17 cm short on the Breaker's pump); each class's left shoulder now sits where it reaches every foregrip. New `weapons/gun_model.gd` (`GunModel`). The `holds` suite measures both.
+
+- **Reloads (D-158):** every reload clip is keyed to one timeline; the magazine leaves the gun in the left hand and comes back into its seat (within 0.7 cm), the shotgun's shell sits in the palm and goes into the port, the sounds come on their cues (they were early), the body's reload lasts exactly the reload (its own clip length; a first-shell clip for the shotgun; a 0.05 s fade-out), and a reload cut short stops showing.
+
+- **Checks:** the `holds` suite (11 checks) measures all of it; main merged in; all 33 suites pass (1083 checks).
+
+**Next:** your check of the weapons ("Your open checks" in PLAN.md); M11's optimization.
+
 ## 2026-10-16 — M11 UI fit
 
 **Done**
@@ -31,9 +63,12 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 - The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
 
 - The boot screen exists (D-153): once per run, any key skips it. It shows your Divocakos logo (the laughing watermelon, 112 × 112) at whole multiples with the name under it; the main menu has the small mark in the corner and "Build M10 · Divocakos" in the footer. Logo and name: all rights reserved, outside the CC BY-NC-SA plan (docs/CREDITS.md). `tools/make_studio_logo.py` makes the two picture files.
-- New suite `layout` (14 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
+- A minimal compass on the HUD (D-180): a thin strip at the top centre with N/E/S/W and ticks that turns with your view, and a red square at the bearing of an enemy's shot for about two seconds. It listens to a new `Noises.shot_fired`, which real shots and a client's replayed shots both emit, so it works online. The round top bar and the toasts moved 16 px down for it.
+- UI scale option (D-181): Settings → Video → UI scale, Auto / 50 / 75 / 100 %, saved and applied live. Auto gives 1.0 at 720p, 1.5 at 1080p, 2.0 at 1440p, 3.0 at 2160p and 2.0 at your 2920 × 1753; 100 % fills the window exactly (2.28 there). The layout test now goes through every size (3840 × 2160 added) × every setting.
+- New suite `layout` (16 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
 
 **Next:** your check: look at the Play screen in the editor's game view at 2920 × 1753. M12 writes the logo's rights into the licence files.
+
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

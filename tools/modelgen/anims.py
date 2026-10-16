@@ -14,7 +14,7 @@ turned from the T-pose.
 Clips (FPS keyframes, rotation tracks for every bone, translation for the hips):
   idle, walk_<dir>, run_<dir>, crouch_idle, crouch_walk_<dir>   (<dir>: f fr r br b bl l fl)
   jump, fall, fall_crouch, land
-  aim_d80, aim_d40, aim_0, aim_u40, aim_u80                     (upper body aim poses)
+  aim_d80, aim_d60, ... aim_0, ... aim_u80 (every 20 deg)        (upper body aim poses)
   fire, flinch                                                  (additive: differences from aim_0)
   reload                                                        (arms only matter)
   death_forward, death_backward, death_headshot
@@ -534,7 +534,8 @@ def all_clips(rig):
     land_low = _with_hips(rig, stand, -0.10)
     clips.append(('land', False, keyed(rig, *keyframes(rig, [(0.0, air_pose(rig, 0.3)), (0.08, land_low),
                                                              (0.30, stand_pose(rig))], 0.30))))
-    for name, aim in (('aim_d80', -80), ('aim_d40', -40), ('aim_0', 0), ('aim_u40', 40), ('aim_u80', 80)):
+    for suffix, aim in PITCHES:
+        name = f'aim_{suffix}'
         p = stand_pose(rig, aim=aim)
         clips.append((name, False, keyed(rig, np.array([0.0]), [p])))
     # fire: the gun kicks back and up and the chest rocks, as differences from aiming level
@@ -583,7 +584,9 @@ def _with_hips(rig, pose, dy):
 # The rifle set keeps the clips above. Every other animation set (holds.py) adds its own aim
 # poses, a reload, and (by style) a fire kick or attacks. The legs are always the stand pose's:
 # the AnimationTree only takes the upper body from these clips.
-PITCHES = (('d80', -80), ('d40', -40), ('0', 0), ('u40', 40), ('u80', 80))
+# Aim poses every 20 degrees (M11, D-156: every 40 the blend between two let the gun drift).
+PITCHES = (('d80', -80), ('d60', -60), ('d40', -40), ('d20', -20), ('0', 0), ('u20', 20), ('u40', 40), ('u60', 60),
+           ('u80', 80))
 
 
 def pistol_hold(rig, pose, aim=0.0, kick=0.0, lift=0.0, pull=0.0):
@@ -673,9 +676,10 @@ def pistol_reload_clip(rig):
     return keyframes(rig, keys, 2.5)
 
 
-def shell_clip(rig):
+def shell_clip(rig, first=False):
     """one shotgun shell going in, 2.5 s (stretched to the shell time): the gun tips toward the
-    body, the left hand takes a shell from the vest and pushes it into the loading port."""
+    body, the left hand takes a shell from the vest and pushes it into the loading port. `first`:
+    the reload's first shell, 4.5 s, the gun brought up from the aim first (M11, D-158)."""
     def at(tilt, left):
         p = stand_pose(rig)
         rot, pos = rig.hold(0.0, 0.0, p)
@@ -686,18 +690,25 @@ def shell_clip(rig):
             return p
         where, pole = left
         if isinstance(where, str):
-            wrist = pos + tilted @ (rig.gun[where] + np.array([-0.04, -0.06, 0.05]))
+            # the shell in the palm goes into the loading port (GunModel shows it there)
+            wrist = pos + tilted @ (rig.gun[where] + rig.hand_l_wrist)
         else:
             w = rig.world(p)
             wrist = w['chest'][1] + w['chest'][0] @ np.asarray(where, float)
         rig.grip(p, tilted, pos, left=(wrist, tilted @ rig.hand_l_rot, pole))
         return p
     pole = (-0.8, -0.6, 0.1)
+    # keyed to holds.RELOAD_EVENTS['shell']: the shell taken at 0.28, in at 0.80
     keys = [(0.0, at(1.0, None)),
             (0.7, at(1.0, ((-0.05, -0.28, -0.10), pole))),
             (1.6, at(1.0, ('magazine', pole))),
             (2.0, at(1.0, ('magazine', pole))),
             (2.5, at(1.0, None))]
+    if first:
+        # the first shell after bringing the gun up from the aim (reload_start_time, 0.4 s of
+        # the 0.5 s shell: 2.0 s at this clip's scale)
+        keys = [(0.0, stand_pose(rig))] + [(t + 2.0, p) for t, p in keys]
+        return keyframes(rig, keys, 4.5)
     return keyframes(rig, keys, 2.5)
 
 
@@ -754,7 +765,9 @@ def set_clips(body, bone_points, sets, points_of, style_of, base_points):
             if name == 'shotgun':
                 times, poses = shell_clip(rig)
                 clips.append(('reload_shell', False, keyed(rig, times, poses)))
-            times, poses = reload_clip(rig)
+                times, poses = shell_clip(rig, first=True)
+            else:
+                times, poses = reload_clip(rig)
             clips.append((f'reload_{name}', False, keyed(rig, times, poses)))
         elif style == 'pistol':
             times, poses = pistol_reload_clip(rig)

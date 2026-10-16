@@ -34,7 +34,7 @@ const SCENE_CAMERA_FOV := 73.74
 const DEFAULTS := {
 	&"sensitivity": 1.0, &"invert_y": false, &"fov": 90.0,
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
-	&"palette_effect": true, &"pixelate_hud": false,
+	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0,
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
 	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
@@ -177,6 +177,16 @@ func _test_values() -> void:
 	_check("The pixel height snaps to the nearest allowed value (500 → 480), the frame rate limit is 0 or 30 to 1000",
 			nearest == 480 and biggest == 720 and slow == 30 and unlimited == 0 and capped == 1000,
 			"pixel height 500 → %d, 1000 → %d; fps 10 → %d, -4 → %d, 99999 → %d" % [nearest, biggest, slow, unlimited, capped])
+	fresh.ui_scale = 60
+	var near_fifty := fresh.ui_scale
+	fresh.ui_scale = 90
+	var near_hundred := fresh.ui_scale
+	fresh.ui_scale = 500
+	var most := fresh.ui_scale
+	fresh.ui_scale = -5
+	var least := fresh.ui_scale
+	_check("The UI scale snaps to the nearest of Auto (0), 50, 75 and 100 percent (D-181): 60 → 50, 90 → 100, 500 → 100, -5 → Auto",
+			near_fifty == 50 and near_hundred == 100 and most == 100 and least == 0, "60 → %d, 90 → %d, 500 → %d, -5 → %d" % [near_fifty, near_hundred, most, least])
 	fresh.master_volume = 2.0
 	var loud := fresh.master_volume
 	fresh.master_volume = -1.0
@@ -403,6 +413,7 @@ func _test_saving() -> void:
 	writer.pixel_height = 360
 	writer.palette_effect = false
 	writer.pixelate_hud = true
+	writer.ui_scale = 75
 	writer.master_volume = 0.4
 	writer.effects_volume = 0.7
 	writer.interface_volume = 0.1
@@ -434,7 +445,7 @@ func _test_saving() -> void:
 	var sections := saved.get_sections() if saved != null else PackedStringArray()
 	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online and controls (the crosshair's keys without their prefix)",
 			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls"]) and saved.has_section_key("crosshair", "gap")
-					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360
+					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360 and saved.get_value("video", "ui_scale", -1) == 75
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
 	_check("The last match setup is the [match] section: team_size, enemy_team_size, difficulty, rounds_to_win, friendly_fire, map, mode, kill_limit and rotation, without the prefix, and the section's setup_version (D-132)",

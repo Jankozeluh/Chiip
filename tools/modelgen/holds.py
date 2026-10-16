@@ -42,6 +42,17 @@ HOLD_OFFSETS = {
 }
 
 
+# The moments of a reload, as fractions of it, that every reload clip (anims.py, fparms.py) is
+# keyed to and the game moves the magazine and the shell by (weapons/gun_model.gd,
+# GunModel.MAGAZINE_EVENTS and SHELL_EVENTS; change both together, M11 D-158). A magazine: the
+# left hand takes it, swaps it for a fresh one at the vest, puts that in, works the handle. A
+# shotgun shell: taken from the vest, pushed into the loading port.
+RELOAD_EVENTS = {
+    'magazine': dict(grab=0.24, swap=0.38, insert=0.66, handle=0.80),
+    'shell': dict(take=0.28, insert=0.80),
+}
+
+
 def points(set_name):
     """the gun points of a set, in weapon space, with its hold offset applied."""
     pts = weapons.GUNS[SETS[set_name]['gun']]()[1]

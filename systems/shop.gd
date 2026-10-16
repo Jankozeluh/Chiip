@@ -22,10 +22,33 @@ const VEST_HELMET_PRICE := 800
 const KIT_PRICE := 300
 const CATEGORY_NAMES: Array[String] = ["Pistols", "Primaries", "Gear", "Grenades"]
 
+## Every item for sale, built by the first [method items] or [method find] call. Holding them also
+## keeps the arsenal's [WeaponData] loaded: [method WeaponData.all] loads each one again from
+## its file whenever nothing holds it (about 6 ms a call).
+static var _items: Array[Dictionary] = []
+
 
 ## Every item for sale, in menu order: [code]{id, name, price, category, icon, data}[/code]
 ## ([code]data[/code] is the [WeaponData], null for gear). The "Vest + helm" is short for its 16 px name to fit an item of the menu.
+## Built once and kept (D-165): the bots' shopping asks for it dozens of times at every round
+## start. The array is a copy; the items in it are shared, so don't change them.
 static func items() -> Array[Dictionary]:
+	if _items.is_empty():
+		_items = _build_items()
+	return _items.duplicate()
+
+
+## The item with [param id], or an empty dictionary.
+static func find(id: StringName) -> Dictionary:
+	if _items.is_empty():
+		_items = _build_items()
+	for item in _items:
+		if item.id == id:
+			return item
+	return {}
+
+
+static func _build_items() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for data in WeaponData.all():
 		if data.price <= 0:
@@ -39,14 +62,6 @@ static func items() -> Array[Dictionary]:
 	out.append({"id": KIT, "name": "Defuse kit", "price": KIT_PRICE, "category": Category.GEAR,
 			"icon": load("res://assets/ui/weapons/defuse_kit.png"), "data": null})
 	return out
-
-
-## The item with [param id], or an empty dictionary.
-static func find(id: StringName) -> Dictionary:
-	for item in items():
-		if item.id == id:
-			return item
-	return {}
 
 
 ## The buy-menu category of a weapon.

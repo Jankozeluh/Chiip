@@ -324,7 +324,7 @@ func _on_lobby_closed() -> void:
 
 
 func _on_setting_changed(key: StringName) -> void:
-	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect":
+	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect" or key == &"ui_scale":
 		apply_pixel_settings()
 
 

@@ -16,6 +16,12 @@ Each gun names a few points the animations need (in weapon space, numpy arrays):
 The knife names `tip` and `butt` (the pommel); a grenade is centred on its body, which sits
 in the palm, and names `pin` (the ring) and `lever`. The defuse kit has no points.
 
+Named pieces (M11, D-158) become their own nodes in the .glb, so reloads can move them:
+  'magazine'         the magazine (its node's origin is the gun's `magazine` point)
+  'magazine_hidden'  more of the magazine, hidden inside the grip while it's in (not in icons)
+  'shell'            a shotgun shell for the left hand, centred on the origin (not in icons)
+Every point is also a node, `point_<name>`, so the game can find it on the model.
+
 GUNS lists everything that gets a .glb and an icon (rifle, carbine, smg, shotgun, sniper,
 pistol, hand_cannon, knife, frag, flashbang, smoke, defuse_kit). GEAR lists what only gets an
 icon (armor, armor_helmet); these face +X so the icon's side view shows their front. KITS
@@ -76,7 +82,7 @@ def rifle():
         Piece(B, 'box', (0.026, 0.046, 0.030), (0, 0.044, -0.50), mat='metal', bevel=0.004),      # front sight block
         Piece(B, 'box', (0.008, 0.030, 0.008), (0, 0.080, -0.505), mat='metal'),                    # front sight post
         Piece(B, 'cyl', (0.015, 0.015, 0.045), (0, 0.022, -0.535), mat='metal', axis='-z', sides=6),  # muzzle brake
-        Piece(B, 'box', (0.028, 0.100, 0.068), (0, -0.055, -0.130), rot=(12, 0, 0), mat='metal', bevel=0.006),  # magazine
+        Piece(B, 'box', (0.028, 0.100, 0.068), (0, -0.055, -0.130), rot=(12, 0, 0), mat='metal', bevel=0.006, name='magazine'),
         Piece(B, 'box', (0.028, 0.100, 0.064), (0, -0.140, -0.170), rot=(32, 0, 0), mat='metal', bevel=0.006),
         Piece(B, 'box', (0.030, 0.090, 0.040), (0, -0.048, 0.022), rot=(-18, 0, 0), mat='furn', bevel=0.008),  # grip
         Piece(B, 'box', (0.010, 0.010, 0.060), (0, -0.018, -0.040), mat='metal'),                  # trigger guard
@@ -104,7 +110,7 @@ def carbine():
         Piece(B, 'box', (0.022, 0.032, 0.026), (0, 0.054, -0.455), mat='metal', bevel=0.003),         # front sight block
         Piece(B, 'box', (0.006, 0.024, 0.006), (0, 0.082, -0.455), mat='metal'),                      # front sight post
         Piece(B, 'cyl', (0.014, 0.013, 0.045), (0, 0.026, -0.50), mat='metal', axis='-z', sides=6),   # flash hider
-        Piece(B, 'box', (0.026, 0.080, 0.044), (0, -0.075, -0.077), rot=(3, 0, 0), mat='metal', bevel=0.004),   # magazine
+        Piece(B, 'box', (0.026, 0.080, 0.044), (0, -0.075, -0.077), rot=(3, 0, 0), mat='metal', bevel=0.004, name='magazine'),
         Piece(B, 'box', (0.026, 0.070, 0.044), (0, -0.149, -0.0875), rot=(14, 0, 0), mat='metal', bevel=0.004),
         Piece(B, 'box', (0.030, 0.090, 0.040), (0, -0.048, 0.022), rot=(-18, 0, 0), mat='furn', bevel=0.008),   # grip
         Piece(B, 'box', (0.010, 0.008, 0.050), (0, -0.037, -0.028), mat='metal'),                    # trigger guard
@@ -132,8 +138,8 @@ def smg():
         Piece(B, 'cyl', (0.013, 0.011, 0.045), (0, 0.030, -0.235), mat='metal', axis='-z', sides=6), # barrel stub
         Piece(B, 'cyl', (0.014, 0.014, 0.012), (0, 0.030, -0.28), mat='gear_dk', axis='+z', sides=6),  # muzzle
         Piece(B, 'box', (0.032, 0.092, 0.042), (0, -0.048, 0.022), rot=(-18, 0, 0), mat='polymer', bevel=0.006),  # grip
-        Piece(B, 'box', (0.024, 0.130, 0.034), (0, -0.088, 0.034), rot=(-18, 0, 0), mat='metal'),     # magazine in the grip
-        Piece(B, 'box', (0.030, 0.012, 0.042), (0, -0.153, 0.056), rot=(-18, 0, 0), mat='gear_dk'),  # magazine base
+        Piece(B, 'box', (0.024, 0.130, 0.034), (0, -0.088, 0.034), rot=(-18, 0, 0), mat='metal', name='magazine'),     # in the grip
+        Piece(B, 'box', (0.030, 0.012, 0.042), (0, -0.153, 0.056), rot=(-18, 0, 0), mat='gear_dk', name='magazine'),  # its base
         Piece(B, 'box', (0.026, 0.080, 0.030), (0, -0.054, -0.185), mat='polymer', bevel=0.006),     # vertical foregrip
         Piece(B, 'box', (0.030, 0.012, 0.056), (0, -0.012, -0.185), mat='metal'),                    # its mount
         Piece(B, 'box', (0.010, 0.008, 0.060), (0, -0.013, -0.04), mat='metal'),                      # trigger guard
@@ -171,6 +177,9 @@ def shotgun():
         Piece(B, 'box', (0.038, 0.086, 0.30), (0, -0.020, 0.215), rot=(5, 0, 0), mat='furn', bevel=0.012),    # stock
         Piece(B, 'box', (0.042, 0.100, 0.018), (0, -0.032, 0.372), rot=(7, 0, 0), mat='gear_dk', bevel=0.004),  # butt pad
         Piece(B, 'box', (0.006, 0.012, 0.006), (0, 0.049, -0.612), mat='metal'),                     # bead sight
+        # one shell, carried in the left hand while reloading (its own node, hidden on the gun)
+        Piece(B, 'cyl', (0.0105, 0.0105, 0.052), (0, 0.0, 0.026), mat='polymer', axis='-z', sides=6, name='shell'),
+        Piece(B, 'cyl', (0.011, 0.011, 0.013), (0, 0.0, 0.026), mat='metal', axis='+z', sides=6, name='shell'),
     ]
     points = dict(foregrip=_v(0.0, -0.016, -0.42), magazine=_v(0.0, -0.03, -0.06), handle=_v(0.0, 0.0, -0.42),
                   muzzle=_v(0.0, 0.030, -0.62), butt=_v(0.0, -0.032, 0.382))
@@ -209,7 +218,7 @@ def sniper():
         Piece(B, 'cyl', (0.005, 0.005, 0.050), (0.020, 0.030, 0.055), mat='metal', axis='+x', sides=6),
         Piece(B, 'cyl', (0.005, 0.005, 0.050), (0.070, 0.030, 0.055), mat='metal', axis=(0, -0.45, 0.9), sides=6),
         Piece(B, 'box', (0.016, 0.016, 0.016), (0.070, 0.008, 0.099), mat='gear_dk'),                # bolt knob
-        Piece(B, 'box', (0.030, 0.050, 0.060), (0, -0.030, -0.06), mat='metal'),                     # box magazine
+        Piece(B, 'box', (0.030, 0.050, 0.060), (0, -0.030, -0.06), mat='metal', name='magazine'),    # box magazine
         Piece(B, 'box', (0.010, 0.010, 0.050), (0, -0.022, 0.0), mat='metal'),                       # trigger guard
         Piece(B, 'box', (0.040, 0.010, 0.18), (0, -0.036, -0.44), mat='metal'),                      # folded bipod legs
         Piece(B, 'box', (0.020, 0.016, 0.026), (0, -0.034, -0.35), mat='metal'),                     # bipod mount
@@ -226,7 +235,8 @@ def pistol():
         Piece(B, 'box', (0.028, 0.030, 0.19), (0, 0.020, -0.06), mat='metal', bevel=0.004),          # slide
         Piece(B, 'box', (0.026, 0.020, 0.17), (0, -0.003, -0.065), mat='polymer', bevel=0.003),      # frame
         Piece(B, 'box', (0.028, 0.092, 0.040), (0, -0.048, 0.022), rot=(-18, 0, 0), mat='polymer', bevel=0.005),  # grip
-        Piece(B, 'box', (0.030, 0.012, 0.046), (0, -0.094, 0.037), rot=(-18, 0, 0), mat='metal'),    # magazine base
+        Piece(B, 'box', (0.030, 0.012, 0.046), (0, -0.094, 0.037), rot=(-18, 0, 0), mat='metal', name='magazine'),  # its base
+        Piece(B, 'box', (0.022, 0.086, 0.032), (0, -0.050, 0.023), rot=(-18, 0, 0), mat='metal', name='magazine_hidden'),  # in the grip
         Piece(B, 'box', (0.010, 0.008, 0.060), (0, -0.032, -0.040), mat='polymer'),                  # trigger guard
         Piece(B, 'box', (0.010, 0.022, 0.008), (0, -0.021, -0.068), mat='polymer'),                  # guard front
         Piece(B, 'box', (0.006, 0.016, 0.008), (0, -0.018, -0.030), mat='metal'),                    # trigger
@@ -254,7 +264,8 @@ def hand_cannon():
         Piece(B, 'box', (0.018, 0.008, 0.115), (0, 0.069, -0.15), mat='metal'),                      # top rib
         Piece(B, 'box', (0.034, 0.024, 0.22), (0, -0.007, -0.10), mat='polymer', bevel=0.004),       # frame
         Piece(B, 'box', (0.034, 0.108, 0.048), (0, -0.058, 0.024), rot=(-18, 0, 0), mat='polymer', bevel=0.006),  # grip
-        Piece(B, 'box', (0.036, 0.012, 0.054), (0, -0.1135, 0.0425), rot=(-18, 0, 0), mat='metal'),  # magazine base
+        Piece(B, 'box', (0.036, 0.012, 0.054), (0, -0.1135, 0.0425), rot=(-18, 0, 0), mat='metal', name='magazine'),  # its base
+        Piece(B, 'box', (0.026, 0.100, 0.038), (0, -0.062, 0.027), rot=(-18, 0, 0), mat='metal', name='magazine_hidden'),  # in the grip
         Piece(B, 'box', (0.012, 0.010, 0.085), (0, -0.040, -0.062), mat='metal'),                    # trigger guard bottom
         Piece(B, 'box', (0.012, 0.032, 0.010), (0, -0.030, -0.104), mat='metal'),                    # trigger guard front
         Piece(B, 'box', (0.007, 0.022, 0.009), (0, -0.026, -0.036), mat='metal'),                    # trigger

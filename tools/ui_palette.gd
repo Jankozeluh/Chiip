@@ -509,3 +509,16 @@ const HUD_HIT_INNER := 14
 const HUD_HIT_LENGTH := 12
 const HUD_HIT_THICKNESS := 4
 const HUD_HIT_TIME_MS := 150
+
+## The compass (D-180): a thin strip at the top centre that turns with the view and shows N, E, S and W with ticks, and a marker where an
+## enemy fired. It shows this many degrees across its width, a tick every [constant HUD_COMPASS_TICK_STEP] degrees (a taller one every
+## third, at the 45-degree points; the letters stand at the 90-degree points), ticks and the centre pointer this thick, the enemy marker this
+## big for this many milliseconds, fading over the last [constant HUD_COMPASS_FADE_MS] of them.
+const HUD_COMPASS_ARC := 120
+const HUD_COMPASS_TICK_STEP := 15
+const HUD_COMPASS_TICK_SMALL := 4
+const HUD_COMPASS_TICK_LARGE := 8
+const HUD_COMPASS_THICKNESS := 2
+const HUD_COMPASS_MARKER := 8
+const HUD_COMPASS_MARKER_TIME_MS := 2000
+const HUD_COMPASS_FADE_MS := 1000

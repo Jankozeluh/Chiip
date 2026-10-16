@@ -29,21 +29,26 @@ const TEST_MAP := "res://maps/test_map.tscn"
 ## The window sizes of the user's screens and the ones a window can be dragged to.
 const SIZES: Array[Vector2i] = [
 	Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(2920, 1753),
-	Vector2i(3440, 1440), Vector2i(2560, 1600), Vector2i(1440, 1080),
+	Vector2i(3440, 1440), Vector2i(2560, 1600), Vector2i(1440, 1080), Vector2i(3840, 2160),
 ]
 ## What [method PixelView.ui_scale_for] must answer for each of [constant SIZES].
-const SCALES: Array[float] = [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 1.0]
+const SCALES: Array[float] = [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 1.0, 3.0]
 ## How far a control may reach past the window, in pixels (rounding of scaled sizes).
 const TOLERANCE := 1.5
 ## How many offenders a failure message lists.
 const MAX_LISTED := 4
 
 var _failures: int = 0
+## Every window size with every UI scale setting (Auto, 50, 75 and 100 percent): [size, percent].
+var _cases: Array = []
 
 
 func _ready() -> void:
 	# The shared settings: never read or write the player's file (nothing here calls load_from_disk).
 	Settings.get_instance().reset_to_defaults()
+	for size in SIZES:
+		for percent in Settings.UI_SCALES:
+			_cases.append([size, percent])
 	_test_scale_rule()
 	await _test_main_menu(false)
 	await _test_main_menu(true)
@@ -74,6 +79,18 @@ func _test_scale_rule() -> void:
 		# The 1280 × 720 layout always fits: at least 1280 design pixels across and 720 up and down.
 		if SIZES[i].x / factor < 1280.0 - 0.01 or SIZES[i].y / factor < 720.0 - 0.01 or fposmod(factor * 2.0, 1.0) > 0.0:
 			wrong.append("%s: the layout would be %.0f × %.0f" % [SIZES[i], SIZES[i].x / factor, SIZES[i].y / factor])
+	# The UI scale setting (D-181): 100 fills the window exactly, 75 and 50 are smaller, none ever overflows.
+	var percents: Array[String] = []
+	for size in SIZES:
+		var fit := minf(size.x / 1280.0, size.y / 720.0)
+		var auto := PixelView.ui_scale_for(Vector2(size), 0)
+		var fill := PixelView.ui_scale_for(Vector2(size), 100)
+		var three_quarters := PixelView.ui_scale_for(Vector2(size), 75)
+		var half := PixelView.ui_scale_for(Vector2(size), 50)
+		if not (is_equal_approx(fill, fit) and half <= three_quarters and three_quarters <= auto and auto <= fill and half >= 0.47 and auto >= fit * 0.66):
+			percents.append("%s: 50 %% %.2f, 75 %% %.2f, Auto %.2f, 100 %% %.2f (fit %.2f)" % [size, half, three_quarters, auto, fill, fit])
+	_check("The UI scale setting: 100 %% is the exact fit, Auto is at most one half step below it (and never under two thirds of it), 75 %% and 50 %% are smaller, none under 0.47 (D-181)",
+			percents.is_empty(), "wrong: %s" % [percents])
 	_check("The UI scale is the tighter of width / 1280 and height / 720 in half steps (1.5 at 1080p, 2 at 1440p, on the ultrawide and at 2920 × 1753, 1 at 1440 × 1080), so the 1280 × 720 layout always fits and the pixel font stays even",
 			wrong.is_empty(), "wrong: %s" % [wrong])
 
@@ -99,7 +116,10 @@ func _test_main_menu(pixelated: bool) -> void:
 		"Play, Practice": func() -> void: menu.get_match_setup().pick("practice"),
 		"lobby": func() -> void: menu.get_match_setup().close(); menu.open_lobby(),
 	}
-	for size in SIZES:
+	for case in _cases:
+		var size: Vector2i = case[0]
+		var percent: int = case[1]
+		Settings.get_instance().ui_scale = percent
 		_resize(size)
 		for screen_name: String in screens:
 			screens[screen_name].call()
@@ -124,7 +144,7 @@ func _test_main_menu(pixelated: bool) -> void:
 		settings_menu.close()
 		menu.get_match_setup().close()
 	var label := "pixelated HUD, " if pixelated else ""
-	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen) lies inside the window at all %d sizes" % [label, SIZES.size()],
+	_check("Main menu (%severy screen: main page, Play with each mode, the lobby, all settings tabs, the Licences screen) lies inside the window at all %d sizes × UI scales" % [label, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(menu)
 	menu.queue_free()
@@ -166,7 +186,10 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 	var board := main.get_node("Scoreboard") as Scoreboard
 	var end_screen := main.get_node("MatchEndScreen") as MatchEndScreen
 	var failures := {}
-	for size in SIZES:
+	for case in _cases:
+		var size: Vector2i = case[0]
+		var percent: int = case[1]
+		Settings.get_instance().ui_scale = percent
 		_resize(size)
 		# 1. The class draft (opens by itself at the match start; M brings it back).
 		if not class_menu.is_open():
@@ -177,6 +200,19 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 		# 2. The HUD alone.
 		await _settle(size)
 		_collect(failures, "HUD at %s" % [size], [hud], size)
+		# 2b. The compass strip stands clear of the top bar, the toasts and the kill feed (D-180).
+		(hud.get_node("Toasts") as ToastStack).show_toast(ToastStack.Kind.MATCH_POINT, "Match point")
+		await _settle(size)
+		var compass := hud.get_node("Compass") as Control
+		var crowded: Array[String] = []
+		if not compass.is_visible_in_tree() or compass.size.x <= 0.0:
+			crowded.append("the compass isn't showing")
+		for other_path in ["RoundHud/TdmBar", "RoundHud/BombBar", "Toasts", "RoundHud/KillFeed", "RoundHud/Center"]:
+			var other := hud.get_node(other_path) as Control
+			if other.is_visible_in_tree() and other.get_global_rect().size.y > 0.0 and other.get_global_rect().intersects(compass.get_global_rect()):
+				crowded.append("%s %s over the compass %s" % [other_path, other.get_global_rect(), compass.get_global_rect()])
+		if not crowded.is_empty():
+			failures["compass at %s" % [size]] = crowded
 		# 3. The buy menu (freeze time), in a match with rounds.
 		if buy_menu.open():
 			await _settle(size)
@@ -204,7 +240,7 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 			await _settle(size)
 			_collect(failures, "match end at %s" % [size], [end_screen], size)
 			end_screen.visible = false
-	_check("%s: the HUD, class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes" % [game_name, SIZES.size()],
+	_check("%s: the HUD (its compass clear of the top bar and the toasts), class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(main)
 	main.queue_free()
@@ -251,11 +287,14 @@ func _test_loading_then_draft() -> void:
 	var draft_under_band := class_menu.is_open()
 	var failures := {}
 	# The band at every size (the game is paused under it; the test goes on).
-	for size in SIZES:
+	for case in _cases:
+		var size: Vector2i = case[0]
+		var percent: int = case[1]
+		Settings.get_instance().ui_scale = percent
 		_resize(size)
 		await _settle(size)
 		_collect(failures, "loading screen at %s" % [size], [screen], size)
-	_check("The loading screen (\"Map 1 of 3 · Rotation\", Square) lies inside the window at all %d sizes and the class draft is still closed under it" % SIZES.size(),
+	_check("The loading screen (\"Map 1 of 3 · Rotation\", Square) lies inside the window at all %d sizes × UI scales and the class draft is still closed under it" % _cases.size(),
 			showing and not draft_under_band and failures.is_empty(), "showing %s, draft open under the band %s, %s" % [showing, draft_under_band, _describe(failures)])
 	screen.advance(100.0)
 	await _settle(SIZES[3])
@@ -301,16 +340,19 @@ func _test_boot_screen() -> void:
 	screen.show_screen()
 	var shows_logo := screen.get_logo().visible and not screen.get_wordmark().visible and screen.get_studio_name_label().text == "Divocakos"
 	var whole_steps: Array[String] = []
-	for size in SIZES:
+	for case in _cases:
+		var size: Vector2i = case[0]
+		var percent: int = case[1]
+		Settings.get_instance().ui_scale = percent
 		_resize(size)
-		screen.set_ui_scale(PixelView.ui_scale_for(Vector2(size)))
+		screen.set_ui_scale(PixelView.ui_scale_for(Vector2(size), percent))
 		await _settle(size)
 		_collect(failures, "boot screen at %s" % [size], [screen], size)
 		# The picture is a whole multiple of its 112 pixels at every UI scale of the half steps: 224 design pixels × scale.
 		var multiple := screen.get_logo().get_global_rect().size.x / 112.0
-		if not is_equal_approx(multiple, roundf(multiple)):
+		if percent == 0 and not is_equal_approx(multiple, roundf(multiple)):
 			whole_steps.append("%s: %.2f×" % [size, multiple])
-	_check("The boot screen (the logo with \"Divocakos\" under it) lies inside the window at all %d sizes, and the logo is a whole multiple of its pixels at each" % SIZES.size(),
+	_check("The boot screen (the logo with \"Divocakos\" under it) lies inside the window at all %d sizes × UI scales, and (at Auto) the logo is a whole multiple of its pixels at each" % _cases.size(),
 			failures.is_empty() and shows_logo and whole_steps.is_empty(), "logo shown %s, uneven: %s, %s" % [shows_logo, whole_steps, _describe(failures)])
 	screen.finish()
 	# Without the logo file the game's name stands in.
@@ -318,12 +360,15 @@ func _test_boot_screen() -> void:
 	screen.show_screen()
 	var wordmark_without_logo := screen.get_wordmark().visible and not screen.get_logo().visible
 	failures = {}
-	for size in SIZES:
+	for case in _cases:
+		var size: Vector2i = case[0]
+		var percent: int = case[1]
+		Settings.get_instance().ui_scale = percent
 		_resize(size)
-		screen.set_ui_scale(PixelView.ui_scale_for(Vector2(size)))
+		screen.set_ui_scale(PixelView.ui_scale_for(Vector2(size), percent))
 		await _settle(size)
 		_collect(failures, "boot screen without a logo at %s" % [size], [screen], size)
-	_check("Without the logo file the boot screen shows the game's name instead and still lies inside the window at all %d sizes (D-153)" % SIZES.size(),
+	_check("Without the logo file the boot screen shows the game's name instead and still lies inside the window at all %d sizes × UI scales (D-153)" % _cases.size(),
 			failures.is_empty() and wordmark_without_logo, "wordmark shown without a logo: %s, %s" % [wordmark_without_logo, _describe(failures)])
 	screen.finish()
 	BootScreen.logo_path = "res://icon.svg"
@@ -360,10 +405,13 @@ func _test_studio_mark() -> void:
 	var mark := menu.get_node("Page/StudioMark") as TextureRect
 	var name_label := menu.get_node("Page/MapName") as Label
 	var wrong: Array[String] = []
-	for size in SIZES:
+	for case in _cases:
+		var size: Vector2i = case[0]
+		var percent: int = case[1]
+		Settings.get_instance().ui_scale = percent
 		_resize(size)
 		await _settle(size)
-		var steps := maxi(1, floori(PixelView.ui_scale_for(Vector2(size))))
+		var steps := maxi(1, floori(PixelView.ui_scale_for(Vector2(size), percent)))
 		var rect := mark.get_global_rect()
 		var texture := mark.texture
 		var multiple := rect.size.x / texture.get_size().x if texture != null else 0.0
@@ -406,6 +454,17 @@ func _test_resize_relays_out() -> void:
 	_check("A runtime resize re-lays the menu out by itself (item text %s px at 1280 × 720, %s at 1080p, %s at 1440p, %s at 2920 × 1753 and 1440p alike, 1440 × 1080 as 720p), and going back restores it" % [
 			sizes_seen[SIZES[0]], sizes_seen[SIZES[1]], sizes_seen[SIZES[2]], sizes_seen[SIZES[3]]],
 			grows and bound_by_width and back, "grows %s, whole steps %s, back %s" % [grows, bound_by_width, back])
+	# The UI scale setting reaches the menu live (no restart, no resize): Auto 2×, 100 % fills 2.28×, 75 % 1.5×, 50 % 1×.
+	_resize(SIZES[3])
+	var by_percent: Array[int] = []
+	for percent in Settings.UI_SCALES:
+		Settings.get_instance().ui_scale = percent
+		by_percent.append(play.get_theme_font_size("font_size"))
+	Settings.get_instance().ui_scale = 0
+	var auto_again := play.get_theme_font_size("font_size")
+	_check("Changing the UI scale setting re-lays the menu out at once: at 2920 × 1753 the item text is %s px for Auto, 50, 75 and 100 %% (fills the window: 2.28×), and Auto again gives %d" % [by_percent, auto_again],
+			by_percent[0] == 64 and by_percent[1] == 32 and by_percent[2] == 48 and by_percent[3] == roundi(32.0 * 2920.0 / 1280.0) and auto_again == 64,
+			"item text %s, Auto again %d" % [by_percent, auto_again])
 	remove_child(menu)
 	menu.queue_free()
 	await get_tree().process_frame
@@ -422,6 +481,8 @@ func _resize(size: Vector2i) -> void:
 
 ## Waits for the layout to settle, putting the window size back when a headless run has snapped it back.
 func _settle(size: Vector2i) -> void:
+	# A real window says "resized" again once it has its new size; setting the size here says it inside the setter.
+	get_tree().root.size_changed.emit()
 	for i in 3:
 		await get_tree().process_frame
 		if get_tree().root.size != size:
@@ -432,6 +493,9 @@ func _settle(size: Vector2i) -> void:
 ## are not inside the root window's visible area.
 func _collect(failures: Dictionary, label: String, roots: Array, size: Vector2i) -> void:
 	var bounds := get_tree().root.get_visible_rect()
+	var percent := Settings.get_instance().ui_scale
+	if percent != 0:
+		label += ", UI scale %d %%" % percent
 	var offenders: Array[String] = []
 	for root: Node in roots:
 		_scan(root, bounds.grow(TOLERANCE), offenders)
@@ -485,3 +549,4 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	print("%s  %s: %s" % ["PASS" if passed else "FAIL", check_name, detail])
 	if not passed:
 		_failures += 1
+

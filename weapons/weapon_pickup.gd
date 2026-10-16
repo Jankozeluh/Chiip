@@ -135,7 +135,7 @@ func _find_floor() -> void:
 func _build_model() -> void:
 	var model: Node3D
 	if data != null and data.model != null:
-		model = data.model.instantiate() as Node3D
+		model = GunModel.instantiate(data.model)
 	else:
 		var bar := MeshInstance3D.new()
 		var mesh := BoxMesh.new()

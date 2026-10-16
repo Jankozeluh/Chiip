@@ -1709,6 +1709,164 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** a screenshot comparison per size (heavy, and a human has to look); testing only the scale function (misses a page that is wider than the layout).
 
+## D-155 — The viewmodel is drawn in its own depth range, by its shaders (2026-10-16)
+
+**Decision:** The first-person arms, gun and muzzle flash keep rendering in the world's own low-res viewport, but with viewmodel shaders (`shaders/viewmodel.gdshaderinc`): in `vertex()` they write `POSITION` themselves, with their own vertical field of view (`Viewmodel.FOV`, 73.74°: the camera's at the default FOV, so the gun looks the same at every FOV setting) and with their depth squeezed into the nearest 2 % of the depth buffer (from 1 cm in front of the eye). Nothing in the world can then cover them: a wall would have to be nearer than the camera's own near plane. `Viewmodel.prepare()` gives every mesh in a viewmodel its viewmodel material: the crew's arms a viewmodel copy of the crew shader (same surface, so the team colour works), every gun surface a gun shader with its own texture, made once per source material. Lighting uses the real position, so the gun is lit by the map where it is.
+
+**Why:** It keeps everything that makes the picture Chiip's: the 480-line world (D-048), the palette effect and the map's lights apply to the gun for free, because it is in the same image. It costs nothing per frame (no second render). The old viewmodel poked into every wall you stood against (the known limitation since M2).
+
+**Alternatives:**
+- **A second camera** for the viewmodel with its own cull layer, in a second SubViewport composited over the world: what Unity tutorials do. It needs a second full render pass at the same low resolution, its own lights or shared ones, and the palette effect would have to run over the composite. More cost and more parts for the same picture.
+- **Godot's own viewmodel options** (`BaseMaterial3D.use_fov_override` and `use_z_clip_scale`, new in 4.x): they exist only on the standard material, not on the crew's custom shader; with two different formulas the arms and the gun could disagree. Our own include does the same for both.
+- **Pulling the gun back** when near a wall (a ray from the eye): many games do it as well, but it changes how the gun looks while you hug walls, and still clips at corners.
+
+## D-156 — A left-hand IK on the body, and aim poses every 20° (2026-10-16)
+
+**Decision:** Every crew body has a `HandIK` (a `SkeletonModifier3D`, two-bone IK for the left arm) that puts the left wrist where it holds the gun's foregrip, every tick, after the animation graph. The target comes from the gun model itself: the generator writes every gun point as an empty node (`point_foregrip`, `point_magazine`...), and `GunModel.left_hand_target()` adds rig.py's left-hand-on-foregrip offset. The elbow stays on the side the animation put it. The body fades the IK out (0.12 s) while reloading, dead, or holding the knife or a grenade. The aim poses come every 20° instead of every 40° (129 clips per class), so the right arm and the gun drift less between two poses too.
+
+**Why:** Each clip holds the foregrip exactly (the generator solves the same IK), but the game blends them: two aim pitches, locomotion, crouching, the kick. A blend of two arm poses doesn't keep a hand on a point. Measured (`holds` suite, 4 classes × 7 guns × 14 blended poses): without the IK the left hand was up to **34.6 cm** off the gun (the Bulwark aiming up 50°), and the 20° poses alone still left 15 cm; with both, at most **0.9 cm**.
+
+**Alternatives:** More aim poses only (still centimetres off between them, and nothing for the kick or locomotion blends); Godot's `TwoBoneIK3D` node (sets only the wrist position, so the hand's rotation needs a second modifier and a target node per character; our script is 40 lines and reads the target straight from the weapon bone); attaching the left hand to the gun with a `BoneAttachment3D` (bones can't follow a node).
+
+## D-157 — First-person left shoulders reach every long gun (2026-10-16)
+
+**Decision:** The first-person arms' left shoulder (out of view below the camera) is placed per class: `fparms.left_shoulder()` moves it from where it was toward the long guns' foregrips until the left hand reaches every one of them at rest (97 % of the arm's length).
+
+**Why:** It didn't reach: the left hand stopped short of the foregrip and floated in the air, by up to **17 cm** on the Breaker's pump (the Scout's arms are the shortest) and 4 to 8 cm on the rifles. Now the first-person idle, kick and draw hold every foregrip within 0.1 cm (`holds` suite). The shoulder stays below the picture, so the view looks the same.
+
+**Alternatives:** Pull each gun back toward the camera until the hand reaches (the Breaker would sit 14 cm closer, a very different viewmodel); longer arms in first person (the body's and the arms' proportions are the same on purpose, D-079).
+
+## D-158 — Reloads on one timeline: magazine and shell in the hand, sounds on cue (2026-10-16)
+
+**Decision:**
+- **One timeline:** every reload clip, first and third person, is keyed to the same moments, as fractions of the reload: a magazine is taken at 0.24, swapped for a fresh one at the vest at 0.38, in at 0.66, the handle at 0.80; a shotgun shell is taken from the vest at 0.28 and in at 0.80 (`holds.RELOAD_EVENTS`, `GunModel.MAGAZINE_EVENTS` / `SHELL_EVENTS`).
+- **The magazine moves:** it is a node of its own in the gun model; from 0.24 to 0.66 it goes with the left hand, then back into its seat (`GunModel.update()`, in both views). The shotgun has a `Shell` that sits in the left palm from 0.28 to 0.80, when the hand puts it into the loading port. The pistols' magazines have a body inside the grip, so a whole magazine comes out.
+- **Sounds on cue:** magazine out 0.28, in 0.66, the handle 0.80 (they were at 0.10, 0.60 and 0.85, before the hand even reached the magazine); a shell's sound as it goes in (0.80), not when it counts at the end. `Weapon.reload_cue(step)` fires with each.
+- **Exactly the reload's length:** the body's clip is stretched by its own length (all were assumed 2.5 s). The shotgun's first shell has its own body clip, `reload_shotgun`: the gun brought up, then the shell, like the first-person one. The reload one-shot fades out in 0.05 s instead of 0.15 s (a fade counts real seconds, and a shell lasts only 0.43 s, so the fade pulled the hand off the port). A reload cut short (a shot during a shotgun reload, a weapon switch) fades out on the body; the arms play the shot.
+
+**Why:** In your words, "reloading guns goes correctly". The magazine never left the gun (the hand went to it and back while it stayed in), the sounds came early, and the body's shotgun reload counted the first shell's lead-in as part of the shell.
+
+**Alternatives:** Drop the old magazine as a physics prop (CS doesn't; more objects each reload); animate the magazine in the generator as a bone (it would need a bone on every gun's skeleton, which guns don't have); write the moments into each clip as animation markers (glTF has no markers, and every clip shares the same moments anyway).
+
+## D-165 — How Chiip's speed is measured (2026-10-16)
+
+**Decision:** `tools/frame_timing.gd` splits every frame into its parts and is the one tool for frame times:
+- **The parts:** physics ticks (bots, movement, animation trees, the physics step), scripts (`_process`, the HUD), drawing, and the rest. Each part gets its average and 99th percentile.
+- **CPU over budget:** frames whose physics and scripts together take more than 8.33 ms (one frame at 120 Hz). Such a frame is late whatever the graphics card does.
+- **Spikes:** every frame over 12.5 ms (`--spike <ms>` changes the threshold), with the round's phase and what was added to the scene in that frame (`weapon_spot.tscn`, an explosion's lights and particles…). That names the moment that costs.
+- **Pipelines compiled while drawing:** Godot 4.4+ counts them, and they are the first-match stutter on a new computer. Chiip has none: 4.7 compiles new materials in the background.
+- **Three ways to run it:**
+  - with a window: the frame rate, the parts and the draw calls; `--vsync` keeps V-Sync on, as the settings do
+  - headless with `--fixed-fps 128`: the CPU side, about a minute of play in ten seconds
+  - `--lan`: a LAN host, with a second, headless game joining on the same computer
+
+**Why:**
+- The M8 version waited for the round to go live by counting `1 / frames per second`. While a map loads, the engine reports about 1 fps, so it stopped waiting at once, and every earlier number was measured during freeze time, with the bots standing still.
+- Its "process" column was the engine's monitor: the slowest frame of each second, including drawing and the wait for the display.
+- On macOS with V-Sync off, the system now and then holds a frame while it waits for the display. These show as 12–17 ms "draw" spikes, and a player with V-Sync on never gets them. So the slowest 1 % of frames with V-Sync off says little about stutter. The CPU parts and the spikes' causes do.
+- Metal reports no GPU times (neither `--gpu-profile` nor the viewport's measured render time), so the GPU's share is read from "draw" and the frame rate.
+
+**Alternatives:**
+- Godot's script profiler (`-d --profiling`). It prints only one frame a second, so it misses most spikes. It is still useful for one deterministic run, such as perf_test's round starts.
+- The editor's profiler: it needs clicking through by hand, and the numbers can't be compared from run to run.
+
+## D-166 — The shop and the network keep the arsenal loaded (2026-10-16)
+
+**Decision:** `Shop` builds its list of items once and keeps it (`Shop.items()` returns a copy, `Shop.find()` searches the kept list). `NetProtocol` keeps the arsenal in packet order and a table from weapon id to index. Neither calls `WeaponData.all()` again.
+
+**Why:** `WeaponData.all()` calls `load()` for every weapon file. When nothing else holds a weapon's data, that reloads it from disk: about 6 ms per call for the eleven weapons.
+- At every round start the bots' shopping called it 83 times (through `Shop.find`), and `Shop.items()` also reloaded three icons each time. In perf_test (no player, so no buy menu holding the weapons) that was a 153 ms tick. Now the worst tick is 17 ms and the average tick 0.59 ms (was 0.78).
+- In a real match the buy menu holds the weapons, so the gain there is smaller (round start 25 → 21 ms on Depot). But the network code named every character's weapon through `WeaponData.all()` in every snapshot (64 a second): 8 µs a call, now 0.2 µs.
+- Keeping the shop's list keeps the arsenal loaded, so `WeaponData.all()` is fast for every other caller as well.
+
+**Reported, not changed here:** `WeaponData.all()` itself should keep what it loads (`weapons/weapon_data.gd` belongs to the M11 weapons session).
+
+**Alternatives:** holding the weapons in `RoundManager`, which helps only offline rounds; a lookup by id in `WeaponData`, which is the weapons session's file.
+
+## D-167 — Lag compensation keeps each zone's box (2026-10-16)
+
+**Decision:** `LagCompensation.record()` finds each hit zone's box shape and half size once and keeps them on the zone as metadata (`lag_compensation_box`). Before, it searched the zone's children every tick. What is recorded is unchanged.
+
+**Why:** On a LAN host, recording took 0.15 ms of every 128 Hz tick (150 zones for ten characters), most of the 0.27 ms that being online adds to a 5v5 frame. Half of that was the search. Now record() takes 0.11 ms instead of 0.24 ms (both measured under the script profiler).
+
+**Alternatives:**
+- A dictionary from zone to box in `LagCompensation`. A freed zone's memory can be reused by a new one, and the entry would then point at a dead shape.
+- Recording every second tick. That halves the cost, but shots would be checked against poses interpolated over 15.6 ms instead of 7.8 ms, which changes hits.
+
+## D-168 — Limits in the performance test (2026-10-16)
+
+**Decision:** `tests/perf_test` (a seeded bots-only 5v5 on the test map, 20 s with two or three round starts) now checks:
+- the average tick under **2.0 ms** (was 3.9 ms; measured 0.6 ms)
+- 99 ticks in 100 under **3.9 ms** (was 7.8 ms; measured 0.9–1.6 ms)
+- **no tick over 50 ms**, round starts included (new; measured 17–20 ms, and 153 ms before D-166)
+- with `-- --window`, **no shader pipeline compiled in the middle of drawing a frame** (new)
+
+It also prints its five slowest ticks with the round's phase and time, so a failure says where to look.
+
+**Why:**
+- The old limits were about five times what the game uses, so a change could double the cost and still pass.
+- The new ones keep a margin of about three, which covers a busier computer: three sessions running suites at once measured up to 1.2 ms on average.
+- The worst-tick limit is the one that would have caught D-166's 153 ms round start. Neither of the old checks could, because a few slow ticks among 2,560 don't move the average or the 99th percentile.
+
+**Alternatives:**
+- Frame-rate limits: they depend on the monitor and on macOS's V-Sync (D-165).
+- A limit of 25 ms on the worst tick: the round start is 17–20 ms, which leaves too little margin.
+
+
+## D-169 — What was measured and left as it is (2026-10-16)
+
+**Decision:** These stay as they are. Each was measured on an Apple M5, 5v5, and costs too little to be worth a change to how the game plays or looks:
+- **Animation trees at 128 Hz for every character:** about 0.15 ms of a 0.8 ms tick for ten characters. Thinning them out for far or unseen characters would make their hit zones lag the bots' shots by a tick.
+- **The sun's four shadow cascades:** two cascades, or no shadows at all, changed the GPU's busy time by nothing measurable (30–32 % at 60 Hz). No lamp on the quick maps casts shadows.
+- **Bot vision every 0.1 s:** about 0.01 ms per tick on average (ten bots, two rays per enemy in view).
+- **The client's 128 commands a second:** 23 KB/s up for a 5v5 client and 30 KB/s down. That's fine for LAN and the internet. Sending two ticks per packet would halve the packets but delay every input by a tick (M12 can decide for Tailscale).
+- **Draw calls:** 120–300 per frame, depending on the map. The props aren't worth merging into MultiMeshes yet.
+
+**Reported to the sessions that own the code:**
+- The round start is now the slowest moment of a match, 14–20 ms in one tick on every map in rounds mode. Every character gets a new loadout, and `Weapon.create()` builds the whole weapon scene (17 nodes, the first-person model and four sound players) for bots too, about 0.45 ms per weapon.
+- A respawn costs 4–6 ms and a frag's explosion 4–7 ms (`weapons/explosion.gd`).
+- `WeaponData.all()` reloads the weapon files when nothing holds them (D-166).
+- These are in `weapons/` (the M11 weapons session's files) and in the shared notes.
+
+**Why:** The game holds a 120 Hz display with room to spare. Physics and scripts take 0.4–0.6 ms of a frame with a window and 0.6–0.8 ms headless. Uncapped, it draws 340–410 fps at 1080p and at the 3440 × 1440 world size. What players could feel were hitches, and the big one was D-166's.
+
+**Alternatives:** Spreading the round start over several ticks: the loadouts and the bots' purchases would come during the freeze time instead of at its start. That's a change to the rules' order that the round and economy tests check, for about 15 ms once a round.
+
+## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
+
+**Decision:**
+- **A thin compass strip at the top centre of the HUD** (`ui/compass.gd`, `Compass`): N, E, S and W with small ticks every 15° (taller every 45°), a short pointer in the middle, turning with your view, 120° across 400 design pixels. In the HUD's look: Silkscreen 16 px, hard 2 px shadows, the TEXT, MUTE and enemy colours of the palette. Its sizes are tokens (`HUD_COMPASS_*` in `tools/ui_palette.gd`, the theme's "Hud" type).
+- **Enemies show only when they shoot:** a small red square at the bearing of the shot, fading out over the last second of two. One square per enemy (his next shot moves it); only shots within 60 m (`Noises.GUNSHOT_RANGE`, the range bots hear them from); never your team's or your own; further than 60° to the side it sits on the strip's end, so you know which way to turn. No other markers, and **no A/B site letters** in Bomb (optional in the brief; left out to keep it minimal).
+- **A new signal for it, `Noises.shot_fired`**, emitted by `Noises.announce_shot()` from `Weapon._fire()` (the host's, the bots', single player) **and from `Weapon.play_remote_shot()`** (a client sees other players' shots as replays from the host, D-104). `noise_made` stays as it was. So it works online with nothing new from the host.
+- **The top bar and the toasts moved down 16 px** (bar 24 → 40, toasts 112 → 128) to make room: compass at 8 to 32, the kill feed (32) starts under it. The layout test checks, at all seven window sizes, that the compass lies inside the window and doesn't touch the bar, the toasts, the kill feed or the banners.
+- The compass hides while you are dead (the death view) and shows while you spectate a teammate, with their view.
+
+**Why:** Your words: just a simpler compass, "nothing fancy, very minimal", with enemies on it "when they shoot".
+
+**Alternatives:**
+- **Using `noise_made` itself:** it also carries footsteps, grenade blasts and the bomb's noise, which would need telling apart by their range, and a client never gets a noise for another player's shot (the replay `play_remote_shot()` makes none, on purpose: a global bus is shared by two games in one test process, and bots listen to it).
+- **Marking every enemy continuously, or on sight:** wallhack-like; the point is to answer the shot you heard but couldn't place.
+- **Leaving the bar where it was and putting the compass under the toasts:** the toasts come and go below it and the compass would jump around.
+
+
+## D-181 — A UI scale setting, and what Auto gives (2026-10-16)
+
+**Decision:**
+- **Settings → Video has a UI scale row: Auto, 50 %, 75 %, 100 %**, saved (`Settings.ui_scale`: 0, 50, 75, 100) and applied at once (the menus and the HUD listen to the setting, like to the pixel height). The percent is a share of **the biggest scale that fits the window**, the tighter of width / 1280 and height / 720 (D-151):
+  - **Auto (0):** that, rounded down to a half step from 1.0 up, so the pixel font stays even (16 px text is 2 px per font pixel at 1×, 3 at 1.5×, 4 at 2×: multiples of 8 px).
+  - **100 %:** the biggest scale exactly (a fraction is fine here, the font may come out uneven): for a window between two steps, say a 1920 × 1017 one (Auto 1.0, 100 % 1.41).
+  - **75 %, 50 %:** that share of the biggest, rounded down to half steps from 1.0 up.
+- **Under 1.0 a scale is multiplied by 0.95** (`PixelView.SMALL_SCALE_AIR`): text and boxes are rounded to whole pixels, mostly up, and at 0.57 to 0.67 (the pixelated HUD at 1440p and 2160p) the Play screen needed up to 3 % more than the window.
+- **What Auto gives** (text of 16 px design size in brackets): 1280 × 720 → 1.0 (16 px); 1920 × 1080 → 1.5 (24, the mockups' look); 2560 × 1440 → 2.0 (32); **2920 × 1753 → 2.0 (32, width-bound: the exact fit is 2.28)**; 3440 × 1440 → 2.0 (32); 2560 × 1600 → 2.0; 3840 × 2160 → 3.0 (48); 1440 × 1080 → 1.0. The 16 px text is 2.2 % of the window's height at 720p, 1080p, 1440p and 2160p (the same look on every 16:9 size), 1.8 % at 2920 × 1753.
+- **No option is bigger than the biggest that fits:** 125 % or 150 % would put a 1280 × 720 layout into 1024 × 576 or less, and the Play screen alone needs 707 px of height. The layout test goes through every size × Auto, 50, 75 and 100 %.
+
+**Why:** Your words, with the compass: *"at rovnou mysli i na scale toho UI, at to neni zbytecne velke ani male"* (think about the scale too, so it isn't needlessly big or small). Auto already keeps the same look at every 16:9 resolution; what it can't do is use the space between two steps (a 1000-pixel-tall window gets 1.0 where 1080 gets 1.5), and some people want it smaller or bigger than the mockups' look, so the setting does both: 100 % fills the window, 75 % and 50 % shrink it.
+
+**Alternatives:**
+- **Finer automatic steps** (quarter steps, or the exact fit): a 1.25× scale draws 16 px text at 20 px, 2.5 px per font pixel, so every second pixel is wider.
+- **Sizes above the fit (125 %, 150 %):** menus would be cut off, which is what D-151 fixed. Bigger text needs a redesigned layout.
+- **Reading the display's DPI** to pick the size: Windows and Linux report 96 dpi regardless of the monitor, so it can't be trusted.
+
 ## D-170 — Licences: GPL-3.0 for the code, CC BY-NC-SA 4.0 for the art (2026-10-16)
 
 **Decision:**
