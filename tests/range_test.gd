@@ -5,7 +5,7 @@ extends Node
 ##     Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/range_test.tscn
 ##
 ## The map scene: it starts practice with no bots, has no team spawns, and has its targets at
-## 5, 10, 20 and 40 m (and moving ones), a gun stand for every gun, distance signs, bot spawns
+## 5, 10, 20 and 40 m (and a moving one), a gun stand for every gun, distance signs, bot spawns
 ## and patrol points, all reachable from where the player stands. Then the game (main.tscn,
 ## started the way the main menu's Practice does, never touching the real settings file): no
 ## bots at first; the console's bot_add, bot_difficulty and bot_kick add, change and remove them;
@@ -72,8 +72,8 @@ func _test_scene() -> void:
 			moving += 1
 	var missing_distances := DISTANCES.filter(func(distance: String) -> bool:
 		return not titles.any(func(title: String) -> bool: return title.begins_with(distance + " ") or title == distance))
-	_check("Targets stand at 5, 10, 20 and 40 m, and at least two move (built from range_target entities)",
-			missing_distances.is_empty() and moving >= 2, "%d targets %s, %d moving" % [dummies.size(), titles, moving])
+	_check("Targets stand at 5, 10, 20 and 40 m, and one moves (built from range_target entities)",
+			missing_distances.is_empty() and moving >= 1, "%d targets %s, %d moving" % [dummies.size(), titles, moving])
 
 	var stands: Array[KitWeaponStand] = []
 	for node in map.find_children("*", "Node3D", true, false):
@@ -112,8 +112,8 @@ func _test_scene() -> void:
 			unreachable.append(String(marker.name))
 		if marker in bot_spawns and Vector2(at.x, at.z).distance_to(Vector2(start.x, start.z)) < BOT_SPAWN_DISTANCE:
 			too_close.append(String(marker.name))
-	_check("Bots have 6 or more spawns at least 20 m from the player and 10 or more patrol points, all reachable from where the player stands; the player has no spawn points (comes back where they started)",
-			bot_spawns.size() >= 6 and patrols.size() >= 10 and unreachable.is_empty() and too_close.is_empty() and player_spawns.is_empty(),
+	_check("Bots have 6 or more spawns at least 20 m from the player and 6 or more patrol points, all reachable from where the player stands; the player has no spawn points (comes back where they started)",
+			bot_spawns.size() >= 6 and patrols.size() >= 6 and unreachable.is_empty() and too_close.is_empty() and player_spawns.is_empty(),
 			"%d bot spawns, %d patrol points, unreachable %s, too close %s, player spawns %d" % [bot_spawns.size(), patrols.size(), unreachable, too_close, player_spawns.size()])
 	remove_child(map)
 	map.free()

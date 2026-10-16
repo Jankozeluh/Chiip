@@ -671,7 +671,7 @@ Four more entities make a training map like the **Shooting Range** (`maps/shooti
 
 **No bots at the start.** Practice starts with two bots on a map, unless the map's scene root has the metadata `practice_bots` (in Godot: select the root node, Inspector, *Add Metadata*, an `int`). The Shooting Range has 0: you add bots with the console (`bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick [all]`, `bot_difficulty <level>`).
 
-**Bots need patrol points** (`info_patrol`) and a navmesh where they should fight. On the range they wander only in the arena behind the gun stands, so the lanes stay quiet until you go and look for them (or an enemy sees you).
+**Bots need patrol points** (`info_patrol`) and a navmesh where they should fight. On the range they wander only in the open area behind the gun stands, so the lanes stay quiet until an enemy sees you.
 
 **Lay out lanes like the range:** the player's start at the origin facing −Z (downrange), so the `Player` node of the template needs no moving; lanes 4 m wide; distances measured from the firing line to the target's feet; a berm or a tall wall behind the last target.
 

@@ -1478,7 +1478,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 ## D-141 — Practice is a Shooting Range; the test map is hidden (2026-10-16) — *provisional*
 
 **Decision:**
-- **A new practice map, `maps/shooting_range`** (a TrenchBroom map built with the kit, in the crew-matched look of D-140): a range hall with lanes, targets at 5, 10, 20, 25 and 40 m and two moving ones, a spray wall, a stand for every gun, distance lines and signs, and an arena behind it where bots can fight. Layout in MAPS.md.
+- **A new practice map, `maps/shooting_range`** (a TrenchBroom map built with the kit, in the crew-matched look of D-140): kept simple, as you asked (*"neco jednoducheho"*): one walled yard with lanes, targets at 5, 10, 20 and 40 m and one moving at 15 m, a spray wall, a stand for every gun and grenade, distance lines and signs, and a small open area behind the stands where bots can fight. Layout in MAPS.md. (A first, bigger version, with a separate 44 × 36 m arena, a second moving target and a head-only target, was cut down to this the same day.)
 - **Practice plays it:** the main menu's Practice button and `-- --practice` without `--map` (both through `Settings.DEFAULT_MAP`).
 - **It starts with no bots.** The console adds them (`bot_add [easy|normal|hard] [ally|enemy]`, `bot_kick [all]`, `bot_difficulty`); they appear at the arena's bot spawns, at least 20 m from you. A map tells practice how many bots to start with by metadata on its scene's root, `practice_bots` (`ArenaRules.START_BOTS_META`), which main.gd reads; without it practice starts with ArenaRules' two, as before.
 - **The test map is hidden** from everything the player is offered: `GameLaunch.HIDDEN_MAPS` lists it, and `GameLaunch.list_maps()` (match setup and the lobby) and the console's map list leave it out. The rotation never had it. It stays for the automated tests and still loads by name: `map test_map`, `-- --map res://maps/test_map.tscn`.
@@ -1509,7 +1509,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:**
 - **Hand-placing dummies and guns in the scene:** invisible in TrenchBroom, so not reusable.
-- **`info_respawn` for the bots:** it is a player spawn too, so you would come back in the arena among the bots.
+- **`info_respawn` for the bots:** it is a player spawn too, so you would come back in the open area among the bots.
 - **`MapWeapons` with a fixed pool:** it puts guns at random places and is made for rounds.
 - **Leaving grenades to the buy menu:** the stands let you throw one after another without opening a menu.
 
