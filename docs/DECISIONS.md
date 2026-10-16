@@ -2248,7 +2248,7 @@ The new way of working starts once the work in progress (the v0.1.1 hotfix and M
 
 ## D-221 — M17: features for playing with friends (2026-10-16)
 
-**Decision:** After M16 and v0.2.0, M17 adds:
+**Decision:** After M16, M17 adds the following, and **v0.2.0 ships only once M17 is done, after an optimization check**:
 - a free-for-all deathmatch (only if it stays simple)
 - a LAN/Tailscale game browser and text chat
 - a killcam
@@ -2256,7 +2256,7 @@ The new way of working starts once the work in progress (the v0.1.1 hotfix and M
 
 Not now: first-launch tips, crosshair share codes, replays.
 
-**Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) and v0.2.0 come first.
+**Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) comes first. You'd rather ship v0.2.0 with these features ("chtel bych v0.2.0 vydat az tam toto co jsi popsal bude") and check the optimization just before.
 
 ## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
 

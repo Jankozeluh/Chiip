@@ -627,7 +627,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 
 ## M17 — Playing with friends ⬜
 
-**Goal:** make sessions with friends easier and more fun (D-221). Starts after M16 and v0.2.0, one short branch at a time.
+**Goal:** make sessions with friends easier and more fun (D-221). Starts after M16, one short branch at a time. **v0.2.0 ships only once M17 is done**, after an optimization check (D-221).
 
 - [ ] **Free-for-all deathmatch**, if it stays simple: everyone for themselves, built on the team respawn mode, first to the kill limit wins; enemy colours for everyone else
 - [ ] **Game browser:** games on your LAN or tailnet show up in a list (no typing IPs), with join in one click
