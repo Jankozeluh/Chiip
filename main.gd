@@ -256,9 +256,11 @@ func leave_online() -> void:
 ## [member mode]), it only tells the main menu to skip itself.
 func _load_map() -> void:
 	if GameLaunch.is_pending():
-		_spawn_map(_take_launch())
+		var launched := _take_launch()
+		# The band first: the map's class menu waits for it to hide (D-152).
 		if _shows_loading_screen():
-			_show_loading_screen(_map.scene_file_path)
+			_show_loading_screen(launched.resource_path)
+		_spawn_map(launched)
 		return
 	var scene := map_scene
 	var args := OS.get_cmdline_user_args()
@@ -310,6 +312,8 @@ func _show_loading_screen(path: String, map_follows: bool = false) -> void:
 
 func _on_loading_finished() -> void:
 	_loading_hides_hud = false
+	# The class draft opens now, not under the band (D-152).
+	_class_menu.open_if_pending()
 	_update_hud_visibility()
 
 

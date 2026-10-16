@@ -3486,6 +3486,7 @@ func _test_loading_screen_in_the_game() -> void:
 	var manager := main.get_map().get_node_or_null("RespawnMatch") as RoundManager
 	var first_lines := screen.get_lines()
 	var first_state := LoadingScreen.is_showing() and tree.paused and not hud.visible and screen.get_done_chips() < Tokens.LOADING_CHIPS
+	var class_menu_under_band := (main.get_node("ClassMenu") as ClassMenu).is_open()
 	var clock := manager.time_left if manager != null else -1.0
 	for i in 8:
 		await tree.process_frame
@@ -3500,7 +3501,9 @@ func _test_loading_screen_in_the_game() -> void:
 		if not LoadingScreen.is_showing():
 			break
 		await tree.process_frame
-	_check("After the hold time the screen hides and the game is unpaused; the class menu that opened at the match start is still open under it, now usable, and keeps the HUD hidden (mockup 08)",
+	_check("The class draft doesn't open under the loading band (D-152): it stays closed while the screen shows",
+			not class_menu_under_band, "class menu open under the band: %s" % class_menu_under_band)
+	_check("After the hold time the screen hides and the game is unpaused, and only then the class draft opens (mockup 08); it keeps the HUD hidden",
 			not LoadingScreen.is_showing() and not tree.paused and not hud.visible and (main.get_node("ClassMenu") as ClassMenu).is_open(),
 			"showing %s, paused %s, hud %s" % [LoadingScreen.is_showing(), tree.paused, hud.visible])
 	_close_class_menu(main)
@@ -3514,17 +3517,20 @@ func _test_loading_screen_in_the_game() -> void:
 	for i in 6:
 		await tree.process_frame
 	var next_lines := screen.get_lines()
+	var next_menu_under_band := LoadingScreen.is_showing() and (main.get_node("ClassMenu") as ClassMenu).is_open()
 	_check("next_map() shows the screen at once (paused, HUD hidden), lets a frame draw before it loads the map, and then names the new one: \"Map 2 of 3 · Rotation\", Square",
 			next_state and still_old and before_map == "res://maps/depot.tscn" and main.get_map().scene_file_path == "res://maps/square.tscn"
 					and next_lines == PackedStringArray(["Map 2 of 3 · Rotation", "Square", "Team Deathmatch · first to 50"]),
 			"showing %s, old map first %s, map now %s, lines %s" % [next_state, still_old, main.get_map().scene_file_path, next_lines])
+	_check("The new map's class draft doesn't open under the band either", not next_menu_under_band, "open under the band: %s" % next_menu_under_band)
 	for i in 200:
 		if not LoadingScreen.is_showing():
 			break
 		await tree.process_frame
+	var next_menu_opened := (main.get_node("ClassMenu") as ClassMenu).is_open()
 	_close_class_menu(main)
-	_check("It hides again after the hold time (unpaused, HUD back once the new map's class menu is closed)",
-			not LoadingScreen.is_showing() and not tree.paused and hud.visible, "showing %s, paused %s" % [LoadingScreen.is_showing(), tree.paused])
+	_check("It hides again after the hold time and the new map's class draft opens then (unpaused, HUD back once it is closed)",
+			next_menu_opened and not LoadingScreen.is_showing() and not tree.paused and hud.visible, "menu opened %s, showing %s, paused %s" % [next_menu_opened, LoadingScreen.is_showing(), tree.paused])
 	main.restart_match()
 	await tree.process_frame
 	await tree.process_frame

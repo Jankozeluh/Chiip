@@ -8,7 +8,9 @@
 - The UI scale is the tighter of width / 1280 and height / 720, in half steps from 1.0 up (D-151): at your 2920 × 1753 it is 2×, and the Play screen is whole. It re-applies on every resize and fullscreen switch (`Window.size_changed`, already wired in the game and the main menu).
 - The Play screen's three cards no longer widen with their text: the page needed 1338 design pixels, now 894. That was the other half of the cut-off.
 
-**Next:** the loading screen over the class draft, and the studio logo, then the layout test.
+- The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
+
+**Next:** the studio logo, then the layout test.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
