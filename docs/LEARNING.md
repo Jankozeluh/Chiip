@@ -832,6 +832,19 @@
 - A fade is a tween on the player's `volume_db` (`player.create_tween().tween_property(player, "volume_db", -60.0, 1.2)`), like a coroutine lerping `AudioSource.volume`. A tween made from a node stops while that node is paused, so the music's players are `PROCESS_MODE_ALWAYS`.
 - A static class can't add a node to the root from inside another node's `_ready()` (the root is busy adding children): `add_child.call_deferred()` and act on the node's `ready` signal.
 
+## M16: maintainability and debugging
+
+**Export plugins** (D-224; Unity's `IPreprocessBuildWithReport` / `IPostprocessBuildWithReport`)
+- An `EditorExportPlugin` runs inside the editor while it exports, also for a headless `--export-release`. Its `_export_begin()` runs once per export; `add_file(path, bytes, remap)` puts a file into the exported game's data that doesn't exist in the project folder. Chiip's (`addons/chiip_build_info/`) adds `res://build_hash.txt` with the git commit. It needs an `EditorPlugin` that registers it (`add_export_plugin()`), enabled in *Project Settings → Plugins*, and both scripts start with `@tool`.
+
+**The log file** (D-224; Unity's `Player.log`)
+- Godot writes everything printed (and every engine error) to `user://logs/godot.log` when *Debug → File Logging* is on (on by default for desktop; Chiip sets it explicitly). At the next start the old file is renamed with its date and a new one begins; `max_log_files` keeps the last few. `application/run/flush_stdout_on_print` writes each line to disk at once, so a crash doesn't lose the last lines.
+
+**Zip files** (D-224; .NET's `System.IO.Compression.ZipArchive`)
+- `ZIPPacker` writes a zip: `open(path)`, then for each file `start_file(name)`, `write_file(bytes)`, `close_file()`, and `close()`. `ZIPReader` reads one back (`get_files()`, `read_file(name)`). `OS.shell_show_in_file_manager(path)` opens Finder or Explorer at a file.
+
+**`user://` lives under `$HOME`** (D-222): on macOS it is `~/Library/Application Support/Godot/app_userdata/<project name>/`, on Linux `~/.local/share/godot/app_userdata/...`. Starting Godot with `HOME=<another folder>` gives it an empty `user://` there, which is how the test runner keeps each suite away from the player's files (Unity has no equivalent switch for `Application.persistentDataPath`).
+
 ## M15: accessibility and polish
 
 **Gamepads in Godot** (D-211, D-212; Unity's old Input Manager axes, or the new Input System's actions)

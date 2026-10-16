@@ -765,6 +765,12 @@ func save_to_disk(path: String = "") -> Error:
 		return ERR_UNCONFIGURED
 	if target == SETTINGS_PATH:
 		real_file_accesses += 1
+	return to_config().save(target)
+
+
+## Every setting and key binding as the settings file holds them (what [method save_to_disk]
+## writes; a bug report adds it as text, M16).
+func to_config() -> ConfigFile:
 	var file := ConfigFile.new()
 	for key: StringName in SCHEMA:
 		file.set_value(SCHEMA[key]["section"], _file_key(key), _values[key])
@@ -777,7 +783,7 @@ func save_to_disk(path: String = "") -> Error:
 		file.set_value("controls", action, texts)
 	for action in PAD_BINDABLE_ACTIONS:
 		file.set_value("pad", action, _pad_to_text(_pad_bindings[action]))
-	return file.save(target)
+	return file
 
 
 ## Applies the settings that reach the engine (window, frame rate, audio buses,

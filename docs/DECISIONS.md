@@ -2278,6 +2278,18 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** Running the Windows build in Wine or a VM (a download, slow, and the engine part is Godot's own tested template). A whole match instead of a round (minutes instead of seconds; the suites play whole matches in the editor build). Requiring a kill in the round check (flaky: one run in three had a single kill). A CI job that exports on every push (needs export templates in CI and doubles the minutes; the releases are rare).
 
+## D-224 — M16: a log file, the build on screen, and "Report a bug" packs a zip (2026-10-16)
+
+**Decision:**
+- **The log** is the engine's own rotating log file, turned on explicitly in project.godot: `user://logs/godot.log`, one file per run, the last five kept (`debug/file_logging/*`), and `application/run/flush_stdout_on_print` on, so every line is on disk at once (also after a crash). Its first line, from `BuildInfo.log_startup()`, says the version, the build, the computer and the engine.
+- **The build** is the git commit: an `EditorExportPlugin` (`addons/chiip_build_info/`) writes it into every export as `res://build_hash.txt` without touching the project folder; the editor's build asks git. `BuildInfo.describe()` gives "0.1.1 (a3e34a5)", shown in the main menu's footer ("Build 0.1.1 (a3e34a5) · Divocakos") and the pause menu's.
+- **"Report a bug"** (a text button in the pause menu's footer, and the console's `bug_report`) writes `user://bug_reports/chiip-bug-<version>-<date>.zip` and opens its folder: `info.txt` (version, build, computer, engine, screen, language, the map, mode, round and online status), `settings.cfg` (the settings in use) and the logs of this run and the one before. The online address is replaced by "(removed)" and the home folder's path by "~", because the zip goes into a public GitHub issue; the last ten reports are kept.
+- **`.github/ISSUE_TEMPLATE/bug_report.md`** asks for what happened, the steps, how often, the build, the system, online or not, and the zip.
+
+**Why:** A friend's bug report today is a sentence in a chat; with the log, the build and the settings the bug can be reproduced on the right commit. The engine's logger already rotates files and catches engine errors, so a logger of our own would only duplicate it. The commit, not only the version, tells apart two builds of the same version (a hotfix in progress, a test build). Flushing every line costs little (the game prints a few lines a minute) and is what makes a crash's last lines readable.
+
+**Alternatives:** A logger of our own (`Logger` subclass, Godot 4.5+) with levels and categories (more code; the engine's file has what's needed). The build date instead of the commit (doesn't say which code). Writing the commit into a tracked file before each export (dirties the working tree, easy to forget). Sending reports to a server (needs a server and a privacy policy; a zip the player looks at and attaches is under their control). Putting the whole user folder in the zip (stats history and old reports are noise).
+
 ## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
 
 **Decision:**

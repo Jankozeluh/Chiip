@@ -150,6 +150,10 @@ Console commands online: `status` (the session, ping, packet loss, prediction co
 
 To try online play on one computer, start the game twice: host in one window and join `127.0.0.1` in the other.
 
+## Reporting a bug
+
+Press **Esc** in a game and click **Report a bug** (or type `bug_report` in the console, the key left of 1). The game saves a zip and opens its folder: it holds the game's log, the version, your computer and screen, and your settings (your online address is left out). Open a [new issue](https://github.com/Jankozeluh/Chiip/issues/new?template=bug_report.md), say what happened and how to make it happen again, and drag the zip in. The build you run (for example "Build 0.1.1 (a3e34a5)") is at the bottom of the main menu and the pause menu.
+
 ## Licences
 
 - The game's **code** is under the **GNU General Public License, version 3** ([LICENSE](LICENSE)).

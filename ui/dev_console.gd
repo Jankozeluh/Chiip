@@ -284,6 +284,7 @@ func _register_commands() -> void:
 	register_command("money", _cmd_money, "money [amount]", "Set your money in a match (no value: show)")
 	register_command("status", _cmd_status, "status", "Online: the session, the players, ping, loss and corrections")
 	register_command("net_fakelag", _cmd_fake.bind("lag"), "net_fakelag [ms]", "Online: delay everything this computer receives (no value: show)")
+	register_command("bug_report", _cmd_bug_report, "bug_report", "Pack the log, version, computer and settings into a zip for a bug report, and open its folder")
 	register_command("net_fakeloss", _cmd_fake.bind("loss"), "net_fakeloss [percent]", "Online: drop this share of the snapshots or commands received (no value: show)")
 
 
@@ -520,6 +521,17 @@ func _cmd_fake(args: Array, which: String) -> void:
 	else:
 		session.fake_loss = clampf(value / 100.0, 0.0, 0.9)
 		print_line("%d%% of the unreliable packets this computer receives are dropped." % roundi(session.fake_loss * 100.0))
+
+
+## bug_report (M16, D-224): main.gd packs the report ([BugReport]); the console says where it is.
+func _cmd_bug_report(_args: Array) -> void:
+	var path: String = main.report_bug() if main != null and main.has_method("report_bug") else BugReport.create()
+	if path.is_empty():
+		print_error("The bug report couldn't be saved.")
+		return
+	print_line("Bug report saved: %s" % BugReport.scrub(ProjectSettings.globalize_path(path)))
+	print_line("Attach it to a new issue: %s/issues" % LicensesMenu.SOURCE_URL)
+	BugReport.show_in_folder(path)
 
 
 ## Online, a cheat or a change to the match would be unfair or fight the host (D-109): says so

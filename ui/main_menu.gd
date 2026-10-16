@@ -82,6 +82,8 @@ var _lobby_opener: Button
 
 
 func _ready() -> void:
+	# The log's first line (M16): version, build, computer.
+	BuildInfo.log_startup()
 	var settings := Settings.get_instance()
 	# Gamepad menus and prompts (D-211, D-213): it only watches the input.
 	add_child(PadInput.new())
@@ -110,7 +112,8 @@ func _ready() -> void:
 	# The menu track (M13, D-195); a game fades it out.
 	Music.play_menu()
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
-	_build_label.text = "Build %s · Divocakos" % ProjectSettings.get_setting("application/config/version", "")
+	# The version and the commit it was built from (M16, D-224), as in the pause menu and bug reports.
+	_build_label.text = "Build %s · Divocakos" % BuildInfo.describe()
 	_build_background()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()

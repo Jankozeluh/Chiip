@@ -49,6 +49,12 @@ signal settings_pressed
 ## Emitted when the player presses the leave button (it does not unpause: the
 ## owner leaves the scene, see [code]Main.return_to_menu()[/code]).
 signal leave_pressed
+## Emitted when the player presses "Report a bug" (M16, D-224): main.gd packs the report
+## ([BugReport]) and calls [method show_bug_report_result].
+signal bug_report_pressed
+
+## The footer button's text before a report is made.
+const BUG_REPORT_TEXT := "Report a bug"
 
 ## Online (M9): the menu is an overlay and never pauses the game. main.gd sets it on every map load.
 var online: bool = false
@@ -60,6 +66,8 @@ var online: bool = false
 @onready var _settings_button: Button = %SettingsButton
 @onready var _leave_button: Button = %LeaveButton
 @onready var _online_note: Label = %OnlineNote
+@onready var _build_label: Label = %Build
+@onready var _bug_report_button: Button = %BugReportButton
 ## The menu items that the mouse is over (Button → true). The button's own
 ## hover state isn't updated yet when it emits [signal Control.mouse_entered].
 var _hovered: Dictionary = {}
@@ -70,6 +78,9 @@ func _ready() -> void:
 	_resume_button.pressed.connect(close)
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_leave_button.pressed.connect(leave_pressed.emit)
+	_bug_report_button.pressed.connect(bug_report_pressed.emit)
+	# The footer (M16): the build, as in the main menu, and "Report a bug".
+	_build_label.text = "Build %s" % BuildInfo.describe()
 	for item in _items():
 		item.focus_entered.connect(_update_chip.bind(item))
 		item.focus_exited.connect(_update_chip.bind(item))
@@ -112,6 +123,7 @@ func open() -> void:
 	if is_open():
 		return
 	visible = true
+	_bug_report_button.text = BUG_REPORT_TEXT
 	MenuState.open(self)
 	if not online:
 		get_tree().paused = true
@@ -174,6 +186,12 @@ func set_leave_text(text: String) -> void:
 ## [method set_online] (M9) turns it on, since the match goes on there (D-065).
 func set_online_note_visible(shown: bool) -> void:
 	_online_note.visible = shown
+
+
+## Says on the footer button whether the report was saved ([param saved]): "Report saved · folder
+## opened" or "Couldn't save the report". Back to "Report a bug" when the menu opens again.
+func show_bug_report_result(saved: bool) -> void:
+	_bug_report_button.text = "Report saved · folder opened" if saved else "Couldn't save the report"
 
 
 ## Scales the layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
@@ -260,6 +278,16 @@ func get_title() -> Label:
 ## The line "Online · the match keeps running" (hidden in single player).
 func get_online_note() -> Label:
 	return _online_note
+
+
+## The footer's "Report a bug" button (M16).
+func get_bug_report_button() -> Button:
+	return _bug_report_button
+
+
+## The footer's build line, "Build 0.1.1 (26776e1)" (M16).
+func get_build_label() -> Label:
+	return _build_label
 
 
 ## The full-screen dimmed background that keeps clicks from reaching the game.

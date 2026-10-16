@@ -100,6 +100,8 @@ var _rotation_index: int = 0
 
 
 func _ready() -> void:
+	# The log's first line when the game starts without the menu (M16).
+	BuildInfo.log_startup()
 	var settings := Settings.get_instance()
 	if load_settings and not settings.is_loaded() and not OS.get_cmdline_user_args().has("--no-settings"):
 		var result := settings.load_from_disk()
@@ -122,6 +124,7 @@ func _ready() -> void:
 	_pause_menu.settings_pressed.connect(open_settings)
 	_pause_menu.leave_pressed.connect(return_to_menu)
 	_settings_menu.closed.connect(_pause_menu.settings_closed)
+	_pause_menu.bug_report_pressed.connect(_on_bug_report_pressed)
 	_loading_screen.finished.connect(_on_loading_finished)
 	# The class menu and the buy menu show only the dimmed world (mockups 08 and 14): the HUD steps aside while one is open.
 	_class_menu.visibility_changed.connect(_update_hud_visibility)
@@ -165,6 +168,30 @@ func get_settings_menu() -> SettingsMenu:
 ## The pause menu (Esc).
 func get_pause_menu() -> PauseMenu:
 	return _pause_menu
+
+
+## Packs a bug report ([BugReport]) with what is being played, and returns its path ("" if it
+## couldn't be written). The pause menu's "Report a bug" and the console's bug_report (M16).
+func report_bug() -> String:
+	var lines := PackedStringArray(["Game: %s on %s" % [
+			"practice" if mode == Mode.PRACTICE else MatchSettings.GameMode.keys()[match_settings.game_mode].to_lower(),
+			_map.scene_file_path if _map != null else "no map"]])
+	if net_session != null:
+		lines.append("Online: %s" % ("host" if net_session.is_host() else "client"))
+		if _net_game != null:
+			lines.append_array(PackedStringArray(_net_game.get_status_lines()))
+	var rules := _map.get_node_or_null("RoundManager") as RoundManager if _map != null else null
+	if rules != null:
+		lines.append("Round %d, score %d-%d, phase %s" % [rules.round_number, rules.score[0], rules.score[1],
+				RoundManager.Phase.keys()[rules.phase]])
+	return BugReport.create(lines)
+
+
+func _on_bug_report_pressed() -> void:
+	var path := report_bug()
+	if not path.is_empty():
+		BugReport.show_in_folder(path)
+	_pause_menu.show_bug_report_result(not path.is_empty())
 
 
 ## Replaces the current map with the scene at [param path] (console: map). Offline only: online
