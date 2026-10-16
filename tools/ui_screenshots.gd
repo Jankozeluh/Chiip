@@ -4,7 +4,7 @@ extends SceneTree
 ## match on Depot: class menu, HUD in freeze time and in a live round with kills,
 ## the Tab scoreboard, the pause menu, the console and the match-end screen, then
 ## a Team Deathmatch HUD on Square and the same after you die, with the respawn
-## countdown), for judging the look before and after a
+## countdown, and its Tab scoreboard), for judging the look before and after a
 ## change (M10). Run with a window (rendering needs one):
 ##
 ##     Godot --path . --resolution 1280x720 --quit-after 20000 --script res://tools/ui_screenshots.gd -- --out <folder>
@@ -143,7 +143,8 @@ func _match_shots() -> void:
 	console.set_open(false)
 	_block_input = true
 	await _frames(2)
-	# The end of the match, as the round manager announces it.
+	# The end of the match, as the round manager announces it (in a rotation, so the third button shows).
+	(main.get_node("MatchEndScreen") as MatchEndScreen).set_next_map("Square")
 	manager.score[you] = 5
 	manager.score[Teams.other(you)] = 3
 	manager.match_ended.emit(you)
@@ -171,6 +172,14 @@ func _respawn_shots() -> void:
 	player.take_damage(500.0, Hitbox.Zone.CHEST, enemies[1])
 	await _frames(30)
 	await _shot("hud_respawn_countdown")
+	# The Tab scoreboard of a Team Deathmatch (the kill limit and the clock under the mode), with you dead.
+	_block_input = false
+	DevConsole.is_open = false
+	Input.action_press("scoreboard")
+	await _frames(6)
+	await _shot("scoreboard_team_deathmatch")
+	Input.action_release("scoreboard")
+	_block_input = true
 	await _stop_game(main)
 
 

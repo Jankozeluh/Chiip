@@ -65,8 +65,6 @@ const BACKDROP := Color("07090d", 0.62)
 const PLATE := Color("0b1017", 0.72)
 ## Your own row in a table: raised (it also gets an accent frame).
 const YOU_ROW := Color("1c2533")
-## What a dead player's row is multiplied by in the Tab scoreboard (its text goes to about MUTE).
-const DEAD_ROW := Color(1, 1, 1, 0.45)
 ## Kept for older names: the frame of an inset area and of a panel are the line colour.
 const INSET := Color("07090d")
 const INSET_BORDER := LINE_COLOR
@@ -207,6 +205,10 @@ const KEY_SLOT_PAD_TOP := 1
 const KEY_SLOT_PAD_BOTTOM := 4
 ## The Back button of the settings screen (a TEXT frame, 40 high): 24 either side.
 const STRONG_BUTTON_PAD_X := 24
+## The match-end screen's buttons (48 high, 24 either side; 16 px text centred on its capitals: 12 + 21 + 15).
+const TALL_BUTTON_PAD_X := 24
+const TALL_BUTTON_PAD_TOP := 12
+const TALL_BUTTON_PAD_BOTTOM := 15
 ## A tag (the lime DEFAULT on the Team Deathmatch card: padding 2 6).
 const TAG_PAD_X := 6
 const TAG_PAD_Y := 2
@@ -237,14 +239,27 @@ const PANEL_MARGIN_WIDE_X := 32
 const PANEL_MARGIN_WIDE_Y := 32
 const ROW_MARGIN_X := 16
 const ROW_MARGIN_Y := 9
-## Between the rows of a menu (ContentBox), the parts of a table (TableBox) and its rows (TeamBox).
+## Inside a scoreboard row (CellMargin; the mockup's "padding 0 16"): the row's height comes from its own
+## minimum size and its cells centre themselves, so there is no space above or below.
+const CELL_MARGIN_X := 16
+const CELL_MARGIN_Y := 0
+## Between the rows of a menu (ContentBox), the parts of a table (TableBox: the column titles and the teams)
+## and its rows (TeamBox). The Tab scoreboard's are the mockup's flex gap of 8.
 const CONTENT_GAP := 8
-const TABLE_GAP := 16
-const TEAM_ROW_GAP := 0
+const TABLE_GAP := 8
+const TEAM_ROW_GAP := 8
+## Above the enemy team's line in a table: the mockup's 16 for the Tab scoreboard and 12 for the match-end screen
+## (the line's own box carries it, so a row of the table needs no spacer).
+const TEAM_LINE_GAP := 16
+const TEAM_LINE_GAP_TIGHT := 12
+## Under the Tab scoreboard's header (scores and mode), on top of the 8 between its parts.
+const HEADER_GAP := 16
 ## Between two scores (ScoreRow), a form's label and its controls (FormRow) and buttons in a row (ButtonRow).
 const SCORE_GAP := 24
 const FORM_GAP := 16
 const BUTTON_ROW_GAP := 16
+## Between the two centred lines of a scoreboard's header ("Team Deathmatch · Depot" and "First to 50 · 7:42").
+const SCORE_LINES_GAP := 6
 ## Between the segments of a segmented choice: none, they share one frame.
 const SEGMENT_GAP := 0
 ## Between the menu items of a list (the mockup's 4), and the cards of the Play screen (24).
@@ -280,6 +295,22 @@ const FLUSH_GAP := 0
 const STACK_GAP := 0
 ## The parts of a small group, 16 apart (the two preview squares and the caption under them).
 const GROUP_GAP := 16
+
+# --- Line boxes of big text (the mockups' line heights, D-137) ---
+# Silkscreen's line box is a bit more than three times the text size (62 px at 48, 41 at 32, 123 at 96), while the
+# mockup sets the line height to the text size ("line heights: 96/96, 48/48, 32/32"). A label inside a
+# TitleTrim, LargeTrim or HeroTrim (a MarginContainer with negative margins) is cut to that height, as much off
+# the top as off the bottom, which is where CSS puts the cut, so a score or a result sits where the mockup has it.
+
+## 48 px text: 62 - 14 = 48.
+const TRIM_TITLE_TOP := -7
+const TRIM_TITLE_BOTTOM := -7
+## 32 px text: 41 - 9 = 32.
+const TRIM_LARGE_TOP := -5
+const TRIM_LARGE_BOTTOM := -4
+## 96 px text: 123 - 27 = 96.
+const TRIM_HERO_TOP := -14
+const TRIM_HERO_BOTTOM := -13
 
 # --- HUD (the overlay of a running game; D-133) ---
 #

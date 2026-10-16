@@ -1,18 +1,20 @@
 class_name MatchEndScreen
 extends CanvasLayer
-## The screen shown when a match is over: "Victory" or "Defeat" for your team,
-## the final score and a scoreboard of both teams (a [ScoreboardTable]), with
-## "Play again" and "Main menu" buttons, and "Next map: Square" when the maps
-## are played in rotation (D-087). Hidden until the [RoundManager] emits
-## [signal RoundManager.match_ended].
+## The screen shown when a match is over, as the mockup draws it (D-137, "16
+## Match end"): a full ink page with "Victory" or "Defeat" in 96 px, the final
+## score on either side of the mode and the map ("50  Team Deathmatch · Depot
+## 43"), the final table of both teams (a compact [ScoreboardTable], nobody
+## muted) and, at the bottom, "Play again", "Next map · Square" when the maps are
+## played in rotation (D-087) and "Main menu". Hidden until the [RoundManager]
+## emits [signal RoundManager.match_ended].
 ##
 ## It only shows state and reports button clicks; [code]main.gd[/code] reacts to
 ## [signal play_again_pressed] and [signal main_menu_pressed]. Teams have no names:
 ## your team (from [member Teams.viewer_team]) is blue and listed first, the
-## enemy team red. Its look comes from the UI theme (D-057): the panel, title,
+## enemy team red. Its look comes from the UI theme (D-057): the page, title,
 ## scores and buttons use theme type variations. The result picks "VictoryLabel"
 ## or "DefeatLabel" by name (your team's colour or the enemy's), and the two scores
-## are a "FriendlyScoreLabel" and an "EnemyScoreLabel" in the scene.
+## are a "FriendlyLargeLabel" and an "EnemyLargeLabel" in the scene.
 
 ## Emitted when the player clicks "Play again".
 signal play_again_pressed
@@ -23,14 +25,14 @@ signal next_map_pressed
 
 var _manager: RoundManager
 
-@onready var _title: Label = $Panel/Margin/Content/Title
-@onready var _your_score: Label = $Panel/Margin/Content/Score/YourScore
-@onready var _dash: Label = $Panel/Margin/Content/Score/Dash
-@onready var _enemy_score: Label = $Panel/Margin/Content/Score/EnemyScore
-@onready var _table: ScoreboardTable = $Panel/Margin/Content/Table
-@onready var _play_again: Button = $Panel/Margin/Content/Buttons/PlayAgain
-@onready var _main_menu: Button = $Panel/Margin/Content/Buttons/MainMenu
-@onready var _next_map: Button = $Panel/Margin/Content/Buttons/NextMap
+@onready var _title: Label = %Result
+@onready var _your_score: Label = %YourScore
+@onready var _mode_label: Label = %ModeLabel
+@onready var _enemy_score: Label = %EnemyScore
+@onready var _table: ScoreboardTable = %Table
+@onready var _play_again: Button = %PlayAgain
+@onready var _main_menu: Button = %MainMenu
+@onready var _next_map: Button = %NextMap
 
 
 func _ready() -> void:
@@ -39,18 +41,57 @@ func _ready() -> void:
 	_play_again.pressed.connect(play_again_pressed.emit)
 	_main_menu.pressed.connect(main_menu_pressed.emit)
 	_next_map.pressed.connect(next_map_pressed.emit)
+	_refresh_chip()
 
 
-## Offers "Next map: <title>" after the match, or no such button with an empty
+## Offers "Next map · <title>" after the match, or no such button with an empty
 ## [param title] (no rotation). main.gd calls it whenever a map is loaded.
 func set_next_map(title: String) -> void:
-	_next_map.text = "Next map: %s" % title
+	_next_map.text = "Next map · %s" % title
 	_next_map.visible = not title.is_empty()
 
 
-## The "Next map" button (hidden without a rotation). For tests.
+# --- Test hooks ---
+
+
+## The "Next map" button (hidden without a rotation).
 func get_next_map_button() -> Button:
 	return _next_map
+
+
+## The "Play again" button, the filled one with the chip.
+func get_play_again_button() -> Button:
+	return _play_again
+
+
+## The "Main menu" button.
+func get_main_menu_button() -> Button:
+	return _main_menu
+
+
+## The result, "Victory" or "Defeat".
+func get_result_label() -> Label:
+	return _title
+
+
+## The final score of your team (32 px, in its colour).
+func get_your_score_label() -> Label:
+	return _your_score
+
+
+## The final score of the enemy team.
+func get_enemy_score_label() -> Label:
+	return _enemy_score
+
+
+## The mode and the map between the scores, "Team Deathmatch · Depot".
+func get_mode_label() -> Label:
+	return _mode_label
+
+
+## The final table.
+func get_table() -> ScoreboardTable:
+	return _table
 
 
 func _input(event: InputEvent) -> void:
@@ -86,6 +127,12 @@ func set_round_manager(manager: RoundManager) -> void:
 func set_ui_scale(factor: float) -> void:
 	UiTheme.apply(self, factor)
 	_table.set_ui_scale(factor)
+	_refresh_chip()
+
+
+## Puts the theme's chip (at the scale of the theme now) on the filled button.
+func _refresh_chip() -> void:
+	_play_again.icon = UiIcons.get_icon(_play_again, UiIcons.CHIP)
 
 
 func _on_match_ended(winner: int) -> void:
@@ -95,7 +142,7 @@ func _on_match_ended(winner: int) -> void:
 	_title.text = "Victory" if won else "Defeat"
 	_title.theme_type_variation = &"VictoryLabel" if won else &"DefeatLabel"
 	_your_score.text = str(_manager.score[you])
-	_dash.text = "-"
+	_mode_label.text = MatchText.mode_line(_manager)
 	_enemy_score.text = str(_manager.score[them])
 	# Final numbers: the table doesn't dim the players who died in the last round.
 	_table.show_match(_manager)

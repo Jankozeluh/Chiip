@@ -27,6 +27,10 @@ extends Node
 ## The HUD (task 6, D-133) takes its look from the theme: the HUD roles exist and
 ## carry the tokens, the HUD scenes have no theme override and its scripts no colour
 ## literal, and the F3 overlay starts hidden and F3 shows it.
+## The scoreboard, the pause menu and the match-end screen (M10 task 11, D-137) are the mockup's: the new
+## roles and their sizes, the Tab scoreboard's panel, header (also in Team Deathmatch), titles, team lines, rows,
+## class icons and muted dead rows, the pause menu's column and its focus chip, and the match-end screen's page,
+## result, score line, compact table and buttons, each also at 1.5 times the size.
 ## The shared [Settings] instance never saves in this test (nothing calls
 ## `load_from_disk()`) and is put back to its defaults after each group; the
 ## last check makes sure the real `user://settings.cfg` wasn't touched. Quits
@@ -75,6 +79,15 @@ const VARIATIONS := {
 	"SettingsColumn": "VBoxContainer", "FlushRow": "HBoxContainer", "StackBox": "VBoxContainer", "GroupBox": "VBoxContainer",
 	"TableRowPanel": "PanelContainer", "WideSegmentButton": "Button", "KeyCapButton": "Button", "KeySlotButton": "Button",
 	"ListeningKeyButton": "KeyCapButton", "StrongButton": "Button", "DimButton": "Button", "SwatchButton": "Button",
+	# M10 task 11 (D-137): the scoreboard, the pause menu and the match-end screen as in the mockup: 32 px team-coloured
+	# scores, the line above the enemy's rows in a tighter table, a row's inside margin, the space under the Tab
+	# scoreboard's header, the two centred lines between its scores, big text cut to the mockup's line height, the
+	# 48 high buttons of the match-end screen, a centred menu item and its ink chip.
+	"FriendlyLargeLabel": "Label", "EnemyLargeLabel": "Label", "TeamHeaderEnemyTight": "PanelContainer",
+	"CellMargin": "MarginContainer", "HeaderMargin": "MarginContainer", "ScoreLines": "VBoxContainer",
+	"TitleTrim": "MarginContainer", "LargeTrim": "MarginContainer", "HeroTrim": "MarginContainer",
+	"TallButton": "Button", "TallPrimaryButton": "PrimaryButton", "CenteredItemButton": "BigButton", "InkChip": "Panel",
+	"PageColumn": "VBoxContainer", "MuteLabel": "Label",
 }
 ## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -124,12 +137,14 @@ func _ready() -> void:
 	_test_new_roles()
 	_test_settings_roles()
 	_test_restyle_roles()
+	await _test_mockup_roles()
 	_test_icon_slots()
 	_test_scaled_theme()
 	await _test_scaling_a_menu()
 	await _test_preview()
 	await _test_console()
 	await _test_scoreboard()
+	await _test_scoreboard_header_in_team_deathmatch()
 	await _test_match_end_screen()
 	await _test_menus_have_no_overrides()
 	_test_hud_roles()
@@ -458,9 +473,105 @@ func _test_restyle_roles() -> void:
 					and backdrop_box != null and backdrop_box.bg_color == Tokens.BACKDROP and backdrop_box.border_width_left == 0,
 			"gap %d, margin %d, backdrop %s" % [swatch_row.get_theme_constant("separation"), swatch_margin.get_theme_constant("margin_left"),
 					backdrop_box.bg_color if backdrop_box != null else "none"])
-	_check("The table's two colours live in the palette: dead_row (a dead player's row is multiplied by it) is the DEAD_ROW token, and the your-row band is the YOU_ROW token",
-			_theme.get_color("dead_row", "Palette") == Tokens.DEAD_ROW and (_theme.get_stylebox("panel", "YouRowPanel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW,
-			"dead_row %s, your row %s" % [_theme.get_color("dead_row", "Palette"), (_theme.get_stylebox("panel", "YouRowPanel") as StyleBoxFlat).bg_color])
+	var you_box := _theme.get_stylebox("panel", "YouRowPanel") as StyleBoxFlat
+	_check("The table's colours live in the palette and the theme: a living player's class icon is tinted friendly_text or enemy_text, a dead player's `line` (the LINE token; D-137 replaced the old dead_row multiplier, which is gone), and your row is the YOU_ROW band with a BORDER wide accent frame that takes no room (its content margins are 0, so its columns line up with the other rows')",
+			_theme.get_color("line", "Palette") == Tokens.LINE_COLOR and not _theme.has_color("dead_row", "Palette")
+					and you_box.bg_color == Tokens.YOU_ROW and you_box.border_color == Tokens.ACCENT and you_box.border_width_left == Tokens.BORDER
+					and you_box.content_margin_left == 0.0 and you_box.content_margin_top == 0.0,
+			"line %s, dead_row %s, your row %s, content margin %.0f" % [_theme.get_color("line", "Palette"), _theme.has_color("dead_row", "Palette"),
+					you_box.bg_color, you_box.content_margin_left])
+	remove_child(holder)
+	holder.queue_free()
+
+
+## The roles of the scoreboard, the pause menu and the match-end screen (M10 task 11, D-137) take their
+## tokens and come out at the mockups' sizes: big text cut to its line height, the lines above the teams, the
+## tables' spacing, the 48 high buttons, the centred menu item with its chip, and the chip icon in the theme.
+func _test_mockup_roles() -> void:
+	var holder := Control.new()
+	add_child(holder)
+	var friendly_large := _variation_node(Label.new(), "FriendlyLargeLabel", holder)
+	var enemy_large := _variation_node(Label.new(), "EnemyLargeLabel", holder)
+	_check("The match-end screen's scores are 32 px in the UI's team colours (FriendlyLargeLabel, EnemyLargeLabel)",
+			friendly_large.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and enemy_large.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+					and friendly_large.get_theme_color("font_color") == Tokens.FRIENDLY and enemy_large.get_theme_color("font_color") == Tokens.ENEMY,
+			"friendly %s, enemy %s" % [friendly_large.get_theme_color("font_color"), enemy_large.get_theme_color("font_color")])
+	# Big text in a trim container is as high as the mockup's line height (48 / 32 / 96 px), not as the font's line box.
+	var trimmed := {}
+	for pair: Array in [["TitleTrim", "TitleLabel", Tokens.TEXT_SIZE_TITLE, Tokens.TRIM_TITLE_TOP, Tokens.TRIM_TITLE_BOTTOM],
+			["LargeTrim", "LargeLabel", Tokens.TEXT_SIZE_LARGE, Tokens.TRIM_LARGE_TOP, Tokens.TRIM_LARGE_BOTTOM],
+			["HeroTrim", "HeroLabel", Tokens.TEXT_SIZE_HERO, Tokens.TRIM_HERO_TOP, Tokens.TRIM_HERO_BOTTOM]]:
+		var trim := _variation_node(MarginContainer.new(), pair[0], holder) as MarginContainer
+		var label := _variation_node(Label.new(), pair[1], trim) as Label
+		label.text = "Aa"
+		trimmed[pair[0]] = [trim, label, pair[2], pair[3], pair[4]]
+	await get_tree().process_frame
+	var heights := {}
+	var trims_ok := true
+	for trim_name: String in trimmed:
+		var entry: Array = trimmed[trim_name]
+		var trim := entry[0] as MarginContainer
+		heights[trim_name] = trim.get_combined_minimum_size().y
+		trims_ok = trims_ok and heights[trim_name] == float(entry[2]) and trim.get_theme_constant("margin_top") == entry[3] \
+				and trim.get_theme_constant("margin_bottom") == entry[4] and (entry[1] as Label).position.y == float(entry[3])
+	_check("Big text cut to the mockup's line heights (\"line heights: 96/96, 48/48, 32/32\"): a label in a TitleTrim, LargeTrim or HeroTrim is exactly 48, 32 or 96 px high and sits that much above the top, as CSS puts it",
+			trims_ok, "heights %s" % [heights])
+	var friendly_line := _variation_node(PanelContainer.new(), "TeamHeaderFriendly", holder)
+	var enemy_line := _variation_node(PanelContainer.new(), "TeamHeaderEnemy", holder)
+	var tight_line := _variation_node(PanelContainer.new(), "TeamHeaderEnemyTight", holder)
+	var line_box := tight_line.get_theme_stylebox("panel") as StyleBoxFlat
+	var cell_margin := _variation_node(MarginContainer.new(), "CellMargin", holder)
+	var header_margin := _variation_node(MarginContainer.new(), "HeaderMargin", holder)
+	var lines := _variation_node(VBoxContainer.new(), "ScoreLines", holder)
+	var table_box := _variation_node(VBoxContainer.new(), "TableBox", holder)
+	var team_box := _variation_node(VBoxContainer.new(), "TeamBox", holder)
+	await get_tree().process_frame
+	_check("The lines above the teams are empty panels as high as the mockup's gaps plus the 2 px line: your team's 2, the enemy's 16 + 2 on the Tab scoreboard and 12 + 2 on the match-end screen (the space above is transparent, the line is at the bottom)",
+			friendly_line.size.y == float(Tokens.LINE) and enemy_line.size.y == float(Tokens.TEAM_LINE_GAP + Tokens.LINE)
+					and tight_line.size.y == float(Tokens.TEAM_LINE_GAP_TIGHT + Tokens.LINE)
+					and line_box.border_width_bottom == Tokens.LINE and line_box.border_width_top == 0 and line_box.border_color == Tokens.ENEMY
+					and line_box.bg_color.a == 0.0,
+			"heights %.0f / %.0f / %.0f" % [friendly_line.size.y, enemy_line.size.y, tight_line.size.y])
+	_check("A scoreboard row's inside margin is 16 at the sides and none above and below, the Tab scoreboard's header leaves %d under it, its two lines are %d apart, and its table and rows are %d apart (the mockup's flex gap of 8)" % [Tokens.HEADER_GAP, Tokens.SCORE_LINES_GAP, Tokens.TABLE_GAP],
+			cell_margin.get_theme_constant("margin_left") == Tokens.CELL_MARGIN_X and cell_margin.get_theme_constant("margin_right") == Tokens.CELL_MARGIN_X
+					and cell_margin.get_theme_constant("margin_top") == 0 and cell_margin.get_theme_constant("margin_bottom") == 0
+					and header_margin.get_theme_constant("margin_bottom") == Tokens.HEADER_GAP and header_margin.get_theme_constant("margin_top") == 0
+					and lines.get_theme_constant("separation") == Tokens.SCORE_LINES_GAP
+					and table_box.get_theme_constant("separation") == Tokens.TABLE_GAP and team_box.get_theme_constant("separation") == Tokens.TEAM_ROW_GAP
+					and Tokens.TABLE_GAP == 8 and Tokens.TEAM_ROW_GAP == 8 and Tokens.HEADER_GAP == 16 and Tokens.TEAM_LINE_GAP == 16 and Tokens.TEAM_LINE_GAP_TIGHT == 12,
+			"margin %d / %d, header %d, lines %d, table %d, rows %d" % [cell_margin.get_theme_constant("margin_left"), cell_margin.get_theme_constant("margin_top"),
+					header_margin.get_theme_constant("margin_bottom"), lines.get_theme_constant("separation"),
+					table_box.get_theme_constant("separation"), team_box.get_theme_constant("separation")])
+	var tall := _variation_node(Button.new(), "TallButton", holder) as Button
+	var tall_primary := _variation_node(Button.new(), "TallPrimaryButton", holder) as Button
+	tall.text = "Main menu"
+	tall_primary.text = "Play again"
+	await get_tree().process_frame
+	var tall_normal := tall.get_theme_stylebox("normal") as StyleBoxFlat
+	var tall_fill := tall_primary.get_theme_stylebox("normal") as StyleBoxFlat
+	_check("The match-end screen's buttons are 48 high with 24 either side: the outlined one has the plain button's MUTE frame, the primary one the accent fill with the hard shadow and ink text; both keep the 16 px text",
+			tall.size.y == 48.0 and tall_primary.size.y == 48.0 and tall_normal.content_margin_left == Tokens.TALL_BUTTON_PAD_X
+					and tall_normal.border_color == Tokens.BUTTON_BORDER and tall_normal.border_width_left == Tokens.BORDER
+					and tall_fill.bg_color == Tokens.ACCENT and tall_fill.border_color == Tokens.SHADOW and tall_fill.border_width_bottom == Tokens.SHADOW_OFFSET
+					and tall_primary.get_theme_color("font_color") == Tokens.TEXT_ON_FILL and tall.get_theme_font_size("font_size") == Tokens.TEXT_SIZE,
+			"heights %.0f and %.0f, padding %.0f, frame %s" % [tall.size.y, tall_primary.size.y, tall_normal.content_margin_left, tall_normal.border_color])
+	var item := _variation_node(Button.new(), "CenteredItemButton", holder) as Button
+	var big := _variation_node(Button.new(), "BigButton", holder) as Button
+	var ink_chip := _variation_node(Panel.new(), "InkChip", holder)
+	var chip_states := ["icon_normal_color", "icon_hover_color", "icon_focus_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_disabled_color"]
+	_check("A centred menu item is a big menu item (32 px, lime fill on hover and focus) whose icon is invisible in every state, because the screen draws the chip next to the text itself with an InkChip (ink on the accent); the plain menu item still shows its chip",
+			item.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and (item.get_theme_stylebox("focus") as StyleBoxFlat).bg_color == Tokens.ACCENT
+					and chip_states.all(func(state: String) -> bool: return item.get_theme_color(state) == Color.TRANSPARENT)
+					and big.get_theme_color("icon_focus_color") == Tokens.TEXT_ON_FILL
+					and (ink_chip.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.TEXT_ON_FILL,
+			"focus icon colour %s, plain item %s" % [item.get_theme_color("icon_focus_color"), big.get_theme_color("icon_focus_color")])
+	var chip := UiIcons.get_icon(holder, UiIcons.CHIP)
+	holder.theme = UiTheme.scaled(1.5)
+	var chip_scaled := UiIcons.get_icon(holder, UiIcons.CHIP)
+	_check("The chip is in the theme's icons (not one of the 21 slots), 8 px, and 12 px under a theme scaled by 1.5, so a button's chip scales with the UI",
+			chip != null and chip.get_size() == Vector2(8, 8) and chip_scaled != null and chip_scaled.get_size() == Vector2(12, 12)
+					and not UiIcons.all_slots().has(UiIcons.CHIP),
+			"chip %s, scaled %s" % [chip.get_size() if chip != null else "none", chip_scaled.get_size() if chip_scaled != null else "none"])
 	remove_child(holder)
 	holder.queue_free()
 
@@ -702,34 +813,145 @@ func _test_console() -> void:
 	console.queue_free()
 
 
-## The Tab scoreboard and its table take their look from the theme.
+## The Tab scoreboard and its table, as the mockup draws them (M10 task 11, D-137, "15 Scoreboard"): the
+## panel, the header (scores, mode and map, the clock), the column titles, the team lines, the rows with the
+## class icons, your row, the muted dead rows, scaling by 1.5, and that nothing in it takes the mouse.
 func _test_scoreboard() -> void:
 	await _new_match()
 	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
 	add_child(board)
 	board.set_round_manager(_rounds)
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	# A clock to read: 1:12 left of the round.
+	_rounds.time_left = 72.0
 	Input.action_press("scoreboard")
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	var table := board.get_node("Center/Panel/Margin/Content/Table") as ScoreboardTable
-	var panel := board.get_node("Center/Panel") as PanelContainer
-	var round_label := board.get_node("Center/Panel/Margin/Content/RoundLabel") as Label
+	await get_tree().process_frame
+	var table := board.get_table()
+	var panel := board.get_panel()
+	var viewer := Teams.viewer_team
+	var other := Teams.other(viewer)
 	var yours := table.get_row(_player)
-	var header := table.get_node("Team%d/Header" % Teams.viewer_team) as PanelContainer
-	var enemy_header := table.get_node("Team%d/Header" % Teams.other(Teams.viewer_team)) as PanelContainer
-	_check("The Tab scoreboard still builds its rows (3 + 3, your team first) and shows while Tab is held",
-			board.visible and table.get_displayed(Teams.viewer_team).size() == 3 and table.get_displayed(Teams.other(Teams.viewer_team)).size() == 3
-					and yours != null and round_label.text == "Round 1",
-			"visible %s, rows %d + %d, header '%s'" % [
-					board.visible, table.get_displayed(Teams.viewer_team).size(), table.get_displayed(Teams.other(Teams.viewer_team)).size(), round_label.text])
-	_check("Its look comes from theme variations: an overlay panel, a dim round label, blue and red team headers, your row on the highlight band, 16 px rows",
-			panel.theme_type_variation == &"OverlayPanel" and round_label.theme_type_variation == &"DimLabel"
-					and header.theme_type_variation == &"TeamHeaderFriendly" and enemy_header.theme_type_variation == &"TeamHeaderEnemy"
-					and yours.theme_type_variation == &"YouRowPanel" and (yours.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW
-					and (header.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.FRIENDLY
-					and (enemy_header.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.ENEMY
-					and (yours.find_children("*", "Label", true, false)[0] as Label).get_theme_font_size("font_size") == 16,
-			"panel '%s', header '%s', your row '%s'" % [panel.theme_type_variation, header.theme_type_variation, yours.theme_type_variation])
+	var titles := table.get_node("Titles") as PanelContainer
+	var friendly_line := table.get_node("Team%d/Header" % viewer) as PanelContainer
+	var enemy_line := table.get_node("Team%d/Header" % other) as PanelContainer
+	var child_names := table.get_children().map(func(node: Node) -> String: return String(node.name))
+	_check("The Tab scoreboard builds the column titles and both teams (3 + 3 rows, your team first) and shows while Tab is held",
+			board.visible and table.get_displayed(viewer).size() == 3 and table.get_displayed(other).size() == 3 and yours != null
+					and child_names == ["Titles", "Team%d" % viewer, "Team%d" % other],
+			"visible %s, rows %d + %d, children %s" % [board.visible, table.get_displayed(viewer).size(), table.get_displayed(other).size(), child_names])
+
+	# The panel: 880 wide, centred, 64 from the top, ink at 88%, 32 of padding.
+	var view_width := get_viewport().get_visible_rect().size.x
+	_check("The panel is the mockup's: an overlay panel (ink at 88%) 880 wide, centred, 64 px from the top, with 32 px of padding (the table is 816 wide)",
+			panel.theme_type_variation == &"OverlayPanel" and (panel.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.PANEL_OVERLAY
+					and panel.size.x == 880.0 and panel.global_position.y == 64.0 and absf(panel.get_global_rect().get_center().x - view_width / 2.0) <= 0.5
+					and table.global_position.x - panel.global_position.x == float(Tokens.PANEL_MARGIN_X) and table.size.x == 816.0
+					and table.global_position.y - panel.global_position.y == float(Tokens.PANEL_MARGIN_Y) + 48.0 + float(Tokens.HEADER_GAP) + float(Tokens.CONTENT_GAP),
+			"panel %s at y %.0f, table %s at x %.0f" % [panel.size, panel.global_position.y, table.size, table.global_position.x - panel.global_position.x])
+
+	# The header: your score at the left (48 px, your colour), the opponent's at the right, two centred lines between them.
+	var your_score := board.get_your_score_label()
+	var their_score := board.get_enemy_score_label()
+	var mode_label := board.get_mode_label()
+	var clock_label := board.get_clock_label()
+	var lines_height := 2.0 * _theme.default_font.get_height(Tokens.TEXT_SIZE) + Tokens.SCORE_LINES_GAP
+	_check("The header reads 'Bomb · Test Map' over 'Round 1 · 1:12' (the mode and the map, then the round and its time left, in DIM), your score at the left in your colour and theirs at the right in the enemy's, 48 px, the whole header 48 high and the lines centred between the scores",
+			mode_label.text == "Bomb · Test Map" and clock_label.text == "Round 1 · 1:12" and clock_label.theme_type_variation == &"DimLabel"
+					and your_score.theme_type_variation == &"FriendlyScoreLabel" and their_score.theme_type_variation == &"EnemyScoreLabel"
+					and your_score.get_theme_color("font_color") == Tokens.FRIENDLY and their_score.get_theme_color("font_color") == Tokens.ENEMY
+					and your_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and their_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
+					and your_score.get_parent().size.y == float(Tokens.TEXT_SIZE_TITLE) and mode_label.get_parent().size.y == lines_height and lines_height == 48.0
+					and your_score.global_position.x < mode_label.global_position.x and mode_label.global_position.x < their_score.global_position.x
+					and mode_label.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER and clock_label.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER
+					and absf(mode_label.get_global_rect().get_center().x - panel.get_global_rect().get_center().x) <= 2.0
+					and absf(clock_label.get_global_rect().get_center().x - panel.get_global_rect().get_center().x) <= 2.0
+					and your_score.text == "0" and their_score.text == "0",
+			"'%s' / '%s', scores '%s' - '%s', header height %.0f" % [mode_label.text, clock_label.text, your_score.text, their_score.text, your_score.get_parent().size.y])
+
+	# The column titles: an empty 32 px column for the class icon, PLAYER, K, D, A (64 px each) and DMG (96), right-aligned, in MUTE, 32 high.
+	var title_labels := titles.find_children("*", "Label", true, false)
+	var expected_titles: Array = ["Player", "K", "D", "A", "DMG"]
+	if _rounds.has_economy():
+		expected_titles.append("Money")
+	var title_texts: Array = title_labels.map(func(label: Node) -> String: return (label as Label).text)
+	var title_widths: Array = title_labels.map(func(label: Node) -> float: return (label as Label).size.x)
+	var title_icon := titles.find_child("Icon", true, false) as Control
+	_check("The column titles are 32 high and in MUTE: a 32 px column for the class icon, then PLAYER, K, D, A and DMG; K, D and A are 64 px wide and DMG 96 (Money, 96, is M7's, for your team's cash), numbers right-aligned",
+			title_texts == expected_titles and titles.size.y == 32.0 and title_icon.size.x == 32.0
+					and title_labels.all(func(label: Node) -> bool: return (label as Label).theme_type_variation == &"MuteLabel" and (label as Label).get_theme_color("font_color") == Tokens.MUTE)
+					and title_widths.slice(1, 4) == [64.0, 64.0, 64.0] and title_widths[4] == 96.0
+					and title_labels.slice(1).all(func(label: Node) -> bool: return (label as Label).horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT),
+			"titles %s, widths %s, height %.0f" % [title_texts, title_widths, titles.size.y])
+
+	# The lines: 2 px in your colour under the titles, 2 px in the enemy's with 16 more above it.
+	var first_row := table.get_row(table.get_displayed(viewer)[0])
+	var second_row := table.get_row(table.get_displayed(viewer)[1])
+	var last_row := table.get_row(table.get_displayed(viewer)[2])
+	var enemy_first := table.get_row(table.get_displayed(other)[0])
+	_check("Your team's rows sit under a 2 px line in your colour, 8 px under the titles, and the enemy's under a 2 px line in theirs, 16 + 8 px under your last row; every row is 40 high and 8 px from the next, and the line is 8 px above its first row",
+			friendly_line.theme_type_variation == &"TeamHeaderFriendly" and enemy_line.theme_type_variation == &"TeamHeaderEnemy"
+					and (friendly_line.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.FRIENDLY
+					and (enemy_line.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.ENEMY
+					and friendly_line.size.y == 2.0 and enemy_line.size.y == 18.0
+					and friendly_line.global_position.y - (titles.global_position.y + titles.size.y) == 8.0
+					and first_row.global_position.y - (friendly_line.global_position.y + 2.0) == 8.0
+					and second_row.global_position.y - (first_row.global_position.y + first_row.size.y) == 8.0
+					and first_row.size.y == 40.0 and second_row.size.y == 40.0 and last_row.size.y == 40.0
+					and enemy_line.global_position.y - (last_row.global_position.y + last_row.size.y) == 8.0
+					and enemy_first.global_position.y - (enemy_line.global_position.y + 18.0) == 8.0 and enemy_first.size.y == 40.0,
+			"line heights %.0f / %.0f, row heights %.0f / %.0f" % [friendly_line.size.y, enemy_line.size.y, first_row.size.y, enemy_first.size.y])
+
+	# A row: icon, name, K, D, A, DMG; yours is raised and framed in the accent, the others have nothing behind them.
+	var your_box := yours.get_theme_stylebox("panel") as StyleBoxFlat
+	var other_row := table.get_row(table.get_displayed(viewer).filter(func(member: Character) -> bool: return member != _player)[0])
+	var your_labels := yours.find_children("*", "Label", true, false)
+	var your_icon := yours.find_child("Icon", true, false) as TextureRect
+	_check("Your row is on the RAISED band with a 2 px accent frame (YouRowPanel) and the other rows have no background (RowPanel); the columns line up in both: the icon column from 16 px in, the name 32 px after it, the numbers right-aligned in 64 / 64 / 64 / 96 px (the money, 96 more, ends the row)",
+			yours.theme_type_variation == &"YouRowPanel" and your_box.bg_color == Tokens.YOU_ROW and your_box.border_color == Tokens.ACCENT and your_box.border_width_left == Tokens.BORDER
+					and other_row.theme_type_variation == &"RowPanel" and other_row.get_theme_stylebox("panel") is StyleBoxEmpty
+					and your_icon.global_position.x - yours.global_position.x == 16.0
+					and (your_labels[0] as Label).global_position.x - yours.global_position.x == 16.0 + 32.0
+					and (other_row.find_children("*", "Label", true, false)[0] as Label).global_position.x == (your_labels[0] as Label).global_position.x
+					and (your_labels[-1] as Label).get_global_rect().end.x == yours.get_global_rect().end.x - 16.0
+					and (other_row.find_children("*", "Label", true, false)[-1] as Label).get_global_rect().end.x == (your_labels[-1] as Label).get_global_rect().end.x
+					and your_labels.slice(1, 4).all(func(label: Node) -> bool: return (label as Label).size.x == 64.0 and (label as Label).horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT)
+					and (your_labels[4] as Label).size.x == 96.0 and (your_labels[0] as Label).get_theme_font_size("font_size") == Tokens.TEXT_SIZE,
+			"your row at x %.0f, name at %.0f, last column ends at %.0f of %.0f" % [your_icon.global_position.x, (your_labels[0] as Label).global_position.x,
+					(your_labels[-1] as Label).get_global_rect().end.x, yours.get_global_rect().end.x])
+
+	# The class icons: the player's class slot, 16 x 16, in the team colour; a dead player's row is muted.
+	var wrong_icons := ""
+	for team in [viewer, other]:
+		for member in table.get_displayed(team):
+			var icon := table.get_row(member).find_child("Icon", true, false) as TextureRect
+			var expected_icon := UiIcons.get_icon(table, member.class_data.id)
+			var colour := Tokens.FRIENDLY if team == viewer else Tokens.ENEMY
+			if expected_icon == null or icon.texture != expected_icon or icon.texture.get_size() != Vector2(16, 16) or icon.modulate != colour \
+					or icon.texture_filter != CanvasItem.TEXTURE_FILTER_NEAREST or icon.size.y != 16.0:
+				wrong_icons += "%s (%s) icon %s %s; " % [member.name, member.class_data.id, icon.texture, icon.modulate]
+	_check("Every row shows its player's class icon (the slot named after the class id), 16 × 16 with nearest filtering, tinted in your colour for your team and in the enemy's for theirs",
+			wrong_icons.is_empty(), "all six match" if wrong_icons.is_empty() else wrong_icons)
+	var victim := table.get_displayed(other)[1]
+	victim.take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await get_tree().process_frame
+	var dead_row := table.get_row(victim)
+	var dead_labels := dead_row.find_children("*", "Label", true, false)
+	var dead_icon := dead_row.find_child("Icon", true, false) as TextureRect
+	var living_labels := table.get_row(table.get_displayed(other)[0]).find_children("*", "Label", true, false)
+	var living_icon := table.get_row(table.get_displayed(other)[0]).find_child("Icon", true, false) as TextureRect
+	_check("A dead player's row is muted: all its text MUTE (MuteLabel) and its class icon LINE-coloured; a living player's row keeps white text and its team-coloured icon",
+			table.is_muted(victim) and not table.is_muted(table.get_displayed(other)[0]) and not table.is_muted(_player)
+					and dead_labels.all(func(label: Node) -> bool: return (label as Label).get_theme_color("font_color") == Tokens.MUTE)
+					and dead_icon.modulate == Tokens.LINE_COLOR
+					and living_labels.all(func(label: Node) -> bool: return (label as Label).get_theme_color("font_color") == Tokens.TEXT)
+					and living_icon.modulate == Tokens.ENEMY,
+			"dead text %s, dead icon %s, living text %s, living icon %s" % [(dead_labels[0] as Label).get_theme_color("font_color"), dead_icon.modulate,
+					(living_labels[0] as Label).get_theme_color("font_color"), living_icon.modulate])
+
 	# A menu on top of the game (the settings menu, the pause menu) takes the keyboard: no scoreboard then.
 	var menu_stand_in := Node.new()
 	MenuState.open(menu_stand_in)
@@ -742,35 +964,73 @@ func _test_scoreboard() -> void:
 	_check("Tab is ignored while any menu is open (MenuState), and counts again when it closes",
 			not with_menu and board.visible, "visible with a menu open: %s, after closing it: %s" % [with_menu, board.visible])
 	menu_stand_in.free()
-	var board_yours := board.get_node("Center/Panel/Margin/Content/Score/YourScore") as Label
-	var board_theirs := board.get_node("Center/Panel/Margin/Content/Score/EnemyScore") as Label
-	_check("Its scores are team-coloured by theme variations, with the colours the per-node overrides once gave: yours a FriendlyScoreLabel in your team's text colour, theirs an EnemyScoreLabel in the enemy's",
-			board_yours.theme_type_variation == &"FriendlyScoreLabel" and board_theirs.theme_type_variation == &"EnemyScoreLabel"
-					and board_yours.get_theme_color("font_color") == Tokens.FRIENDLY
-					and board_theirs.get_theme_color("font_color") == Tokens.ENEMY,
-			"yours %s, theirs %s" % [board_yours.get_theme_color("font_color"), board_theirs.get_theme_color("font_color")])
 	var overrides := _style_or_size_overrides(board)
 	_check("Nothing in the scoreboard carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
+	var blocking: Array[String] = []
+	for control: Control in board.find_children("*", "Control", true, false):
+		if control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			blocking.append(String(control.name))
+	_check("No part of the scoreboard takes a mouse click, the table's rebuilt rows included", blocking.is_empty(), "controls that would take clicks: %s" % [blocking])
+
+	# Scaled by 1.5 everything is exactly 1.5 times as big, the rebuilt rows and their icons included.
 	board.set_ui_scale(1.5)
 	await get_tree().process_frame
-	var row_label := yours.find_children("*", "Label", true, false)[0] as Label
-	var score := board.get_node("Center/Panel/Margin/Content/Score/YourScore") as Label
-	var stat_width := (yours.find_children("*", "Label", true, false)[1] as Label).custom_minimum_size.x
-	var separation := (table.get_node("Team0") as VBoxContainer).get_theme_constant("separation")
-	_check("Scaled by 1.5 the scoreboard is exactly 1.5 times as big: panel 640 → 960 minimum width, rows 16 → 24 px, scores 32 → 48 px, number columns 96 → 144, the gap between rows 2 → 3",
-			panel.custom_minimum_size.x == 960.0 and row_label.get_theme_font_size("font_size") == 24
-					and score.get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_TITLE, 1.5)
-					and stat_width == 144.0 and separation == _x(Tokens.TEAM_ROW_GAP, 1.5),
-			"panel %.0f, row font %d, score font %d, column %.0f, gap %d" % [
-					panel.custom_minimum_size.x, row_label.get_theme_font_size("font_size"), score.get_theme_font_size("font_size"), stat_width, separation])
+	await get_tree().process_frame
+	var scaled_row := table.get_row(_player)
+	var scaled_icon := scaled_row.find_child("Icon", true, false) as TextureRect
+	var scaled_labels := scaled_row.find_children("*", "Label", true, false)
+	_check("Scaled by 1.5 the scoreboard is exactly 1.5 times as big: the panel 880 → 1320 wide and 96 from the top, rows 40 → 60 high with 12 between them, titles 32 → 48, text 16 → 24, the number columns 64 / 96 → 96 / 144, the icons 16 → 24 (the rows are rebuilt for them), the header scores 72 px",
+			panel.size.x == 1320.0 and panel.global_position.y == 96.0 and scaled_row.size.y == 60.0 and table.get_node("Titles").size.y == 48.0
+					and table.get_theme_constant("separation") == _x(Tokens.TABLE_GAP, 1.5) and (table.get_node("Team%d" % viewer) as Control).get_theme_constant("separation") == _x(Tokens.TEAM_ROW_GAP, 1.5)
+					and (scaled_labels[0] as Label).get_theme_font_size("font_size") == 24 and (scaled_labels[1] as Label).size.x == 96.0 and (scaled_labels[4] as Label).size.x == 144.0
+					and scaled_icon.texture.get_size() == Vector2(24, 24) and scaled_icon.size.y == 24.0
+					and board.get_your_score_label().get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_TITLE, 1.5)
+					and (table.get_node("Team%d/Header" % Teams.other(viewer)) as Control).size.y == 27.0,
+			"panel %s at y %.0f, row %.0f high, text %d, icon %s, enemy line %.0f" % [panel.size, panel.global_position.y, scaled_row.size.y,
+					(scaled_labels[0] as Label).get_theme_font_size("font_size"), scaled_icon.texture.get_size(), (table.get_node("Team%d/Header" % Teams.other(viewer)) as Control).size.y])
 	board.set_ui_scale(1.0)
+	await get_tree().process_frame
+	_check("Back at 1.0 the panel is 880 wide again and the rows are 40 high",
+			panel.size.x == 880.0 and table.get_row(_player).size.y == 40.0, "panel %.0f, row %.0f" % [panel.size.x, table.get_row(_player).size.y])
 	Input.action_release("scoreboard")
 	remove_child(board)
 	board.queue_free()
 
 
-## The match-end screen takes its look from the theme, builds its table and scales.
+## In a Team Deathmatch (a [RespawnMatch]) the Tab scoreboard's header reads 'Team Deathmatch · <map>' over
+## 'First to <kill limit> · <time left>', and "Overtime" instead of the time in overtime; the match-end screen's mode line says the same.
+func _test_scoreboard_header_in_team_deathmatch() -> void:
+	var rules := RespawnMatch.new()
+	await _new_match(5, rules)
+	rules.settings.kill_limit = 50
+	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
+	add_child(board)
+	board.set_round_manager(_rounds)
+	await _wait_for_phase(RoundManager.Phase.LIVE)
+	_rounds.time_left = 462.0
+	Input.action_press("scoreboard")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var mode_text := board.get_mode_label().text
+	var clock_text := board.get_clock_label().text
+	(_rounds as RespawnMatch).overtime = true
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var overtime_text := board.get_clock_label().text
+	var titles := board.get_table().get_node("Titles").find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text)
+	_check("In a Team Deathmatch the header reads 'Team Deathmatch · Test Map' over 'First to 50 · 7:42' and, in overtime, 'First to 50 · Overtime'; there is no money column (a respawn match has no economy)",
+			mode_text == "Team Deathmatch · Test Map" and clock_text == "First to 50 · 7:42" and overtime_text == "First to 50 · Overtime"
+					and titles == ["Player", "K", "D", "A", "DMG"],
+			"'%s' / '%s' / '%s', titles %s" % [mode_text, clock_text, overtime_text, titles])
+	Input.action_release("scoreboard")
+	remove_child(board)
+	board.queue_free()
+
+
+## The match-end screen as the mockup draws it (M10 task 11, D-137, "16 Match end"): a full ink page, the
+## result in 96 px, the final score either side of the mode and the map, the compact table of both teams
+## (nobody muted), and the buttons at the bottom; it scales by 1.5 and its buttons report their clicks.
 func _test_match_end_screen() -> void:
 	await _new_match(1)
 	var screen := MATCH_END_SCENE.instantiate() as MatchEndScreen
@@ -782,63 +1042,138 @@ func _test_match_end_screen() -> void:
 	await _wait_for_phase(RoundManager.Phase.MATCH_END)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	var late_row := screen.get_node("Panel/Margin/Content/Table").get_node("Team0/%s" % _player.name).find_children("*", "Label", true, false)
-	_check("Rows built after the screen was scaled are scaled too (font 24, number columns 144)",
-			(late_row[0] as Label).get_theme_font_size("font_size") == 24 and (late_row[1] as Label).custom_minimum_size.x == 144.0,
-			"font %d, column %.0f" % [(late_row[0] as Label).get_theme_font_size("font_size"), (late_row[1] as Label).custom_minimum_size.x])
+	await get_tree().process_frame
+	var table := screen.get_table()
+	var late_row := table.get_row(_player)
+	var late_labels := late_row.find_children("*", "Label", true, false)
+	var late_icon := late_row.find_child("Icon", true, false) as TextureRect
+	_check("Rows built after the screen was scaled are scaled too: text 24, number columns 96 / 144, the row 54 high (36 × 1.5), the icon 24 px",
+			(late_labels[0] as Label).get_theme_font_size("font_size") == 24 and (late_labels[1] as Label).custom_minimum_size.x == 96.0
+					and (late_labels[4] as Label).custom_minimum_size.x == 144.0 and late_row.custom_minimum_size.y == 54.0
+					and late_icon.texture.get_size() == Vector2(24, 24),
+			"font %d, columns %.0f / %.0f, row %.0f, icon %s" % [(late_labels[0] as Label).get_theme_font_size("font_size"), (late_labels[1] as Label).custom_minimum_size.x,
+					(late_labels[4] as Label).custom_minimum_size.x, late_row.custom_minimum_size.y, late_icon.texture.get_size()])
 	screen.set_ui_scale(1.0)
 	await get_tree().process_frame
-	var title := screen.get_node("Panel/Margin/Content/Title") as Label
-	var panel := screen.get_node("Panel") as PanelContainer
-	var table := screen.get_node("Panel/Margin/Content/Table") as ScoreboardTable
-	var play_again := screen.get_node("Panel/Margin/Content/Buttons/PlayAgain") as Button
-	var main_menu_button := screen.get_node("Panel/Margin/Content/Buttons/MainMenu") as Button
-	_check("The match-end screen still shows 'Victory' and builds its table (3 + 3 rows), with 'Play again' focused",
-			screen.visible and title.text == "Victory" and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
-					and play_again.has_focus(),
-			"visible %s, title '%s', rows %d + %d, focus on Play again: %s" % [
-					screen.visible, title.text, table.get_displayed(0).size(), table.get_displayed(1).size(), play_again.has_focus()])
+	await get_tree().process_frame
+	var background := screen.get_node("Background") as Panel
+	var result := screen.get_result_label()
+	var your_score := screen.get_your_score_label()
+	var their_score := screen.get_enemy_score_label()
+	var mode_label := screen.get_mode_label()
+	var play_again := screen.get_play_again_button()
+	var main_menu_button := screen.get_main_menu_button()
+	var next_map := screen.get_next_map_button()
+	var view := get_viewport().get_visible_rect().size
+	_check("The match-end screen shows 'Victory' and the table of both teams (3 + 3 rows), with 'Play again' focused, on a full ink page that stops mouse clicks",
+			screen.visible and result.text == "Victory" and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
+					and play_again.has_focus() and background.theme_type_variation == &"InkPanel" and background.mouse_filter == Control.MOUSE_FILTER_STOP
+					and (background.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.INK
+					and background.anchor_right == 1.0 and background.anchor_bottom == 1.0,
+			"visible %s, result '%s', rows %d + %d, focus on Play again: %s" % [screen.visible, result.text, table.get_displayed(0).size(), table.get_displayed(1).size(), play_again.has_focus()])
+
+	# The header: the result 40 from the top, 96 px Bold in your colour; 16 below it your score, the mode and map in MUTE, theirs.
+	var result_trim := result.get_parent() as Control
+	var score_line := your_score.get_parent().get_parent() as Control
+	var your_trim := your_score.get_parent() as Control
+	var their_trim := their_score.get_parent() as Control
+	_check("The result is 96 px Bold in your colour, 96 high and 40 px from the top, centred; 16 px under it the score line is 32 high: your score (32 px, your colour), the mode and map in MUTE ('Bomb · Test Map'), theirs (32 px, the enemy's colour), 24 px apart, the three centred as one group",
+			result.theme_type_variation == &"VictoryLabel" and result.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO
+					and result.get_theme_font("font").resource_path == Tokens.FONT_BOLD and result.get_theme_color("font_color") == Tokens.FRIENDLY
+					and result_trim.global_position.y == 40.0 and result_trim.size.y == 96.0 and absf(result.get_global_rect().get_center().x - view.x / 2.0) <= 0.5
+					and score_line.global_position.y == 40.0 + 96.0 + 16.0 and your_trim.size.y == 32.0 and their_trim.size.y == 32.0
+					and your_score.theme_type_variation == &"FriendlyLargeLabel" and their_score.theme_type_variation == &"EnemyLargeLabel"
+					and your_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and their_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+					and your_score.get_theme_color("font_color") == Tokens.FRIENDLY and their_score.get_theme_color("font_color") == Tokens.ENEMY
+					and your_score.text == str(_rounds.score[0]) and their_score.text == str(_rounds.score[1])
+					and mode_label.text == "Bomb · Test Map" and mode_label.theme_type_variation == &"MuteLabel" and mode_label.get_theme_color("font_color") == Tokens.MUTE
+					and mode_label.global_position.x - (your_trim.global_position.x + your_trim.size.x) == 24.0
+					and their_trim.global_position.x - (mode_label.global_position.x + mode_label.size.x) == 24.0
+					and absf(((your_trim.global_position.x + their_trim.get_global_rect().end.x) / 2.0) - view.x / 2.0) <= 0.5,
+			"result at y %.0f (%.0f high), score line at y %.0f, scores '%s' - '%s', '%s'" % [result_trim.global_position.y, result_trim.size.y, score_line.global_position.y,
+					your_score.text, their_score.text, mode_label.text])
+
+	# The table: 800 wide, centred, 224 from the top; titles 28 high, rows 36, nothing between the rows, 12 above the enemy's line.
+	var titles := table.get_node("Titles") as Control
+	var friendly_line := table.get_node("Team0/Header") as Control
+	var enemy_line := table.get_node("Team1/Header") as Control
+	var rows0 := table.get_displayed(0).map(func(member: Character) -> Control: return table.get_row(member))
+	var rows1 := table.get_displayed(1).map(func(member: Character) -> Control: return table.get_row(member))
+	var all_rows: Array = rows0 + rows1
+	var muted := _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
+	var title_labels := titles.find_children("*", "Label", true, false)
+	_check("The table is the mockup's compact one: 800 wide, centred, 224 from the top, titles 28 high (PLAYER, K, D, A, DMG: no money column here), a 2 px line in your colour and 36 high rows with nothing between them, a 2 px line in the enemy's colour 12 px under your last row, and nobody muted although the three enemies are dead",
+			table.size.x == 800.0 and absf(table.get_global_rect().get_center().x - view.x / 2.0) <= 0.5 and table.global_position.y == 224.0
+					and titles.size.y == 28.0 and title_labels.map(func(label: Node) -> String: return (label as Label).text) == ["Player", "K", "D", "A", "DMG"]
+					and friendly_line.size.y == 2.0 and enemy_line.size.y == 14.0
+					and friendly_line.global_position.y == titles.global_position.y + 28.0
+					and all_rows.all(func(row: Control) -> bool: return row.size.y == 36.0)
+					and (rows0[0] as Control).global_position.y == friendly_line.global_position.y + 2.0
+					and (rows0[1] as Control).global_position.y == (rows0[0] as Control).global_position.y + 36.0
+					and enemy_line.global_position.y == (rows0[2] as Control).global_position.y + 36.0
+					and (rows1[0] as Control).global_position.y == enemy_line.global_position.y + 14.0
+					and (friendly_line.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.FRIENDLY
+					and (enemy_line.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.ENEMY
+					and muted.is_empty() and _rounds.get_participants().filter(func(member: Character) -> bool: return not member.is_alive()).size() == 3,
+			"table %s at y %.0f, titles %.0f high, rows %.0f, enemy line %.0f, muted %s" % [table.size, table.global_position.y, titles.size.y,
+					(rows0[0] as Control).size.y, enemy_line.size.y, _names(muted)])
+	var your_row := table.get_row(_player)
+	var your_box := your_row.get_theme_stylebox("panel") as StyleBoxFlat
+	_check("Your row is raised and framed in the accent here too, with your class icon in your colour",
+			your_row.theme_type_variation == &"YouRowPanel" and your_box.bg_color == Tokens.YOU_ROW and your_box.border_color == Tokens.ACCENT
+					and (your_row.find_child("Icon", true, false) as TextureRect).modulate == Tokens.FRIENDLY,
+			"your row '%s'" % your_row.theme_type_variation)
+
+	# The buttons: 48 high, 40 from the bottom, centred, 16 apart; Play again filled with the chip, the others outlined.
+	var buttons := screen.get_node("Buttons") as HBoxContainer
+	var chip := play_again.icon
+	_check("At the bottom, 40 up and centred, are 'Play again' (the accent fill with the chip), then 'Main menu' (outlined): 48 high, 24 px padding, 16 px apart; 'Next map' stays hidden without a rotation",
+			play_again.text == "Play again" and main_menu_button.text == "Main menu" and not next_map.visible
+					and play_again.theme_type_variation == &"TallPrimaryButton" and main_menu_button.theme_type_variation == &"TallButton"
+					and play_again.size.y == 48.0 and main_menu_button.size.y == 48.0
+					and buttons.global_position.y + buttons.size.y == view.y - 40.0
+					and absf(buttons.get_global_rect().get_center().x - view.x / 2.0) <= 0.5
+					and main_menu_button.global_position.x - (play_again.global_position.x + play_again.size.x) == 16.0
+					and (play_again.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Tokens.ACCENT
+					and (main_menu_button.get_theme_stylebox("normal") as StyleBoxFlat).border_color == Tokens.BUTTON_BORDER
+					and chip != null and chip.get_size() == Vector2(8, 8) and main_menu_button.icon == null
+					and play_again.get_theme_color("icon_normal_color") == Tokens.TEXT_ON_FILL,
+			"play again %s, main menu %s, bottom %.0f of %.0f" % [play_again.size, main_menu_button.size, buttons.global_position.y + buttons.size.y, view.y])
+	screen.set_next_map("Square")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("In a rotation 'Next map · Square' (outlined, 48 high) comes between 'Play again' and 'Main menu', 16 apart from both",
+			next_map.visible and next_map.text == "Next map · Square" and next_map.theme_type_variation == &"TallButton" and next_map.size.y == 48.0
+					and next_map.global_position.x - (play_again.global_position.x + play_again.size.x) == 16.0
+					and main_menu_button.global_position.x - (next_map.global_position.x + next_map.size.x) == 16.0,
+			"text '%s', at x %.0f" % [next_map.text, next_map.global_position.x])
+	screen.set_next_map("")
 	var menu_presses: Array[int] = [0]
 	screen.main_menu_pressed.connect(func() -> void: menu_presses[0] += 1)
 	main_menu_button.pressed.emit()
-	_check("The second button says 'Main menu' (it was Quit) and reports `main_menu_pressed` when clicked; 'Play again' keeps its name",
+	_check("The last button says 'Main menu' (it was Quit) and reports `main_menu_pressed` when clicked; 'Play again' keeps its name",
 			main_menu_button.text == "Main menu" and play_again.text == "Play again" and menu_presses[0] == 1 and not screen.has_signal("quit_pressed"),
 			"texts '%s' and '%s', presses %d" % [play_again.text, main_menu_button.text, menu_presses[0]])
-	_check("Its look comes from theme variations: a modal panel with the accent frame, a 48 px title, 16 px buttons; the buttons are themed in every state",
-			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"VictoryLabel"
-					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and play_again.get_theme_font_size("font_size") == 16
-					and (main_menu_button.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left == Tokens.BORDER
-					and (main_menu_button.get_theme_stylebox("focus") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette"),
-			"panel '%s', title %d px, button %d px" % [panel.theme_type_variation, title.get_theme_font_size("font_size"), play_again.get_theme_font_size("font_size")])
-	var your_score := screen.get_node("Panel/Margin/Content/Score/YourScore") as Label
-	var their_score := screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label
-	_check("The result and the scores are team-coloured by theme variations, with the colours the per-node overrides once gave: 'Victory' and your score in your team's text colour (32 px scores, 48 px title), theirs in the enemy's",
-			your_score.theme_type_variation == &"FriendlyScoreLabel" and their_score.theme_type_variation == &"EnemyScoreLabel"
-					and title.get_theme_color("font_color") == Tokens.FRIENDLY
-					and your_score.get_theme_color("font_color") == Tokens.FRIENDLY
-					and their_score.get_theme_color("font_color") == Tokens.ENEMY
-					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO
-					and your_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and their_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE,
-			"title %s, yours %s, theirs %s" % [title.get_theme_color("font_color"), your_score.get_theme_color("font_color"), their_score.get_theme_color("font_color")])
 	var overrides := _style_or_size_overrides(screen)
 	_check("Nothing in the match-end screen carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
 	screen.set_ui_scale(1.5)
 	await get_tree().process_frame
-	var row_label := table.get_row(_player).find_children("*", "Label", true, false)[0] as Label
-	_check("Scaled by 1.5: panel 760 → 1140, title 48 → 72 px, buttons 16 → 24 px and 200 × 40 → 300 × 60, table rows 16 → 24 px",
-			panel.custom_minimum_size.x == 1140.0 and title.get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_HERO, 1.5)
-					and play_again.get_theme_font_size("font_size") == 24 and play_again.custom_minimum_size == Vector2(300, 60)
-					and row_label.get_theme_font_size("font_size") == 24,
-			"panel %.0f, title %d, button %d (%s), row %d" % [
-					panel.custom_minimum_size.x, title.get_theme_font_size("font_size"), play_again.get_theme_font_size("font_size"),
-					play_again.custom_minimum_size, row_label.get_theme_font_size("font_size")])
+	await get_tree().process_frame
+	_check("Scaled by 1.5: the result 96 → 144 px at 60 from the top, the table 1200 wide at 336 with rows 54 high and titles 42, the buttons 48 → 72 high, text 16 → 24 px",
+			result.get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_HERO, 1.5) and (result.get_parent() as Control).global_position.y == 60.0
+					and table.size.x == 1200.0 and table.global_position.y == 336.0 and table.get_row(_player).size.y == 54.0
+					and table.get_node("Titles").size.y == 42.0 and play_again.size.y == 72.0 and play_again.get_theme_font_size("font_size") == 24
+					and play_again.icon.get_size() == Vector2(12, 12) and your_score.get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_LARGE, 1.5),
+			"result %d, table %s at y %.0f, row %.0f, button %.0f high, chip %s" % [result.get_theme_font_size("font_size"), table.size, table.global_position.y,
+					table.get_row(_player).size.y, play_again.size.y, play_again.icon.get_size()])
 	screen.set_ui_scale(1.0)
 	await get_tree().process_frame
-	_check("Back at 1.0 everything returns to its design size (panel 760, title 48, row 16)",
-			panel.custom_minimum_size.x == 760.0 and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO
-					and (table.get_row(_player).find_children("*", "Label", true, false)[0] as Label).get_theme_font_size("font_size") == 16,
-			"panel %.0f, title %d" % [panel.custom_minimum_size.x, title.get_theme_font_size("font_size")])
+	await get_tree().process_frame
+	_check("Back at 1.0 everything returns to its design size (the result 96 px, the table 800 wide, the rows 36 high, the buttons 48)",
+			result.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and table.size.x == 800.0 and table.get_row(_player).size.y == 36.0
+					and play_again.size.y == 48.0 and play_again.icon.get_size() == Vector2(8, 8),
+			"result %d, table %.0f, row %.0f" % [result.get_theme_font_size("font_size"), table.size.x, table.get_row(_player).size.y])
 	remove_child(screen)
 	screen.queue_free()
 
@@ -942,9 +1277,9 @@ func _test_menus_have_no_overrides() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	found["match-end screen (Defeat)"] = _overrides_below(screen) if screen.visible else ["not shown"]
-	var result := screen.get_node("Panel/Margin/Content/Title") as Label
-	var your_score := screen.get_node("Panel/Margin/Content/Score/YourScore") as Label
-	var their_score := screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label
+	var result := screen.get_result_label()
+	var your_score := screen.get_your_score_label()
+	var their_score := screen.get_enemy_score_label()
 	_check("After a lost match the title is a DefeatLabel in the enemy team's text colour, while the scores keep their own team colours (yours friendly, theirs enemy), all from the theme",
 			result.text == "Defeat" and result.theme_type_variation == &"DefeatLabel"
 					and result.get_theme_color("font_color") == Tokens.ENEMY
@@ -2339,7 +2674,7 @@ func _test_pause_menu() -> void:
 			"closed before %s, visible %s, open %s, paused %s" % [closed_at_first, menu.visible, menu.is_open(), tree.paused])
 	var texts := _texts([menu.get_resume_button(), menu.get_settings_button(), menu.get_leave_button()])
 	_check("It offers Resume, Settings and Leave match (the game is a match here), with Resume focused so Enter resumes",
-			texts == ["Resume", "Settings", "Leave match"] and menu.get_resume_button().has_focus() and (menu.get_node("Panel/Margin/Content/Title") as Label).text == "Paused",
+			texts == ["Resume", "Settings", "Leave match"] and menu.get_resume_button().has_focus() and menu.get_title().text == "Paused",
 			"buttons %s, focus on Resume %s" % [texts, menu.get_resume_button().has_focus()])
 
 	menu.get_resume_button().pressed.emit()
@@ -2536,41 +2871,96 @@ func _test_pause_esc_rules() -> void:
 	Settings.get_instance().reset_to_defaults()
 
 
-## The menu's look (a modal panel with a title and three big buttons, no style
-## overrides, a click-blocking background) and its scaling.
+## The pause menu as the mockup draws it (M10 task 11, D-137, "04 Pause"): the game dimmed, no panel, a centred
+## column with the 48 px title, 32 px under it three 352 px wide menu items 4 px apart; the focused item is filled
+## with the accent and its chip sits beside its text, the two centred together; the online line is there but
+## hidden; it blocks clicks, takes no overrides and scales by exactly 1.5.
 func _test_pause_menu_look() -> void:
 	var menu := PAUSE_MENU_SCENE.instantiate() as PauseMenu
 	add_child(menu)
 	await get_tree().process_frame
-	var panel := menu.get_panel()
-	var title := menu.get_node("Panel/Margin/Content/Title") as Label
+	var column := menu.get_column()
+	var title := menu.get_title()
 	var background := menu.get_background()
 	var buttons: Array[Button] = [menu.get_resume_button(), menu.get_settings_button(), menu.get_leave_button()]
-	var all_big := buttons.all(func(button: Button) -> bool: return button.theme_type_variation == &"BigButton" and button.get_theme_font_size("font_size") == 32)
-	_check("It is hidden until opened; its look comes from variations: a modal panel (accent frame), a 48 px title, three 32 px big buttons; it sits between the Tab scoreboard (3) and the match-end screen (5), and keeps running while paused",
-			not menu.visible and panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel" and title.get_theme_font_size("font_size") == 48
-					and all_big
+	var all_big := buttons.all(func(button: Button) -> bool: return button.theme_type_variation == &"CenteredItemButton" and button.get_theme_font_size("font_size") == 32)
+	_check("It is hidden until opened; its look comes from variations: a page column, a 48 px Bold title, three 32 px menu items; it sits between the Tab scoreboard (3) and the match-end screen (5), and keeps running while paused",
+			not menu.visible and column.theme_type_variation == &"PageColumn" and title.theme_type_variation == &"TitleLabel" and title.get_theme_font_size("font_size") == 48
+					and title.get_theme_font("font").resource_path == Tokens.FONT_BOLD and all_big
 					and menu.layer == 4 and menu.process_mode == Node.PROCESS_MODE_ALWAYS,
-			"visible %s, panel '%s', title %d px, big buttons %s, layer %d, process mode %d" % [
-					menu.visible, panel.theme_type_variation, title.get_theme_font_size("font_size"), all_big, menu.layer, menu.process_mode])
+			"visible %s, column '%s', title %d px, menu items %s, layer %d, process mode %d" % [
+					menu.visible, column.theme_type_variation, title.get_theme_font_size("font_size"), all_big, menu.layer, menu.process_mode])
 	var overrides := _style_or_size_overrides(menu)
 	_check("Nothing in the pause menu carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
-	_check("A full-screen background (a dim backdrop panel) and the panel both stop mouse clicks, so no click reaches the player controls behind the menu",
-			background.mouse_filter == Control.MOUSE_FILTER_STOP and background.anchor_left == 0.0 and background.anchor_top == 0.0
-					and background.anchor_right == 1.0 and background.anchor_bottom == 1.0 and panel.mouse_filter == Control.MOUSE_FILTER_STOP,
-			"background filter %d, anchors (%.0f, %.0f, %.0f, %.0f), panel filter %d" % [background.mouse_filter, background.anchor_left,
-					background.anchor_top, background.anchor_right, background.anchor_bottom, panel.mouse_filter])
+	_check("A full-screen dim (a backdrop panel: void at 62%) and the column both stop mouse clicks, so no click reaches the player controls behind the menu, and there is no panel (a dimmed game, a column)",
+			background.theme_type_variation == &"BackdropPanel" and (background.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.BACKDROP
+					and background.mouse_filter == Control.MOUSE_FILTER_STOP and background.anchor_left == 0.0 and background.anchor_top == 0.0
+					and background.anchor_right == 1.0 and background.anchor_bottom == 1.0 and column.mouse_filter == Control.MOUSE_FILTER_STOP
+					and menu.find_children("*", "PanelContainer", true, false).is_empty(),
+			"background filter %d, anchors (%.0f, %.0f, %.0f, %.0f), column filter %d" % [background.mouse_filter, background.anchor_left,
+					background.anchor_top, background.anchor_right, background.anchor_bottom, column.mouse_filter])
+
+	# The column: the title, then the items 32 below it, 352 wide, 48 high and 4 apart, the text centred; the online line is hidden.
+	menu.visible = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var title_trim := title.get_parent() as Control
+	var items := buttons[0].get_parent() as Control
+	var online := menu.get_online_note()
+	var view := get_viewport().get_visible_rect().size
+	_check("The title is 48 high with the items 32 below it; they are 352 wide, 48 high and 4 apart, their text centred; the column is centred on the screen; the mockup's line 'Online · the match keeps running' is in the scene but hidden (single player), and set_online_note_visible() shows it",
+			title_trim.size.y == 48.0 and items.size.x == 352.0 and items.global_position.y - (title_trim.global_position.y + title_trim.size.y) == 32.0
+					and buttons.all(func(button: Button) -> bool: return button.size.x == 352.0 and button.size.y == 48.0 and button.alignment == HORIZONTAL_ALIGNMENT_CENTER)
+					and buttons[1].global_position.y - (buttons[0].global_position.y + 48.0) == 4.0 and buttons[2].global_position.y - (buttons[1].global_position.y + 48.0) == 4.0
+					and title.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER and absf(items.get_global_rect().get_center().x - view.x / 2.0) <= 0.5
+					and absf(column.get_global_rect().get_center().y - view.y / 2.0) <= 1.0
+					and online.text == "Online · the match keeps running" and not online.visible and online.theme_type_variation == &"DimLabel",
+			"title %.0f high, items %s, button %s, online visible %s" % [title_trim.size.y, items.size, buttons[0].size, online.visible])
+	menu.set_online_note_visible(true)
+	var online_shown := online.visible
+	menu.set_online_note_visible(false)
+
+	# The focus chip: the focused item has it, the others don't; chip, gap and text are centred as one group.
+	var resume := menu.get_resume_button()
+	var settings_button := menu.get_settings_button()
+	resume.grab_focus()
+	await get_tree().process_frame
+	var resume_chip := resume.get_node("Chip") as Control
+	var settings_chip := settings_button.get_node("Chip") as Control
+	var font := resume.get_theme_font("font")
+	var text_width := font.get_string_size(resume.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 32).x
+	var group_width := 8.0 + float(Tokens.BUTTON_ICON_GAP) + text_width
+	var plain_chip_state := resume_chip.visible and not settings_chip.visible and resume.icon != null and settings_button.icon == null
+	var inline_chip_size: Vector2 = resume.icon.get_size() if resume.icon != null else Vector2.ZERO
+	var chip_left := resume_chip.position.x
+	var chip_ok := absf(chip_left - roundf((352.0 - group_width) / 2.0)) <= 1.0 and resume_chip.position.y == 20.0 and resume_chip.size == Vector2(8, 8) \
+			and (resume_chip.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.TEXT_ON_FILL
+	settings_button.grab_focus()
+	await get_tree().process_frame
+	var moved := settings_chip.visible and not resume_chip.visible and settings_button.icon != null and resume.icon == null
+	_check("The focused item is filled with the accent and has the chip: 8 px square in ink, 16 px before its text, the group centred in the 352 px item and level with it; when the focus moves on, the chip goes with it and the old item's text is centred on its own again",
+			online_shown and plain_chip_state and chip_ok and moved and (resume.get_theme_stylebox("focus") as StyleBoxFlat).bg_color == Tokens.ACCENT
+					and resume.get_theme_color("font_focus_color") == Tokens.TEXT_ON_FILL,
+			"chip at x %.1f (group %.0f of 352), y %.0f, moved with focus %s" % [chip_left, group_width, resume_chip.position.y, moved])
+	var lit_before := settings_chip.visible
+
 	menu.set_ui_scale(1.5)
 	await get_tree().process_frame
-	var scaled := panel.custom_minimum_size.x == 720.0 and title.get_theme_font_size("font_size") == 72 \
-			and menu.get_resume_button().get_theme_font_size("font_size") == 48
+	await get_tree().process_frame
+	var scaled_items := buttons[0].get_parent() as Control
+	var settings_chip_size := settings_chip.size
+	var scaled := scaled_items.size.x == 528.0 and title.get_theme_font_size("font_size") == 72 and buttons[0].get_theme_font_size("font_size") == 48 \
+			and settings_chip_size == Vector2(12, 12) and settings_button.icon != null and settings_button.icon.get_size() == Vector2(12, 12) \
+			and scaled_items.global_position.y - ((title.get_parent() as Control).global_position.y + (title.get_parent() as Control).size.y) == 48.0
 	menu.set_ui_scale(1.0)
 	await get_tree().process_frame
-	var restored := panel.custom_minimum_size.x == 480.0 and title.get_theme_font_size("font_size") == 48 \
-			and menu.get_resume_button().get_theme_font_size("font_size") == 32
-	_check("Scaled by 1.5 the panel goes 480 → 720 px, the title 48 → 72 px and the buttons 32 → 48 px; back at 1.0 each returns to its design size",
-			scaled and restored, "scaled %s, restored %s" % [scaled, restored])
+	await get_tree().process_frame
+	var restored := (buttons[0].get_parent() as Control).size.x == 352.0 and title.get_theme_font_size("font_size") == 48 \
+			and buttons[0].get_theme_font_size("font_size") == 32 and settings_chip.size == Vector2(8, 8)
+	_check("Scaled by 1.5 the items go 352 → 528 px wide, the title 48 → 72 px, the items' text 32 → 48 px, the gap under the title 32 → 48 and the chip 8 → 12 px; back at 1.0 each returns to its design size",
+			scaled and restored and lit_before and inline_chip_size == Vector2(8, 8),
+			"scaled %s, restored %s, chip %s" % [scaled, restored, settings_chip_size])
 	remove_child(menu)
 	menu.queue_free()
 	MenuState.reset()
@@ -2763,7 +3153,8 @@ func _positions(characters: Array[Character]) -> Array[Vector3]:
 
 ## Starts a match first to [param rounds_to_win] on a fresh copy of the test map
 ## (an earlier map is removed), with short timings, and waits until everyone has joined.
-func _new_match(rounds_to_win: int = 5) -> void:
+## [param rules] is the round manager to play it with (a [RespawnMatch] for Team Deathmatch).
+func _new_match(rounds_to_win: int = 5, rules: RoundManager = null) -> void:
 	if _map != null:
 		remove_child(_map)
 		_map.queue_free()
@@ -2776,7 +3167,7 @@ func _new_match(rounds_to_win: int = 5) -> void:
 	settings.round_time = 30.0
 	settings.round_end_time = 0.3
 	settings.rounds_to_win = rounds_to_win
-	_rounds = RoundManager.new()
+	_rounds = rules if rules != null else RoundManager.new()
 	_rounds.settings = settings
 	_rounds.rng.seed = 7
 	_map.add_child(_rounds)
@@ -2816,6 +3207,11 @@ func _silence(character: Character) -> void:
 		data.dry_fire_sound = null
 		data.reload_sound = null
 		character.weapon.data = data
+
+
+## The names of [param characters], in order.
+func _names(characters: Array) -> Array:
+	return characters.map(func(character: Character) -> String: return String(character.name))
 
 
 ## Puts [param node] in the tree below [param parent], using theme type variation [param variation].

@@ -1,9 +1,13 @@
 class_name Scoreboard
 extends CanvasLayer
 ## The hold-Tab scoreboard (action [code]scoreboard[/code]), like CS: while you
-## hold the key, a panel shows the round number, the score (yours in blue,
-## theirs in red) and a [ScoreboardTable] of both teams with kills, deaths,
-## assists and damage, the players who are dead dimmed. Let go and it is gone.
+## hold the key, a panel shows the score (yours in blue at the left, theirs in
+## red at the right), the mode and the map and what is left of the match
+## between them ("Team Deathmatch · Depot", "First to 50 · 7:42"; "Bomb ·
+## Depot", "Round 3 · 1:12"), and a [ScoreboardTable] of both teams with class
+## icons, kills, deaths, assists and damage, the players who are dead muted.
+## Let go and it is gone. The panel is the mockup's (D-137): 880 wide, 64 px from
+## the top, ink at 88%.
 ##
 ## It is a pure view of the [RoundManager]: it never changes the game, and it
 ## polls instead of listening to signals, because damage (which changes the
@@ -24,14 +28,16 @@ extends CanvasLayer
 ## scores use theme type variations (your score is a "FriendlyScoreLabel" and
 ## theirs an "EnemyScoreLabel", since you always see your team in the friendly
 ## colour), and [method set_ui_scale] hands the menu a theme scaled for the
-## window ([UiTheme]).
+## window ([UiTheme]). The words of the header come from [MatchText].
 
 var _manager: RoundManager
 
-@onready var _round_label: Label = $Center/Panel/Margin/Content/RoundLabel
-@onready var _your_score: Label = $Center/Panel/Margin/Content/Score/YourScore
-@onready var _enemy_score: Label = $Center/Panel/Margin/Content/Score/EnemyScore
-@onready var _table: ScoreboardTable = $Center/Panel/Margin/Content/Table
+@onready var _panel: PanelContainer = $Panel
+@onready var _mode_label: Label = %ModeLabel
+@onready var _clock_label: Label = %ClockLabel
+@onready var _your_score: Label = %YourScore
+@onready var _enemy_score: Label = %EnemyScore
+@onready var _table: ScoreboardTable = %Table
 
 
 func _ready() -> void:
@@ -73,8 +79,42 @@ func _should_show() -> bool:
 ## Brings the header and the table in line with the manager.
 func _refresh() -> void:
 	var you := Teams.viewer_team
-	_round_label.text = "First to %d kills" % _manager.settings.kill_limit if _manager.is_team_respawn() else "Round %d" % _manager.round_number
+	_mode_label.text = MatchText.mode_line(_manager)
+	_clock_label.text = MatchText.clock_line(_manager)
 	_your_score.text = str(_manager.score[you])
 	_enemy_score.text = str(_manager.score[Teams.other(you)])
 	_table.refresh()
+
+
+# --- Test hooks ---
+
+
+## The panel (880 wide, 64 px from the top).
+func get_panel() -> PanelContainer:
+	return _panel
+
+
+## The table of both teams.
+func get_table() -> ScoreboardTable:
+	return _table
+
+
+## The header's first centred line, the mode and the map.
+func get_mode_label() -> Label:
+	return _mode_label
+
+
+## The header's second centred line, the kill limit or the round and the time left.
+func get_clock_label() -> Label:
+	return _clock_label
+
+
+## Your score, at the left of the header.
+func get_your_score_label() -> Label:
+	return _your_score
+
+
+## The enemy's score, at the right of the header.
+func get_enemy_score_label() -> Label:
+	return _enemy_score
 

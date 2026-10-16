@@ -31,7 +31,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Merged main** (M7's arsenal, economy, buy menu and class draft, and the map kit, 77d0f69) into this branch. Conflicts were all documents and one console check (M7's console is 24 lines now); M7's new HUD labels (slots, money, reward, armor) were moved onto theme roles like the rest of the HUD. 24 suites, 798 checks pass.
 
-**Next:** the pause menu, scoreboard, match end, console, loading screen, then the HUD, kill feed, class-draft cards and buy menu on top of M7.
+- **Pause menu, Tab scoreboard and match end** (task 11, Sonnet): as in your mockups; class icons and team lines in the tables, your row framed in lime, dead players muted; 812 checks pass.
+
+**Next:** console, loading screen, HUD and kill feed, class-draft cards and buy menu.
 
 ## 2026-10-16 — Merges into main: M7 and the M10 map kit
 

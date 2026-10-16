@@ -25,6 +25,11 @@ extends RefCounted
 const FOLDER := "res://assets/ui/icons/"
 ## The theme type that holds them (a custom type, like "Palette").
 const THEME_TYPE := &"Icons"
+## The focus chip, the 8 px square (assets/ui/chip.png). It is in the same theme type but is not a slot:
+## a button that shows it only while it is focused or hovered (the pause menu, the match-end screen) asks
+## for it with [code]UiIcons.get_icon(button, UiIcons.CHIP)[/code], so it is scaled with the UI like the
+## slots (a button's own [code]icon[/code] property is not).
+const CHIP := &"chip"
 
 ## Every slot, by group (UI_MOCKUPS.md, item 16). A slot's name is the PNG's
 ## file name without ".png". Weapons and grenades are named like M7's weapon

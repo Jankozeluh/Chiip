@@ -15,79 +15,105 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
-theme_type_variation = &"BackdropPanel"
+theme_type_variation = &"InkPanel"
 
-[node name="Panel" type="PanelContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+[node name="Header" type="VBoxContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 40.0
+offset_bottom = 40.0
 grow_horizontal = 2
-grow_vertical = 2
-custom_minimum_size = Vector2(760, 0)
-mouse_filter = 0
-theme_type_variation = &"ModalPanel"
+mouse_filter = 2
+theme_type_variation = &"GroupBox"
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="ResultTrim" type="MarginContainer" parent="Header"]
 layout_mode = 2
-theme_type_variation = &"PanelMarginWide"
+mouse_filter = 2
+theme_type_variation = &"HeroTrim"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
-layout_mode = 2
-theme_type_variation = &"ContentBox"
-
-[node name="Title" type="Label" parent="Panel/Margin/Content"]
+[node name="Result" type="Label" parent="Header/ResultTrim"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"VictoryLabel"
 text = "Victory"
 horizontal_alignment = 1
 
-[node name="Score" type="HBoxContainer" parent="Panel/Margin/Content"]
+[node name="ScoreLine" type="HBoxContainer" parent="Header"]
 layout_mode = 2
+mouse_filter = 2
 theme_type_variation = &"ScoreRow"
 alignment = 1
 
-[node name="YourScore" type="Label" parent="Panel/Margin/Content/Score"]
+[node name="YourTrim" type="MarginContainer" parent="Header/ScoreLine"]
 layout_mode = 2
-theme_type_variation = &"FriendlyScoreLabel"
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="YourScore" type="Label" parent="Header/ScoreLine/YourTrim"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"FriendlyLargeLabel"
 text = "0"
 
-[node name="Dash" type="Label" parent="Panel/Margin/Content/Score"]
+[node name="ModeLabel" type="Label" parent="Header/ScoreLine"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"ScoreLabel"
-text = "-"
+size_flags_vertical = 4
+theme_type_variation = &"MuteLabel"
+text = "Team Deathmatch"
 
-[node name="EnemyScore" type="Label" parent="Panel/Margin/Content/Score"]
+[node name="EnemyTrim" type="MarginContainer" parent="Header/ScoreLine"]
 layout_mode = 2
-theme_type_variation = &"EnemyScoreLabel"
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="EnemyScore" type="Label" parent="Header/ScoreLine/EnemyTrim"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"EnemyLargeLabel"
 text = "0"
 
-[node name="Table" parent="Panel/Margin/Content" instance=ExtResource("table_scene")]
-layout_mode = 2
+[node name="Table" parent="." instance=ExtResource("table_scene")]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 224.0
+offset_right = 400.0
+offset_bottom = 224.0
+grow_horizontal = 2
 dim_dead = false
+compact = true
 
-[node name="Spacer" type="Control" parent="Panel/Margin/Content"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-
-[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/Content"]
-layout_mode = 2
+[node name="Buttons" type="HBoxContainer" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -88.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
 theme_type_variation = &"ButtonRow"
 alignment = 1
 
-[node name="NextMap" type="Button" parent="Panel/Margin/Content/Buttons"]
-visible = false
+[node name="PlayAgain" type="Button" parent="Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(280, 40)
-text = "Next map"
-
-[node name="PlayAgain" type="Button" parent="Panel/Margin/Content/Buttons"]
-layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+theme_type_variation = &"TallPrimaryButton"
 text = "Play again"
 
-[node name="MainMenu" type="Button" parent="Panel/Margin/Content/Buttons"]
+[node name="NextMap" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+theme_type_variation = &"TallButton"
+text = "Next map"
+
+[node name="MainMenu" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TallButton"
 text = "Main menu"

@@ -70,8 +70,9 @@ func _init() -> void:
 ## get_theme_color("accent", "Palette")), so the palette lives in the theme too.
 ## "friendly" / "enemy" are the 3D world's team colours from [Teams]; the UI's
 ## own team colours (D-134) are "friendly_text" / "enemy_text" and their fills.
-## Colors that no control can hold as a theme item (a table row is dimmed by
-## multiplying it, "dead_row") are named here too.
+## Colours that no control can hold as a theme item (an icon's tint, a team's colour in
+## code) are named here too: a scoreboard row tints its class icon with "friendly_text",
+## "enemy_text" or, for a dead player, "line".
 func _palette() -> void:
 	_colors("Palette", {
 		"accent": Palette.ACCENT, "accent_bright": Palette.ACCENT_BRIGHT, "accent_dark": Palette.SELECTION,
@@ -83,8 +84,6 @@ func _palette() -> void:
 		"friendly": Teams.FRIENDLY_COLOR, "enemy": Teams.ENEMY_COLOR,
 		"friendly_text": Palette.FRIENDLY, "enemy_text": Palette.ENEMY,
 		"friendly_fill": Palette.FRIENDLY_FILL, "enemy_fill": Palette.ENEMY_FILL,
-		# What a dead player's row is multiplied by (a row's modulate is not a theme item).
-		"dead_row": Palette.DEAD_ROW,
 	})
 
 
@@ -138,6 +137,13 @@ func _labels() -> void:
 	_variation("EnemyScoreLabel", "Label")
 	_font_sizes("EnemyScoreLabel", {"font_size": Palette.TEXT_SIZE_TITLE})
 	_colors("EnemyScoreLabel", {"font_color": Palette.ENEMY})
+	# The match-end screen's scores: 32 px in the team colours.
+	_variation("FriendlyLargeLabel", "Label")
+	_font_sizes("FriendlyLargeLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("FriendlyLargeLabel", {"font_color": Palette.FRIENDLY})
+	_variation("EnemyLargeLabel", "Label")
+	_font_sizes("EnemyLargeLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("EnemyLargeLabel", {"font_color": Palette.ENEMY})
 	# The match result: "VICTORY" in your colour, "DEFEAT" in the enemy's, 96 px Bold.
 	_variation("VictoryLabel", "Label")
 	_font_sizes("VictoryLabel", {"font_size": Palette.TEXT_SIZE_HERO})
@@ -210,18 +216,22 @@ func _panels() -> void:
 	# Table rows: nothing behind a row; your own row raised and framed in the accent.
 	_variation("RowPanel", "PanelContainer")
 	_styles("RowPanel", {"panel": _empty("row_panel", BORDER_MARGINS)})
+	# (The frame is drawn inside the row and takes no room, so your row's columns line up with the others.)
 	_variation("YouRowPanel", "PanelContainer")
-	_styles("YouRowPanel", {"panel": _box("you_row_panel", Palette.YOU_ROW, Palette.ACCENT, Palette.BORDER)})
+	_styles("YouRowPanel", {"panel": _box("you_row_panel", Palette.YOU_ROW, Palette.ACCENT, Palette.BORDER, _even(0))})
 	# A row of a table of settings (the Controls tab's keys): a 2 px PANEL line along its top.
 	_variation("TableRowPanel", "PanelContainer")
 	var table_row := _box("table_row_panel", Color.TRANSPARENT, Palette.PANEL_OPAQUE)
 	table_row.border_width_top = Palette.LINE
 	_styles("TableRowPanel", {"panel": table_row})
-	# The line under a team's column titles: 2 px in the UI's team colour.
+	# The line above a team's rows: 2 px in the UI's team colour (an empty panel, as high as the line). The
+	# enemy's carries the space above it, 16 px on the Tab scoreboard and 12 on the match-end screen.
 	_variation("TeamHeaderFriendly", "PanelContainer")
 	_styles("TeamHeaderFriendly", {"panel": _underline("team_header_friendly", Palette.FRIENDLY)})
 	_variation("TeamHeaderEnemy", "PanelContainer")
-	_styles("TeamHeaderEnemy", {"panel": _underline("team_header_enemy", Palette.ENEMY)})
+	_styles("TeamHeaderEnemy", {"panel": _underline("team_header_enemy", Palette.ENEMY, Palette.TEAM_LINE_GAP)})
+	_variation("TeamHeaderEnemyTight", "PanelContainer")
+	_styles("TeamHeaderEnemyTight", {"panel": _underline("team_header_enemy_tight", Palette.ENEMY, Palette.TEAM_LINE_GAP_TIGHT)})
 	# The chips (Foundations: "one square pixel is the whole brand"): flat squares in a team colour or the accent.
 	_variation("FriendlyChip", "Panel")
 	_styles("FriendlyChip", {"panel": _box("friendly_chip", Palette.FRIENDLY)})
@@ -229,6 +239,9 @@ func _panels() -> void:
 	_styles("EnemyChip", {"panel": _box("enemy_chip", Palette.ENEMY)})
 	_variation("AccentChip", "Panel")
 	_styles("AccentChip", {"panel": _box("accent_chip", Palette.ACCENT)})
+	# The chip on a lit menu item: ink on the accent fill.
+	_variation("InkChip", "Panel")
+	_styles("InkChip", {"panel": _box("ink_chip", Palette.TEXT_ON_FILL)})
 	# A segmented choice's frame: 2 px LINE around the choices, nothing inside.
 	_variation("SegmentFrame", "PanelContainer")
 	_styles("SegmentFrame", {"panel": _box("segment_frame", Color.TRANSPARENT, Palette.LINE_COLOR, Palette.BORDER)})
@@ -245,6 +258,18 @@ func _containers() -> void:
 	_margins("PanelMarginWide", Palette.PANEL_MARGIN_WIDE_X, Palette.PANEL_MARGIN_WIDE_Y)
 	_variation("RowMargin", "MarginContainer")
 	_margins("RowMargin", Palette.ROW_MARGIN_X, Palette.ROW_MARGIN_Y)
+	# The inside of a scoreboard row, and the space under the Tab scoreboard's header.
+	_variation("CellMargin", "MarginContainer")
+	_margins("CellMargin", Palette.CELL_MARGIN_X, Palette.CELL_MARGIN_Y)
+	_variation("HeaderMargin", "MarginContainer")
+	_constants("HeaderMargin", {"margin_bottom": Palette.HEADER_GAP})
+	# Big text cut to the mockups' line heights (negative margins, see the tokens): 48, 32 and 96 px.
+	_variation("TitleTrim", "MarginContainer")
+	_constants("TitleTrim", {"margin_top": Palette.TRIM_TITLE_TOP, "margin_bottom": Palette.TRIM_TITLE_BOTTOM})
+	_variation("LargeTrim", "MarginContainer")
+	_constants("LargeTrim", {"margin_top": Palette.TRIM_LARGE_TOP, "margin_bottom": Palette.TRIM_LARGE_BOTTOM})
+	_variation("HeroTrim", "MarginContainer")
+	_constants("HeroTrim", {"margin_top": Palette.TRIM_HERO_TOP, "margin_bottom": Palette.TRIM_HERO_BOTTOM})
 	# The rows of a menu, and its smaller groups.
 	_variation("ContentBox", "VBoxContainer")
 	_constants("ContentBox", {"separation": Palette.CONTENT_GAP})
@@ -254,6 +279,9 @@ func _containers() -> void:
 	_constants("TeamBox", {"separation": Palette.TEAM_ROW_GAP})
 	_variation("ScoreRow", "HBoxContainer")
 	_constants("ScoreRow", {"separation": Palette.SCORE_GAP})
+	# The two centred lines between the scoreboard's scores.
+	_variation("ScoreLines", "VBoxContainer")
+	_constants("ScoreLines", {"separation": Palette.SCORE_LINES_GAP})
 	_variation("FormRow", "HBoxContainer")
 	_constants("FormRow", {"separation": Palette.FORM_GAP})
 	_variation("ButtonRow", "HBoxContainer")
@@ -424,6 +452,14 @@ func _buttons() -> void:
 	var item := Vector4(Palette.BIG_BUTTON_PAD_X, Palette.BIG_BUTTON_PAD_TOP, Palette.BIG_BUTTON_PAD_X, Palette.BIG_BUTTON_PAD_BOTTOM)
 	_menu_item_styles("BigButton", item)
 	_font_sizes("BigButton", {"font_size": Palette.TEXT_SIZE_LARGE})
+	# A centred menu item (the pause menu's): in the mockup the chip and the text are one group that is centred, while a
+	# button draws its icon at the left edge and centres the text beside it. So here the icon is only a spacer (invisible
+	# in every state) that moves the text over, and the screen puts the chip (an InkChip) next to the text itself.
+	_variation("CenteredItemButton", "BigButton")
+	_colors("CenteredItemButton", {
+		"icon_normal_color": Color.TRANSPARENT, "icon_hover_color": Color.TRANSPARENT, "icon_focus_color": Color.TRANSPARENT,
+		"icon_pressed_color": Color.TRANSPARENT, "icon_hover_pressed_color": Color.TRANSPARENT, "icon_disabled_color": Color.TRANSPARENT,
+	})
 	# Host and Join: a small, disabled-looking menu item (40 high, 16 px).
 	var small := Vector4(Palette.SMALL_ITEM_PAD_X, Palette.BUTTON_PAD_TOP, Palette.SMALL_ITEM_PAD_X, Palette.BUTTON_PAD_BOTTOM)
 	_menu_item_styles("SmallItemButton", small)
@@ -454,6 +490,18 @@ func _buttons() -> void:
 		"pressed": _shadowed("big_primary_button_pressed", Palette.ACCENT, big),
 		"hover_pressed": _shadowed("big_primary_button_hover_pressed", Palette.ACCENT_BRIGHT, big),
 		"focus": _ring("big_primary_button_focus", Palette.TEXT, big),
+	})
+	# The match-end screen's buttons: 48 high, 24 either side. The primary one is Play again, the others are outlined.
+	var tall := Vector4(Palette.TALL_BUTTON_PAD_X, Palette.TALL_BUTTON_PAD_TOP, Palette.TALL_BUTTON_PAD_X, Palette.TALL_BUTTON_PAD_BOTTOM)
+	_variation("TallButton", "Button")
+	_outlined_button_styles("TallButton", tall)
+	_variation("TallPrimaryButton", "PrimaryButton")
+	_styles("TallPrimaryButton", {
+		"normal": _shadowed("tall_primary_button_normal", Palette.ACCENT, tall),
+		"hover": _shadowed("tall_primary_button_hover", Palette.ACCENT_BRIGHT, tall),
+		"pressed": _shadowed("tall_primary_button_pressed", Palette.ACCENT, tall),
+		"hover_pressed": _shadowed("tall_primary_button_hover_pressed", Palette.ACCENT_BRIGHT, tall),
+		"focus": _ring("tall_primary_button_focus", Palette.TEXT, tall),
 	})
 	# The team-size chips of the Play screen (Foundations: TEAM SIZE): a square per player,
 	# filled in the team's colour up to the team's size, framed in LINE after it.
@@ -817,6 +865,9 @@ func _icon_slots() -> void:
 			_theme.set_icon(slot, UiIcons.THEME_TYPE, load(path))
 			filled.append(String(slot))
 	print("icon slots filled: %d of %d %s" % [filled.size(), UiIcons.all_slots().size(), filled])
+	# The focus chip, for buttons that show it only while focused or hovered ([constant UiIcons.CHIP]): in
+	# the theme so that it scales with the UI like the slots.
+	_icons(String(UiIcons.THEME_TYPE), {String(UiIcons.CHIP): "chip"})
 
 
 # Helpers: build styleboxes, and fill a theme type with items.
@@ -851,10 +902,12 @@ func _shadowed(id: String, fill: Color, margins: Vector4) -> StyleBoxFlat:
 	return box
 
 
-## Nothing behind, a 2 px line in [param color] along the bottom edge.
-func _underline(id: String, color: Color) -> StyleBoxFlat:
+## Nothing behind, a 2 px line in [param color] along the bottom edge, and [param space_above] of
+## empty room over it (an empty panel with this style is that high).
+func _underline(id: String, color: Color, space_above: int = 0) -> StyleBoxFlat:
 	var box := _box(id, Color.TRANSPARENT, color)
 	box.border_width_bottom = Palette.LINE
+	box.content_margin_top = space_above
 	return box
 
 

@@ -9,7 +9,7 @@ extends Node
 ## the map row (a quick map or the rotation) and the rotation's order and summary,
 ## and what Start leaves for the game. Then the game itself (main.tscn, started
 ## the way Start does, never touching the real settings file): a rotation starts
-## on its first map, the match-end screen offers "Next map: Square", the next map
+## on its first map, the match-end screen offers "Next map · Square", the next map
 ## is a fresh match by the same rules, the rotation wraps around, "Play again"
 ## stays on the map, and without a rotation there is no "Next map". Quits with
 ## the number of failed checks as the exit code.
@@ -117,12 +117,12 @@ func _test_rotation_in_game() -> void:
 	await _start_game(GameLaunch.rotation_maps(), _quick_rules())
 	var end_screen := _main.get_node("MatchEndScreen") as MatchEndScreen
 	var next_button := end_screen.get_next_map_button()
-	_check("A rotation starts on its first map, Depot; the match-end screen will offer \"Next map: Square\"",
-			_map_path() == DEPOT and _main.call("get_next_map") == SQUARE and next_button.text == "Next map: Square"
+	_check("A rotation starts on its first map, Depot; the match-end screen will offer \"Next map · Square\"",
+			_map_path() == DEPOT and _main.call("get_next_map") == SQUARE and next_button.text == "Next map · Square"
 					and not end_screen.visible,
 			"map %s, next %s, button '%s'" % [_map_path(), _main.call("get_next_map"), next_button.text])
 	await _win_match()
-	_check("After the match the end screen shows \"Next map: Square\" next to Play again, and it has the focus",
+	_check("After the match the end screen shows \"Next map · Square\" next to Play again, and it has the focus",
 			end_screen.visible and next_button.is_visible_in_tree() and next_button.has_focus(),
 			"screen %s, button visible %s, focus %s" % [end_screen.visible, next_button.is_visible_in_tree(), next_button.has_focus()])
 	next_button.pressed.emit()
@@ -130,7 +130,7 @@ func _test_rotation_in_game() -> void:
 	var rounds := _rounds()
 	_check("Next map plays Square: a fresh match by the same rules, the end screen hidden, and Spillway next",
 			_map_path() == SQUARE and rounds != null and rounds.round_number == 1 and rounds.score == [0, 0]
-					and rounds.settings.rounds_to_win == 1 and not end_screen.visible and next_button.text == "Next map: Spillway",
+					and rounds.settings.rounds_to_win == 1 and not end_screen.visible and next_button.text == "Next map · Spillway",
 			"map %s, round %d, score %s, next '%s'" % [_map_path(), rounds.round_number if rounds else -1, rounds.score if rounds else [], next_button.text])
 	_main.call("restart_match")
 	await _wait_ticks(3)
@@ -142,7 +142,7 @@ func _test_rotation_in_game() -> void:
 	_main.call("next_map")
 	await _wait_ticks(3)
 	_check("After Spillway the rotation starts over with Depot", on_spillway == SPILLWAY and _map_path() == DEPOT
-			and next_button.text == "Next map: Square", "then %s, then %s" % [on_spillway, _map_path()])
+			and next_button.text == "Next map · Square", "then %s, then %s" % [on_spillway, _map_path()])
 
 
 func _test_respawn_launch() -> void:

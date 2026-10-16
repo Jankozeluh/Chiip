@@ -320,9 +320,9 @@ func _test_screens_and_freeze() -> void:
 			hud_yours == str(_rounds.score[you]) and hud_theirs == str(_rounds.score[them]) and you == _player.team,
 			"HUD %s-%s, score %d-%d, you are team %d" % [hud_yours, hud_theirs, _rounds.score[you], _rounds.score[them], you])
 	var screen := _main.get_node("MatchEndScreen") as MatchEndScreen
-	var title := (screen.get_node("Panel/Margin/Content/Title") as Label).text
-	var screen_yours := (screen.get_node("Panel/Margin/Content/Score/YourScore") as Label).text
-	var screen_theirs := (screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label).text
+	var title := screen.get_result_label().text
+	var screen_yours := screen.get_your_score_label().text
+	var screen_theirs := screen.get_enemy_score_label().text
 	var expected_title := "Victory" if winner == you else "Defeat"
 	_check("The match-end screen is up with %s and the final score" % expected_title,
 			screen.visible and title == expected_title and screen_yours == str(_rounds.score[you]) and screen_theirs == str(_rounds.score[them]),

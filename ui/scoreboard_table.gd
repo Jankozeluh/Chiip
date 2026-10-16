@@ -1,37 +1,64 @@
 class_name ScoreboardTable
 extends VBoxContainer
-## The two-team table of a scoreboard: your team first under a blue header, then
-## the enemy team under a red one; one row per player with name, kills, deaths,
-## assists and damage, best first (kills, then damage), and your own row
-## highlighted. With [member dim_dead] a dead player's row is dimmed, so you see
-## who is still alive.
+## The two-team table of a scoreboard, as the mockups draw it (D-137, "15
+## Scoreboard" and "16 Match end"): the column titles (a space for the class
+## icon, PLAYER, K, D, A, DMG) in MUTE, then a 2 px line in your team's colour
+## and your team's rows, then a 2 px line in the enemy's colour and theirs. A
+## row has the player's class icon in the team colour, the name, kills, deaths,
+## assists and damage (rounded), best first (kills, then damage, then the order
+## they joined), and your own row is raised and framed in the accent. With
+## [member dim_dead] a dead player's row is muted (MUTE text, the icon in LINE),
+## so you see who is still alive.
 ##
-## Used by the match-end screen ([MatchEndScreen]) and by the hold-Tab overlay
-## ([Scoreboard]). It is a pure view of a [RoundManager]: [method show_match]
-## hands it the match, [method refresh] reads the current numbers and changes
-## nothing in the game. Teams have no names, so "your team" is [member
-## Teams.viewer_team] and the colors come from [method Teams.color_for].
+## Used by the match-end screen ([MatchEndScreen], [member compact]) and by the
+## hold-Tab overlay ([Scoreboard]). It is a pure view of a [RoundManager]:
+## [method show_match] hands it the match, [method refresh] reads the current
+## numbers and changes nothing in the game. Teams have no names, so "your team"
+## is [member Teams.viewer_team] and its colour is the UI's friendly one.
 ##
-## Its look comes from the UI theme (D-057): the rows, headers and labels pick
-## theme type variations ("TeamHeaderFriendly", "YouRowPanel", "BrightLabel"...)
-## instead of carrying styles of their own, so they scale with the theme. How
-## dimmed a dead player's row is (when [member dim_dead] is on) is the theme's
-## "dead_row" palette colour, which the row's [code]modulate[/code] is set to.
+## M7 added a money column, which the mockup doesn't draw: with [member
+## show_money] your own team's money shows after the damage (the enemy's stays
+## hidden, as in CS), and your team's defuse kits are marked in the name.
+##
+## Its look comes from the UI theme (D-057): the rows, the lines and the
+## labels pick theme type variations ("RowPanel", "YouRowPanel",
+## "TeamHeaderFriendly", "MuteLabel"...) instead of carrying styles of their
+## own, so they scale with the theme. Row heights and column widths are plain
+## minimum sizes (design pixels, scaled by [UiTheme]); the class icons come from
+## the theme's icon slots ([UiIcons]) and are tinted with the palette's team
+## colours.
 ##
 ## Nothing in the table takes mouse clicks (every control uses [constant
 ## Control.MOUSE_FILTER_IGNORE]), so it can sit on top of the game.
 
-## Width (design pixels) of each number column.
-const STAT_COLUMN_WIDTH := 96.0
-## Titles of the number columns.
-const STAT_TITLES: Array[String] = ["Kills", "Deaths", "Assists", "Damage"]
+## Width (design pixels) of the column that holds the class icon.
+const ICON_COLUMN_WIDTH := 32.0
+## Width of the kills, deaths and assists columns.
+const NUMBER_COLUMN_WIDTH := 64.0
+## Width of the damage column, and of the money column when it is shown.
+const WIDE_COLUMN_WIDTH := 96.0
+## The titles of the columns after the player's name.
+const STAT_TITLES: Array[String] = ["K", "D", "A", "DMG"]
+## The title of the name column, and of the money column.
+const PLAYER_TITLE := "Player"
+const MONEY_TITLE := "Money"
+## The height of the titles and of a player's row on the Tab scoreboard.
+const TITLES_HEIGHT := 32.0
+const ROW_HEIGHT := 40.0
+## The same on the match-end screen ([member compact]).
+const COMPACT_TITLES_HEIGHT := 28.0
+const COMPACT_ROW_HEIGHT := 36.0
 
-## Dim the rows of players who are dead. The hold-Tab overlay wants that (who is
-## still alive this round); the match-end screen shows final numbers and turns it off.
+## Mute the rows of players who are dead (MUTE text, the icon in LINE). The hold-Tab
+## overlay wants that (who is still alive this round); the match-end screen shows
+## final numbers and turns it off.
 @export var dim_dead: bool = true
 ## Show a money column for your own team (the Tab overlay in a match with an economy, D-098); the
 ## enemy's money stays hidden, as in CS.
 @export var show_money: bool = false
+## The match-end screen's tighter table: 28 high titles and 36 high rows with nothing between
+## them, and 12 px above the enemy's line, where the Tab scoreboard has 32, 40, 8 and 16.
+@export var compact: bool = false
 
 var _manager: RoundManager
 var _ui_scale: float = 1.0
@@ -45,6 +72,8 @@ var _displayed: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if compact:
+		theme_type_variation = &"StackBox"
 
 
 ## Shows the match run by [param manager] (null empties the table) and reads its
@@ -56,8 +85,8 @@ func show_match(manager: RoundManager) -> void:
 
 
 ## Reads the current numbers from the round manager. The rows are rebuilt only
-## when something they show has changed (a stat, a death, a respawn, a new
-## player), so calling it every frame is cheap.
+## when something they show has changed (a stat, a death, a respawn, a class, a
+## new player), so calling it every frame is cheap.
 func refresh() -> void:
 	if not is_instance_valid(_manager):
 		_signature = []
@@ -72,23 +101,28 @@ func refresh() -> void:
 		for member in members:
 			var stats := _manager.get_stats(member)
 			signature.append([member, String(member.name), stats.kills, stats.deaths, stats.assists,
-					roundi(stats.damage), member.is_alive(), member.is_local_player(), _money_text(member), member.has_defuse_kit])
+					roundi(stats.damage), member.is_alive(), member.is_local_player(), _money_text(member), member.has_defuse_kit,
+					_class_id(member)])
 	signature.append(order)
 	if signature == _signature:
 		return
 	_signature = signature
 	_clear()
+	add_child(_make_titles())
 	for team in order:
 		_add_team(team, sorted_members[team])
-	# The new rows' own sizes (column widths); the theme they inherit is already scaled.
+	# The new rows' own sizes (heights, column widths); the theme they inherit is already scaled.
 	UiTheme.apply_sizes(self, _ui_scale)
 
 
 ## Scales the table; 1.0 is the size it is designed for (a 720-pixel-tall
-## window). Rows built later are scaled too.
+## window). Rows built later are scaled too, and the rows are built again now
+## so that the class icons are the ones of the scaled theme.
 func set_ui_scale(factor: float) -> void:
 	_ui_scale = factor
 	UiTheme.apply(self, factor)
+	_signature = []
+	refresh()
 
 
 ## The row of [param character], or null when the table doesn't show them.
@@ -101,6 +135,17 @@ func get_displayed(team: int) -> Array[Character]:
 	var shown: Array[Character] = []
 	shown.assign(_displayed.get(team, []))
 	return shown
+
+
+## True when [param character]'s row is drawn as a dead player's: muted text
+## and a LINE-coloured icon. False for a living player, and for a row that the
+## table doesn't mute ([member dim_dead] off) or doesn't show.
+func is_muted(character: Character) -> bool:
+	var row: PanelContainer = _rows.get(character)
+	if row == null:
+		return false
+	var name_label := _name_label(row)
+	return name_label != null and name_label.theme_type_variation == &"MuteLabel"
 
 
 ## Everyone on [param team], best first: most kills, then most damage, then the
@@ -127,40 +172,53 @@ func _clear() -> void:
 	_displayed.clear()
 
 
-## Adds a team's colored header and one row per player.
+## The column titles: PLAYER, K, D, A and DMG (and Money) in MUTE, over a space the width of the icon column.
+func _make_titles() -> PanelContainer:
+	var cells: Array[String] = [PLAYER_TITLE]
+	cells.append_array(STAT_TITLES)
+	if _shows_money():
+		cells.append(MONEY_TITLE)
+	var titles := _make_row(cells, &"RowPanel", &"MuteLabel", COMPACT_TITLES_HEIGHT if compact else TITLES_HEIGHT, null, Color.WHITE)
+	titles.name = "Titles"
+	return titles
+
+
+## Adds a team's line (2 px in its colour) and one row per player.
 func _add_team(team: int, members: Array[Character]) -> void:
+	var yours := team == Teams.viewer_team
 	var box := VBoxContainer.new()
 	box.name = "Team%d" % team
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.theme_type_variation = &"TeamBox"
+	box.theme_type_variation = &"StackBox" if compact else &"TeamBox"
 	add_child(box)
-	var title := "Your team" if team == Teams.viewer_team else "Enemy team"
-	var header_cells: Array[String] = [title]
-	header_cells.append_array(STAT_TITLES)
-	if _shows_money():
-		header_cells.append("Money" if team == Teams.viewer_team else "")
-	# Blue for your team, red for the enemy, as Teams.color_for() says (the theme copies those colors).
-	var header := _make_row(header_cells,
-			&"TeamHeaderFriendly" if team == Teams.viewer_team else &"TeamHeaderEnemy", &"BrightLabel")
-	header.name = "Header"
-	box.add_child(header)
+	# Blue for your team, red for the enemy, as the theme says (the enemy's line also leaves room above it).
+	var line := PanelContainer.new()
+	line.name = "Header"
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if yours:
+		line.theme_type_variation = &"TeamHeaderFriendly"
+	else:
+		line.theme_type_variation = &"TeamHeaderEnemyTight" if compact else &"TeamHeaderEnemy"
+	box.add_child(line)
 	_displayed[team] = members
 	for member in members:
 		var stats := _manager.get_stats(member)
 		var is_you := member.is_local_player()
+		var muted := dim_dead and not member.is_alive()
 		var shown_name := "%s (you)" % member.name if is_you else String(member.name)
 		# Your team's defuse kits show, as in CS (D-098).
-		if member.has_defuse_kit and team == Teams.viewer_team:
+		if member.has_defuse_kit and yours:
 			shown_name += "  · kit"
 		var cells: Array[String] = [
 				shown_name,
 				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))]
 		if _shows_money():
 			cells.append(_money_text(member))
-		var row := _make_row(cells, &"YouRowPanel" if is_you else &"RowPanel", &"BrightLabel" if is_you else &"")
+		# A living player's icon is in their team's colour, a dead player's in LINE.
+		var tint_name := &"line" if muted else (&"friendly_text" if yours else &"enemy_text")
+		var row := _make_row(cells, &"YouRowPanel" if is_you else &"RowPanel", &"MuteLabel" if muted else &"",
+				COMPACT_ROW_HEIGHT if compact else ROW_HEIGHT, _class_icon(member), get_theme_color(tint_name, "Palette"))
 		row.name = String(member.name)
-		if dim_dead and not member.is_alive():
-			row.modulate = get_theme_color("dead_row", "Palette")
 		box.add_child(row)
 		_rows[member] = row
 
@@ -177,30 +235,64 @@ func _money_text(member: Character) -> String:
 	return "$%d" % _manager.get_money(member)
 
 
-## One line: a background, then the [param cells] side by side. The first cell
-## (the name) takes the free width, the others are fixed-width numbers. The
-## look is named, not built: [param panel_variation] for the background and
-## [param label_variation] for the text (empty = the plain label).
-func _make_row(cells: Array[String], panel_variation: StringName, label_variation: StringName) -> PanelContainer:
+## The id of [param member]'s class ("rifleman"), which is also the name of its icon slot; empty without a class.
+func _class_id(member: Character) -> StringName:
+	return member.class_data.id if member.class_data != null else &""
+
+
+## [param member]'s class icon from the theme, or null while its slot is empty.
+func _class_icon(member: Character) -> Texture2D:
+	var id := _class_id(member)
+	return UiIcons.get_icon(self, id) if id != &"" else null
+
+
+## One line, [param height] high: a background, then the icon column (the
+## class icon in [param tint], or just room for it), then the [param cells] side
+## by side. The first cell (the name) takes the free width, the others are
+## fixed-width numbers (the damage and the money are wider). The look is named,
+## not built: [param panel_variation] for the background and [param
+## label_variation] for the text (empty = the plain label).
+func _make_row(cells: Array[String], panel_variation: StringName, label_variation: StringName, height: float,
+		icon: Texture2D, tint: Color) -> PanelContainer:
 	var row := PanelContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.theme_type_variation = panel_variation
+	row.custom_minimum_size.y = height
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.theme_type_variation = &"RowMargin"
+	margin.theme_type_variation = &"CellMargin"
 	row.add_child(margin)
 	var line := HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.theme_type_variation = &"FlushRow"
 	margin.add_child(line)
+	# The icon is drawn at its own size at the left of its column, centred up and down.
+	var icon_cell := TextureRect.new()
+	icon_cell.name = "Icon"
+	icon_cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_cell.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_cell.stretch_mode = TextureRect.STRETCH_KEEP
+	icon_cell.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon_cell.custom_minimum_size.x = ICON_COLUMN_WIDTH
+	icon_cell.texture = icon
+	icon_cell.modulate = tint
+	line.add_child(icon_cell)
 	for i in cells.size():
 		var label := Label.new()
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.theme_type_variation = label_variation
 		label.text = cells[i]
+		label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if i == 0:
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		else:
-			label.custom_minimum_size.x = STAT_COLUMN_WIDTH
+			label.custom_minimum_size.x = WIDE_COLUMN_WIDTH if i >= STAT_TITLES.size() else NUMBER_COLUMN_WIDTH
 			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		line.add_child(label)
 	return row
+
+
+## The label with the player's name in [param row] (the first label of its line).
+func _name_label(row: Control) -> Label:
+	var labels := row.find_children("*", "Label", true, false)
+	return labels[0] as Label if not labels.is_empty() else null

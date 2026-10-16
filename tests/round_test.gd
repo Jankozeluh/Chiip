@@ -878,28 +878,27 @@ func _test_scoreboard_table() -> void:
 	add_child(table)
 	table.show_match(_rounds)
 
-	# Layout: both teams, yours first under a blue header, theirs under a red one.
+	# Layout (D-137): the column titles once, then both teams, yours first under a blue line, theirs under a red one.
 	var team_boxes := table.get_children().map(func(box: Node) -> String: return String(box.name))
-	var your_header := _row_cells(table.get_node("Team0/Header"))
-	var their_header := _row_cells(table.get_node("Team1/Header"))
-	_check("The table lists both teams, yours first under a blue 'Your team' header, then the enemy under a red one, 3 rows each",
-			team_boxes == ["Team0", "Team1"] and your_header == ["Your team", "Kills", "Deaths", "Assists", "Damage"]
-					and their_header[0] == "Enemy team" and _header_color(table, 0) == _ui_team_color(true)
+	var titles := _row_cells(table.get_node("Titles"))
+	var friendly_row_labels := _row_cells(table.get_row(table.get_displayed(0)[0]))
+	_check("The table has the column titles (Player, K, D, A, DMG), then both teams, yours first under a blue line, then the enemy under a red one, 3 rows each",
+			team_boxes == ["Titles", "Team0", "Team1"] and titles == ["Player", "K", "D", "A", "DMG"] and friendly_row_labels.size() == 5
+					and _header_color(table, 0) == _ui_team_color(true)
 					and _header_color(table, 1) == _ui_team_color(false)
 					and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
 					and table.get_displayed(0).all(func(member: Character) -> bool: return member.team == 0),
-			"boxes %s, headers %s / %s, rows %d and %d" % [team_boxes, your_header, their_header,
-					table.get_displayed(0).size(), table.get_displayed(1).size()])
+			"boxes %s, titles %s, rows %d and %d" % [team_boxes, titles, table.get_displayed(0).size(), table.get_displayed(1).size()])
 	Teams.set_viewer_team(1)
 	table.refresh()
 	team_boxes = table.get_children().map(func(box: Node) -> String: return String(box.name))
-	var flipped_title: String = _row_cells(table.get_node("Team1/Header"))[0]
 	var flipped_color := _header_color(table, 1)
+	var flipped_enemy_color := _header_color(table, 0)
 	Teams.set_viewer_team(0)
 	table.refresh()
-	_check("Seen from team 1, team 1 comes first under the blue header and team 0 follows in red",
-			team_boxes == ["Team1", "Team0"] and flipped_title == "Your team" and flipped_color == _ui_team_color(true),
-			"boxes %s, team 1's title '%s' and color %s" % [team_boxes, flipped_title, flipped_color])
+	_check("Seen from team 1, team 1 comes first under the blue line and team 0 follows in red",
+			team_boxes == ["Titles", "Team1", "Team0"] and flipped_color == _ui_team_color(true) and flipped_enemy_color == _ui_team_color(false),
+			"boxes %s, team 1's line %s and team 0's %s" % [team_boxes, flipped_color, flipped_enemy_color])
 
 	# Stats: Bot1 hurts both Bot3 and Bot4 by 80, Bot2 finishes them (kills 2,
 	# damage 20 + 20, and Bot1 gets 2 assists); you hurt Bot5 by 20.6 and Bot5
@@ -943,10 +942,10 @@ func _test_scoreboard_table() -> void:
 	_check("Rows are sorted by kills, then damage, then join order: Bot2 (2 kills) before Bot1 (more damage) before you; Bot5 (30 damage) before Bot3 and Bot4",
 			_names(table.get_displayed(0)) == _names([bot2, bot1, _player]) and _names(table.get_displayed(1)) == _names([bot5, bot3, bot4]),
 			"your team %s, enemies %s" % [_names(table.get_displayed(0)), _names(table.get_displayed(1))])
-	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
-	_check("Dead players' rows are dimmed (Bot3 and Bot4), the rows of the living are not",
-			_names(dimmed) == _names([bot3, bot4]) and is_equal_approx(table.get_row(bot3).modulate.a, ThemeDB.get_project_theme().get_color("dead_row", "Palette").a),
-			"dimmed rows: %s" % [_names(dimmed)])
+	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
+	_check("Dead players' rows are muted (Bot3 and Bot4: MUTE text and a LINE-coloured icon), the rows of the living are not",
+			_names(dimmed) == _names([bot3, bot4]) and _is_muted_look(table.get_row(bot3)) and not _is_muted_look(table.get_row(bot5)) and not _is_muted_look(table.get_row(_player)),
+			"muted rows: %s" % [_names(dimmed)])
 	var highlighted := _rounds.get_participants().filter(func(member: Character) -> bool: return _is_highlighted(table.get_row(member)))
 	_check("Only your own row is highlighted",
 			_names(highlighted) == _names([_player]), "highlighted rows: %s" % [_names(highlighted)])
@@ -966,12 +965,12 @@ func _test_scoreboard_table() -> void:
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
 	table.refresh()
-	dimmed = _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
+	dimmed = _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
 	var yours := _row_cells(table.get_row(_player))
-	_check("In the next round everyone is alive again and nothing is dimmed, while the numbers carry over (you: 1 kill, 100 damage; Bot2 still first)",
+	_check("In the next round everyone is alive again and nothing is muted, while the numbers carry over (you: 1 kill, 100 damage; Bot2 still first)",
 			_rounds.round_number == 2 and dimmed.is_empty() and yours == [_player.name + " (you)", "1", "0", "0", "100"]
 					and _names(table.get_displayed(0)) == _names([bot2, _player, bot1]),
-			"round %d, dimmed %s, your row %s, your team %s" % [_rounds.round_number, _names(dimmed), yours, _names(table.get_displayed(0))])
+			"round %d, muted %s, your row %s, your team %s" % [_rounds.round_number, _names(dimmed), yours, _names(table.get_displayed(0))])
 	remove_child(table)
 	table.queue_free()
 
@@ -983,7 +982,7 @@ func _test_scoreboard_overlay() -> void:
 	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
 	add_child(board)
 	board.set_round_manager(_rounds)
-	var table := board.get_node("Center/Panel/Margin/Content/Table") as ScoreboardTable
+	var table := board.get_table()
 	await _wait_ticks(2)
 	var before := board.visible
 	Input.action_press("scoreboard")
@@ -999,11 +998,11 @@ func _test_scoreboard_overlay() -> void:
 	var header := _board_header(board)
 	var blue := _ui_team_color(true)
 	var red := _ui_team_color(false)
-	_check("The header shows the round and the score, yours in blue and theirs in red, above the table of both teams",
-			header["round"] == "Round 1" and header["yours"] == "0" and header["theirs"] == "0"
+	_check("The header shows the mode and the map, the round and its time left and the score, yours in blue and theirs in red, above the table of both teams (the titles and two team boxes)",
+			header["mode"] == "Bomb · Test Map" and header["clock"].begins_with("Round 1 · ") and header["yours"] == "0" and header["theirs"] == "0"
 					and header["yours_color"] == blue and header["theirs_color"] == red
-					and table.get_child_count() == 2 and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3,
-			"header %s, %d team box(es)" % [header, table.get_child_count()])
+					and table.get_child_count() == 3 and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3,
+			"header %s, %d child(ren)" % [header, table.get_child_count()])
 
 	# It follows the match while held, with no refresh call: damage, a kill, a dead row.
 	await _wait_for_phase(RoundManager.Phase.LIVE)
@@ -1014,10 +1013,10 @@ func _test_scoreboard_overlay() -> void:
 	enemies[0].take_damage(500.0, Hitbox.Zone.CHEST, _player)
 	await _wait_ticks(2)
 	var after_kill := _row_cells(table.get_row(_player))
-	_check("While it is held the table follows the match without being asked: damage (40), then a kill (1 kill, 100 damage) and the victim's row dimmed",
+	_check("While it is held the table follows the match without being asked: damage (40), then a kill (1 kill, 100 damage) and the victim's row muted",
 			after_damage[4] == "40" and after_kill[1] == "1" and after_kill[4] == "100"
-					and table.get_row(enemies[0]).modulate.a < 1.0 and table.get_row(enemies[1]).modulate.a == 1.0,
-			"after the damage %s, after the kill %s, victim's row alpha %.2f" % [after_damage, after_kill, table.get_row(enemies[0]).modulate.a])
+					and table.is_muted(enemies[0]) and not table.is_muted(enemies[1]),
+			"after the damage %s, after the kill %s, victim's row muted %s" % [after_damage, after_kill, table.is_muted(enemies[0])])
 
 	# It doesn't block movement or pause the game.
 	var start := _player.global_position
@@ -1047,28 +1046,29 @@ func _test_scoreboard_overlay() -> void:
 
 	# Scaling: the panel and the rows, also rows built after the scale was set.
 	board.set_ui_scale(1.5)
-	var panel := board.get_node("Center/Panel") as Control
-	var width_scaled := panel.custom_minimum_size.x
+	var panel := board.get_panel()
+	var width_scaled := panel.offset_right - panel.offset_left
 	var font_scaled := _row_font_size(table.get_row(_player))
 	enemies[1].take_damage(10.0, Hitbox.Zone.CHEST, _player)
 	await _wait_ticks(2)
 	var font_rebuilt := _row_font_size(table.get_row(_player))
+	var row_scaled := table.get_row(_player).custom_minimum_size.y
 	board.set_ui_scale(1.0)
 	var font_back := _row_font_size(table.get_row(_player))
-	_check("UI scale 1.5 scales the panel (640 -> 960) and the rows, also rows rebuilt afterwards (font 16 -> 24); 1.0 restores them",
-			width_scaled == 960.0 and font_scaled == 24 and font_rebuilt == 24 and font_back == 16 and panel.custom_minimum_size.x == 640.0,
-			"panel %.0f, row font %d, after a rebuild %d, back at 1.0: %d" % [width_scaled, font_scaled, font_rebuilt, font_back])
+	_check("UI scale 1.5 scales the panel (880 -> 1320) and the rows (40 -> 60 high), also rows rebuilt afterwards (font 16 -> 24); 1.0 restores them",
+			width_scaled == 1320.0 and font_scaled == 24 and font_rebuilt == 24 and row_scaled == 60.0 and font_back == 16 and panel.offset_right - panel.offset_left == 880.0,
+			"panel %.0f, row font %d, after a rebuild %d, row %.0f, back at 1.0: %d" % [width_scaled, font_scaled, font_rebuilt, row_scaled, font_back])
 
 	# After a round: the score and the next round's number.
 	await _win_round(0)
 	await _wait_ticks(2)
 	header = _board_header(board)
-	var round_one_won: bool = header["round"] == "Round 1" and header["yours"] == "1" and header["theirs"] == "0"
+	var round_one_won: bool = header["clock"] == "Round 1 · Over" and header["yours"] == "1" and header["theirs"] == "0"
 	await _wait_for_phase(RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
 	var next_header := _board_header(board)
-	_check("After winning round 1 the header reads 'Round 1' and 1 - 0; the next round it reads 'Round 2' with the score kept",
-			round_one_won and next_header["round"] == "Round 2" and next_header["yours"] == "1" and next_header["theirs"] == "0",
+	_check("After winning round 1 the header reads 'Round 1 · Over' and 1 - 0; the next round it reads 'Round 2' and a time, with the score kept",
+			round_one_won and next_header["clock"].begins_with("Round 2 · ") and next_header["yours"] == "1" and next_header["theirs"] == "0",
 			"after the round: %s; next round: %s" % [header, next_header])
 
 	# A replaced round manager (Play again loads a new map) shows nothing until the new one arrives; null (practice) never shows.
@@ -1078,7 +1078,7 @@ func _test_scoreboard_overlay() -> void:
 	board.set_round_manager(_rounds)
 	await _wait_ticks(2)
 	var new_header := _board_header(board)
-	var fresh: bool = board.visible and new_header["round"] == "Round 1" and new_header["yours"] == "0" and table.get_displayed(0).size() == 3
+	var fresh: bool = board.visible and new_header["clock"].begins_with("Round 1 · ") and new_header["yours"] == "0" and table.get_displayed(0).size() == 3
 	board.set_round_manager(null)
 	await _wait_ticks(2)
 	var practice := board.visible
@@ -1116,17 +1116,17 @@ func _test_scoreboard_in_match_end_screen() -> void:
 	await _win_round(0)
 	await _wait_for_phase(RoundManager.Phase.MATCH_END)
 	await _wait_ticks(2)
-	var table := screen.get_node("Panel/Margin/Content/Table") as ScoreboardTable
-	var title := screen.get_node("Panel/Margin/Content/Title") as Label
+	var table := screen.get_table()
+	var title := screen.get_result_label()
 	var team_boxes := table.get_children().map(func(box: Node) -> String: return String(box.name))
 	var dead := _rounds.get_participants().filter(func(member: Character) -> bool: return not member.is_alive())
-	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
+	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
 	var yours := _row_cells(table.get_row(_player))
-	_check("The match-end screen shows 'Victory' and the same table: your team first, 3 rows each, your row marked with 3 kills and 300 damage, and nobody dimmed although the 3 enemies are dead",
-			screen.visible and title.text == "Victory" and team_boxes == ["Team0", "Team1"] and table.get_displayed(0).size() == 3
+	_check("The match-end screen shows 'Victory' and the same table: your team first, 3 rows each, your row marked with 3 kills and 300 damage, and nobody muted although the 3 enemies are dead",
+			screen.visible and title.text == "Victory" and team_boxes == ["Titles", "Team0", "Team1"] and table.get_displayed(0).size() == 3
 					and table.get_displayed(1).size() == 3 and yours == [_player.name + " (you)", "3", "0", "0", "300"]
 					and _is_highlighted(table.get_row(_player)) and dead.size() == 3 and dimmed.is_empty(),
-			"visible %s, title '%s', boxes %s, your row %s, %d dead, dimmed %s" % [screen.visible, title.text, team_boxes, yours, dead.size(), _names(dimmed)])
+			"visible %s, title '%s', boxes %s, your row %s, %d dead, muted %s" % [screen.visible, title.text, team_boxes, yours, dead.size(), _names(dimmed)])
 	screen.set_ui_scale(2.0)
 	var font_scaled := _row_font_size(table.get_row(_player))
 	screen.set_ui_scale(1.0)
@@ -1134,7 +1134,7 @@ func _test_scoreboard_in_match_end_screen() -> void:
 	screen.set_round_manager(null)
 	_check("The screen scales the table's rows with itself (font 16 -> 32 -> 16), and handing it no round manager hides it and empties the table",
 			font_scaled == 32 and font_back == 16 and not screen.visible and table.get_child_count() == 0,
-			"row font at 2.0: %d, back at 1.0: %d, visible %s, %d team box(es) left" % [font_scaled, font_back, screen.visible, table.get_child_count()])
+			"row font at 2.0: %d, back at 1.0: %d, visible %s, %d child(ren) left" % [font_scaled, font_back, screen.visible, table.get_child_count()])
 	remove_child(screen)
 	screen.queue_free()
 
@@ -1271,17 +1271,26 @@ func _names(characters: Array) -> Array:
 	return characters.map(func(character: Character) -> String: return String(character.name))
 
 
-## What the overlay's header shows: the round label, both scores and their colors.
+## What the overlay's header shows: the mode and map line, the clock line, both scores and their colors.
 func _board_header(board: Scoreboard) -> Dictionary:
-	var your_score := board.get_node("Center/Panel/Margin/Content/Score/YourScore") as Label
-	var their_score := board.get_node("Center/Panel/Margin/Content/Score/EnemyScore") as Label
+	var your_score := board.get_your_score_label()
+	var their_score := board.get_enemy_score_label()
 	return {
-		"round": (board.get_node("Center/Panel/Margin/Content/RoundLabel") as Label).text,
+		"mode": board.get_mode_label().text,
+		"clock": board.get_clock_label().text,
 		"yours": your_score.text,
 		"theirs": their_score.text,
 		"yours_color": your_score.get_theme_color("font_color"),
 		"theirs_color": their_score.get_theme_color("font_color"),
 	}
+
+
+## True if [param row] is drawn as a dead player's (D-137): its text in MUTE and its class icon in LINE.
+func _is_muted_look(row: Control) -> bool:
+	var labels := row.find_children("*", "Label", true, false)
+	var icon := row.find_child("Icon", true, false) as CanvasItem
+	return not labels.is_empty() and labels.all(func(label: Node) -> bool: return (label as Label).theme_type_variation == &"MuteLabel") \
+			and icon != null and icon.modulate == ThemeDB.get_project_theme().get_color("line", "Palette")
 
 
 func _distance_to_own_spawn(member: Character) -> float:

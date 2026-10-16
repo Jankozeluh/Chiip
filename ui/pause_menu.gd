@@ -27,9 +27,16 @@ extends CanvasLayer
 ##
 ## It only reports button clicks: [code]main.gd[/code] opens the settings menu
 ## on [signal settings_pressed] and leaves for the main menu on
-## [signal leave_pressed]. Its look comes from the UI theme (D-057): no colors,
-## sizes or styleboxes of its own, and [method set_ui_scale] gives it the theme
-## scaled for the window like the other menus.
+## [signal leave_pressed]. Its look is the mockup's (D-137): the game dimmed by
+## a [code]BackdropPanel[/code] and, on it, a centred column with the title
+## "Paused" and three menu items 352 px wide. The item that has the focus or the
+## mouse is filled with the accent and shows the chip, a small ink square, next
+## to its text, the two centred together as in the mockup. (A button draws its
+## icon at its left edge, so the item's own icon is only an invisible spacer that
+## moves the text over, and this script puts the [code]Chip[/code] panel beside
+## the text.) Its look comes from the UI theme (D-057): no colors, sizes or
+## styleboxes of its own, and [method set_ui_scale] gives it the theme scaled for
+## the window like the other menus.
 
 ## Emitted when the player presses Settings. The menu hides itself, so the
 ## settings menu has the screen to itself; main.gd opens that menu, and calls
@@ -39,11 +46,16 @@ signal settings_pressed
 ## owner leaves the scene, see [code]Main.return_to_menu()[/code]).
 signal leave_pressed
 
-@onready var _panel: PanelContainer = $Panel
+@onready var _column: VBoxContainer = $Column
 @onready var _background: Panel = $Background
+@onready var _title: Label = %Title
 @onready var _resume_button: Button = %ResumeButton
 @onready var _settings_button: Button = %SettingsButton
 @onready var _leave_button: Button = %LeaveButton
+@onready var _online_note: Label = %OnlineNote
+## The menu items that the mouse is over (Button → true). The button's own
+## hover state isn't updated yet when it emits [signal Control.mouse_entered].
+var _hovered: Dictionary = {}
 
 
 func _ready() -> void:
@@ -51,6 +63,13 @@ func _ready() -> void:
 	_resume_button.pressed.connect(close)
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_leave_button.pressed.connect(leave_pressed.emit)
+	for item in _items():
+		item.focus_entered.connect(_update_chip.bind(item))
+		item.focus_exited.connect(_update_chip.bind(item))
+		item.mouse_entered.connect(_set_hovered.bind(item, true))
+		item.mouse_exited.connect(_set_hovered.bind(item, false))
+		item.resized.connect(_update_chip.bind(item))
+	_refresh_chips()
 
 
 func _exit_tree() -> void:
@@ -81,7 +100,6 @@ func open() -> void:
 	if is_open():
 		return
 	visible = true
-	_panel.visible = true
 	MenuState.open(self)
 	get_tree().paused = true
 	_resume_button.grab_focus()
@@ -110,7 +128,7 @@ func can_open() -> bool:
 	return not is_open() and not MenuState.blocks_gameplay()
 
 
-## Brings the panel back after the settings menu it opened has closed, with the
+## Brings the column back after the settings menu it opened has closed, with the
 ## Settings button focused. Does nothing when this menu isn't open any more.
 func settings_closed() -> void:
 	if not is_open():
@@ -123,20 +141,67 @@ func settings_closed() -> void:
 ## in the bot arena. main.gd sets it whenever a map is loaded.
 func set_leave_text(text: String) -> void:
 	_leave_button.text = text
+	_update_chip(_leave_button)
+
+
+## Shows or hides the mockup's line under the items, "Online · the match keeps
+## running". It is hidden: in single player the pause really stops the match.
+## Multiplayer (M9) turns it on, since the match goes on there (D-065).
+func set_online_note_visible(shown: bool) -> void:
+	_online_note.visible = shown
 
 
 ## Scales the layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
-## Gives the menu the theme scaled for the window ([UiTheme]).
+## Gives the menu the theme scaled for the window ([UiTheme]), and the chip the
+## size the theme now has.
 func set_ui_scale(factor: float) -> void:
 	UiTheme.apply(self, factor)
+	_refresh_chips()
 
 
 func _on_settings_pressed() -> void:
-	# The settings menu is a big panel with a dim background of its own; showing
+	# The settings menu is a big page with a dim background of its own; showing
 	# this one under it would dim the game twice. It stays open (and the game
 	# paused): settings_closed() shows it again.
 	visible = false
 	settings_pressed.emit()
+
+
+## The three menu items, top to bottom.
+func _items() -> Array[Button]:
+	return [_resume_button, _settings_button, _leave_button]
+
+
+func _set_hovered(item: Button, hovered: bool) -> void:
+	_hovered[item] = hovered
+	_update_chip(item)
+
+
+## While the item has the focus or the mouse its chip shows beside the text and
+## the text moves over to make room: the item's icon (the theme's chip at the
+## scale of the theme, invisible) is set, which shifts the text by half of the icon
+## and the gap, and the chip panel goes to the left of the text, so that chip,
+## gap and text are centred as one group. A resting item has no icon and no chip,
+## and its text is centred on its own.
+func _update_chip(item: Button) -> void:
+	var chip := item.get_node_or_null("Chip") as Control
+	if chip == null:
+		return
+	var lit: bool = item.has_focus() or _hovered.get(item, false)
+	item.icon = UiIcons.get_icon(item, UiIcons.CHIP) if lit else null
+	chip.visible = lit
+	if not lit:
+		return
+	var font := item.get_theme_font("font")
+	var text_width := font.get_string_size(item.text, HORIZONTAL_ALIGNMENT_LEFT, -1, item.get_theme_font_size("font_size")).x
+	var chip_size := chip.get_combined_minimum_size()
+	var group_width := chip_size.x + item.get_theme_constant("h_separation") + text_width
+	chip.position = Vector2(roundf((item.size.x - group_width) / 2.0), roundf((item.size.y - chip_size.y) / 2.0))
+
+
+func _refresh_chips() -> void:
+	for item in _items():
+		_update_chip(item)
 
 
 # --- Test hooks ---
@@ -157,9 +222,19 @@ func get_leave_button() -> Button:
 	return _leave_button
 
 
-## The panel with the title and the buttons.
-func get_panel() -> PanelContainer:
-	return _panel
+## The centred column with the title, the three items and the online line.
+func get_column() -> VBoxContainer:
+	return _column
+
+
+## The title, "Paused".
+func get_title() -> Label:
+	return _title
+
+
+## The line "Online · the match keeps running" (hidden in single player).
+func get_online_note() -> Label:
+	return _online_note
 
 
 ## The full-screen dimmed background that keeps clicks from reaching the game.
