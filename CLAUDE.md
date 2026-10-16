@@ -42,6 +42,12 @@ The user wants cheaper models used wherever they do the job just as well:
 
 - Delegate mechanical subtasks to a subagent with `model: "haiku"` (or Sonnet), giving it a complete brief, and keep design work in the main session.
 - Start a fresh session for each milestone: long conversations re-read their whole history every step. This file and the docs exist so a new session can pick up the project without the old conversation.
+- **Watch the usage limit** (the user's request, 2026-10-16: "davej pozor na ty limity a pouzivej agenty respektive modely efektivne"):
+  - One subagent at a time, with a tight brief; no parallel fan-out.
+  - Run only the suites a change touches (`bash tools/run_tests.sh <names>`); do the full run once, at the end of a milestone or before a merge.
+  - Read only the parts of files you need (grep, line ranges).
+  - One screenshot comparison per screen, read at a reduced scale.
+  - Keep reports short.
 
 ## Code conventions
 
