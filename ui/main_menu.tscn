@@ -60,10 +60,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 72
-theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 72
-theme_override_constants/margin_bottom = 48
+theme_type_variation = &"PageMargin"
 
 [node name="Column" type="VBoxContainer" parent="Page/Margin"]
 layout_mode = 2
@@ -73,7 +70,7 @@ alignment = 1
 [node name="Panel" type="PanelContainer" parent="Page/Margin/Column"]
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(380, 0)
+custom_minimum_size = Vector2(560, 0)
 theme_type_variation = &"OverlayPanel"
 
 [node name="PanelMargin" type="MarginContainer" parent="Page/Margin/Column/Panel"]
@@ -86,7 +83,7 @@ theme_type_variation = &"ContentBox"
 
 [node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
 layout_mode = 2
-theme_type_variation = &"TitleLabel"
+theme_type_variation = &"HeroLabel"
 text = "CHIIP"
 horizontal_alignment = 1
 
@@ -100,28 +97,123 @@ horizontal_alignment = 1
 layout_mode = 2
 custom_minimum_size = Vector2(0, 12)
 
-[node name="PlayButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
-unique_name_in_owner = true
+[node name="Modes" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
 layout_mode = 2
-theme_type_variation = &"BigButton"
-text = "Play"
+theme_type_variation = &"ModeList"
 
-[node name="PracticeButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+[node name="Deathmatch" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DeathmatchButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"BigButton"
+theme_type_variation = &"ModeButton"
+
+[node name="Text" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ModeMargin"
+
+[node name="Lines" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch/Text"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ModeText"
+
+[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch/Text/Lines"]
+layout_mode = 2
+theme_type_variation = &"ModeTitleLabel"
+text = "Team Deathmatch"
+
+[node name="Detail" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Deathmatch/Text/Lines"]
+layout_mode = 2
+theme_type_variation = &"ModeDetailLabel"
+autowrap_mode = 3
+
+[node name="Bomb" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BombButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ModeButton"
+
+[node name="Text" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ModeMargin"
+
+[node name="Lines" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb/Text"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ModeText"
+
+[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb/Text/Lines"]
+layout_mode = 2
+theme_type_variation = &"ModeTitleLabel"
+text = "Bomb"
+
+[node name="Detail" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Bomb/Text/Lines"]
+layout_mode = 2
+theme_type_variation = &"ModeDetailLabel"
+autowrap_mode = 3
+
+[node name="Practice" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PracticeButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ModeButton"
+
+[node name="Text" type="MarginContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ModeMargin"
+
+[node name="Lines" type="VBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice/Text"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ModeText"
+
+[node name="Title" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice/Text/Lines"]
+layout_mode = 2
+theme_type_variation = &"ModeTitleLabel"
 text = "Practice"
 
-[node name="SettingsButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+[node name="Detail" type="Label" parent="Page/Margin/Column/Panel/PanelMargin/Content/Modes/Practice/Text/Lines"]
+layout_mode = 2
+theme_type_variation = &"ModeDetailLabel"
+autowrap_mode = 3
+
+[node name="Spacer2" type="Control" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+
+[node name="Links" type="HBoxContainer" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"BigButton"
+theme_type_variation = &"ButtonRow"
+alignment = 1
+
+[node name="CustomButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Links"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TextButton"
+text = "Custom match"
+
+[node name="SettingsButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Links"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TextButton"
 text = "Settings"
 
-[node name="QuitButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content"]
+[node name="QuitButton" type="Button" parent="Page/Margin/Column/Panel/PanelMargin/Content/Links"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"BigButton"
+theme_type_variation = &"TextButton"
 text = "Quit"
 
 [node name="MatchSetup" parent="." instance=ExtResource("setup_scene")]

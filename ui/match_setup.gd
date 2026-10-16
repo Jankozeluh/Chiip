@@ -1,7 +1,8 @@
 class_name MatchSetup
 extends CanvasLayer
-## Match setup (M5 task 11, D-064): the panel the main menu's Play opens. You
-## choose the mode (rounds or team respawn, D-087), the size of your team (you
+## Match setup (M5 task 11, D-064), called "Custom match" since M10 (D-132): the
+## panel the main menu's Custom match opens. You choose the mode (Team Deathmatch
+## or Bomb, D-087, D-132), the size of your team (you
 ## included, 1 to 5) and of the enemy team (1 to 5), the bots' difficulty, the
 ## match length (first to 5, 10 or 15 rounds; for team respawn first to 30, 50
 ## or 75 kills), friendly fire, one map or the rotation of the quick maps, and
@@ -22,6 +23,9 @@ extends CanvasLayer
 ## Esc closes it when it is on top. Its look comes from the UI theme (D-057):
 ## no colors, sizes or styleboxes of its own, and [method set_ui_scale] gives it
 ## the theme scaled for the window like the other menus.
+##
+## Its choices are also what the main menu's one-click mode buttons play, and
+## [method describe_mode] is the line under each of them.
 
 ## Emitted when the player presses Start.
 signal started
@@ -35,8 +39,13 @@ const WORD_BUTTON_WIDTH := 112.0
 const LENGTH_BUTTON_WIDTH := 152.0
 ## The width of the map's option button.
 const MAP_WIDTH := 360.0
-## The width of the mode and maps buttons ("Team respawn", "Rotation").
-const MODE_BUTTON_WIDTH := 200.0
+## The width of the mode and maps buttons ("Team Deathmatch", "Rotation").
+const MODE_BUTTON_WIDTH := 240.0
+## The modes as the menus name them, in the order they are offered (D-132):
+## the [member Settings.match_mode] value → its name.
+const MODE_NAMES := {"respawn": "Team Deathmatch", "rounds": "Bomb"}
+## Between the parts of [method describe_mode]'s line (Silkscreen has the middle dot, D-047).
+const DETAIL_SEPARATOR := " · "
 
 ## Where the choices are stored. The shared [Settings] when null (set before the panel is in the tree).
 var settings: Settings
@@ -143,8 +152,8 @@ func get_summary() -> String:
 
 
 func _build_rows() -> void:
-	_add_segmented_row(&"match_mode", "Mode", ["Rounds", "Team respawn"], Settings.MATCH_MODES, MODE_BUTTON_WIDTH,
-			"Rounds: one life each; on maps with bomb sites the attackers plant the bomb. Team respawn: back after 3 s, first team to the kill limit wins.")
+	_add_segmented_row(&"match_mode", "Mode", MODE_NAMES.values(), MODE_NAMES.keys(), MODE_BUTTON_WIDTH,
+			"Team Deathmatch: back after 3 s, first team to the kill limit wins. Bomb: one life each; on maps with bomb sites the attackers plant the bomb.")
 	_add_segmented_row(&"match_team_size", "Your team", ["1", "2", "3", "4", "5"], [1, 2, 3, 4, 5],
 			NUMBER_BUTTON_WIDTH, "Players on your side, you included: 3 means you and two bot teammates.")
 	_add_segmented_row(&"match_enemy_team_size", "Enemy team", ["1", "2", "3", "4", "5"], [1, 2, 3, 4, 5],
@@ -190,8 +199,8 @@ func _add_row(label_text: String, tip: String) -> HBoxContainer:
 func _add_segmented_row(key: StringName, label_text: String, texts: Array, values: Array, button_width: float, tip: String) -> void:
 	var row := _add_row(label_text, tip)
 	var strip := HBoxContainer.new()
-	# A small gap, so the buttons read as one strip.
-	strip.add_theme_constant_override("separation", 4)
+	# Close together, so the buttons read as one strip.
+	strip.theme_type_variation = &"SegmentRow"
 	row.add_child(strip)
 	var group := ButtonGroup.new()
 	var buttons: Array[Button] = []
@@ -228,8 +237,8 @@ func _add_map_row() -> void:
 
 
 ## Shows the stored choices: the button of each row's value pressed (and the
-## others not), the stored map selected (the default map, or the first, when it
-## is gone), and the summary.
+## others not), the stored map selected (Depot, or the first, when it is gone),
+## and the summary.
 func _refresh() -> void:
 	for key: StringName in _segments:
 		var buttons: Array = _segments[key]
@@ -239,19 +248,37 @@ func _refresh() -> void:
 			(buttons[index] as Button).set_pressed_no_signal(values[index] == current)
 	var shown := _map_paths.find(settings.match_map)
 	if shown < 0:
-		shown = maxi(0, _map_paths.find(Settings.DEFAULT_MAP))
+		shown = maxi(0, _map_paths.find(Settings.DEFAULT_MATCH_MAP))
 	_map_option.select(shown)
 	# The match length counts rounds, or kills in team respawn.
 	var respawn := settings.match_mode == "respawn"
 	(_segment_rows[&"match_rounds_to_win"] as Control).visible = not respawn
 	(_segment_rows[&"match_kill_limit"] as Control).visible = respawn
 	var goal := "first to %d kills" % settings.match_kill_limit if respawn else "first to %d rounds" % settings.match_rounds_to_win
-	_summary.text = "%sYou and %s against %s. %s bots, %s, friendly fire %s." % [
-			"Team respawn: " if respawn else "", _bots_text(settings.match_team_size - 1), _bots_text(settings.match_enemy_team_size),
+	_summary.text = "%s: You and %s against %s. %s bots, %s, friendly fire %s." % [
+			MODE_NAMES[settings.match_mode], _bots_text(settings.match_team_size - 1), _bots_text(settings.match_enemy_team_size),
 			settings.match_difficulty.capitalize(), goal, "on" if settings.match_friendly_fire else "off"]
 	var rotation := get_rotation_maps()
 	if not rotation.is_empty():
 		_summary.text += " Maps in rotation: %s." % ", ".join(rotation.map(func(path: String) -> String: return GameLaunch.map_title(path)))
+
+
+## The two lines under a mode on the main menu: what one click on it plays with
+## the stored choices of [param stored] when the mode is [param mode] ("respawn"
+## or "rounds"): the rules, then the maps, e.g.
+## "3v3 · Normal bots · first to 50 kills" and "Depot, Square, Spillway".
+static func describe_mode(stored: Settings, mode: String) -> String:
+	var rules: Array[String] = [
+		"%dv%d" % [stored.match_team_size, stored.match_enemy_team_size],
+		"%s bots" % stored.match_difficulty.capitalize(),
+		"first to %d kills" % stored.match_kill_limit if mode == "respawn" else "first to %d rounds" % stored.match_rounds_to_win,
+	]
+	if stored.match_friendly_fire:
+		rules.append("friendly fire")
+	var maps: Array[String] = [stored.match_map]
+	if stored.match_rotation:
+		maps = GameLaunch.rotation_maps(stored.match_map)
+	return "%s\n%s" % [DETAIL_SEPARATOR.join(rules), ", ".join(maps.map(func(path: String) -> String: return GameLaunch.map_title(path)))]
 
 
 ## "no bots", "1 bot", "3 bots".

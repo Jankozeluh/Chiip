@@ -39,7 +39,7 @@ theme_type_variation = &"ContentBox"
 [node name="Title" type="Label" parent="Panel/Margin/Content"]
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
-text = "Match setup"
+text = "Custom match"
 horizontal_alignment = 1
 
 [node name="Rows" type="VBoxContainer" parent="Panel/Margin/Content"]
@@ -72,4 +72,5 @@ text = "Back"
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(200, 40)
+theme_type_variation = &"PrimaryButton"
 text = "Start"

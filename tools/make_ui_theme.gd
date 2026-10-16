@@ -141,6 +141,8 @@ func _panels() -> void:
 ## Spacing for recurring layouts. Plain containers keep Godot's defaults, so
 ## the HUD (which relies on them) doesn't change.
 func _containers() -> void:
+	_variation("PageMargin", "MarginContainer")
+	_margins("PageMargin", Palette.PAGE_MARGIN_X, Palette.PAGE_MARGIN_Y)
 	_variation("PanelMargin", "MarginContainer")
 	_margins("PanelMargin", Palette.PANEL_MARGIN_X, Palette.PANEL_MARGIN_Y)
 	_variation("PanelMarginWide", "MarginContainer")
@@ -166,6 +168,8 @@ func _containers() -> void:
 	# The main menu's mode choices, and the two lines inside each.
 	_variation("ModeList", "VBoxContainer")
 	_constants("ModeList", {"separation": Palette.MODE_GAP})
+	_variation("ModeMargin", "MarginContainer")
+	_margins("ModeMargin", Palette.MODE_BUTTON_PAD_X, Palette.MODE_BUTTON_PAD_Y)
 	_variation("ModeText", "VBoxContainer")
 	_constants("ModeText", {"separation": Palette.MODE_LINE_GAP})
 

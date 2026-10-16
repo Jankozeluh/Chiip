@@ -108,7 +108,7 @@ const BUTTON_PAD_Y := 8
 ## The big buttons of the main menu and the pause menu.
 const BIG_BUTTON_PAD_X := 28
 const BIG_BUTTON_PAD_Y := 16
-## The big mode choices of the main menu (a title and a line of detail inside).
+## The big mode choices of the main menu (a title and a line of detail inside: ModeMargin).
 const MODE_BUTTON_PAD_X := 24
 const MODE_BUTTON_PAD_Y := 14
 ## Text buttons (a word to click, no box).
@@ -154,6 +154,9 @@ const SEPARATOR_SPACE := 8
 const POPUP_ICON_GAP := 8
 const POPUP_ENTRY_GAP := 8
 const POPUP_ITEM_PAD := 8
+## Around a full-screen page (the main menu's), from the window's edges: PageMargin.
+const PAGE_MARGIN_X := 72
+const PAGE_MARGIN_Y := 48
 ## Inside a panel: PanelMargin, PanelMarginWide (big screens) and RowMargin (table rows).
 const PANEL_MARGIN_X := 16
 const PANEL_MARGIN_Y := 12

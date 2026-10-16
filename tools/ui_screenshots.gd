@@ -57,12 +57,7 @@ func _menu_shots() -> void:
 	menu.call("open_match_setup")
 	await _frames(4)
 	await _shot("match_setup")
-	var setup: Node = menu.call("get_match_setup")
-	if setup.has_method("open_custom"):
-		setup.call("open_custom")
-		await _frames(4)
-		await _shot("match_setup_custom")
-	setup.call("close")
+	(menu.call("get_match_setup") as MatchSetup).close()
 	menu.call("open_settings")
 	await _frames(4)
 	await _shot("settings_game")

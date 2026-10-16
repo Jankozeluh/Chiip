@@ -12,7 +12,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Theme tokens, roles and icon slots** (D-131). Every value of the theme is now a named token in `tools/ui_palette.gd` (85 of them), and `tools/make_ui_theme.gd` has no numbers of its own, which a new check enforces. The regenerated theme only gained the new roles (mode choice, primary and text buttons, hero text, team-coloured text); nothing on screen changed. New `UiIcons` with 21 icon slots named after M7's weapon ids and the class ids: a PNG in `assets/ui/icons/` fills a slot through the theme, so it scales with the UI. The theme checks now compare with the tokens, so your mockups' values won't break them. `ui_test`: 139 checks.
 
-**Next:** the main menu's mode choice.
+- **Main menu: one click to play** (D-132). The main page now shows **Team Deathmatch** (first and focused), **Bomb** and **Practice** as big buttons, each with two lines saying what it plays ("3v3 · Normal bots · first to 50 kills" and "Depot, Square, Spillway"); one click starts it. Below them **Custom match** (the old match setup, renamed, Team Deathmatch first), **Settings** and **Quit**. New defaults: Team Deathmatch on the rotation from Depot. Your own `settings.cfg` saved the old defaults (bomb rounds on the test map), so the `[match]` section got a version number and an older file gets the new mode, map and rotation once. Still today's look; your mockups decide the new one.
+
+**Next:** the remaining menus restyle from the theme alone, then the HUD's layout.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

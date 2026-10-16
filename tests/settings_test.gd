@@ -38,11 +38,11 @@ const DEFAULTS := {
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
 	&"crosshair_color": Color(0.2, 1.0, 0.2), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
-	# The last match setup (D-064): D-041's match, on the test map.
+	# The last match setup (D-064): D-041's match.
 	&"match_team_size": 3, &"match_enemy_team_size": 3, &"match_difficulty": "normal", &"match_rounds_to_win": 5,
-	&"match_friendly_fire": false, &"match_map": "res://maps/test_map.tscn",
-	# M8 (D-087): rounds on one map; team respawn's kill limit is D-083's 50.
-	&"match_mode": "rounds", &"match_kill_limit": 50, &"match_rotation": false,
+	&"match_friendly_fire": false,
+	# M8 (D-087): team respawn's kill limit is D-083's 50. M10 (D-132): Team Deathmatch on the rotation, from Depot.
+	&"match_map": "res://maps/depot.tscn", &"match_mode": "respawn", &"match_kill_limit": 50, &"match_rotation": true,
 }
 
 var _failures: int = 0
@@ -415,9 +415,9 @@ func _test_saving() -> void:
 	writer.match_rounds_to_win = 10
 	writer.match_friendly_fire = true
 	writer.match_map = "res://maps/comparison/csg_room.tscn"
-	writer.match_mode = "respawn"
+	writer.match_mode = "rounds"
 	writer.match_kill_limit = 75
-	writer.match_rotation = true
+	writer.match_rotation = false
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
@@ -429,14 +429,15 @@ func _test_saving() -> void:
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
-	_check("The last match setup is the [match] section: team_size, enemy_team_size, difficulty, rounds_to_win, friendly_fire, map, mode, kill_limit and rotation, without the prefix",
+	_check("The last match setup is the [match] section: team_size, enemy_team_size, difficulty, rounds_to_win, friendly_fire, map, mode, kill_limit and rotation, without the prefix, and the section's setup_version (D-132)",
 			saved.get_value("match", "team_size", 0) == 5 and saved.get_value("match", "enemy_team_size", 0) == 2
 					and saved.get_value("match", "difficulty", "") == "hard" and saved.get_value("match", "rounds_to_win", 0) == 10
 					and saved.get_value("match", "friendly_fire", false) == true
 					and saved.get_value("match", "map", "") == "res://maps/comparison/csg_room.tscn"
-					and saved.get_value("match", "mode", "") == "respawn" and saved.get_value("match", "kill_limit", 0) == 75
-					and saved.get_value("match", "rotation", false) == true
-					and saved.get_section_keys("match").size() == 9,
+					and saved.get_value("match", "mode", "") == "rounds" and saved.get_value("match", "kill_limit", 0) == 75
+					and saved.get_value("match", "rotation", true) == false
+					and saved.get_value("match", "setup_version", 0) == Settings.MATCH_SETUP_VERSION
+					and saved.get_section_keys("match").size() == 10,
 			"keys %s" % [saved.get_section_keys("match")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)
@@ -508,7 +509,7 @@ func _test_unreadable_values() -> void:
 	_check("A hand-edited [match] section is forgiven: a team of 9 is clamped to 5, text for a number, an unknown difficulty, a number for a bool and a number for the map fall back to the defaults, 7 rounds snaps to 5",
 			match_settings.match_team_size == 5 and match_settings.match_enemy_team_size == 3 and match_settings.match_difficulty == "normal"
 					and match_settings.match_rounds_to_win == 5 and not match_settings.match_friendly_fire
-					and match_settings.match_map == Settings.DEFAULT_MAP,
+					and match_settings.match_map == Settings.DEFAULT_MATCH_MAP,
 			"team %d, enemy %d, difficulty %s, rounds %d, friendly fire %s, map %s" % [match_settings.match_team_size, match_settings.match_enemy_team_size,
 					match_settings.match_difficulty, match_settings.match_rounds_to_win, match_settings.match_friendly_fire, match_settings.match_map])
 	_write_text(TEMP_PATH, "[match]\nrounds_to_win = 12\ndifficulty = \"hard\"\nteam_size = 0\n")
@@ -517,6 +518,18 @@ func _test_unreadable_values() -> void:
 			match_settings.match_rounds_to_win == 10 and match_settings.match_difficulty == "hard" and match_settings.match_team_size == 1
 					and match_settings.match_enemy_team_size == 3,
 			"rounds %d, difficulty %s, team %d" % [match_settings.match_rounds_to_win, match_settings.match_difficulty, match_settings.match_team_size])
+	# A file from before M10 (no setup_version): its mode, map and rotation were the old menu's defaults.
+	_write_text(TEMP_PATH, "[match]\nteam_size = 4\nmode = \"rounds\"\nrotation = false\nmap = \"res://maps/test_map.tscn\"\n")
+	var old_file := Settings.new()
+	old_file.load_from_disk(TEMP_PATH)
+	_write_text(TEMP_PATH, "[match]\nsetup_version = %d\nteam_size = 4\nmode = \"rounds\"\nrotation = false\nmap = \"res://maps/square.tscn\"\n" % Settings.MATCH_SETUP_VERSION)
+	var new_file := Settings.new()
+	new_file.load_from_disk(TEMP_PATH)
+	_check("A match setup saved before M10 (no setup_version) gets today's mode, map and rotation once (Team Deathmatch on the rotation from Depot) and keeps the rest; a current file keeps Bomb on Square (D-132)",
+			old_file.match_mode == "respawn" and old_file.match_rotation and old_file.match_map == Settings.DEFAULT_MATCH_MAP and old_file.match_team_size == 4
+					and new_file.match_mode == "rounds" and not new_file.match_rotation and new_file.match_map == "res://maps/square.tscn" and new_file.match_team_size == 4,
+			"old file: %s / %s / %s / %d; current file: %s / %s / %s" % [old_file.match_mode, old_file.match_rotation, old_file.match_map, old_file.match_team_size,
+					new_file.match_mode, new_file.match_rotation, new_file.match_map])
 	print("(Godot prints a ConfigFile parse error next: the check loads a broken file on purpose.)")
 	_write_text(TEMP_PATH, "[game]\nsensitivity = 3.5\nthis is not a settings file [[[\nfov = abc\n")
 	var broken := Settings.new()

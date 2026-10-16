@@ -60,12 +60,23 @@ const MATCH_LENGTHS: Array[int] = [5, 10, 15]
 ## The bot difficulties match setup offers: the names of bots/difficulty_*.tres, easiest first.
 const DIFFICULTIES: Array[String] = ["easy", "normal", "hard"]
 ## The modes match setup offers (D-087): "rounds" (bomb rounds on maps with bomb
-## sites) and "respawn" (team respawn, D-082).
+## sites; the menus call it Bomb) and "respawn" (team respawn, D-082; the menus
+## call it Team Deathmatch, the primary mode since D-132).
 const MATCH_MODES: Array[String] = ["rounds", "respawn"]
 ## The kill limits match setup offers for team respawn (D-083: 50 is about 4 minutes with bots).
 const KILL_LIMITS: Array[int] = [30, 50, 75]
-## The map match setup starts with, and the one the main menu flies over.
+## The practice map, the one the main menu flies over, and the map the game
+## plays when nothing chose one (main.tscn started directly, the tests).
 const DEFAULT_MAP := "res://maps/test_map.tscn"
+## The map a match starts on until you choose another: the first of the rotation (D-132).
+const DEFAULT_MATCH_MAP := "res://maps/depot.tscn"
+## What the [code][match][/code] section's values mean. Files written before M10
+## have no [code]setup_version[/code] (version 1): their mode, map and rotation
+## were the defaults of a menu that no longer exists (bomb rounds on the test map),
+## so loading one puts those three to today's defaults once (D-132).
+const MATCH_SETUP_VERSION := 2
+## The settings [constant MATCH_SETUP_VERSION] 2 gave new defaults.
+const MATCH_SETUP_V2_KEYS: Array[StringName] = [&"match_mode", &"match_map", &"match_rotation"]
 ## How many keys or buttons one action can have (primary and secondary).
 const BINDING_SLOTS := 2
 ## CS's field of view is measured across a 4:3 screen: 90° there. [method vertical_fov] converts.
@@ -104,17 +115,18 @@ const SCHEMA := {
 	&"crosshair_outline": {"section": "crosshair", "default": true},
 	&"crosshair_dot": {"section": "crosshair", "default": false},
 	&"crosshair_dynamic": {"section": "crosshair", "default": false},
-	# The last match setup (D-064). The defaults are D-041's: 3v3, Normal, first to 5, friendly fire off.
+	# The last match setup (D-064). The defaults are D-041's: 3v3, Normal, first to 5, friendly fire off;
+	# since M10 (D-132) Team Deathmatch on the rotation of the quick maps, from Depot.
 	&"match_team_size": {"section": "match", "default": 3, "min": 1, "max": 5},
 	&"match_enemy_team_size": {"section": "match", "default": 3, "min": 1, "max": 5},
 	&"match_difficulty": {"section": "match", "default": "normal", "choices": DIFFICULTIES},
 	&"match_rounds_to_win": {"section": "match", "default": 5, "choices": MATCH_LENGTHS},
 	&"match_friendly_fire": {"section": "match", "default": false},
-	&"match_map": {"section": "match", "default": DEFAULT_MAP},
+	&"match_map": {"section": "match", "default": DEFAULT_MATCH_MAP},
 	# M8 (D-087): the mode, team respawn's kill limit, and playing the quick maps in rotation.
-	&"match_mode": {"section": "match", "default": "rounds", "choices": MATCH_MODES},
+	&"match_mode": {"section": "match", "default": "respawn", "choices": MATCH_MODES},
 	&"match_kill_limit": {"section": "match", "default": 50, "choices": KILL_LIMITS},
-	&"match_rotation": {"section": "match", "default": false},
+	&"match_rotation": {"section": "match", "default": true},
 }
 
 ## The names of the mouse buttons a binding can use, by button index (for menus).
@@ -260,7 +272,7 @@ var match_rounds_to_win: int:
 var match_friendly_fire: bool:
 	get: return _values[&"match_friendly_fire"]
 	set(value): set_value(&"match_friendly_fire", value)
-## The map scene of the next match, e.g. [constant DEFAULT_MAP]. Nothing checks
+## The map scene of the next match, e.g. [constant DEFAULT_MATCH_MAP]. Nothing checks
 ## that it still exists: match setup falls back to the default map when it doesn't.
 var match_map: String:
 	get: return _values[&"match_map"]
@@ -500,6 +512,11 @@ func load_from_disk(path: String = SETTINGS_PATH) -> Error:
 	for key: StringName in SCHEMA:
 		var entry: Dictionary = SCHEMA[key]
 		set_value(key, file.get_value(entry["section"], _file_key(key), entry["default"]))
+	# An older match setup: its mode, map and rotation become today's defaults (D-132).
+	var setup_version: Variant = file.get_value("match", "setup_version", 1)
+	if typeof(setup_version) != TYPE_INT or setup_version < MATCH_SETUP_VERSION:
+		for key in MATCH_SETUP_V2_KEYS:
+			set_value(key, SCHEMA[key]["default"])
 	_load_bindings(file)
 	_batch_depth -= 1
 	# What was just read is already in the file; clamped values wait for the next change.
@@ -525,6 +542,7 @@ func save_to_disk(path: String = "") -> Error:
 	var file := ConfigFile.new()
 	for key: StringName in SCHEMA:
 		file.set_value(SCHEMA[key]["section"], _file_key(key), _values[key])
+	file.set_value("match", "setup_version", MATCH_SETUP_VERSION)
 	for action in BINDABLE_ACTIONS:
 		# A plain Array, so the file reads ["key:87", ""] and not Array[String](...).
 		var texts: Array = []

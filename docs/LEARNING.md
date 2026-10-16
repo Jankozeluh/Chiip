@@ -620,3 +620,9 @@
 
 **Custom theme types for icons** (`ui/ui_icons.gd`)
 - A theme type doesn't have to be a class: the theme can hold items under any name you choose, like our `Palette` (colours) and `Icons` (textures). Any control under the theme asks with `get_theme_icon(&"headshot", &"Icons")`, and `has_theme_icon()` says whether the item exists, so a missing icon can fall back to text instead of Godot's "missing icon" placeholder. Because the icon lives in the theme, `UiTheme`'s scaled copies resize it with the rest of the UI (nearest-neighbor), which loading the PNG by path in each screen wouldn't do. Unity's nearest equivalent is a sprite atlas referenced by name from a style sheet.
+
+**A button with more than one line of text** (`ui/main_menu.tscn`, the mode buttons)
+- A `Button` draws one text in one font size, and its minimum size comes only from that text and its stylebox, so children you add to it are neither laid out nor counted. The trick is to put the `Button` and the content side by side in a container: a `MarginContainer` makes every child as big as itself, so the `Button` fills the whole area behind two labels, and the container is as tall as the labels need. The labels and their boxes get `mouse_filter = IGNORE`, so the click, the hover and the keyboard focus go to the `Button` underneath. In Unity's uGUI you'd do the same with a `Button` component on a parent `Image` and two `Text` children with *Raycast Target* off.
+
+**Changing a saved default without surprising old players** (`Settings.MATCH_SETUP_VERSION`)
+- Settings are saved with every value, so a new default never reaches a player who already has a file. A version number written into the file (`setup_version` in `[match]`) lets loading tell an old file from a new one and move only the values that changed meaning, once; the next save writes the new version. The same idea as a save-game version in Unity's `PlayerPrefs` or a JSON save.
