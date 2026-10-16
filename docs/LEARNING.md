@@ -723,6 +723,19 @@
 **The peer is the swappable part** (`net/net_transport.gd`, D-114)
 - In Godot everything above the connection talks to a `MultiplayerPeer`: RPCs, `send_bytes()`, peer ids, `peer_connected`. ENet (`ENetMultiplayerPeer`), WebSocket, WebRTC and GodotSteam's `SteamMultiplayerPeer` are all `MultiplayerPeer`s, so changing how computers reach each other means making a different peer and nothing else. Unity's Netcode works the same way: its `NetworkManager` has a *transport* component (Unity Transport, or a community Steam transport) you swap without touching game code. Chiip puts the making of the peer in one small class (`EnetTransport`), so a Steam one can sit next to it later.
 
+### M11 — Weapons and models
+
+**Shader includes** (`.gdshaderinc`, `#include "res://..."`)
+- A shader file can pull in another file's code with `#include`, like a C header: uniforms, constants and functions all come along. Chiip's crew surface lives in `crew_surface.gdshaderinc`, so the bodies' shader and the first-person arms' shader share it, and every viewmodel shader includes `shaders/viewmodel.gdshaderinc`. Unity's equivalent is `#include "File.hlsl"` / `.cginc` in a shader. Functions in an include can't see `vertex()`'s built-ins (`PROJECTION_MATRIX`, `VERTEX`), so they take them as parameters; global ones like `CLIP_SPACE_FAR` work anywhere.
+
+**Writing `POSITION` in a spatial shader** (the viewmodel, D-155)
+- Normally Godot multiplies `VERTEX` by the model-view and projection matrices for you. If `vertex()` writes `POSITION` (clip space), that value is used instead, while lighting still uses the real view-space position. That's how the viewmodel gets its own field of view (scale clip x and y) and its own depth range (set clip z), Quake's depth-range trick, without a second camera. In Unity you'd do the same in a custom vertex shader by changing `UnityObjectToClipPos`'s result, or use a second camera with a culling mask.
+- Godot 4 uses **reverse Z**: depth is 1 at the near plane and 0 far away (`CLIP_SPACE_FAR` is the far value: 0, or −1 in the Compatibility renderer). Nearer things have *larger* depth, the opposite of Unity's default on OpenGL.
+
+**Skeleton modifiers** (`SkeletonModifier3D`, the left-hand IK, D-156)
+- A node under a `Skeleton3D` that changes bone poses after the animation, every update: override `_process_modification()`, read poses with `get_bone_global_pose()` and write them with `set_bone_global_pose()`. `influence` (0 to 1) blends its result with the animated pose, `active` switches it off. Unity's counterpart is the Animation Rigging package (a *Rig* with a `TwoBoneIKConstraint`), or `OnAnimatorIK` with `SetIKPosition`. Godot 4.6+ also ships ready ones (`TwoBoneIK3D`, `FABRIK3D`, `LookAtModifier3D`...).
+- The result lives in the poses only while the skeleton draws: Godot puts the animated poses back afterwards, so modifiers don't pile up from frame to frame. To read what a modifier did, connect to `Skeleton3D.skeleton_updated` (a `BoneAttachment3D` does the same).
+
 ### M11 — Optimization
 
 **Measuring a frame** (`tools/frame_timing.gd`, D-165)

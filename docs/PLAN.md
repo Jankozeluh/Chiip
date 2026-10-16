@@ -2,12 +2,14 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** none. **The whole roadmap, M0 to M10, is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval.
+> **Current milestone:** M11 Polish: the UI fit and the weapons and models are built; the optimization is in progress. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval.
 
 ## Your open checks
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M11 weapons & models.** (1) Walk into a wall with every gun (and turn your FOV to 70 and 110): the gun stays whole in front of the wall, lit like the room, and looks the same size at every FOV. (2) Watch bots (or spectate a teammate) aim up and down, run and crouch: the left hand stays on the handguard or the pump. (3) Reload every gun: the magazine leaves with the left hand and goes back in, the Breaker's shell is in the hand before it goes in, and the clicks come when the hand does it; does a reload feel right in length? (4) Fire during a Breaker reload: it stops at once, in your view and on the body.
+- [ ] **M11 UI fit and the studio logo.** (1) Open the game in the editor's game view at your 2920 × 1753 (and drag the window narrow, tall and fullscreen): the Play screen, class draft and HUD stay whole; the text is 2× there, crisp. (2) Start a match: the loading band goes first, and then the class draft opens (nothing covers its cards). (3) The boot screen shows your Divocakos logo and name once when the game starts (any key skips); the small mark and the name are in the main menu's corner and footer (D-153).
 - [ ] **M7 playtest (arsenal, perks & economy).** Start a match from the menu (Depot, Square or Spillway for the bomb, map weapons and kits). Then:
   1. **Buying:** the freeze time is 15 s. **B** opens the buy menu (from the class menu too): the category's number then the item's, or click; greyed items say why. Round 1 is a pistol round ($1,000). Is it quick to use under time pressure? Are the light economy's numbers right: $3,000 a win, $1,500 → $3,000 for losses, $200 a kill ($500 knife), prices $500 / $1,000 / $2,500 / $4,000 (D-090)? Do saves and force buys feel worth it?
   2. **The guns** (practice: B buys everything free): the Ram as before; the Warden (more accurate, no one-tap through a helmet); the Hornet; the Breaker (9 pellets, a shell at a time, fire to stop the reload); the Heron (right mouse: two zoom steps, a moment to settle, out of the scope after each shot, no crosshair unscoped); the Sparrow and the Verdict (one shot per click); the knife (left slash, right stab, harder from behind). Tell me what feels off.
@@ -520,7 +522,7 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 17. [x] **Multiplayer lobby** (M9's, merged from main) in the mockup's look (D-137). *(Sonnet)* Built: the Lobby page (name, the host's addresses, two team columns with empty "Bot" slots, Switch team, the mode · map · limit footer, Edit setup and Start) and the Join page; match setup opened from the lobby hides Practice.
 18. [x] **Buy menu** (M7's) in the mockup's look, and the HUD hidden behind the class and buy menus (D-137). *(Sonnet)*
 
-Not in this branch: the boot screen (it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
+Not in this branch: the boot screen (built later in M11, D-153: it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
 
 **Done when:** the main menu starts Team Deathmatch in one click, Custom still offers everything match setup did, every screen and the HUD take their look from the theme, all suites pass, and then: every screen matches your mockups.
 
@@ -534,15 +536,19 @@ The class draft (two random classes offered each match) and the random map weapo
 
 **Goal:** fix what playing showed, and make it run smoothly (D-150). Each part is planned in detail by its session.
 
-- [ ] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3)
-- [ ] **Weapons and models** (D-155 to D-164): first-person guns never poke through walls (a separate viewmodel layer, as in CS and CoD); every class holds every weapon correctly (grip and off-hand, pistols, knife, grenades); reloads match each weapon's reload time in first and third person, with the sounds on cue. Checks that measure hand-to-grip distances
+- [x] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3). Built: the tighter axis in half steps (D-151, plus the Play cards that were wider than the layout), the class draft opens after the loading band (D-152), the boot screen with your Divocakos logo and name, the logo's rights in CREDITS.md (D-153), and the `layout` suite (D-154)
+- [x] **Weapons and models** (D-155 to D-158; built, waiting for your check in "Your open checks"): first-person guns never poke through walls (a separate viewmodel layer, as in CS and CoD); every class holds every weapon correctly (grip and off-hand, pistols, knife, grenades); reloads match each weapon's reload time in first and third person, with the sounds on cue. Checks that measure hand-to-grip distances
+  1. [x] **The viewmodel in its own layer** (D-155): viewmodel shaders with their own field of view and the nearest sliver of the depth buffer, in the world's own low-res image (pixel look, palette and lights kept). New suite `holds`: every class × weapon draws in the layer; pressed against a wall, the gun reaches past it but stays in front
+  2. [x] **Every class holds every weapon right** (D-156, D-157): a left-hand IK on every body and aim poses every 20° (the left hand was up to 34.6 cm off the gun in blended poses, now at most 0.9 cm); in first person each class's left shoulder reaches every long gun (it was 17 cm short on the Breaker). The guns' points are nodes in their models. Contact sheets per weapon (`tools/hold_sheet.gd`)
+  3. [x] **Reloads match** (D-158): one timeline for every reload clip; the magazine goes with the left hand and back into its seat, the shotgun's shell sits in the palm and goes into the port; the sounds come on their cues; the body's reload lasts exactly the reload (a first-shell clip for the shotgun); a shotgun reload cut short by a shot stops showing
+  4. [x] **Checks** (`holds` suite, 11 checks): the viewmodel against a wall; hand-to-grip distances for every class × two-handed gun in 14 blended poses (third person) and the arms' key frames (first person); every class × gun reload's length, magazine, shell and sound cues in both views; the shotgun interrupt. Full run: all 33 suites pass (1083 checks)
 - [ ] **Optimization** (D-165 to D-169): measure every map at 5v5 and as a LAN host (average frame rate and the worst 1 % of frames), find the hot spots (bot AI, vision rays, animation, shadows, physics), fix them, and add limits to the performance test
 
 ## M12 — Share & playtest ⬜
 
 **Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
 
-- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files, licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
+- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files (the Divocakos logo and name stay all rights reserved, outside CC BY-NC-SA: docs/CREDITS.md), licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
 - [ ] **Clean for public:** no personal paths (`/Users/...`) or anything private in the repo; a public README for players and contributors
 - [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows
 - [ ] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide

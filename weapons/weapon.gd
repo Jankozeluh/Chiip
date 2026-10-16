@@ -44,12 +44,13 @@ signal zoom_changed(level: int)
 signal shell_loading
 ## Emitted when the weapon is taken out (also a grenade after the one before it was thrown).
 signal drawn
+## Emitted when a reload reaches one of its cues, as its sound plays (M11, D-158): for a magazine
+## 0 out, 1 in, 2 the handle; for a shotgun 0, a shell going in ([constant GunModel.MAGAZINE_SOUNDS]).
+signal reload_cue(step: int)
 
 ## The generic weapon scene [method create] instantiates (loaded when needed: it uses this script).
 const SCENE_PATH := "res://weapons/weapon.tscn"
 
-## When the reload sound plays, as fractions of the reload time: magazine out, magazine in, bolt.
-const RELOAD_SOUND_STEPS: Array[float] = [0.1, 0.6, 0.85]
 ## Below this fraction of top speed you count as standing still (CS: about 34%).
 const ACCURATE_SPEED_FRACTION := 0.34
 ## How quickly the view follows the recoil kick (higher = snappier).
@@ -140,6 +141,8 @@ var _flash_time_left: float = 0.0
 var _arms: Node3D
 var _arms_player: AnimationPlayer
 var _arms_meshes: Array[MeshInstance3D] = []
+## The gun model on the arms, for its magazine and shell during reloads (M11, D-158).
+var _gun_parts: GunModel
 ## The team colour of the arms' sleeves.
 var _arms_color: Color = Teams.FRIENDLY_COLOR
 ## Sway offset (x right, y up) and the view angles of the last frame it was measured at.
@@ -249,6 +252,8 @@ func set_viewmodel_visible(on: bool) -> void:
 ## [code]<class>_arms.glb[/code] and [param material] the class's crew material (the arms share the
 ## body's texture, see [method CrewBody.material_for]). The gun goes on their weapon bone with the
 ## muzzle flash at its muzzle, and the arms draw the gun. Calling it again swaps the arms.
+## Everything in the viewmodel gets its viewmodel material ([method Viewmodel.prepare]), so it never
+## pokes into walls.
 func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 	if not is_node_ready():
 		# Not in the game yet (a character outside the tree got a weapon): put them in on _ready.
@@ -259,6 +264,7 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 		_viewmodel.remove_child(_arms)
 		_arms.queue_free()
 	_arms_meshes.clear()
+	_gun_parts = null
 	_arms = arms_scene.instantiate() as Node3D
 	var model := gun_model if gun_model != null else (data.model if data != null else null)
 	_arms.name = "Arms"
@@ -266,7 +272,6 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 	for node in _arms.find_children("*", "MeshInstance3D", true, false):
 		var mesh := node as MeshInstance3D
 		mesh.material_override = material
-		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_arms_meshes.append(mesh)
 	set_arms_team_color(_arms_color)
 	var skeletons := _arms.find_children("*", "Skeleton3D", true, false)
@@ -275,13 +280,21 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 		mount.name = "Gun"
 		mount.bone_name = "weapon"
 		(skeletons[0] as Skeleton3D).add_child(mount)
-		var gun := model.instantiate() as Node3D
+		var gun := GunModel.instantiate(model)
 		gun.transform = data.hold_offset if data != null else Transform3D.IDENTITY
 		mount.add_child(gun)
-		for node in gun.find_children("*", "MeshInstance3D", true, false):
-			(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_muzzle_flash.reparent(mount, false)
 		_muzzle_flash.position = muzzle_point
+		_gun_parts = GunModel.new(gun)
+		var skeleton := skeletons[0] as Skeleton3D
+		# After the clip has posed the arms (and the gun's mount has followed), the magazine follows the hand.
+		skeleton.skeleton_updated.connect(func() -> void:
+			if not skeleton.is_inside_tree():
+				return
+			_gun_parts.update(data, get_reload_progress(),
+					skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_l"))))
+	# Its own layer in front of the world, with its own field of view (M11, D-155).
+	Viewmodel.prepare(_viewmodel)
 	var players := _arms.find_children("*", "AnimationPlayer", true, false)
 	_arms_player = players[0] as AnimationPlayer if not players.is_empty() else null
 	if _arms_player != null:
@@ -348,6 +361,18 @@ func get_spray_shot() -> int:
 ## True while a reload is in progress.
 func is_reloading() -> bool:
 	return _reload_time_left > 0.0
+
+
+## How far the current reload is, from 0 to 1: for a shotgun, how far the current shell is (below
+## 0 while the gun is still being brought up for the first one). -1 when not reloading. The
+## magazine's and the shell's moves and the reload sounds follow it ([GunModel], M11 D-158).
+func get_reload_progress() -> float:
+	if not is_reloading():
+		return -1.0
+	var length := get_reload_time()
+	if not data.reload_per_shell and remote:
+		length = _reload_length
+	return 1.0 - _reload_time_left / maxf(length, 0.001)
 
 
 ## Full magazine and reserve again, no reload or recoil in progress (on respawn). A grenade keeps
@@ -762,12 +787,9 @@ func _remote_tick(delta: float) -> void:
 	_recover_recoil(delta)
 	if _reload_time_left <= 0.0:
 		return
-	var time_left_before := _reload_time_left
+	var before := get_reload_progress()
 	_reload_time_left -= delta
-	for step_fraction in RELOAD_SOUND_STEPS:
-		var step_time_left := _reload_length * (1.0 - step_fraction)
-		if time_left_before > step_time_left and _reload_time_left <= step_time_left:
-			_play(data.reload_sound, true)
+	_play_reload_cues(before, get_reload_progress() if _reload_time_left > 0.0 else 1.0)
 	if _reload_time_left <= 0.0:
 		_reload_time_left = 0.0
 		reload_finished.emit()
@@ -777,12 +799,9 @@ func _update_reload(delta: float) -> void:
 	if data.reload_per_shell:
 		_update_shell_reload(delta)
 		return
-	var time_left_before := _reload_time_left
+	var before := get_reload_progress()
 	_reload_time_left -= delta
-	for step in RELOAD_SOUND_STEPS:
-		var step_time_left := get_reload_time() * (1.0 - step)
-		if time_left_before > step_time_left and _reload_time_left <= step_time_left:
-			_play(data.reload_sound, true)
+	_play_reload_cues(before, get_reload_progress() if _reload_time_left > 0.0 else 1.0)
 	if _reload_time_left <= 0.0:
 		_reload_time_left = 0.0
 		var loaded := mini(data.magazine_size - magazine, reserve)
@@ -792,15 +811,26 @@ func _update_reload(delta: float) -> void:
 		reload_finished.emit()
 
 
+## Plays the reload sound for every cue the reload passed between progress [param before] and
+## [param after] ([method get_reload_progress]), and emits [signal reload_cue].
+func _play_reload_cues(before: float, after: float) -> void:
+	var cues := GunModel.SHELL_SOUNDS if data.reload_per_shell else GunModel.MAGAZINE_SOUNDS
+	for step in cues.size():
+		if before < cues[step] and after >= cues[step]:
+			_play(data.reload_sound, true)
+			reload_cue.emit(step)
+
+
 ## A shotgun's reload: a shell goes in every reload time until the magazine is full or the
-## reserve is empty.
+## reserve is empty. Its sound plays as the hand pushes it in; it counts at the end of its time.
 func _update_shell_reload(delta: float) -> void:
+	var before := get_reload_progress()
 	_reload_time_left -= delta
+	_play_reload_cues(before, get_reload_progress() if _reload_time_left > 0.0 else 1.0)
 	if _reload_time_left > 0.0:
 		return
 	magazine += 1
 	reserve -= 1
-	_play(data.reload_sound, true)
 	ammo_changed.emit(magazine, reserve)
 	if magazine < data.magazine_size and reserve > 0:
 		_reload_time_left = get_reload_time()

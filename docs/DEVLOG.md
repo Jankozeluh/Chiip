@@ -11,6 +11,33 @@
 
 **Next:** the remaining hot spots, then limits in perf_test, then the before-and-after numbers.
 
+## 2026-10-16 — M11 weapons & models
+
+**Done**
+- **Guns never poke through walls (D-155):** the viewmodel (arms, gun, muzzle flash) is drawn by viewmodel shaders with its own field of view and in the nearest sliver of the depth buffer, in the same low-res image as the world, so it keeps the pixel look, the palette effect and the map's lighting. New `weapons/viewmodel.gd` (`Viewmodel`), `shaders/viewmodel.gdshaderinc`, `characters/crew/crew_viewmodel.gdshader`, `weapons/viewmodel_gun.gdshader`, `weapons/viewmodel_flash.gdshader`; the crew's surface moved to `crew_surface.gdshaderinc`. New suite `holds` (viewmodel layer and the wall check).
+- New tool `tools/hold_sheet.gd`: a contact sheet per weapon with the four classes in several poses.
+- **Holds (D-156, D-157):** the guns' points are nodes in their models now (`point_foregrip`...; the magazine and the shotgun's shell are nodes of their own too). Third person: a left-hand IK (`characters/crew/hand_ik.gd`) on every body, and aim poses every 20°: the left hand was up to 34.6 cm off the gun when the game blended poses, now at most 0.9 cm. First person: the left arm didn't reach the long guns (17 cm short on the Breaker's pump); each class's left shoulder now sits where it reaches every foregrip. New `weapons/gun_model.gd` (`GunModel`). The `holds` suite measures both.
+
+- **Reloads (D-158):** every reload clip is keyed to one timeline; the magazine leaves the gun in the left hand and comes back into its seat (within 0.7 cm), the shotgun's shell sits in the palm and goes into the port, the sounds come on their cues (they were early), the body's reload lasts exactly the reload (its own clip length; a first-shell clip for the shotgun; a 0.05 s fade-out), and a reload cut short stops showing.
+
+- **Checks:** the `holds` suite (11 checks) measures all of it; main merged in; all 33 suites pass (1083 checks).
+
+**Next:** your check of the weapons ("Your open checks" in PLAN.md); M11's optimization.
+
+## 2026-10-16 — M11 UI fit
+
+**Done**
+- The UI scale is the tighter of width / 1280 and height / 720, in half steps from 1.0 up (D-151): at your 2920 × 1753 it is 2×, and the Play screen is whole. It re-applies on every resize and fullscreen switch (`Window.size_changed`, already wired in the game and the main menu).
+- The Play screen's three cards no longer widen with their text: the page needed 1338 design pixels, now 894. That was the other half of the cut-off.
+
+- The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
+
+- The boot screen exists (D-153): once per run, any key skips it. It shows your Divocakos logo (the laughing watermelon, 112 × 112) at whole multiples with the name under it; the main menu has the small mark in the corner and "Build M10 · Divocakos" in the footer. Logo and name: all rights reserved, outside the CC BY-NC-SA plan (docs/CREDITS.md). `tools/make_studio_logo.py` makes the two picture files.
+- New suite `layout` (14 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
+
+**Next:** your check: look at the Play screen in the editor's game view at 2920 × 1753. M12 writes the logo's rights into the licence files.
+
+
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
 **Done**

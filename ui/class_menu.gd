@@ -11,7 +11,8 @@ extends CanvasLayer
 ## hovers or the arrow keys reach ([method get_lit_index]).
 ## Esc, or the [code]class_menu[/code] key (M), closes it without a change.
 ##
-## When it shows: in a match it opens by itself once, when round 1's freeze time begins, and M
+## When it shows: in a match it opens by itself once, when round 1's freeze time begins (under the
+## loading screen it waits until that has hidden, D-152: [method open_if_pending]), and M
 ## opens or closes it during freeze time only; it closes itself when freeze time ends. In
 ## practice mode (no rounds) M works at any time. With no game rules (a free-roam map) it never
 ## opens. The rules decide whether a class may change ([method RoundManager.request_class],
@@ -37,6 +38,9 @@ var _rules: Node
 ## The character whose class the menu changes (the map's Player).
 var _player: Character
 var _is_open: bool = false
+## True when the match start asked the menu to open while the loading screen was up: it opens when
+## the screen hides ([method open_if_pending]).
+var _open_pending: bool = false
 
 ## The theme type that holds the sizes the menu reads (card width and height, the widest row).
 const SIZES_TYPE := &"ClassDraft"
@@ -123,7 +127,7 @@ func set_rules(rules: Node, player: Character) -> void:
 		manager.round_started.connect(_on_round_started)
 		manager.phase_changed.connect(_on_phase_changed)
 		if manager.round_number == 1:
-			open()
+			_open_at_match_start()
 
 
 ## Scales the layout; 1.0 is the size it is designed for (a 720-pixel-tall window).
@@ -140,9 +144,9 @@ func is_open() -> bool:
 
 
 ## True if the menu may open now: there are rules and a player, the developer console is closed,
-## and either it is practice mode or the match is in freeze time.
+## the loading screen is not up, and either it is practice mode or the match is in freeze time.
 func can_open() -> bool:
-	if not is_instance_valid(_rules) or not is_instance_valid(_player) or DevConsole.is_open:
+	if not is_instance_valid(_rules) or not is_instance_valid(_player) or DevConsole.is_open or LoadingScreen.is_showing():
 		return false
 	# Not over the pause menu, the settings menu or any other open menu.
 	if MenuState.is_any_open() and not MenuState.is_open(self):
@@ -175,8 +179,17 @@ func open() -> bool:
 	return true
 
 
+## Opens the menu now if the match start asked for it while the loading screen was up (D-152).
+## [code]main.gd[/code] calls it when the loading screen has hidden.
+func open_if_pending() -> void:
+	if _open_pending:
+		_open_pending = false
+		open()
+
+
 ## Closes the menu and gives the mouse and the trigger back. Does nothing if it is closed.
 func close() -> void:
+	_open_pending = false
 	if not _is_open:
 		return
 	_is_open = false
@@ -399,10 +412,18 @@ func _get_controller() -> PlayerController:
 	return _player.get_node_or_null("PlayerController") as PlayerController
 
 
+## Opens for the draft at the start of a match, or, under the loading screen, remembers to open when it hides.
+func _open_at_match_start() -> void:
+	if LoadingScreen.is_showing():
+		_open_pending = true
+	else:
+		open()
+
+
 func _on_round_started(round_number: int) -> void:
 	# The start of the match: a chance to choose a class. Later rounds don't ask (M does).
 	if round_number == 1:
-		open()
+		_open_at_match_start()
 
 
 func _on_phase_changed(phase: RoundManager.Phase) -> void:

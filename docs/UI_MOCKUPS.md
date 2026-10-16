@@ -56,6 +56,7 @@
 
 | # | Mockup | Scene (layout) | Roles it uses today |
 |---|---|---|---|
+| 0 (01 Boot) | Boot screen | `ui/boot_screen.tscn` (+ `.gd`) | `InkPanel`, `LoadingColumn`, `TitleLabel` (the studio's name), `HeroLabel` (the game's name if the logo file is missing), `ChipRow` of `TextChip` / `LineChip`, `MuteLabel`. Built (D-153) with the studio's logo and name; the 56 px corner mark is in the main menu |
 | 1, 2 | Main menu | `ui/main_menu.tscn` (+ `.gd`) | `SidePanel`, `LogoLabel`, `FriendlyChip` / `EnemyChip` / `AccentChip`, `ChipRow`, `ModeList` of `BigButton` menu items (chip icon), `DividerMargin` + `LineSeparator`, `SmallItemButton`, `MuteLabel`, `ShadowLabel`. Built (D-135) |
 | 2 | Play screen (mode choice + Custom) | `ui/match_setup.tscn` (+ `.gd`, cards and rows built in code) | `InkPanel`, `PageMargin`, `PageColumn`, `TitleLabel`, `DimKeyCapLabel`, `TextButton`, `CardRow` of `ModeButton` / `ModeButtonPicked` cards (`ModeMargin`, `ModeText`, `ModeTitleLabel`, `TagLabel`, `ModeDetailLabel`, `HeaderLabel` / `MuteLabel`), `FormGrid` rows (`RowBox`, `DimLabel`, `SegmentFrame`, `SegmentRow`, `SegmentButton`, team chips `FriendlyChipButton` / `EnemyChipButton` / `EmptyChipButton` in `TeamChipRow`), `BigPrimaryButton`. Built (D-135) |
 | 3 | Class draft | `ui/class_menu.tscn` today (M7 turns it into the draft) | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `FormRow`, cards: `PanelContainer` with `PanelMargin`, `HeaderLabel`, `BrightLabel`, `DimLabel` |

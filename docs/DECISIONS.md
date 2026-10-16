@@ -1572,9 +1572,9 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 ## D-138 — A loading screen between maps; the boot screen waits for a logo (2026-10-16) — *provisional*
 
-**Decision:** When a match starts or the rotation moves on, the mockup's loading screen shows the map's name in 96 px Bold, "Map 2 of 3 · Rotation", the mode and the limit, and a row of chips while the map loads. The boot screen with the studio logo is left out until the logo exists as a file in the project (the mockup links an image on the web, and a download needs your OK).
+**Decision:** When a match starts or the rotation moves on, the mockup's loading screen shows the map's name in 96 px Bold, "Map 2 of 3 · Rotation", the mode and the limit, and a row of chips while the map loads. The boot screen with the studio logo is left out until the logo exists as a file in the project *(built in M11 with a stand-in until the file comes, D-153)* (the mockup links an image on the web, and a download needs your OK).
 
-**Built** (task 15, by a Sonnet subagent): `ui/loading_screen.tscn` (`LoadingScreen`), the last node of `main.tscn`. It shows when a match starts from the main menu (a pending `GameLaunch`) and on `next_map()`, not on Play again, the console's `map` or the command-line flags. The map is already loaded when the band is drawn (on `next_map()` the screen comes first, then the load), so the world behind it is the real map, standing still: the screen pauses the tree for its `hold_time` (1.5 s) while the 12 chips fill, then unpauses. While it shows it swallows every input event in `_input()` (it is the last node, so it sees them first) and the Tab scoreboard checks `LoadingScreen.is_showing()`; it doesn't register with `MenuState`, so the class menu can open under it at a match start and is usable when it hides. The lines come from `MatchText.loading_lines()`: "Map 2 of 3 · Rotation" (or the mode's name, or "Practice"), the map's title, "Team Deathmatch · first to 50" / "Bomb · first to N rounds". Tests that start games through `GameLaunch` switch it off (`main.loading_screen`, or the static `LoadingScreen.enabled` for flows that change scenes). Alternatives: real background loading with `ResourceLoader.load_threaded_request()` (the maps load in a fraction of a second, so the chips would barely show; the hold gives time to read the map's name), and a full-screen card without the world (the mockup shows the map). Differences: mixed-case text as on the other screens; on Next map the match-end screen stays under the band until the new map has loaded.
+**Built** (task 15, by a Sonnet subagent): `ui/loading_screen.tscn` (`LoadingScreen`), the last node of `main.tscn`. It shows when a match starts from the main menu (a pending `GameLaunch`) and on `next_map()`, not on Play again, the console's `map` or the command-line flags. The map is already loaded when the band is drawn (on `next_map()` the screen comes first, then the load), so the world behind it is the real map, standing still: the screen pauses the tree for its `hold_time` (1.5 s) while the 12 chips fill, then unpauses. While it shows it swallows every input event in `_input()` (it is the last node, so it sees them first) and the Tab scoreboard checks `LoadingScreen.is_showing()`; it doesn't register with `MenuState`. *(The class menu used to open under it at a match start; changed by D-152.)* The lines come from `MatchText.loading_lines()`: "Map 2 of 3 · Rotation" (or the mode's name, or "Practice"), the map's title, "Team Deathmatch · first to 50" / "Bomb · first to N rounds". Tests that start games through `GameLaunch` switch it off (`main.loading_screen`, or the static `LoadingScreen.enabled` for flows that change scenes). Alternatives: real background loading with `ResourceLoader.load_threaded_request()` (the maps load in a fraction of a second, so the chips would barely show; the hold gives time to read the map's name), and a full-screen card without the world (the mockup shows the map). Differences: mixed-case text as on the other screens; on Next map the match-end screen stays under the band until the new map has loaded.
 
 **Online (merge with M9):** an online game never shows the loading screen (`main.gd` `_shows_loading_screen()` is false while `net_session != null`). The screen pauses the whole tree, and in multiplayer nobody can pause the other players (D-109); the host would freeze the match for everyone, and a client's map is chosen by the lobby anyway. The alternative, a band that doesn't pause, would let you move and shoot behind it.
 
@@ -1660,6 +1660,94 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** MIT, or source-available only; itch.io with a restricted page; UPnP and direct-IP play (it opens a port on the host's router).
 
+## D-151 — The UI scales by the tighter of width and height, in half steps (2026-10-16)
+
+**Decision:**
+- **The UI scale is the tighter of window width / 1280 and window height / 720** (`PixelView.ui_scale_for()`), so the 1280 × 720 layout always fits, whatever the window's shape. From 1.0 up it is rounded down to a half step (1, 1.5, 2, 2.5 …), because Silkscreen draws every one of its pixels as a whole number of screen pixels only at those steps (16 px text: 2 px per pixel at 1×, 3 at 1.5×, 4 at 2×); in between they come out uneven. Below 1.0 (a small window, or the pixelated HUD's low-res image) it is the exact fit.
+- 1280 × 720 → 1, 1920 × 1080 → 1.5, 2560 × 1440, 3440 × 1440 and 2560 × 1600 → 2, **2920 × 1753 → 2** (width-bound: 2920 / 1280 = 2.28), 1440 × 1080 → 1.
+- `PixelView.apply()` now returns the **factor** (it returned the UI height); `main.gd` and `MainMenu` hand it to every menu, the HUD, the console and the loading screen. Both already re-run on `Window.size_changed`, which a drag, a fullscreen switch and the editor's embedded game view all emit, so a resize re-lays everything out.
+- **The Play screen's three mode cards are equally wide in any window:** their description and last lines wrap (`autowrap_mode`) instead of widening the card. That was the second half of your cut-off screenshot: the page's minimum width was 1338 design pixels (the Practice card's one-line text made it the widest), more than the 1280 the layout is designed for, so even a 16:9 window showed it cut. It is 894 now.
+
+**Why:** Your screenshot of the editor's game view at 2920 × 1753 showed "LAY" for "PLAY", "EAM DEATHMATCH" and the right column cut off, and *"when I expanded on the full screen it completely fucked up the UI"*. The old rule was window height / 720: 2.43 there, a layout 1199 design pixels wide in a 1280-wide design.
+
+**Alternatives:**
+- **Exact fit, no steps** (2.28 there): the text would be 36.5 px, which the font engine rounds, so the pixel font's pixels come out 4 or 5 px wide at random.
+- **Whole steps only** (1×, 2×): 1920 × 1080 would drop from the mockups' exact 1.5× to 1×.
+- **Fixed 16:9 canvas with bars** (`content_scale_aspect = keep`): the ultrawide would waste its sides; the mockups' rule is to anchor to the edges.
+
+## D-152 — The class draft opens after the loading screen, not under it (2026-10-16)
+
+**Decision:**
+- **A match start's class draft waits for the loading band to hide.** `ClassMenu.can_open()` is false while `LoadingScreen.is_showing()`; when the match start asks the menu to open (`set_rules()` with round 1 under way, or `round_started(1)`), it remembers that (`_open_pending`) and `main.gd` calls `ClassMenu.open_if_pending()` when the loading screen emits `finished`. Rotation changes (`next_map()`) work the same way, and the band still hides itself only after its 1.5 s hold, as in the mockup.
+- **`main.gd` shows the band before it spawns a launched map** (`_load_map()`), not after. It used to show it second, so the class draft had already opened by then.
+- **Layers, checked:** loading screen 20 and boot screen 30 stand above every menu (class draft 4, pause 4, settings 6, console 10); the layout test checks that no visible layer sits above the draft once the map is loaded.
+
+**Why:** Your screenshot showed the band ("Map 1 of 3 · Rotation / Spillway / …/ Loading") over the lower part of the class cards. The band is meant to hide while the map is up, but D-138 let the draft open at the same moment, so for the 1.5 s hold (longer when the load stalls) the band covered the cards.
+
+**Alternatives:** shortening the hold to nothing once the map is ready (the band is the mockup's, and the map name needs time to be read); lowering the band's layer under the draft (the band would then show through the dimmed draft and look like part of it); hiding the band when the draft opens (the band also pauses the game, so the draft would open on a game that is still held).
+
+## D-153 — The boot screen and the studio logo (2026-10-16)
+
+**Decision:**
+- **There is a boot screen now** (`ui/boot_screen.tscn`, `BootScreen`, the mockup's "01 Boot"): the studio logo (112 × 112 picture shown 224 design pixels wide), the name **Divocakos** under it, a row of eight squares that fill over 2.5 s and "Any key to skip". The main menu shows it **once per run**, over the menu, when the game starts on the menu (not with `-- --match`, `--practice`, `--map`, `--host` or `--join`, not in a headless run, not when the menu comes back from a match). Any key or click skips it and nothing reaches the menu under it.
+- **The logo is the studio's own** (`assets/ui/studio_logo.png`, a laughing watermelon, supplied by you on 2026-10-16) with a half-size copy for the main menu (`assets/ui/studio_logo_small.png`, Lanczos-reduced by `tools/make_studio_logo.py`). **Whole steps only:** the boot logo is 224 design pixels × the UI scale, which is a whole multiple of its 112 pixels at every half step (2× at 1.0, 3× at 1.5, 4× at 2.0); the corner mark is 56 px × the whole part of the scale, from the small picture at odd steps and the full one at even steps. The picture is smooth artwork, not pixel art, so the nearest filtering the UI gives every control shows no blockiness, only equal pixels.
+- **The main menu shows it small:** a mark in the bottom right corner with the map's name beside it (the mockup), and "Build M10 · Divocakos" in the footer. There is no credits screen in the game yet; the credits are `docs/CREDITS.md` (M12's third-party notices can add one).
+- **Rights:** the logo and the name "Divocakos" are **all rights reserved**, outside the planned CC BY-NC-SA 4.0 for the game's art (D-150): recorded in `docs/CREDITS.md`, to be written into the licence files in M12.
+- **If a file is missing** the boot screen shows the game's name in the logo's place and the corner mark hides, so nothing breaks.
+
+**Why:** Your words: *"logo naseho studia se nenacetlo vubec v podstate"* (the studio logo basically didn't load at all). D-138 left the boot screen out because the logo wasn't a file, and nothing in the game referred to one: the mockup copy in the project had the image link replaced by placeholder text. You then sent the real file.
+
+**Alternatives:** a Godot boot splash in `project.godot` (`application/boot_splash`; the engine shows it before the game loads, it can't be skipped or animated, and the menu is the first screen anyway); showing the boot screen every time the menu opens (it would delay every return from a match); scaling the 112 px picture to the mockup's 56 px with nearest filtering (drops every other pixel of smooth artwork: jagged); drawing a pixel-art version (the studio's mark is theirs to redraw).
+
+## D-154 — A layout test at seven window sizes (2026-10-16)
+
+**Decision:** `tests/layout_test.tscn` (suite `layout`, in `tools/run_tests.sh`) resizes the real root window to 1280 × 720, 1920 × 1080, 2560 × 1440, 2920 × 1753 (your screenshot), 3440 × 1440, 2560 × 1600 and 1440 × 1080, by setting `Window.size` (which emits `size_changed`, so it goes through the menus' own wiring, nothing calls `apply_pixel_settings()` for them). At each size it opens every menu in turn and checks that **every visible control lies inside the window** (a scroll box's contents may run past its edge, the box may not): the main menu (page, Play with each of its three modes, the lobby's connect page, all five settings tabs, also with the pixelated HUD on), and in a real Bomb game and Team Deathmatch game the HUD, class draft, buy menu, pause menu, Tab scoreboard, console and match-end screen; then the loading screen and the boot screen. It also checks the scale rule, that **after loading nothing covers the class draft** (loading screen hidden, game unpaused, draft open, no visible layer above the draft), and that a runtime resize re-lays out a menu without anyone calling it.
+
+**Why:** The cut-off screens came from two things no existing test measured: the scale rule, and a page whose minimum width was more than the layout width. Rects in a real window are what you see; the earlier checks looked at font sizes and minimum sizes only. With the old height-only rule and the cards' text unwrapped, the new suite fails on the Play screen at 2920 × 1753, 2560 × 1600 and the pixelated 1280 × 720.
+
+**Notes:** A headless run's root window can be resized and keeps its size, so the real window sizes are tested without opening a window. The lobby's team page (needs a session) and the kill feed's moving lines aren't scanned.
+
+**Alternatives:** a screenshot comparison per size (heavy, and a human has to look); testing only the scale function (misses a page that is wider than the layout).
+
+## D-155 — The viewmodel is drawn in its own depth range, by its shaders (2026-10-16)
+
+**Decision:** The first-person arms, gun and muzzle flash keep rendering in the world's own low-res viewport, but with viewmodel shaders (`shaders/viewmodel.gdshaderinc`): in `vertex()` they write `POSITION` themselves, with their own vertical field of view (`Viewmodel.FOV`, 73.74°: the camera's at the default FOV, so the gun looks the same at every FOV setting) and with their depth squeezed into the nearest 2 % of the depth buffer (from 1 cm in front of the eye). Nothing in the world can then cover them: a wall would have to be nearer than the camera's own near plane. `Viewmodel.prepare()` gives every mesh in a viewmodel its viewmodel material: the crew's arms a viewmodel copy of the crew shader (same surface, so the team colour works), every gun surface a gun shader with its own texture, made once per source material. Lighting uses the real position, so the gun is lit by the map where it is.
+
+**Why:** It keeps everything that makes the picture Chiip's: the 480-line world (D-048), the palette effect and the map's lights apply to the gun for free, because it is in the same image. It costs nothing per frame (no second render). The old viewmodel poked into every wall you stood against (the known limitation since M2).
+
+**Alternatives:**
+- **A second camera** for the viewmodel with its own cull layer, in a second SubViewport composited over the world: what Unity tutorials do. It needs a second full render pass at the same low resolution, its own lights or shared ones, and the palette effect would have to run over the composite. More cost and more parts for the same picture.
+- **Godot's own viewmodel options** (`BaseMaterial3D.use_fov_override` and `use_z_clip_scale`, new in 4.x): they exist only on the standard material, not on the crew's custom shader; with two different formulas the arms and the gun could disagree. Our own include does the same for both.
+- **Pulling the gun back** when near a wall (a ray from the eye): many games do it as well, but it changes how the gun looks while you hug walls, and still clips at corners.
+
+## D-156 — A left-hand IK on the body, and aim poses every 20° (2026-10-16)
+
+**Decision:** Every crew body has a `HandIK` (a `SkeletonModifier3D`, two-bone IK for the left arm) that puts the left wrist where it holds the gun's foregrip, every tick, after the animation graph. The target comes from the gun model itself: the generator writes every gun point as an empty node (`point_foregrip`, `point_magazine`...), and `GunModel.left_hand_target()` adds rig.py's left-hand-on-foregrip offset. The elbow stays on the side the animation put it. The body fades the IK out (0.12 s) while reloading, dead, or holding the knife or a grenade. The aim poses come every 20° instead of every 40° (129 clips per class), so the right arm and the gun drift less between two poses too.
+
+**Why:** Each clip holds the foregrip exactly (the generator solves the same IK), but the game blends them: two aim pitches, locomotion, crouching, the kick. A blend of two arm poses doesn't keep a hand on a point. Measured (`holds` suite, 4 classes × 7 guns × 14 blended poses): without the IK the left hand was up to **34.6 cm** off the gun (the Bulwark aiming up 50°), and the 20° poses alone still left 15 cm; with both, at most **0.9 cm**.
+
+**Alternatives:** More aim poses only (still centimetres off between them, and nothing for the kick or locomotion blends); Godot's `TwoBoneIK3D` node (sets only the wrist position, so the hand's rotation needs a second modifier and a target node per character; our script is 40 lines and reads the target straight from the weapon bone); attaching the left hand to the gun with a `BoneAttachment3D` (bones can't follow a node).
+
+## D-157 — First-person left shoulders reach every long gun (2026-10-16)
+
+**Decision:** The first-person arms' left shoulder (out of view below the camera) is placed per class: `fparms.left_shoulder()` moves it from where it was toward the long guns' foregrips until the left hand reaches every one of them at rest (97 % of the arm's length).
+
+**Why:** It didn't reach: the left hand stopped short of the foregrip and floated in the air, by up to **17 cm** on the Breaker's pump (the Scout's arms are the shortest) and 4 to 8 cm on the rifles. Now the first-person idle, kick and draw hold every foregrip within 0.1 cm (`holds` suite). The shoulder stays below the picture, so the view looks the same.
+
+**Alternatives:** Pull each gun back toward the camera until the hand reaches (the Breaker would sit 14 cm closer, a very different viewmodel); longer arms in first person (the body's and the arms' proportions are the same on purpose, D-079).
+
+## D-158 — Reloads on one timeline: magazine and shell in the hand, sounds on cue (2026-10-16)
+
+**Decision:**
+- **One timeline:** every reload clip, first and third person, is keyed to the same moments, as fractions of the reload: a magazine is taken at 0.24, swapped for a fresh one at the vest at 0.38, in at 0.66, the handle at 0.80; a shotgun shell is taken from the vest at 0.28 and in at 0.80 (`holds.RELOAD_EVENTS`, `GunModel.MAGAZINE_EVENTS` / `SHELL_EVENTS`).
+- **The magazine moves:** it is a node of its own in the gun model; from 0.24 to 0.66 it goes with the left hand, then back into its seat (`GunModel.update()`, in both views). The shotgun has a `Shell` that sits in the left palm from 0.28 to 0.80, when the hand puts it into the loading port. The pistols' magazines have a body inside the grip, so a whole magazine comes out.
+- **Sounds on cue:** magazine out 0.28, in 0.66, the handle 0.80 (they were at 0.10, 0.60 and 0.85, before the hand even reached the magazine); a shell's sound as it goes in (0.80), not when it counts at the end. `Weapon.reload_cue(step)` fires with each.
+- **Exactly the reload's length:** the body's clip is stretched by its own length (all were assumed 2.5 s). The shotgun's first shell has its own body clip, `reload_shotgun`: the gun brought up, then the shell, like the first-person one. The reload one-shot fades out in 0.05 s instead of 0.15 s (a fade counts real seconds, and a shell lasts only 0.43 s, so the fade pulled the hand off the port). A reload cut short (a shot during a shotgun reload, a weapon switch) fades out on the body; the arms play the shot.
+
+**Why:** In your words, "reloading guns goes correctly". The magazine never left the gun (the hand went to it and back while it stayed in), the sounds came early, and the body's shotgun reload counted the first shell's lead-in as part of the shell.
+
+**Alternatives:** Drop the old magazine as a physics prop (CS doesn't; more objects each reload); animate the magazine in the generator as a bone (it would need a bone on every gun's skeleton, which guns don't have); write the moments into each clip as animation markers (glTF has no markers, and every clip shares the same moments anyway).
+
 ## D-165 — How Chiip's speed is measured (2026-10-16)
 
 **Decision:** `tools/frame_timing.gd` splits every frame into its parts and is the one tool for frame times:
@@ -1723,6 +1811,7 @@ It also prints its five slowest ticks with the round's phase and time, so a fail
 **Alternatives:**
 - Frame-rate limits: they depend on the monitor and on macOS's V-Sync (D-165).
 - A limit of 25 ms on the worst tick: the round start is 17–20 ms, which leaves too little margin.
+
 
 ## Open questions
 

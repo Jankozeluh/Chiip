@@ -48,9 +48,6 @@ enum Mode {
 	PRACTICE,
 }
 
-## The HUD and overlay are laid out for a window this many pixels tall.
-const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
-
 ## The map to play. The main menu's match setup overrides it with its choice
 ## ([GameLaunch]); from the command line, [code]-- --map <scene>[/code] does:
 ## [code]Godot --path . -- --map res://maps/comparison/csg_room.tscn[/code]
@@ -259,9 +256,11 @@ func leave_online() -> void:
 ## [member mode]), it only tells the main menu to skip itself.
 func _load_map() -> void:
 	if GameLaunch.is_pending():
-		_spawn_map(_take_launch())
+		var launched := _take_launch()
+		# The band first: the map's class menu waits for it to hide (D-152).
 		if _shows_loading_screen():
-			_show_loading_screen(_map.scene_file_path)
+			_show_loading_screen(launched.resource_path)
+		_spawn_map(launched)
 		return
 	var scene := map_scene
 	var args := OS.get_cmdline_user_args()
@@ -313,6 +312,8 @@ func _show_loading_screen(path: String, map_follows: bool = false) -> void:
 
 func _on_loading_finished() -> void:
 	_loading_hides_hud = false
+	# The class draft opens now, not under the band (D-152).
+	_class_menu.open_if_pending()
 	_update_hud_visibility()
 
 
@@ -433,17 +434,17 @@ func _map_has_group(group: String) -> bool:
 ## shaders/palette_limit.gdshader). Runs when one of them changes and when the
 ## window is resized.
 func apply_pixel_settings() -> void:
-	var ui_height := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
-	_hud.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_debug_overlay.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_console.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_scoreboard.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_match_end_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_pause_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_settings_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_class_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_buy_menu.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
-	_loading_screen.set_ui_scale(ui_height / UI_DESIGN_HEIGHT)
+	var factor := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
+	_hud.set_ui_scale(factor)
+	_debug_overlay.set_ui_scale(factor)
+	_console.set_ui_scale(factor)
+	_scoreboard.set_ui_scale(factor)
+	_match_end_screen.set_ui_scale(factor)
+	_pause_menu.set_ui_scale(factor)
+	_settings_menu.set_ui_scale(factor)
+	_class_menu.set_ui_scale(factor)
+	_buy_menu.set_ui_scale(factor)
+	_loading_screen.set_ui_scale(factor)
 
 
 func _on_setting_changed(key: StringName) -> void:

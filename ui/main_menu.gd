@@ -70,6 +70,8 @@ var _lobby_opener: Button
 @onready var _host_button: Button = %HostButton
 @onready var _join_button: Button = %JoinButton
 @onready var _map_name: Label = %MapName
+@onready var _studio_mark: TextureRect = %StudioMark
+@onready var _boot: BootScreen = %BootScreen
 @onready var _setup: MatchSetup = $MatchSetup
 @onready var _lobby: LobbyMenu = $LobbyMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
@@ -101,6 +103,7 @@ func _ready() -> void:
 	apply_pixel_settings()
 	MenuState.open(self)
 	_play_button.grab_focus()
+	_show_boot_screen()
 	# Back from an online match, or from one that ended: the lobby (or the reason) comes first.
 	var session := NetLobby.find_session(get_tree())
 	if (session != null and session.is_active()) or not GameLaunch.notice.is_empty():
@@ -204,12 +207,46 @@ func start_practice() -> void:
 ## ([PixelView], like main.gd does for the game). Runs at startup, when the
 ## video settings change and when the window is resized.
 func apply_pixel_settings() -> void:
-	var ui_height := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
-	var factor := ui_height / PixelView.UI_DESIGN_HEIGHT
+	var factor := PixelView.apply(Settings.get_instance(), get_tree().root, _world, _palette_effect)
 	UiTheme.apply(_page, factor)
 	_setup.set_ui_scale(factor)
 	_lobby.set_ui_scale(factor)
 	_settings_menu.set_ui_scale(factor)
+	_boot.set_ui_scale(factor)
+	_place_studio_mark(factor)
+
+
+## Puts the studio's mark in the bottom right corner with the map's name to its left (the mockup's
+## 56 × 56 mark, D-153), at a whole multiple of its picture so the pixels stay even: 56 px on the
+## half-size logo at UI scales 1 and 1.5, 112 px on the full logo at 2 and 2.5, and so on. Without the logo
+## files the mark stays hidden and the name sits in the corner. Runs after every [method UiTheme.apply], which
+## puts the scene's own offsets back.
+func _place_studio_mark(factor: float) -> void:
+	var steps := maxi(1, floori(factor))
+	var logo := BootScreen.load_logo() if steps % 2 == 0 else BootScreen.load_small_logo()
+	_studio_mark.texture = logo
+	_studio_mark.visible = logo != null
+	var side := 56.0 * steps
+	var edge := roundf(32.0 * factor)
+	_studio_mark.offset_right = -edge
+	_studio_mark.offset_bottom = -edge
+	_studio_mark.offset_left = -edge - side
+	_studio_mark.offset_top = -edge - side
+	# The name is centred on the mark and 16 px (at 720p) from it.
+	var height := roundf(21.0 * factor)
+	var right := -edge - ((side + roundf(16.0 * factor)) if logo != null else 0.0)
+	var bottom := -edge - (roundf((side - height) / 2.0) if logo != null else 0.0)
+	_map_name.offset_right = right
+	_map_name.offset_left = right - roundf(400.0 * factor)
+	_map_name.offset_bottom = bottom
+	_map_name.offset_top = bottom - height
+
+
+## The boot screen (D-153) shows once per run, over the menu, when the game starts on the menu.
+func _show_boot_screen() -> void:
+	var args := OS.get_cmdline_user_args()
+	if BootScreen.is_due() and not args.has("--host") and not args.has("--join"):
+		_boot.show_screen()
 
 
 ## Replaces the menu with the game scene.
