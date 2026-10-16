@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-15
 >
-> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". Next: M7 — Arsenal, perks & economy.
+> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". In progress: M7 — Arsenal, perks & economy, M9 — Multiplayer, and M10 — Look & feel (map kit and a modern UI), each in its own branch.
 
 ## Your open checks
 
@@ -59,6 +59,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M7 | Arsenal, perks & economy | ⬜ | Earn money, buy from the full arsenal, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
+| M10 | Look & feel: map kit and a modern UI | ⬜ | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -329,6 +330,25 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 **Done when:** you and a friend can play a full bomb-defusal match together against bots, over LAN and through a Steam lobby, and shooting feels fair at normal pings.
 
 **You learn:** Godot's multiplayer API (RPCs, `MultiplayerSynchronizer`, `MultiplayerSpawner`), authority, prediction, lag compensation, Steamworks basics.
+
+## M10 — Look & feel: map kit and a modern UI ⬜
+
+**Goal:** the maps stop looking blank, anyone can build maps from one kit, and the menus look clean and modern while staying pixelated (D-120). Runs as two parts in parallel, each planned in detail when it starts.
+
+**Map kit and environment art** (decisions D-121 to D-129):
+- [ ] A texture library: about 30 more CC0 textures from ambientCG, made retro by our tool (64 × 64, palette-limited) and grouped into sets (industrial, urban, interior, nature). Ready to use in TrenchBroom
+- [ ] A prop library made by our own generator in the crew's low-poly style: crates, barrels, pallets, fences and railings, lamps, doors, pipes, signs, simple vehicles, plants and trees, debris. Each has collision and can be placed in TrenchBroom as an entity
+- [ ] Light fixtures as entities, and anything else a mapper needs (ladders, glass, triggers) that the game supports
+- [ ] A mapping guide for you and the community (`docs/MAPPING.md`): the workflow, the look rules (MAPS.md), the entity list, building, navmesh, testing
+- [ ] Dress Depot, Square, Spillway and the test map with the kit, without changing the layouts' timing (the maps test still passes)
+
+**Modern, minimal UI and simpler modes** (decisions D-130 to D-139):
+- [ ] A UI refresh: minimal and more modern, with clear hierarchy, spacing and fewer boxes, keeping the pixel font and the pixelated look, nothing childish. Main menu, match setup, settings, pause, HUD, scoreboard, match-end screen and kill feed
+- [ ] A simpler mode choice: **Team Deathmatch is the primary mode** (first and the default), then Bomb and Practice; one click to play, with the details behind "Custom"
+
+The class draft (two random classes offered each match) and the random map weapons belong to M7.
+
+**Done when:** the three quick maps look furnished, a new map can be built from the kit by following the guide, and the menus look clean and modern.
 
 ## Backlog (ideas, not scheduled)
 
