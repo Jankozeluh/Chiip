@@ -27,7 +27,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Main menu and Play screen** (task 9, D-135), as in your mockup: the dark column with CHIIP and its three chips, Play / Practice / Settings / Quit with the lime focus and chip, Host and Join marked soon. Play opens the Play screen: the Team Deathmatch card is picked (lime frame, "Click to play"), one click on it plays; Bomb and Practice are a click away; under them the picked mode's Custom rows (map or rotation, kill limit 25–100, team chips, 5 / 10 / 15 minutes, bots, friendly fire) and the big Play button. The menus now scale their placed-by-pixel layouts too, so 1080p is exactly 1.5×.
 
-**Next:** the settings screen.
+- **Settings** (task 10, D-137, built by a Sonnet subagent): a full screen as in your mockup: underlined tabs, 48 px rows, OFF / ON segments instead of check boxes, sliders with value boxes, the frame limit as segments, the crosshair tab with your five swatches and two live previews on a dark and a light square, the controls as a table with key caps ("Press a key..." in lime), Reset and Back. The default crosshair colour is now your `#36D07A`. 627 checks pass.
+
+**Next:** merge main (M7 and the map kit), then the pause menu, scoreboard, match end, console, loading screen, the HUD, kill feed, class-draft cards and buy menu.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

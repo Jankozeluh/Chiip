@@ -212,6 +212,11 @@ func _panels() -> void:
 	_styles("RowPanel", {"panel": _empty("row_panel", BORDER_MARGINS)})
 	_variation("YouRowPanel", "PanelContainer")
 	_styles("YouRowPanel", {"panel": _box("you_row_panel", Palette.YOU_ROW, Palette.ACCENT, Palette.BORDER)})
+	# A row of a table of settings (the Controls tab's keys): a 2 px PANEL line along its top.
+	_variation("TableRowPanel", "PanelContainer")
+	var table_row := _box("table_row_panel", Color.TRANSPARENT, Palette.PANEL_OPAQUE)
+	table_row.border_width_top = Palette.LINE
+	_styles("TableRowPanel", {"panel": table_row})
 	# The line under a team's column titles: 2 px in the UI's team colour.
 	_variation("TeamHeaderFriendly", "PanelContainer")
 	_styles("TeamHeaderFriendly", {"panel": _underline("team_header_friendly", Palette.FRIENDLY)})
@@ -283,6 +288,19 @@ func _containers() -> void:
 	_constants("ChipRow", {"separation": Palette.CHIP_GAP})
 	_variation("TeamChipRow", "HBoxContainer")
 	_constants("TeamChipRow", {"separation": Palette.TEAM_CHIP_GAP})
+	# The settings screen: the gaps between its title, tabs and footer, rows whose parts sit edge to edge
+	# (a 400 px label, then the control), rows that touch, and a small group (preview squares and caption).
+	_variation("SettingsColumn", "VBoxContainer")
+	_constants("SettingsColumn", {"separation": Palette.SETTINGS_GAP})
+	_variation("FlushRow", "HBoxContainer")
+	_constants("FlushRow", {"separation": Palette.FLUSH_GAP})
+	_variation("StackBox", "VBoxContainer")
+	_constants("StackBox", {"separation": Palette.STACK_GAP})
+	_variation("GroupBox", "VBoxContainer")
+	_constants("GroupBox", {"separation": Palette.GROUP_GAP})
+	# A page's parts side by side that wrap under each other when the window is narrow (the crosshair tab's rows and preview).
+	_variation("FlowBox", "HFlowContainer")
+	_constants("FlowBox", {"h_separation": Palette.FLUSH_GAP, "v_separation": Palette.PAGE_GAP})
 	# The settings menu's crosshair colour swatches, and the margin that frames each colour inside its button.
 	_variation("SwatchRow", "HBoxContainer")
 	_constants("SwatchRow", {"separation": Palette.SWATCH_GAP})
@@ -467,24 +485,9 @@ func _buttons() -> void:
 	})
 	# A segment of a segmented choice (Foundations: SEGMENTS): DIM text with nothing behind;
 	# the chosen one (a pressed toggle) filled with TEXT, ink text; the focus underlined in the accent.
-	_variation("SegmentButton", "Button")
-	var segment := Vector4(Palette.SEGMENT_PAD_X, Palette.SEGMENT_PAD_TOP, Palette.SEGMENT_PAD_X, Palette.SEGMENT_PAD_BOTTOM)
-	var focus := _box("segment_button_focus", Color.TRANSPARENT, Palette.ACCENT, 0, segment)
-	focus.draw_center = false
-	focus.border_width_bottom = Palette.BORDER
-	_styles("SegmentButton", {
-		"normal": _empty("segment_button_normal", segment),
-		"hover": _empty("segment_button_hover", segment),
-		"pressed": _box("segment_button_pressed", Palette.TEXT, Color.TRANSPARENT, 0, segment),
-		"hover_pressed": _box("segment_button_hover_pressed", Palette.TEXT, Color.TRANSPARENT, 0, segment),
-		"disabled": _empty("segment_button_disabled", segment),
-		"focus": focus,
-	})
-	_colors("SegmentButton", {
-		"font_color": Palette.TEXT_DIM, "font_hover_color": Palette.TEXT, "font_focus_color": Palette.TEXT,
-		"font_pressed_color": Palette.TEXT_ON_FILL, "font_hover_pressed_color": Palette.TEXT_ON_FILL,
-		"font_disabled_color": Palette.TEXT_DISABLED,
-	})
+	# The settings screen's segments (on / off, frame limit) are wider.
+	_segment_styles("SegmentButton", Palette.SEGMENT_PAD_X)
+	_segment_styles("WideSegmentButton", Palette.SEGMENT_WIDE_PAD_X)
 	# A word to click, without a box (a link).
 	_variation("TextButton", "Button")
 	var text_pads := Vector4(Palette.TEXT_BUTTON_PAD_X, Palette.TEXT_BUTTON_PAD_Y, Palette.TEXT_BUTTON_PAD_X, Palette.TEXT_BUTTON_PAD_Y)
@@ -495,9 +498,85 @@ func _buttons() -> void:
 		"focus": _ring("text_button_focus", Palette.ACCENT, text_pads),
 	})
 	_colors("TextButton", {"font_color": Palette.TEXT_DIM, "font_pressed_color": Palette.ACCENT, "font_hover_pressed_color": Palette.ACCENT})
+	# The settings screen's buttons. Reset: a MUTE frame and DIM text (the quieter of the two). Back: a TEXT frame
+	# and TEXT text (the stronger); both 40 high.
+	_variation("DimButton", "Button")
+	_colors("DimButton", {"font_color": Palette.TEXT_DIM})
+	_variation("StrongButton", "Button")
+	var strong := Vector4(Palette.STRONG_BUTTON_PAD_X, Palette.BUTTON_PAD_TOP, Palette.STRONG_BUTTON_PAD_X, Palette.BUTTON_PAD_BOTTOM)
+	_styles("StrongButton", {
+		"normal": _box("strong_button_normal", Palette.BUTTON, Palette.TEXT, Palette.BORDER, strong),
+		"hover": _box("strong_button_hover", Palette.BUTTON, Palette.ACCENT, Palette.BORDER, strong),
+		"pressed": _box("strong_button_pressed", Palette.BUTTON_PRESSED, Palette.BUTTON_PRESSED, Palette.BORDER, strong),
+		"hover_pressed": _box("strong_button_hover_pressed", Palette.BUTTON_PRESSED, Palette.BUTTON_PRESSED, Palette.BORDER, strong),
+		"disabled": _box("strong_button_disabled", Palette.BUTTON, Palette.BUTTON_BORDER_DISABLED, Palette.BORDER, strong),
+		"focus": _ring("strong_button_focus", Palette.ACCENT, strong),
+	})
+	# A key slot of the Controls tab (26 high). The first is a key cap: a LINE frame and TEXT text. The second is
+	# plain MUTE text, still a button. The one waiting for a key is filled with the accent, ink text.
+	var cap := Vector4(Palette.KEY_SLOT_PAD_X, Palette.KEY_SLOT_PAD_TOP, Palette.KEY_SLOT_PAD_X, Palette.KEY_SLOT_PAD_BOTTOM)
+	var plain := Vector4(0, Palette.KEY_SLOT_PAD_TOP, 0, Palette.KEY_SLOT_PAD_BOTTOM)
+	var lit := _box("key_slot_lit", Palette.ACCENT, Color.TRANSPARENT, 0, cap)
+	_variation("KeyCapButton", "Button")
+	_styles("KeyCapButton", {
+		"normal": _box("key_cap_button_normal", Palette.BUTTON, Palette.LINE_COLOR, Palette.BORDER, cap),
+		"hover": _box("key_cap_button_hover", Palette.BUTTON, Palette.ACCENT, Palette.BORDER, cap),
+		"pressed": lit, "hover_pressed": lit,
+		"disabled": _box("key_cap_button_disabled", Palette.BUTTON, Palette.BUTTON_BORDER_DISABLED, Palette.BORDER, cap),
+		"focus": _ring("key_cap_button_focus", Palette.ACCENT, cap),
+	})
+	_colors("KeyCapButton", {"font_color": Palette.TEXT, "font_pressed_color": Palette.TEXT_ON_FILL, "font_hover_pressed_color": Palette.TEXT_ON_FILL})
+	_variation("KeySlotButton", "Button")
+	_styles("KeySlotButton", {
+		"normal": _empty("key_slot_button_normal", plain), "hover": _empty("key_slot_button_hover", plain),
+		"pressed": lit, "hover_pressed": lit, "disabled": _empty("key_slot_button_disabled", plain),
+		"focus": _ring("key_slot_button_focus", Palette.ACCENT, plain),
+	})
+	_colors("KeySlotButton", {"font_color": Palette.MUTE, "font_pressed_color": Palette.TEXT_ON_FILL, "font_hover_pressed_color": Palette.TEXT_ON_FILL})
+	_variation("ListeningKeyButton", "KeyCapButton")
+	_styles("ListeningKeyButton", {"normal": lit, "hover": lit, "pressed": lit, "hover_pressed": lit, "focus": lit})
+	_colors("ListeningKeyButton", {
+		"font_color": Palette.TEXT_ON_FILL, "font_hover_color": Palette.TEXT_ON_FILL, "font_focus_color": Palette.TEXT_ON_FILL,
+		"font_pressed_color": Palette.TEXT_ON_FILL, "font_hover_pressed_color": Palette.TEXT_ON_FILL,
+	})
+	# A crosshair colour swatch's cell: nothing at rest, a 2 px frame around the chosen colour in the accent
+	# (the colour itself is a child, inset by SwatchMargin), a MUTE one when hovered.
+	_variation("SwatchButton", "Button")
+	var swatch := _even(0)
+	var swatch_chosen := _ring("swatch_button_chosen", Palette.ACCENT, swatch)
+	_styles("SwatchButton", {
+		"normal": _empty("swatch_button_normal", swatch), "disabled": _empty("swatch_button_disabled", swatch),
+		"hover": _ring("swatch_button_hover", Palette.MUTE, swatch),
+		"pressed": swatch_chosen, "hover_pressed": swatch_chosen, "focus": _ring("swatch_button_focus", Palette.TEXT_DIM, swatch),
+	})
 	# Option buttons and menu buttons share the button look; the arrow is an icon.
 	_icons("OptionButton", {"arrow": "arrow_down"})
 	_constants("OptionButton", {"arrow_margin": Palette.ARROW_GAP, "h_separation": Palette.BUTTON_ICON_GAP})
+
+
+## The looks of a segment of a segmented choice: DIM text with nothing behind, TEXT when hovered,
+## the chosen one (a pressed toggle) filled with TEXT and ink text, the focus underlined in the
+## accent. [param pad_x] is the space either side of its text.
+func _segment_styles(type: String, pad_x: int) -> void:
+	_variation(type, "Button")
+	var prefix := type.to_snake_case()
+	var segment := Vector4(pad_x, Palette.SEGMENT_PAD_TOP, pad_x, Palette.SEGMENT_PAD_BOTTOM)
+	var focus := _box("%s_focus" % prefix, Color.TRANSPARENT, Palette.ACCENT, 0, segment)
+	focus.draw_center = false
+	focus.border_width_bottom = Palette.BORDER
+	_styles(type, {
+		"normal": _empty("%s_normal" % prefix, segment),
+		"hover": _empty("%s_hover" % prefix, segment),
+		"pressed": _box("%s_pressed" % prefix, Palette.TEXT, Color.TRANSPARENT, 0, segment),
+		"hover_pressed": _box("%s_hover_pressed" % prefix, Palette.TEXT, Color.TRANSPARENT, 0, segment),
+		"disabled": _empty("%s_disabled" % prefix, segment),
+		"focus": focus,
+	})
+	_colors(type, {
+		"font_color": Palette.TEXT_DIM, "font_hover_color": Palette.TEXT, "font_focus_color": Palette.TEXT,
+		"font_pressed_color": Palette.TEXT_ON_FILL, "font_hover_pressed_color": Palette.TEXT_ON_FILL,
+		"font_disabled_color": Palette.TEXT_DISABLED,
+	})
 
 
 ## The five looks of an outlined button: a 2 px frame (MUTE at rest, the accent
@@ -622,6 +701,9 @@ func _tabs() -> void:
 	var selected := _box("tab_selected", Color.TRANSPARENT, Palette.ACCENT, 0, margins)
 	selected.border_width_bottom = Palette.TAB_UNDERLINE
 	selected.expand_margin_bottom = Palette.BORDER
+	# The underline is as wide as the word: the tab's side padding (which spaces the words 32 apart) is cut off it.
+	selected.expand_margin_left = -Palette.TAB_PAD_X
+	selected.expand_margin_right = -Palette.TAB_PAD_X
 	var unselected := _empty("tab_unselected", margins)
 	var hovered := _empty("tab_hovered", margins)
 	var disabled := _empty("tab_disabled", margins)
@@ -632,6 +714,8 @@ func _tabs() -> void:
 		var focus := _box("%s_tab_focus" % type.to_snake_case(), Color.TRANSPARENT, Palette.ACCENT, 0, margins)
 		focus.draw_center = false
 		focus.border_width_bottom = Palette.TAB_UNDERLINE
+		focus.expand_margin_left = -Palette.TAB_PAD_X
+		focus.expand_margin_right = -Palette.TAB_PAD_X
 		_styles(type, {
 			"tab_selected": selected, "tab_unselected": unselected, "tab_hovered": hovered,
 			"tab_disabled": disabled, "tab_focus": focus,
@@ -647,7 +731,8 @@ func _tabs() -> void:
 			"increment": "arrow_right", "increment_highlight": "arrow_right_highlight",
 		})
 	_styles("TabContainer", {"panel": page})
-	_constants("TabContainer", {"side_margin": 0})
+	# The first word starts at the page's edge, like the title above it: the tab strip begins one tab padding to its left.
+	_constants("TabContainer", {"side_margin": -Palette.TAB_PAD_X})
 
 
 ## Scroll bars have no arrow buttons: a slim LINE bar in an empty track.

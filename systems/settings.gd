@@ -111,7 +111,7 @@ const SCHEMA := {
 	&"master_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"effects_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"interface_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
-	&"crosshair_color": {"section": "crosshair", "default": Color(0.2, 1.0, 0.2)},
+	&"crosshair_color": {"section": "crosshair", "default": Color("36d07a")},
 	&"crosshair_length": {"section": "crosshair", "default": 7.0, "min": 1.0, "max": 30.0},
 	&"crosshair_gap": {"section": "crosshair", "default": 4.0, "min": 0.0, "max": 20.0},
 	&"crosshair_thickness": {"section": "crosshair", "default": 2.0, "min": 1.0, "max": 8.0},
@@ -228,7 +228,7 @@ var interface_volume: float:
 	get: return _values[&"interface_volume"]
 	set(value): set_value(&"interface_volume", value)
 
-## Crosshair line color (CS green by default); its alpha fades the whole crosshair.
+## Crosshair line color (the mockup's green, #36D07A, by default); its alpha fades the whole crosshair.
 var crosshair_color: Color:
 	get: return _values[&"crosshair_color"]
 	set(value): set_value(&"crosshair_color", value)

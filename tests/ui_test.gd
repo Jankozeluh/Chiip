@@ -71,6 +71,10 @@ const VARIATIONS := {
 	"FriendlyScoreLabel": "Label", "EnemyScoreLabel": "Label", "VictoryLabel": "Label", "DefeatLabel": "Label",
 	"ConsoleLabel": "Label", "ConsoleLineEdit": "LineEdit", "SwatchRow": "HBoxContainer", "SwatchMargin": "MarginContainer",
 	"BackdropPanel": "Panel",
+	# M10 task 10 (D-137): the settings screen's roles.
+	"SettingsColumn": "VBoxContainer", "FlushRow": "HBoxContainer", "StackBox": "VBoxContainer", "GroupBox": "VBoxContainer",
+	"TableRowPanel": "PanelContainer", "WideSegmentButton": "Button", "KeyCapButton": "Button", "KeySlotButton": "Button",
+	"ListeningKeyButton": "KeyCapButton", "StrongButton": "Button", "DimButton": "Button", "SwatchButton": "Button",
 }
 ## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -118,6 +122,7 @@ func _ready() -> void:
 	_test_variations()
 	_test_tokens()
 	_test_new_roles()
+	_test_settings_roles()
 	_test_restyle_roles()
 	_test_icon_slots()
 	_test_scaled_theme()
@@ -132,6 +137,7 @@ func _ready() -> void:
 	await _test_debug_overlay()
 	_test_menu_state()
 	await _test_settings_menu_building()
+	await _test_settings_menu_look()
 	await _test_settings_menu_controls()
 	await _test_crosshair_preview()
 	await _test_rebinding()
@@ -329,6 +335,83 @@ func _test_new_roles() -> void:
 			_theme.get_color("friendly_text", "Palette") == Tokens.FRIENDLY
 					and _theme.get_color("enemy_text", "Palette") == Tokens.ENEMY,
 			"friendly %s, enemy %s" % [_theme.get_color("friendly_text", "Palette"), _theme.get_color("enemy_text", "Palette")])
+	remove_child(holder)
+	holder.queue_free()
+
+
+## The roles the settings screen is built from (M10 task 10, D-137) take their tokens: the spacing of its column,
+## rows and groups, the wide segments, the Back and Reset buttons, the key slots (a cap, plain text, listening), the
+## table row's line, the swatch's frame, and the tab strip the mockup draws (the underline as wide as the word).
+func _test_settings_roles() -> void:
+	var holder := Control.new()
+	add_child(holder)
+	var column := _variation_node(VBoxContainer.new(), "SettingsColumn", holder)
+	var flush := _variation_node(HBoxContainer.new(), "FlushRow", holder)
+	var stack := _variation_node(VBoxContainer.new(), "StackBox", holder)
+	var group := _variation_node(VBoxContainer.new(), "GroupBox", holder)
+	_check("The settings screen's spacing roles take their tokens: its column 24 apart, rows whose parts sit edge to edge, rows that touch, and a group 16 apart",
+			column.get_theme_constant("separation") == Tokens.SETTINGS_GAP and flush.get_theme_constant("separation") == Tokens.FLUSH_GAP
+					and stack.get_theme_constant("separation") == Tokens.STACK_GAP and group.get_theme_constant("separation") == Tokens.GROUP_GAP,
+			"column %d, flush %d, stack %d, group %d" % [column.get_theme_constant("separation"), flush.get_theme_constant("separation"),
+					stack.get_theme_constant("separation"), group.get_theme_constant("separation")])
+	var segment := _variation_node(Button.new(), "SegmentButton", holder)
+	var wide := _variation_node(Button.new(), "WideSegmentButton", holder)
+	var wide_pressed := wide.get_theme_stylebox("pressed") as StyleBoxFlat
+	_check("The wide segment is the Play screen's segment with 16 px either side instead of 12: the same chosen fill (TEXT) and text colours",
+			segment.get_theme_stylebox("normal").content_margin_left == Tokens.SEGMENT_PAD_X and wide.get_theme_stylebox("normal").content_margin_left == Tokens.SEGMENT_WIDE_PAD_X
+					and wide.get_theme_stylebox("normal").content_margin_top == Tokens.SEGMENT_PAD_TOP and wide_pressed.bg_color == Tokens.TEXT
+					and wide.get_theme_color("font_color") == Tokens.TEXT_DIM and wide.get_theme_color("font_pressed_color") == Tokens.TEXT_ON_FILL,
+			"padding %s / %s, chosen fill %s" % [segment.get_theme_stylebox("normal").content_margin_left, wide.get_theme_stylebox("normal").content_margin_left, wide_pressed.bg_color])
+	var dim := _variation_node(Button.new(), "DimButton", holder)
+	var strong := _variation_node(Button.new(), "StrongButton", holder)
+	var strong_normal := strong.get_theme_stylebox("normal") as StyleBoxFlat
+	var plain := Button.new()
+	holder.add_child(plain)
+	_check("The Reset button is the plain button (a MUTE frame) with DIM text and the Back button has a TEXT frame, TEXT text and 24 px either side; both are 40 high",
+			dim.get_theme_color("font_color") == Tokens.TEXT_DIM and (dim.get_theme_stylebox("normal") as StyleBoxFlat).border_color == Tokens.BUTTON_BORDER
+					and strong_normal.border_color == Tokens.TEXT and strong_normal.border_width_left == Tokens.BORDER
+					and strong_normal.content_margin_left == Tokens.STRONG_BUTTON_PAD_X and strong.get_theme_color("font_color") == Tokens.TEXT
+					and strong_normal.content_margin_top + strong_normal.content_margin_bottom == Tokens.BUTTON_PAD_TOP + Tokens.BUTTON_PAD_BOTTOM,
+			"reset text %s, back frame %s, back padding %s" % [dim.get_theme_color("font_color"), strong_normal.border_color, strong_normal.content_margin_left])
+	var cap := _variation_node(Button.new(), "KeyCapButton", holder)
+	var slot := _variation_node(Button.new(), "KeySlotButton", holder)
+	var listening := _variation_node(Button.new(), "ListeningKeyButton", holder)
+	var cap_normal := cap.get_theme_stylebox("normal") as StyleBoxFlat
+	var listening_normal := listening.get_theme_stylebox("normal") as StyleBoxFlat
+	_check("A key slot is 26 high (1 + 21 + 4 px with the line box): the first a key cap (a LINE frame, TEXT text, 10 px either side), the second plain MUTE text with no box, the one waiting for a key filled with the accent in ink text",
+			cap_normal.border_color == Tokens.LINE_COLOR and cap_normal.border_width_top == Tokens.BORDER and cap.get_theme_color("font_color") == Tokens.TEXT
+					and cap_normal.content_margin_left == Tokens.KEY_SLOT_PAD_X
+					and cap_normal.content_margin_top + cap_normal.content_margin_bottom + _theme.default_font.get_height(Tokens.TEXT_SIZE) == 26.0
+					and slot.get_theme_stylebox("normal") is StyleBoxEmpty and slot.get_theme_color("font_color") == Tokens.MUTE
+					and listening_normal.bg_color == Tokens.ACCENT and listening.get_theme_color("font_color") == Tokens.TEXT_ON_FILL
+					and (listening.get_theme_stylebox("hover") as StyleBoxFlat).bg_color == Tokens.ACCENT,
+			"cap frame %s, slot text %s, listening fill %s" % [cap_normal.border_color, slot.get_theme_color("font_color"), listening_normal.bg_color])
+	var row := _variation_node(PanelContainer.new(), "TableRowPanel", holder)
+	var row_box := row.get_theme_stylebox("panel") as StyleBoxFlat
+	var swatch := _variation_node(Button.new(), "SwatchButton", holder)
+	var swatch_margin := _variation_node(MarginContainer.new(), "SwatchMargin", holder)
+	_check("A table row has a %d px PANEL line along its top and nothing else; a swatch's cell draws nothing at rest and a %d px accent frame around the chosen colour, with the colour inset by the gap and the frame (%d px)" % [Tokens.LINE, Tokens.BORDER, Tokens.SWATCH_MARGIN],
+			row_box.border_width_top == Tokens.LINE and row_box.border_width_bottom == 0 and row_box.border_width_left == 0
+					and row_box.border_color == Tokens.PANEL_OPAQUE and row_box.bg_color.a == 0.0
+					and swatch.get_theme_stylebox("normal") is StyleBoxEmpty and (swatch.get_theme_stylebox("pressed") as StyleBoxFlat).border_color == Tokens.ACCENT
+					and (swatch.get_theme_stylebox("pressed") as StyleBoxFlat).draw_center == false
+					and swatch_margin.get_theme_constant("margin_left") == Tokens.SWATCH_MARGIN,
+			"row line %s %d px, swatch chosen %s" % [row_box.border_color, row_box.border_width_top, (swatch.get_theme_stylebox("pressed") as StyleBoxFlat).border_color])
+	var tabs := TabContainer.new()
+	holder.add_child(tabs)
+	var tab_selected := tabs.get_theme_stylebox("tab_selected") as StyleBoxFlat
+	var line_page := tabs.get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The tab strip is the mockup's: 8 above the text and 14 below (12 plus the part of the underline above the line), the underline 4 px in the accent and as wide as the word (the side padding is cut off it), the line under all tabs 2 px LINE, the page's padding putting the first row at y = 176, and the strip starting one padding left of the page so the first word is at its edge",
+			tab_selected.content_margin_top == Tokens.TAB_PAD_TOP and tab_selected.content_margin_bottom == Tokens.TAB_PAD_BOTTOM
+					and tab_selected.border_width_bottom == Tokens.TAB_UNDERLINE and tab_selected.expand_margin_bottom == Tokens.BORDER
+					and tab_selected.expand_margin_left == -Tokens.TAB_PAD_X and tab_selected.expand_margin_right == -Tokens.TAB_PAD_X
+					and line_page.border_width_top == Tokens.LINE and line_page.border_color == Tokens.LINE_COLOR
+					and line_page.content_margin_top == Tokens.TAB_PAGE_PAD_TOP
+					and tabs.get_theme_constant("side_margin") == -Tokens.TAB_PAD_X
+					and 104 + Tokens.TAB_PAD_TOP + _theme.default_font.get_height(Tokens.TEXT_SIZE) + Tokens.TAB_PAD_BOTTOM + Tokens.TAB_PAGE_PAD_TOP == 176,
+			"underline %d, expand %s / %s, page padding %s, strip ends at %d" % [tab_selected.border_width_bottom, tab_selected.expand_margin_left,
+					tab_selected.expand_margin_right, line_page.content_margin_top,
+					104 + Tokens.TAB_PAD_TOP + _theme.default_font.get_height(Tokens.TEXT_SIZE) + Tokens.TAB_PAD_BOTTOM])
 	remove_child(holder)
 	holder.queue_free()
 
@@ -1034,27 +1117,36 @@ func _test_settings_menu_building() -> void:
 	var menu := await _new_menu()
 	var uncovered: Array[StringName] = []
 	for key: StringName in Settings.SCHEMA:
-		var has_control := menu.get_slider(key) != null or menu.get_check(key) != null or menu.get_option(key) != null
+		var has_control := menu.get_slider(key) != null or not menu.get_toggle(key).is_empty() or not menu.get_option(key).is_empty()
 		# The [match] section is match setup's, not the settings menu's.
 		if not has_control and key != &"crosshair_color" and Settings.SCHEMA[key]["section"] != "match":
 			uncovered.append(key)
-	var panel := menu.get_node("Panel") as PanelContainer
-	var title := menu.get_node("Panel/Margin/Content/Title") as Label
-	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Crosshair and Controls, on a themed panel",
+	var background := menu.get_node("Background") as Panel
+	var page := menu.get_node("Page") as MarginContainer
+	var title := menu.get_node("Page/Column/TitleBox/Title") as Label
+	_check("The settings menu is hidden until opened and builds the tabs Game, Video, Audio, Crosshair and Controls on a full ink page (a click-stopping InkPanel, the page margin) under a 48 px title",
 			not menu.visible and menu.get_tab_names() == ["Game", "Video", "Audio", "Crosshair", "Controls"]
-					and panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel" and title.text == "Settings",
-			"visible %s, tabs %s" % [menu.visible, menu.get_tab_names()])
-	_check("Every setting has a control: sliders with number fields (sensitivity, FOV, volumes, crosshair sizes and opacity), check boxes, option buttons for the frame limit and pixel resolution, and color swatches with a hex field",
+					and background.theme_type_variation == &"InkPanel" and background.mouse_filter == Control.MOUSE_FILTER_STOP
+					and page.theme_type_variation == &"PageMargin" and page.get_theme_constant("margin_left") == Tokens.PAGE_MARGIN_X
+					and title.theme_type_variation == &"TitleLabel" and title.text == "Settings"
+					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE,
+			"visible %s, tabs %s, background '%s', page '%s', title '%s' %d px" % [menu.visible, menu.get_tab_names(),
+					background.theme_type_variation, page.theme_type_variation, title.text, title.get_theme_font_size("font_size")])
+	var fps_texts := _texts(menu.get_option(&"fps_cap"))
+	var pixel_slider := menu.get_slider(&"pixel_height")
+	_check("Every setting has a control: sliders with value boxes (sensitivity, FOV, the volumes, the pixel resolution over its %d steps), sliders with plain numbers on the Crosshair tab, OFF / ON segments for the yes / no settings, segments for the frame limit (60, 120, 144, 240, None) and colour swatches with a hex field" % Settings.PIXEL_HEIGHTS.size(),
 			uncovered.is_empty() and menu.get_swatches().size() == SettingsMenu.CROSSHAIR_COLORS.size() and menu.get_hex_field() != null
-					and menu.get_slider(&"crosshair_opacity") != null and menu.get_option(&"fps_cap").item_count == Settings.FPS_CAPS.size()
-					and menu.get_option(&"pixel_height").item_count == Settings.PIXEL_HEIGHTS.size(),
-			"settings without a control: %s, %d swatches, %d frame limits, %d resolutions" % [
-					uncovered, menu.get_swatches().size(), menu.get_option(&"fps_cap").item_count, menu.get_option(&"pixel_height").item_count])
+					and menu.get_slider(&"crosshair_opacity") != null and menu.get_field(&"crosshair_opacity") == null
+					and menu.get_field(&"sensitivity") != null and menu.get_field(&"master_volume") != null and menu.get_field(&"pixel_height") != null
+					and fps_texts == ["60", "120", "144", "240", "None"] and menu.get_toggle(&"fullscreen").size() == 2
+					and pixel_slider.min_value == 0.0 and pixel_slider.max_value == Settings.PIXEL_HEIGHTS.size() - 1,
+			"settings without a control: %s, %d swatches, frame limits %s, pixel slider 0..%s" % [
+					uncovered, menu.get_swatches().size(), fps_texts, pixel_slider.max_value])
 	var unnamed: Array[StringName] = []
 	var wrong_text: Array[String] = []
 	for action: StringName in Settings.BINDABLE_ACTIONS:
-		var label := menu.get_binding_button(action, 0).get_parent().get_child(0) as Label
-		if not SettingsMenu.ACTION_NAMES.has(action) or label.text != SettingsMenu.ACTION_NAMES[action] or label.text.contains("_"):
+		var label := menu.get_action_label(action)
+		if not SettingsMenu.ACTION_NAMES.has(action) or label == null or label.text != SettingsMenu.ACTION_NAMES[action] or label.text.contains("_"):
 			unnamed.append(action)
 		for slot in Settings.BINDING_SLOTS:
 			if menu.get_binding_button(action, slot) == null:
@@ -1063,10 +1155,106 @@ func _test_settings_menu_building() -> void:
 	var jump := [menu.get_binding_button(&"jump", 0).text, menu.get_binding_button(&"jump", 1).text]
 	var shoot := menu.get_binding_button(&"shoot", 0).text
 	var console_key := menu.get_binding_button(&"toggle_console", 0).text
-	_check("The Controls tab has a row per bindable action (all 13) with a readable name and two slots that show the keys: W and an empty slot, Space and Wheel Down, Left Mouse, ` for the console",
+	_check("The Controls tab has a row per bindable action (all %d) with a readable name and two slots that show the keys: W and an empty slot, Space and Wheel Down, Left Mouse, ` for the console" % Settings.BINDABLE_ACTIONS.size(),
 			unnamed.is_empty() and wrong_text.is_empty() and forward == ["W", SettingsMenu.EMPTY_SLOT_TEXT] and jump == ["Space", "Wheel Down"]
 					and shoot == "Left Mouse" and console_key == "`",
 			"unnamed %s, forward %s, jump %s, shoot '%s', console '%s'" % [unnamed, forward, jump, shoot, console_key])
+	_free_menu(menu)
+
+
+## The settings screen has the mockup's structure (D-137), in design pixels: rows 48 high with a 400 px label and
+## controls after it, a slider group 480 px wide with an 80 × 32 value box, OFF / ON segments, the Crosshair tab's
+## 240 px labels, 28 px swatches and two 240 px squares, the Controls table's header and 34 px rows with a
+## key cap and plain text, and the footer's two buttons; every look is a theme role.
+func _test_settings_menu_look() -> void:
+	var menu := await _new_menu()
+	var row := menu.get_row(&"sensitivity")
+	var label := row.get_child(0) as Label
+	var group := menu.get_slider(&"sensitivity").get_parent() as HBoxContainer
+	var box := menu.get_field(&"sensitivity")
+	var pixel_box := menu.get_field(&"pixel_height")
+	_check("A slider row is 48 high: a 400 px DimLabel, then a 480 px group with the slider (which fills the room) and an 80 × 32 value box with centred text, 16 px apart; the pixel resolution's box is 112 wide and reads '480 L'",
+			row.theme_type_variation == &"FlushRow" and row.custom_minimum_size.y == 48.0 and row.get_combined_minimum_size() == Vector2(880, 48)
+					and label.theme_type_variation == &"DimLabel" and label.custom_minimum_size.x == 400.0
+					and group.theme_type_variation == &"RowBox" and group.custom_minimum_size.x == 480.0
+					and menu.get_slider(&"sensitivity").size_flags_horizontal & Control.SIZE_EXPAND == Control.SIZE_EXPAND
+					and box.custom_minimum_size.x == 80.0 and box.get_combined_minimum_size().y == 32.0 and box.alignment == HORIZONTAL_ALIGNMENT_CENTER
+					and pixel_box.custom_minimum_size.x == 112.0 and pixel_box.text == "480 L",
+			"row %s, label %s, group %s, box %s / %s, pixel box '%s' %s" % [row.get_combined_minimum_size(), label.custom_minimum_size.x,
+					group.custom_minimum_size.x, box.custom_minimum_size.x, box.get_combined_minimum_size().y, pixel_box.text, pixel_box.custom_minimum_size.x])
+	var off_on := menu.get_toggle(&"invert_y")
+	var frame := off_on[0].get_parent().get_parent() as PanelContainer
+	var fps := menu.get_option(&"fps_cap")
+	var one_group := true
+	for button in off_on:
+		one_group = one_group and button.toggle_mode and button.theme_type_variation == &"WideSegmentButton" and button.button_group == off_on[0].button_group
+	for button in fps:
+		one_group = one_group and button.button_group == fps[0].button_group
+	_check("A yes / no setting is OFF / ON segments, not a check box: a SegmentFrame around two toggle buttons of the wide segment role in one button group, OFF chosen by default; the frame limit is five segments with None last",
+			frame.theme_type_variation == &"SegmentFrame" and off_on[0].text == "Off" and off_on[1].text == "On" and one_group
+					and off_on[0].button_pressed and not off_on[1].button_pressed and off_on[0].get_parent().theme_type_variation == &"SegmentRow"
+					and fps.size() == 5 and fps[4].text == "None"
+					and fps[4].button_pressed and menu.get_custom_segment(&"fps_cap") != null and not menu.get_custom_segment(&"fps_cap").visible,
+			"frame '%s', texts %s / %s, frame limit %s" % [frame.theme_type_variation, off_on[0].text, off_on[1].text, _texts(fps)])
+	var swatches := menu.get_swatches()
+	var colours: Array[Color] = []
+	for swatch in swatches:
+		colours.append(((swatch.get_child(0) as MarginContainer).get_child(0) as ColorRect).color)
+	var crosshair_label := menu.get_row(&"crosshair_gap").get_child(0) as Label
+	var crosshair_group := menu.get_slider(&"crosshair_gap").get_parent() as Control
+	var number := menu.get_slider(&"crosshair_gap").get_parent().get_child(1) as Label
+	var cells_ok := true
+	for swatch in swatches:
+		cells_ok = cells_ok and swatch.theme_type_variation == &"SwatchButton" and swatch.custom_minimum_size == Vector2(36, 36)
+	_check("The Crosshair tab: five swatches in the mockup's colours (#36D07A, #FFFFFF, #FFE14A, #FF5AD1, #48F0E0), each a 28 px colour in a 36 px cell, the chosen one framed by the theme; opacity, size, gap and thickness have 240 px labels and a group that takes the rest of the 640 px column (400 px) and ends in a plain right-aligned 48 px number (no box)",
+			swatches.size() == 5 and colours == [Color("36d07a"), Color("ffffff"), Color("ffe14a"), Color("ff5ad1"), Color("48f0e0")] and cells_ok
+					and swatches[0].button_pressed and not swatches[1].button_pressed
+					and crosshair_label.custom_minimum_size.x == 240.0 and crosshair_group.size_flags_horizontal & Control.SIZE_EXPAND != 0
+					and number.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT and number.custom_minimum_size.x == 48.0 and number.text == "4"
+					and menu.get_field(&"crosshair_gap") == null and menu.get_value_text(&"crosshair_gap") == "4",
+			"colours %s, label %s, group flags %s, number '%s' %s" % [colours, crosshair_label.custom_minimum_size.x, crosshair_group.size_flags_horizontal, number.text, number.horizontal_alignment])
+	var previews := menu.get_previews()
+	var samples: Array[Control] = []
+	var fills: Array[Color] = []
+	for preview in previews:
+		samples.append(preview.get_parent() as Control)
+		fills.append(((preview.get_parent() as Control).get_child(0) as ColorRect).color)
+	var side_by_side := samples[0].get_parent() == samples[1].get_parent() and samples[0].get_index() + 1 == samples[1].get_index()
+	var squares_ok := true
+	for sample in samples:
+		squares_ok = squares_ok and sample.custom_minimum_size == Vector2(240, 240) and sample.clip_contents
+	for preview in previews:
+		squares_ok = squares_ok and preview.get_script() == load("res://ui/crosshair.gd") and preview.anchor_right == 1.0 and preview.anchor_bottom == 1.0
+	_check("Two preview squares side by side, 240 × 240, dark #23272A and light #C9D0D2, each with a real Crosshair filling it (so it is drawn centred), and a MUTE caption 'Live preview · dark / light' under them",
+			previews.size() == 2 and squares_ok and fills[0].is_equal_approx(Color("23272a")) and fills[1].is_equal_approx(Color("c9d0d2")) and side_by_side,
+			"%d previews, squares ok %s, fills %s" % [previews.size(), squares_ok, fills])
+	var caption := samples[0].get_parent().get_parent().get_child(1) as Label
+	_check("The caption reads 'Live preview · dark / light' in the MUTE role",
+			caption.text == "Live preview · dark / light" and caption.theme_type_variation == &"MuteLabel", "'%s' %s" % [caption.text, caption.theme_type_variation])
+	var jump_label := menu.get_action_label(&"jump")
+	var jump_row := jump_label.get_parent().get_parent() as PanelContainer
+	var cap := menu.get_binding_button(&"jump", 0)
+	var plain := menu.get_binding_button(&"jump", 1)
+	var empty := menu.get_binding_button(&"move_forward", 1)
+	var header := menu.get_node("Page/Column/Tabs/Controls/Header") as Control
+	var header_muted := true
+	for index in 3:
+		header_muted = header_muted and (header.get_child(index) as Label).theme_type_variation == &"MuteLabel"
+	_check("The Controls table: a header row ACTION / KEY 1 / KEY 2 in MUTE (32 high, 240 px key columns), rows 34 high with a 2 px line on top in a table-row panel, the action in DIM, key 1 as a key cap, key 2 as plain text, an empty slot as '-'",
+			(header.get_child(0) as Label).text == "Action" and (header.get_child(1) as Label).text == "Key 1" and (header.get_child(2) as Label).text == "Key 2"
+					and header_muted and header.custom_minimum_size.y == 32.0 and (header.get_child(1) as Control).custom_minimum_size.x == 240.0
+					and jump_row.theme_type_variation == &"TableRowPanel" and jump_row.custom_minimum_size.y == 34.0
+					and jump_label.theme_type_variation == &"DimLabel" and cap.theme_type_variation == &"KeyCapButton"
+					and plain.theme_type_variation == &"KeySlotButton" and plain.text == "Wheel Down" and empty.text == "-"
+					and cap.get_parent().custom_minimum_size.x == 240.0 and plain.get_parent().custom_minimum_size.x == 240.0,
+			"header %s, row %s, caps '%s' / '%s', empty '%s'" % [(header.get_child(1) as Label).text, jump_row.theme_type_variation, cap.theme_type_variation, plain.theme_type_variation, empty.text])
+	var reset := menu.get_reset_button()
+	var back := menu.get_back_button()
+	_check("The footer has 'Reset tab to defaults' (the DIM-text, MUTE-frame button) on the left and 'Back' (the TEXT-framed one) on the right, both 40 high",
+			reset.text == "Reset tab to defaults" and reset.theme_type_variation == &"DimButton" and back.text == "Back" and back.theme_type_variation == &"StrongButton"
+					and reset.get_combined_minimum_size().y == 40.0 and back.get_combined_minimum_size().y == 40.0
+					and reset.get_index() < back.get_index() and reset.get_parent() == back.get_parent(),
+			"reset '%s' %s %s px, back '%s' %s %s px" % [reset.text, reset.theme_type_variation, reset.get_combined_minimum_size().y, back.text, back.theme_type_variation, back.get_combined_minimum_size().y])
 	_free_menu(menu)
 
 
@@ -1084,130 +1272,136 @@ func _test_settings_menu_controls() -> void:
 	var clamped := settings.sensitivity == 10.0 and slider.value == 10.0 and field.text == "10.00"
 	field.text_submitted.emit("fast")
 	var refused := settings.sensitivity == 10.0 and field.text == "10.00"
-	_check("Sensitivity: the slider and the number field write to Settings and agree (2.50 from the slider, 1.25 typed with a comma, 99 clamped to 10.00, text that is no number put back)",
+	_check("Sensitivity: the slider and the value box write to Settings and agree (2.50 from the slider, 1.25 typed with a comma, 99 clamped to 10.00, text that is no number put back)",
 			by_slider and by_field and clamped and refused,
 			"slider %s, field %s, clamped %s, refused %s" % [by_slider, by_field, clamped, refused])
-	var invert := menu.get_check(&"invert_y")
-	invert.button_pressed = true
-	var invert_on := settings.invert_y
+	var invert := menu.get_toggle(&"invert_y")
+	invert[1].button_pressed = true
+	var invert_on := settings.invert_y and invert[1].button_pressed and not invert[0].button_pressed
+	invert[0].button_pressed = true
+	var invert_off := not settings.invert_y and invert[0].button_pressed and not invert[1].button_pressed
 	var fps := menu.get_option(&"fps_cap")
-	fps.item_selected.emit(fps.get_item_index(144))
-	var fps_144 := settings.fps_cap == 144 and Engine.max_fps == 144 and fps.get_item_text(fps.selected) == "144 fps"
-	fps.item_selected.emit(fps.get_item_index(0))
-	var fps_unlimited := settings.fps_cap == 0 and fps.get_item_text(fps.selected) == "Unlimited"
-	var pixels := menu.get_option(&"pixel_height")
-	pixels.item_selected.emit(pixels.get_item_index(360))
-	var pixels_360 := settings.pixel_height == 360 and pixels.get_item_text(pixels.selected) == "360 lines"
-	_check("A check box and the option buttons write to Settings: invert Y, a frame limit of 144 (which reaches the engine) and back to unlimited, 360 lines",
-			invert_on and fps_144 and fps_unlimited and pixels_360,
-			"invert %s, 144 %s, unlimited %s, 360 lines %s" % [invert_on, fps_144, fps_unlimited, pixels_360])
+	fps[2].button_pressed = true
+	var fps_144 := settings.fps_cap == 144 and Engine.max_fps == 144 and fps[2].button_pressed and not fps[4].button_pressed and fps[2].text == "144"
+	fps[4].button_pressed = true
+	var fps_unlimited := settings.fps_cap == 0 and fps[4].button_pressed and not fps[2].button_pressed and fps[4].text == "None"
+	var pixels := menu.get_slider(&"pixel_height")
+	var pixel_box := menu.get_field(&"pixel_height")
+	pixels.value = Settings.PIXEL_HEIGHTS.find(360)
+	var pixels_360 := settings.pixel_height == 360 and pixel_box.text == "360 L"
+	pixel_box.text_submitted.emit("540")
+	var pixels_typed := settings.pixel_height == 540 and pixels.value == Settings.PIXEL_HEIGHTS.find(540) and pixel_box.text == "540 L"
+	pixel_box.text_submitted.emit("500")
+	var pixels_snapped := settings.pixel_height == 480
+	_check("OFF / ON segments, the frame-limit segments and the pixel-resolution slider write to Settings: invert Y on and off (one lit at a time), a frame limit of 144 (which reaches the engine) and None, 360 L from the slider, 540 typed, and 500 typed snaps to the nearest real step (480)",
+			invert_on and invert_off and fps_144 and fps_unlimited and pixels_360 and pixels_typed and pixels_snapped,
+			"invert on %s, off %s, 144 %s, none %s, 360 L %s, 540 typed %s, snapped to %d" % [invert_on, invert_off, fps_144, fps_unlimited, pixels_360, pixels_typed, settings.pixel_height])
 	var volume := menu.get_slider(&"master_volume")
 	var volume_field := menu.get_field(&"master_volume")
 	volume.value = 0.5
-	var half := is_equal_approx(settings.master_volume, 0.5) and volume_field.text == "50%"
+	var half := is_equal_approx(settings.master_volume, 0.5) and volume_field.text == "50"
 	volume_field.text_submitted.emit("25%")
-	var quarter := is_equal_approx(settings.master_volume, 0.25) and is_equal_approx(volume.value, 0.25) and volume_field.text == "25%" \
+	var quarter := is_equal_approx(settings.master_volume, 0.25) and is_equal_approx(volume.value, 0.25) and volume_field.text == "25" \
 			and is_equal_approx(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(Settings.BUS_MASTER)), linear_to_db(0.25))
-	_check("A volume slider is a percentage: 0.5 reads 50%, typing 25% sets 0.25 on the slider, the setting and the audio bus",
+	_check("A volume slider is a percentage: 0.5 reads 50, typing 25% sets 0.25 on the slider, the setting and the audio bus",
 			half and quarter, "half %s, quarter %s, master %.2f" % [half, quarter, settings.master_volume])
 	settings.master_volume = 0.29
-	var rounded := volume_field.text == "29%"
+	var rounded := volume_field.text == "29"
 	settings.crosshair_color = Color(0.2, 1.0, 0.2, 0.9)
-	var opacity_field := menu.get_field(&"crosshair_opacity")
-	rounded = rounded and opacity_field.text == "90%"
-	_check("A whole-number field rounds instead of cutting the decimals off: a volume of 0.29 reads 29% (not 28%) and an opacity of 0.9 reads 90%",
-			rounded, "volume '%s', opacity '%s'" % [volume_field.text, opacity_field.text])
+	rounded = rounded and menu.get_value_text(&"crosshair_opacity") == "90"
+	_check("A whole-number field rounds instead of cutting the decimals off: a volume of 0.29 reads 29 (not 28) and an opacity of 0.9 reads 90",
+			rounded, "volume '%s', opacity '%s'" % [volume_field.text, menu.get_value_text(&"crosshair_opacity")])
 	settings.reset_to_defaults()
 	# The other direction: the settings change, the controls follow.
 	var console := CONSOLE_SCENE.instantiate() as DevConsole
 	add_child(console)
+	var custom := menu.get_custom_segment(&"fps_cap")
 	settings.sensitivity = 2.25
 	settings.invert_y = true
 	settings.fps_cap = 75
-	var custom_text := fps.get_item_text(fps.selected)
-	var custom_items := fps.item_count
+	var custom_text := custom.text
+	var custom_shown := custom.visible and custom.button_pressed and not fps.any(func(button: Button) -> bool: return button.button_pressed)
 	settings.fps_cap = 60
+	var custom_gone := not custom.visible and fps[0].button_pressed
 	settings.pixel_height = 270
 	settings.master_volume = 0.3
-	settings.crosshair_color = Color(1.0, 0.2, 0.2, 0.5)
+	settings.crosshair_color = Color("ff5ad1")
 	var hex := menu.get_hex_field()
-	_check("A change to Settings updates the controls: sensitivity (slider and field), invert Y, a hand-set frame limit of 75 shown as '75 fps (custom)' and gone again, 270 lines, 30%, and the crosshair color (swatch, hex code and opacity)",
-			is_equal_approx(slider.value, 2.25) and field.text == "2.25" and invert.button_pressed
-					and custom_text == "75 fps (custom)" and custom_items == Settings.FPS_CAPS.size() + 1
-					and fps.get_item_text(fps.selected) == "60 fps" and fps.item_count == Settings.FPS_CAPS.size()
-					and pixels.get_item_text(pixels.selected) == "270 lines" and volume_field.text == "30%"
-					and menu.get_swatches()[3].button_pressed and not menu.get_swatches()[0].button_pressed and hex.text == "#FF3333"
-					and menu.get_field(&"crosshair_opacity").text == "50%" and is_equal_approx(menu.get_slider(&"crosshair_opacity").value, 0.5),
-			"sensitivity %s / '%s', frame limit '%s' (%d items), hex '%s'" % [slider.value, field.text, custom_text, custom_items, hex.text])
+	_check("A change to Settings updates the controls: sensitivity (slider and box), invert Y, a hand-set frame limit of 75 shown as its own '75 (custom)' segment and gone again, 270 L, 30, and the crosshair colour (swatch, hex code and opacity)",
+			is_equal_approx(slider.value, 2.25) and field.text == "2.25" and invert[1].button_pressed and not invert[0].button_pressed
+					and custom_text == "75 (custom)" and custom_shown and custom_gone
+					and pixels.value == 0.0 and pixel_box.text == "270 L" and volume_field.text == "30"
+					and menu.get_swatches()[3].button_pressed and not menu.get_swatches()[0].button_pressed and hex.text == "#FF5AD1"
+					and menu.get_value_text(&"crosshair_opacity") == "100" and is_equal_approx(menu.get_slider(&"crosshair_opacity").value, 1.0),
+			"sensitivity %s / '%s', frame limit '%s' shown %s gone %s, hex '%s'" % [slider.value, field.text, custom_text, custom_shown, custom_gone, hex.text])
 	console.run("sensitivity 3")
-	_check("A console command changes the sensitivity while the menu exists and the slider and field move with it",
+	_check("A console command changes the sensitivity while the menu exists and the slider and box move with it",
 			is_equal_approx(slider.value, 3.0) and field.text == "3.00", "slider %s, field '%s'" % [slider.value, field.text])
 	# Opening the menu reads everything again.
 	slider.set_value_no_signal(9.0)
 	field.text = "junk"
-	invert.set_pressed_no_signal(false)
+	invert[1].set_pressed_no_signal(false)
+	invert[0].set_pressed_no_signal(true)
 	menu.open()
-	_check("Opening the menu reads every value from Settings again (a slider, a field and a check box that had drifted are right)",
-			is_equal_approx(slider.value, 3.0) and field.text == "3.00" and invert.button_pressed,
-			"slider %s, field '%s', invert %s" % [slider.value, field.text, invert.button_pressed])
+	_check("Opening the menu reads every value from Settings again (a slider, a box and a segment that had drifted are right)",
+			is_equal_approx(slider.value, 3.0) and field.text == "3.00" and invert[1].button_pressed and not invert[0].button_pressed,
+			"slider %s, field '%s', invert on %s" % [slider.value, field.text, invert[1].button_pressed])
 	menu.close()
 	console.queue_free()
 	_free_menu(menu)
 	settings.reset_to_defaults()
 
 
-## The live crosshair preview is a real Crosshair that follows the settings.
+## The live crosshair previews are real Crosshairs that follow the settings.
 func _test_crosshair_preview() -> void:
 	var settings := Settings.get_instance()
 	var menu := await _new_menu()
+	var previews := menu.get_previews()
 	var preview := menu.get_preview()
-	var sample := preview.get_parent()
-	var patches: Array[Color] = []
-	for child in sample.get_children():
-		if child is ColorRect:
-			patches.append((child as ColorRect).color)
-	var contrast := patches.size() == 2 and absf(patches[0].get_luminance() - patches[1].get_luminance()) > 0.5
-	_check("The preview is a real Crosshair control on a sample with a dark and a light patch, showing the current style (green, 7 px lines, gap 4, thickness 2, outlined)",
-			preview.get_script() == load("res://ui/crosshair.gd") and contrast and preview.color.is_equal_approx(Color(0.2, 1.0, 0.2))
-					and preview.length == 7.0 and preview.gap == 4.0 and preview.thickness == 2.0 and preview.outline and not preview.dot and not preview.dynamic,
-			"%d patches, color %s, length %s, gap %s" % [patches.size(), preview.color, preview.length, preview.gap])
+	_check("Both previews show the current style (the mockup's green, 7 px lines, gap 4, thickness 2, outlined) and the first one is the dark square's",
+			previews.size() == 2 and preview == previews[0] and previews.all(_is_default_crosshair),
+			"%d previews, color %s, length %s, gap %s" % [previews.size(), preview.color, preview.length, preview.gap])
 	menu.get_swatches()[3].pressed.emit()
-	var red := preview.color.is_equal_approx(Color(1.0, 0.2, 0.2)) and settings.crosshair_color.is_equal_approx(Color(1.0, 0.2, 0.2))
+	var pink := Color("ff5ad1")
+	var chosen := previews.all(func(each: Crosshair) -> bool: return each.color.is_equal_approx(pink)) and settings.crosshair_color.is_equal_approx(pink)
 	menu.get_slider(&"crosshair_opacity").value = 0.5
-	var faded := is_equal_approx(preview.color.a, 0.5) and preview.color.is_equal_approx(Color(1.0, 0.2, 0.2, 0.5))
+	var faded := previews.all(func(each: Crosshair) -> bool: return is_equal_approx(each.color.a, 0.5) and each.color.is_equal_approx(Color(pink, 0.5)))
 	menu.get_hex_field().text_submitted.emit("#336699")
-	var typed := preview.color.is_equal_approx(Color(0.2, 0.4, 0.6, 0.5)) and menu.get_hex_field().text == "#336699" \
+	var typed := previews.all(func(each: Crosshair) -> bool: return each.color.is_equal_approx(Color(0.2, 0.4, 0.6, 0.5))) and menu.get_hex_field().text == "#336699" \
 			and not menu.get_swatches().any(func(swatch: Button) -> bool: return swatch.button_pressed)
 	menu.get_hex_field().text_submitted.emit("not a color")
 	var kept := preview.color.is_equal_approx(Color(0.2, 0.4, 0.6, 0.5))
-	_check("The preview follows the color: a swatch picks red, the opacity slider fades it to 50%, a typed #336699 keeps the opacity (and lights no swatch), a bad code changes nothing",
-			red and faded and typed and kept, "red %s, faded %s, typed %s, kept %s" % [red, faded, typed, kept])
+	_check("The previews follow the colour: a swatch picks pink, the opacity slider fades it to 50 (the number says 50), a typed #336699 keeps the opacity (and lights no swatch), a bad code changes nothing",
+			chosen and faded and typed and kept and menu.get_value_text(&"crosshair_opacity") == "50",
+			"chosen %s, faded %s, typed %s, kept %s" % [chosen, faded, typed, kept])
 	menu.get_slider(&"crosshair_length").value = 12.0
 	menu.get_slider(&"crosshair_gap").value = 9.0
 	menu.get_slider(&"crosshair_thickness").value = 4.0
-	menu.get_check(&"crosshair_outline").button_pressed = false
-	menu.get_check(&"crosshair_dot").button_pressed = true
-	menu.get_check(&"crosshair_dynamic").button_pressed = true
-	_check("It follows the sizes and styles: length 12, gap 9, thickness 4, no outline, a dot, dynamic",
-			preview.length == 12.0 and preview.gap == 9.0 and preview.thickness == 4.0 and not preview.outline and preview.dot and preview.dynamic,
+	menu.get_toggle(&"crosshair_outline")[0].button_pressed = true
+	menu.get_toggle(&"crosshair_dot")[1].button_pressed = true
+	menu.get_toggle(&"crosshair_dynamic")[1].button_pressed = true
+	_check("They follow the sizes and styles: length 12, gap 9, thickness 4, no outline, a dot, dynamic (and the plain numbers read 12, 9, 4)",
+			previews.all(func(each: Crosshair) -> bool: return each.length == 12.0 and each.gap == 9.0 and each.thickness == 4.0 and not each.outline and each.dot and each.dynamic)
+					and menu.get_value_text(&"crosshair_length") == "12" and menu.get_value_text(&"crosshair_gap") == "9" and menu.get_value_text(&"crosshair_thickness") == "4",
 			"length %s, gap %s, thickness %s, outline %s, dot %s, dynamic %s" % [preview.length, preview.gap, preview.thickness, preview.outline, preview.dot, preview.dynamic])
 	# Dynamic mode shows the gap opening while the menu is up.
 	menu.open()
 	for i in 20:
 		await get_tree().process_frame
-	var breathing := preview.spread_degrees > 0.0 and preview._spread_in_pixels() > 0.0
+	var breathing := previews.all(func(each: Crosshair) -> bool: return each.spread_degrees > 0.0 and each._spread_in_pixels() > 0.0)
 	menu.close()
-	_check("In dynamic mode the preview's gap opens by itself while the menu is open (its spread comes from the menu's own pulse, as it has no camera)",
+	_check("In dynamic mode both previews' gaps open by themselves while the menu is open (their spread comes from the menu's own pulse, as they have no camera)",
 			breathing, "spread %.3f°, %.1f px" % [preview.spread_degrees, preview._spread_in_pixels()])
 	# "Reset tab" puts back only the tab it is on.
 	menu.open()
 	settings.sensitivity = 4.0
 	menu.get_tabs().current_tab = menu.get_tab_names().find("Crosshair")
 	menu.get_reset_button().pressed.emit()
-	var crosshair_back := preview.color.is_equal_approx(Color(0.2, 1.0, 0.2)) and preview.length == 7.0 and preview.outline and not preview.dot and not preview.dynamic
-	_check("'Reset tab to defaults' on the Crosshair tab puts the whole crosshair back (the preview too) and leaves the other tabs alone (sensitivity stays 4.0)",
-			crosshair_back and settings.sensitivity == 4.0 and menu.get_check(&"crosshair_dot").button_pressed == false,
-			"crosshair back %s, sensitivity %s" % [crosshair_back, settings.sensitivity])
+	var crosshair_back := previews.all(_is_default_crosshair)
+	var segments_back := menu.get_toggle(&"crosshair_dot")[0].button_pressed and menu.get_toggle(&"crosshair_outline")[1].button_pressed
+	_check("'Reset tab to defaults' on the Crosshair tab puts the whole crosshair back (the previews too) and leaves the other tabs alone (sensitivity stays 4.0)",
+			crosshair_back and segments_back and settings.sensitivity == 4.0,
+			"crosshair back %s, segments back %s, sensitivity %s" % [crosshair_back, segments_back, settings.sensitivity])
 	menu.close()
 	_free_menu(menu)
 	settings.reset_to_defaults()
@@ -1220,9 +1414,11 @@ func _test_rebinding() -> void:
 	menu.open()
 	var slot := menu.get_binding_button(&"reload", 1)
 	slot.pressed.emit()
-	_check("Clicking a slot makes it say 'Press a key…' (lit), and the menu waits: MenuState says it is capturing input",
-			menu.is_listening() and slot.text == SettingsMenu.LISTENING_TEXT and slot.button_pressed and MenuState.capturing_input,
-			"listening %s, text '%s', capturing %s" % [menu.is_listening(), slot.text, MenuState.capturing_input])
+	_check("Clicking a slot makes it say 'Press a key...' in the listening role (lime fill, ink text) and its action's name brighter, and the menu waits: MenuState says it is capturing input",
+			menu.is_listening() and slot.text == SettingsMenu.LISTENING_TEXT and slot.text == "Press a key..." and slot.button_pressed
+					and slot.theme_type_variation == &"ListeningKeyButton" and menu.get_action_label(&"reload").theme_type_variation == &"BrightLabel"
+					and menu.get_action_label(&"jump").theme_type_variation == &"DimLabel" and MenuState.capturing_input,
+			"listening %s, text '%s', role '%s', capturing %s" % [menu.is_listening(), slot.text, slot.theme_type_variation, MenuState.capturing_input])
 	_send(_key_event(KEY_T))
 	_send(_key_event(KEY_T, false))
 	var reload_events := InputMap.action_get_events(&"reload")
@@ -1231,6 +1427,7 @@ func _test_rebinding() -> void:
 		reload_keys.append((event as InputEventKey).physical_keycode)
 	_check("The next key press is bound: reload now answers to R and T (in the settings and in the InputMap, for all devices), the slot shows T and the menu stops waiting",
 			not menu.is_listening() and not MenuState.capturing_input and slot.text == "T" and not slot.button_pressed
+					and slot.theme_type_variation == &"KeySlotButton" and menu.get_action_label(&"reload").theme_type_variation == &"DimLabel"
 					and settings.get_binding(&"reload", 1) != null and reload_keys == [KEY_R, KEY_T] and (reload_events[1] as InputEventKey).device == -1
 					and menu.get_notice() == "Reload: T.",
 			"listening %s, slot '%s', keys %s, notice '%s'" % [menu.is_listening(), slot.text, reload_keys, menu.get_notice()])
@@ -1424,34 +1621,47 @@ func _test_menu_blocks_the_player() -> void:
 	MenuState.reset()
 
 
-## The menu is exactly 1.5 times as big at 1.5 and keeps its panel size whatever the tabs hold.
+## The menu is exactly 1.5 times as big at 1.5: the theme's sizes, the rows, the columns and the preview squares.
 func _test_menu_scaling() -> void:
 	var menu := await _new_menu()
-	var panel := menu.get_node("Panel") as PanelContainer
-	var title := menu.get_node("Panel/Margin/Content/Title") as Label
+	var page := menu.get_node("Page") as MarginContainer
+	var title_box := menu.get_node("Page/Column/TitleBox") as Control
+	var title := title_box.get_child(0) as Label
 	var back := menu.get_back_button()
 	var slider := menu.get_slider(&"sensitivity")
-	var label := menu.get_slider(&"sensitivity").get_parent().get_child(0) as Label
+	var row := menu.get_row(&"sensitivity")
+	var label := row.get_child(0) as Label
+	var group := slider.get_parent() as Control
 	var swatch_margin := menu.get_swatches()[0].get_child(0) as MarginContainer
+	var table_row := menu.get_action_label(&"jump").get_parent().get_parent() as Control
+	var sample := menu.get_preview().get_parent() as Control
 	menu.open()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var at_one := [await _panel_sizes(menu), title.get_theme_font_size("font_size"), label.get_theme_font_size("font_size"), back.custom_minimum_size,
-			label.custom_minimum_size.x, swatch_margin.get_theme_constant("margin_left"), menu.get_preview().length]
+	var measure := func() -> Array:
+		return [title.get_theme_font_size("font_size"), label.get_theme_font_size("font_size"), page.get_theme_constant("margin_left"),
+				title_box.custom_minimum_size.y, row.custom_minimum_size.y, row.get_combined_minimum_size(), label.custom_minimum_size.x,
+				group.custom_minimum_size.x, table_row.custom_minimum_size.y, sample.custom_minimum_size,
+				swatch_margin.get_theme_constant("margin_left"), (back.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left,
+				menu.get_preview().length]
+	var at_one: Array = measure.call()
 	menu.set_ui_scale(1.5)
-	var at_one_and_a_half := [await _panel_sizes(menu), title.get_theme_font_size("font_size"), label.get_theme_font_size("font_size"), back.custom_minimum_size,
-			label.custom_minimum_size.x, swatch_margin.get_theme_constant("margin_left"), menu.get_preview().length]
-	var preview_gap_scaled := menu.get_preview().thickness == 3.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var at_one_and_a_half: Array = measure.call()
+	var previews_scaled := menu.get_preview().thickness == 3.0 and menu.get_previews()[1].thickness == 3.0
 	var overrides := _own_overrides(menu)
 	menu.set_ui_scale(1.0)
-	var back_at_one := [await _panel_sizes(menu), title.get_theme_font_size("font_size"), label.get_theme_font_size("font_size"), back.custom_minimum_size,
-			label.custom_minimum_size.x, swatch_margin.get_theme_constant("margin_left"), menu.get_preview().length]
-	var sizes_one: Array[Vector2] = [Vector2(960, 660), Vector2(960, 660), Vector2(960, 660), Vector2(960, 660), Vector2(960, 660)]
-	var sizes_one_and_a_half: Array[Vector2] = [Vector2(1440, 990), Vector2(1440, 990), Vector2(1440, 990), Vector2(1440, 990), Vector2(1440, 990)]
-	_check("At 1.0 the menu is as designed: a 960 × 660 panel on every one of the five tabs (no tab's rows make it wider), 48 px title, 16 px rows, 200 px labels, a 200 × 40 Back button",
-			at_one == [sizes_one, 48, 16, Vector2(200, 40), 200.0, Tokens.SWATCH_MARGIN, 7.0], "%s" % [at_one])
-	_check("Scaled by 1.5 everything is exactly 1.5 times as big: a 1440 × 990 panel on every tab, 72 / 24 px text, 300 labels, a 300 × 60 Back button, the swatch margin 9, the preview crosshair (thickness 3 px), and back at 1.0 it is as before",
-			at_one_and_a_half == [sizes_one_and_a_half, 72, 24, Vector2(300, 60), 300.0, _x(Tokens.SWATCH_MARGIN, 1.5), 11.0] and preview_gap_scaled and back_at_one == at_one,
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var back_at_one: Array = measure.call()
+	_check("At 1.0 the menu is as designed: a 48 px title in a 48 px box, 16 px rows, the 32 px page margin, 48 px rows with 400 px labels and 480 px slider groups (880 × 48 in all), 34 px table rows, 240 px preview squares, a 4 px swatch margin, a 24 px Back button padding, 7 px preview lines",
+			at_one == [48, 16, Tokens.PAGE_MARGIN_X, 48.0, 48.0, Vector2(880, 48), 400.0, 480.0, 34.0, Vector2(240, 240), Tokens.SWATCH_MARGIN,
+					float(Tokens.STRONG_BUTTON_PAD_X), 7.0],
+			"%s" % [at_one])
+	_check("Scaled by 1.5 everything is exactly 1.5 times as big: 72 / 24 px text, the 48 px page margin, 72 px rows with 600 px labels and 720 px groups (1320 × 72 in all), 51 px table rows, 360 px squares, the swatch margin 6, the Back padding 36, the previews' lines (thickness 3 px), and back at 1.0 it is as before",
+			at_one_and_a_half == [72, 24, _x(Tokens.PAGE_MARGIN_X, 1.5), 72.0, 72.0, Vector2(1320, 72), 600.0, 720.0, 51.0, Vector2(360, 360),
+					_x(Tokens.SWATCH_MARGIN, 1.5), float(_x(Tokens.STRONG_BUTTON_PAD_X, 1.5)), 11.0] and previews_scaled and back_at_one == at_one,
 			"1.5: %s, back: %s" % [at_one_and_a_half, back_at_one])
 	_check("Nothing in the menu carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty() and slider.get_theme_stylebox("slider") is StyleBoxFlat, "controls with overrides: %s" % [overrides])
@@ -1480,10 +1690,10 @@ func _test_console_and_menus() -> void:
 	_send(_key_event(KEY_ESCAPE, false))
 	_check("Esc closes it again and the game is free: nothing is open",
 			not menu.visible and not MenuState.is_any_open() and not MenuState.blocks_gameplay(), "menu open %s" % menu.visible)
-	var panel_minimum := (menu.get_node("Panel") as Control).custom_minimum_size
+	var label_minimum := (menu.get_row(&"sensitivity").get_child(0) as Control).custom_minimum_size
 	var window_height := get_tree().root.size.y
-	_check("main.gd scales the menu with the window like the other UI: its panel minimum is 960 × 660 times the window's height over 720 (the headless window is %d tall)" % window_height,
-			panel_minimum == (Vector2(960, 660) * (window_height / 720.0)).round(), "panel minimum %s" % panel_minimum)
+	_check("main.gd scales the menu with the window like the other UI: its 400 px row labels are 400 times the window's height over 720 wide (the headless window is %d tall)" % window_height,
+			label_minimum == (Vector2(400, 0) * (window_height / 720.0)).round(), "label minimum %s" % label_minimum)
 	console.run("clear")
 	console.run("help")
 	var names := console.get_command_names()
@@ -1651,19 +1861,19 @@ func _test_main_menu() -> void:
 	window.size = Vector2i(1280, 720)
 	menu.apply_pixel_settings()
 	var at_720 := [world.stretch_shrink, items.offset_top, play_item.get_theme_font_size("font_size"),
-			(menu.get_match_setup().get_node("Page/Column/Cards").get_child(0) as Control).custom_minimum_size.y, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
+			(menu.get_match_setup().get_node("Page/Column/Cards").get_child(0) as Control).custom_minimum_size.y, (menu.get_settings_menu().get_row(&"sensitivity").get_child(0) as Control).custom_minimum_size.x]
 	window.size = Vector2i(1920, 1080)
 	menu.apply_pixel_settings()
 	var at_1080 := [world.stretch_shrink, items.offset_top, play_item.get_theme_font_size("font_size"),
-			(menu.get_match_setup().get_node("Page/Column/Cards").get_child(0) as Control).custom_minimum_size.y, menu.get_settings_menu().get_node("Panel").custom_minimum_size.x]
+			(menu.get_match_setup().get_node("Page/Column/Cards").get_child(0) as Control).custom_minimum_size.y, (menu.get_settings_menu().get_row(&"sensitivity").get_child(0) as Control).custom_minimum_size.x]
 	settings.pixel_height = 270
 	var low_res := world.stretch_shrink
 	settings.pixel_height = 480
 	_check("The background follows the video settings like the game: the palette effect switches with its setting, and in a 720-pixel window the world is 360 lines (scaled 2×), in a 1080 one 540 lines (2×), 270 lines gives 4×",
 			effect_on and effect_off and at_720[0] == 2 and at_1080[0] == 2 and low_res == 4,
 			"effect on %s, off %s; shrink %s at 720, %s at 1080, %d at 270 lines" % [effect_on, effect_off, at_720[0], at_1080[0], low_res])
-	_check("The menus scale with the window like the other menus: at 720 the menu items sit 272 px down in 32 px text, the Play screen's cards are 192 high and the settings 960 wide; at 1080 exactly 1.5 times that",
-			at_720 == [2, 272.0, Tokens.TEXT_SIZE_LARGE, 192.0, 960.0] and at_1080 == [2, 408.0, _x(Tokens.TEXT_SIZE_LARGE, 1.5), 288.0, 1440.0],
+	_check("The menus scale with the window like the other menus: at 720 the menu items sit 272 px down in 32 px text, the Play screen's cards are 192 high and the settings' row labels 400 wide; at 1080 exactly 1.5 times that",
+			at_720 == [2, 272.0, Tokens.TEXT_SIZE_LARGE, 192.0, 400.0] and at_1080 == [2, 408.0, _x(Tokens.TEXT_SIZE_LARGE, 1.5), 288.0, 600.0],
 			"720: %s, 1080: %s" % [at_720, at_1080])
 	var overrides := _own_overrides(menu.get_node("Page")) + _own_overrides(menu.get_match_setup())
 	_check("Nothing in the main page or the Play screen carries a stylebox or font-size override of its own, so the theme alone decides their look",
@@ -2454,19 +2664,10 @@ func _test_real_file_untouched() -> void:
 					_real_file_md5, now, Settings.get_instance().save_path])
 
 
-## The size of the menu's panel with each tab selected in turn (a tab container is
-## as big as the page it shows needs), ending on the first tab.
-func _panel_sizes(menu: SettingsMenu) -> Array[Vector2]:
-	var panel := menu.get_node("Panel") as Control
-	var sizes: Array[Vector2] = []
-	for index in menu.get_tabs().get_tab_count():
-		menu.get_tabs().current_tab = index
-		await get_tree().process_frame
-		await get_tree().process_frame
-		sizes.append(panel.size)
-	menu.get_tabs().current_tab = 0
-	await get_tree().process_frame
-	return sizes
+## True if a crosshair shows the default style: the mockup's green, 7 px lines, gap 4, thickness 2, outlined, no dot, not dynamic.
+func _is_default_crosshair(crosshair: Crosshair) -> bool:
+	return crosshair.color.is_equal_approx(Color("36d07a")) and crosshair.length == 7.0 and crosshair.gap == 4.0 \
+			and crosshair.thickness == 2.0 and crosshair.outline and not crosshair.dot and not crosshair.dynamic
 
 
 ## A settings menu in the tree, one frame after it was built.

@@ -162,8 +162,10 @@ const MODE_BUTTON_PAD_Y := 24
 ## Text buttons (a word to click, no box).
 const TEXT_BUTTON_PAD_X := 8
 const TEXT_BUTTON_PAD_Y := 6
-## A segment of a segmented choice (inside its 2 px frame: 32 high).
+## A segment of a segmented choice (inside its 2 px frame: 32 high). The Play screen's
+## are 12 either side, the settings screen's (on / off, frame limit) 16.
 const SEGMENT_PAD_X := 12
+const SEGMENT_WIDE_PAD_X := 16
 const SEGMENT_PAD_TOP := 4
 const SEGMENT_PAD_BOTTOM := 7
 ## Check boxes and check buttons.
@@ -175,18 +177,21 @@ const FIELD_PAD_TOP := 4
 const FIELD_PAD_BOTTOM := 7
 ## How many characters wide a text field is at least.
 const FIELD_MIN_CHARACTERS := 4
-## Tabs (the mockup's padding 8 0 12) and the page under them.
+## Tabs (the mockup's padding 8 0 12) and the page under them. A tab's bottom is
+## 12 plus the 2 px of its underline that stands above the 2 px tab line, so the
+## strip is 43 high; the page's top padding then puts the first row at y = 176.
 const TAB_PAD_X := 16
 const TAB_PAD_TOP := 8
-const TAB_PAD_BOTTOM := 12
+const TAB_PAD_BOTTOM := 14
 const TAB_PAGE_PAD := 0
-const TAB_PAGE_PAD_TOP := 32
+const TAB_PAGE_PAD_TOP := 29
 ## Slider tracks (4 px: 2 above and below the line), progress bars and scroll tracks.
 const SLIDER_PAD := 2
 const PROGRESS_PAD := 4
-const SCROLL_PAD := 3
-## The bar you drag in a scroll track.
-const SCROLL_GRABBER_PAD := 3
+const SCROLL_PAD := 2
+## The bar you drag in a scroll track. A scroll bar is as wide as the track's two paddings (4 px),
+## which the settings screen's Controls tab leaves room for above its key list.
+const SCROLL_GRABBER_PAD := 2
 ## Drop-down lists.
 const POPUP_PAD := 4
 ## Tooltips.
@@ -196,6 +201,12 @@ const TOOLTIP_PAD_Y := 8
 const KEY_CAP_PAD_X := 8
 const KEY_CAP_PAD_TOP := 4
 const KEY_CAP_PAD_BOTTOM := 3
+## A key slot of the settings' Controls tab (26 high: 1 + 21 + 4, the capitals centred): 10 either side.
+const KEY_SLOT_PAD_X := 10
+const KEY_SLOT_PAD_TOP := 1
+const KEY_SLOT_PAD_BOTTOM := 4
+## The Back button of the settings screen (a TEXT frame, 40 high): 24 either side.
+const STRONG_BUTTON_PAD_X := 24
 ## A tag (the lime DEFAULT on the Team Deathmatch card: padding 2 6).
 const TAG_PAD_X := 6
 const TAG_PAD_Y := 2
@@ -253,9 +264,22 @@ const ROW_GAP := 16
 ## The three brand chips under the game's name, and a team's size chips.
 const CHIP_GAP := 6
 const TEAM_CHIP_GAP := 4
-## The crosshair colour swatches: space between them, and the frame around the chosen one.
-const SWATCH_GAP := 8
-const SWATCH_MARGIN := 2
+## The crosshair colour swatches. A swatch's cell is the 28 px colour plus the room
+## for the frame around the chosen one (a 2 px gap and the 2 px outline, SWATCH_MARGIN),
+## so the cells touch (SWATCH_GAP) and the colours are 8 px apart.
+const SWATCH_GAP := 0
+const SWATCH_MARGIN := 4
+
+# --- The settings screen (the mockup's "05 Settings", D-137) ---
+
+## Between the settings screen's title, its tabs and its footer.
+const SETTINGS_GAP := 24
+## Edge to edge: the parts of a settings row (a 400 px label, then the control) and of a table row.
+const FLUSH_GAP := 0
+## Rows that touch (the crosshair tab's rows are 48 high and have no gap).
+const STACK_GAP := 0
+## The parts of a small group, 16 apart (the two preview squares and the caption under them).
+const GROUP_GAP := 16
 
 # --- HUD (the overlay of a running game; D-133) ---
 #

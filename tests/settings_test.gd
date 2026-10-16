@@ -36,7 +36,7 @@ const DEFAULTS := {
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
 	&"palette_effect": true, &"pixelate_hud": false,
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
-	&"crosshair_color": Color(0.2, 1.0, 0.2), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
+	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
 	# The last match setup (D-064): D-041's match.
 	&"match_team_size": 3, &"match_enemy_team_size": 3, &"match_difficulty": "normal", &"match_rounds_to_win": 5,
@@ -252,7 +252,7 @@ func _test_crosshair() -> void:
 	add_child(hud)
 	var crosshair := hud.get_node("Crosshair") as Crosshair
 	_check("On defaults the crosshair is green, 7 px lines, a 4 px gap, 2 px thick, outlined, no dot, not dynamic",
-			crosshair.color == Color(0.2, 1.0, 0.2) and crosshair.length == 7.0 and crosshair.gap == 4.0 and crosshair.thickness == 2.0
+			crosshair.color == Color("36d07a") and crosshair.length == 7.0 and crosshair.gap == 4.0 and crosshair.thickness == 2.0
 					and crosshair.outline and not crosshair.dot and not crosshair.dynamic,
 			"color %s, length %s, gap %s, thickness %s, outline %s, dot %s, dynamic %s" % [crosshair.color, crosshair.length, crosshair.gap,
 					crosshair.thickness, crosshair.outline, crosshair.dot, crosshair.dynamic])
@@ -279,7 +279,7 @@ func _test_crosshair() -> void:
 	_check("A setting outside the crosshair doesn't disturb it", crosshair.length == 10.0 and crosshair.dot, "length %s" % crosshair.length)
 	_settings.reset_to_defaults()
 	_check("Resetting restores the default crosshair (scaled 2×: 14 px lines, 8 px gap, 4 px thick)",
-			crosshair.color == Color(0.2, 1.0, 0.2) and crosshair.length == 14.0 and crosshair.gap == 8.0 and crosshair.thickness == 4.0
+			crosshair.color == Color("36d07a") and crosshair.length == 14.0 and crosshair.gap == 8.0 and crosshair.thickness == 4.0
 					and crosshair.outline and not crosshair.dot and not crosshair.dynamic,
 			"length %s, gap %s, thickness %s" % [crosshair.length, crosshair.gap, crosshair.thickness])
 	hud.free()

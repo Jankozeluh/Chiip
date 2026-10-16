@@ -1,6 +1,6 @@
 extends SceneTree
 ## Tool: screenshots of every screen of the UI, taken through the real scenes
-## (the main menu over its flight, match setup, the settings menu, and a real
+## (the main menu over its flight, match setup, the settings menu's five tabs, and a real
 ## match on Depot: class menu, HUD in freeze time and in a live round with kills,
 ## the Tab scoreboard, the pause menu, the console and the match-end screen, then
 ## a Team Deathmatch HUD on Square and the same after you die, with the respawn
@@ -67,8 +67,17 @@ func _menu_shots() -> void:
 	await _frames(4)
 	await _shot("settings_crosshair")
 	settings_menu.get_tabs().current_tab = settings_menu.get_tab_names().find("Controls")
+	# One slot waits for a key, as the mockup shows it.
+	settings_menu.start_listening(&"jump", 0)
 	await _frames(4)
 	await _shot("settings_controls")
+	settings_menu.stop_listening()
+	settings_menu.get_tabs().current_tab = settings_menu.get_tab_names().find("Video")
+	await _frames(4)
+	await _shot("settings_video")
+	settings_menu.get_tabs().current_tab = settings_menu.get_tab_names().find("Audio")
+	await _frames(4)
+	await _shot("settings_audio")
 	settings_menu.close()
 	root.remove_child(menu)
 	menu.free()
