@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". In progress: M7 — Arsenal, perks & economy, M9 — Multiplayer, and M10 — Look & feel (map kit and a modern UI), each in its own branch.
+> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". In progress: M7 — Arsenal, perks & economy, M9 — Multiplayer, and M10 — Look & feel (map kit and a modern UI), each in its own branch. M10's map kit is built (its own branch, D-121 to D-129) and waits for your check.
 
 ## Your open checks
 
@@ -28,6 +28,12 @@ Things only you can check, kept here until done instead of moving from milestone
 - [ ] **M8: the exported app.** Double-click `builds/macos/Chiip.app` in the `m8-maps` worktree (or re-export, README "Exporting the game"): does it start, play a match and quit normally? (D-086)
 - [ ] **M8 playtest: modes and rotation in match setup.** Play → choose **Team respawn** (the length turns into 30 / 50 / 75 kills) and **Rotation** (the summary lists the maps), Start: you begin on Depot (or the map you picked if it's one of the three). After the match, **Next map: Square** gives a fresh match there; Play again stays. Is the setup panel clear, and is the rotation's order right? (D-087)
 - [ ] **M8: lighting.** Look at `docs/maps/lighting_depot.jpg`: is staying with real-time lighting (left column) right, or do you want SSAO as a video setting, or a lightmap bake once the maps are final? (D-085)
+- [ ] **M10 map kit** (textures, props, lamps, entities, the dressed maps; D-121 to D-129):
+  1. **Before and after:** look at the pictures in [MAPS.md](MAPS.md), "Before and after the map kit", then play `map depot`, `map square` and `map spillway`. Do the maps still look minimal and readable, and do players still stand out? Is anything too busy, or still blank?
+  2. **The kit:** play the gallery (`-- --map res://maps/kit/kit_gallery.tscn`). Is any prop, lamp or texture childish, ugly or missing something you'd need?
+  3. **TrenchBroom:** refresh Chiip's configuration (the `export_trenchbroom_config` command in [MAPPING.md](MAPPING.md), step 1), restart TrenchBroom and open `maps/kit/kit_gallery.map`. Do the texture sets show as collections, and do props and lamps show their models, pointing the same way as in the game (an entity with angle 0 faces TrenchBroom's +X)? If TrenchBroom shows them turned by 90° or 180°, tell me: one setting fixes it.
+  4. **The guide:** build a small room with five spawns per side and a bomb site by following "Your first map" in [MAPPING.md](MAPPING.md), then `tools/new_map.gd` and play it. Where does the guide lose you?
+  5. **Decisions to confirm:** six main materials with colour variants counting once (D-127), the performance limits (D-126), see-through things that stop only movement (D-123), signs and windows as decoration on the walls.
 - [ ] **M6 playtest (crew & animation).** Start a match (F5); the class menu opens in the first freeze time (M changes class in any freeze time, `-- --practice` and the console's `class` command any time). Check:
   1. **Silhouettes:** you can tell the four classes apart at a distance by shape alone: the medium Rifleman, the broad Bulwark, the Marksman in his coat, the short Scout with the antenna.
   2. **Team colour:** teammates blue, enemies red, readable from every side and at range.
@@ -335,7 +341,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **Goal:** the maps stop looking blank, anyone can build maps from one kit, and the menus look clean and modern while staying pixelated (D-120). Runs as two parts in parallel, each planned in detail when it starts.
 
-**Map kit and environment art** (decisions D-121 to D-129) 🟨 *in progress in the `claude/m10-mapkit-dc3914` branch*
+**Map kit and environment art** (decisions D-121 to D-129) ✅ *built in the `claude/m10-mapkit-dc3914` branch; waiting for your check in "Your open checks"*
 
 The kit is what you and the community build maps from: textures in TrenchBroom's texture browser, props and lamps in its entity browser, and a guide. Then the four maps get dressed with it. Tasks in order, one commit each (prefix `M10:`); the tag says which model builds it (CLAUDE.md, "Choosing a model"):
 
@@ -368,7 +374,8 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
    - Built: dirt in the dry channel, a grated footbridge, ribbed tanks and pipe wall in grey and teal, hazard stripes on the terrace's edge, lamp entities (a caged bulb in the culvert, pump-house pendants) instead of the scene's lamps, pipes, valves, drain pipes, windows, signs and corner props: 67 entities. Unchanged: walks and routes (51/53/20/21 m; 57/53/55 m), first contact (5.5–6.7 s, median 5.8 s), longest view 38 m (370 pairs over 30 m instead of 375).
 10. [x] **Dress the test map.** Kit props and materials on the CSG test map, its markers and the shooting range unchanged. *(Sonnet)*
    - Built: grey block walls instead of the red brick (now within the look rules), ribbed metal on the crouch tunnel, a strip light in the tunnel instead of its bare lamp, four containers and a few barrels and crates hard against the outer walls (away from every marker and route), pipes, floodlights, doors and signs on the walls, clutter without collision: 41 kit nodes under a `Kit` node (CSG maps place kit scenes directly). The range, the measured boxes, the stairs, the ramp and every marker are unchanged; all 18 suites pass (the perf test: 0.56 ms per physics tick).
-11. [ ] **Before/after and wrap-up** (D-129). Before/after screenshots of every map, frame times with the dressed maps, the check in "Your open checks". *(Haiku runs the tools, Opus judges)*
+11. [x] **Before/after and wrap-up** (D-129). Before/after screenshots of every map, frame times with the dressed maps, the check in "Your open checks". *(Haiku runs the tools, Opus judges)*
+   - Done: before/after pictures of all four maps in [MAPS.md](MAPS.md) (`docs/mapping/before_after_*.jpg`), the look measured on them (team red at most 1.3 %, team blue at most 0.5 %, down from 6 %), frame times on the dressed maps (120 fps, slowest 1 % 9.7–11.8 ms; dressed Depot as fast as undressed), the map-kit check in "Your open checks".
 
 **Done when** (map kit): the four maps look furnished and still play the same (first contact within 5–10 s, every bot route and hold spot valid), a new map can be built from the kit by following the guide, and you've seen before/after screenshots.
 

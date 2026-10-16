@@ -1049,7 +1049,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Decision:** Limits a map should stay within (MAPPING.md, "Performance limits"): **up to 150 props** (lamps included), **up to 24 lamps**, **at most 4 lamps with shadows**, 6 main materials plus about 6 detail textures. Within them a 5v5 holds the display rate on the development Mac.
 
-**Measured** with `tools/frame_timing.gd`, 5v5 bots, 1080p window, V-Sync off (macOS keeps it on anyway at the display's 120 Hz): the kit gallery with 86 props and lamps, 120 fps on average, slowest 1 % of frames 11.3 ms, 629 draw calls.
+**Measured** with `tools/frame_timing.gd`, 5v5 bots, 1080p window, V-Sync off (macOS keeps it on anyway at the display's 120 Hz): the kit gallery with 86 props and lamps, 120 fps on average, slowest 1 % of frames 11.3 ms, 629 draw calls. The dressed quick maps (67–86 entities each): 120 fps, slowest 1 % 9.7 ms (Depot; 9.9 ms undressed), 10.2 ms (Square), 11.8 ms (Spillway), about 240 draw calls (Depot 122 undressed). Dressing costs nothing measurable here, so the limits keep a wide margin (150 props is about twice the gallery).
 
 **Why:** Mappers need numbers, not "don't overdo it". Each prop is a draw call and each shadowed light renders the scene again, so those are the costs that grow with dressing.
 
@@ -1061,6 +1061,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Why:** You found the maps blank. Variety comes from details on top of a calm base, which keeps the minimal, readable look while the maps stop looking empty. Dressing Depot showed that five weren't enough once its 6 m yard walls got their own block texture: plain concrete on every wall and floor is what made it blank. Colour variants of one material (containers in a yard) add variety without adding visual noise, because their pattern is the same.
 
+**Measured after dressing** (MAPS.md, "Before and after the map kit"): in the screenshots below the horizon, strong team-red pixels at most 1.3 % of a shot, team-blue at most 0.5 % (before dressing up to 6 %, from the old blue-grey metal plates); warm lamp light on Depot's warehouse floor first measured 4.4 % "red" (hue right at the 20° boundary), so its pendants are a warmer white now.
+
 **Tried and dropped while dressing:** worn concrete with rebar patches on walls and floors (its marks repeat every 1.6 m and look like a pattern), the rusty-plate texture on containers (reads as brown mud), perforated sheet on racks (busy black holes). The rule for detail textures: one calm pattern per surface.
 
 **Alternatives:** Keeping five in total (the maps stay blank); no limit (risks the noisy look D-063 avoided).
@@ -1068,6 +1070,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 ## D-128 — Dressing keeps the layouts: details go where they don't change play (2026-10-16) — *provisional*
 
 **Decision:** Dressing a map doesn't move walls, ramps, doors or cover. Props go against walls, in corners, on top of or beside existing cover (where they don't lengthen it), above head height, or replace a plain box with a prop of the same size. After dressing: rebuild, re-bake the navmesh, then the maps test (first contact 5–10 s, every marker on the navmesh, both spawns reach both sites) and the map report (sightlines no longer than before).
+
+**Result:** every map passes the maps test with the same first contact as before (Depot 5.5 s, Square 6.7 s, Spillway 5.8 s median, the same four rounds), and the map report gives the same walks, routes and sightlines, with two small differences: Spillway has 370 long sightline pairs instead of 375 (props block a few), and on Square the bots' walk to A is 62 m instead of 65 m because the re-baked navmesh now includes a 1.4 m gap players could always use. The test map's dressing keeps clear of every test.
 
 **Why:** The layouts were tuned with bots (D-060, D-061); dressing should change the look, not the timing.
 

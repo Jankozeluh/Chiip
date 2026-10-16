@@ -570,21 +570,24 @@
 "classname" "light_ceiling"
 "origin" "-197 -126 176"
 "light_range" "7.0"
-"light_energy" "1.6"
+"light_energy" "1.3"
+"light_color" "255 214 160"
 }
 // entity 2
 {
 "classname" "light_ceiling"
 "origin" "197 126 176"
 "light_range" "7.0"
-"light_energy" "1.6"
+"light_energy" "1.3"
+"light_color" "255 214 160"
 }
 // entity 3
 {
 "classname" "light_ceiling"
 "origin" "39 0 176"
 "light_range" "7.0"
-"light_energy" "1.6"
+"light_energy" "1.3"
+"light_color" "255 214 160"
 }
 // entity 4
 {

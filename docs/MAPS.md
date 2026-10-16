@@ -127,6 +127,20 @@ At 5.5 m/s (rifle in hand) a 52 m walk takes about 9.5 s. Contact comes earlier 
 
 After dressing (M10) every number in this table is the same as before, except one: on Square the bots' shortest walk to A is 62 m instead of 65 m. The geometry is identical; the re-baked navmesh now includes the 1.4 m gap between the well crate and the alley house on the west route, which players could always walk through, so bots now find the same way. First contact on Square: 6.1, 6.2, 7.2, 9.1 s (median 6.7 s, as before).
 
+## Before and after the map kit (M10)
+
+Left before, right after dressing, the same shots through the real game (`tools/map_screenshots.gd`, characters hidden). How the kit is used: [MAPPING.md](MAPPING.md).
+
+![Depot before and after](mapping/before_after_depot.jpg)
+
+![Square before and after](mapping/before_after_square.jpg)
+
+![Spillway before and after](mapping/before_after_spillway.jpg)
+
+![The test map before and after](mapping/before_after_test_map.jpg)
+
+Measured on these shots, below the horizon: strong team-red pixels at most 1.3 % of a shot (before: 1.4 %), strong team-blue at most 0.5 % (before: up to 6 %, from the old blue-grey metal plates on Depot's containers and Spillway's tanks). Average saturation 0.06–0.11 (before 0.06–0.09). Frame times with 10 bots: 120 fps on all three maps (the display's rate), slowest 1 % of frames 9.7 ms on Depot (9.9 ms undressed), 10.2 ms on Square, 11.8 ms on Spillway; about 240 draw calls each (Depot 122 undressed). D-126, D-127.
+
 ## How the layouts were tuned
 
 The blockouts were generated once from a small layout script (outside the repository, so the `.map` files are the only source), then tuned in three rounds with bots and the sightline report:

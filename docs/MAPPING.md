@@ -693,7 +693,7 @@ Provisional (D-126). Stay within them and a 5v5 holds the display rate on the de
 | Main materials | 6 | The look rules |
 | Detail textures | About 6, on top | The look rules |
 
-Measured with 10 bots on the development Mac (numbers in D-126): the kit gallery (86 props and lamps) runs at **120 fps on average with the slowest 1 % of frames at 11.3 ms (629 draw calls)**.
+Measured with 10 bots on the development Mac (numbers in D-126): the kit gallery (86 props and lamps) runs at **120 fps on average with the slowest 1 % of frames at 11.3 ms (629 draw calls)**; the dressed quick maps (67–86 props and lamps) also hold 120 fps, slowest 1 % 9.7–11.8 ms. Undressed Depot measured 9.9 ms, so dressing costs nothing you can measure.
 
 Measure your own map (opens a window for about 20 s; add `--respawn` or `--seconds <n>` if you need to):
 
