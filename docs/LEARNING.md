@@ -722,3 +722,18 @@
 
 **The peer is the swappable part** (`net/net_transport.gd`, D-114)
 - In Godot everything above the connection talks to a `MultiplayerPeer`: RPCs, `send_bytes()`, peer ids, `peer_connected`. ENet (`ENetMultiplayerPeer`), WebSocket, WebRTC and GodotSteam's `SteamMultiplayerPeer` are all `MultiplayerPeer`s, so changing how computers reach each other means making a different peer and nothing else. Unity's Netcode works the same way: its `NetworkManager` has a *transport* component (Unity Transport, or a community Steam transport) you swap without touching game code. Chiip puts the making of the peer in one small class (`EnetTransport`), so a Steam one can sit next to it later.
+
+## M12: sharing the game
+
+**Files that are not resources in an export** (`include_filter` of an export preset, `FileAccess` on `res://`)
+- An export packs the project's *resources* (scenes, scripts, textures, imported assets) into one `.pck` file. A plain file such as `LICENSE`, which has no importer, is left out unless the preset's **Resources → Filters to export non-resource files** lists it (`LICENSE, LICENSE-ASSETS, ...`, comma separated, glob patterns). Once listed it sits in the pck and `FileAccess.get_file_as_string("res://LICENSE")` reads it exactly as in the editor. Unity's counterpart is the `StreamingAssets` folder, whose files are copied untouched into the build and read with normal file calls.
+- Checking for it: `FileAccess.file_exists()` is false for a file the export left out, so the Licences screen shows "not in this build" instead of an empty page (`LicensesMenu.read_file()`), and a test can catch it.
+
+**Godot's own licence texts** (`Engine.get_license_text()`, `get_license_info()`, `get_copyright_info()`)
+- The engine carries its licence, the list of every third-party library inside it with its copyright lines, and the text of each licence. A game that ships the engine must show these notices (MIT asks for the copyright line, the libraries' licences for theirs); `Engine.get_*_info()` returns them, so a credits screen is a few lines of code and always matches the engine of the build. Unity keeps its third-party notices in a separate "Third Party Notices" file you ship by hand.
+
+**Toggle buttons in a group** (`Button.toggle_mode`, `ButtonGroup`)
+- A `Button` with `toggle_mode = true` stays pressed after a click. Give several buttons the same `ButtonGroup` and pressing one releases the others: a radio-button list without a special control. The Licences list uses it so the picked document stays highlighted; `set_pressed_no_signal(true)` marks one from code without firing `pressed` (Unity's `ToggleGroup` and `Toggle.SetIsOnWithoutNotify`).
+
+**A theme reaches through layers** (`UiTheme.apply()`)
+- `Control.theme` is inherited down a tree of `Control`s, but a `CanvasLayer` is not a `Control`, so it stops inheritance. Chiip's `UiTheme.apply(root)` therefore walks through non-Control nodes and sets the theme on the first `Control`s below each layer: a `CanvasLayer` menu instanced inside another menu (the Licences screen inside the settings menu) is scaled together with it, without its own call.

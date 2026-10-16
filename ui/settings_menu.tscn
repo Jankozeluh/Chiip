@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://ui/settings_menu.gd" id="menu_script"]
 [ext_resource type="Script" path="res://ui/crosshair.gd" id="crosshair_script"]
+[ext_resource type="PackedScene" path="res://ui/licenses_menu.tscn" id="licenses_scene"]
 
 [node name="SettingsMenu" type="CanvasLayer"]
 process_mode = 3
@@ -238,8 +239,16 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
+[node name="LicensesButton" type="Button" parent="Page/Column/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DimButton"
+text = "Licences"
+
 [node name="BackButton" type="Button" parent="Page/Column/Footer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"StrongButton"
 text = "Back"
+
+[node name="LicensesMenu" parent="." instance=ExtResource("licenses_scene")]

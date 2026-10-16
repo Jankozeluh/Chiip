@@ -1,0 +1,90 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/licenses_menu.gd" id="menu_script"]
+
+[node name="LicensesMenu" type="CanvasLayer"]
+process_mode = 3
+layer = 7
+visible = false
+script = ExtResource("menu_script")
+
+[node name="Background" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_type_variation = &"InkPanel"
+
+[node name="Page" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"PageMargin"
+
+[node name="Column" type="VBoxContainer" parent="Page"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SettingsColumn"
+
+[node name="TitleBox" type="Control" parent="Page/Column"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 48)
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Page/Column/TitleBox"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+grow_vertical = 2
+theme_type_variation = &"TitleLabel"
+text = "Licences"
+
+[node name="Body" type="HBoxContainer" parent="Page/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Docs" type="VBoxContainer" parent="Page/Column/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(304, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="TextPanel" type="PanelContainer" parent="Page/Column/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"InsetPanel"
+
+[node name="TextMargin" type="MarginContainer" parent="Page/Column/Body/TextPanel"]
+layout_mode = 2
+theme_type_variation = &"PanelMargin"
+
+[node name="Text" type="RichTextLabel" parent="Page/Column/Body/TextPanel/TextMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 2
+selection_enabled = true
+
+[node name="Footer" type="HBoxContainer" parent="Page/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Spacer" type="Control" parent="Page/Column/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="BackButton" type="Button" parent="Page/Column/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StrongButton"
+text = "Back"

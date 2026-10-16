@@ -1660,6 +1660,20 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** MIT, or source-available only; itch.io with a restricted page; UPnP and direct-IP play (it opens a port on the host's router).
 
+## D-170 — Licences: GPL-3.0 for the code, CC BY-NC-SA 4.0 for the art (2026-10-16)
+
+**Decision:**
+- **Code:** GNU GPL version 3, "version 3 only" (`LICENSE`, the standard 35 KB text). It covers everything that is not listed below: scripts, scenes, resources, tools, tests, docs.
+- **Art, models, maps and sounds:** CC BY-NC-SA 4.0 (`LICENSE-ASSETS`). It covers `assets/` (except the font files), `maps/`, `docs/mapping/`, `docs/maps/` and `icon.svg`. The generated models, textures and sounds are the *output* of GPL tools and are CC BY-NC-SA.
+- **Third-party material** keeps its own licence: Godot (MIT), FuncGodot (MIT, `addons/func_godot/LICENSE`), Silkscreen (OFL 1.1, `assets/fonts/Silkscreen-OFL.txt`). `THIRD_PARTY_NOTICES.md` lists them, built from `docs/CREDITS.md`.
+- **Every build ships the licences**, in two ways: the three files and the font's and addon's licence are listed in the export presets' include filter (so they sit inside the game's data), and the game's **Settings → Licences** screen (`ui/licenses_menu.*`) shows them, plus "Godot Engine", which the engine writes itself (`Engine.get_license_text()`, `get_license_info()`, `get_copyright_info()`) so the notice of every library inside the engine is always right for the engine in the build.
+- **No per-file licence headers.** The licence is chosen by folder (`LICENSE-ASSETS` lists them) and `tests/release_test.gd` checks the files and the screen. A header on 160 scripts and 100 scenes would say the same as one line in `LICENSE-ASSETS`, and the generated files could not carry one.
+- **The CC licence is linked, not copied.** `LICENSE-ASSETS` has the licence's name, its short summary and the link to the legal code; CC's own guidance accepts that. Adding the 20 KB legal text would need a download, which is for you to approve (CLAUDE.md).
+
+**Why:** Your decision: GPL-3.0 for the code and CC BY-NC-SA 4.0 for art, models, maps and sounds. GPL keeps every copy of the game's code free; NC-SA keeps the art from being sold by someone else while letting friends remix it. "Version 3 only" instead of "or later" because you named version 3 and, as the only copyright holder, you can always widen it later, while a wider licence can't be taken back. The GPL and the asset licence apply to different parts: the code treats the art as data it loads, so neither extends over the other (GPL §5, aggregation).
+
+**Alternatives:** MIT or Apache for the code (anyone could close it, D-150); one licence for everything (CC licences are not meant for code, GPL is not meant for art); "GPL-3.0-or-later"; a header in every file (REUSE-style); a copy of the CC legal text in the repo (needs a download).
+
 ## Open questions
 
 | Question | Decide in |

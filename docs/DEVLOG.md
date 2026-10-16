@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M12 share
+
+Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessions. Decisions D-170 to D-179.
+
+**Done**
+- **Licences** (D-170): `LICENSE` (GPL-3.0, for the code), `LICENSE-ASSETS` (CC BY-NC-SA 4.0, for art, models, maps and sounds, with the folders each covers) and `THIRD_PARTY_NOTICES.md` (Godot, FuncGodot, Silkscreen; built from CREDITS.md). **Settings → Licences** shows them in the game (`ui/licenses_menu.*`, plus Godot's own notices from the engine). The project has a version now (`config/version`, 0.1.0) and the main menu's build label reads it. New suite `release_test` (licence files, the screen, and later the export presets and the clean-for-public checks).
+
+**Next:** clean the repo for public (no personal paths), the player README, the export presets, and the Tailscale address in the lobby.
+
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
 **Done**

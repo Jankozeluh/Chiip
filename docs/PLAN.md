@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** none. **The whole roadmap, M0 to M10, is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval.
+> **Current milestone:** none. **The whole roadmap, M0 to M10, is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK).
 
 ## Your open checks
 
@@ -89,7 +89,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M9 | Multiplayer | 🟨 built, waiting for your playtest | Play with friends over the LAN (one hosts), bots fill empty slots |
 | M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | M11 | Polish | ⬜ | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
-| M12 | Share & playtest | ⬜ | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
+| M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -538,12 +538,12 @@ The class draft (two random classes offered each match) and the random map weapo
 - [ ] **Weapons and models** (D-155 to D-164): first-person guns never poke through walls (a separate viewmodel layer, as in CS and CoD); every class holds every weapon correctly (grip and off-hand, pistols, knife, grenades); reloads match each weapon's reload time in first and third person, with the sounds on cue. Checks that measure hand-to-grip distances
 - [ ] **Optimization** (D-165 to D-169): measure every map at 5v5 and as a LAN host (average frame rate and the worst 1 % of frames), find the hot spots (bot AI, vision rays, animation, shadows, physics), fix them, and add limits to the performance test
 
-## M12 — Share & playtest ⬜
+## M12 — Share & playtest 🟨
 
 **Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
 
-- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files, licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
-- [ ] **Clean for public:** no personal paths (`/Users/...`) or anything private in the repo; a public README for players and contributors
+- [x] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files and the third-party notices (Godot, Silkscreen, FuncGodot) inside the builds and in **Settings → Licences** (D-170); no per-file headers, the folders decide
+- [ ] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors
 - [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows
 - [ ] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide
 - [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK

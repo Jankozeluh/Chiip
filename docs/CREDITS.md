@@ -3,6 +3,8 @@
 > Every third-party asset and tool used in Chiip, with its source and license. Update this file whenever something is added (see CLAUDE.md).
 >
 > Last updated: 2026-10-16
+>
+> The licences of the game itself (GPL-3.0 for the code, CC BY-NC-SA 4.0 for art, models, maps and sounds) are in `LICENSE` and `LICENSE-ASSETS`; `THIRD_PARTY_NOTICES.md` is this file's shipped form (D-170). Change both when something is added.
 
 ## Engine
 

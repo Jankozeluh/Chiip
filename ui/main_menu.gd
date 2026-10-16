@@ -6,7 +6,7 @@ extends Node
 ## **Play** (focused), **Practice**, **Settings** and **Quit**, a line, and
 ## **Host** and **Join** (the online games of M9), over a slow camera flight
 ## across the test map; the build at the bottom left and the map's name at the
-## bottom right.
+## bottom right (the build reads the project's version, M12).
 ##
 ## - **Play** opens the Play screen ([MatchSetup]): three mode cards (Team
 ##   Deathmatch first) and the picked mode's custom rows. Playing a match leaves a
@@ -70,6 +70,7 @@ var _lobby_opener: Button
 @onready var _host_button: Button = %HostButton
 @onready var _join_button: Button = %JoinButton
 @onready var _map_name: Label = %MapName
+@onready var _build_label: Label = %Build
 @onready var _setup: MatchSetup = $MatchSetup
 @onready var _lobby: LobbyMenu = $LobbyMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
@@ -96,6 +97,7 @@ func _ready() -> void:
 	_lobby.closed.connect(_on_lobby_closed)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
+	_build_label.text = "Build %s" % ProjectSettings.get_setting("application/config/version", "")
 	_build_background()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()

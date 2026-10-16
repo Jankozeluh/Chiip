@@ -3,6 +3,7 @@ extends CanvasLayer
 ## The settings menu (D-059; the mockup's "05 Settings" since M10, D-137): a full
 ## ink screen with the tabs Game, Video, Audio, Crosshair (with a live preview on
 ## a dark and a light square) and Controls (click a key, then press the new one).
+## A Licences button in the footer opens the [LicensesMenu] (M12, D-170).
 ##
 ## One reusable scene, [code]ui/settings_menu.tscn[/code]: it hides itself until
 ## [method open] is called and tells the owner with [signal closed] when the
@@ -128,6 +129,8 @@ var _previews: Array[Crosshair] = []
 @onready var _notice: Label = %Notice
 @onready var _reset_button: Button = %ResetButton
 @onready var _back_button: Button = %BackButton
+@onready var _licenses_button: Button = %LicensesButton
+@onready var _licenses: LicensesMenu = $LicensesMenu
 
 
 func _ready() -> void:
@@ -142,6 +145,8 @@ func _ready() -> void:
 	_settings.changed.connect(_on_setting_changed)
 	_reset_button.pressed.connect(_on_reset_pressed)
 	_back_button.pressed.connect(close)
+	_licenses_button.pressed.connect(_licenses.open)
+	_licenses.closed.connect(_licenses_button.grab_focus)
 	_set_notice("")
 	_refresh_all()
 
@@ -881,3 +886,13 @@ func get_reset_button() -> Button:
 ## The "Back" button.
 func get_back_button() -> Button:
 	return _back_button
+
+
+## The Licences button at the right of the footer (opens the [LicensesMenu], M12 D-170).
+func get_licenses_button() -> Button:
+	return _licenses_button
+
+
+## The Licences screen the footer's button opens.
+func get_licenses_menu() -> LicensesMenu:
+	return _licenses
