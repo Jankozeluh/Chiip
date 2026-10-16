@@ -19,7 +19,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **HUD on the theme** (D-133, task 6, built by a Sonnet subagent). The HUD's labels, top bar, centre messages and bomb HUD now take their sizes, outlines and colours from roles and tokens, like the menus; nothing looks different. In Team Deathmatch the centre now says "Killed by Bot2" and counts "Respawning in 3", 2, 1 under it. The F3 debug overlay starts hidden. Pictures at 21:9 and 4:3 show everything in place. `hud.gd` and the kill feed wait for M7's merge (M7 rewrites them). 614 checks pass.
 
-**Next:** the mockups, screen by screen, once this session can read them.
+- **Ready for the mockups** (task 7): UI_MOCKUPS.md now has a table from each mockup to its scene and roles, and how a mockup's values reach the game. Before/after pictures at 720p and 1080p; a check for you in "Your open checks".
+
+**Next:** your mockups, screen by screen: the Foundations file into the tokens and theme, the Menus and Match files into the screens and HUD, the icon set into its slots. Blocked until this session can read the Claude Design project (`/design-login` once in a terminal Claude Code session, or the files exported to a folder).
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

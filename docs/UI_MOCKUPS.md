@@ -57,17 +57,17 @@
 | # | Mockup | Scene (layout) | Roles it uses today |
 |---|---|---|---|
 | 1, 2 | Main menu and mode choice | `ui/main_menu.tscn` (+ `.gd`) | `PageMargin`, `OverlayPanel`, `PanelMarginWide`, `ContentBox`, `HeroLabel`, `DimLabel`; each mode: `ModeButton` behind `ModeMargin` / `ModeText` with `ModeTitleLabel` and `ModeDetailLabel`; `ModeList`; links: `ButtonRow` of `TextButton` |
-| 2 | Custom match panel | `ui/match_setup.tscn` (+ `.gd`, rows built in code) | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `FormRow`, `SegmentRow` of toggle `Button`s, `OptionButton`, `DimLabel`, `ButtonRow`, `PrimaryButton` |
+| 2 | Custom match panel | `ui/match_setup.tscn` (+ `.gd`, rows built in code) | `BackdropPanel`, `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `FormRow`, `SegmentRow` of toggle `Button`s, `OptionButton`, `DimLabel`, `ButtonRow`, `PrimaryButton` |
 | 3 | Class draft | `ui/class_menu.tscn` today (M7 turns it into the draft) | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `FormRow`, cards: `PanelContainer` with `PanelMargin`, `HeaderLabel`, `BrightLabel`, `DimLabel` |
-| 4, 5 | HUD (Team Deathmatch, Bomb) | `ui/hud.tscn`, `ui/round_hud.tscn` (top bar, centre messages, kill feed), `ui/bomb_hud.tscn`, `ui/crosshair.gd` | HUD roles (M10 task 6); armor, weapon slots and pickups come with M7 |
+| 4, 5 | HUD (Team Deathmatch, Bomb) | `ui/hud.tscn` (health, ammo, weapon, death and spectate lines), `ui/round_hud.tscn` (top bar, centre messages, respawn countdown, kill feed), `ui/bomb_hud.tscn`, `ui/crosshair.gd` | `HUD_*` tokens; `HudValueLabel`, `HudWeaponLabel`, `HudDeathLabel`, `HudSpectateLabel`, `HudRespawnLabel`; top bar `HudTopBar`, `HudFriendlyBox` / `HudTimerBox` / `HudEnemyBox`, `HudBoxMargin`, `HudBoxContent`, `HudScoreLabel`, `HudTimerLabel`, `HudRoundLabel`, `HudPips`; messages `HudMessages`, `HudTitleLabel`, `HudLineLabel`, `HudNoteLabel`; bomb `HudBombTagLabel`, `HudPromptLabel`, `HudBombMessageLabel`, `HudBarBack` / `HudBarFill`; state colours and the pip size in the theme type `Hud`. Armor, weapon slots, money and pickups come with M7 |
 | 6 | Buy menu | M7 (`m7-arsenal` branch) | built on the same roles |
-| 7 | Tab scoreboard | `ui/scoreboard.tscn`, `ui/scoreboard_table.gd` (rows built in code) | `OverlayPanel`, `PanelMargin`, `ContentBox`, `DimLabel`, `ScoreRow`, `ScoreLabel` + team score roles, `TableBox`, `TeamBox`, `TeamHeaderFriendly` / `TeamHeaderEnemy`, `RowPanel` / `YouRowPanel`, `RowMargin`, `BrightLabel` |
-| 8 | Match-end screen | `ui/match_end_screen.tscn` (+ the same table) | `ModalPanel`, result and team score roles, the table's roles, `ButtonRow` |
-| 9 | Pause menu | `ui/pause_menu.tscn` | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `BigButton` |
-| 10 | Settings | `ui/settings_menu.tscn` (+ `.gd`, rows built in code), crosshair preview `ui/crosshair.gd` | `ModalPanel`, `TitleLabel`, `TabContainer`, `FormRow`, `HeaderLabel`, `DimLabel`, `InsetPanel`, `HSlider`, `LineEdit`, `CheckBox`, `OptionButton`, `Button` |
+| 7 | Tab scoreboard | `ui/scoreboard.tscn`, `ui/scoreboard_table.gd` (rows built in code) | `OverlayPanel`, `PanelMargin`, `ContentBox`, `DimLabel`, `ScoreRow`, `FriendlyScoreLabel` / `EnemyScoreLabel`, `TableBox`, `TeamBox`, `TeamHeaderFriendly` / `TeamHeaderEnemy`, `RowPanel` / `YouRowPanel`, `RowMargin`, `BrightLabel`; dead rows dimmed by `Palette/dead_row` |
+| 8 | Match-end screen | `ui/match_end_screen.tscn` (+ the same table) | `BackdropPanel`, `ModalPanel`, `VictoryLabel` / `DefeatLabel`, `FriendlyScoreLabel` / `EnemyScoreLabel`, the table's roles, `ButtonRow` |
+| 9 | Pause menu | `ui/pause_menu.tscn` | `BackdropPanel`, `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `BigButton` |
+| 10 | Settings | `ui/settings_menu.tscn` (+ `.gd`, rows built in code), crosshair preview `ui/crosshair.gd` | `BackdropPanel`, `ModalPanel`, `SwatchRow`, `SwatchMargin`, `TitleLabel`, `TabContainer`, `FormRow`, `HeaderLabel`, `DimLabel`, `InsetPanel`, `HSlider`, `LineEdit`, `CheckBox`, `OptionButton`, `Button` |
 | 11 | Multiplayer lobby | M9 (`m9-multiplayer` branch); its entry goes in the main menu's `Links` row | built on the same roles |
 | 12 | Kill feed lines | `ui/kill_feed.gd` (lines built in code) | after M7 is merged (it adds the weapon icons) |
-| 13 | Developer console | `ui/dev_console.tscn` | `ConsolePanel`, console text roles |
+| 13 | Developer console | `ui/dev_console.tscn` | `ConsolePanel`, `ConsoleLabel`, `ConsoleLineEdit` (monospace `FONT_MONO_NAMES`) |
 | 14 | Loading / map change | doesn't exist yet | new scene when the mockup arrives |
 | 15 | Toasts and alerts | `ui/round_hud.tscn` (centre messages), `ui/bomb_hud.tscn` | HUD roles |
 | 16 | Icons | `assets/ui/icons/` | the slots above |
