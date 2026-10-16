@@ -69,6 +69,13 @@ const BOB_DOWN := 0.005
 const BOB_CYCLE_DISTANCE := 3.6
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
+## How many walls one bullet can go through (D-214).
+const MAX_WALLS := 3
+## How far past a wall's far side the next ray starts, in metres, so it doesn't hit the wall again.
+const WALL_STEP := 0.01
+## A client replaying a shot treats a wall whose near side is this close to the reported hit as the
+## one that stopped the bullet (metres).
+const WALL_STOP_TOLERANCE := 0.03
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
 ## A bullet hitting a body, and a head (as recognisable as CS's headshot sound, D-084).
 const HIT_BODY_SOUND := preload("res://assets/sounds/hit_body.wav")
@@ -612,21 +619,35 @@ func _spread(direction: Vector3, degrees: float) -> Vector3:
 	return (direction + (side * cos(angle) + up * sin(angle)) * radius).normalized()
 
 
-## Hitscan: finds the first thing on the bullet's path, instantly (no travel time).
+## Hitscan: finds the first thing on the bullet's path, instantly (no travel time). A bullet that
+## hits a wall can go through it (D-214): [method wall_through] says if and what it costs, the damage
+## it deals further on is multiplied by what is left, and the hole shows on both sides of the wall.
 func _shoot_bullet(direction: Vector3) -> void:
 	var from := _wielder.get_eye_position()
+	var end := from + direction * data.max_range
+	var origin := from
+	var kept := 1.0
+	var walls := 0
+	var last_exit := Vector3.ZERO
 	var result: Dictionary
-	if _wielder.lag_compensation != null:
-		# Online, a friend's shot on the host: against the hit zones where the friend saw them (D-107).
-		result = _wielder.lag_compensation.trace(_wielder, from, from + direction * data.max_range, _get_passable_hitbox_rids())
-	else:
-		var query := PhysicsRayQueryParameters3D.create(
-				from, from + direction * data.max_range, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
-		query.collide_with_areas = true
-		# The ray starts inside your own head hitbox; never hit yourself.
-		query.exclude = _get_passable_hitbox_rids()
-		result = get_world_3d().direct_space_state.intersect_ray(query)
+	while true:
+		result = _cast_bullet(origin, end)
+		if result.is_empty() or result.collider is Hitbox or walls >= MAX_WALLS:
+			break
+		var through := wall_through(result, direction)
+		if through.is_empty():
+			break
+		_show_wall_hit(result, through)
+		kept *= through.kept
+		walls += 1
+		last_exit = through.exit_position
+		origin = last_exit + direction * WALL_STEP
 	if result.is_empty():
+		if walls > 0:
+			# Out the other side and on into nothing: report where it left, so the other computers
+			# can show the holes (they replay the walls from the eye to this point).
+			last_hit = {"position": last_exit, "distance": from.distance_to(last_exit), "zone": "", "damage": 0.0, "walls": walls}
+			hit_landed.emit(last_hit)
 		return
 	var hit_position: Vector3 = result.position
 	var distance := from.distance_to(hit_position)
@@ -634,18 +655,88 @@ func _shoot_bullet(direction: Vector3) -> void:
 	var damage := 0.0
 	if result.collider is Hitbox:
 		var hitbox := result.collider as Hitbox
-		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance), hit_position, _wielder, data)
+		damage = hitbox.receive_hit(data.damage * _get_damage_falloff(distance) * kept, hit_position, _wielder, data)
 		zone = hitbox.get_zone_name()
 	last_hit = {
 		"position": hit_position,
 		"distance": distance,
 		"zone": zone,
 		"damage": damage,
+		"walls": walls,
 	}
 	# A rewound hit (lag compensation) leaves its hole where that spot of the body is now.
 	_spawn_impact(result.get("impact_position", hit_position), result.get("impact_normal", result.normal), result.collider)
 	_play_impact_sound(result)
 	hit_landed.emit(last_hit)
+
+
+## The first thing a bullet from [param origin] towards [param end] hits: the world or a hit zone.
+## Online, a friend's shot on the host is traced against the hit zones where the friend saw them (D-107).
+func _cast_bullet(origin: Vector3, end: Vector3) -> Dictionary:
+	if _wielder.lag_compensation != null:
+		return _wielder.lag_compensation.trace(_wielder, origin, end, _get_passable_hitbox_rids())
+	var query := PhysicsRayQueryParameters3D.create(origin, end, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
+	query.collide_with_areas = true
+	# The ray starts inside your own head hitbox; never hit yourself.
+	query.exclude = _get_passable_hitbox_rids()
+	return get_world_3d().direct_space_state.intersect_ray(query)
+
+
+## Whether this weapon's bullet goes through the wall it hit (D-214). [param hit] is a ray's result against the
+## world, [param direction] the way the bullet travels. Answers an empty dictionary when it stops there, or
+## otherwise [code]exit_position[/code], [code]exit_normal[/code] (the far side of the wall), [code]thickness[/code] (metres
+## along the bullet's path), [code]kept[/code] (the share of the damage left, 0 to 1, more than 0) and
+## [code]kind[/code] (the wall's [enum Surfaces.Kind]). How far it can go is [method Surfaces.reach] of the
+## material times [member WeaponData.penetration]; the far side is found with a ray back from there, which sees
+## nothing from inside a thicker wall.
+func wall_through(hit: Dictionary, direction: Vector3) -> Dictionary:
+	var kind := Surfaces.kind_of(hit.collider, hit.shape, hit.normal)
+	var reach := Surfaces.reach(kind) * data.penetration
+	if reach <= 0.0:
+		return {}
+	var entry: Vector3 = hit.position
+	var query := PhysicsRayQueryParameters3D.create(entry + direction * reach, entry, PhysicsLayers.WORLD)
+	var exit := get_world_3d().direct_space_state.intersect_ray(query)
+	# A hit from inside a thicker wall faces back towards us: it is not a way out.
+	if exit.is_empty() or (exit.normal as Vector3).dot(direction) <= 0.0:
+		return {}
+	var thickness := entry.distance_to(exit.position)
+	if thickness >= reach:
+		return {}
+	return {
+		"exit_position": exit.position, "exit_normal": exit.normal, "exit_collider": exit.collider,
+		"thickness": thickness, "kept": 1.0 - thickness / reach, "kind": kind,
+	}
+
+
+## The share of its damage a bullet fired from the wielder's eye keeps on its way to [param point] (D-214, D-215):
+## 1.0 with nothing in between, less through walls it goes through (up to [constant MAX_WALLS]), 0 when a wall
+## stops it. Bots use it to decide whether to fire at a sound behind thin cover.
+func get_wall_factor(point: Vector3) -> float:
+	var from := _wielder.get_eye_position()
+	var direction := (point - from).normalized()
+	var origin := from
+	var kept := 1.0
+	for wall in MAX_WALLS + 1:
+		var query := PhysicsRayQueryParameters3D.create(origin, point, PhysicsLayers.WORLD)
+		var hit := get_world_3d().direct_space_state.intersect_ray(query)
+		if hit.is_empty():
+			return kept
+		if wall == MAX_WALLS:
+			break
+		var through := wall_through(hit, direction)
+		if through.is_empty():
+			break
+		kept *= through.kept
+		origin = (through.exit_position as Vector3) + direction * WALL_STEP
+	return 0.0
+
+
+## Leaves a hole on each side of the wall a bullet went through, and the impact sound at the near side.
+func _show_wall_hit(hit: Dictionary, through: Dictionary) -> void:
+	_spawn_impact(hit.position, hit.normal, hit.collider)
+	_play_impact_sound(hit)
+	_spawn_impact(through.exit_position, through.exit_normal, through.exit_collider)
 
 
 ## Hit zones a bullet passes through: your own, and with friendly fire off also
@@ -733,10 +824,23 @@ func play_remote_shot(hit: bool, hit_position: Vector3) -> void:
 		return
 	var from := _wielder.get_eye_position()
 	var direction := (hit_position - from).normalized()
-	var query := PhysicsRayQueryParameters3D.create(from, hit_position + direction * 0.25, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
-	query.collide_with_areas = true
-	query.exclude = _wielder.get_hitbox_rids()
-	var result := get_world_3d().direct_space_state.intersect_ray(query)
+	var target := hit_position + direction * 0.25
+	var origin := from
+	var result: Dictionary
+	for wall in MAX_WALLS + 1:
+		var query := PhysicsRayQueryParameters3D.create(origin, target, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
+		query.collide_with_areas = true
+		query.exclude = _wielder.get_hitbox_rids()
+		result = get_world_3d().direct_space_state.intersect_ray(query)
+		# A wall before the reported hit that the bullet went through (D-214): its holes, then on.
+		if result.is_empty() or result.collider is Hitbox or wall == MAX_WALLS \
+				or (result.position as Vector3).distance_to(hit_position) < WALL_STOP_TOLERANCE:
+			break
+		var through := wall_through(result, direction)
+		if through.is_empty():
+			break
+		_show_wall_hit(result, through)
+		origin = (through.exit_position as Vector3) + direction * WALL_STEP
 	if result.is_empty() or (result.position as Vector3).distance_to(hit_position) > 1.0:
 		# The body it hit has moved on here (it is shown a little in the past): a hole in the air
 		# helps nobody, so only the sound plays, from where the bullet landed.

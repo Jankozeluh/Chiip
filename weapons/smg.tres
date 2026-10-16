@@ -23,6 +23,7 @@ kill_reward = 200
 damage = 26.0
 range_modifier = 0.87
 armor_penetration = 0.6
+penetration = 0.5
 magazine_size = 30
 reserve_ammo = 120
 fire_rate_rpm = 857.0

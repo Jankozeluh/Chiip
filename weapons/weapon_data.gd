@@ -66,6 +66,10 @@ const PATHS: Array[String] = [
 @export var range_modifier: float = 0.98
 ## How far bullets reach, in metres. CS: 8192 units ≈ 208 m.
 @export var max_range: float = 208.0
+## How well a bullet goes through walls (D-214): the thickness of each material that stops it is
+## [method Surfaces.reach] times this, and a bullet that goes through keeps the share of its damage
+## the wall didn't take. 1.0 is the rifle; 0 means the weapon's bullets stop at the first wall.
+@export var penetration: float = 1.0
 ## The share of the damage that reaches health when the hit lands on armor (CS's armor ratio
 ## halved: the AK's 1.55 is 0.775). See [Armor].
 @export_range(0.0, 1.0) var armor_penetration: float = 0.5

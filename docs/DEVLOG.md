@@ -11,7 +11,9 @@ Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 s
 
 - **Gamepad** (D-211 to D-213): left stick moves, right stick looks (rate-based, dead zone, sensitivity, look curve, Y inversion in Settings → Game), every action on a button or trigger, a **Pad** column in Settings → Controls (one button per action, saved in a `[pad]` section), menus by D-pad and A, B backs out like Esc (`PadInput`), and prompts that follow the device used last (`LastInput`). Defaults are a console shooter's. The `access` suite has the stick maths, the default and rebound bindings, injected pad events, a real player's look and move, and the menu rules. **Needs your hands:** the dead zone, curve and speed are by-feel numbers (an open check).
 
-**Next:** wallbangs, then smarter team bots.
+- **Wallbangs** (D-214, D-215): bullets go through up to three thin walls. A material's reach (wood 0.5 m, gravel 0.35, hard 0.2, metal 0.12) times the weapon's penetration (sniper 2.5 ... shotgun 0.3, knife 0) decides how much damage is kept (`1 - thickness / reach`); holes on both sides, the host decides and clients replay the walls from the eye to the reported hit (no new message). Bots that heard an enemy behind thin cover may spray through it by difficulty chance. The new `wallbang` suite checks the damage shares on convex and concave walls, slanted and double walls, what stops a bullet, the holes (also replayed), the bots and the weapon data; the weapon table has a `wall_penetration` column.
+
+**Next:** smarter team bots.
 
 ## 2026-10-16 — M12 share
 

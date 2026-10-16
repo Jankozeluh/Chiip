@@ -25,6 +25,7 @@ damage = 26.0
 range_modifier = 0.7
 max_range = 30.0
 armor_penetration = 0.5
+penetration = 0.3
 pellets = 9
 pellet_spread = 3.2
 magazine_size = 8

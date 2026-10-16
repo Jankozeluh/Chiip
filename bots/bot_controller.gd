@@ -84,6 +84,12 @@ const LOOK_AWAY_TIME := 1.8
 const TURN_RESPONSIVENESS := 7.0
 ## How close the aim must be to where the bot wants it before it pulls the trigger, in degrees.
 const ON_TARGET_DEGREES := 2.5
+## How long after hearing or losing an enemy a bot may fire through a wall at the spot (seconds, D-215).
+const WALLBANG_WINDOW := 2.0
+## The share of its damage a bullet must keep through the wall for the bot to fire at the sound.
+const WALLBANG_MIN_KEPT := 0.4
+## How high above the floor a bot aims at a sound behind a wall (a chest, metres).
+const WALLBANG_HEIGHT := 1.1
 ## How long the bot looks around after reaching the last known position, in seconds.
 const LOOK_AROUND_TIME := 2.4
 ## How far the bot looks to each side while looking around, in degrees.
@@ -194,6 +200,9 @@ var _start_delay: float = 0.0
 var _hold_spot: Transform3D = Transform3D.IDENTITY
 var _hold_spots: Array[Transform3D] = []
 var _hold_time: float = 0.0
+## The lead (last known position, raised) the bot rolled its wallbang chance for, and the roll (D-215).
+var _wallbang_lead: Vector3 = Vector3.INF
+var _wallbang_wanted: bool = false
 ## Seconds left in which this attacker closes in on far enemies instead of shooting at them.
 var _close_in_left: float = 0.0
 ## Bomb rounds: the round's bomb (null without one), the site this bot's team
@@ -526,6 +535,8 @@ func _flat_distance(a: Vector3, b: Vector3) -> float:
 
 
 func _search(input: CharacterInput, delta: float) -> void:
+	if _wallbang(input, delta):
+		return
 	if not has_arrived():
 		# Walk there while looking toward where the enemy was (holding the angle).
 		_walk(input, delta, false)
@@ -540,6 +551,38 @@ func _search(input: CharacterInput, delta: float) -> void:
 	_turn_toward(_look_around_yaw + deg_to_rad(LOOK_AROUND_DEGREES) * side, 0.0, WALK_TURN_SPEED, delta)
 	if _look_around_left <= 0.0:
 		_senses.forget()
+
+
+## A bot that heard an enemy (or lost sight of one) behind thin cover sprays at the spot through the wall, when
+## its gun's bullets keep at least [constant WALLBANG_MIN_KEPT] of their damage there (D-215; the weapon says
+## with [method Weapon.get_wall_factor]) and the difficulty's wallbang chance came up for this lead.
+## Returns true while it is doing that (it stands and aims instead of walking on).
+func _wallbang(input: CharacterInput, delta: float) -> bool:
+	var weapon := character.weapon
+	if weapon == null or difficulty.wallbang_chance <= 0.0 or _senses.get_lead_age() > WALLBANG_WINDOW:
+		return false
+	var data := weapon.data
+	if data.is_melee() or data.is_grenade() or data.has_scope() or data.pellets > 1 or data.penetration <= 0.0 \
+			or weapon.is_reloading() or weapon.magazine <= 0:
+		return false
+	var point := _senses.last_known_position + Vector3.UP * WALLBANG_HEIGHT
+	if point != _wallbang_lead:
+		_wallbang_lead = point
+		_wallbang_wanted = rng.randf() < difficulty.wallbang_chance
+	if not _wallbang_wanted:
+		return false
+	var kept := weapon.get_wall_factor(point)
+	if kept < WALLBANG_MIN_KEPT or kept >= 1.0:
+		return false
+	var to_point := point - character.get_eye_position()
+	var desired := Vector2(atan2(-to_point.x, -to_point.z), asin(to_point.normalized().y))
+	_turn_toward(desired.x, desired.y, difficulty.aim_turn_speed, delta)
+	var off_target := rad_to_deg(Vector2(angle_difference(_yaw, desired.x), _pitch - desired.y).length())
+	input.shoot = off_target <= ON_TARGET_DEGREES * 2.0 and not _teammate_in_line_of_fire(to_point.length())
+	if input.shoot and not data.automatic and _trigger_was_held:
+		input.shoot = false
+	_trigger_was_held = input.shoot
+	return true
 
 
 func _engage(input: CharacterInput, delta: float) -> void:
@@ -600,10 +643,10 @@ func _engage(input: CharacterInput, delta: float) -> void:
 ## its target, so a shot now could hit them. Bots hold fire then, like a player
 ## waiting for a teammate to clear the angle (with friendly fire off the bullet
 ## would pass through, but spraying through a friend still isn't how people play).
-func _teammate_in_line_of_fire() -> bool:
+func _teammate_in_line_of_fire(reach_to: float = -1.0) -> bool:
 	var from := character.get_eye_position()
 	var direction := -Basis.from_euler(Vector3(_pitch, _yaw, 0.0)).z
-	var reach := from.distance_to(_target.get_eye_position())
+	var reach := reach_to if reach_to >= 0.0 else from.distance_to(_target.get_eye_position())
 	for mate in Character.all_in_world(character):
 		if mate == character or mate.team != character.team or not mate.is_alive():
 			continue

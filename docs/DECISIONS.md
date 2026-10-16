@@ -2052,6 +2052,26 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Reading `Input.get_connected_joypads()` (a pad plugged in is not a pad in use: the user plays with the mouse and has a pad connected); a signal from an autoload (autoloads don't exist in tool scripts, D-066).
 
+## D-214 — Wallbangs: a bullet goes through thin walls, and loses damage by material and thickness (2026-10-16)
+
+**Decision:** A hitscan bullet that hits the world can go on. Each surface kind (D-084: hard, gravel, metal, wood) has a **reach**: how many metres of it stop a bullet of penetration power 1.0 (hard 0.20, gravel 0.35, metal 0.12, wood 0.50 in `Surfaces.REACH`). Each weapon has a `penetration` power in its data (`WeaponData.penetration`: rifle 1.0, carbine 0.8, SMG and pistol 0.5, hand cannon 1.3, Heron sniper rifle 2.5, shotgun 0.3 per pellet, knife and grenades 0; it is a column in `docs/weapons.csv`). A bullet that went `t` metres through a wall keeps `1 - t / (reach × power)` of its damage; at `t ≥ reach × power` it stops. So a rifle bullet through a 10 cm plaster or brick wall (hard) keeps half, through 10 cm of planks 80 %, a 20 cm concrete wall stops it, and the sniper rifle goes through 25 cm of concrete. A bullet goes through at most **three** walls; the damage falloff by distance counts the whole path as before, and the kept share multiplies the damage of whatever it hits beyond (the hit-zone multiplier, armour and headshot rules are unchanged).
+- **How the thickness is measured:** from the entry point, a ray goes back from `reach × power` metres further along the path; the first surface it meets is the far side. A wall thicker than that has the ray start inside it, and a ray from inside sees nothing (convex shapes) or the entry face from behind (a closed trimesh), which `normal · direction ≤ 0` rejects, so thick walls and crates stop the bullet either way. Tested on both kinds of collision shape and on a slanted wall (the path is longer through it).
+- **Holes on both sides:** a bullet that goes through leaves a hole and plays the impact sound at the near face, leaves a hole at the far face, and then whatever hits after. A bullet that leaves the wall and hits nothing is reported (`last_hit` with `walls` and the exit point) like a hit, which is how the other computers learn about it.
+- **Online:** the host decides damage with the same function, through lag compensation (each segment is traced from where the last wall ended; D-107). A client that sees someone else's shot replays the *walls* between the eye and the reported hit with the same function on the same static map (`Weapon.play_remote_shot`), so every computer draws the same holes with no new network message; the hit position the host reports is already the last thing the bullet touched. `netplay` and `netarsenal` still pass.
+- **Bots:** their bullets go through walls like anybody's. Bots can also *use* it, a little (D-215).
+
+**Why:** a CS-like feel (the user asked for wallbangs for the player and the bots), and the surface kinds were already there for the footstep and impact sounds. One number per material and one per weapon is easy to read and to tune in `docs/weapons.csv`; the whole rule is in `Weapon.wall_through()` (one function, tested directly).
+
+**Alternatives:** CS's own model (a material "penetration modifier" and a maximum distance, then damage lost per unit distance: more numbers per weapon for the same feel); real thickness from the map's brush data (it exists only for TrenchBroom maps, not props or CSG test maps); letting bullets through characters too (a bullet that kills one enemy and hits the next is a bigger change to the kill rules, and not asked for).
+
+## D-215 — Bots fire through thin cover at sounds, behind a difficulty chance (2026-10-16)
+
+**Decision:** A bot that heard an enemy, or just lost sight of one, within `WALLBANG_WINDOW` (2 s) and is in the search state turns to the spot (chest height) and shoots through the wall, but only when `Weapon.get_wall_factor(point)` says the bullet would keep at least 40 % (and not 100 %: with nothing in the way it would see the enemy), with a gun that can (not the scoped rifle, shotgun, knife or grenades). The chance is `BotDifficulty.wallbang_chance` (easy 0, normal 0.35, hard 0.8), rolled once per lead (per new last-known position), so the same bot isn't spraying through every wall it passes.
+
+**Why:** "the player and the bots" (the task): bullets going through walls is symmetrical by itself, and a bot that never uses it would be the one that does not play like a CS player; but constant wall-spraying with perfect knowledge would feel unfair, so it is by chance and by what it heard.
+
+**Alternatives:** Always (unfair, and a bot that has heard you behind a wall would kill you through it); never (the player gets a trick the bots don't have); firing at any known enemy position (it would use information the bot does not have).
+
 ## Open questions
 
 | Question | Decide in |

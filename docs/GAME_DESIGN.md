@@ -299,6 +299,19 @@ CS's grenades (D-097) *(tune)*. You carry at most 1 Frag, 2 Flashbangs and 1 Smo
 - **Flashbang:** goes off 1.6 s after the throw. Everyone with a clear line to it is blinded (teammates and the thrower too): up to 4.5 s, white at first and fading over the last 2 s. Full strength when you look toward it (within about 45°), less from the side, only a short flash when it's behind you; full up to 8 m, a third at 45 m, nothing farther or behind a wall. Your screen goes white and your ears ring; a blinded bot sees nothing (it can't notice or keep sight of anyone) until it fades.
 - **Smoke:** pops where it comes to rest (at least 1 s after the throw; at the latest after 3.5 s) into a grey cloud about 7 m across and 3 m high for **18 s**: it grows over a second and thins out over the last two. Bots can't see through it; inside it your view goes grey. Bullets pass through, as in CS.
 
+### 4.10b Wallbangs (M15, D-214, D-215)
+
+Bullets go through thin walls (up to three), for you and for the bots. What a wall takes depends on **what it is made of** (the surface kinds of the footstep sounds: wood, metal, gravel and earth, hard = concrete, brick, plaster) and **how thick it is along the bullet's path**; a slanted shot goes through more wall. The bullet keeps `1 - thickness / (reach × the weapon's penetration)` of its damage, and stops when that reaches 0:
+
+| Material | Reach (m, for penetration 1.0) | A rifle bullet through 10 cm keeps |
+|---|---|---|
+| Wood (planks, crates' boards) | 0.50 | 80 % |
+| Gravel and earth | 0.35 | 71 % |
+| Hard (concrete, brick, plaster) | 0.20 | 50 % |
+| Metal (sheet, grates) | 0.12 | 17 % |
+
+Penetration per weapon (`docs/weapons.csv`, `wall_penetration`): Heron sniper rifle 2.5, hand cannon (Verdict) 1.3, Ram 1.0, Warden 0.8, Hornet and Sparrow 0.5, Breaker 0.3 per pellet, knife and grenades 0. A 1 m crate or a 20 cm concrete wall stops anything but the Heron. The hole shows on both sides of the wall. Bots that **heard** an enemy behind thin cover (or just lost sight of one) may spray at the spot through the wall, by difficulty chance (easy never, normal 35 %, hard 80 %, once per sound) and only where their bullets would keep at least 40 % of their damage.
+
 ### 4.11 Armor
 
 CS:GO's rule (D-093), the same for every hit, in `Armor`:

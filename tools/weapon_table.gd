@@ -22,7 +22,7 @@ const MAX_SHOTS := 1000
 ## The columns that don't depend on a distance, in order.
 const BASE_COLUMNS: Array[String] = [
 	"id", "name", "slot", "category", "price", "kill_reward", "damage", "pellets",
-	"armor_penetration", "range_modifier", "fire_rate_rpm", "shot_interval_s", "magazine",
+	"armor_penetration", "wall_penetration", "range_modifier", "fire_rate_rpm", "shot_interval_s", "magazine",
 	"reserve", "reload_s", "reload_per_shell", "draw_s", "speed_units", "standing_inaccuracy",
 	"moving_inaccuracy", "scoped_inaccuracy",
 ]
@@ -106,6 +106,7 @@ static func _row(data: WeaponData) -> Dictionary:
 	row["damage"] = _number(data.damage)
 	row["pellets"] = str(data.pellets)
 	row["armor_penetration"] = _number(data.armor_penetration, 3)
+	row["wall_penetration"] = _number(data.penetration, 2)
 	row["range_modifier"] = _number(data.range_modifier)
 	row["fire_rate_rpm"] = _number(data.fire_rate_rpm)
 	row["shot_interval_s"] = _number(data.get_shot_interval(), 3)

@@ -60,6 +60,17 @@ const IMPACTS := {
 	Kind.WOOD: preload("res://assets/sounds/impact_wood.wav"),
 }
 
+## How thick a wall of each kind must be to stop a bullet of penetration power 1.0, in metres (D-214):
+## a bullet that goes through [code]t[/code] metres of it keeps [code]1 - t / (reach × power)[/code] of its damage.
+## Wood gives way easily, metal sheet less, gravel and earth are dense, concrete, brick and plaster stop most
+## bullets (a 10 cm wall halves a rifle's damage, a 20 cm one stops it).
+const REACH := {
+	Kind.HARD: 0.20,
+	Kind.GRAVEL: 0.35,
+	Kind.METAL: 0.12,
+	Kind.WOOD: 0.50,
+}
+
 ## "body id:shape index:normal" → Kind.
 static var _cache: Dictionary = {}
 
@@ -102,6 +113,11 @@ static func kind_for_texture(texture_name: String) -> Kind:
 		if file.contains(entry[0]):
 			return entry[1]
 	return Kind.HARD
+
+
+## How many metres of [param kind] stop a bullet of penetration power 1.0 ([constant REACH]).
+static func reach(kind: Kind) -> float:
+	return REACH[kind]
 
 
 ## The sound of a bullet hitting [param kind].
