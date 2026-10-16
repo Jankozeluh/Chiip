@@ -2,6 +2,16 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M10 map kit
+
+Runs in its own worktree and branch (`claude/m10-mapkit-dc3914`), alongside M7, M9 and the M10 UI refresh. The coordinating session merges it into main.
+
+**Done**
+- **Planned the map kit:** eleven tasks in PLAN.md (M10, "Map kit and environment art"), with provisional decisions D-121 to D-129: the texture sets and how sounds find them, props generated like the crew, collision that is fair to bots (what you see blocks; see-through things block only movement), lamps as entities, gameplay markers placeable in TrenchBroom, performance limits, the look rule of five main materials plus details, dressing that keeps the layouts, and a kit gallery map with its own test.
+- **Picked the textures:** browsed about 300 ambientCG candidates (their preview images) and chose 28 for four sets; the zips are downloaded in task 1.
+
+**Next:** task 1, the texture library.
+
 ## 2026-10-16 — Roadmap: M10 look & feel
 
 **Done**

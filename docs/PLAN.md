@@ -1,6 +1,6 @@
 # Chiip — Plan & Roadmap
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
 > **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". In progress: M7 — Arsenal, perks & economy, M9 — Multiplayer, and M10 — Look & feel (map kit and a modern UI), each in its own branch.
 
@@ -59,7 +59,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M7 | Arsenal, perks & economy | ⬜ | Earn money, buy from the full arsenal, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
-| M10 | Look & feel: map kit and a modern UI | ⬜ | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
+| M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -331,16 +331,38 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** Godot's multiplayer API (RPCs, `MultiplayerSynchronizer`, `MultiplayerSpawner`), authority, prediction, lag compensation, Steamworks basics.
 
-## M10 — Look & feel: map kit and a modern UI ⬜
+## M10 — Look & feel: map kit and a modern UI 🟨
 
 **Goal:** the maps stop looking blank, anyone can build maps from one kit, and the menus look clean and modern while staying pixelated (D-120). Runs as two parts in parallel, each planned in detail when it starts.
 
-**Map kit and environment art** (decisions D-121 to D-129):
-- [ ] A texture library: about 30 more CC0 textures from ambientCG, made retro by our tool (64 × 64, palette-limited) and grouped into sets (industrial, urban, interior, nature). Ready to use in TrenchBroom
-- [ ] A prop library made by our own generator in the crew's low-poly style: crates, barrels, pallets, fences and railings, lamps, doors, pipes, signs, simple vehicles, plants and trees, debris. Each has collision and can be placed in TrenchBroom as an entity
-- [ ] Light fixtures as entities, and anything else a mapper needs (ladders, glass, triggers) that the game supports
-- [ ] A mapping guide for you and the community (`docs/MAPPING.md`): the workflow, the look rules (MAPS.md), the entity list, building, navmesh, testing
-- [ ] Dress Depot, Square, Spillway and the test map with the kit, without changing the layouts' timing (the maps test still passes)
+**Map kit and environment art** (decisions D-121 to D-129) 🟨 *in progress in the `claude/m10-mapkit-dc3914` branch*
+
+The kit is what you and the community build maps from: textures in TrenchBroom's texture browser, props and lamps in its entity browser, and a guide. Then the four maps get dressed with it. Tasks in order, one commit each (prefix `M10:`); the tag says which model builds it (CLAUDE.md, "Choosing a model"):
+
+1. [ ] **Texture library** (D-121). 28 more CC0 textures from ambientCG, made retro by `tools/make_retro_texture.gd` (64 × 64, 16 colours) and sorted into four sets: `assets/textures/industrial/`, `urban/`, `interior/`, `nature/`. A material for each (`assets/materials/<set>/`, for CSG maps and props); chain-link with see-through holes. Footsteps and bullet impacts know them by name (metal, wood, gravel-like ground). The eight existing textures stay where they are as the base set. *(Sonnet processes the batch from a brief; Opus picks and tunes)*
+   - Done when: TrenchBroom lists the four sets; a contact sheet of all textures passes the look rules by measurement (no saturated red or blue, no desert palette); CREDITS lists every texture with its settings; all suites pass.
+   - You learn: how TrenchBroom finds textures (folders become collections) and how func_godot turns a texture name into a material.
+2. [ ] **Prop generator** (D-122, D-123). `modelgen.py props` builds static props from part lists, with the crew's pieces and painter and a prop palette. Each prop gets a `.glb` and texture (`assets/models/props/`), a scene with box collision (`maps/kit/props/`) and an entry in a generated entity file (`maps/fgd/chiip_kit_fgd.tres`), so it shows up in TrenchBroom's entity browser with its model. First props: crates, barrels, pallets. *(Opus)*
+   - Done when: a crate placed in a `.map` file builds into the scene with its model and collision, bots walk around it, bullets hit it, and its footsteps sound like wood.
+   - You learn: Godot's glTF import, `StaticBody3D` with several `CollisionShape3D`s (Unity: a prefab with box colliders), point entities in func_godot.
+3. [ ] **Prop library** (D-122). The rest of the kit, about 40 props: containers, fences and railings, doors, pipes, signs (bomb-site letters, arrows, warnings), simple vehicles, plants and trees, debris. A contact sheet of all of them. *(Opus designs the look; Sonnet writes part lists from specs)*
+   - Done when: every prop builds, has the collision its kind needs, and the contact sheet reads as one family with the crew.
+4. [ ] **Light fixtures** (D-124). Lamp entities with a model and a real light: wall lamp, ceiling lamp, floodlight, street lamp, strip light. Colour, brightness and range are entity properties in TrenchBroom; the bulb glows. *(Sonnet)*
+   - Done when: a lamp placed in TrenchBroom lights the built map with the properties set there.
+   - You learn: `OmniLight3D` and `SpotLight3D` (Unity's point and spot lights), emissive materials, entity properties reaching a script.
+5. [ ] **Mapper essentials** (D-123, D-125). Glass and see-through fences as brush entities (block movement, not bullets or sight), and the gameplay markers as TrenchBroom entities: spawns, respawn points, patrol and hold spots, attack routes and bomb sites, so a whole map can be built in TrenchBroom. Ladders are left out: movement has none (ramps instead). A kit gallery map (`maps/kit/kit_gallery.tscn`) shows every texture and entity, and a new kit test checks them. *(Opus)*
+   - Done when: the gallery map, made only in TrenchBroom format, plays a bot round; the kit test passes.
+   - You learn: brush entities that build an `Area3D`, node groups set from map entities.
+6. [ ] **Mapping guide** (`docs/MAPPING.md`, D-126). For you and the community: the workflow (TrenchBroom, build, navmesh bake, the maps test), the look and building rules, every texture set and entity with a picture, and the performance limits. *(Sonnet drafts, Opus edits)*
+7. [ ] **Dress Depot** (D-127, D-128). Textures, props and lamps on the freight yard without moving walls or cover; rebuild, re-bake the navmesh, maps test and map report. *(Opus)*
+8. [ ] **Dress Square.** The same on the old-town square. *(Opus)*
+9. [ ] **Dress Spillway.** The same on the water works. *(Opus)*
+10. [ ] **Dress the test map.** Kit props and materials on the CSG test map, its markers and the shooting range unchanged. *(Sonnet)*
+11. [ ] **Before/after and wrap-up** (D-129). Before/after screenshots of every map, frame times with the dressed maps, the check in "Your open checks". *(Haiku runs the tools, Opus judges)*
+
+**Done when** (map kit): the four maps look furnished and still play the same (first contact within 5–10 s, every bot route and hold spot valid), a new map can be built from the kit by following the guide, and you've seen before/after screenshots.
+
+**You learn** (map kit): set dressing for a competitive map (cover stays cover, clutter stays out of the way), TrenchBroom entities end to end, and how a generated asset pipeline (Python → glTF → Godot scene → editor entity) fits together.
 
 **Modern, minimal UI and simpler modes** (decisions D-130 to D-139):
 - [ ] A UI refresh: minimal and more modern, with clear hierarchy, spacing and fewer boxes, keeping the pixel font and the pixelated look, nothing childish. Main menu, match setup, settings, pause, HUD, scoreboard, match-end screen and kill feed

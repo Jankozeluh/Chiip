@@ -4,7 +4,7 @@
 >
 > Decisions can be revisited. When one changes, add a new entry that replaces the old one instead of rewriting history, and mark the old one as *Replaced by D-xxx*.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## D-001 — Engine: Godot 4.7.2 with GDScript (2026-10-15)
 
@@ -977,6 +977,95 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, the class draft, and random map weapons.
 
 **Alternatives:** Everything generated, with no downloads (textures look more synthetic). Ready-made CC0 model packs (style may clash with the crew). A random mode-and-map button, and random match twists.
+
+## D-121 — The texture library: 28 ambientCG textures in four sets, found by folder (2026-10-16) — *provisional*
+
+**Decision:**
+- **28 more CC0 textures from ambientCG**, turned retro by `tools/make_retro_texture.gd` like the first eight (64 × 64, 16 colours, D-024), in four sets that TrenchBroom shows as collections: `assets/textures/industrial/` (corrugated steel, diamond plate, rusty plates, grating, chain-link, perforated sheet, worn concrete), `urban/` (asphalt, cobbles, slabs, blocks, rubble wall, slate roof, wood siding, olive plaster), `interior/` (two wood floors, white, dark and checker tiles, ceiling tiles, terrazzo, old planks) and `nature/` (grass, dirt, mossy rock, bark).
+- **The first eight stay where they are**, at the top of `assets/textures/`, as the base set. Moving them would change every built map and the texture names other branches' maps use.
+- **Every texture gets a material** in `assets/materials/<set>/` (world triplanar, like today's, for CSG maps and props). A texture that needs more than func_godot's default material (the chain-link's see-through holes) also gets a `.tres` next to the PNG, which func_godot uses instead of generating one.
+- **Footsteps and impacts know new textures by name:** `Surfaces` matches words in the texture's file name (metal, steel, plate, grate, rust → metal; wood, plank, parquet → wood; gravel, dirt, grass, ground → gravel-like ground). A mapper who names a new texture `blue_metal` gets metal steps without touching code.
+- **Picked and checked against the look rules** (D-031, D-063): no saturated red or blue on surfaces, no sand or desert tones; greens and ochres muted. Measured on the processed textures, not judged by eye.
+- **Downloads:** 28 of the 1K-JPG zips (1.8–11 MB each, about 170 MB in all, kept in the session's scratchpad and deleted afterwards; only the 64 × 64 PNGs enter the project), within your approval of about 30 (D-120). Most were above the 2–5 MB estimated then, because ambientCG's zips hold every map (normal, roughness…), and nature textures are the biggest.
+
+**Why:** Folders are how TrenchBroom groups textures, so sets need no extra configuration and a mapper finds "industrial" where they expect it. Name-based sounds keep the sound pass (D-084) working for textures nobody has listed yet.
+
+**Alternatives:** Moving the old eight into the sets (tidier, but rebuilds every map and breaks other branches' maps); a texture WAD file (the Quake way, but Godot-side materials are simpler); a table of texture → sound kind only (every new texture would need a code change); 2K textures (the tool shrinks to 64 × 64 anyway).
+
+## D-122 — Props are generated like the crew: part lists → glTF → a scene → a TrenchBroom entity (2026-10-16) — *provisional*
+
+**Decision:**
+- **Props come from `tools/modelgen/`** (D-054), from part lists in `props.py`: the same bevelled boxes, tapered cylinders and low-res spheres as the crew, the same painter with 16-shade ramps (plus a few ramps for props: rust, safety yellow, leaf green, concrete), baked light, grain and patterns (wood grain, planks, ribs, rivets, hazard stripes, letters for signs). Static meshes without bones; the crew's 96 texels per metre.
+- **One command, `modelgen.py props`, writes everything** for every prop:
+  - `assets/models/props/<name>.glb` and `<name>_albedo.png` (Godot imports them like the crew);
+  - a scene `maps/kit/props/<name>.tscn`: a `StaticBody3D` with the model and the prop's collision boxes from its part list;
+  - its entry in `maps/fgd/chiip_kit_fgd.tres` (generated), a func_godot point class with the scene and the `.glb` as its display model, so TrenchBroom's entity browser shows the real model and `tools/export_trenchbroom_config.gd` writes it into the FGD.
+- **Names are `prop_<thing>`** (`prop_crate_wood`, `prop_barrel`), like Quake's and Source's prop classes. A prop's front faces `-Z` in Godot, which is the entity's angle in TrenchBroom.
+- **Glowing parts** (lamp bulbs, lit signs) are a second material with emission, so they glow without a light.
+
+**Why:** The crew already proved the pipeline, so props match the crew's chunky low-poly look and palette by construction. Generated scenes and FGD entries mean a new prop is one part list and one command, with nothing to set up by hand in Godot or TrenchBroom.
+
+**Alternatives:** Building props from brushes in TrenchBroom (no tool needed, but no round shapes, and each map would carry its own copies); CC0 model packs (style clash, downloads); func_godot's model point class, which exports display models from the scene at FGD export time (needs the game path set in the editor, and writes into the game folder).
+
+## D-123 — Collision: what you see is what blocks; see-through things block only movement (2026-10-16) — *provisional*
+
+**Decision:**
+- **Solid props block movement, bullets and sight** (the WORLD layer), with boxes that follow their shape closely, because bots see by raycasts against the world: if a prop hid you from a player but not from bots (or the other way round), the bots would cheat. Tree crowns and bushes count as solid.
+- **See-through things block only movement:** chain-link fences, railings, glass and grates are on the physics layer bots already use (layer 3): characters and the navmesh treat it as solid, bullets and sight pass through. The layer keeps its name; the docs now say what else uses it.
+- **Small clutter has no collision:** debris, litter, tufts of grass, wall-mounted things above head height. There are no steps (MAPS.md), so anything low that you could walk into either blocks fully (you jump onto it, as on a crate) or has no collision at all.
+- **Props are cover like the maps' boxes:** low cover 1.2 m or less, tall cover 2.2 m or more, so the building rules still hold for props.
+
+**Why:** Fairness between players and bots is the clarity rule's twin: the same things hide everyone. Reusing layer 3 needs no change to characters, bots or weapons.
+
+**Alternatives:** Mesh-shaped collision (expensive, catches on edges); a new "clip" physics layer (cleaner name, but every character scene and the navmesh settings would change in several branches); collision on everything (debris would stop players like a wall).
+
+## D-124 — Light fixtures are entities with a real light (2026-10-16) — *provisional*
+
+**Decision:** Lamp props (`light_wall`, `light_ceiling`, `light_flood`, `light_street`, `light_strip`) are point entities whose scene holds the lamp's model and a real-time light: an `OmniLight3D` for most, a `SpotLight3D` for the floodlight. Colour, brightness, range and shadows are entity properties set in TrenchBroom, with warm defaults (D-031: warm light only from lamps). Shadows are off by default. The bulb is a glowing material, so a lamp reads as on even where its light is weak.
+
+**Why:** A lamp you can see explains the light in a room, and placing one in TrenchBroom puts the light where the model is. Shadowless omni lights are cheap in Godot's clustered renderer.
+
+**Alternatives:** Lights placed separately in the Godot scene, as today's maps do (two places to edit); Quake-style `light` entities with no model (lights from nowhere); baked light (D-085 keeps lighting real-time).
+
+## D-125 — Gameplay markers can be placed in TrenchBroom (2026-10-16) — *provisional*
+
+**Decision:** Point entities for every marker the game reads: `info_attack_spawn`, `info_defend_spawn`, `info_respawn`, `info_patrol`, `info_hold`, `info_route` (route name and order), and a brush entity `trigger_bombsite` (A or B). They build into the same nodes and groups as the hand-placed markers in today's maps (MAPS.md, "Markers in each map scene"), so the game needs no change. The three quick maps keep their markers in the scene; the kit gallery map uses only entities.
+
+**Why:** "so that I and or the community can build maps": with markers in TrenchBroom a whole map is one `.map` file plus a template scene, without learning Godot's editor first.
+
+**Alternatives:** Markers only in Godot's editor (today; two tools to learn); converting the three maps' markers to entities (risky churn for no gameplay change).
+
+## D-126 — Performance limits for maps (2026-10-16) — *provisional*
+
+**Decision:** Limits a map should stay within, measured with `tools/frame_timing.gd` on the dressed maps (numbers in MAPPING.md): props, lamps (and lamps with shadows), and materials per map. Within them a 5v5 holds the display rate on the M8 machine.
+
+**Why:** Mappers need numbers, not "don't overdo it". Each prop is a draw call and each shadowed light renders the scene again, so those are the costs that grow with dressing.
+
+**Alternatives:** No limits (a community map could run badly without anyone knowing why); limits enforced by a tool (later, if needed).
+
+## D-127 — Look rules for a dressed map: five main materials plus details (2026-10-16) — *provisional; changes D-063's material limit*
+
+**Decision:** D-063's "at most 5 materials per map" becomes **at most 5 main materials** for the big surfaces (floors, walls, roofs, the large blocks), plus **details** in small doses: trim, edges, signs, props and lamps. Everything else in D-063 stays: no saturated red or blue on large surfaces, neutral shadows, cool daylight, measured in screenshots.
+
+**Why:** You found the maps blank. Variety comes from details on top of a calm base, which keeps the minimal, readable look while the maps stop looking empty.
+
+**Alternatives:** Keeping five in total (the maps stay blank); no limit (risks the noisy look D-063 avoided).
+
+## D-128 — Dressing keeps the layouts: details go where they don't change play (2026-10-16) — *provisional*
+
+**Decision:** Dressing a map doesn't move walls, ramps, doors or cover. Props go against walls, in corners, on top of or beside existing cover (where they don't lengthen it), above head height, or replace a plain box with a prop of the same size. After dressing: rebuild, re-bake the navmesh, then the maps test (first contact 5–10 s, every marker on the navmesh, both spawns reach both sites) and the map report (sightlines no longer than before).
+
+**Why:** The layouts were tuned with bots (D-060, D-061); dressing should change the look, not the timing.
+
+**Alternatives:** Redesigning the maps around the new props (a new tuning round, and your playtest of the layouts is still open).
+
+## D-129 — A kit gallery map and a kit test (2026-10-16) — *provisional*
+
+**Decision:** `maps/kit/kit_gallery.map` lays out every texture and entity of the kit, built only from TrenchBroom entities (D-125), and doubles as the guide's picture source and a playable example. `tests/kit_test.tscn` checks the kit: every prop scene loads with a model and the collision its kind needs, every FGD entity has a scene, the gallery's markers and bomb sites work, and a bot round plays on it.
+
+**Why:** A kit nobody can see is hard to use, and generated files need a check that they still fit together after the next run of the generator.
+
+**Alternatives:** Pictures only (no check); checking props inside the maps test (slower, and mixes kit and maps).
 
 ## Open questions
 
