@@ -47,6 +47,15 @@ const BUTTON_BORDER_DISABLED := Color("2b3544")
 ## A faint band behind a hovered check box or check button.
 const TOGGLE_HOVER := Color(1, 1, 1, 0.07)
 
+## The dimming behind a modal menu (settings, pause, class, match setup, match end):
+## it keeps the game or the page visible but out of the way, and takes the clicks.
+const BACKDROP := Color(0, 0, 0, 0.62)
+## The light band behind your own row in a scoreboard table.
+const YOU_ROW := Color(1, 1, 1, 0.16)
+## What a dead player's row in a scoreboard table is multiplied by (the Tab
+## scoreboard dims them); its alpha is how visible the row stays.
+const DEAD_ROW := Color(1, 1, 1, 0.4)
+
 ## The accent: focus rings, selection, slider fill, check marks, active tab.
 const ACCENT := Color("4cc9f0")
 ## The accent lit up (hovered knobs, pressed text) and sunk into a fill (selected rows).
@@ -79,6 +88,11 @@ const HANDLE_GROOVE_DARKEN := 0.3
 const FONT := "res://assets/fonts/Silkscreen-Regular.ttf"
 ## Its bold cut, there for a mockup that asks for it; no role uses it yet.
 const FONT_BOLD := "res://assets/fonts/Silkscreen-Bold.ttf"
+## The monospace font of the developer console, as the names the system is asked
+## for in order (the first one installed wins; macOS has Menlo). A system font,
+## so nothing is shipped; the console isn't part of the game's look. (An array,
+## because a PackedStringArray can't be a constant; the theme tool converts it.)
+const FONT_MONO_NAMES: Array[String] = ["Menlo", "Monaco", "Courier New", "monospace"]
 
 # --- Text sizes ---
 
@@ -177,3 +191,7 @@ const SEGMENT_GAP := 4
 ## Between the mode choices of the main menu, and between a mode's title and its detail line.
 const MODE_GAP := 12
 const MODE_LINE_GAP := 4
+## Between the colour swatches of the settings menu's crosshair colour row, and
+## the margin around the colour inside each swatch button (SwatchRow, SwatchMargin).
+const SWATCH_GAP := 6
+const SWATCH_MARGIN := 6

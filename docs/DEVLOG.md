@@ -14,7 +14,10 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Main menu: one click to play** (D-132). The main page now shows **Team Deathmatch** (first and focused), **Bomb** and **Practice** as big buttons, each with two lines saying what it plays ("3v3 · Normal bots · first to 50 kills" and "Depot, Square, Spillway"); one click starts it. Below them **Custom match** (the old match setup, renamed, Team Deathmatch first), **Settings** and **Quit**. New defaults: Team Deathmatch on the rotation from Depot. Your own `settings.cfg` saved the old defaults (bomb rounds on the test map), so the `[match]` section got a version number and an older file gets the new mode, map and rotation once. Still today's look; your mockups decide the new one.
 
-**Next:** the remaining menus restyle from the theme alone, then the HUD's layout.
+- **Every menu restyles from the theme** (D-131, task 5, built by a Sonnet subagent). The last colours, fonts and spacings set on single nodes (team-coloured scores, Victory/Defeat, the console's monospace font, the crosshair swatches, the dim behind menus, your scoreboard row, dead rows) are now roles and tokens. Nothing looks different; a new check builds every menu and fails if any node carries its own style.
+- **Your mockups are ready** in Claude Design, but this session can't open the project until `/design-login` has been run once in a terminal Claude Code session on this machine (or the files are exported to a folder).
+
+**Next:** the HUD's layout while waiting for the mockups, then the mockups screen by screen.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

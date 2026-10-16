@@ -778,7 +778,7 @@ func _test_scoreboard_table() -> void:
 			"your team %s, enemies %s" % [_names(table.get_displayed(0)), _names(table.get_displayed(1))])
 	var dimmed := _rounds.get_participants().filter(func(member: Character) -> bool: return table.get_row(member).modulate.a < 1.0)
 	_check("Dead players' rows are dimmed (Bot3 and Bot4), the rows of the living are not",
-			_names(dimmed) == _names([bot3, bot4]) and is_equal_approx(table.get_row(bot3).modulate.a, ScoreboardTable.DEAD_ROW_ALPHA),
+			_names(dimmed) == _names([bot3, bot4]) and is_equal_approx(table.get_row(bot3).modulate.a, ThemeDB.get_project_theme().get_color("dead_row", "Palette").a),
 			"dimmed rows: %s" % [_names(dimmed)])
 	var highlighted := _rounds.get_participants().filter(func(member: Character) -> bool: return _is_highlighted(table.get_row(member)))
 	_check("Only your own row is highlighted",
@@ -1083,10 +1083,11 @@ func _header_color(table: ScoreboardTable, team: int) -> Color:
 	return ((table.get_node("Team%d/Header" % team) as Control).get_theme_stylebox("panel") as StyleBoxFlat).bg_color
 
 
-## True if the row has the highlight background of your own row.
+## True if the row has the highlight background of your own row (the theme's "YouRowPanel").
 func _is_highlighted(row: Control) -> bool:
 	var background := row.get_theme_stylebox("panel") as StyleBoxFlat
-	return background != null and background.bg_color == ScoreboardTable.YOU_ROW_COLOR
+	var highlight := ThemeDB.get_project_theme().get_stylebox("panel", "YouRowPanel") as StyleBoxFlat
+	return background != null and highlight != null and background.bg_color == highlight.bg_color
 
 
 func _row_font_size(row: Node) -> int:

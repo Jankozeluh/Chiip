@@ -47,7 +47,7 @@ alignment = 1
 
 [node name="YourScore" type="Label" parent="Center/Panel/Margin/Content/Score"]
 layout_mode = 2
-theme_type_variation = &"ScoreLabel"
+theme_type_variation = &"FriendlyScoreLabel"
 text = "0"
 
 [node name="Dash" type="Label" parent="Center/Panel/Margin/Content/Score"]
@@ -57,7 +57,7 @@ text = "-"
 
 [node name="EnemyScore" type="Label" parent="Center/Panel/Margin/Content/Score"]
 layout_mode = 2
-theme_type_variation = &"ScoreLabel"
+theme_type_variation = &"EnemyScoreLabel"
 text = "0"
 
 [node name="Table" parent="Center/Panel/Margin/Content" instance=ExtResource("table_scene")]

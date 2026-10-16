@@ -43,3 +43,31 @@
 14. **Loading or map-change screen**, with the map name and mode.
 15. **Toasts and alerts:** "Switching sides", "Match point", "Bomb planted", "Low ammo", and a hit marker on a hit.
 16. **Icons:** weapons (8: AK-style rifle, carbine, SMG, pump shotgun, sniper rifle, service pistol, hand cannon, knife), grenades (3), armor, helmet, defuse kit, bomb, classes (4), headshot, health. A pixel icon set, probably 16 × 16 or 32 × 32.
+
+## How a mockup becomes the game
+
+*Added by the M10 UI work (D-130, D-131). Your mockups are the source of truth: each one is applied screen by screen, with before/after screenshots.*
+
+1. **Colours, sizes and spacing → tokens.** Every visual value of the UI is a named token in `tools/ui_palette.gd`: colours (`PANEL`, `BUTTON`, `ACCENT`, `TEXT_DIM`...), the fonts (`FONT`, `FONT_BOLD`), text sizes (`TEXT_SIZE` 16, `TEXT_SIZE_LARGE` 32, `TEXT_SIZE_TITLE` and `TEXT_SIZE_HERO` 48), line widths (`BORDER`, `LINE`), paddings and gaps. A mockup's hex colours and pixel sizes (at 1280 × 720) go there; then the theme tools run (CLAUDE.md, Commands) and every screen changes at once.
+2. **Shapes → the theme tool.** Whether a button has a frame, a panel a border, a tab an underline is decided in `tools/make_ui_theme.gd`, per *role* (a type variation). It has no numbers of its own; it only says which token goes where.
+3. **Layout → the scene.** Where things sit on a screen (columns, order, alignment, what is shown) is in the screen's `.tscn`. Screens pick roles and never set a colour or size of their own, so a layout change doesn't touch the look and the other way round.
+4. **Icons → their slots.** A PNG named after its slot in `assets/ui/icons/` (list in `ui/ui_icons.gd`: `rifle`, `carbine`, `smg`, `shotgun`, `sniper`, `pistol`, `hand_cannon`, `knife`, `frag`, `flashbang`, `smoke`, `armor`, `helmet`, `defuse_kit`, `bomb`, `rifleman`, `bulwark`, `marksman`, `scout`, `headshot`, `health`) appears wherever the screens ask for it; until then they show text.
+5. **Check:** `tools/ui_screenshots.gd` pictures every screen through the real game at 720p or 1080p, before and after.
+
+| # | Mockup | Scene (layout) | Roles it uses today |
+|---|---|---|---|
+| 1, 2 | Main menu and mode choice | `ui/main_menu.tscn` (+ `.gd`) | `PageMargin`, `OverlayPanel`, `PanelMarginWide`, `ContentBox`, `HeroLabel`, `DimLabel`; each mode: `ModeButton` behind `ModeMargin` / `ModeText` with `ModeTitleLabel` and `ModeDetailLabel`; `ModeList`; links: `ButtonRow` of `TextButton` |
+| 2 | Custom match panel | `ui/match_setup.tscn` (+ `.gd`, rows built in code) | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `FormRow`, `SegmentRow` of toggle `Button`s, `OptionButton`, `DimLabel`, `ButtonRow`, `PrimaryButton` |
+| 3 | Class draft | `ui/class_menu.tscn` today (M7 turns it into the draft) | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `FormRow`, cards: `PanelContainer` with `PanelMargin`, `HeaderLabel`, `BrightLabel`, `DimLabel` |
+| 4, 5 | HUD (Team Deathmatch, Bomb) | `ui/hud.tscn`, `ui/round_hud.tscn` (top bar, centre messages, kill feed), `ui/bomb_hud.tscn`, `ui/crosshair.gd` | HUD roles (M10 task 6); armor, weapon slots and pickups come with M7 |
+| 6 | Buy menu | M7 (`m7-arsenal` branch) | built on the same roles |
+| 7 | Tab scoreboard | `ui/scoreboard.tscn`, `ui/scoreboard_table.gd` (rows built in code) | `OverlayPanel`, `PanelMargin`, `ContentBox`, `DimLabel`, `ScoreRow`, `ScoreLabel` + team score roles, `TableBox`, `TeamBox`, `TeamHeaderFriendly` / `TeamHeaderEnemy`, `RowPanel` / `YouRowPanel`, `RowMargin`, `BrightLabel` |
+| 8 | Match-end screen | `ui/match_end_screen.tscn` (+ the same table) | `ModalPanel`, result and team score roles, the table's roles, `ButtonRow` |
+| 9 | Pause menu | `ui/pause_menu.tscn` | `ModalPanel`, `PanelMarginWide`, `ContentBox`, `TitleLabel`, `BigButton` |
+| 10 | Settings | `ui/settings_menu.tscn` (+ `.gd`, rows built in code), crosshair preview `ui/crosshair.gd` | `ModalPanel`, `TitleLabel`, `TabContainer`, `FormRow`, `HeaderLabel`, `DimLabel`, `InsetPanel`, `HSlider`, `LineEdit`, `CheckBox`, `OptionButton`, `Button` |
+| 11 | Multiplayer lobby | M9 (`m9-multiplayer` branch); its entry goes in the main menu's `Links` row | built on the same roles |
+| 12 | Kill feed lines | `ui/kill_feed.gd` (lines built in code) | after M7 is merged (it adds the weapon icons) |
+| 13 | Developer console | `ui/dev_console.tscn` | `ConsolePanel`, console text roles |
+| 14 | Loading / map change | doesn't exist yet | new scene when the mockup arrives |
+| 15 | Toasts and alerts | `ui/round_hud.tscn` (centre messages), `ui/bomb_hud.tscn` | HUD roles |
+| 16 | Icons | `assets/ui/icons/` | the slots above |

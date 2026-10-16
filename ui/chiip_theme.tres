@@ -24,6 +24,11 @@
 [ext_resource type="Texture2D" path="res://assets/ui/arrow_right_highlight.png" id="20_m0yv4"]
 [ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="21_hur4u"]
 
+[sub_resource type="StyleBoxFlat" id="backdrop_panel"]
+bg_color = Color(0, 0, 0, 0.62)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="big_button_disabled"]
 content_margin_left = 28.0
 content_margin_top = 16.0
@@ -263,6 +268,9 @@ content_margin_left = 8.0
 content_margin_top = 4.0
 content_margin_right = 8.0
 content_margin_bottom = 4.0
+
+[sub_resource type="SystemFont" id="mono_font"]
+font_names = PackedStringArray("Menlo", "Monaco", "Courier New", "monospace")
 
 [sub_resource type="StyleBoxFlat" id="console_panel"]
 bg_color = Color(0.043137256, 0.0627451, 0.09019608, 0.92)
@@ -894,6 +902,8 @@ anti_aliasing = false
 [resource]
 default_font = ExtResource("21_hur4u")
 default_font_size = 16
+BackdropPanel/base_type = &"Panel"
+BackdropPanel/styles/panel = SubResource("backdrop_panel")
 BigButton/base_type = &"Button"
 BigButton/font_sizes/font_size = 32
 BigButton/styles/disabled = SubResource("big_button_disabled")
@@ -962,14 +972,27 @@ CheckButton/styles/hover = SubResource("check_button_hover")
 CheckButton/styles/hover_pressed = SubResource("check_button_hover")
 CheckButton/styles/normal = SubResource("check_button_normal")
 CheckButton/styles/pressed = SubResource("check_button_pressed")
+ConsoleLabel/base_type = &"Label"
+ConsoleLabel/fonts/font = SubResource("mono_font")
+ConsoleLineEdit/base_type = &"LineEdit"
+ConsoleLineEdit/fonts/font = SubResource("mono_font")
 ConsolePanel/base_type = &"PanelContainer"
 ConsolePanel/styles/panel = SubResource("console_panel")
 ContentBox/base_type = &"VBoxContainer"
 ContentBox/constants/separation = 8
+DefeatLabel/base_type = &"Label"
+DefeatLabel/colors/font_color = Color(0.818, 0.49299997, 0.467, 1)
+DefeatLabel/font_sizes/font_size = 48
 DimLabel/base_type = &"Label"
 DimLabel/colors/font_color = Color(0.6039216, 0.65882355, 0.7411765, 1)
+EnemyScoreLabel/base_type = &"Label"
+EnemyScoreLabel/colors/font_color = Color(0.818, 0.49299997, 0.467, 1)
+EnemyScoreLabel/font_sizes/font_size = 32
 FormRow/base_type = &"HBoxContainer"
 FormRow/constants/separation = 16
+FriendlyScoreLabel/base_type = &"Label"
+FriendlyScoreLabel/colors/font_color = Color(0.5125, 0.61, 0.805, 1)
+FriendlyScoreLabel/font_sizes/font_size = 32
 HScrollBar/styles/grabber = SubResource("h_scroll_bar_grabber")
 HScrollBar/styles/grabber_highlight = SubResource("h_scroll_bar_grabber_highlight")
 HScrollBar/styles/grabber_pressed = SubResource("h_scroll_bar_grabber_pressed")
@@ -1042,6 +1065,7 @@ PageMargin/constants/margin_top = 48
 Palette/colors/accent = Color(0.29803923, 0.7882353, 0.9411765, 1)
 Palette/colors/accent_bright = Color(0.6509804, 0.92156863, 1, 1)
 Palette/colors/accent_dark = Color(0.11764706, 0.41568628, 0.5254902, 1)
+Palette/colors/dead_row = Color(1, 1, 1, 0.4)
 Palette/colors/enemy = Color(0.72, 0.22, 0.18, 1)
 Palette/colors/enemy_text = Color(0.818, 0.49299997, 0.467, 1)
 Palette/colors/friendly = Color(0.25, 0.4, 0.7, 1)
@@ -1121,6 +1145,13 @@ ScoreRow/base_type = &"HBoxContainer"
 ScoreRow/constants/separation = 14
 SegmentRow/base_type = &"HBoxContainer"
 SegmentRow/constants/separation = 4
+SwatchMargin/base_type = &"MarginContainer"
+SwatchMargin/constants/margin_bottom = 6
+SwatchMargin/constants/margin_left = 6
+SwatchMargin/constants/margin_right = 6
+SwatchMargin/constants/margin_top = 6
+SwatchRow/base_type = &"HBoxContainer"
+SwatchRow/constants/separation = 6
 TabBar/colors/font_disabled_color = Color(0.37254903, 0.42352942, 0.5019608, 1)
 TabBar/colors/font_hovered_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 TabBar/colors/font_outline_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
@@ -1193,5 +1224,8 @@ VSlider/icons/grabber_highlight = ExtResource("15_jw1wv")
 VSlider/styles/grabber_area = SubResource("slider_fill")
 VSlider/styles/grabber_area_highlight = SubResource("slider_fill_highlight")
 VSlider/styles/slider = SubResource("slider_track")
+VictoryLabel/base_type = &"Label"
+VictoryLabel/colors/font_color = Color(0.5125, 0.61, 0.805, 1)
+VictoryLabel/font_sizes/font_size = 48
 YouRowPanel/base_type = &"PanelContainer"
 YouRowPanel/styles/panel = SubResource("you_row_panel")

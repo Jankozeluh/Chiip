@@ -47,6 +47,7 @@ func _init() -> void:
 	_labels()
 	_panels()
 	_containers()
+	_console()
 	_buttons()
 	_toggles()
 	_line_edit()
@@ -66,7 +67,9 @@ func _init() -> void:
 
 ## Named colors for code that needs one (a node asks with
 ## get_theme_color("accent", "Palette")), so the palette lives in the theme too.
-## Team colors are copied from [Teams], which owns them.
+## Team colors are copied from [Teams], which owns them. Colors that no control
+## can hold as a theme item (a table row is dimmed by multiplying it, "dead_row")
+## are named here too.
 func _palette() -> void:
 	_colors("Palette", {
 		"accent": Palette.ACCENT, "accent_bright": Palette.ACCENT_BRIGHT, "accent_dark": Palette.ACCENT_DARK,
@@ -75,9 +78,17 @@ func _palette() -> void:
 		"panel": Palette.PANEL, "panel_border": Palette.PANEL_BORDER, "inset": Palette.INSET,
 		"friendly": Teams.FRIENDLY_COLOR, "enemy": Teams.ENEMY_COLOR,
 		# Team colours lightened for text on dark panels (scores, names, the match result).
-		"friendly_text": Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN),
-		"enemy_text": Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN),
+		"friendly_text": _team_text(Teams.FRIENDLY_COLOR),
+		"enemy_text": _team_text(Teams.ENEMY_COLOR),
+		# What a dead player's row is multiplied by (a row's modulate is not a theme item).
+		"dead_row": Palette.DEAD_ROW,
 	})
+
+
+## [param color] lightened the way [method Teams.text_color_for] does it, so text
+## in a team's colour stays readable on a dark panel.
+func _team_text(color: Color) -> Color:
+	return color.lightened(Teams.TEXT_LIGHTEN)
 
 
 func _labels() -> void:
@@ -105,11 +116,29 @@ func _labels() -> void:
 	_colors("ModeTitleLabel", {"font_color": Palette.TEXT_BRIGHT})
 	_variation("ModeDetailLabel", "Label")
 	_colors("ModeDetailLabel", {"font_color": Palette.TEXT_DIM})
+	# Scores in a team's colour. Colours are relative to the viewer, so "your" team is
+	# always the friendly one: the left score of a scoreboard says Friendly, the right Enemy.
+	_variation("FriendlyScoreLabel", "Label")
+	_font_sizes("FriendlyScoreLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("FriendlyScoreLabel", {"font_color": _team_text(Teams.FRIENDLY_COLOR)})
+	_variation("EnemyScoreLabel", "Label")
+	_font_sizes("EnemyScoreLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("EnemyScoreLabel", {"font_color": _team_text(Teams.ENEMY_COLOR)})
+	# The match result: "Victory" in your team's colour, "Defeat" in the enemy's.
+	_variation("VictoryLabel", "Label")
+	_font_sizes("VictoryLabel", {"font_size": Palette.TEXT_SIZE_TITLE})
+	_colors("VictoryLabel", {"font_color": _team_text(Teams.FRIENDLY_COLOR)})
+	_variation("DefeatLabel", "Label")
+	_font_sizes("DefeatLabel", {"font_size": Palette.TEXT_SIZE_TITLE})
+	_colors("DefeatLabel", {"font_color": _team_text(Teams.ENEMY_COLOR)})
 
 
 func _panels() -> void:
 	var panel := _box("panel", Palette.PANEL, Palette.PANEL_BORDER, Palette.BORDER)
 	_styles("Panel", {"panel": panel})
+	# The dimming behind a modal menu: a full-screen Panel that keeps the clicks from the game.
+	_variation("BackdropPanel", "Panel")
+	_styles("BackdropPanel", {"panel": _box("backdrop_panel", Palette.BACKDROP)})
 	_styles("PanelContainer", {"panel": panel})
 	_styles("PopupPanel", {"panel": _box("popup_panel", Palette.PANEL_OPAQUE, Palette.PANEL_BORDER, Palette.BORDER)})
 	# A screen that wants your attention: the match-end screen.
@@ -130,7 +159,7 @@ func _panels() -> void:
 	_variation("RowPanel", "PanelContainer")
 	_styles("RowPanel", {"panel": _empty("row_panel", BORDER_MARGINS)})
 	_variation("YouRowPanel", "PanelContainer")
-	_styles("YouRowPanel", {"panel": _box("you_row_panel", ScoreboardTable.YOU_ROW_COLOR)})
+	_styles("YouRowPanel", {"panel": _box("you_row_panel", Palette.YOU_ROW)})
 	# The colored bar above a team's rows. Team colors come from Teams.
 	_variation("TeamHeaderFriendly", "PanelContainer")
 	_styles("TeamHeaderFriendly", {"panel": _box("team_header_friendly", Teams.FRIENDLY_COLOR)})
@@ -172,6 +201,24 @@ func _containers() -> void:
 	_margins("ModeMargin", Palette.MODE_BUTTON_PAD_X, Palette.MODE_BUTTON_PAD_Y)
 	_variation("ModeText", "VBoxContainer")
 	_constants("ModeText", {"separation": Palette.MODE_LINE_GAP})
+	# The settings menu's crosshair colour swatches, and the margin that frames each colour inside its button.
+	_variation("SwatchRow", "HBoxContainer")
+	_constants("SwatchRow", {"separation": Palette.SWATCH_GAP})
+	_variation("SwatchMargin", "MarginContainer")
+	_margins("SwatchMargin", Palette.SWATCH_MARGIN, Palette.SWATCH_MARGIN)
+
+
+## The developer console's text is monospace, so its columns line up. A system
+## font made from the names in the tokens; one font shared by the output and the
+## input line (the size is the body size, as everywhere).
+func _console() -> void:
+	var mono := SystemFont.new()
+	mono.resource_scene_unique_id = "mono_font"
+	mono.font_names = PackedStringArray(Palette.FONT_MONO_NAMES)
+	_variation("ConsoleLabel", "Label")
+	_fonts("ConsoleLabel", {"font": mono})
+	_variation("ConsoleLineEdit", "LineEdit")
+	_fonts("ConsoleLineEdit", {"font": mono})
 
 
 func _buttons() -> void:
@@ -501,6 +548,11 @@ func _constants(type: String, items: Dictionary) -> void:
 func _font_sizes(type: String, items: Dictionary) -> void:
 	for item_name: String in items:
 		_theme.set_font_size(item_name, type, items[item_name])
+
+
+func _fonts(type: String, items: Dictionary) -> void:
+	for item_name: String in items:
+		_theme.set_font(item_name, type, items[item_name])
 
 
 ## [param items] maps an icon name to the PNG's name in assets/ui/.

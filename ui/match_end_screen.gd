@@ -10,7 +10,9 @@ extends CanvasLayer
 ## [signal play_again_pressed] and [signal main_menu_pressed]. Teams have no names:
 ## your team (from [member Teams.viewer_team]) is blue and listed first, the
 ## enemy team red. Its look comes from the UI theme (D-057): the panel, title,
-## scores and buttons use theme type variations.
+## scores and buttons use theme type variations. The result picks "VictoryLabel"
+## or "DefeatLabel" by name (your team's colour or the enemy's), and the two scores
+## are a "FriendlyScoreLabel" and an "EnemyScoreLabel" in the scene.
 
 ## Emitted when the player clicks "Play again".
 signal play_again_pressed
@@ -91,12 +93,10 @@ func _on_match_ended(winner: int) -> void:
 	var them := Teams.other(you)
 	var won := winner == you
 	_title.text = "Victory" if won else "Defeat"
-	_title.add_theme_color_override("font_color", _text_color(you if won else them))
+	_title.theme_type_variation = &"VictoryLabel" if won else &"DefeatLabel"
 	_your_score.text = str(_manager.score[you])
-	_your_score.add_theme_color_override("font_color", _text_color(you))
 	_dash.text = "-"
 	_enemy_score.text = str(_manager.score[them])
-	_enemy_score.add_theme_color_override("font_color", _text_color(them))
 	# Final numbers: the table doesn't dim the players who died in the last round.
 	_table.show_match(_manager)
 	visible = true
@@ -104,7 +104,3 @@ func _on_match_ended(winner: int) -> void:
 	# In a rotation the next map is what you'd usually want.
 	(_next_map if _next_map.visible else _play_again).grab_focus()
 
-
-## Text in a team's color, lightened so it stays readable on the dark panel.
-func _text_color(team: int) -> Color:
-	return Teams.color_for(team).lightened(0.35)

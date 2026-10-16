@@ -21,8 +21,10 @@ extends CanvasLayer
 ## sees that a menu is open and hides.
 ##
 ## Its look comes from the UI theme (D-057): the panel, the header and the
-## scores use theme type variations, and [method set_ui_scale] hands the
-## menu a theme scaled for the window ([UiTheme]).
+## scores use theme type variations (your score is a "FriendlyScoreLabel" and
+## theirs an "EnemyScoreLabel", since you always see your team in the friendly
+## colour), and [method set_ui_scale] hands the menu a theme scaled for the
+## window ([UiTheme]).
 
 var _manager: RoundManager
 
@@ -38,8 +40,6 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var should_show := _should_show()
-	if should_show and not visible:
-		_apply_team_colors()
 	visible = should_show
 	if should_show:
 		_refresh()
@@ -78,10 +78,3 @@ func _refresh() -> void:
 	_enemy_score.text = str(_manager.score[Teams.other(you)])
 	_table.refresh()
 
-
-## Colors the two scores by team (yours blue, theirs red). Done when the panel
-## appears, not every frame: changing a theme override makes the control redo its style.
-func _apply_team_colors() -> void:
-	var you := Teams.viewer_team
-	_your_score.add_theme_color_override("font_color", Teams.text_color_for(you))
-	_enemy_score.add_theme_color_override("font_color", Teams.text_color_for(Teams.other(you)))

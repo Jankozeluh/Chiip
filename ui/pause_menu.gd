@@ -40,7 +40,7 @@ signal settings_pressed
 signal leave_pressed
 
 @onready var _panel: PanelContainer = $Panel
-@onready var _background: ColorRect = $Background
+@onready var _background: Panel = $Background
 @onready var _resume_button: Button = %ResumeButton
 @onready var _settings_button: Button = %SettingsButton
 @onready var _leave_button: Button = %LeaveButton
@@ -163,5 +163,5 @@ func get_panel() -> PanelContainer:
 
 
 ## The full-screen dimmed background that keeps clicks from reaching the game.
-func get_background() -> ColorRect:
+func get_background() -> Panel:
 	return _background

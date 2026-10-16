@@ -498,7 +498,7 @@ func _add_choice_row(parent: Control, key: StringName, label_text: String, value
 func _add_color_row(parent: Control) -> void:
 	var row := _add_row(parent, "Color", "Pick a color, or type any #RRGGBB. The opacity below is kept.")
 	var swatches := HBoxContainer.new()
-	swatches.add_theme_constant_override("separation", 6)
+	swatches.theme_type_variation = &"SwatchRow"
 	row.add_child(swatches)
 	for entry: Array in CROSSHAIR_COLORS:
 		var swatch := Button.new()
@@ -508,10 +508,9 @@ func _add_color_row(parent: Control) -> void:
 		# The color sits in the button as a margin around a ColorRect, so the
 		# button keeps its themed frame, hover and focus ring.
 		var margin := MarginContainer.new()
+		margin.theme_type_variation = &"SwatchMargin"
 		margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-			margin.add_theme_constant_override(side, 6)
 		var fill := ColorRect.new()
 		fill.color = entry[1]
 		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE

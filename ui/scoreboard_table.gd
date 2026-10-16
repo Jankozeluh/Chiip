@@ -14,18 +14,15 @@ extends VBoxContainer
 ##
 ## Its look comes from the UI theme (D-057): the rows, headers and labels pick
 ## theme type variations ("TeamHeaderFriendly", "YouRowPanel", "BrightLabel"...)
-## instead of carrying styles of their own, so they scale with the theme.
+## instead of carrying styles of their own, so they scale with the theme. How
+## dimmed a dead player's row is (when [member dim_dead] is on) is the theme's
+## "dead_row" palette colour, which the row's [code]modulate[/code] is set to.
 ##
 ## Nothing in the table takes mouse clicks (every control uses [constant
 ## Control.MOUSE_FILTER_IGNORE]), so it can sit on top of the game.
 
 ## Width (design pixels) of each number column.
 const STAT_COLUMN_WIDTH := 96.0
-## Background of your own row. The theme's "YouRowPanel" variation (made by
-## tools/make_ui_theme.gd) takes this value, so there is one definition.
-const YOU_ROW_COLOR := Color(1, 1, 1, 0.16)
-## How visible a dead player's row is when [member dim_dead] is on (1 = not dimmed).
-const DEAD_ROW_ALPHA := 0.4
 ## Titles of the number columns.
 const STAT_TITLES: Array[String] = ["Kills", "Deaths", "Assists", "Damage"]
 
@@ -152,7 +149,7 @@ func _add_team(team: int, members: Array[Character]) -> void:
 				&"YouRowPanel" if is_you else &"RowPanel", &"BrightLabel" if is_you else &"")
 		row.name = String(member.name)
 		if dim_dead and not member.is_alive():
-			row.modulate = Color(1, 1, 1, DEAD_ROW_ALPHA)
+			row.modulate = get_theme_color("dead_row", "Palette")
 		box.add_child(row)
 		_rows[member] = row
 

@@ -2,9 +2,6 @@
 
 [ext_resource type="Script" path="res://ui/dev_console.gd" id="console_script"]
 
-[sub_resource type="SystemFont" id="mono_font"]
-font_names = PackedStringArray("Menlo", "Monaco", "Courier New", "monospace")
-
 [node name="DevConsole" type="CanvasLayer"]
 process_mode = 3
 layer = 10
@@ -28,11 +25,11 @@ theme_type_variation = &"ContentBox"
 [node name="Output" type="Label" parent="Panel/Margin/Box"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_fonts/font = SubResource("mono_font")
+theme_type_variation = &"ConsoleLabel"
 vertical_alignment = 2
 clip_text = true
 
 [node name="Input" type="LineEdit" parent="Panel/Margin/Box"]
 layout_mode = 2
-theme_override_fonts/font = SubResource("mono_font")
+theme_type_variation = &"ConsoleLineEdit"
 placeholder_text = "type a command, e.g. help"

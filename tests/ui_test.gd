@@ -39,6 +39,7 @@ const MAIN_SCENE := preload("res://main.tscn")
 const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const PAUSE_MENU_SCENE := preload("res://ui/pause_menu.tscn")
+const CLASS_MENU_SCENE := preload("res://ui/class_menu.tscn")
 const THEME_PATH := "res://ui/chiip_theme.tres"
 ## The design tokens the theme is built from (D-131). Checks of the look compare
 ## with them rather than with numbers, so a new look doesn't break them.
@@ -62,6 +63,24 @@ const VARIATIONS := {
 	"PrimaryButton": "Button", "ModeButton": "Button", "TextButton": "Button",
 	"SegmentRow": "HBoxContainer", "ModeList": "VBoxContainer", "ModeText": "VBoxContainer",
 	"ModeMargin": "MarginContainer", "PageMargin": "MarginContainer",
+	# M10 (D-131): roles that replaced the menus' own colours, fonts and spacing: team-coloured scores and
+	# match result, the console's monospace font, the crosshair colour swatches, the dim behind a modal menu.
+	"FriendlyScoreLabel": "Label", "EnemyScoreLabel": "Label", "VictoryLabel": "Label", "DefeatLabel": "Label",
+	"ConsoleLabel": "Label", "ConsoleLineEdit": "LineEdit", "SwatchRow": "HBoxContainer", "SwatchMargin": "MarginContainer",
+	"BackdropPanel": "Panel",
+}
+## The theme overrides a menu must not carry (see [method _override_names]): the names a control's
+## properties don't list because the built-in theme has no such item for its class, asked for one by one.
+## Kind (the part Godot puts after "theme_override_") → item names.
+const OVERRIDE_NAMES := {
+	"colors": ["font_color", "font_outline_color", "font_hover_color", "font_pressed_color", "font_disabled_color",
+			"font_focus_color", "font_selected_color", "caret_color", "selection_color", "default_color"],
+	"fonts": ["font", "normal_font"],
+	"font_sizes": ["font_size"],
+	"constants": ["separation", "h_separation", "v_separation", "margin_left", "margin_top", "margin_right",
+			"margin_bottom", "outline_size", "line_spacing"],
+	"styles": ["panel", "normal", "hover", "pressed", "disabled", "focus"],
+	"icons": ["icon"],
 }
 
 var _failures: int = 0
@@ -81,6 +100,7 @@ func _ready() -> void:
 	_test_variations()
 	_test_tokens()
 	_test_new_roles()
+	_test_restyle_roles()
 	_test_icon_slots()
 	_test_scaled_theme()
 	await _test_scaling_a_menu()
@@ -88,6 +108,7 @@ func _ready() -> void:
 	await _test_console()
 	await _test_scoreboard()
 	await _test_match_end_screen()
+	await _test_menus_have_no_overrides()
 	_test_menu_state()
 	await _test_settings_menu_building()
 	await _test_settings_menu_controls()
@@ -215,10 +236,10 @@ func _test_variations() -> void:
 	var friendly := _variation_node(PanelContainer.new(), "TeamHeaderFriendly", holder)
 	var enemy := _variation_node(PanelContainer.new(), "TeamHeaderEnemy", holder)
 	var you_row := _variation_node(PanelContainer.new(), "YouRowPanel", holder)
-	_check("The colors the theme copies still match their source: team headers = Teams.FRIENDLY_COLOR / ENEMY_COLOR, your row = ScoreboardTable.YOU_ROW_COLOR (rerun tools/make_ui_theme.gd if this fails)",
+	_check("The colors the theme copies still match their source: team headers = Teams.FRIENDLY_COLOR / ENEMY_COLOR, your row = the YOU_ROW token (rerun tools/make_ui_theme.gd if this fails)",
 			(friendly.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.FRIENDLY_COLOR
 					and (enemy.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.ENEMY_COLOR
-					and (you_row.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == ScoreboardTable.YOU_ROW_COLOR
+					and (you_row.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW
 					and _theme.get_color("friendly", "Palette") == Teams.FRIENDLY_COLOR and _theme.get_color("enemy", "Palette") == Teams.ENEMY_COLOR,
 			"friendly %s, enemy %s, your row %s" % [
 					(friendly.get_theme_stylebox("panel") as StyleBoxFlat).bg_color, (enemy.get_theme_stylebox("panel") as StyleBoxFlat).bg_color,
@@ -287,6 +308,55 @@ func _test_new_roles() -> void:
 			_theme.get_color("friendly_text", "Palette") == Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
 					and _theme.get_color("enemy_text", "Palette") == Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN),
 			"friendly %s, enemy %s" % [_theme.get_color("friendly_text", "Palette"), _theme.get_color("enemy_text", "Palette")])
+	remove_child(holder)
+	holder.queue_free()
+
+
+## The roles that replaced what menus once set per node (M10, D-131): team-coloured scores and the match
+## result, the console's font, the crosshair swatches' spacing, the dim behind a modal menu, and the two
+## palette colours the scoreboard table reads.
+func _test_restyle_roles() -> void:
+	var holder := Control.new()
+	add_child(holder)
+	var friendly_score := _variation_node(Label.new(), "FriendlyScoreLabel", holder)
+	var enemy_score := _variation_node(Label.new(), "EnemyScoreLabel", holder)
+	var victory := _variation_node(Label.new(), "VictoryLabel", holder)
+	var defeat := _variation_node(Label.new(), "DefeatLabel", holder)
+	var friendly_text := Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	var enemy_text := Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN)
+	_check("Team-coloured text is a role: friendly and enemy scores are 32 px in the team colours lightened like Teams.text_color_for(), 'Victory' and 'Defeat' 48 px in the same two colours",
+			friendly_score.get_theme_color("font_color") == friendly_text and enemy_score.get_theme_color("font_color") == enemy_text
+					and victory.get_theme_color("font_color") == friendly_text and defeat.get_theme_color("font_color") == enemy_text
+					and friendly_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and enemy_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+					and victory.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and defeat.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
+					and victory.get_theme_font("font").resource_path == FONT_PATH,
+			"friendly %s, enemy %s, scores %d px, result %d px" % [friendly_score.get_theme_color("font_color"), enemy_score.get_theme_color("font_color"),
+					friendly_score.get_theme_font_size("font_size"), victory.get_theme_font_size("font_size")])
+	var console_label := _variation_node(Label.new(), "ConsoleLabel", holder)
+	var console_input := _variation_node(LineEdit.new(), "ConsoleLineEdit", holder)
+	var plain := Label.new()
+	holder.add_child(plain)
+	var label_font := console_label.get_theme_font("font") as SystemFont
+	var input_font := console_input.get_theme_font("font") as SystemFont
+	_check("The console roles use a system font built from the FONT_MONO_NAMES token (not the pixel font), at the body size",
+			label_font != null and input_font != null and label_font.font_names == PackedStringArray(Tokens.FONT_MONO_NAMES)
+					and input_font.font_names == label_font.font_names and plain.get_theme_font("font").resource_path == FONT_PATH
+					and console_label.get_theme_font_size("font_size") == Tokens.TEXT_SIZE and console_input.get_theme_font_size("font_size") == Tokens.TEXT_SIZE,
+			"label font %s, input font %s" % [label_font.font_names if label_font != null else "none", input_font.font_names if input_font != null else "none"])
+	var swatch_row := _variation_node(HBoxContainer.new(), "SwatchRow", holder)
+	var swatch_margin := _variation_node(MarginContainer.new(), "SwatchMargin", holder)
+	var backdrop := _variation_node(Panel.new(), "BackdropPanel", holder)
+	var backdrop_box := backdrop.get_theme_stylebox("panel") as StyleBoxFlat
+	_check("The swatch row spaces by SWATCH_GAP and each swatch's margin is SWATCH_MARGIN on all four sides; the backdrop panel is a plain BACKDROP fill with no frame",
+			swatch_row.get_theme_constant("separation") == Tokens.SWATCH_GAP
+					and [swatch_margin.get_theme_constant("margin_left"), swatch_margin.get_theme_constant("margin_top"),
+							swatch_margin.get_theme_constant("margin_right"), swatch_margin.get_theme_constant("margin_bottom")] == [Tokens.SWATCH_MARGIN, Tokens.SWATCH_MARGIN, Tokens.SWATCH_MARGIN, Tokens.SWATCH_MARGIN]
+					and backdrop_box != null and backdrop_box.bg_color == Tokens.BACKDROP and backdrop_box.border_width_left == 0,
+			"gap %d, margin %d, backdrop %s" % [swatch_row.get_theme_constant("separation"), swatch_margin.get_theme_constant("margin_left"),
+					backdrop_box.bg_color if backdrop_box != null else "none"])
+	_check("The table's two colours live in the palette: dead_row (a dead player's row is multiplied by it) is the DEAD_ROW token, and the your-row band is the YOU_ROW token",
+			_theme.get_color("dead_row", "Palette") == Tokens.DEAD_ROW and (_theme.get_stylebox("panel", "YouRowPanel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW,
+			"dead_row %s, your row %s" % [_theme.get_color("dead_row", "Palette"), (_theme.get_stylebox("panel", "YouRowPanel") as StyleBoxFlat).bg_color])
 	remove_child(holder)
 	holder.queue_free()
 
@@ -517,6 +587,13 @@ func _test_console() -> void:
 					and panel.custom_minimum_size.y == 360.0
 					and (input.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == _theme.get_stylebox("normal", "LineEdit").bg_color,
 			"font %d → %d, input %d, panel minimum back at %.0f" % [base_size, scaled_size, scaled_input, panel.custom_minimum_size.y])
+	var output_font := output.get_theme_font("font") as SystemFont
+	var input_font := input.get_theme_font("font") as SystemFont
+	_check("The console's monospace font comes from the theme (ConsoleLabel and ConsoleLineEdit, the FONT_MONO_NAMES token), not from the scene: the output and the input line use it, with no font override of their own",
+			output.theme_type_variation == &"ConsoleLabel" and input.theme_type_variation == &"ConsoleLineEdit"
+					and output_font != null and input_font != null and output_font.font_names == PackedStringArray(Tokens.FONT_MONO_NAMES)
+					and input_font.font_names == output_font.font_names and not output.has_theme_font_override("font") and not input.has_theme_font_override("font"),
+			"output font %s, input font %s" % [output_font.font_names if output_font != null else "none", input_font.font_names if input_font != null else "none"])
 	remove_child(console)
 	console.queue_free()
 
@@ -544,7 +621,7 @@ func _test_scoreboard() -> void:
 	_check("Its look comes from theme variations: an overlay panel, a dim round label, blue and red team headers, your row on the highlight band, 16 px rows",
 			panel.theme_type_variation == &"OverlayPanel" and round_label.theme_type_variation == &"DimLabel"
 					and header.theme_type_variation == &"TeamHeaderFriendly" and enemy_header.theme_type_variation == &"TeamHeaderEnemy"
-					and yours.theme_type_variation == &"YouRowPanel" and (yours.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == ScoreboardTable.YOU_ROW_COLOR
+					and yours.theme_type_variation == &"YouRowPanel" and (yours.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW
 					and (header.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.color_for(Teams.viewer_team)
 					and (enemy_header.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.color_for(Teams.other(Teams.viewer_team))
 					and (yours.find_children("*", "Label", true, false)[0] as Label).get_theme_font_size("font_size") == 16,
@@ -561,8 +638,15 @@ func _test_scoreboard() -> void:
 	_check("Tab is ignored while any menu is open (MenuState), and counts again when it closes",
 			not with_menu and board.visible, "visible with a menu open: %s, after closing it: %s" % [with_menu, board.visible])
 	menu_stand_in.free()
+	var board_yours := board.get_node("Center/Panel/Margin/Content/Score/YourScore") as Label
+	var board_theirs := board.get_node("Center/Panel/Margin/Content/Score/EnemyScore") as Label
+	_check("Its scores are team-coloured by theme variations, with the colours the per-node overrides once gave: yours a FriendlyScoreLabel in your team's text colour, theirs an EnemyScoreLabel in the enemy's",
+			board_yours.theme_type_variation == &"FriendlyScoreLabel" and board_theirs.theme_type_variation == &"EnemyScoreLabel"
+					and board_yours.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
+					and board_theirs.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team)),
+			"yours %s, theirs %s" % [board_yours.get_theme_color("font_color"), board_theirs.get_theme_color("font_color")])
 	var overrides := _style_or_size_overrides(board)
-	_check("Nothing in the scoreboard carries a stylebox or font-size override of its own (colors only), so the theme alone decides its look",
+	_check("Nothing in the scoreboard carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
 	board.set_ui_scale(1.5)
 	await get_tree().process_frame
@@ -616,12 +700,22 @@ func _test_match_end_screen() -> void:
 			main_menu_button.text == "Main menu" and play_again.text == "Play again" and menu_presses[0] == 1 and not screen.has_signal("quit_pressed"),
 			"texts '%s' and '%s', presses %d" % [play_again.text, main_menu_button.text, menu_presses[0]])
 	_check("Its look comes from theme variations: a modal panel with the accent frame, a 48 px title, 16 px buttons; the buttons are themed in every state",
-			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel"
+			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"VictoryLabel"
 					and title.get_theme_font_size("font_size") == 48 and play_again.get_theme_font_size("font_size") == 16
 					and (panel.get_theme_stylebox("panel") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette")
 					and (main_menu_button.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left == 2
 					and (main_menu_button.get_theme_stylebox("focus") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette"),
 			"panel '%s', title %d px, button %d px" % [panel.theme_type_variation, title.get_theme_font_size("font_size"), play_again.get_theme_font_size("font_size")])
+	var your_score := screen.get_node("Panel/Margin/Content/Score/YourScore") as Label
+	var their_score := screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label
+	_check("The result and the scores are team-coloured by theme variations, with the colours the per-node overrides once gave: 'Victory' and your score in your team's text colour (32 px scores, 48 px title), theirs in the enemy's",
+			your_score.theme_type_variation == &"FriendlyScoreLabel" and their_score.theme_type_variation == &"EnemyScoreLabel"
+					and title.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
+					and your_score.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
+					and their_score.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team))
+					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
+					and your_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and their_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE,
+			"title %s, yours %s, theirs %s" % [title.get_theme_color("font_color"), your_score.get_theme_color("font_color"), their_score.get_theme_color("font_color")])
 	var overrides := _style_or_size_overrides(screen)
 	_check("Nothing in the match-end screen carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
@@ -643,6 +737,124 @@ func _test_match_end_screen() -> void:
 			"panel %.0f, title %d" % [panel.custom_minimum_size.x, title.get_theme_font_size("font_size")])
 	remove_child(screen)
 	screen.queue_free()
+
+
+## M10 (D-131): no menu or overlay carries a theme override of its own (a colour, font, size, spacing,
+## style or icon set on a node), so changing the tokens in tools/ui_palette.gd restyles every one of
+## them. Builds each screen the way the game does (the match-end screen after its match ended, the Tab
+## scoreboard while held) and lists the controls that carry any override.
+func _test_menus_have_no_overrides() -> void:
+	# The finder itself: it must see overrides of every kind, or a clean result would mean nothing.
+	var scratch := Control.new()
+	add_child(scratch)
+	var label := Label.new()
+	var box := HBoxContainer.new()
+	var panel := Panel.new()
+	var line := LineEdit.new()
+	var check_box := CheckBox.new()
+	var clean := Label.new()
+	for control: Control in [label, box, panel, line, check_box, clean]:
+		scratch.add_child(control)
+	label.add_theme_color_override("font_color", Color.RED)
+	label.add_theme_font_size_override("font_size", 20)
+	box.add_theme_constant_override("separation", 3)
+	panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	line.add_theme_font_override("font", ThemeDB.fallback_font)
+	check_box.add_theme_icon_override("checked", PlaceholderTexture2D.new())
+	var seen: Array[String] = []
+	for control: Control in [label, box, panel, line, check_box]:
+		seen.append_array(_override_names(control))
+	seen.sort()
+	_check("The override finder sees a colour, a font size, a spacing, a style, a font and an icon override, and none on a clean control",
+			seen == ["colors/font_color", "constants/separation", "font_sizes/font_size", "fonts/font", "icons/checked", "styles/panel"]
+					and _override_names(clean).is_empty() and _overrides_below(scratch).size() == 5,
+			"found %s" % [seen])
+	remove_child(scratch)
+	scratch.queue_free()
+
+	var found := {}
+	var settings_menu := await _new_menu()
+	settings_menu.open()
+	await get_tree().process_frame
+	found["settings menu"] = _overrides_below(settings_menu)
+	settings_menu.close()
+	_free_menu(settings_menu)
+	var pause_menu := PAUSE_MENU_SCENE.instantiate() as PauseMenu
+	add_child(pause_menu)
+	await get_tree().process_frame
+	found["pause menu"] = _overrides_below(pause_menu)
+	remove_child(pause_menu)
+	pause_menu.queue_free()
+	var class_menu := CLASS_MENU_SCENE.instantiate() as ClassMenu
+	add_child(class_menu)
+	await get_tree().process_frame
+	found["class menu"] = _overrides_below(class_menu)
+	remove_child(class_menu)
+	class_menu.queue_free()
+	var console := CONSOLE_SCENE.instantiate() as DevConsole
+	add_child(console)
+	await get_tree().process_frame
+	found["console"] = _overrides_below(console)
+	remove_child(console)
+	console.queue_free()
+	var main_menu := MAIN_MENU_SCENE.instantiate() as MainMenu
+	main_menu.load_settings = false
+	add_child(main_menu)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	found["main menu (with its match setup and settings menu)"] = _overrides_below(main_menu)
+	remove_child(main_menu)
+	main_menu.queue_free()
+	await get_tree().process_frame
+	MenuState.reset()
+	var setup := MATCH_SETUP_SCENE.instantiate() as MatchSetup
+	setup.settings = Settings.new()
+	add_child(setup)
+	await get_tree().process_frame
+	setup.open()
+	found["match setup"] = _overrides_below(setup)
+	setup.close()
+	remove_child(setup)
+	setup.queue_free()
+	MenuState.reset()
+	await _new_match()
+	var board := SCOREBOARD_SCENE.instantiate() as Scoreboard
+	add_child(board)
+	board.set_round_manager(_rounds)
+	Input.action_press("scoreboard")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	found["Tab scoreboard (shown)"] = _overrides_below(board) if board.visible else ["not shown"]
+	Input.action_release("scoreboard")
+	remove_child(board)
+	board.queue_free()
+	# The other team wins, so the screen shows 'Defeat' and the enemy's colours.
+	await _new_match(1)
+	var screen := MATCH_END_SCENE.instantiate() as MatchEndScreen
+	add_child(screen)
+	screen.set_round_manager(_rounds)
+	await _win_round(1)
+	await _wait_for_phase(RoundManager.Phase.MATCH_END)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	found["match-end screen (Defeat)"] = _overrides_below(screen) if screen.visible else ["not shown"]
+	var result := screen.get_node("Panel/Margin/Content/Title") as Label
+	var your_score := screen.get_node("Panel/Margin/Content/Score/YourScore") as Label
+	var their_score := screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label
+	_check("After a lost match the title is a DefeatLabel in the enemy team's text colour, while the scores keep their own team colours (yours friendly, theirs enemy), all from the theme",
+			result.text == "Defeat" and result.theme_type_variation == &"DefeatLabel"
+					and result.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team))
+					and your_score.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
+					and their_score.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team)),
+			"title '%s' %s, yours %s, theirs %s" % [result.text, result.get_theme_color("font_color"), your_score.get_theme_color("font_color"), their_score.get_theme_color("font_color")])
+	remove_child(screen)
+	screen.queue_free()
+	var offenders := {}
+	for screen_name: String in found:
+		if not (found[screen_name] as Array).is_empty():
+			offenders[screen_name] = found[screen_name]
+	_check("No menu or overlay carries a theme override of its own (colour, font, size, spacing, style or icon): the settings, pause and class menus, the console, the main menu with match setup, the Tab scoreboard and the match-end screen all take their whole look from the theme",
+			offenders.is_empty(), "screens checked: %d, overrides found: %s" % [found.size(), offenders])
 
 
 # --- The settings menu (D-059) ---
@@ -1475,7 +1687,8 @@ func _test_match_setup() -> void:
 			setup.get_map_paths() == on_disk and on_disk.has("res://maps/test_map.tscn") and option.item_count == on_disk.size()
 					and GameLaunch.list_maps() == on_disk and shown.has("Test Map"),
 			"on disk %s, offered %s" % [on_disk, setup.get_map_paths()])
-	var other := 1 - maxi(0, setup.get_map_paths().find("res://maps/test_map.tscn"))
+	# Any map other than the one shown (Depot by default).
+	var other := (maxi(0, setup.get_map_paths().find(setup.get_map_path())) + 1) % setup.get_map_paths().size()
 	var picked_other := setup.get_map_paths().size() > 1
 	if picked_other:
 		option.select(other)
@@ -1991,7 +2204,7 @@ func _test_pause_menu_look() -> void:
 	var overrides := _style_or_size_overrides(menu)
 	_check("Nothing in the pause menu carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty(), "controls with overrides: %s" % [overrides])
-	_check("A full-screen background (a dim ColorRect) and the panel both stop mouse clicks, so no click reaches the player controls behind the menu",
+	_check("A full-screen background (a dim backdrop panel) and the panel both stop mouse clicks, so no click reaches the player controls behind the menu",
 			background.mouse_filter == Control.MOUSE_FILTER_STOP and background.anchor_left == 0.0 and background.anchor_top == 0.0
 					and background.anchor_right == 1.0 and background.anchor_bottom == 1.0 and panel.mouse_filter == Control.MOUSE_FILTER_STOP,
 			"background filter %d, anchors (%.0f, %.0f, %.0f, %.0f), panel filter %d" % [background.mouse_filter, background.anchor_left,
@@ -2395,6 +2608,44 @@ func _own_overrides(root: Node) -> Array[String]:
 					or control.has_theme_font_size_override("font_size"):
 				found.append(String(control.name))
 		found.append_array(_own_overrides(child))
+	return found
+
+
+## The theme overrides [param control] carries itself, as "kind/item" ("colors/font_color",
+## "constants/separation"...). Godot lists every theme item the built-in theme has for the control's class
+## as a "theme_override_<kind>/<item>" property and stores the ones that are overridden, so the property
+## list tells them apart; the usual names the built-in theme may not list for the class are asked for one
+## by one ([constant OVERRIDE_NAMES]).
+func _override_names(control: Control) -> Array[String]:
+	var found: Array[String] = []
+	for property in control.get_property_list():
+		var property_name := String(property["name"])
+		if property_name.begins_with("theme_override_") and (int(property["usage"]) & PROPERTY_USAGE_STORAGE) != 0:
+			found.append(property_name.trim_prefix("theme_override_"))
+	var by_name := {
+		"colors": control.has_theme_color_override, "fonts": control.has_theme_font_override,
+		"font_sizes": control.has_theme_font_size_override, "constants": control.has_theme_constant_override,
+		"styles": control.has_theme_stylebox_override, "icons": control.has_theme_icon_override,
+	}
+	for kind: String in OVERRIDE_NAMES:
+		for item: String in OVERRIDE_NAMES[kind]:
+			var override_name := "%s/%s" % [kind, item]
+			if (by_name[kind] as Callable).call(item) and not found.has(override_name):
+				found.append(override_name)
+	return found
+
+
+## The controls in [param root] and below it (the ones a scene or a script added, not the engine's own
+## parts of a TabContainer, an OptionButton and the like) that carry any theme override, as
+## "Name (colors/font_color, ...)".
+func _overrides_below(root: Node) -> Array[String]:
+	var found: Array[String] = []
+	if root is Control:
+		var names := _override_names(root as Control)
+		if not names.is_empty():
+			found.append("%s (%s)" % [root.name, ", ".join(names)])
+	for child in root.get_children():
+		found.append_array(_overrides_below(child))
 	return found
 
 
