@@ -85,6 +85,10 @@ func _start_range() -> void:
 	_main.set("mode", 1)
 	_main.set("map_scene", load(Settings.DEFAULT_MAP))
 	add_child(_main)
+	# These checks are about the props themselves: their in-world readouts and a shot at the pad starting a run at once
+	# (the game's 2D training screens have their own checks in ui_test and layout_test, D-236).
+	TrainingHub.hud_active = false
+	TrainingHub.menu = null
 	await _wait_ticks(8)
 	(_main.get_node("ClassMenu") as ClassMenu).close()
 	_player = _main.call("get_player") as Character

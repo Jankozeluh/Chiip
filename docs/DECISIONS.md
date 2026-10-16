@@ -2323,6 +2323,19 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** keeping the four tabs and restyling them (the page puts the lifetime row, the bars and the history on one screen); a fixed Training block on the page (no room at 1280 × 720).
 
+## D-236 — The training screens on the HUD: a start panel, a run readout, a result, a spray panel (2026-10-16)
+
+**Decision:**
+- **Aim trainer (pages 20 to 22):** a shot at the pad opens a **start panel** (a menu: the mouse is free, Esc closes it, Enter starts) with the length 30, 60 or 90 seconds, your best for that length and gun, and Start. During the run the HUD shows **hits, the time with a bar, and the score** (the countdown's number in the time's place before), and **Esc stops the run** (it used to pause the game; shooting the pad still stops it too). A finished run shows a **result panel** for the few seconds the trainer keeps it (score and "New best" or "Best was", accuracy, hits out of the targets shown, average time, best streak; `AimScore` counts the **best streak**: targets hit in a row, an expired one starts it over). The in-world `Label3D` readouts of D-205 stay for a map on its own and the tests; with the game's HUD they are off (`TrainingHub.hud_active`).
+- **Lengths keep their own bests:** `aim_flick_<gun>` is still the 30-second run's key (so existing bests stay), a 60 or 90 s run saves under `aim_flick_<gun>_60` / `_90`; Stats' Training page names them ("Aim trainer · Ram · 60 s"). A run started without the panel (the console's `aim`, the tests) lasts the entity's `run_time` and uses the plain key.
+- **Spray practice (page 23):** a panel at the top right while you shoot the wall (for six seconds after your last shot): your gun with its icon, the shots of the spray out of the pattern's, **on pattern** (the control, from ten shots on), the legend of the wall's dots. The wall's own pattern and holes in the world are unchanged.
+- **Not built, and why:** the result panel's buttons **Again** and **Done** (the panel is a readout: shoot the pad to go again, the run is already over), the page's keys **R reset the wall**, **P hide the pattern** and **1 to 5 weapon** (R is reload: the wall resets by shooting the orange plate or the console's `spray_reset`; the weapon keys already switch guns; hiding the pattern would be a new action), and the dimmed world behind the result.
+- The pieces meet through **`TrainingHub`** (static members, like `Noises`): the trainer and the wall put themselves there, the HUD reads it, the start panel registers itself.
+
+**Why:** The handoff: "Aim trainer: the start panel (Start, best score), the HUD during a run (timer, hits, score), and the results panel (score, accuracy, a new best). Spray practice: how the weapon's spray pattern shows next to your shots on the wall."
+
+**Alternatives:** a start key instead of a panel (the page draws a panel, and the length needs a choice); making the result a menu with buttons (it would take the mouse after every run).
+
 ## Open questions
 
 | Question | Decide in |

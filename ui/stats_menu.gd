@@ -64,7 +64,7 @@ const RESULT_WORDS := {"win": "VICTORY", "loss": "DEFEAT", "draw": "DRAW"}
 ## Training key prefixes → their names. The aim trainer and the spray wall add theirs (D-205, D-208).
 const TRAINING_NAMES := {"aim_flick": "Aim trainer", "spray": "Spray practice"}
 ## How a detail saved with a best reads on the Training page (a key not listed is made readable).
-const DETAIL_NAMES := {"reaction_ms": "Reaction ms", "accuracy": "Accuracy %", "drift_cm": "Drift cm", "pattern_cm": "Pattern cm"}
+const DETAIL_NAMES := {"reaction_ms": "Reaction ms", "accuracy": "Accuracy %", "drift_cm": "Drift cm", "pattern_cm": "Pattern cm", "best_streak": "Best streak"}
 ## Month names for the short dates ("16 OCT").
 const MONTHS: Array[String] = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
 
@@ -414,7 +414,13 @@ static func training_title(key: String) -> String:
 	for prefix: String in TRAINING_NAMES:
 		if key == prefix or key.begins_with(prefix + "_"):
 			var weapon := key.trim_prefix(prefix).trim_prefix("_")
-			return TRAINING_NAMES[prefix] if weapon == "" else "%s · %s" % [TRAINING_NAMES[prefix], weapon_name(weapon)]
+			# A run of a chosen length ends in its seconds: "rifle_60" (D-236).
+			var seconds := ""
+			var split := weapon.rfind("_")
+			if split > 0 and weapon.substr(split + 1).is_valid_int():
+				seconds = " · %s s" % weapon.substr(split + 1)
+				weapon = weapon.substr(0, split)
+			return TRAINING_NAMES[prefix] if weapon == "" else "%s · %s%s" % [TRAINING_NAMES[prefix], weapon_name(weapon), seconds]
 	return key.capitalize()
 
 

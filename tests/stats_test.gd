@@ -352,6 +352,8 @@ func _test_screen_text() -> void:
 			StatsMenu.format_date(0) == "-" and StatsMenu.format_date(DATE).length() == 16 and StatsMenu.format_date(DATE)[4] == "-", StatsMenu.format_date(DATE))
 	var training: Array = StatsMenu.training_rows({"aim_flick_rifle": {"score": 4200.0, "date": DATE, "hits": 31, "reaction_ms": 412},
 			"mystery_run": {"score": 7.5, "date": 0}, "spray_smg": {"score": 62.5, "date": DATE, "shots": 25, "drift_cm": 14.5}})
+	_check("A best of a chosen length says its seconds (D-236): aim_flick_rifle_60 is \"Aim trainer · Ram · 60 s\"",
+			StatsMenu.training_title("aim_flick_rifle_60") == "Aim trainer · Ram · 60 s" and StatsMenu.training_title("aim_flick_rifle") == "Aim trainer · Ram", StatsMenu.training_title("aim_flick_rifle_60"))
 	_check("Training bests are named after their training and gun (a key nobody knows is made readable), whole scores without .0, details in words",
 			training[0][0] == "Aim trainer · Ram" and training[0][1] == "4200" and training[0][3] == "Hits 31, Reaction ms 412" and training[1][0] == "Mystery Run"
 			and training[1][1] == "7.5" and training[2][0] == "Spray practice · Hornet" and training[2][1] == "62.5" and training[2][3] == "Shots 25, Drift cm 14.5",

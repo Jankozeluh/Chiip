@@ -237,6 +237,18 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 			await get_tree().process_frame
 			_collect(failures, "%s overlay at %s" % [mode, size], [overlay], size)
 		overlay.set_mode("off")
+		# 2d. The Shooting Range's training screens: the run, the result, the spray panel and the start panel (D-236).
+		var training_hud := main.get_node("TrainingHud") as TrainingHud
+		for screen in ["run", "result", "spray"]:
+			training_hud.preview(screen)
+			await _settle(size)
+			_collect(failures, "training %s at %s" % [screen, size], [training_hud], size)
+		training_hud.follow_hub()
+		var training_menu := main.get_node("TrainingMenu") as TrainingMenu
+		training_menu.visible = true
+		await _settle(size)
+		_collect(failures, "training start panel at %s" % [size], [training_menu], size)
+		training_menu.visible = false
 		# 3. The buy menu (freeze time), in a match with rounds.
 		if buy_menu.open():
 			await _settle(size)
@@ -264,7 +276,7 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 			await _settle(size)
 			_collect(failures, "match end at %s" % [size], [end_screen], size)
 			end_screen.visible = false
-	_check("%s: the HUD (its compass clear of the top bar and the toasts), the FPS counter and developer overlay, class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
+	_check("%s: the HUD (its compass clear of the top bar and the toasts), the FPS counter and developer overlay, the training screens, class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(main)
 	main.queue_free()

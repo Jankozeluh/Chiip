@@ -224,6 +224,20 @@ func _panels() -> void:
 	_styles("PureChip", {"panel": _box("pure_chip", Palette.PURE)})
 	_variation("PureChipFrame", "Panel")
 	_styles("PureChipFrame", {"panel": _box("pure_chip_frame", Color.TRANSPARENT, Palette.PURE, Palette.BORDER)})
+	# The training panels (v0.2, D-236): an opaque panel with a LINE frame, and a TEXT fill for the HUD's time bar.
+	_variation("TrainingPanel", "PanelContainer")
+	_styles("TrainingPanel", {"panel": _box("training_panel", Palette.PANEL_OPAQUE, Palette.LINE_COLOR, Palette.BORDER, _even(Palette.TRAINING_PAD))})
+	_hud_panel("HudBarFillText", _box("hud_bar_fill_text", Palette.TEXT))
+	_hud_gap("HudRunRow", "HBoxContainer", Palette.HUD_RUN_GAP)
+	_variation("ResultGrid", "GridContainer")
+	_constants("ResultGrid", {"h_separation": Palette.FORM_GAP, "v_separation": Palette.FORM_GAP})
+	_variation("SprayMargin", "MarginContainer")
+	_margins("SprayMargin", Palette.SPRAY_PAD, Palette.SPRAY_PAD)
+	_variation("FormColumn", "VBoxContainer")
+	_constants("FormColumn", {"separation": Palette.FORM_GAP})
+	# The spray panel's legend: the pattern's dot (a frame) and yours (the crosshair green).
+	_hud_panel("PatternDot", _box("pattern_dot", Color.TRANSPARENT, Palette.TEXT, Palette.BORDER))
+	_hud_panel("ShotDot", _box("shot_dot", Palette.CROSSHAIR))
 	# The Stats screen's bars (v0.2, D-235): a RAISED track, a TEXT fill, a MUTE fill (deaths, a K/D below 1), a LINE rule.
 	_variation("StatBarTrack", "Panel")
 	_styles("StatBarTrack", {"panel": _box("stat_bar_track", Palette.PANEL_RAISED)})

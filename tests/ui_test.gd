@@ -232,6 +232,7 @@ func _ready() -> void:
 	_test_buy_menu_roles()
 	await _test_buy_menu_look()
 	await _test_compass()
+	await _test_training_ui()
 	_test_pad_glyphs()
 	_test_real_file_untouched()
 	if _failures == 0:
@@ -3793,6 +3794,86 @@ func _test_compass() -> void:
 	GameLaunch.clear()
 	Teams.friendly_fire = false
 
+
+
+# --- The Shooting Range's training screens (v0.2, D-236) ---
+
+
+## The aim trainer's start panel, run readouts, result and Esc stop, and the spray panel, on the real Shooting Range:
+## a shot at the pad opens the panel (the length picks its own best), Start counts down and runs, the HUD shows the run,
+## Esc stops it without opening the pause menu, a finished run's result shows; the props keep their world readouts quiet.
+func _test_training_ui() -> void:
+	MenuState.reset()
+	TrainingHub.reset()
+	var main := MAIN_SCENE.instantiate()
+	main.set("load_settings", false)
+	main.set("loading_screen", false)
+	main.set("mode", 1)
+	main.set("map_scene", load(Settings.DEFAULT_MAP))
+	add_child(main)
+	for i in 8:
+		await get_tree().physics_frame
+	(main.get_node("ClassMenu") as ClassMenu).close()
+	var hud := main.get_node("TrainingHud") as TrainingHud
+	var menu := main.get_node("TrainingMenu") as TrainingMenu
+	var player := main.call("get_player") as Character
+	var trainers := (main.call("get_map") as Node).find_children("*", "RangeTrainer", true, false)
+	var trainer := trainers[0] as RangeTrainer
+	trainer.book = StatsBook.new()
+	trainer.countdown_time = 0.1
+	trainer.rng.seed = 7
+	_check("The game scene has the training HUD and start panel and tells the props (D-236): the HUD is active, the panel is where a shot at the pad goes",
+			TrainingHub.hud_active and TrainingHub.menu == menu and hud.get_state() == {"run": false, "result": false, "spray": false} and not menu.is_open(),
+			"hud active %s" % TrainingHub.hud_active)
+	# A shot at the pad opens the start panel.
+	trainer.call(&"_on_pad_hit", 0.0, Hitbox.Zone.CHEST, Vector3.ZERO, player, 0.0, null)
+	var opened := menu.is_open() and MenuState.is_top(menu) and menu.get_length() == 30 and trainer.get_state() == RangeTrainer.State.IDLE
+	menu.set_length(60)
+	var best_caption := menu.get_best_texts()[0]
+	_check("A shot at the pad opens the start panel (30 s picked, no run yet); picking 60 s makes the best line say \"Best · 60 s\"",
+			opened and best_caption == "Best · 60 s", "open %s, caption '%s'" % [opened, best_caption])
+	# Start: the countdown and the run.
+	trainer.book.submit_best(RangeTrainer.best_key(player.weapon.data.id, 60.0), 4820.0, {"accuracy": 82.0})
+	menu.set_length(30)
+	menu.set_length(60)
+	var best_texts := menu.get_best_texts()
+	menu.get_start_button().pressed.emit()
+	await get_tree().process_frame
+	var started := not menu.is_open() and trainer.is_active() and is_equal_approx(trainer.get_run_seconds(), 60.0)
+	_check("The best line shows the best for the length (4 820, 82 %), Start closes the panel and starts a 60 s run",
+			best_texts[1] == "4 820" and best_texts[2].begins_with("82%") and started, "best %s, started %s" % [best_texts, started])
+	for i in 40:
+		await get_tree().physics_frame
+	await get_tree().process_frame
+	var run_texts := hud.get_run_texts()
+	_check("The run shows on the HUD: the hits, the time as m:ss and the score, and nothing in the world (no readout over the shooter)",
+			hud.get_state()["run"] and run_texts[0] == "0" and run_texts[1].begins_with("0:") and trainer.get_readout() == "", "run %s, readout '%s'" % [run_texts, trainer.get_readout()])
+	# Esc stops the run and does not pause.
+	_send(_action_event("pause"))
+	await get_tree().process_frame
+	var stopped: bool = trainer.get_state() == RangeTrainer.State.IDLE and not (main.call("get_pause_menu") as PauseMenu).is_open() and not hud.get_state()["run"]
+	_check("Esc stops the run without a score and does not open the pause menu", stopped, "state %d" % trainer.get_state())
+	# A short run to its result.
+	trainer.start(player, 1.0)
+	for i in 200:
+		await get_tree().physics_frame
+	await get_tree().process_frame
+	var result := hud.get_result_texts()
+	_check("A finished run shows the result panel: its score line and the four cells (accuracy, hits, average time, best streak)",
+			hud.get_state()["result"] and trainer.get_state() == RangeTrainer.State.RESULT and result["cells"].size() == 4, "state %s, %s" % [hud.get_state(), result])
+	trainer.stop()
+	# The spray panel mirrors the wall.
+	hud.preview("spray")
+	var spray := hud.get_spray_texts()
+	hud.follow_hub()
+	_check("The spray panel has the gun, the shots of the spray and the pattern share", spray == ["RIFLE", "18 / 30", "64%"], "%s" % [spray])
+	main.queue_free()
+	await get_tree().process_frame
+	TrainingHub.reset()
+	MenuState.reset()
+	GameLaunch.clear()
+	Teams.friendly_fire = false
+	Settings.get_instance().reset_to_defaults()
 
 # --- The gamepad glyphs (v0.2, D-230) ---
 

@@ -90,6 +90,11 @@ func _exit_tree() -> void:
 func _input(event: InputEvent) -> void:
 	if not event.is_action_pressed("pause") or MenuState.capturing_input:
 		return
+	# Esc ends an aim trainer run instead of pausing (v0.2, D-236: "Esc stop").
+	if not is_open() and TrainingHub.is_running() and not MenuState.blocks_gameplay():
+		TrainingHub.stop_run()
+		get_viewport().set_input_as_handled()
+		return
 	if is_open():
 		# Only the menu on top resumes (the settings menu and the console, which
 		# take Esc before this node does, are over it when they are open).

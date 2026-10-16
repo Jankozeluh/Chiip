@@ -17,7 +17,9 @@
 
 - Stats screen as the designer's two pages (D-235): the lifetime row, K/D bars, accuracy and wins blocks, the history, a match detail; new recorded data (kills and damage per gun, kills and deaths per minute); the Training bests behind a fifth filter.
 
-**Next:** the aim trainer and spray practice panels, credits, the pad prompts.
+- Training on the HUD (D-236): the aim trainer's start panel with 30/60/90 s (each length its own best), the run readout, Esc to stop, the result panel with the best streak, and the spray wall's panel.
+
+**Next:** credits, the pad prompts, the app icon (if the assets file comes).
 
 ## 2026-10-16 — M15 accessibility & polish
 

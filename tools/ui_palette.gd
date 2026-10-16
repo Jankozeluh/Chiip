@@ -297,6 +297,13 @@ const STAT_ROW_PAD := 12
 const STAT_COLUMN_GAP := 48
 ## The space between the Stats page's blocks one under another.
 const STAT_SECTION_GAP := 16
+## The padding inside the Shooting Range's training panels (the start panel and the result).
+const TRAINING_PAD := 32
+## The space between the aim trainer's run readouts, and the padding of the spray panel.
+const HUD_RUN_GAP := 48
+const SPRAY_PAD := 24
+## The crosshair's default green: the spray panel's legend dot for your shots.
+const CROSSHAIR := Color("36d07a")
 ## White, for text that is tinted with a colour at runtime (the team colour preview).
 const PURE := Color.WHITE
 ## Edge to edge: the parts of a settings row (a 400 px label, then the control) and of a table row.

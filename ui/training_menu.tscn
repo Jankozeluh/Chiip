@@ -1,0 +1,128 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/training_menu.gd" id="menu_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/chip.png" id="chip"]
+
+[node name="TrainingMenu" type="CanvasLayer"]
+process_mode = 3
+layer = 7
+visible = false
+script = ExtResource("menu_script")
+
+[node name="Backdrop" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_type_variation = &"BackdropPanel"
+
+[node name="Panel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 0)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -240.0
+offset_top = 160.0
+offset_right = 240.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"TrainingPanel"
+
+[node name="Column" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SettingsColumn"
+
+[node name="Head" type="VBoxContainer" parent="Panel/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"FormColumn"
+
+[node name="Title" type="Label" parent="Panel/Column/Head"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Aim trainer"
+
+[node name="Blurb" type="Label" parent="Panel/Column/Head"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Hit as many targets as you can. Faster hits score more."
+autowrap_mode = 3
+
+[node name="LengthRow" type="HBoxContainer" parent="Panel/Column"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LengthCaption" type="Label" parent="Panel/Column/LengthRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"DimLabel"
+text = "Length"
+
+[node name="Lengths" type="HBoxContainer" parent="Panel/Column/LengthRow"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Rule" type="Panel" parent="Panel/Column"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"StatBarLine"
+
+[node name="BestRow" type="HBoxContainer" parent="Panel/Column"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BestCaption" type="Label" parent="Panel/Column/BestRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_type_variation = &"DimLabel"
+text = "Best"
+
+[node name="Best" type="VBoxContainer" parent="Panel/Column/BestRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ContentBox"
+
+[node name="BestValue" type="Label" parent="Panel/Column/BestRow/Best"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+theme_type_variation = &"LargeLabel"
+text = "-"
+
+[node name="BestDetail" type="Label" parent="Panel/Column/BestRow/Best"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+theme_type_variation = &"MuteLabel"
+
+[node name="StartButton" type="Button" parent="Panel/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BigPrimaryButton"
+text = "Start"
+icon = ExtResource("chip")
+
+[node name="Hint" type="Label" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -53.0
+offset_right = 300.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"MuteLabel"
+text = "Enter start · Esc leave the range"
+horizontal_alignment = 1

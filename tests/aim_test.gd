@@ -64,7 +64,7 @@ func _test_score() -> void:
 			"%d points, %d hits, %d misses, score %d" % [run.points, run.hits, run.misses(), run.score()])
 	_check("Accuracy is hits over shots, the average reaction is over the hits only, and the details are ready to save",
 			is_equal_approx(run.accuracy(), 0.6) and is_equal_approx(run.average_reaction(), 0.75)
-			and run.details() == {"hits": 3, "misses": 2, "expired": 1, "accuracy": 60.0, "reaction_ms": 750},
+			and run.details() == {"hits": 3, "misses": 2, "expired": 1, "accuracy": 60.0, "reaction_ms": 750, "best_streak": 3},
 			"%s" % [run.details()])
 	var wild := AimScore.new()
 	wild.add_hit(0.3, 1.5)
@@ -88,6 +88,10 @@ func _start_range() -> void:
 	_main.set("mode", 1)
 	_main.set("map_scene", load(Settings.DEFAULT_MAP))
 	add_child(_main)
+	# These checks are about the props themselves: their in-world readouts and a shot at the pad starting a run at once
+	# (the game's 2D training screens have their own checks in ui_test and layout_test, D-236).
+	TrainingHub.hud_active = false
+	TrainingHub.menu = null
 	await _wait_ticks(8)
 	(_main.get_node("ClassMenu") as ClassMenu).close()
 	_player = _main.call("get_player") as Character
