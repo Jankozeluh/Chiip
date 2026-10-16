@@ -722,3 +722,16 @@
 
 **The peer is the swappable part** (`net/net_transport.gd`, D-114)
 - In Godot everything above the connection talks to a `MultiplayerPeer`: RPCs, `send_bytes()`, peer ids, `peer_connected`. ENet (`ENetMultiplayerPeer`), WebSocket, WebRTC and GodotSteam's `SteamMultiplayerPeer` are all `MultiplayerPeer`s, so changing how computers reach each other means making a different peer and nothing else. Unity's Netcode works the same way: its `NetworkManager` has a *transport* component (Unity Transport, or a community Steam transport) you swap without touching game code. Chiip puts the making of the peer in one small class (`EnetTransport`), so a Steam one can sit next to it later.
+
+### M11 — Optimization
+
+**Measuring a frame** (`tools/frame_timing.gd`, D-165)
+- Unity has the Profiler window and `FrameTimingManager`. Godot's editor has a Profiler tab too, but a tool needs numbers it can compare from run to run, so Chiip times the frame itself. `SceneTree.physics_frame` fires at the start of every physics tick and `process_frame` at the start of the process step. `RenderingServer.frame_pre_draw` and `frame_post_draw` bracket drawing. The gaps between them are the frame's parts.
+- A node's `process_priority` orders `_process` calls: higher runs later (Unity's Script Execution Order). A helper node with a huge priority marks the end of the scripts in a run without a window, where no drawing signals fire.
+- `Performance.get_monitor(TIME_PROCESS)` is not one frame's time: the engine updates it once a second with the slowest frame of that second, and it includes drawing and the wait for the display.
+- `RenderingServer.get_rendering_info(RENDERING_INFO_PIPELINE_COMPILATIONS_DRAW)` counts shader pipelines compiled in the middle of a frame: the "first time I see a smoke, it hitches" stutter. Unity's equivalent is `ShaderVariantCollection` warm-up. Godot 4.4+ compiles most of them in the background ("specialization").
+- `-d --profiling` on the command line prints GDScript's own profiler (time per function) once a second: like Unity's Deep Profile, for scripts only.
+
+**Loading versus finding a resource** (`systems/shop.gd`, D-166)
+- `load()` returns the copy already in memory as long as something holds it. When nothing does, the resource was freed and `load()` parses the file again, like `Resources.Load` after `Resources.UnloadUnusedAssets`. Code that runs often keeps what it loaded in a `static var`. The class keeps it, as in a C# static field.
+- `set_meta()` / `get_meta()` hang a value on any `Object` (Unity: a component, or a dictionary keyed by the object). Chiip keeps a hit zone's box on the zone (`net/lag_compensation.gd`): it goes away with the zone, while a dictionary keyed by the zone could match a new zone that got a freed one's memory.

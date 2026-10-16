@@ -1660,6 +1660,28 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** MIT, or source-available only; itch.io with a restricted page; UPnP and direct-IP play (it opens a port on the host's router).
 
+## D-165 — How Chiip's speed is measured (2026-10-16)
+
+**Decision:** `tools/frame_timing.gd` splits every frame into its parts and is the one tool for frame times:
+- **The parts:** physics ticks (bots, movement, animation trees, the physics step), scripts (`_process`, the HUD), drawing, and the rest. Each part gets its average and 99th percentile.
+- **CPU over budget:** frames whose physics and scripts together take more than 8.33 ms (one frame at 120 Hz). Such a frame is late whatever the graphics card does.
+- **Spikes:** every frame over 12.5 ms (`--spike <ms>` changes the threshold), with the round's phase and what was added to the scene in that frame (`weapon_spot.tscn`, an explosion's lights and particles…). That names the moment that costs.
+- **Pipelines compiled while drawing:** Godot 4.4+ counts them, and they are the first-match stutter on a new computer. Chiip has none: 4.7 compiles new materials in the background.
+- **Three ways to run it:**
+  - with a window: the frame rate, the parts and the draw calls; `--vsync` keeps V-Sync on, as the settings do
+  - headless with `--fixed-fps 128`: the CPU side, about a minute of play in ten seconds
+  - `--lan`: a LAN host, with a second, headless game joining on the same computer
+
+**Why:**
+- The M8 version waited for the round to go live by counting `1 / frames per second`. While a map loads, the engine reports about 1 fps, so it stopped waiting at once, and every earlier number was measured during freeze time, with the bots standing still.
+- Its "process" column was the engine's monitor: the slowest frame of each second, including drawing and the wait for the display.
+- On macOS with V-Sync off, the system now and then holds a frame while it waits for the display. These show as 12–17 ms "draw" spikes, and a player with V-Sync on never gets them. So the slowest 1 % of frames with V-Sync off says little about stutter. The CPU parts and the spikes' causes do.
+- Metal reports no GPU times (neither `--gpu-profile` nor the viewport's measured render time), so the GPU's share is read from "draw" and the frame rate.
+
+**Alternatives:**
+- Godot's script profiler (`-d --profiling`). It prints only one frame a second, so it misses most spikes. It is still useful for one deterministic run, such as perf_test's round starts.
+- The editor's profiler: it needs clicking through by hand, and the numbers can't be compared from run to run.
+
 ## Open questions
 
 | Question | Decide in |

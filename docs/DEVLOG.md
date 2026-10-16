@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M11 optimization
+
+**Done**
+- `tools/frame_timing.gd` now splits each frame into its parts (physics, scripts, drawing, the rest). It lists every spike with what was added to the scene in that frame and counts pipelines compiled while drawing. It also runs headless (a minute of play in ten seconds) and as a LAN host with a client it starts itself (D-165).
+- Found that all earlier frame timings were taken during freeze time: the tool stopped waiting for the round at once.
+- Round starts: the bots' shopping reloaded every weapon file 83 times (`WeaponData.all()`). The shop and the network code now keep the arsenal loaded (D-166). perf_test's worst tick went from 153 ms to 17 ms, and its average tick from 0.78 to 0.59 ms.
+
+**Next:** the remaining hot spots, then limits in perf_test, then the before-and-after numbers.
+
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
 **Done**
