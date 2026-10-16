@@ -2270,6 +2270,12 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** keeping the screens as built, in their own style (the designer asked for the reviews: the compass, the boot screen and the licences); drawing the glyphs by hand (the component is the designer's spec).
 
+## D-231 — The boot screen follows the designer's page (2026-10-16)
+
+**Decision:** The boot screen (D-153) is the designer's "30 Boot": the logo with a **smooth filter** (it is a painted mark; the nearest filter of D-153 was wrong for it), "DIVOCAKOS" in 32 px with 4 px letter spacing (a new `SpacedLabel` role) instead of the 48 px bold name, **four** squares instead of eight, the credit line "Created by JK · Divocakos" at the bottom left (the main menu's footer says it too, in place of "Build M10 · Divocakos") and "Any key to skip" at the bottom right, on the opaque deepest dark (a new `VoidPanel` role). Timing: the logo, name and squares fade in over 0.3 s, then the screen holds 1.6 s (`hold_time` 1.9 s). The logo stays at 224 design pixels, a whole multiple of its 112 pixels at every UI scale of half steps.
+
+**Why:** The designer's review (D-230). **Alternatives:** none worth it; the page is explicit about every item. The squares' gap is the theme's 6 px, the page's 8 px: left, because the loading screen's squares share the role.
+
 ## Open questions
 
 | Question | Decide in |

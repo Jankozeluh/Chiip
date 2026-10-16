@@ -348,7 +348,7 @@ func _test_boot_screen() -> void:
 			"big %s, small %s" % [big, small])
 	var failures := {}
 	screen.show_screen()
-	var shows_logo := screen.get_logo().visible and not screen.get_wordmark().visible and screen.get_studio_name_label().text == "Divocakos"
+	var shows_logo := screen.get_logo().visible and not screen.get_wordmark().visible and screen.get_studio_name_label().text == "DIVOCAKOS"
 	var whole_steps: Array[String] = []
 	for case in _cases:
 		var size: Vector2i = case[0]
@@ -396,8 +396,8 @@ func _test_boot_screen() -> void:
 	key.keycode = KEY_SPACE
 	Input.parse_input_event(key)
 	await get_tree().process_frame
-	_check("With a logo file the picture shows (square, no game's name), the squares fill with time (4 of 8 at half time), and a key skips the screen",
-			picture_with_logo and square and half == 4 and finished[0] and not screen.visible and not screen.is_showing(),
+	_check("With a logo file the picture shows (square, no game's name), the squares fill with time (2 of 4 at half time), and a key skips the screen",
+			picture_with_logo and square and half == 2 and finished[0] and not screen.visible and not screen.is_showing(),
 			"picture %s, square %s, %d done at half, finished %s" % [picture_with_logo, square, half, finished[0]])
 	BootScreen.logo_path = "res://assets/ui/studio_logo.png"
 	remove_child(screen)

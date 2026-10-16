@@ -182,6 +182,15 @@ func _labels() -> void:
 	_variation("LogoLabel", "Label")
 	_font_sizes("LogoLabel", {"font_size": Palette.TEXT_SIZE_HERO})
 	_fonts("LogoLabel", {"font": logo})
+	# The studio's name on the boot screen: 32 px with the same letter spacing (v0.2 screen 30).
+	var spaced := FontVariation.new()
+	spaced.resource_scene_unique_id = "spaced_font"
+	spaced.base_font = load(Palette.FONT)
+	spaced.spacing_glyph = Palette.HERO_LETTER_SPACING
+	_variation("SpacedLabel", "Label")
+	_font_sizes("SpacedLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_fonts("SpacedLabel", {"font": spaced})
+	_colors("SpacedLabel", {"font_color": Palette.TEXT})
 	# Text over the game world with a hard shadow (the main menu's map name).
 	_variation("ShadowLabel", "Label")
 	_constants("ShadowLabel", {"shadow_offset_x": Palette.SHADOW_OFFSET, "shadow_offset_y": Palette.SHADOW_OFFSET, "shadow_outline_size": 0})
@@ -198,6 +207,9 @@ func _panels() -> void:
 	# The dimming behind a modal menu: a full-screen Panel that keeps the clicks from the game.
 	_variation("BackdropPanel", "Panel")
 	_styles("BackdropPanel", {"panel": _box("backdrop_panel", Palette.BACKDROP)})
+	# The boot screen's background: the deepest dark (VOID, opaque).
+	_variation("VoidPanel", "Panel")
+	_styles("VoidPanel", {"panel": _box("void_panel", Palette.VOID)})
 	# A full-screen menu's ink background (settings, the Play screen, the match end).
 	_variation("InkPanel", "Panel")
 	_styles("InkPanel", {"panel": _box("ink_panel", Palette.INK)})

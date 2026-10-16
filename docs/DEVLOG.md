@@ -7,7 +7,9 @@
 **Done**
 - Merged main (M13 sound, M14 stats and training, M15 accessibility) and started the designer's v0.2 pages (D-230), one commit each: the glyph set and `PadGlyphs` first.
 
-**Next:** the boot screen, the compass to the new spec, the FPS counter and debug overlay, the settings tabs, Stats, training, credits, the pad prompts.
+- Boot screen to the designer's page (D-231): smooth logo, spaced "DIVOCAKOS", four squares, the credit line, a 0.3 s fade-in; the menu footer carries the credit line too.
+
+**Next:** the compass to the new spec, the FPS counter and debug overlay, the settings tabs, Stats, training, credits, the pad prompts.
 
 ## 2026-10-16 — M15 accessibility & polish
 

@@ -1,12 +1,13 @@
 class_name BootScreen
 extends CanvasLayer
-## The boot screen (M11, D-153), the mockup's "01 Boot": the studio logo (224 × 224, pixel art, drawn
-## with nearest filtering) centred on the deepest dark, a row of eight squares that fill while it shows
-## and "Any key to skip" at the bottom. The main menu shows it once per run, before the menu appears
-## ([method MainMenu._show_boot_screen]); any key or mouse click skips it, and it hides itself after
-## [member hold_time] seconds.
+## The boot screen (M11, D-153; the designer's "30 Boot" since v0.2, D-231): the studio's logo (112 × 112, drawn
+## 224 wide with a smooth filter: it is a painted mark, not pixel art) centred on the deepest dark, "DIVOCAKOS" in
+## 32 px with 4 px letter spacing under it, four squares that fill while the screen shows, "Created by JK · Divocakos"
+## at the bottom left and "Any key to skip" at the bottom right. Logo, name and squares fade in over 0.3 s and the
+## screen holds 1.6 s more. The main menu shows it once per run, before the menu appears
+## ([method MainMenu._show_boot_screen]); any key or mouse click skips it.
 ##
-## **The studio's logo** is [code]res://assets/ui/studio_logo.png[/code], 112 × 112, with the name
+## **The studio's logo** is [code]res://assets/ui/studio_logo.png[/code], with the name
 ## "Divocakos" under it ([constant STUDIO_NAME]). Both belong to the studio, all rights reserved (docs/CREDITS.md).
 ## The picture is drawn 224 design pixels wide, which is a whole multiple of its size at every
 ## UI scale in half steps (2× at 1.0, 3× at 1.5 ...). The main menu's corner mark uses the
@@ -19,6 +20,10 @@ extends CanvasLayer
 ## Emitted once, when the screen has hidden itself (by timeout or by a key).
 signal finished
 
+## The credit line of the boot screen's bottom left and the main menu's footer (the design's "Created by JK · Divocakos").
+const CREDIT_LINE := "Created by JK · Divocakos"
+## Seconds the logo, the name and the squares take to fade in on the dark.
+const FADE_IN := 0.3
 ## The studio's name, shown under the logo.
 const STUDIO_NAME := "Divocakos"
 ## The half-size logo of the main menu's corner mark.
@@ -32,8 +37,9 @@ static var enabled: bool = true
 ## True once a boot screen has shown in this run: the menu comes back from a match without it.
 static var _shown: bool = false
 
-## How long the screen stays up, in seconds. The squares fill evenly over it.
-@export var hold_time: float = 2.5
+## How long the screen stays up, in seconds: the fade-in ([constant FADE_IN]) and the 1.6 s hold of the design.
+## The squares fill evenly over it.
+@export var hold_time: float = 1.9
 
 ## Seconds counted since [method show_screen].
 var _elapsed: float = 0.0
@@ -46,12 +52,13 @@ var _active: bool = false
 @onready var _wordmark: Label = %Wordmark
 @onready var _studio_name: Label = %StudioName
 @onready var _chip_row: HBoxContainer = %Chips
+@onready var _content: Control = %Center
 
 
 func _ready() -> void:
 	visible = false
 	set_process(false)
-	_studio_name.text = STUDIO_NAME
+	_studio_name.text = STUDIO_NAME.to_upper()
 	_show_logo_or_wordmark()
 
 
@@ -93,6 +100,7 @@ func show_screen() -> void:
 	_shown = true
 	_active = true
 	_elapsed = 0.0
+	_content.modulate.a = 0.0
 	_show_logo_or_wordmark()
 	_update_chips()
 	visible = true
@@ -105,6 +113,7 @@ func advance(seconds: float) -> void:
 	if not _active:
 		return
 	_elapsed += seconds
+	_content.modulate.a = clampf(_elapsed / FADE_IN, 0.0, 1.0)
 	_update_chips()
 	if _elapsed >= hold_time:
 		finish()
@@ -158,6 +167,11 @@ func get_done_chips() -> int:
 ## The logo's picture slot (hidden while there is no logo file).
 func get_logo() -> TextureRect:
 	return _logo
+
+
+## How opaque the logo, the name and the squares are now (0 to 1: they fade in).
+func get_content_alpha() -> float:
+	return _content.modulate.a
 
 
 ## The studio's name under the logo.
