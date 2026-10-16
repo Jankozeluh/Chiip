@@ -1100,6 +1100,14 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Checked:** two new gear checks (a spot's gun floats, a walk over takes it, the ring dims and the name hides, it's back after its time; in rounds no timer, but fresh at the next round start) and a maps check per map (a Heron and a Breaker on the navmesh, walks within 12 m of each other). All other suites pass.
 
+**Money** (task 10):
+- **In the round manager** (authority, M9's host): `MatchSettings` group *Economy* (`economy`, `start_money` 1,000, `max_money` 10,000, `win_money` 3,000, `loss_money` [1,500, 2,000, 2,500, 3,000], `teamkill_penalty` 200, `plant_money` and `defuse_money` 200); kill rewards come from the weapon (`WeaponData.kill_reward`: $200, the knife $500), read from the victim's `last_damage_source` (D-093). `get_money()`, `add_money()`, `spend()`, `get_loss_money()`, `has_economy()` (off in team respawn), signal `money_changed(character, amount, reason)`. The round is paid when it ends (before `round_ended`'s listeners run); losses count in a row per team and a win clears the count; the start of each half resets everyone to the starting money. A defuse pays the defuser and wins the round, so the round's money comes on top.
+- **On screen:** your money above your health ("$ 1000", green), with up to three lines for the last rewards ("+$3000  Round won", "+$200  Kill", fading after 3 s); the Tab scoreboard has a money column for your team (the enemy's stays hidden, as in CS; the match-end screen has none); console `money [amount]`.
+
+**Why (money):** The light economy of D-090: round numbers that are easy to read, and since gear doesn't carry over, money is the only thing a round leaves behind, so every freeze time asks "buy or save?". Clearing the loss count on a win (CS:GO's old rule rather than CS2's step down) keeps it the simplest to explain. Showing every reward line is how CS teaches its economy.
+
+**Checked (money):** a new `tests/economy_test.tscn` (10 checks): $1,000 at the start, $3,000 for a win, $1,500 / $2,000 / $2,500 for losses in a row and the count starting over after a win, $200 for a pistol kill and $500 for a knife kill, −$200 for a teamkill, the plant's and defuse's $200, the $10,000 cap, the reset at half time, no money in team respawn, the HUD's money and reward lines, the scoreboard's money column for your team only, and the console command. All 22 suites pass.
+
 **Alternatives:** Pickups anywhere on a timer like old arena shooters (more chaos, less CS); armor and grenade spots too (could come later); spots only in team respawn (rounds would lose the eco-round fight for a power weapon); a weapon icon over the spot instead of the name (the name reads in the font we have).
 
 ## Open questions

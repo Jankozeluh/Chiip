@@ -186,6 +186,7 @@ func _register_commands() -> void:
 	register_command("disconnect", _cmd_disconnect, "disconnect", "Leave the game for the main menu")
 	register_command("class", _cmd_class, "class [name]", "List the classes, or take one (in a match: during freeze time)")
 	register_command("armor", _cmd_armor, "armor [0-100] [helmet]", "Set your armor, with or without a helmet (no value: show)")
+	register_command("money", _cmd_money, "money [amount]", "Set your money in a match (no value: show)")
 
 
 func _cmd_help(_args: Array) -> void:
@@ -270,6 +271,17 @@ func _cmd_armor(args: Array) -> void:
 	if not args.is_empty():
 		player.set_armor(float(args[0]), args.size() > 1 and String(args[1]) == "helmet")
 	print_line("Armor %d%s." % [ceili(player.armor), " with a helmet" if player.has_helmet else ""])
+
+
+func _cmd_money(args: Array) -> void:
+	var player := _get_player()
+	var rules := _get_rules() as RoundManager
+	if player == null or rules == null or not rules.has_economy():
+		print_line("There is no money here (only in a match with rounds).")
+		return
+	if not args.is_empty():
+		rules.add_money(player, int(args[0]) - rules.get_money(player), "Console")
+	print_line("You have $%d." % rules.get_money(player))
 
 
 func _cmd_noclip(_args: Array) -> void:

@@ -15,6 +15,9 @@ const LOW_HEALTH := 25.0
 const FLASH_RING := preload("res://assets/sounds/flash_ring.wav")
 ## How grey the view gets inside a smoke cloud at its thickest (1 = nothing shows through).
 const SMOKE_OPACITY := 0.97
+## How many reward lines show at once, and for how long each (seconds).
+const REWARD_LINES := 3
+const REWARD_TIME := 3.0
 ## Seconds the weapon list shows after a change, and how long it then takes to fade.
 const SLOTS_SHOW_TIME := 2.5
 const SLOTS_FADE_TIME := 0.5
@@ -30,6 +33,10 @@ var respawn_hint: bool = true
 
 ## The weapon whose ammo the labels follow.
 var _watched_weapon: Weapon
+## The match whose money the HUD shows (null: none).
+var _manager: RoundManager
+## The reward lines showing: [text, seconds left].
+var _rewards: Array = []
 ## Seconds the weapon list keeps showing.
 var _slots_show_left: float = 0.0
 ## The player is dead: no crosshair until the respawn.
@@ -42,6 +49,8 @@ var _ring_audio: AudioStreamPlayer
 @onready var _health_label: Label = $HealthLabel
 @onready var _armor_icon: ArmorIcon = $ArmorIcon
 @onready var _slots_label: Label = $SlotsLabel
+@onready var _money_label: Label = $MoneyLabel
+@onready var _reward_label: Label = $RewardLabel
 @onready var _scope_overlay: ScopeOverlay = $ScopeOverlay
 @onready var _smoke_overlay: ColorRect = $SmokeOverlay
 @onready var _flash_overlay: ColorRect = $FlashOverlay
@@ -60,6 +69,7 @@ func set_player(new_player: Character) -> void:
 	player.respawned.connect(_on_player_respawned)
 	_crosshair.camera = player.get_camera()
 	set_view_target(player)
+	_update_money()
 
 
 ## Shows the round HUD (top bar, countdown, banners, kill feed) for the match
@@ -68,6 +78,14 @@ func set_player(new_player: Character) -> void:
 func set_round_manager(manager: RoundManager) -> void:
 	_round_hud.set_round_manager(manager)
 	_bomb_hud.set_round_manager(manager)
+	if is_instance_valid(_manager) and _manager.money_changed.is_connected(_on_money_changed):
+		_manager.money_changed.disconnect(_on_money_changed)
+	_manager = manager
+	_rewards.clear()
+	_reward_label.text = ""
+	if manager != null:
+		manager.money_changed.connect(_on_money_changed)
+	_update_money()
 
 
 ## Shows the health, ammo and weapon of [param target] instead of the player's
@@ -106,6 +124,8 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_armor_icon, factor)
 	UiScale.apply(_armor_label, factor)
 	UiScale.apply(_slots_label, factor)
+	UiScale.apply(_money_label, factor)
+	UiScale.apply(_reward_label, factor)
 	UiScale.apply(_death_label, factor)
 	UiScale.apply(_spectate_label, factor)
 	_crosshair.set_ui_scale(factor)
@@ -115,6 +135,13 @@ func set_ui_scale(factor: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if not _rewards.is_empty():
+		for reward: Array in _rewards:
+			reward[1] -= delta
+		var before := _rewards.size()
+		_rewards = _rewards.filter(func(reward: Array) -> bool: return reward[1] > 0.0)
+		if _rewards.size() != before:
+			_show_rewards()
 	if _slots_show_left > 0.0:
 		_slots_show_left -= delta
 		_slots_label.modulate.a = clampf(_slots_show_left / SLOTS_FADE_TIME, 0.0, 1.0)
@@ -234,6 +261,33 @@ func _update_armor() -> void:
 	_armor_label.modulate = Color(1, 1, 1, 1.0 if shown.armor > 0.0 else ArmorIcon.EMPTY_ALPHA)
 	_armor_icon.points = shown.armor
 	_armor_icon.helmet = shown.has_helmet
+
+
+## Shows your money (D-098) in a match with an economy; hidden otherwise.
+func _update_money() -> void:
+	var shows := is_instance_valid(_manager) and _manager.has_economy() and player != null and is_instance_valid(player)
+	_money_label.visible = shows
+	_reward_label.visible = shows
+	if shows:
+		_money_label.text = "$ %d" % _manager.get_money(player)
+
+
+## Your money changed: the new total, and a line saying why ("+$200  Kill"), newest at the bottom.
+func _on_money_changed(character: Character, amount: int, reason: String) -> void:
+	if character != player:
+		return
+	_update_money()
+	if reason == "New half" or amount == 0:
+		return
+	var sign := "+" if amount > 0 else "-"
+	_rewards.append(["%s$%d  %s" % [sign, absi(amount), reason], REWARD_TIME])
+	while _rewards.size() > REWARD_LINES:
+		_rewards.pop_front()
+	_show_rewards()
+
+
+func _show_rewards() -> void:
+	_reward_label.text = "\n".join(_rewards.map(func(reward: Array) -> String: return reward[0]))
 
 
 ## Your ears ring after a flashbang, as long as it blinds you.

@@ -37,6 +37,14 @@ extends Node
 ## [member MatchSettings.round_loadout] (the knife and the Sparrow), no armor and no kit, and the
 ## guns left on the floor last round are gone. Whatever is bought or picked up lasts one round.
 ##
+## Money (D-090, D-098), when [member MatchSettings.economy] is on: everyone starts each half
+## with [member MatchSettings.start_money]; a round pays the winners
+## [member MatchSettings.win_money] and the losers by how many rounds in a row they have lost
+## ([member MatchSettings.loss_money]); a kill pays its weapon's [member WeaponData.kill_reward]
+## (a teamkill costs [member MatchSettings.teamkill_penalty]); the plant pays every attacker and the
+## defuse the defuser. Money carries over between rounds, gear doesn't. [method spend] is how the
+## buy menu pays (task 11), through [method request_buy].
+##
 ## Classes (D-052, D-078): the bots get a mix when the match starts, the player keeps their own
 ## class (or [member MatchSettings.player_class]), and [method request_class] changes a class
 ## during freeze time only.
@@ -72,6 +80,10 @@ signal match_ended(winner: int)
 signal character_killed(victim: Character, killer: Character, headshot: bool)
 ## Emitted when [method request_class] gave [param character] another class.
 signal class_changed(character: Character, data: ClassData)
+## Emitted when [param character]'s money changes by [param amount] (negative when spent), for
+## [param reason]: "Round won", "Round lost", "Kill", "Teamkill", "Bomb planted", "Bomb defused",
+## "Bought", "New half". [method get_money] has the new total.
+signal money_changed(character: Character, amount: int, reason: String)
 
 const BOT_SCENE := preload("res://bots/bot.tscn")
 const BOMB_SCENE := preload("res://bomb/bomb.tscn")
@@ -114,6 +126,10 @@ var rng := RandomNumberGenerator.new()
 ## and time only.
 var bomb: Bomb
 
+## Every participant's money: Character → int.
+var _money: Dictionary = {}
+## Rounds lost in a row by each team (index = team number), for the loss money.
+var _loss_streak: Array[int] = [0, 0]
 ## Randomness for the bots' class mix. It is seeded from [member rng] without drawing from it,
 ## so the mix doesn't change the spawn spots and the starting sides a seed gives.
 var _class_rng := RandomNumberGenerator.new()
@@ -246,6 +262,7 @@ func _start_match() -> void:
 	for team in Teams.COUNT:
 		score.append(0)
 	winner = -1
+	_reset_money()
 	_add_bomb()
 	_start_round()
 
@@ -282,6 +299,7 @@ func _end_round(round_winner: int, reason: EndReason) -> void:
 		bomb.active = false
 	# Count the round first, so everyone listening to the signals sees the new score.
 	_score_round(round_winner)
+	_pay_round(round_winner)
 	_set_phase(Phase.ROUND_END, settings.round_end_time)
 	round_ended.emit(round_winner, reason)
 
@@ -297,6 +315,8 @@ func _after_round_end() -> void:
 	# Nobody can have won yet at this point, so half time never clashes with a match end.
 	if round_number == settings.rounds_to_win - 1:
 		attacking_team = get_defending_team()
+		# A new half: everyone back to the starting money, as in CS.
+		_reset_money()
 		sides_swapped.emit()
 	_start_round()
 
@@ -401,6 +421,8 @@ func _pick_bomb_carrier() -> Character:
 
 
 func _on_bomb_planted(_site: Area3D, _planter: Character) -> void:
+	for attacker in get_members(attacking_team):
+		add_money(attacker, settings.plant_money, "Bomb planted")
 	# If the attackers were already all dead, nothing changes: the defenders must defuse.
 	_check_elimination.call_deferred()
 
@@ -410,9 +432,87 @@ func _on_bomb_exploded() -> void:
 		_end_round(attacking_team, EndReason.BOMB_EXPLODED)
 
 
-func _on_bomb_defused(_defuser: Character) -> void:
+func _on_bomb_defused(defuser: Character) -> void:
+	add_money(defuser, settings.defuse_money, "Bomb defused")
 	if phase == Phase.LIVE:
 		_end_round(get_defending_team(), EndReason.BOMB_DEFUSED)
+
+
+# --- Money (D-098) ---
+
+
+## True if this match has money (rounds with [member MatchSettings.economy] on).
+func has_economy() -> bool:
+	return settings.economy and not is_team_respawn()
+
+
+## How much money [param character] has (0 without an economy).
+func get_money(character: Character) -> int:
+	return _money.get(character, 0)
+
+
+## Gives [param character] [param amount] (negative takes it away), capped at
+## [member MatchSettings.max_money] and never below 0, and says why. Does nothing without an
+## economy. Returns the change actually made.
+func add_money(character: Character, amount: int, reason: String) -> int:
+	if not has_economy() or not _money.has(character):
+		return 0
+	var before: int = _money[character]
+	var after := clampi(before + amount, 0, settings.max_money)
+	_money[character] = after
+	if after != before:
+		money_changed.emit(character, after - before, reason)
+	return after - before
+
+
+## Takes [param amount] from [param character] if it has that much. Returns true if it paid.
+func spend(character: Character, amount: int) -> bool:
+	if not has_economy() or get_money(character) < amount:
+		return false
+	add_money(character, -amount, "Bought")
+	return true
+
+
+## How much [param team] gets for losing the next round now (by its losses in a row).
+func get_loss_money(team: int) -> int:
+	var table := settings.loss_money
+	if table.is_empty():
+		return 0
+	return table[mini(_loss_streak[team], table.size() - 1)]
+
+
+## Everyone back to the starting money, no losses in a row (the match start and half time).
+func _reset_money() -> void:
+	_loss_streak = [0, 0]
+	if not has_economy():
+		return
+	for character in _participants:
+		var before: int = _money.get(character, 0)
+		_money[character] = settings.start_money
+		money_changed.emit(character, settings.start_money - before, "New half")
+
+
+## Pays a round: the winners the win money, the losers by their losses in a row.
+func _pay_round(round_winner: int) -> void:
+	var loser := Teams.other(round_winner)
+	var loss := get_loss_money(loser)
+	for character in get_members(round_winner):
+		add_money(character, settings.win_money, "Round won")
+	for character in get_members(loser):
+		add_money(character, loss, "Round lost")
+	_loss_streak[loser] += 1
+	_loss_streak[round_winner] = 0
+
+
+## A kill pays the killer its weapon's reward ($200, $500 with the knife); a teamkill costs.
+func _pay_kill(victim: Character, killer: Character) -> void:
+	if killer == null or killer == victim or not _money.has(killer) or phase == Phase.MATCH_END:
+		return
+	if killer.team == victim.team:
+		add_money(killer, -settings.teamkill_penalty, "Teamkill")
+		return
+	var weapon := victim.last_damage_source
+	add_money(killer, weapon.kill_reward if weapon != null else 200, "Kill")
 
 
 # --- Players ---
@@ -432,6 +532,7 @@ func _add_bot(team: int, data: ClassData) -> void:
 func _join(character: Character) -> void:
 	_participants.append(character)
 	_stats[character] = Stats.new()
+	_money[character] = 0
 	character.damaged.connect(_on_damaged.bind(character))
 	character.died.connect(_on_died.bind(character))
 
@@ -519,6 +620,7 @@ func _on_died(killer: Character, victim: Character) -> void:
 		if attacker != killer and dealt[attacker] >= ASSIST_DAMAGE and _stats.has(attacker):
 			(_stats[attacker] as Stats).assists += 1
 	_damage_this_life.erase(victim)
+	_pay_kill(victim, killer)
 	_score_kill(victim, killer)
 	character_killed.emit(victim, killer, _last_hit_zone.get(victim, -1) == Hitbox.Zone.HEAD)
 	_check_elimination.call_deferred()

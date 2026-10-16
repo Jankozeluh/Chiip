@@ -77,3 +77,21 @@ enum GameMode {
 ## Search & Destroy): the knife and the Sparrow. Whatever is bought or picked up lasts one round.
 ## Team respawn uses each class's own loadout instead ([member ClassData.loadout]).
 @export var round_loadout: Array[WeaponData] = [preload("res://weapons/knife.tres"), preload("res://weapons/pistol.tres")]
+
+@export_group("Economy")
+## Money in rounds (D-090, D-098): earned by winning, losing, killing and the bomb, carried over
+## between rounds and spent in the buy menu. Off: no money at all (the team respawn mode has none).
+@export var economy: bool = true
+## Money at the start of each half, and the most anyone can have.
+@export var start_money: int = 1000
+@export var max_money: int = 10000
+## For winning a round.
+@export var win_money: int = 3000
+## For losing a round: the first number for a first loss, the next for each loss in a row after
+## it; the last one repeats. A win starts the count again.
+@export var loss_money: PackedInt32Array = PackedInt32Array([1500, 2000, 2500, 3000])
+## Taken away for killing a teammate.
+@export var teamkill_penalty: int = 200
+## For every attacker when the bomb is planted, and for the defender who defuses it.
+@export var plant_money: int = 200
+@export var defuse_money: int = 200

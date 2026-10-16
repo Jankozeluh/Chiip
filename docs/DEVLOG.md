@@ -19,7 +19,9 @@
 
 - **Task 9, power weapons on the maps** (D-098): every quick map has a Heron and a Breaker on gold rings in contested lanes, placed so both teams walk about as far to them; back every round (in team respawn 30 s after being taken). MAPS.md has where.
 
-**Next:** task 10 (money).
+- **Task 10, money** (D-098): the light economy runs in the round manager: $1,000 to start each half, $3,000 a win, $1,500 rising to $3,000 for losses in a row, $200 a kill ($500 with the knife), $200 for the plant (every attacker) and the defuse, −$200 for a teamkill, $10,000 at most. Your money and the last rewards are on the HUD, your team's money on the Tab scoreboard; console `money`. New `tests/economy_test.tscn` (10 checks); all 22 suites pass (680 checks).
+
+**Next:** task 11 (the buy menu).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

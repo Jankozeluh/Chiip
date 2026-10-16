@@ -261,6 +261,8 @@ func drop(weapon: Weapon) -> WeaponPickup:
 ## What a dying character leaves behind (D-090): its best gun, the primary, else the pistol.
 ## Grenades and the rest are lost with it.
 func drop_on_death() -> WeaponPickup:
+	if not _character.is_inside_tree():
+		return null
 	var best := get_in_slot(WeaponData.Slot.PRIMARY)
 	if best == null:
 		best = get_in_slot(WeaponData.Slot.PISTOL)
