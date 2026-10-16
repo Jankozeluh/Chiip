@@ -1,8 +1,8 @@
 # Chiip — Plan & Roadmap
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
-> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". Next: M7 — Arsenal, perks & economy.
+> **Current milestone:** M5 — Rounds & game flow is built (all 13 tasks). M6 — Crew & animation and M8 — Modes & 3 quick maps (bomb rounds, team respawn, three quick maps in rotation, sound pass, export) are built too. All of it waits for your playtest in "Your open checks". M7 — Arsenal, perks & economy and M9 — Multiplayer are in progress, in parallel (M9's phase B, the arsenal online, follows M7).
 
 ## Your open checks
 
@@ -58,7 +58,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M6 | Crew & animation | 🟨 built, waiting for your playtest | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
 | M7 | Arsenal, perks & economy | ⬜ | Earn money, buy from the full arsenal, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
-| M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
+| M9 | Multiplayer | 🟨 in progress | Play with friends (one hosts), bots fill empty slots |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -313,22 +313,56 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** level design in TrenchBroom (lanes, sightlines, timing), lightmap baking, `Area3D` triggers, spawn selection, exporting a game.
 
-## M9 — Multiplayer ⬜
+## M9 — Multiplayer 🟨
 
-**Goal:** play Chiip with friends. One player hosts, others join, and bots fill the empty slots (D-033).
+*Planned on 2026-10-16 in its own branch, in parallel with M7. You asked for the whole roadmap to be built and will playtest at the end, so the decisions below (D-100 to D-112) are my recommendations, applied until you say otherwise.*
 
-- [ ] Networking foundation: Godot's high-level multiplayer (ENet), host/join by IP on a LAN
-- [ ] Server authority: the host runs the game rules (damage, rounds, money, bomb); clients send their per-tick input commands (from M4)
-- [ ] Client-side prediction and correction for your own movement, so it stays as responsive as single-player
-- [ ] Lag compensation for hitscan shots: the host checks hits against where targets were when you fired
-- [ ] Replicate rounds, economy, bomb and bots to all players
-- [ ] Lobby: host/join, team choice, bots fill empty slots
-- [ ] Steam lobbies and friend invites via the GodotSteam addon
-- [ ] Network tests: simulated latency and packet loss
+**Goal:** play Chiip with friends. One player hosts, others join over the LAN or through a Steam lobby, and bots fill the empty slots (D-033). Shooting feels fair at normal pings.
+
+**The key idea:** the host's computer runs the real game, exactly the single-player game of M5 to M8: the round manager, the bomb, every bot, every hit. A friend's computer runs a copy that only *shows* the host's game, plus one thing it simulates itself: its own player, so moving and shooting stay as instant as offline. That is CS's model (a *listen server*: the host plays on the server). It works because M4 made every character follow per-tick input commands (D-034): a friend's keyboard and mouse produce `CharacterInput`s on their computer, the commands travel to the host, and the host's `Character` simulates them by the same rules as everyone else's. In the other direction the host sends *snapshots* (where everyone is, 64 times a second) and *events* (kills, round results, the bomb). The three hard parts are the ones CS is famous for: **prediction** (your own movement doesn't wait for the host), **interpolation** (everyone else moves smoothly between snapshots) and **lag compensation** (the host checks your shot against where you saw your target).
+
+**Tasks**, in order, one commit each. The tag says which model builds it (CLAUDE.md, "Choosing a model"). Phase A works without M7; phase B follows once M7 is merged into main; phase C adds Steam.
+
+*Phase A: LAN multiplayer*
+
+1. [x] **Plan.** This task list and the decisions D-100 to D-112 (provisional). *(Opus)*
+2. [ ] **Connection and session.** A `NetSession` node (new folder `net/`) hosts a game on UDP port 26000 (Quake's port) or joins one by IP, with Godot's high-level multiplayer and its ENet peer. The host keeps the *roster* (who is connected, their name and team) and sends it to everyone with RPCs; leaving and lost connections are noticed on both sides. The game stream gets its own packet layer with a fake-lag and fake-loss switch (`net_fakelag`, `net_fakeloss`, like CS's). Your player name becomes a setting. Console: `host`, `connect <ip>`, `status`, and `disconnect` also leaves an online game. New `tests/net_test.tscn`: a host and two clients in one process connect, see each other in the roster, and exchange messages under fake lag and loss. *(Opus)*
+3. [ ] **One match on every screen.** The host's Start loads the same map and rules on every computer and waits (up to 15 s) until everyone has loaded. Every character gets a stable network id. The host's round manager fills each team with its human players first and bots for the empty slots; the friends' characters on the host are driven by a `NetworkController`. Each client builds the same characters as *puppets*, named after their players. On clients the round manager and the bomb run as *replicas*: the same fields and signals, but no decisions, so the HUD, kill feed, scoreboard, bomb HUD, class menu and end screen work unchanged. Code that looked at "every character in the tree" now looks at the characters of its own world, so two games can run in one test process. *(Opus)*
+4. [ ] **Server authority.** Clients send their commands; every packet repeats all the commands the host hasn't confirmed yet, so a lost packet costs nothing. The host runs every command exactly once and in order, as CS's server does, with a budget so nobody can run faster than real time. The shot spread is rolled from the command's number, so the host and the shooter roll the same spread. Damage, deaths, rounds, the bomb and class changes stay where they are: on the host; clients ask (`request_class()`). *(Opus)*
+5. [ ] **Snapshots.** 64 times a second the host sends each client a snapshot: every character's position, velocity, aim, stance, health, ammo and life, the round's phase and clock, and the bomb. Clients show everyone else about 50 ms in the past, interpolated between two snapshots (CS's `cl_interp`), so they move smoothly; their footsteps, animations, shots (sound, flash, impacts) and reloads play from that. Reliable events carry what must not get lost: round phases and results, kills, damage, scoreboard numbers, class changes and every step of the bomb. Spectating works on clients. *(Opus)*
+6. [ ] **Client-side prediction.** Your own character moves the moment you press a key: your computer simulates your commands as it does offline. When the host's answer for a command differs from what your computer predicted, you are put where the host says and your newer commands are replayed (CS's prediction); small corrections are smoothed over 0.1 s, so you rarely notice them. Ammo, reloads and recoil are predicted too. The F3 overlay shows ping, loss and corrections. *(Opus)*
+7. [ ] **Lag compensation.** The host keeps the last second of everyone's hit zones. Each command says what moment you were looking at, so the host checks your shot against the hit zones where they were then, up to 400 ms back, as CS does. Walls still stop bullets where they are. *(Opus)*
+8. [ ] **Lobby.** Main menu → **Multiplayer**: **Host** or **Join** (the host's IP), with your name. The lobby shows both teams and their slots, empty slots as bots; click a team to join it. The host sets the match with match setup's rows (mode, map or rotation, team sizes, bot difficulty, length, friendly fire) and presses Start. After a match the host's Play again and Next map take everyone along. *(Sonnet: the screens; Opus: the wiring)*
+9. [ ] **The pause menu and other menus online.** Online, Esc opens the pause menu as an overlay that doesn't pause: your character stops, the game goes on (as M5 planned, D-065). Leave disconnects. The console's cheats and bot commands are offline only; the end screen's buttons are the host's. *(Sonnet)*
+10. [ ] **Coming and going.** A player who leaves or loses the connection during a match is taken over by a bot, stats and all. A friend who joins a running match takes over a bot on the team they choose. When the host quits, everyone goes back to the menu with a message. *(Opus)*
+11. [ ] **Network tests.** `tests/netplay_test.tscn`: a host and two clients in one process at 100 ms ping with 5% loss: your prediction stays in step with the host, shots at a strafing target hit with lag compensation, a seeded bomb round looks the same on every screen (score, kill feed, bomb), a player who leaves is taken over by a bot; bandwidth per client is measured. Both net suites in `tools/run_tests.sh`. *(Sonnet writes, Haiku runs and reports)*
+
+*Phase B: the arsenal online (after M7 is merged)*
+
+12. [ ] **Weapons online:** the inventory, switching, dropping and picking up guns (dropped guns and power weapons as network objects), each gun's own rules (pellets, scopes, the knife). *(Opus)*
+13. [ ] **Money and the buy menu online:** money in the snapshots, purchases asked of the host, rewards shown on the clients' HUD. *(Opus)*
+14. [ ] **Grenades online:** thrown on the host, flying on every screen; explosions, flashes and smoke on every screen. *(Opus)*
+
+*Phase C: Steam*
+
+15. [ ] **GodotSteam.** The GodotSteam addon (GDExtension for Godot 4.7, with Valve's Steamworks runtime) from its official GitHub releases, installed under `addons/`, in CREDITS.md with its licence. Valve's public test app ID 480 while developing. The game still starts and plays everything without Steam. *(Sonnet, Opus checks)*
+16. [ ] **Steam lobbies and invites.** Host on Steam opens a friends-only lobby; **Invite friends** opens Steam's overlay; accepting an invite (or Join game in Steam's friends list) joins it. The game stream runs over Steam's networking through the same `NetSession`, so everything from phase A works unchanged. *(Opus)*
+17. [ ] **Checks and the playtest list.** All suites passing, the docs complete, and the M9 playtest list (LAN with a second Mac, Steam with a friend) in "Your open checks". *(Sonnet writes, Haiku runs and reports)*
 
 **Done when:** you and a friend can play a full bomb-defusal match together against bots, over LAN and through a Steam lobby, and shooting feels fair at normal pings.
 
-**You learn:** Godot's multiplayer API (RPCs, `MultiplayerSynchronizer`, `MultiplayerSpawner`), authority, prediction, lag compensation, Steamworks basics.
+**You learn:** Godot's high-level multiplayer API (`MultiplayerPeer`, `SceneMultiplayer`, `ENetMultiplayerPeer`, RPCs and authority), why `MultiplayerSynchronizer` and `MultiplayerSpawner` are great for many games and why a CS-style shooter writes its own snapshots, packing data into bytes, client-side prediction and reconciliation, entity interpolation, lag compensation, testing networked code in one process, GDExtension addons, Steamworks basics (lobbies, invites, the overlay).
+
+**Decisions** (provisional, D-100 to D-112):
+
+| Question | Options | My recommendation (applied) |
+|---|---|---|
+| Who runs the game | **(a)** The host's computer runs every rule; clients send commands and show snapshots (a listen server, CS's model). **(b)** Every computer runs the whole simulation from everyone's inputs (lockstep, RTS games). **(c)** Each computer decides about its own player (client authority). | **(a)** (D-100): fair, cheat-resistant, and it reuses the single-player game as it is |
+| How data travels | **(a)** Godot's high-level multiplayer over ENet: RPCs for the lobby, our own compact packets for snapshots and commands. **(b)** Godot's `MultiplayerSynchronizer` and `MultiplayerSpawner` for everything. | **(a)** (D-101): the synchronizer has no notion of "the snapshot of tick 4711" or "the last command you ran", which prediction and lag compensation need |
+| Tick and snapshot rate | **(a)** Simulation at 128 Hz as now, snapshots at 64 Hz, others shown ~50 ms in the past. **(b)** Snapshots at 128 Hz. **(c)** 32 Hz. | **(a)** (D-104): smooth and still small (about 25 KB/s per friend for a 5v5) |
+| Lobby and teams | **(a)** Host or join by IP; two teams with slots; you pick a team; bots fill the empty slots; the host's match setup. **(b)** Teams balanced automatically. | **(a)** (D-108): playing with friends means choosing sides |
+| Players leaving | **(a)** A bot takes over their character; a newcomer takes over a bot. **(b)** The slot stays empty. | **(a)** (D-110): bots fill empty slots, at any time |
+| Steam | **(a)** GodotSteam, lobbies and invites, the same game stream over Steam's networking. **(b)** LAN only. | **(a)** (D-112): what you asked for; app ID 480 until Chiip has its own |
 
 ## Backlog (ideas, not scheduled)
 
@@ -339,3 +373,6 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 - Training modes: aim trainer, spray practice, movement maps (KZ- or surf-style)
 - Match statistics (K/D, ADR, headshot %) and a stats screen
 - Demo recording and replays
+- A dedicated server: a host without a player of its own (`--server`, headless), for a match that runs on a spare computer (D-100)
+- Finding LAN games by themselves (a broadcast) instead of typing the host's IP (D-108)
+- A tactical pause for the host in online games (D-109)

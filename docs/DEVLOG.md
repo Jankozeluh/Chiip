@@ -2,6 +2,17 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M9 multiplayer
+
+Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsenal`).
+
+**Done**
+- **Plan** (task 1): the M9 list in PLAN.md became 17 tasks in three phases: LAN multiplayer (connection, one match on every screen, server authority, snapshots, prediction, lag compensation, the lobby, the pause menu online, players coming and going, network tests), the arsenal online once M7 is merged, and Steam lobbies and invites through GodotSteam. Decisions D-100 to D-112, provisional: a listen server where the host runs the single-player game as it is (D-100); Godot's high-level multiplayer over ENet on port 26000, RPCs for the lobby and our own packets for the game (D-101); a session node at the tree root, network ids and names (D-102); every command run exactly once on the host, spread rolled from the command number (D-103); 64 Hz snapshots, others shown 47 ms in the past, reliable events (D-104); replica round manager and bomb on clients (D-105); prediction with replay (D-106); lag compensation against recorded hit-zone boxes, up to 400 ms (D-107); the lobby (D-108); the pause menu as an overlay online (D-109); bots taking over (D-110); one-process network tests (D-111); Steam through GodotSteam with app 480 (D-112).
+- A quick check before planning: two `SceneMultiplayer`s in one Godot process, each on its own branch of the tree, talk over ENet on localhost. That is what the network tests need (D-111).
+- All 17 suites pass on the starting point (568 checks).
+
+**Next:** task 2, the connection and the session.
+
 ## 2026-10-15 — Merges into main: M8 and M6
 
 Main now holds M5, the M8 work and M6 together.

@@ -4,7 +4,7 @@
 >
 > Decisions can be revisited. When one changes, add a new entry that replaces the old one instead of rewriting history, and mark the old one as *Replaced by D-xxx*.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## D-001 — Engine: Godot 4.7.2 with GDScript (2026-10-15)
 
@@ -956,6 +956,123 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 **Checked:** a new `tests/rotation_test.tscn` (13 checks): the rows and their defaults; team respawn switching the length to kills (50, then 75), the summary and the rules Start builds; the rotation's order from the test map and from Square, and its summary; what Start leaves for the game; and in the real game scene: a rotation starting on Depot with "Next map: Square" ready, the button shown and focused after the match, Next map giving a fresh match on Square, Play again staying, the wrap from Spillway to Depot, team respawn kept across maps, and no button without a rotation. M5's settings test lists the three new settings. All seventeen suites pass.
 
 **Alternatives:** "Rotation" as an entry in the map list (one control, but the list would no longer be the maps on disk); a random order or a shuffled playlist (less predictable when you want to learn the maps); a map vote at the end of a match (the backlog's "map voting"); putting the test map in the rotation (it has no bomb sites or respawn zones of its own); moving on automatically after a few seconds, like CoD's lobby countdown (you'd lose the end screen while reading it).
+
+## D-100 — Multiplayer is a listen server: the host runs the game, clients send commands and show snapshots (2026-10-16) — *provisional*
+
+**Decision:** One player hosts and plays on the same computer (a *listen server*, as when you start a CS game with friends from the console). The host's computer runs the real game: the same `main.tscn` with the same `RoundManager`, `Bomb`, bots and weapons as single-player. Each friend's computer (a *client*) sends its player's per-tick `CharacterInput` commands (D-034) to the host and shows what the host sends back. The client simulates exactly one thing itself, its own player (prediction, D-106), and corrects it when the host disagrees. Everything that decides the game (damage, deaths, rounds, money, the bomb, class changes) runs only on the host. Single-player stays exactly as it is: no network code runs without a session.
+
+**Why:** It is CS's model, so it plays the way you know (first-shot accuracy, peeking, trading) and the host's word is final, which makes cheating by changing your own game useless. It reuses the whole single-player game unchanged on the host, because M4 to M8 kept the rules in authority code driven by commands ("Keeping multiplayer possible").
+
+**Alternatives:** *lockstep* (every computer runs the whole simulation from everyone's inputs, as RTS games do: tiny traffic, but the game waits for the slowest player every tick and any difference in floating-point maths splits the games apart); *client authority* (each computer decides where its player is and whom it hit: simple, but trivial to cheat and players disagree about who shot first); a *dedicated server* (a host without a player; it would be a small addition later, see the backlog).
+
+## D-101 — Godot's high-level multiplayer over ENet; RPCs for the lobby, compact packets for the game (2026-10-16) — *provisional*
+
+**Decision:** Connections use Godot's high-level multiplayer: a `SceneMultiplayer` (the `multiplayer` object every node can reach) with an `ENetMultiplayerPeer` (ENet is a small library that sends UDP packets reliably or unreliably). The default port is **26000**, Quake's. Two kinds of traffic:
+- **The lobby and session** (joining, names, teams, starting a match): *RPCs*, functions marked `@rpc` that one computer calls on the others. Few messages, all reliable.
+- **The game stream** (commands, snapshots, game events): our own packets, packed into bytes by `NetProtocol` and sent with `SceneMultiplayer.send_bytes()`, unreliable for commands and snapshots (a newer one replaces a lost one), reliable for events. One `NetSession` layer sends and receives them, which is also where fake lag and loss are added for tests (`net_fakelag` and `net_fakeloss` in milliseconds and percent, like CS's).
+
+**Why:** RPCs are Godot's natural way to say "do this on the other computer" and they are ideal for the lobby. For the game itself, prediction and lag compensation need to know exactly which tick a snapshot shows and which command the host ran last; Godot's `MultiplayerSynchronizer` (which copies chosen properties to the other computers) has no notion of either, and `MultiplayerSpawner` (which creates the same nodes on every computer) doesn't fit characters that the round manager creates and bots that become players. Our own packets are also several times smaller than the synchronizer's, which matters for Steam's relays. One layer for the stream gives us one place to simulate bad connections.
+
+**Alternatives:** `MultiplayerSynchronizer` + `MultiplayerSpawner` for everything (fastest to start, used by most Godot tutorials, but no ticks, no acknowledgements and no redundancy); RPCs for everything (each RPC call has overhead and no tick stamp); raw `PacketPeerUDP` without ENet (we would rewrite reliability and connections).
+
+## D-102 — The session node lives at the tree root; players have network ids and names (2026-10-16) — *provisional*
+
+**Decision:** A `NetSession` node is created when you host or join and is added to the root of the tree, next to the current scene, so it survives the change from the main menu to the game and back (like an autoload, but only while you are online). It isn't an autoload because tools and tests run without autoloads, and because the network tests run a host and clients **in one process**: each side has its own `NetSession` and its own `SceneMultiplayer`, given to its branch of the tree with `SceneTree.set_multiplayer()`. Game code never looks the session up by name: `main.gd` hands it to the nodes that need it.
+
+Every character in an online match has a **network id** (`Character.net_id`, from 1, given by the host when the match starts; bots get one too) so snapshots and events can name it (ARCHITECTURE rule 5). Its node is named after the player (your name from the settings, a number added when two are the same; bots stay "Bot3"), so the kill feed and scoreboard show names without changes.
+
+**Why:** the network code must not be global for the in-process tests, and passing the session down keeps the single-player code free of it.
+
+**Alternatives:** an autoload `Net` (simple, but tools and the one-process tests can't use it); a static instance like `Settings` (one per process, the same problem).
+
+## D-103 — Commands: the host runs every one exactly once; repeated until confirmed; spread from the command number (2026-10-16) — *provisional*
+
+**Decision:**
+- The client numbers its commands (`CharacterInput.tick`) and sends, once per frame, every command the host hasn't confirmed yet (up to 32, a quarter of a second). A lost packet is covered by the next one.
+- The host runs **each command exactly once, in order**, as soon as it arrives, as CS's server does: the friend's character on the host is stepped by hand (`Character.step()`, the same code as `_physics_process`) once per command instead of once per host tick. A budget of one command per host tick, saved up to 8, stops a client from running faster than real time (a speed hack) while letting late packets catch up. A client whose commands stop arriving stands still on the host.
+- Snapshots tell each client the number of the last command the host ran (the *ack*), which prediction compares against (D-106).
+- The client predicts with exactly the command it sends: movement keys are packed into whole steps before the client uses them, so both computers simulate the same numbers.
+- The **shot spread** of an online character's shot is rolled from a generator seeded with its network id and the command's number, so the host and the shooter's own computer roll the same spread: where your bullet lands on your screen is where it lands on the host.
+
+**Why:** running each command exactly once means the host simulates exactly what your computer predicted, so prediction errors come only from real disagreements (someone bumped you, you were hit). The alternative, one command per host tick from a small buffer, misses or doubles commands whenever packets bunch up, and Godot runs two or three physics ticks per rendered frame, so they always bunch up.
+
+**Alternatives:** one command per host tick with a jitter buffer (Overwatch's way; needs careful buffer tuning and adds delay); sending each command once (a lost packet loses a jump or a shot).
+
+## D-104 — Snapshots at 64 Hz; others shown about 50 ms in the past; reliable events for what must not get lost (2026-10-16) — *provisional*
+
+**Decision:**
+- The simulation stays at **128 ticks a second** (D-010). Every second tick the host sends each client a **snapshot** (64 a second, CS2's rate): the host tick; the ack (D-103); the round's phase and clock; the bomb (state, carrier, position, fuse, who plants or defuses and how far); and for every character its position, velocity, yaw and pitch, eye height, crouching, on the ground, alive, frozen, busy, health, a *life* counter (it goes up on every respawn), magazine, reserve and reloading. The client's own character comes with the full-precision state prediction needs. A 5v5 snapshot is about 500 bytes, about 30 KB/s per client.
+- Clients show every other character **6 ticks (47 ms) behind** the newest snapshot, interpolated between the two snapshots around that moment (CS's `cl_interp`: one lost snapshot still leaves one to interpolate to). If snapshots stop, characters keep moving for up to 100 ms, then stop.
+- **Cosmetic events** (a shot with where it hit, a reload) ride in the snapshots, each repeated in three snapshots and numbered so a lost snapshot loses nothing and nothing plays twice.
+- **Reliable events** are sent in order the moment they happen: the roster, round phases (freeze, live, round end with winner and reason, half time, match end, overtime), kills (victim, killer, headshot), damage (who, how much, which zone, by whom), the scoreboard numbers (at most 4 times a second, when they change), class changes, and the bomb's pickups, drops, plants, defuses and explosion.
+
+**Why:** 64 Hz is smooth at 128 Hz simulation and half the traffic; 47 ms of delay hides one lost snapshot without making others feel late. Events that change the score must arrive, so they go reliable; shots arrive often and a late gunshot is worthless, so they ride along unreliably but repeated.
+
+**Alternatives:** 128 Hz snapshots (twice the traffic for little gain); 32 Hz (CS:GO's old matchmaking rate: visibly choppier); extrapolation instead of interpolation (no delay, but characters overshoot corners).
+
+## D-105 — On clients the round manager and the bomb are replicas (2026-10-16) — *provisional*
+
+**Decision:** A client's game creates the same `RoundManager` (or `RespawnMatch`) and `Bomb` as the host, with `replica = true`: they make no decisions (no spawning, no timers that end anything, no planting), and the network code fills in their fields (phase, clock, score, sides, stats, the bomb's state) from the host's snapshots and events and emits their signals. Everything that shows a match (round HUD, kill feed, Tab scoreboard, bomb HUD, class menu, end screen) keeps listening to the same object, unchanged. The replica keeps the clock running between snapshots so the timer counts smoothly, and the replica bomb beeps by itself, but it only explodes when the host says so.
+
+**Why:** the views were built to only listen and read (ARCHITECTURE rule 2), so giving them a replica is the smallest change, and online and offline matches look the same.
+
+**Alternatives:** separate client-side views fed by the network code (a second copy of every view); syncing the views themselves (clients would show whatever the host's screen shows, including the host's own perspective).
+
+## D-106 — Client-side prediction with reconciliation by replaying commands (2026-10-16) — *provisional*
+
+**Decision:** The client simulates its own character from its own commands at once, as offline, and keeps each command with the state it predicted after it (the last second). When a snapshot says "the last command I ran was 1234, and this is where it left you", the client compares that with its own prediction for 1234. If they differ by more than 1 cm or 0.05 m/s (or in crouching, or on the ground), it takes the host's state and *replays* every newer command at once (movement only: no sounds, no shots), so it ends up where the host will put it. The visible jump of such a correction is smoothed out over 0.1 s (CS's `cl_smooth`). Ammo is corrected by the difference between the host's count and the predicted count for the same command. Respawns, freeze time and the bomb's `busy` come from the host and are followed the same way. Other characters are never predicted: they are interpolated (D-104).
+
+**Why:** without prediction every step would wait a round trip (100 ms at a typical online ping), which feels like moving through mud. Replaying instead of blending keeps the client exactly on the host's path.
+
+**Alternatives:** no prediction (simple, laggy); blending toward the host's position (cheap, but drifts and rubber-bands); also predicting other players (overshoots, and Source doesn't either).
+
+## D-107 — Lag compensation: the host checks shots against hit zones rewound to what the shooter saw (2026-10-16) — *provisional*
+
+**Decision:** At the end of every tick the host records every character's hit-zone boxes (one transform per zone) for the last second. Each command carries the tick the client was showing other characters at (the interpolated moment, D-104). When a friend's command fires, the host doesn't test the ray against the hit zones as they are now: it tests it, in code, against the boxes as they were at that moment (interpolated between the two recorded ticks, at most **400 ms** back), and the world (walls) as it is. The rest of the shot (damage, falloff, the zone, the hole, the sound) is unchanged. The host's own shots and the bots' shots need no rewinding. A test checks the ray-against-box maths against the physics engine's own ray test.
+
+**Why:** without it you would have to lead every moving target by your ping, which is unplayable in a CS-like game. Testing against stored boxes in code, instead of moving the real hit-zone areas back and forth, is exact and doesn't depend on when the physics engine (Jolt) moves bodies (CLAUDE.md, "Jolt moves a teleported body only at the next physics step"). 400 ms covers every reasonable ping without letting a very laggy player shoot people who left cover long ago (CS allows up to 1 s).
+
+**Alternatives:** moving the hit-zone areas back in time and using the physics engine's ray (Source's way; risky with Jolt's deferred moves); no lag compensation (lead your targets); client-side hit detection (the shooter's computer decides: cheatable).
+
+## D-108 — The lobby: host or join by IP, two teams of slots, bots fill the rest (2026-10-16) — *provisional*
+
+**Decision:** The main menu gets **Multiplayer**: you enter your name (saved in the settings) and **Host**, or the host's IP and **Join**. The lobby shows the two teams side by side, in your colours (your team blue), each with as many slots as the match has players per team: players by name, empty slots as "Bot". You join a team by clicking it (a full team refuses). The host picks the match with match setup's rows (mode, map or rotation, team sizes, bot difficulty, length, friendly fire) and **Start**; the others see the settings as the host sets them. Online matches are matches only (rounds or team respawn), no practice. You pick your class in the game, as offline (the class menu asks the host).
+
+**Why:** for friends, choosing sides and seeing who is where matters more than automatic balancing; reusing match setup's rows keeps one way to set up a match.
+
+**Alternatives:** automatic team balance; a server browser that finds LAN games by itself (a broadcast; a later addition); joining only through Steam.
+
+## D-109 — Online, the pause menu is an overlay that doesn't pause (2026-10-16) — *provisional*
+
+**Decision:** As M5 planned (D-065): online, Esc opens the same pause menu, but it doesn't set `get_tree().paused`. It still registers with `MenuState`, so your character stops and doesn't shoot while it's open, and the mouse is free. Leave match disconnects (a client) or ends the game for everyone (the host). The console's cheats (`god`, `noclip`) and bot commands only work offline.
+
+**Why:** nobody can stop the other players' game, and cheats would be unfair (and on a client they would only fight the host's corrections).
+
+**Alternatives:** a vote to pause (CS's tactical pause) for the host only: a later addition if you want it.
+
+## D-110 — Bots take over players who leave; a player who joins late takes over a bot (2026-10-16) — *provisional*
+
+**Decision:** When a friend leaves or loses the connection (ENet notices after a few seconds), the host gives their character a bot's brain: it keeps its name with "(bot)", team, class and stats and plays on. When someone joins a match that is already running, they pick a team and take over one of its bots at the next round start (at once in team respawn). If the host leaves, the clients go back to the main menu with "The host ended the game".
+
+**Why:** "bots fill empty slots" (D-033) shouldn't stop at the start of the match; a match among friends should survive someone's Wi-Fi dropping.
+
+**Alternatives:** the slot stays empty (CS's default); the match ends when someone leaves.
+
+## D-111 — Network tests run a host and clients in one process, with fake lag and loss (2026-10-16) — *provisional*
+
+**Decision:** The network suites (`net_test`, `netplay_test`) start a host and one or two clients **inside one Godot process**: each side is its own branch of the tree with its own `SceneMultiplayer` (`SceneTree.set_multiplayer()`), its own physics world (`SubViewport.own_world_3d`) and its own `NetSession`, connected through real ENet on localhost. The session's packet layer adds the fake lag (in ticks, so headless runs are repeatable) and seeded fake loss. To make two games in one tree possible, code that looked at every character in the tree (`get_nodes_in_group("characters")`) now asks only for the characters of its own world (`Character.all_in_world()`).
+
+**Why:** one process means one test run, one log and checks that can look at both sides at the same moment; real ENet means the tests use the same path as a real game.
+
+**Alternatives:** two processes talking to each other (closer to real life, but hard to check both sides at once and slower); a fake in-memory peer (fast, but then ENet is never tested).
+
+## D-112 — Steam through GodotSteam, test app 480, the same game stream (2026-10-16) — *provisional*
+
+**Decision:** Steam lobbies and invites come from **GodotSteam**, the open-source Steamworks addon for Godot (a GDExtension, installed under `addons/`, MIT licence, with Valve's Steamworks runtime library). Until Chiip has its own Steam app, it uses Valve's public test app **ID 480** ("Spacewar"), which every Steam developer uses for this. Hosting on Steam creates a friends-only lobby; Steam's overlay invites friends; joining from an invite or the friends list connects through Steam's networking (relayed, so no ports to open). The game stream (D-101) runs over Steam the same way as over ENet, through a Steam `MultiplayerPeer`. Without Steam running the game works as before, and LAN stays.
+
+**Why:** your choice (D-033: LAN first, then Steam lobbies). Steam's relays solve what makes playing over the internet hard (NAT, firewalls, IP addresses).
+
+**Alternatives:** IP only over the internet (players open ports on their routers); a Godot-specific relay service; Epic's Online Services.
 
 ## Open questions
 
