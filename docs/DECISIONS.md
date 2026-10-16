@@ -1677,14 +1677,28 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 ## D-171 — Clean for public: no personal paths, a player README, a developer guide (2026-10-16)
 
 **Decision:**
-- **No personal absolute path or user name in any project text file.** Commands in the docs use `$GODOT` and `$PROJECT` (set once at the top of `docs/DEVELOPING.md`) or `--path .`; CLAUDE.md uses `--path .`. A private-page link (`claude.ai/artifact/...`) became plain text. `tests/release_test.gd` reads every text file of the project and fails on `/Users/`, `C:\Users\`, the user name or such a link.
+- **No personal absolute path or user name in any project text file.** Commands in the docs use `$GODOT` and `$PROJECT` (set once at the top of `docs/DEVELOPING.md`) or `--path .`; CLAUDE.md uses `--path .`. A link to a private Claude page became plain text. `tests/release_test.gd` reads every text file of the project and fails on a home-folder path (macOS or Windows style), the user name or such a link.
 - **README.md is the player's guide** (what Chiip is, download and run per system with the unsigned-app steps, playing, controls, playing with friends over Tailscale, settings, licences). The old developer README moved to **docs/DEVELOPING.md** (running from the editor, tests, TrenchBroom, generators, exporting), and the README links to it.
 - **`.gitignore`** keeps out `.godot/`, `/builds/`, Godot's export passwords (`export_credentials.cfg`), signing keys (`*.p12`, `*.pfx`, `*.keystore`, `*.jks`), `.env` and Claude's per-machine files.
 - **Scan result:** no secrets, tokens, keys, e-mail addresses or private network addresses in HEAD or in the history (patterns checked across all 187 commits). What stays public on purpose: the author's name (Jan Koželuh) and GitHub no-reply address in the commits and the copyright line. **Left for you to decide** (reported, not changed): CLAUDE.md describes you and quotes you in Czech; DECISIONS.md and DEVLOG.md quote your words, one with a swear word; the history before this commit still contains the old absolute paths of your Mac (about 25 commits) and your user name. Rewriting the history into one clean first commit would remove them; not doing it keeps the full history of how the game was built.
 
 **Why:** Your words: it "musi byt bezpecne nasdiletelne". A path with your user name tells strangers little, but nothing private should be public by accident, and a test keeps it that way when later changes add a path again.
 
-**Alternatives:** Rewrite the history before the first push (cleaner, but the history of 187 commits is part of the project's story and of the DEVLOG's references); keep `/Users/...` paths and ignore them; a separate "public" branch without docs.
+**Alternatives:** Rewrite the history before the first push (cleaner, but the history of 187 commits is part of the project's story and of the DEVLOG's references); keep the home-folder paths and ignore them; a separate "public" branch without docs.
+
+## D-172 — Export presets and the release packaging (2026-10-16)
+
+**Decision:**
+- **Three presets:** `macOS` (universal, ad-hoc signed, as before), `Windows` (x86_64) and `Linux` (x86_64). Windows and Linux **embed the data in the one executable** (`embed_pck`), so a friend gets a single file; the Mac app is a bundle as usual. Windows and Linux ship S3TC / BPTC textures (desktop GPUs); the project's ETC2 / ASTC import stays on for the Mac.
+- **Licences inside:** every preset's include filter lists `LICENSE`, `LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`, the font's licence and FuncGodot's licence, because a file that is not a resource is left out of an export otherwise. `tests/*` and `tools/*` are excluded.
+- **Release zips:** `tools/package_release.sh` makes `Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each a folder with the game and the three notice files beside it (the licences thus ship twice: next to the game and inside it).
+- **Version 0.1.0:** `config/version` in `project.godot` is the single number; the Mac preset repeats it (a test compares). Minimum macOS 11.
+- **No icon on the Windows exe**, no code signing or notarization: setting the icon needs `rcedit` (a download to approve), and signing costs money every year. The README explains the warnings.
+- **Not exported yet.** The presets are checked by reading them (Godot lists all three) and by `release_test`; the first real export is the release itself, after your OK, with a smoke test of each build that can run here.
+
+**Why:** Friends should double-click one file. The licences must be in the game, not only on the web page. Windows and Linux builds can't be tried on this Mac, so the presets stay close to Godot's defaults, with only the options that matter set.
+
+**Alternatives:** A separate `.pck` next to the executable (two files to keep together); installers (.msi, .dmg: extra tooling and signing); signing and notarizing the Mac app (an Apple Developer account, $99 a year); UPX or other compression of the exe (more false virus warnings).
 
 ## Open questions
 

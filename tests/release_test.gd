@@ -23,6 +23,7 @@ func _ready() -> void:
 	_test_licence_files()
 	await _test_licences_screen()
 	await _test_licences_from_settings()
+	_test_export_presets()
 	_test_no_personal_paths()
 	_test_gitignore()
 	MenuState.reset()
@@ -137,6 +138,81 @@ func _test_licences_from_settings() -> void:
 	remove_child(settings)
 	settings.queue_free()
 	MenuState.reset()
+
+
+# --- Export presets ---
+
+
+func _test_export_presets() -> void:
+	var config := ConfigFile.new()
+	var loaded := config.load("res://export_presets.cfg")
+	var names: Array[String] = []
+	var by_name: Dictionary = {}
+	for section in config.get_sections():
+		if section.begins_with("preset.") and not section.ends_with(".options"):
+			var preset_name: String = config.get_value(section, "name", "")
+			names.append(preset_name)
+			by_name[preset_name] = section
+	_check("export_presets.cfg has the three presets (macOS, Windows, Linux), each for the right platform",
+			loaded == OK and names == ["macOS", "Windows", "Linux"]
+					and config.get_value(by_name["macOS"], "platform", "") == "macOS"
+					and config.get_value(by_name["Windows"], "platform", "") == "Windows Desktop"
+					and config.get_value(by_name["Linux"], "platform", "") == "Linux",
+			"load %d, presets %s" % [loaded, names])
+	var architectures: Dictionary = {"macOS": "universal", "Windows": "x86_64", "Linux": "x86_64"}
+	var paths: Dictionary = {"macOS": "builds/macos/Chiip.app", "Windows": "builds/windows/Chiip.exe", "Linux": "builds/linux/Chiip.x86_64"}
+	var arch_ok := true
+	var path_ok := true
+	var filters_ok := true
+	var detail := ""
+	var licence_files: Array[String] = ["LICENSE", "LICENSE-ASSETS", "THIRD_PARTY_NOTICES.md", "assets/fonts/Silkscreen-OFL.txt", "addons/func_godot/LICENSE"]
+	for preset_name: String in architectures:
+		var section: String = by_name.get(preset_name, "")
+		if section.is_empty():
+			arch_ok = false
+			continue
+		if config.get_value(section + ".options", "binary_format/architecture", "") != architectures[preset_name]:
+			arch_ok = false
+			detail += " %s-arch" % preset_name
+		if config.get_value(section, "export_path", "") != paths[preset_name]:
+			path_ok = false
+			detail += " %s-path" % preset_name
+		var include: String = config.get_value(section, "include_filter", "")
+		var exclude: String = config.get_value(section, "exclude_filter", "")
+		for file in licence_files:
+			if not include.contains(file) or not FileAccess.file_exists("res://" + file):
+				filters_ok = false
+				detail += " %s-missing-%s" % [preset_name, file]
+		if not exclude.contains("tests/*") or not exclude.contains("tools/*"):
+			filters_ok = false
+			detail += " %s-exclude" % preset_name
+	_check("The architectures are universal (Mac) and x86_64 (Windows, Linux); the builds go to builds/<system>/Chiip.* (ignored by git)", arch_ok and path_ok, detail)
+	_check("Every preset ships the licence files (the include filter lists LICENSE, LICENSE-ASSETS, THIRD_PARTY_NOTICES.md, the font's and the addon's licence, and they exist) and leaves tests/ and tools/ out", filters_ok, detail)
+	var version := str(ProjectSettings.get_setting("application/config/version", ""))
+	var mac := by_name.get("macOS", "") as String
+	_check("The Mac app's version is the project's (%s) and nothing in any preset holds a signing identity or a password" % version,
+			config.get_value(mac + ".options", "application/short_version", "") == version
+					and config.get_value(mac + ".options", "application/version", "") == version
+					and not _has_secrets(config),
+			"short %s" % config.get_value(mac + ".options", "application/short_version", ""))
+	_check("The Windows and Linux builds embed the data in the one file and carry desktop texture formats (S3TC / BPTC); the Mac app has no embedded pck",
+			config.get_value(by_name["Windows"] + ".options", "binary_format/embed_pck", false) == true
+					and config.get_value(by_name["Linux"] + ".options", "binary_format/embed_pck", false) == true
+					and config.get_value(by_name["Windows"] + ".options", "texture_format/s3tc_bptc", false) == true
+					and config.get_value(by_name["Linux"] + ".options", "texture_format/s3tc_bptc", false) == true,
+			"")
+
+
+## True when a preset holds a signing identity, a team id or a password with a value.
+func _has_secrets(config: ConfigFile) -> bool:
+	for section in config.get_sections():
+		for key in config.get_section_keys(section):
+			var lower := key.to_lower()
+			if lower.contains("identity") or lower.contains("password") or lower.contains("apple_team_id") or lower.contains("api_key"):
+				var value := str(config.get_value(section, key, ""))
+				if not value.is_empty():
+					return true
+	return false
 
 
 # --- Safe to publish ---

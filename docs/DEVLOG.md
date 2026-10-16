@@ -11,7 +11,9 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 
 - **Clean for public and a player README** (D-171). No personal path or private link is left in the project's text files (a test guards it), `.gitignore` also keeps export passwords and signing keys out, and the history has no secrets (checked for keys, tokens, e-mail and private addresses). The old README (editor, tests, TrenchBroom, generators) moved to `docs/DEVELOPING.md` with `$GODOT` and `$PROJECT`; the new README is for players: download and run per system (with the unsigned-app steps), controls, playing with friends through Tailscale step by step, settings, licences. `docs/KNOWN_ISSUES.md` has its first list.
 
-**Next:** the export presets, and the Tailscale address in the lobby.
+- **Export presets** (D-172): `Windows`, `Linux` (both one file with the data embedded) and the updated `macOS`, each listing the licence files in its include filter; `tools/package_release.sh` for the three zips; `docs/DEVELOPING.md` has the export steps. Nothing is exported (builds only when you say); Godot lists all three presets and `release_test` checks them.
+
+**Next:** the Tailscale address in the lobby.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

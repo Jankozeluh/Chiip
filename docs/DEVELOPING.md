@@ -64,18 +64,23 @@ To play a different map (also straight into the game, as a match where the map a
 
 ## Exporting the game
 
-The first macOS build (D-086). One-time setup: the Godot 4.7.2 export templates are installed in `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (in the editor: *Editor → Manage Export Templates*). Then, from the project folder:
+Builds are made **only when asked for** (CLAUDE.md), for a release (M12, D-172). `export_presets.cfg` has three presets: **Windows** (x86_64, one `.exe` with the game's data inside), **Linux** (x86_64, one file) and **macOS** (a universal `.app`, ad-hoc signed). Each lists the licence files in its include filter (so they sit in the game's data and **Settings → Licences** can show them) and leaves `tests/` and `tools/` out. One-time setup: the Godot 4.7.2 export templates are installed in `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (in the editor: *Editor → Manage Export Templates*). Then, from the project folder:
 
 ```bash
-mkdir -p builds/macos && touch builds/.gdignore
+mkdir -p builds/windows builds/linux builds/macos && touch builds/.gdignore
 ```
 
 ```bash
+"$GODOT" --headless --path "$PROJECT" --export-release "Windows" builds/windows/Chiip.exe
+"$GODOT" --headless --path "$PROJECT" --export-release "Linux" builds/linux/Chiip.x86_64
 "$GODOT" --headless --path "$PROJECT" --export-release "macOS" builds/macos/Chiip.app
 ```
 
-Open `builds/macos/Chiip.app` with a double-click (it's signed ad-hoc, so on another Mac it needs right-click → *Open*). Command-line options work as for the editor build, after the app's binary: `builds/macos/Chiip.app/Contents/MacOS/Chiip -- --map res://maps/depot.tscn --respawn`. In the editor: *Project → Export…*, preset **macOS**, *Export Project*.
+Smoke-test the Mac build headless: `builds/macos/Chiip.app/Contents/MacOS/Chiip --headless --quit-after 900 -- --map res://maps/depot.tscn`. Command-line options work as for the editor build, after the app's binary. In the editor: *Project → Export…*, pick a preset, *Export Project*.
 
+Then `bash tools/package_release.sh` makes the three zip files for the GitHub Release in `builds/release/` (`Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip`, `…-macos-universal.zip`), each a folder with the game and `LICENSE`, `LICENSE-ASSETS` and `THIRD_PARTY_NOTICES.md` next to it. The version is `config/version` in `project.godot`; the Mac preset's `short_version` and `version` must match it (`release_test` checks).
+
+The builds are not signed: the README tells players how to get past the warnings (macOS Gatekeeper, Windows SmartScreen). The Windows `.exe` has Godot's default icon, because setting one needs `rcedit`, a download that has not been approved. Nothing in a preset may hold a password or a signing identity (`release_test` checks); Godot keeps those in `export_credentials.cfg`, which is git-ignored.
 
 ## Making maps with TrenchBroom
 
