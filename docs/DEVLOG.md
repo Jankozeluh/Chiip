@@ -10,7 +10,9 @@
 
 - The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
 
-**Next:** the studio logo, then the layout test.
+- The boot screen exists now (D-153): it shows once per run, any key skips it. The studio logo file was never in the project (the mockup's link was replaced by a placeholder text in the copy), so it shows the game's name until `assets/ui/studio_logo.png` is added; the main menu's small corner mark appears with it.
+
+**Next:** the layout test, then the full run.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
