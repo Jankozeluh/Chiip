@@ -35,8 +35,9 @@ enum GameMode {
 
 @export_group("Timing")
 ## Seconds at the start of each round when everyone can look around but not
-## move or shoot. CS: 15 s with buying; 5 s until there's something to buy (M7).
-@export var freeze_time: float = 5.0
+## move or shoot, and buy (D-098). CS: 15 s with buying (5 s until M7 brought the buy menu).
+## Team respawn keeps 5 s.
+@export var freeze_time: float = 15.0
 ## Seconds a live round lasts. When it runs out, the defending side wins. CS: 1:55.
 @export var round_time: float = 115.0
 ## Seconds between a round's result and the next round's freeze time.

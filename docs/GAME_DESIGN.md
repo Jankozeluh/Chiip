@@ -331,6 +331,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Reload | R |
 | Weapons | 1 primary, 2 pistol, 3 knife, 4 grenades (again: the next grenade); Q last weapon; G drops the gun in hand. Switching takes the new weapon's draw time before it fires |
 | Use: plant / defuse the bomb (hold); a press while looking at a gun on the floor swaps it for yours | E |
+| Buy menu (freeze time; any time in practice): the category's number, then the item's, or click | B |
 | Buy menu | B |
 | Class menu (opens at match start; M in freeze time; 1–4 or click to pick) | M |
 | Scoreboard (hold, in a match) | Tab |

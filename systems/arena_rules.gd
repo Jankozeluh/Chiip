@@ -77,6 +77,34 @@ func request_class(character: Character, data: ClassData) -> bool:
 	return true
 
 
+## Practice buys anything for free, any time (D-090): the buy menu's questions answered for it.
+func can_buy_now(character: Character) -> bool:
+	return is_instance_valid(character) and character.is_alive()
+
+
+func get_buy_time_left() -> float:
+	return 0.0
+
+
+## Everything is free in practice.
+func get_price(_character: Character, _item_id: StringName) -> int:
+	return 0
+
+
+func get_buy_refusal(character: Character, item_id: StringName) -> String:
+	if not can_buy_now(character):
+		return "You're dead"
+	return Shop.refusal(character, item_id, true, false)
+
+
+## Hands [param item_id] over for free. Returns "" when given, else why not.
+func request_buy(character: Character, item_id: StringName) -> String:
+	var reason := get_buy_refusal(character, item_id)
+	if reason == "":
+		Shop.give(character, item_id)
+	return reason
+
+
 ## Removes the most recently added bot. Returns false if there are none.
 func remove_bot() -> bool:
 	var bots := get_bots()

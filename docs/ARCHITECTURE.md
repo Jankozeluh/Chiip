@@ -119,6 +119,8 @@ Chiip/
 | `weapons/smoke_cloud.gd`, `systems/smokes.gd` | `SmokeCloud`: low-poly grey puffs for 18 s with a blocking ellipsoid (`blocks()`, `density_at()`); `Smokes`: the static list of clouds that `BotSenses` and the HUD ask |
 | `ui/scope_overlay.gd` | `ScopeOverlay`: the sniper scope's view drawn in code (black with a round window, a rim and thin cross lines), a full-screen child of the HUD shown while the weapon on show is scoped (D-095) |
 | `ui/armor_icon.gd` | `ArmorIcon`: the HUD's pixel-art shield drawn in code (an "H" on it with a helmet, dimmed at 0 armor), next to the HUD's `ArmorLabel` (D-093) |
+| `systems/shop.gd` | `Shop` (static, D-098): the items for sale (`items()`, `find()`, categories), prices for a character (`price_for()`: the helmet alone over a vest), what stops a purchase (`refusal()`) and the hand-over (`give()`) |
+| `ui/buy_menu.tscn` + `.gd` | `BuyMenu` (D-098): B in freeze time (any time in practice): five columns of items with icons and prices, keys or clicks; asks the rules (`request_buy()`), registers with `MenuState`; added to `main.tscn` beside the class menu |
 | `characters/inventory.gd` | `Inventory` (a child node of every character, D-094): the weapons carried by slot, the one in hand (`hold()`, draw times with the Rifleman's Quick Hands), `give()`, `remove()`, `drop()`, `drop_on_death()`, `set_loadout()`, walking over guns (`update_pickups()`), the E swap (`try_swap()`), signal `changed` |
 | `weapons/weapon.tscn` | The generic weapon scene: `Weapon` script, audio players and the viewmodel; `Weapon.create(data)` makes every carried weapon from it with the data's model (`rifle.tscn` stays the scenes' starting rifle) |
 | `weapons/weapon_pickup.gd` | `WeaponPickup`: a gun lying on the floor with its ammo (group `weapon_pickups`), falling to the floor when dropped, ignoring its dropper for 1 s; only the model, no collision |
@@ -235,6 +237,7 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `scoreboard` | Tab (hold) | Scoreboard overlay (polls `Input.is_action_pressed`; ignored while the console is open) |
 | `use` | E (hold) | PlayerController → `CharacterInput.use` → the bomb (plant, defuse); a fresh press swaps for the gun on the floor you look at (`Inventory.try_swap()`) |
 | `slot_primary` / `slot_pistol` / `slot_knife` / `slot_grenade` | 1 / 2 / 3 / 4 | PlayerController → `CharacterInput.weapon_slot` → `Inventory.select_slot()` (D-094) |
+| `buy_menu` | B | The buy menu (D-098): opens and closes it while the rules allow buying |
 | `last_weapon` / `drop_weapon` | Q / G | PlayerController → `CharacterInput.last_weapon` / `drop` → `Inventory` |
 | `class_menu` | M | Class menu: opens or closes it during freeze time (any time in practice mode); ignored while the console is open. The digit keys 1 to 4 and Esc are read from the key events while the menu is open, not bound as actions |
 
@@ -447,7 +450,7 @@ bash tools/run_tests.sh
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
 | `gear_test` | 31 | Armor on real characters (D-093) and the inventory (D-094): slots and limits, switching by key with draw times, Q, grenades cycling, dropping, walking over guns, the E swap, death drops, the HUD and the body following the weapon in hand, the loadouts of rounds, team respawn and practice | ~2 s |
-| `economy_test` | 10 | The light economy (D-098): starting money, wins, losses in a row, kill rewards by weapon, teamkills, plant and defuse, the cap, half time, team respawn without money, the HUD's money and rewards, the scoreboard's money column, the console | ~1 s |
+| `economy_test` | 21 | The light economy (D-098): starting money, wins, losses in a row, kill rewards by weapon, teamkills, plant and defuse, the cap, half time, team respawn without money, the HUD's money and rewards, the scoreboard's money column, the console; the buy menu (keys, clicks, refusals, closing, team respawn, practice) | ~2 s |
 | `grenade_test` | 14 | Grenades (D-097): pin and throw or lob, speed and angle, the last grenade giving way to the weapon before, putting one back; bounces and resting; the frag's falloff, walls, armor and the thrower's kill; the flash's strength by facing, distance and walls, the white screen, a blinded bot; the smoke blocking a bot's sight, greying a camera, ending after 18 s | ~2 s |
 | `guns_test` | 16 | How each weapon works (D-095): the semi-automatic pistol, the shotgun's pellets and shell reloads, the reload perk, the sniper scope (zoom steps, camera, mouse, accuracy, the Marksman's perk, dropping out after a shot, speed, the HUD's scope view), the knife (flat damage, armor, backstabs, reach) | ~1 s |
 | `arsenal_test` | 30 | The arsenal's data files, CS's armor results, and that `docs/weapons.csv` matches the data (D-091) | under 1 s |

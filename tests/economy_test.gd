@@ -40,6 +40,7 @@ func _run_all() -> void:
 	await _test_no_money_in_team_respawn()
 	await _test_hud_and_scoreboard()
 	await _test_console()
+	await _test_buy_menu()
 
 
 func _test_round_money() -> void:
@@ -170,6 +171,169 @@ func _test_console() -> void:
 	await _wait_ticks(2)
 
 
+func _test_buy_menu() -> void:
+	# Freeze time is the buy time: long enough for every step below.
+	var settings := _settings()
+	settings.freeze_time = 5.0
+	await _new_match(settings)
+	# A pause menu before the buy menu in the tree takes Esc only when the buy menu lets it through.
+	var pause := load("res://ui/pause_menu.tscn").instantiate() as PauseMenu
+	add_child(pause)
+	var menu := load("res://ui/buy_menu.tscn").instantiate() as BuyMenu
+	add_child(menu)
+	menu.set_rules(_rounds, _player)
+	var money_label := menu.get_node("Panel/Margin/Content/TopRow/Money") as Label
+	var time_label := menu.get_node("Panel/Margin/Content/TopRow/BuyTime") as Label
+	var message_label := menu.get_node("Panel/Margin/Content/Message") as Label
+	var columns := menu.get_node("Panel/Margin/Content/Columns") as HBoxContainer
+
+	# 1. B opens it in freeze time.
+	var closed_before := not menu.is_open() and menu.can_open()
+	_press_action("buy_menu")
+	await _wait_ticks(3)
+	_check("B opens the buy menu in freeze time: registered as a menu, with your money and the buy time",
+			closed_before and menu.is_open() and MenuState.is_open(menu) and money_label.text == "$ 1000" and time_label.visible
+			and time_label.text.begins_with("Buy time"),
+			"open %s, money '%s', time '%s'" % [menu.is_open(), money_label.text, time_label.text])
+
+	# 2. Every shop item is there with its price, in five columns.
+	var listed := true
+	var in_columns := columns.get_child_count() == Shop.CATEGORY_NAMES.size()
+	var pistol_ids: Array[StringName] = []
+	for item in Shop.items():
+		var button := menu.get_item_button(item.id)
+		listed = listed and button != null and button.text.contains("$%d" % item.price) and button.text.contains(item.name) \
+				and button.icon != null
+		if item.category == Shop.Category.PISTOLS:
+			pistol_ids.append(item.id)
+	for category in Shop.CATEGORY_NAMES.size():
+		var expected := Shop.items().filter(func(item: Dictionary) -> bool: return item.category == category).size()
+		var buttons := columns.get_child(category).get_children().filter(func(node: Node) -> bool: return node is Button).size()
+		in_columns = in_columns and buttons == expected
+	_check("It lists every shop item with its icon and price (the Ram's $2500) in five columns",
+			listed and in_columns and menu.get_item_button(&"rifle").text.contains("$2500"),
+			"%d columns, Ram button '%s'" % [columns.get_child_count(), menu.get_item_button(&"rifle").text.replace("\n", " | ")])
+
+	# 3. The Verdict ($500) by keys: the category, then its number in the category.
+	var verdict_key := (KEY_1 + pistol_ids.find(&"hand_cannon")) as Key
+	var sparrow_before := _player.inventory.get_in_slot(WeaponData.Slot.PISTOL).data.id == &"pistol"
+	_tap_key(KEY_1)
+	await _wait_ticks(2)
+	var pistols_header := columns.get_child(Shop.Category.PISTOLS).get_child(0) as Label
+	var selected := menu.get_selected_category() == Shop.Category.PISTOLS and pistols_header.theme_type_variation == &"BrightLabel"
+	_tap_key(verdict_key)
+	await _wait_ticks(2)
+	var pistol := _player.inventory.get_in_slot(WeaponData.Slot.PISTOL)
+	var sparrow_on_floor := get_tree().get_nodes_in_group(WeaponPickup.GROUP).any(func(node: Node) -> bool:
+			return _map.is_ancestor_of(node) and (node as WeaponPickup).data.id == &"pistol")
+	_check("Keys 1 then 2 buy the Verdict: it is in the pistol slot, $1000 becomes $500, and the Sparrow it replaced lies on the floor",
+			sparrow_before and selected and pistol != null and pistol.data.id == &"hand_cannon" and _rounds.get_money(_player) == 500
+			and sparrow_on_floor and menu.is_open() and menu.get_selected_category() == -1,
+			"pistol %s, $%d, selected %s, Sparrow on the floor %s" % [pistol.data.id if pistol != null else &"none", _rounds.get_money(_player), selected, sparrow_on_floor])
+
+	# 4. Not enough money: the answer, the reason line, a disabled button, the money unchanged.
+	var ram := menu.get_item_button(&"rifle")
+	ram.pressed.emit()
+	var clicked_reason := menu.get_message()
+	var clicked_line := message_label.text
+	var reason := menu.buy(&"rifle")
+	_check("A purchase you can't afford fails with 'Not enough money': shown at the bottom, the Ram's button disabled, money unchanged",
+			reason == "Not enough money" and clicked_reason == "Not enough money" and clicked_line == "Not enough money"
+			and ram.disabled and ram.tooltip_text == "Not enough money" and _rounds.get_money(_player) == 500
+			and _player.inventory.get_in_slot(WeaponData.Slot.PRIMARY) == null,
+			"answer '%s', line '%s', disabled %s, $%d" % [reason, clicked_line, ram.disabled, _rounds.get_money(_player)])
+
+	# 5. A vest ($500): armor on, the button disabled, the money gone, the menu still open.
+	var vest := menu.get_item_button(&"vest")
+	var vest_was_enabled := not vest.disabled
+	var vest_reason := menu.buy(&"vest")
+	_check("A vest buys $500 of armor and its button is disabled afterwards (the menu stays open)",
+			vest_was_enabled and vest_reason == "" and _player.armor == Armor.MAX_ARMOR and vest.disabled
+			and vest.tooltip_text == "You have a vest" and _rounds.get_money(_player) == 0 and menu.is_open()
+			and money_label.text == "$ 0",
+			"armor %.0f, vest disabled %s ('%s'), $%d" % [_player.armor, vest.disabled, vest.tooltip_text, _rounds.get_money(_player)])
+
+	# 6. It closes when the round goes live, and B then does nothing.
+	await _wait_for_live()
+	var closed_live := not menu.is_open() and not MenuState.is_any_open()
+	_press_action("buy_menu")
+	await _wait_ticks(3)
+	_check("The menu closes when freeze time ends, and B does nothing during the round",
+			closed_live and not menu.is_open() and not menu.can_open() and not MenuState.is_any_open(),
+			"closed at live %s, open after B %s" % [closed_live, menu.is_open()])
+
+	# 7. Esc closes it, and the pause menu behind doesn't take the same press.
+	await _new_match(settings)
+	menu.set_rules(_rounds, _player)
+	_press_action("buy_menu")
+	await _wait_ticks(3)
+	var opened := menu.is_open()
+	_press_action("pause")
+	await _wait_ticks(3)
+	_check("Esc closes the buy menu and nothing else opens (the pause menu doesn't take that press)",
+			opened and not menu.is_open() and not MenuState.is_any_open() and not pause.is_open() and not get_tree().paused,
+			"was open %s, open now %s, pause menu open %s" % [opened, menu.is_open(), pause.is_open()])
+	get_tree().paused = false
+
+	# 8. Team respawn has no money and so no buy menu: B does nothing.
+	var respawn_settings := _settings()
+	respawn_settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	respawn_settings.freeze_time = 5.0
+	await _new_match(respawn_settings, RespawnMatch.new())
+	menu.set_rules(_rounds, _player)
+	_press_action("buy_menu")
+	await _wait_ticks(3)
+	_check("In team respawn B does nothing: there is no money, so no buy menu",
+			not _rounds.has_economy() and not menu.is_open() and not menu.can_open() and not MenuState.is_any_open(),
+			"economy %s, open %s" % [_rounds.has_economy(), menu.is_open()])
+
+	# 9. Practice: any time, everything free.
+	_remove_map()
+	_map = MAP_SCENE.instantiate()
+	add_child(_map)
+	_player = _map.get_node("Player") as Character
+	_player.footstep_sound = null
+	var arena := ArenaRules.new()
+	arena.bot_count = 0
+	_map.add_child(arena)
+	await _wait_ticks(3)
+	menu.set_rules(arena, _player)
+	_press_action("buy_menu")
+	await _wait_ticks(3)
+	var ram_text := menu.get_item_button(&"rifle").text
+	var free_prices := ram_text.contains("FREE") and not ram_text.contains("$") and not time_label.visible \
+			and money_label.text == "Free in practice"
+	var sniper_bought := menu.buy(&"sniper")
+	var primary := _player.inventory.get_in_slot(WeaponData.Slot.PRIMARY)
+	var again := menu.buy(&"sniper")
+	var shown_again := message_label.text == "You have it" and menu.get_message() == "You have it"
+	_check("In practice the menu opens at any time, prices say FREE, and the Heron is yours for nothing",
+			menu.is_open() and free_prices and sniper_bought == "" and primary != null and primary.data.id == &"sniper"
+			and again == "You have it" and menu.get_item_button(&"sniper").disabled and shown_again,
+			"open %s, Ram '%s', bought '%s', primary %s, again '%s'" % [menu.is_open(), ram_text.replace("\n", " | "), sniper_bought,
+					primary.data.id if primary != null else &"none", again])
+	# The reason goes away by itself after a couple of seconds.
+	var waited := 0
+	while menu.get_message() != "" and waited < 128 * 4:
+		await get_tree().physics_frame
+		waited += 1
+	_check("A refusal's reason leaves the bottom line by itself after about two seconds",
+			menu.get_message() == "" and waited > 128 and waited < 128 * 3 and message_label.text != "You have it",
+			"gone after %d ticks, line '%s'" % [waited, message_label.text])
+	_press_action("buy_menu")
+	await _wait_ticks(3)
+	_check("B closes it again", not menu.is_open() and not MenuState.is_any_open(), "open %s" % menu.is_open())
+
+	# Leave nothing open behind.
+	menu.close()
+	remove_child(menu)
+	menu.queue_free()
+	remove_child(pause)
+	pause.queue_free()
+	MenuState.reset()
+	await _wait_ticks(2)
+
+
 # --- Helpers ---
 
 
@@ -243,3 +407,22 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	print("%s  %s: %s" % ["PASS" if passed else "FAIL", check_name, detail])
 	if not passed:
 		_failures += 1
+
+
+## Sends an action's press and release through the input system, as a key would.
+func _press_action(action: String) -> void:
+	for pressed in [true, false]:
+		var event := InputEventAction.new()
+		event.action = action
+		event.pressed = pressed
+		Input.parse_input_event(event)
+
+
+## Sends a key press and release (by physical key), as the keyboard would.
+func _tap_key(key: Key) -> void:
+	for pressed in [true, false]:
+		var event := InputEventKey.new()
+		event.physical_keycode = key
+		event.keycode = key
+		event.pressed = pressed
+		Input.parse_input_event(event)

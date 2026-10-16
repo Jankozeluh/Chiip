@@ -84,6 +84,8 @@ signal class_changed(character: Character, data: ClassData)
 ## [param reason]: "Round won", "Round lost", "Kill", "Teamkill", "Bomb planted", "Bomb defused",
 ## "Bought", "New half". [method get_money] has the new total.
 signal money_changed(character: Character, amount: int, reason: String)
+## Emitted when [param character] bought [param item_id] ([Shop]).
+signal item_bought(character: Character, item_id: StringName)
 
 const BOT_SCENE := preload("res://bots/bot.tscn")
 const BOMB_SCENE := preload("res://bomb/bomb.tscn")
@@ -282,7 +284,7 @@ func _start_round() -> void:
 		bomb.start_round(_pick_bomb_carrier(), attacking_team)
 	_plan_bots()
 	_set_frozen(true)
-	_set_phase(Phase.FREEZE, settings.freeze_time)
+	_set_phase(Phase.FREEZE, _freeze_time())
 	round_started.emit(round_number)
 
 
@@ -332,6 +334,11 @@ func _plan_bots() -> void:
 ## The weapons [param character] gets at a round start: the same fresh loadout for everyone.
 func _loadout_for(_character: Character) -> Array[WeaponData]:
 	return settings.round_loadout
+
+
+## Seconds of freeze time at a round start (the buy time, D-098).
+func _freeze_time() -> float:
+	return settings.freeze_time
 
 
 ## Seconds the live part of a round lasts.
@@ -439,6 +446,51 @@ func _on_bomb_defused(defuser: Character) -> void:
 
 
 # --- Money (D-098) ---
+
+
+## True if [param character] may shop now: a match with money, in freeze time (D-098), alive.
+## The buy menu asks before it opens.
+func can_buy_now(character: Character) -> bool:
+	return has_economy() and phase == Phase.FREEZE and round_number > 0 and is_instance_valid(character) \
+			and character.is_alive() and _participants.has(character)
+
+
+## Seconds of buy time left (the freeze time's), 0 when buying is over.
+func get_buy_time_left() -> float:
+	return time_left if phase == Phase.FREEZE else 0.0
+
+
+## What [param item_id] costs [param character] now ([method Shop.price_for]).
+func get_price(character: Character, item_id: StringName) -> int:
+	return Shop.price_for(character, item_id)
+
+
+## Why [param character] can't buy [param item_id] now, or "" if it can: the time, the money, or
+## what it carries ([method Shop.refusal]; a kit is for defenders on a map with the bomb).
+func get_buy_refusal(character: Character, item_id: StringName) -> String:
+	if not has_economy():
+		return "No buying in this mode"
+	if not can_buy_now(character):
+		return "Buying is over" if phase != Phase.FREEZE else "You can't buy now"
+	var reason := Shop.refusal(character, item_id, get_side(character.team) == Teams.Side.DEFENDING, bomb != null)
+	if reason != "":
+		return reason
+	if get_money(character) < get_price(character, item_id):
+		return "Not enough money"
+	return ""
+
+
+## Buys [param item_id] for [param character] if the rules allow it: pays and hands it over
+## ([method Shop.give]). Returns "" when bought, else why not. The buy menu and the bots ask here
+## (authority code: in M9 the host decides every purchase).
+func request_buy(character: Character, item_id: StringName) -> String:
+	var reason := get_buy_refusal(character, item_id)
+	if reason != "":
+		return reason
+	spend(character, get_price(character, item_id))
+	Shop.give(character, item_id)
+	item_bought.emit(character, item_id)
+	return ""
 
 
 ## True if this match has money (rounds with [member MatchSettings.economy] on).

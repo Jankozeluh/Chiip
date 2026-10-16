@@ -22,6 +22,8 @@ extends RoundManager
 ## Emitted when the time runs out with the score tied: the next kill wins.
 signal overtime_started
 
+## Seconds of freeze time at the start (the rounds' 15 s are buy time, which this mode has none of).
+const FREEZE_TIME := 5.0
 ## Group of the map's respawn markers (12 per quick map, in four zones).
 const RESPAWN_GROUP := "respawn_points"
 ## A respawn spot counts as taken while someone stands closer than this (metres).
@@ -86,6 +88,11 @@ func pick_spawn(character: Character) -> Transform3D:
 ## No bomb in this mode.
 func _add_bomb() -> void:
 	pass
+
+
+## Five seconds at the team ends, as in D-082: there is nothing to buy (D-090).
+func _freeze_time() -> float:
+	return minf(settings.freeze_time, FREEZE_TIME)
 
 
 ## The power weapons come back 30 s after being taken (D-098).
