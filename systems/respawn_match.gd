@@ -50,6 +50,12 @@ var overtime: bool = false
 var _respawn_left: Dictionary = {}
 ## Class changes waiting for a respawn: Character → ClassData.
 var _pending_class: Dictionary = {}
+## Online, on a client: sends "I skipped my killcam" to the host ([method skip_killcam]; set by [NetClient]).
+var killcam_skip_request: Callable
+## Player → the seconds its respawn waits beyond the delay for its killcam ([method _hold_for_killcam]).
+var _killcam_hold: Dictionary = {}
+## The players at this computer whose killcam is on ([method set_killcam_watcher]).
+var _killcam_watchers: Dictionary = {}
 ## Each team's shared hunting plan for its bots (index = team number).
 var _hunt_plans: Array[HuntPlan] = []
 
@@ -149,6 +155,7 @@ func _live_tick(delta: float) -> void:
 		_respawn_left[character] -= delta
 		if _respawn_left[character] <= 0.0:
 			_respawn_left.erase(character)
+			_killcam_hold.erase(character)
 			var spot := pick_spawn(character)
 			if _pending_class.has(character):
 				var data: ClassData = _pending_class[character]
@@ -192,11 +199,51 @@ func _score_round(_round_winner: int) -> void:
 
 
 func _on_died(killer: Character, victim: Character) -> void:
+	# Before the kill is announced: a killcam that is off asks for the plain delay back when it hears of it.
+	if phase == Phase.LIVE:
+		_respawn_left[victim] = settings.respawn_delay + _hold_for_killcam(victim, killer)
 	super(killer, victim)
 	if phase != Phase.LIVE:
 		return
-	_respawn_left[victim] = settings.respawn_delay
 	_check_match_point(killer, victim)
+
+
+## How much longer than the respawn delay [param victim] stays dead so its killcam can play to the end
+## ([constant Killcam.TOTAL], M17, D-241): a player killed by someone else whose killcam is on (one at this
+## computer, [method set_killcam_watcher]), or a friend online (its computer asks to skip when its killcam is
+## off). Never a bot. Skipping gives it back ([method skip_killcam]).
+func _hold_for_killcam(victim: Character, killer: Character) -> float:
+	_killcam_hold.erase(victim)
+	if killer == null or killer == victim or victim.get_node_or_null("BotController") != null:
+		return 0.0
+	if not _killcam_watchers.has(victim) and victim.get_node_or_null("NetworkController") == null:
+		return 0.0
+	var hold := maxf(Killcam.TOTAL - settings.respawn_delay, 0.0)
+	if hold > 0.0:
+		_killcam_hold[victim] = hold
+	return hold
+
+
+## Whether [param character], a player at this computer, watches its killcam ([Killcam] says so).
+func set_killcam_watcher(character: Character, on: bool) -> void:
+	if on:
+		_killcam_watchers[character] = true
+	else:
+		_killcam_watchers.erase(character)
+
+
+## [param character] skipped its killcam (or has it turned off): it comes back after the plain respawn
+## delay, counted from its death. Online, on a client, the request goes to the host.
+func skip_killcam(character: Character) -> void:
+	if replica:
+		if killcam_skip_request.is_valid():
+			killcam_skip_request.call(character)
+		return
+	if not _killcam_hold.has(character):
+		return
+	if _respawn_left.has(character):
+		_respawn_left[character] = maxf(_respawn_left[character] - _killcam_hold[character], 0.0)
+	_killcam_hold.erase(character)
 
 
 ## Ends the match when a kill decided it: [param killer]'s team reached the kill limit, or scored in overtime.

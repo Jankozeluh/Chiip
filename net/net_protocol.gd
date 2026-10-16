@@ -78,6 +78,8 @@ enum Request {
 	CLASS = 1,
 	## [item id]: buy this ([Shop]'s ids: a weapon's id, vest, vest_helmet or kit; D-113).
 	BUY,
+	## []: I skipped my killcam (or have it off): bring me back after the plain respawn delay (M17, D-241).
+	SKIP_KILLCAM,
 }
 
 ## Cosmetic events riding in snapshots (D-104), repeated in a few snapshots each.

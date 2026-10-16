@@ -73,6 +73,8 @@ const JUMP_SPEED := 0.5
 ## Run the animation graph. Off, the model keeps its rest pose (the T-pose), which tests use to
 ## measure the hit zones as the generator made them.
 @export var animated: bool = true
+## False for a body that only shows (the killcam's ghosts, M17): no hit zones, so nothing can hit it.
+@export var with_hit_zones: bool = true
 
 ## One shared material per class model, by model path.
 static var _materials: Dictionary = {}
@@ -142,7 +144,8 @@ func _build() -> void:
 		return
 	# Update the bones on physics ticks, like the AnimationTree, so the hit zones keep step.
 	_skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
-	_build_hit_zones()
+	if with_hit_zones:
+		_build_hit_zones()
 	_hand_ik = HandIK.new()
 	_hand_ik.name = "HandIK"
 	_hand_ik.influence = 0.0
@@ -253,6 +256,25 @@ func wants_hand_on_foregrip() -> bool:
 	if not _gun_has_foregrip or _dead:
 		return false
 	return _weapon == null or not is_instance_valid(_weapon) or not _weapon.is_reloading()
+
+
+## Shows [param data] in the hands, held its way (null: no gun), for a body without a [Character]
+## (the killcam's ghosts, M17); an attached body follows its character's weapon by itself.
+func show_weapon(data: WeaponData) -> void:
+	var shown := data if data != null else _NO_GUN
+	if shown != _gun_data:
+		_show_gun(shown)
+	_set_hold(data)
+
+
+## True after [method play_death], until [method play_alive].
+func is_dead() -> bool:
+	return _dead
+
+
+## Plays a shot (the kick and the muzzle flash) for a body without a [Character] (the killcam, M17).
+func play_shot() -> void:
+	_on_fired(0)
 
 
 ## The left-hand IK (M11, D-156), for tests.

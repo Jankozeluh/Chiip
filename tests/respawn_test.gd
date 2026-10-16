@@ -235,6 +235,8 @@ func _test_respawn_countdown() -> void:
 	var rules := main.call("get_map").get_node("RespawnMatch") as RespawnMatch
 	var player := main.call("get_map").get_node("Player") as Character
 	var hud := main.get_node("HUD")
+	# The plain respawn delay: the killcam (M17), which holds you longer, has its own suite.
+	(main.call("get_killcam") as Killcam).enabled = false
 	await _go_live_in(rules)
 	var enemies := rules.get_members(1)
 	var mate := rules.get_members(0).filter(func(member: Character) -> bool: return member != player)[0] as Character

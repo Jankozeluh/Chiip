@@ -482,6 +482,9 @@ func _on_request(peer_id: int, values: Array) -> void:
 		NetProtocol.Request.BUY:
 			if values.size() == 2 and (values[1] is StringName or values[1] is String) and String(values[1]).length() <= MAX_ITEM_ID_LENGTH:
 				rules.request_buy(character, StringName(values[1]))
+		NetProtocol.Request.SKIP_KILLCAM:
+			if values.size() == 1 and rules is RespawnMatch:
+				(rules as RespawnMatch).skip_killcam(character)
 
 
 func _on_match_message(data: Dictionary) -> void:

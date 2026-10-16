@@ -500,6 +500,13 @@ func _update_viewmodel(delta: float) -> void:
 			Vector3(offset.x, offset.y, 0.0))
 
 
+## Plays a shot's sound, muzzle flash and the arms' kick without firing anything: the killcam's
+## replay of the killer's gun (M17), a weapon without a holder, heard as your own.
+func replay_shot() -> void:
+	_play(data.shot_sound, false)
+	_play_shot_effects()
+
+
 ## Muzzle flash and the arms' kick.
 func _play_shot_effects() -> void:
 	_muzzle_flash.visible = true

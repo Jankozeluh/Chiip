@@ -502,6 +502,127 @@ layout_mode = 2
 horizontal_alignment = 1
 theme_type_variation = &"HudSmallLabel"
 
+[node name="KillcamOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="KillcamColumn" type="VBoxContainer" parent="KillcamOverlay"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 104.0
+offset_right = 400.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+
+[node name="KillcamTitle" type="Label" parent="KillcamOverlay/KillcamColumn"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_type_variation = &"HudTitleLabel"
+text = "KILLCAM"
+
+[node name="KillcamPlate" type="PanelContainer" parent="KillcamOverlay/KillcamColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"HudPlate"
+
+[node name="KillcamRow" type="HBoxContainer" parent="KillcamOverlay/KillcamColumn/KillcamPlate"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowBlock"
+
+[node name="KilledByLabel" type="Label" parent="KillcamOverlay/KillcamColumn/KillcamPlate/KillcamRow"]
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateDimLabel"
+text = "Killed by"
+
+[node name="KillcamName" type="Label" parent="KillcamOverlay/KillcamColumn/KillcamPlate/KillcamRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateLabel"
+
+[node name="KillcamIcon" type="TextureRect" parent="KillcamOverlay/KillcamColumn/KillcamPlate/KillcamRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+texture_filter = 1
+
+[node name="KillcamWeapon" type="Label" parent="KillcamOverlay/KillcamColumn/KillcamPlate/KillcamRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateMuteLabel"
+
+[node name="KillcamBar" type="Panel" parent="KillcamOverlay/KillcamColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"HudProgressBack"
+
+[node name="KillcamFill" type="Panel" parent="KillcamOverlay/KillcamColumn/KillcamBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"HudProgressFill"
+
+[node name="SkipHint" type="HBoxContainer" parent="KillcamOverlay"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -88.0
+offset_right = 200.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+alignment = 1
+theme_type_variation = &"HudRowIcon"
+
+[node name="SkipKey" type="Label" parent="KillcamOverlay/SkipHint"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"KeyCapLabel"
+text = "Space"
+
+[node name="SkipGlyph" type="TextureRect" parent="KillcamOverlay/SkipHint"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="SkipText" type="Label" parent="KillcamOverlay/SkipHint"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"HudSmallLabel"
+vertical_alignment = 1
+text = "Skip"
+
 [node name="FlashOverlay" type="ColorRect" parent="."]
 visible = false
 anchors_preset = 15

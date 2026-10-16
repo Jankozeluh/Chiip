@@ -2126,6 +2126,16 @@ func _test_settings_menu_controls() -> void:
 	var invert_on := settings.invert_y and invert[1].button_pressed and not invert[0].button_pressed
 	invert[0].button_pressed = true
 	var invert_off := not settings.invert_y and invert[0].button_pressed and not invert[1].button_pressed
+	var killcam := menu.get_toggle(&"killcam")
+	var killcam_default := settings.killcam and killcam[1].button_pressed and not killcam[0].button_pressed
+	killcam[0].button_pressed = true
+	var killcam_off := not settings.killcam and killcam[0].button_pressed and not killcam[1].button_pressed
+	killcam[1].button_pressed = true
+	var killcam_on := settings.killcam and killcam[1].button_pressed and not killcam[0].button_pressed
+	var on_game_tab := menu.get_row(&"killcam").get_parent() == menu.get_node("%Game")
+	_check("The Killcam setting is an OFF / ON toggle on the Game tab: on at first, and its segments write to Settings both ways",
+			killcam_default and killcam_off and killcam_on and on_game_tab,
+			"default on %s, off %s, on %s, on the Game tab %s" % [killcam_default, killcam_off, killcam_on, on_game_tab])
 	var fps := menu.get_option(&"fps_cap")
 	fps[2].button_pressed = true
 	var fps_144 := settings.fps_cap == 144 and Engine.max_fps == 144 and fps[2].button_pressed and not fps[4].button_pressed and fps[2].text == "144"

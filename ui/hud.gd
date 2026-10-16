@@ -17,6 +17,10 @@ extends CanvasLayer
 ## stack under the top bar; the compass ([Compass], D-180) is the thin strip above the top bar; the HUD hands that stack to its round and bomb parts and adds the low ammo toast itself
 ## (once per magazine, when it first drops to [constant LOW_AMMO_FRACTION] of a full one).
 ##
+## While the killcam plays (M17, D-241, [method set_killcam]) the corners, the crosshair, the compass and the death
+## view give way to its overlay: the title "KILLCAM", the killer's name (in their team's colour) and weapon, a thin bar
+## that fills as the replay runs and the key (or pad button) that skips it. They come back when it is over.
+##
 ## A pure view: it only reads the game's state. The look comes from the UI theme (D-133, D-141):
 ## the scene's controls pick roles, the sizes of the drawn parts and the state colours come from
 ## the theme's "Hud" type and the palette ("Palette" type), and the icons from [UiIcons].
@@ -79,6 +83,10 @@ var _ui_scale: float = 1.0
 var _chips: Array[Panel] = []
 ## The magazine of the watched weapon the last time it changed (-1: none), to tell a drop to "low" from a refill.
 var _magazine_seen: int = -1
+## The killcam whose replay the overlay shows (null: none), whether it plays now, and the killer it shows.
+var _killcam: Killcam
+var _killcam_playing: bool = false
+var _killcam_killer: Character
 
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _hit_marker: HitMarker = $HitMarker
@@ -124,6 +132,15 @@ var _magazine_seen: int = -1
 @onready var _death_dot: Label = %DeathDot
 @onready var _respawn_label: Label = %RespawnLabel
 @onready var _killer_hp: Label = %KillerHp
+@onready var _killcam_overlay: Control = %KillcamOverlay
+@onready var _killcam_plate: Control = %KillcamPlate
+@onready var _killcam_name: Label = %KillcamName
+@onready var _killcam_icon: TextureRect = %KillcamIcon
+@onready var _killcam_weapon: Label = %KillcamWeapon
+@onready var _killcam_bar: Control = %KillcamBar
+@onready var _killcam_fill: Panel = %KillcamFill
+@onready var _skip_key: Label = %SkipKey
+@onready var _skip_glyph: TextureRect = %SkipGlyph
 @onready var _scope_overlay: ScopeOverlay = $ScopeOverlay
 @onready var _smoke_overlay: ColorRect = $SmokeOverlay
 @onready var _flash_overlay: ColorRect = $FlashOverlay
@@ -139,9 +156,11 @@ func _ready() -> void:
 	_death_plate.custom_minimum_size.y = plate_height
 	_spectate_plate.custom_minimum_size.y = plate_height
 	_carry_plate.custom_minimum_size.y = _theme_size(&"alert_plate_height")
+	_killcam_plate.custom_minimum_size.y = plate_height
+	_killcam_bar.custom_minimum_size = Vector2(_theme_size(&"prompt_bar_width"), _theme_size(&"prompt_bar_height"))
 	# The icons are sized from their textures (see _set_icon), not by UiScale; they are white and take a tint.
 	for rect in [_health_icon, _armor_icon, _kit_icon, _weapon_icon, _mini_health_icon, _mini_armor_icon,
-			_mini_gun_icon, _killer_icon, _carry_icon]:
+			_mini_gun_icon, _killer_icon, _carry_icon, _killcam_icon]:
 		var icon_rect: TextureRect = rect
 		icon_rect.set_meta(UiScale.SKIP_SIZE_META, true)
 		icon_rect.modulate = _palette(&"text")
@@ -213,10 +232,58 @@ func set_view_target(target: Character) -> void:
 	_update_view()
 
 
+## Shows the overlay of [param killcam] while it replays your death, and hides the player's own view and the death
+## view meanwhile (M17, D-241); null clears it. [code]main.gd[/code] calls it on every map load.
+func set_killcam(killcam: Killcam) -> void:
+	if is_instance_valid(_killcam):
+		if _killcam.started.is_connected(_on_killcam_started):
+			_killcam.started.disconnect(_on_killcam_started)
+		if _killcam.finished.is_connected(_on_killcam_finished):
+			_killcam.finished.disconnect(_on_killcam_finished)
+	_killcam = killcam
+	_killcam_playing = false
+	_killcam_killer = null
+	if killcam != null:
+		killcam.started.connect(_on_killcam_started)
+		killcam.finished.connect(_on_killcam_finished)
+		if killcam.is_playing():
+			_killcam_playing = true
+			_killcam_killer = killcam.get_killer()
+			_update_killcam_killer()
+	_update_view()
+
+
+## True while the killcam overlay shows. For tests.
+func is_killcam_shown() -> bool:
+	return _killcam_overlay.visible
+
+
+## The killer's name on the killcam overlay ("" while it is hidden). For tests.
+func get_killcam_killer_text() -> String:
+	return _killcam_name.text if _killcam_overlay.visible else ""
+
+
+## The weapon's name on the killcam overlay ("" while it is hidden or there is none). For tests.
+func get_killcam_weapon_text() -> String:
+	return _killcam_weapon.text if _killcam_overlay.visible and _killcam_weapon.visible else ""
+
+
+## The key (or pad button) the killcam's skip hint names ("" while the overlay is hidden). For tests.
+func get_killcam_skip_text() -> String:
+	if not _killcam_overlay.visible:
+		return ""
+	return _skip_key.text if _skip_key.visible else ("glyph" if _skip_glyph.visible else "")
+
+
+## How full the killcam's bar is, 0 to 1 (-1 while the overlay is hidden). For tests.
+func get_killcam_progress_shown() -> float:
+	return _killcam_fill.anchor_right if _killcam_overlay.visible else -1.0
+
+
 ## Scales the HUD layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
 func set_ui_scale(factor: float) -> void:
 	_ui_scale = factor
-	for root: Control in [_bottom_left, _bottom_right, _spectate_box, _death_column, _slots_label, _compass]:
+	for root: Control in [_bottom_left, _bottom_right, _spectate_box, _death_column, _killcam_overlay, _slots_label, _compass]:
 		UiScale.apply_tree(root, factor)
 	_compass.set_ui_scale(factor)
 	_crosshair.set_ui_scale(factor)
@@ -232,6 +299,8 @@ func set_ui_scale(factor: float) -> void:
 		_update_armor()
 		_show_weapon()
 		_update_death()
+	if _killcam_playing:
+		_update_killcam_killer()
 
 
 ## The text of the respawn countdown ("Respawning in 3"), or "" while there is none (alive, practice,
@@ -255,20 +324,29 @@ func _process(delta: float) -> void:
 	var flash := shown.get_flash_alpha() if shown != null and is_instance_valid(shown) else 0.0
 	_flash_overlay.color.a = flash
 	_flash_overlay.visible = flash > 0.0
-	var camera := player.get_camera() if player != null and is_instance_valid(player) else null
+	var camera := _view_camera()
 	var smoke := Smokes.density_at(camera.global_position) * SMOKE_OPACITY if camera != null else 0.0
 	_smoke_overlay.color.a = smoke
 	_smoke_overlay.visible = smoke > 0.0
 	# A scope shows its own view; a sniper rifle has no crosshair unscoped either, as in CS.
 	var weapon := shown.weapon if shown != null and is_instance_valid(shown) else null
 	_scope_overlay.visible = weapon != null and weapon.is_scoped()
-	_crosshair.visible = not _player_dead and not (weapon != null and weapon.data.has_scope())
+	_crosshair.visible = not _player_dead and not _killcam_playing and not (weapon != null and weapon.data.has_scope())
 	if player != null and player.weapon != null and _crosshair.dynamic:
 		_crosshair.spread_degrees = player.weapon.get_inaccuracy()
 		_crosshair.queue_redraw()
 	_update_buy_hint()
-	if _player_dead:
+	if _killcam_playing:
+		_update_killcam()
+	elif _player_dead:
 		_update_death()
+
+
+## The camera the player sees through: the killcam's while it replays, else their own (null: none).
+func _view_camera() -> Camera3D:
+	if _killcam_playing and is_instance_valid(_killcam) and _killcam.get_camera() != null:
+		return _killcam.get_camera()
+	return player.get_camera() if player != null and is_instance_valid(player) else null
 
 
 ## The player has to see the buy hint only while the rules let them buy.
@@ -485,13 +563,16 @@ func _show_rewards() -> void:
 ## a teammate; the death view (the tint and the plate) while you are dead and watching nobody.
 func _update_view() -> void:
 	var spectating := shown != player
-	var dead_view := _player_dead and not spectating
-	_bottom_left.visible = not spectating and not _player_dead
-	_bottom_right.visible = not spectating and not _player_dead
+	var dead_view := _player_dead and not spectating and not _killcam_playing
+	_bottom_left.visible = not spectating and not _player_dead and not _killcam_playing
+	_bottom_right.visible = not spectating and not _player_dead and not _killcam_playing
 	_spectate_box.visible = spectating
 	_dead_tint.visible = dead_view
-	_compass.visible = Settings.get_instance().compass and not dead_view
+	_compass.visible = Settings.get_instance().compass and not dead_view and not _killcam_playing
 	_death_column.visible = dead_view
+	_killcam_overlay.visible = _killcam_playing
+	if _killcam_playing:
+		_update_killcam()
 	if spectating:
 		_update_spectate_name()
 	if dead_view:
@@ -534,6 +615,54 @@ func _update_death() -> void:
 	_killer_hp.visible = has_killer and _killer.is_alive()
 	if _killer_hp.visible:
 		_killer_hp.text = "%s · %d HP left" % [_killer.name, ceili(_killer.health)]
+
+
+## The killcam started its replay of the kill: its overlay replaces the death view.
+func _on_killcam_started(killer: Character) -> void:
+	_killcam_playing = true
+	_killcam_killer = killer
+	_update_killcam_killer()
+	_update_view()
+
+
+## The replay is over (it ended, was skipped, or you came back): the death view and its countdown, or the corners, return.
+func _on_killcam_finished() -> void:
+	_killcam_playing = false
+	_killcam_killer = null
+	_update_view()
+
+
+## The killer's name in their team's colour, and the weapon that killed you (its icon, and its name beside it).
+func _update_killcam_killer() -> void:
+	var killer := _killcam_killer
+	var has_killer := is_instance_valid(killer)
+	_killcam_name.text = killer.name if has_killer else ""
+	if has_killer:
+		_killcam_name.add_theme_color_override("font_color", Teams.ui_color_of(killer))
+	var data: WeaponData = null
+	if has_killer:
+		data = _killer_weapon if killer == _killer and _killer_weapon != null else (killer.weapon.data if killer.weapon != null else null)
+	_set_icon(_killcam_icon, data.id if data != null else &"", ICON_NORMAL)
+	_killcam_weapon.text = data.display_name if data != null else ""
+	_killcam_weapon.visible = data != null
+
+
+## Every frame of the replay: the bar fills with its progress, and the skip hint names the key (or the pad button)
+## of the device used last. The replay's end that the HUD missed (the map was replaced) clears the overlay.
+func _update_killcam() -> void:
+	if not is_instance_valid(_killcam):
+		_on_killcam_finished()
+		return
+	_killcam_fill.set_anchor(SIDE_RIGHT, _killcam.get_progress(), true)
+	var settings := Settings.get_instance()
+	_skip_key.text = LastInput.prompt_for(&"jump", settings)
+	var glyph: Texture2D = null
+	if LastInput.gamepad:
+		glyph = PadGlyphs.get_scaled_texture(PadGlyphs.style_for(settings.pad_prompts),
+				PadGlyphs.button_for_event(settings.get_pad_binding(&"jump")), maxi(1, floori(_ui_scale)))
+	_skip_glyph.texture = glyph
+	_skip_glyph.visible = glyph != null
+	_skip_key.visible = glyph == null and not _skip_key.text.is_empty()
 
 
 ## Seconds until the player comes back in a live team respawn match, or -1 when they aren't waiting to.

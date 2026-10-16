@@ -99,6 +99,8 @@ var _map: Node
 var _player: Character
 ## Online: the [NetHost] or [NetClient] of the current map, or null offline.
 var _net_game: Node
+## The killcam of a respawn match (M17, D-241), or null.
+var _killcam: Killcam
 ## True while the loading screen covers the game (it hides the HUD, see [method _update_hud_visibility]).
 var _loading_hides_hud: bool = false
 ## The maps of the rotation (empty without one), and which of them is playing.
@@ -402,6 +404,10 @@ func _spawn_map(scene: PackedScene) -> void:
 		recorder.name = "StatsRecorder"
 		rules.add_child(recorder)
 		recorder.setup(rules as RoundManager, player, _map.scene_file_path.get_file().get_basename(), net_session != null)
+	_killcam = null
+	_hud.set_killcam(null)
+	if rules is RespawnMatch:
+		_add_killcam(rules as RespawnMatch, player)
 	# Hides the match-end screen of the previous map; it opens when this match ends,
 	# with "Next map" when there is a rotation.
 	_match_end_screen.set_round_manager(rules as RoundManager)
@@ -442,6 +448,26 @@ func _set_up_spectating(player: Character, in_match: bool) -> void:
 		return
 	controller.spectating_enabled = in_match
 	controller.view_target_changed.connect(_hud.set_view_target)
+
+
+## Adds the killcam to a respawn match (M17, D-241): the recorder that keeps everyone's last seconds,
+## and the replay of your deaths through your killer's eyes. Rounds have none (they'd tell the dead
+## where the enemies are).
+func _add_killcam(rules: RespawnMatch, player: Character) -> void:
+	var recorder := KillcamRecorder.new()
+	recorder.name = "KillcamRecorder"
+	_map.add_child(recorder)
+	_killcam = Killcam.new()
+	_killcam.name = "Killcam"
+	_map.add_child(_killcam)
+	_killcam.enabled = Settings.get_instance().killcam
+	_killcam.setup(rules, player, recorder)
+	_hud.set_killcam(_killcam)
+
+
+## The killcam of the match (null outside respawn matches).
+func get_killcam() -> Killcam:
+	return _killcam
 
 
 ## Adds the node that runs the game on the current map (see [enum Mode]) and returns it, or null.
@@ -525,3 +551,6 @@ func apply_pixel_settings() -> void:
 func _on_setting_changed(key: StringName) -> void:
 	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect" or key == &"ui_scale" or key == &"team_colors":
 		apply_pixel_settings()
+	# The killcam setting (M17, D-241) works at once: off, the replay in progress ends and none follows.
+	if key == &"killcam" and is_instance_valid(_killcam):
+		_killcam.enabled = Settings.get_instance().killcam

@@ -197,6 +197,8 @@ func setup(game_session: NetSession, game_map: Node, game_rules: RoundManager, o
 	# ([constant BLOCKING_SPEED], D-106).
 	rules.class_request = _request_class
 	rules.buy_request = _request_buy
+	if rules is RespawnMatch:
+		(rules as RespawnMatch).killcam_skip_request = _request_skip_killcam
 	session.packet_received.connect(_on_packet)
 	session.closed.connect(_on_session_closed)
 	session.send_to_host({"loaded": true})
@@ -392,6 +394,11 @@ func _send_command(delta: float) -> void:
 func _request_buy(_character: Character, item_id: StringName) -> void:
 	if session != null:
 		session.send_packet(1, NetProtocol.pack_values(NetProtocol.Message.REQUEST, [NetProtocol.Request.BUY, String(item_id)]), true)
+
+
+func _request_skip_killcam(_character: Character) -> void:
+	if session != null:
+		session.send_packet(1, NetProtocol.pack_values(NetProtocol.Message.REQUEST, [NetProtocol.Request.SKIP_KILLCAM]), true)
 
 
 func _request_class(_character: Character, data: ClassData) -> void:

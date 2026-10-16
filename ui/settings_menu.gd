@@ -451,6 +451,7 @@ func _build_game_tab() -> void:
 	_add_slider_row(_game_rows, &"fov", {
 		"label": "Field of view", "step": 1.0, "format": "%d",
 		"tip": "Degrees across a 4:3 screen, like CS: 90 here is CS's 90. A wider window shows more to the sides."})
+	_add_toggle_row(_game_rows, &"killcam", "Killcam", "After a death in Team Deathmatch or free-for-all, replay the kill through your killer's eyes. Jump skips it.")
 
 
 func _build_video_tab() -> void:

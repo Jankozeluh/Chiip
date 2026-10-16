@@ -148,6 +148,7 @@ const SCHEMA := {
 	&"sensitivity": {"section": "game", "default": 1.0, "min": 0.05, "max": 10.0},
 	&"invert_y": {"section": "game", "default": false},
 	&"fov": {"section": "game", "default": 90.0, "min": 70.0, "max": 110.0},
+	&"killcam": {"section": "game", "default": true},
 	&"fullscreen": {"section": "video", "default": false},
 	&"vsync": {"section": "video", "default": true},
 	&"fps_cap": {"section": "video", "default": 0, "min": 30, "max": 1000, "off": 0},
@@ -254,6 +255,10 @@ var _dirty: bool = false
 var sensitivity: float:
 	get: return _values[&"sensitivity"]
 	set(value): set_value(&"sensitivity", value)
+## Show the killcam after a death in Team Deathmatch and free-for-all (M17, D-241).
+var killcam: bool:
+	get: return _values[&"killcam"]
+	set(value): set_value(&"killcam", value)
 ## Flip vertical mouse look.
 var invert_y: bool:
 	get: return _values[&"invert_y"]

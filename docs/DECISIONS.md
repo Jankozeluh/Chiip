@@ -2441,6 +2441,19 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** A team per player (`Teams.COUNT` and every per-team array would grow; the protocol sends team numbers as bytes per character); a separate deathmatch class beside `RespawnMatch` (would repeat the respawns, loadouts and overtime); suicides costing a point as in CoD (left out: no suicides by fall damage in Chiip).
 
+## D-241 — M17: the killcam replays your death from this computer's own recording, and your respawn waits for it (2026-10-16)
+
+**Decision:** In Team Deathmatch and free-for-all, a beat (1 s) after you die the last 4 s before the kill and 0.5 s after it play again through your killer's eyes:
+- **Recorded locally, not sent:** a `KillcamRecorder` on the map notes every character's pose 64 times a second (position, velocity, view, eye height, stance, alive, the gun in hand, whether it fired) and keeps the last 7 s. On the host and offline that is the game itself; on a client it is the puppets as the snapshots posed them, whose shots already fire their guns (`Weapon.play_remote_shot()`). So the killcam costs no bandwidth, and works offline.
+- **Ghosts:** a camera at the killer's recorded eyes, with the killer's gun as a first-person viewmodel (their class's arms in their colour; its shots flash, kick and sound). Everyone else is a `CrewBody` posed from the notes (walking, aiming, shooting, falling), made without hit zones (`with_hit_zones = false`) so nothing in the game can hit it. The real bodies hide while it plays (only `visible`: their hit zones, the bots and the host's simulation go on).
+- **The respawn waits for it:** the host keeps a player killed by someone else dead for the whole killcam (5.5 s instead of the 3 s delay) — the player at this computer while its killcam is on, and every friend online. **Jump (Space) skips** it and asks for the plain delay back (counted from the death); a killcam that is off asks at once (online: one new request, `SKIP_KILLCAM`). Bots never wait.
+- **Only the respawn modes:** in rounds the dead could tell their living teammates where the enemy is (and the bomb mode is decided by information), so `main.gd` adds the killcam only to a `RespawnMatch`.
+- A setting turns it off (on by default).
+
+**Why:** CoD's killcam shows how you died, which teaches positions and angles; playing it during a lengthened respawn is CoD's trade (skip it to come back sooner). D-221's plan said "from a ring buffer of snapshots the host has": the client already has those snapshots, as the puppets it shows, so recording on each computer gives the same picture without sending the host's buffer to the dead player, and it also works offline. Ghost bodies keep the replay purely visual: rewinding the real characters would move their hit zones (lag compensation reads them) and, on the host, the simulation itself.
+
+**Alternatives:** The host sends its buffer to the victim (about 20 KB per death); a third-person replay over the killer's shoulder (CS's freezecam is just a still); the killcam inside the plain 3 s delay (too short for 4 s before the kill); the killcam in rounds too (it reveals positions to a dead teammate).
+
 ## Open questions
 
 | Question | Decide in |

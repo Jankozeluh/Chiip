@@ -33,6 +33,8 @@ const SCENE_CAMERA_FOV := 73.74
 ## What the settings must start at: the game's behaviour before settings existed.
 const DEFAULTS := {
 	&"sensitivity": 1.0, &"invert_y": false, &"fov": 90.0,
+	# M17 (D-241): the killcam replays your death in Team Deathmatch and free-for-all.
+	&"killcam": true,
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
 	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0, &"compass": true, &"fps_counter": "off", &"net_stats": true, &"team_colors": "standard",
 	&"pad_sensitivity": 1.0, &"pad_deadzone": 0.15, &"pad_curve": 1.5, &"pad_invert_y": false, &"pad_invert_x": false, &"pad_prompts": "auto",
@@ -412,6 +414,7 @@ func _test_saving() -> void:
 			"file exists %s" % FileAccess.file_exists(TEMP_PATH))
 	writer.invert_y = true
 	writer.fov = 103.0
+	writer.killcam = false
 	writer.fullscreen = true
 	writer.vsync = false
 	writer.fps_cap = 144

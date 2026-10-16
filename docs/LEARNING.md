@@ -832,6 +832,12 @@
 - A fade is a tween on the player's `volume_db` (`player.create_tween().tween_property(player, "volume_db", -60.0, 1.2)`), like a coroutine lerping `AudioSource.volume`. A tween made from a node stops while that node is paused, so the music's players are `PROCESS_MODE_ALWAYS`.
 - A static class can't add a node to the root from inside another node's `_ready()` (the root is busy adding children): `add_child.call_deferred()` and act on the node's `ready` signal.
 
+## M17: playing with friends
+
+**Switching cameras** (D-241; Unity: enabling another `Camera` or raising its depth): a viewport draws through one `Camera3D`, the one whose `current` is true. The killcam adds its own camera, sets `current = true` (the player's camera stops drawing), and on the way out sets the old one's `current` back. `get_viewport().get_camera_3d()` tells which one draws now.
+
+**Hiding without stopping** (D-241): `visible = false` on a `Node3D` hides it and its children from every camera, but its scripts, animations and physics bodies go on. The killcam hides the real characters' bodies that way while their hit zones (areas under the bones) keep working for the game.
+
 ## M16: maintainability and debugging
 
 **Export plugins** (D-224; Unity's `IPreprocessBuildWithReport` / `IPostprocessBuildWithReport`)
