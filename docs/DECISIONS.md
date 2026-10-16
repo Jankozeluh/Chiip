@@ -2010,6 +2010,31 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Rewriting the history to remove the old path and the name (you decided against it); trusting the friends because they are invited (one broken client could still hang the host); encrypting the game's own traffic (Tailscale already does, and DTLS would add certificates to a hobby game); pinning actions to tags only (a moved tag would run new code unseen); signing the builds (costs money every year; checksums are the cheap part of it).
 
+## D-200 — Stats are kept on your computer, in one text file (2026-10-16)
+
+**Decision:** M14's history and lifetime numbers live in one JSON file, `user://stats.json` (`StatsBook`, in `systems/stats_book.gd`), and never go anywhere else, online games included (each player records their own).
+- **What's in it:** the last 300 finished matches (`StatsMatch`: date, mode, map, result, score, rounds, duration, kills, deaths, assists, damage, headshot kills, and per weapon the bullets fired, the hits and the hits by zone), the **lifetime totals** (`StatsTotals`; they are added to as each match ends, so they stay right after the oldest matches drop out of the list), and the personal bests of the training (`submit_best`, D-205).
+- **A damaged file never costs a crash or a silent loss:** a file that isn't JSON, has the wrong shape or comes from a newer version (`version` above 1) is moved aside as `stats.json.bad` and an empty book starts; one bad match inside a good file is skipped; every number is cleaned on reading (the right type, in range, hits never over shots, headshots never over kills, unknown zones dropped); missing totals are counted again from the history. Saving writes a temporary file and renames it over the real one.
+- **Like Settings, it saves only after something loaded it** (the main menu or `main.gd`, unless `--no-settings` or `load_settings` is off), so tests and tools can't write your file; `stats_test` checks the real file's checksum before and after.
+- **JSON, not a binary resource or a `ConfigFile`:** you are a data analyst, so the file can be opened, read, copied or analysed as it is; it also stays readable when the game changes (a `version` field). A CSV of the history can be written next to it (`StatsBook.export_csv`; the Stats screen's button, D-204).
+
+**Why:** Stats are a small amount of data that you will want to look at outside the game, and that must survive a bad write or an edit by hand. A game that crashes on load because its stats file is damaged is worse than one that starts a fresh book and keeps the old file for you.
+
+**Alternatives:** A Godot `Resource` (`.tres`/`.res`: a parse error or a changed script can make the whole resource fail to load, and it is not a format a spreadsheet reads); a `ConfigFile` like the settings (fine for a flat list of options, awkward for a list of matches); a database such as SQLite (a new addon and a download for a few hundred rows); no cap on the history (the file would grow for ever, though 300 matches is only about 150 KB, and the totals keep counting anyway).
+
+## D-201 — The definitions: K/D, ADR, HS %, accuracy (2026-10-16)
+
+**Decision:** Each number has one definition (`StatsMath`), used by every screen and by the tests.
+- **K/D** = kills ÷ deaths with deaths counted as at least 1 (no deaths shows the kills, not infinity). Teamkills are not kills (RoundManager already scores them as −1).
+- **ADR** = damage dealt to enemies ÷ rounds played, **for round (bomb) matches only.** Team respawn is one long round, so "damage per round" would just be its total; a respawn match has no ADR, and the lifetime ADR counts only the round matches' damage and rounds. The scoreboard of a round match gets an ADR column (D-202); respawn matches keep the DMG column alone.
+- **HS %** = headshot kills ÷ kills, as in CS. The weapons table shows the other number too, the **share of hits that were head hits**, from the zone counts.
+- **Accuracy** = bullets that hit an enemy ÷ bullets fired. **A shotgun's pellets count one by one** (the Breaker fires 9 per pull), so accuracy never goes over 100 % and a pull that hits with three pellets counts as three hits out of nine. Only guns count: the knife and grenades have no shots; hits on teammates (friendly fire) and on yourself are not hits.
+- **Win %** counts draws as played. Wins are kept per mode (`rounds`, `respawn`) and per map, next to the matches played, so "5 of 8" is possible.
+
+**Why:** Numbers that could be read two ways would make the screen hard to trust; these are CS's own definitions (K/D, ADR, HS %) except where Chiip's modes make one meaningless (ADR in a respawn match), and where a pump shotgun would otherwise break accuracy. Counting pellets keeps the maths simple and the table comparable between weapons.
+
+**Alternatives:** An ADR for respawn matches too, with a "round" of 60 seconds or a life (invented units that look like CS's but mean something else); counting a shotgun pull as one shot that hits when any pellet lands (a 9-pellet blast and a 1-pellet shot would look the same, and the Breaker's accuracy would be flattering and unlike the zone counts); head hits per kill instead of kills with a headshot (HS % is the number CS players know).
+
 ## Open questions
 
 | Question | Decide in |
