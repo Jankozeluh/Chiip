@@ -8,9 +8,10 @@ extends SceneTree
 ## It doesn't react to the mouse: the developer console is flagged open every
 ## frame (the player controller then ignores all input) and the mouse is kept
 ## free. The image is read straight from the World SubViewport, set to a fixed
-## size, so the HUD isn't in it. Shots are taken during the first round's
+## size, so the HUD isn't in it, and characters are hidden (since M10), so
+## shots show the map alone. Shots are taken during the first round's
 ## freeze time, from places every map has: an overview from above the
-## attackers' end, each spawn, each bomb site and the middle of the mid route.
+## attackers' end, each spawn, each bomb site and the middle of each lane's route.
 ## Each is saved as a PNG scaled up 2× with sharp pixels.
 ##
 ## [code]--lighting ssao[/code] or [code]--lighting sdfgi[/code] renders the same shots with
@@ -53,6 +54,9 @@ func _init() -> void:
 	map.add_child(camera)
 	camera.make_current()
 	for shot in _plan_shots(map):
+		# The map, not the players: bots standing at a spawn would fill the shot (and your gun shows).
+		for character in get_nodes_in_group("characters"):
+			(character as Node3D).visible = false
 		camera.fov = shot[3]
 		camera.look_at_from_position(shot[1], shot[2])
 		for i in 3:
@@ -109,12 +113,14 @@ func _plan_shots(map: Node3D) -> Array:
 		var toward_middle := Vector3(-floor_centre.x, 0, -floor_centre.z).normalized()
 		var eye := floor_centre + toward_middle * 8.0 + Vector3.UP * (EYE_HEIGHT + 0.6)
 		shots.append(["site_" + site.name.trim_prefix("BombSite").to_lower(), eye, floor_centre + Vector3.UP, 73.74])
+	# The middle of each lane, looking along its attack route (mid, and since M10 the west and east lanes).
 	for route in _in_map(map, "attack_routes"):
-		if route.name == "RouteMid" and route.get_child_count() >= 2:
+		var lane := String(route.name).trim_prefix("Route").to_lower()
+		if lane in ["mid", "west", "east"] and route.get_child_count() >= 2:
 			var middle := route.get_child_count() / 2
 			var from := (route.get_child(middle - 1) as Node3D).global_position + Vector3.UP * EYE_HEIGHT
 			var to := (route.get_child(middle) as Node3D).global_position + Vector3.UP * EYE_HEIGHT
-			shots.append(["mid", from, to, 73.74])
+			shots.append(["mid" if lane == "mid" else "lane_" + lane, from, to, 73.74])
 	return shots
 
 

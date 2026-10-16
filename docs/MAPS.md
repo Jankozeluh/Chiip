@@ -1,6 +1,6 @@
 # Chiip — Maps
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
 > The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed and without baked lighting. They play as bomb rounds (D-080). Decisions: D-060–D-063.
 
@@ -28,7 +28,7 @@
 Your direction: *"everything should be minimalistic and pixelated, cs/quake/cod like with the characters like I showed you"* (D-063).
 
 - **Minimal and blocky.** Simple box geometry, clean readable spaces, no clutter, nothing detailed or realistic. Props are plain boxes: crates, containers, stalls, tanks.
-- **Few materials: at most 5 per map**, from the existing 64 × 64 retro textures with nearest filtering. The world renders at 480 lines (D-048). Depot and Spillway use 5, Square 4.
+- **Few materials: at most 6 main materials per map** for the big surfaces (D-127, since the map kit; before it, 5 in total, D-063). Variants of one material count once: the same ribbed metal in four colours, pale and olive plaster, cobbles and slabs. Details come on top in small doses: trims, signs, props, lamps. All are 64 × 64 retro textures with nearest filtering; the world renders at 480 lines (D-048). How to build with the kit: [MAPPING.md](MAPPING.md).
 - **Players stand out.** Characters wear their team colour, painted at runtime: your team blue, enemies red (D-042). So no saturated red or blue on large map surfaces: walls, floors and big props are neutral greys (concrete, plaster, stone, gravel, metal), plus wood as the one warm accent. Muted greens or ochres are fine too. `bricks_red` isn't used: on average it's a muted brown, but 21 % of its pixels are strong reds.
 - **Neutral shadows.** The maps' environments light shadows with a neutral grey ambient light instead of the blue sky. With the sky's light, shadowed floors rendered as rgb (43–50, 63–70, 92–100): the same hue as the blue team (215° vs 220°) at 50 % saturation. With grey ambient they render as rgb (63, 64, 65), 3 % saturation, about as bright as before.
 - **Cool daylight, no desert:** neutral white sun, grey-blue sky and haze; warm light only from lamps (D-031).
@@ -67,7 +67,7 @@ The `.map` files in `maps/` are the source: open them in TrenchBroom (README, "M
 1. Rebuild the scene: `tools/build_maps.gd -- res://maps/depot.tscn` (or *Build Map* on the `Map` node).
 2. Bake the navmesh: `tools/bake_navmesh.gd -- res://maps/depot.tscn`.
 3. Check it: `tests/maps_test.tscn` (markers, paths, first contact) and `tools/map_report.gd` (sizes, walks, sightlines). If you moved floor or walls, move any marker that now stands inside them.
-4. Screenshots: `tools/map_screenshots.gd` renders an overview, both spawns, both sites and mid through the real game.
+4. Screenshots: `tools/map_screenshots.gd` renders an overview, both spawns, both sites and the middle of each lane through the real game, with the characters hidden.
 
 The exact commands are in CLAUDE.md. **In TrenchBroom the map is turned:** Godot's x is TrenchBroom's Y and Godot's z is TrenchBroom's X. In TrenchBroom's top view, north (the defenders' end) is on the left and east is at the top.
 

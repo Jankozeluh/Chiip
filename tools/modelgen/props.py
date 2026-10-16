@@ -888,3 +888,16 @@ _sign_prop('sign_arrow_left', 0.6, 0.35, '<', 'Arrow sign pointing left, 0.6 x 0
 _sign_prop('sign_arrow_right', 0.6, 0.35, '>', 'Arrow sign pointing right, 0.6 x 0.35 m.', text_height=0.24)
 _sign_prop('sign_warning', 0.5, 0.5, '!', 'Yellow warning sign, 0.5 m square.', plate='sign_yellow', text_height=0.34)
 _sign_prop('sign_exit', 0.9, 0.36, 'EXIT', 'Green exit sign, 0.9 x 0.36 m.', plate='sign_green', ink='sign', text_height=0.22)
+
+
+# ================================================================ more industrial
+@prop('rail_track', 'industrial', 'A 6 m piece of railway track along its length (front to back): two steel rails on wooden sleepers, 0.2 m high. Decoration: no collision.',
+      surface='metal', collide='none')
+def rail_track():
+    P = []
+    for i in range(9):
+        P.append(box((2.5, 0.08, 0.22), (0, 0.04, -2.6 + i * 0.65), 'wood_dk', bevel=0))
+    for x in (-0.72, 0.72):
+        P.append(box((0.07, 0.12, 6.0), (x, 0.14, 0), 'steel', bevel=0))
+        P.append(box((0.14, 0.03, 6.0), (x, 0.095, 0), 'metal_dk', bevel=0))
+    return P

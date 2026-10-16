@@ -302,6 +302,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
 | [MAPS.md](docs/MAPS.md) | The quick maps: plans, layouts, map rules, measurements |
+| [MAPPING.md](docs/MAPPING.md) | Building a map from the map kit: TrenchBroom workflow, rules, every texture, prop, lamp and entity, limits |
 | [DEVLOG.md](docs/DEVLOG.md) | Diary of each work session: what changed and what's next |
 | [LEARNING.md](docs/LEARNING.md) | Godot concepts learned along the way, compared to Unity |
 | [CREDITS.md](docs/CREDITS.md) | Third-party assets and tools, with sources and licenses |

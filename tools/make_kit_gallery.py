@@ -31,11 +31,12 @@ HALF_X, HALF_Z, WALL_H, WALL_T = 20.0, 36.0, 4.0, 0.5
 
 WALL_TEXTURES = [
     'concrete_floor', 'plaster_wall', 'painted_plaster', 'stone_grey', 'metal_plates', 'wood_planks',
-    'industrial/corrugated_grey', 'industrial/corrugated_green', 'industrial/rust_plates', 'industrial/concrete_worn',
+    'industrial/corrugated_grey', 'industrial/corrugated_green', 'industrial/corrugated_rust', 'industrial/corrugated_teal',
+    'industrial/rust_plates', 'industrial/concrete_worn',
     'industrial/perforated', 'industrial/hazard_stripes', 'industrial/diamond_plate', 'industrial/grate',
     'urban/blocks_grey', 'urban/rubble_wall', 'urban/plaster_olive', 'urban/wood_siding', 'urban/roof_slate',
     'interior/tiles_white', 'interior/tiles_dark', 'interior/ceiling_tiles', 'interior/planks_old',
-    'nature/rock_moss', 'nature/bark', 'gravel_grey', 'urban/slabs', 'urban/cobbles',
+    'nature/rock_moss', 'nature/bark', 'gravel_grey', 'urban/slabs',
 ]
 FLOOR_TEXTURES = [
     'urban/asphalt', 'urban/cobbles', 'urban/slabs', 'industrial/diamond_plate', 'industrial/grate',

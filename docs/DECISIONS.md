@@ -986,7 +986,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Every texture gets a material** in `assets/materials/<set>/` (world triplanar, like today's, for CSG maps and props). A texture that needs more than func_godot's default material (the chain-link's see-through holes) also gets a `.tres` next to the PNG, which func_godot uses instead of generating one.
 - **Footsteps and impacts know new textures by name:** `Surfaces` matches words in the texture's file name (metal, steel, plate, grate, rust → metal; wood, plank, parquet → wood; gravel, dirt, grass, ground → gravel-like ground). A mapper who names a new texture `blue_metal` gets metal steps without touching code.
 - **Picked and checked against the look rules** (D-031, D-063): no saturated red or blue on surfaces, no sand or desert tones; greens and ochres muted. Measured on the processed textures, not judged by eye: the new `tools/texture_report.gd` counts a texture's strong team-red and team-blue pixels (at most 3 %) and its average saturation (at most 0.45, which wood just passes). Calibrated on the base set: it fails `bricks_red` with 21 % strong reds, as MAPS.md measured. All 28 pass with 0 % team colours; everything but wood stays at 0.30 saturation or less.
-- **Three textures drawn, not downloaded** (`tools/make_kit_textures.py`): `interior/glass` (see-through, for `func_glass`), `industrial/hazard_stripes` and `industrial/floor_line` (trims), in the props' palette.
+- **Five textures drawn, not downloaded** (`tools/make_kit_textures.py`): `interior/glass` (see-through, for `func_glass`), `industrial/hazard_stripes` and `industrial/floor_line` (trims), and `industrial/corrugated_rust` and `corrugated_teal` (the grey ribbed metal recoloured, so containers come in four colours with one pattern), in the props' palette.
 - **Eight sources prepared first** by `tools/texture_prep.py`: their colour maps alone become flat grey or noise at 64 × 64 (the ribs, lugs and holes of corrugated steel, diamond plate, perforated sheet and dark tiles live in the asset's displacement map), the rust's hue counted as team red (36 %), and two patterns are drawn instead (roof shingles that became plaid, and the chain-link's mesh, finer than a pixel). Details in CREDITS.md.
 - **Downloads:** 28 of the 1K-JPG zips (1.8–11 MB each, about 170 MB in all, kept in the session's scratchpad and deleted afterwards; only the 64 × 64 PNGs enter the project), within your approval of about 30 (D-120). Most were above the 2–5 MB estimated then, because ambientCG's zips hold every map (normal, roughness…), and nature textures are the biggest.
 
@@ -1047,17 +1047,21 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 ## D-126 — Performance limits for maps (2026-10-16) — *provisional*
 
-**Decision:** Limits a map should stay within, measured with `tools/frame_timing.gd` on the dressed maps (numbers in MAPPING.md): props, lamps (and lamps with shadows), and materials per map. Within them a 5v5 holds the display rate on the M8 machine.
+**Decision:** Limits a map should stay within (MAPPING.md, "Performance limits"): **up to 150 props** (lamps included), **up to 24 lamps**, **at most 4 lamps with shadows**, 6 main materials plus about 6 detail textures. Within them a 5v5 holds the display rate on the development Mac.
+
+**Measured** with `tools/frame_timing.gd`, 5v5 bots, 1080p window, V-Sync off (macOS keeps it on anyway at the display's 120 Hz): the kit gallery with 86 props and lamps, 120 fps on average, slowest 1 % of frames 11.3 ms, 629 draw calls.
 
 **Why:** Mappers need numbers, not "don't overdo it". Each prop is a draw call and each shadowed light renders the scene again, so those are the costs that grow with dressing.
 
 **Alternatives:** No limits (a community map could run badly without anyone knowing why); limits enforced by a tool (later, if needed).
 
-## D-127 — Look rules for a dressed map: five main materials plus details (2026-10-16) — *provisional; changes D-063's material limit*
+## D-127 — Look rules for a dressed map: six main materials plus details (2026-10-16) — *provisional; changes D-063's material limit*
 
-**Decision:** D-063's "at most 5 materials per map" becomes **at most 5 main materials** for the big surfaces (floors, walls, roofs, the large blocks), plus **details** in small doses: trim, edges, signs, props and lamps. Everything else in D-063 stays: no saturated red or blue on large surfaces, neutral shadows, cool daylight, measured in screenshots.
+**Decision:** D-063's "at most 5 materials per map" becomes **at most 6 main materials** for the big surfaces (floors, walls, roofs, the large blocks), where **variants of one material count once** (the same ribbed metal in four colours, pale and olive plaster, cobbles and slabs), plus **details** in small doses: trim, edges, signs, props and lamps. Everything else in D-063 stays: no saturated red or blue on large surfaces, neutral shadows, cool daylight, measured in screenshots.
 
-**Why:** You found the maps blank. Variety comes from details on top of a calm base, which keeps the minimal, readable look while the maps stop looking empty.
+**Why:** You found the maps blank. Variety comes from details on top of a calm base, which keeps the minimal, readable look while the maps stop looking empty. Dressing Depot showed that five weren't enough once its 6 m yard walls got their own block texture: plain concrete on every wall and floor is what made it blank. Colour variants of one material (containers in a yard) add variety without adding visual noise, because their pattern is the same.
+
+**Tried and dropped while dressing:** worn concrete with rebar patches on walls and floors (its marks repeat every 1.6 m and look like a pattern), the rusty-plate texture on containers (reads as brown mud), perforated sheet on racks (busy black holes). The rule for detail textures: one calm pattern per surface.
 
 **Alternatives:** Keeping five in total (the maps stay blank); no limit (risks the noisy look D-063 avoided).
 

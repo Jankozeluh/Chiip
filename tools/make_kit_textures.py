@@ -7,6 +7,9 @@ Writes into assets/textures/ (then run Godot's import, CLAUDE.md):
     industrial/hazard_stripes.png   worn diagonal safety-yellow and charcoal stripes, for edges
                                     and trims in small doses (D-127)
     industrial/floor_line.png       the base concrete floor with a painted yellow line along it
+    industrial/corrugated_rust.png  industrial/corrugated_grey recoloured into a rusty brown (kept
+    industrial/corrugated_teal.png  off the team red's hue) and into the props' grey-green paint, so
+                                    containers come in four colours with the same ribs
     interior/glass.png + glass.tres see-through grey glass with two streaks (alpha blended), for
                                     func_glass brushes
 and a world-triplanar material for each in assets/materials/ (for CSG maps and props).
@@ -123,6 +126,18 @@ def floor_line():
     return img.astype(np.uint8)
 
 
+def recolour(source, ramp_name, low, high, grey_mix):
+    """`source`'s brightness mapped onto shades low..high of a prop ramp, mixed with grey by
+    `grey_mix` (0..1) to keep the colour muted."""
+    src = np.asarray(Image.open(os.path.join(TEXTURES, source + '.png')).convert('RGB')).astype(np.float32) / 255.0
+    lum = src @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    t = (lum - lum.min()) / max(float(lum.max() - lum.min()), 1e-6)
+    shades = np.clip(np.round(low + t * (high - low)), 0, 15).astype(int)
+    colour = ramp(ramp_name)[shades]
+    grey = (colour @ np.array([0.2126, 0.7152, 0.0722], np.float32))[..., None].repeat(3, -1)
+    return np.clip(colour * (1 - grey_mix) + grey * grey_mix, 0, 255).astype(np.uint8)
+
+
 def glass():
     y, x = np.mgrid[0:SIZE, 0:SIZE]
     tint = np.array([150, 160, 156], np.float32)              # a neutral grey-green, not blue
@@ -138,12 +153,15 @@ def glass():
 def main():
     save(hazard_stripes(), 'industrial/hazard_stripes')
     save(floor_line(), 'industrial/floor_line')
+    save(recolour('industrial/corrugated_grey', 'cardboard', 3, 11, 0.3), 'industrial/corrugated_rust')
+    save(recolour('industrial/corrugated_grey', 'teal', 4, 12, 0.2), 'industrial/corrugated_teal')
     save(glass(), 'interior/glass')
     with open(os.path.join(TEXTURES, 'interior', 'glass.tres'), 'w') as fh:
         fh.write(GLASS_MATERIAL)
     print('wrote', os.path.join(TEXTURES, 'interior', 'glass.tres'))
     # A world-triplanar material each, like every library texture (for CSG maps and props).
     for name, extra in (('industrial/hazard_stripes', ''), ('industrial/floor_line', ''),
+                        ('industrial/corrugated_rust', ''), ('industrial/corrugated_teal', ''),
                         ('interior/glass', 'transparency = 1\nmetallic_specular = 0.6\nroughness = 0.25\n')):
         path = os.path.join(ROOT, 'assets', 'materials', name + '.tres')
         os.makedirs(os.path.dirname(path), exist_ok=True)
