@@ -261,9 +261,12 @@ func _build_cards() -> void:
 		description.name = "Description"
 		description.theme_type_variation = &"ModeDetailLabel"
 		description.text = MODES[mode]["text"]
+		# Wrapping keeps the three cards equally wide in any window: the text may not widen a card (D-151).
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lines.add_child(description)
 		var last := Label.new()
 		last.name = "Action"
+		last.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lines.add_child(last)
 		_cards[mode] = button
 		_card_lines[mode] = last

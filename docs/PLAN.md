@@ -8,6 +8,7 @@
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M11 UI fit and the studio logo.** (1) Open the game in the editor's game view at your 2920 × 1753 (and drag the window narrow, tall and fullscreen): the Play screen, class draft and HUD stay whole; the text is 2× there, crisp. (2) Start a match: the loading band goes first, and then the class draft opens (nothing covers its cards). (3) The boot screen shows your Divocakos logo and name once when the game starts (any key skips); the small mark and the name are in the main menu's corner and footer (D-153).
 - [ ] **M7 playtest (arsenal, perks & economy).** Start a match from the menu (Depot, Square or Spillway for the bomb, map weapons and kits). Then:
   1. **Buying:** the freeze time is 15 s. **B** opens the buy menu (from the class menu too): the category's number then the item's, or click; greyed items say why. Round 1 is a pistol round ($1,000). Is it quick to use under time pressure? Are the light economy's numbers right: $3,000 a win, $1,500 → $3,000 for losses, $200 a kill ($500 knife), prices $500 / $1,000 / $2,500 / $4,000 (D-090)? Do saves and force buys feel worth it?
   2. **The guns** (practice: B buys everything free): the Ram as before; the Warden (more accurate, no one-tap through a helmet); the Hornet; the Breaker (9 pellets, a shell at a time, fire to stop the reload); the Heron (right mouse: two zoom steps, a moment to settle, out of the scope after each shot, no crosshair unscoped); the Sparrow and the Verdict (one shot per click); the knife (left slash, right stab, harder from behind). Tell me what feels off.
@@ -520,7 +521,7 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 17. [x] **Multiplayer lobby** (M9's, merged from main) in the mockup's look (D-137). *(Sonnet)* Built: the Lobby page (name, the host's addresses, two team columns with empty "Bot" slots, Switch team, the mode · map · limit footer, Edit setup and Start) and the Join page; match setup opened from the lobby hides Practice.
 18. [x] **Buy menu** (M7's) in the mockup's look, and the HUD hidden behind the class and buy menus (D-137). *(Sonnet)*
 
-Not in this branch: the boot screen (it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
+Not in this branch: the boot screen (built later in M11, D-153: it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
 
 **Done when:** the main menu starts Team Deathmatch in one click, Custom still offers everything match setup did, every screen and the HUD take their look from the theme, all suites pass, and then: every screen matches your mockups.
 
@@ -534,7 +535,7 @@ The class draft (two random classes offered each match) and the random map weapo
 
 **Goal:** fix what playing showed, and make it run smoothly (D-150). Each part is planned in detail by its session.
 
-- [ ] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3)
+- [x] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3). Built: the tighter axis in half steps (D-151, plus the Play cards that were wider than the layout), the class draft opens after the loading band (D-152), the boot screen with your Divocakos logo and name, the logo's rights in CREDITS.md (D-153), and the `layout` suite (D-154)
 - [ ] **Weapons and models** (D-155 to D-164): first-person guns never poke through walls (a separate viewmodel layer, as in CS and CoD); every class holds every weapon correctly (grip and off-hand, pistols, knife, grenades); reloads match each weapon's reload time in first and third person, with the sounds on cue. Checks that measure hand-to-grip distances
   1. [x] **The viewmodel in its own layer** (D-155): viewmodel shaders with their own field of view and the nearest sliver of the depth buffer, in the world's own low-res image (pixel look, palette and lights kept). New suite `holds`: every class × weapon draws in the layer; pressed against a wall, the gun reaches past it but stays in front
   2. [x] **Every class holds every weapon right** (D-156, D-157): a left-hand IK on every body and aim poses every 20° (the left hand was up to 34.6 cm off the gun in blended poses, now at most 0.9 cm); in first person each class's left shoulder reaches every long gun (it was 17 cm short on the Breaker). The guns' points are nodes in their models. Contact sheets per weapon (`tools/hold_sheet.gd`)
@@ -546,7 +547,7 @@ The class draft (two random classes offered each match) and the random map weapo
 
 **Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
 
-- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files, licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
+- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files (the Divocakos logo and name stay all rights reserved, outside CC BY-NC-SA: docs/CREDITS.md), licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
 - [ ] **Clean for public:** no personal paths (`/Users/...`) or anything private in the repo; a public README for players and contributors
 - [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows
 - [ ] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide

@@ -13,6 +13,19 @@
 
 **Next:** checks and the full run.
 
+## 2026-10-16 — M11 UI fit
+
+**Done**
+- The UI scale is the tighter of width / 1280 and height / 720, in half steps from 1.0 up (D-151): at your 2920 × 1753 it is 2×, and the Play screen is whole. It re-applies on every resize and fullscreen switch (`Window.size_changed`, already wired in the game and the main menu).
+- The Play screen's three cards no longer widen with their text: the page needed 1338 design pixels, now 894. That was the other half of the cut-off.
+
+- The loading band no longer covers the class draft: the draft opens when the band has hidden (D-152), and a launched map's band is shown before the map spawns.
+
+- The boot screen exists (D-153): once per run, any key skips it. It shows your Divocakos logo (the laughing watermelon, 112 × 112) at whole multiples with the name under it; the main menu has the small mark in the corner and "Build M10 · Divocakos" in the footer. Logo and name: all rights reserved, outside the CC BY-NC-SA plan (docs/CREDITS.md). `tools/make_studio_logo.py` makes the two picture files.
+- New suite `layout` (14 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
+
+**Next:** your check: look at the Play screen in the editor's game view at 2920 × 1753. M12 writes the logo's rights into the licence files.
+
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
 **Done**
