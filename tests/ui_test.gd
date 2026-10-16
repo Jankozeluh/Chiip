@@ -1058,16 +1058,16 @@ func _test_scoreboard() -> void:
 
 	# The column titles: an empty 32 px column for the class icon, PLAYER, K, D, A (64 px each) and DMG (96), right-aligned, in MUTE, 32 high.
 	var title_labels := titles.find_children("*", "Label", true, false)
-	var expected_titles: Array = ["Player", "K", "D", "A", "DMG"]
+	var expected_titles: Array = ["Player", "K", "D", "A", "DMG", "ADR"]
 	if _rounds.has_economy():
 		expected_titles.append("Money")
 	var title_texts: Array = title_labels.map(func(label: Node) -> String: return (label as Label).text)
 	var title_widths: Array = title_labels.map(func(label: Node) -> float: return (label as Label).size.x)
 	var title_icon := titles.find_child("Icon", true, false) as Control
-	_check("The column titles are 32 high and in MUTE: a 32 px column for the class icon, then PLAYER, K, D, A and DMG; K, D and A are 64 px wide and DMG 96 (Money, 96, is M7's, for your team's cash), numbers right-aligned",
+	_check("The column titles are 32 high and in MUTE: a 32 px column for the class icon, then PLAYER, K, D, A and DMG; K, D and A are 64 px wide and DMG 96 (ADR, 64, is M14's, for rounds matches; Money, 96, is M7's, for your team's cash), numbers right-aligned",
 			title_texts == expected_titles and titles.size.y == 32.0 and title_icon.size.x == 32.0
 					and title_labels.all(func(label: Node) -> bool: return (label as Label).theme_type_variation == &"MuteLabel" and (label as Label).get_theme_color("font_color") == Tokens.MUTE)
-					and title_widths.slice(1, 4) == [64.0, 64.0, 64.0] and title_widths[4] == 96.0
+					and title_widths.slice(1, 4) == [64.0, 64.0, 64.0] and title_widths[4] == 96.0 and title_widths[5] == 64.0
 					and title_labels.slice(1).all(func(label: Node) -> bool: return (label as Label).horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT),
 			"titles %s, widths %s, height %.0f" % [title_texts, title_widths, titles.size.y])
 
@@ -1288,9 +1288,9 @@ func _test_match_end_screen() -> void:
 	var all_rows: Array = rows0 + rows1
 	var muted := _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
 	var title_labels := titles.find_children("*", "Label", true, false)
-	_check("The table is the mockup's compact one: 800 wide, centred, 224 from the top, titles 28 high (PLAYER, K, D, A, DMG: no money column here), a 2 px line in your colour and 36 high rows with nothing between them, a 2 px line in the enemy's colour 12 px under your last row, and nobody muted although the three enemies are dead",
+	_check("The table is the mockup's compact one: 800 wide, centred, 224 from the top, titles 28 high (PLAYER, K, D, A, DMG, ADR: no money column here), a 2 px line in your colour and 36 high rows with nothing between them, a 2 px line in the enemy's colour 12 px under your last row, and nobody muted although the three enemies are dead",
 			table.size.x == 800.0 and absf(table.get_global_rect().get_center().x - view.x / 2.0) <= 0.5 and table.global_position.y == 224.0
-					and titles.size.y == 28.0 and title_labels.map(func(label: Node) -> String: return (label as Label).text) == ["Player", "K", "D", "A", "DMG"]
+					and titles.size.y == 28.0 and title_labels.map(func(label: Node) -> String: return (label as Label).text) == ["Player", "K", "D", "A", "DMG", "ADR"]
 					and friendly_line.size.y == 2.0 and enemy_line.size.y == 14.0
 					and friendly_line.global_position.y == titles.global_position.y + 28.0
 					and all_rows.all(func(row: Control) -> bool: return row.size.y == 36.0)

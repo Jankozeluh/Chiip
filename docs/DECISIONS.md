@@ -2035,6 +2035,30 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** An ADR for respawn matches too, with a "round" of 60 seconds or a life (invented units that look like CS's but mean something else); counting a shotgun pull as one shot that hits when any pellet lands (a 9-pellet blast and a 1-pellet shot would look the same, and the Breaker's accuracy would be flattering and unlike the zone counts); head hits per kill instead of kills with a headshot (HS % is the number CS players know).
 
+## D-202 — Recording: you only, finished matches only, the scoreboard's own numbers (2026-10-16)
+
+**Decision:** `StatsRecorder` (`systems/stats_recorder.gd`) is added by `main.gd` under the rules of every match (rounds and Team respawn, offline and online; practice has no rules to record) and saves one `StatsMatch` when `RoundManager.match_ended` comes.
+- **It watches only you** (the map's Player): your **bullets** from `Weapon.fired` of the gun in your hand (following `Character.weapon_changed`, like the HUD does), your **hits** from `Character.damaged` of every other character (a new `RoundManager.participant_joined` signal tells it about bots and friends arriving, on the host and on a client), your **headshot kills** from `character_killed`, and the time played. A hit counts only on an enemy and only for a gun (the knife, grenades, teammates and yourself don't), in the gun's own row, by zone.
+- **Kills, deaths, assists and damage are read from the rules' scoreboard numbers** at the end (`RoundManager.get_stats`; online the host's, sent by STATS events long before the match ends, because a round ends several seconds after its last kill), so the history and the match-end screen always say the same. A teamkill takes a point off the scoreboard's kills; the history never goes below 0.
+- **Only finished matches are saved.** Leaving a match (Esc → Leave, Main menu), the host ending it, or closing the game saves nothing; the numbers of a match nobody finished would skew the averages.
+- **`RoundManager.get_rounds_played()`** (the rounds won by both teams; 0 in Team respawn) is the round count behind ADR. Round matches' scoreboards (Tab and the match end) get an **ADR column** after DMG: the damage over the rounds played, and in the first round the damage so far; Team respawn has none (D-201).
+- **Tests and tools can't write your file:** the book saves only once it has been loaded, and `main.gd` loads it under the same two guards as the settings (`load_settings`, and no `--no-settings`). `statsrec_test` plays real shots and whole matches in memory and checks the real file's checksum.
+
+**Why:** Recording at the player level (not the match level) gives per-weapon accuracy and zone counts that no scoreboard has, while reading the final kills and damage from the scoreboard avoids two sources that could disagree by one. Saving only finished matches keeps "a match" meaning one thing.
+
+**Alternatives:** Recording every player's shots (the host sees them all, but the stats are yours and a friend's numbers aren't yours to keep); counting kills and damage in the recorder itself (a second tally that could differ from the scoreboard, e.g. on a client that missed an event); saving a partial record when you leave (half a match's ADR and K/D, and no result); the recorder as an autoload (one more global; the game scene already owns the rules it watches).
+
+## D-203 — Online: each player records their own stats from what the host announced (2026-10-16)
+
+**Decision:** Nothing about your stats is sent anywhere. The client's recorder is the same code as the host's and the offline one, fed by what the host announces: damage through the `DAMAGED` event (which now also carries the weapon's index as a seventh value, as `KILLED` already did for the kill feed's icon; a client sets `last_damage_source` from it before applying the damage, and an older host that doesn't send it makes the recorder credit the gun the player fired last), kills through `KILLED`, the scoreboard numbers through `STATS`, the end through `MATCH_ENDED`. Bullets are your own, counted on your computer when you fire (the client predicts its shots).
+- So a hit the host didn't decide (a shot the host's lag compensation judged a miss, a pellet it didn't count) is **not a hit in your stats** either: the accuracy is the host's verdict, not your screen's.
+- Each player's file is their own; the host's file records the host's match, the friend's the friend's. `statsrec_test` plays a host and a client in one process, each with a book of its own: the client's real shots, the host's announced hits, one record with the host's kills and damage.
+- The protocol change is one appended value, read only when present (`values.size() > 6`): old and new builds still talk. `netsec`/`net*` suites pass unchanged.
+
+**Why:** Letting the host decide is the game's rule everywhere else (D-100 to D-114), and it keeps a client from padding its stats; copying the kill feed's weapon field was the smallest way to know which gun a hit came from (the other way, guessing from what the player holds, credits a knife stab to the rifle).
+
+**Alternatives:** The client counting its own predicted hits (it would see hits the host later rejects, and its accuracy would differ from the host's view of the same match); a new "stats" message at the match end (more protocol, and a place to cheat); guessing the weapon from the one in hand (wrong for grenades and anything after a quick switch).
+
 ## Open questions
 
 | Question | Decide in |

@@ -35,12 +35,13 @@ extends VBoxContainer
 const ICON_COLUMN_WIDTH := 32.0
 ## Width of the kills, deaths and assists columns.
 const NUMBER_COLUMN_WIDTH := 64.0
-## Width of the damage column, and of the money column when it is shown.
+## Width of the damage column, and of the money column when it is shown (ADR is a number column).
 const WIDE_COLUMN_WIDTH := 96.0
 ## The titles of the columns after the player's name.
 const STAT_TITLES: Array[String] = ["K", "D", "A", "DMG"]
-## The title of the name column, and of the money column.
+## The title of the name column, of the ADR column (rounds matches only, M14, D-201) and of the money column.
 const PLAYER_TITLE := "Player"
+const ADR_TITLE := "ADR"
 const MONEY_TITLE := "Money"
 ## The height of the titles and of a player's row on the Tab scoreboard.
 const TITLES_HEIGHT := 32.0
@@ -94,7 +95,7 @@ func refresh() -> void:
 		return
 	var order: Array[int] = [Teams.viewer_team, Teams.other(Teams.viewer_team)]
 	var sorted_members := {}
-	var signature: Array = [_manager.get_participants().size()]
+	var signature: Array = [_manager.get_participants().size(), _manager.get_rounds_played()]
 	for team in order:
 		var members := _sorted_members(team)
 		sorted_members[team] = members
@@ -176,6 +177,8 @@ func _clear() -> void:
 func _make_titles() -> PanelContainer:
 	var cells: Array[String] = [PLAYER_TITLE]
 	cells.append_array(STAT_TITLES)
+	if _shows_adr():
+		cells.append(ADR_TITLE)
 	if _shows_money():
 		cells.append(MONEY_TITLE)
 	var titles := _make_row(cells, &"RowPanel", &"MuteLabel", COMPACT_TITLES_HEIGHT if compact else TITLES_HEIGHT, null, Color.WHITE)
@@ -212,6 +215,8 @@ func _add_team(team: int, members: Array[Character]) -> void:
 		var cells: Array[String] = [
 				shown_name,
 				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))]
+		if _shows_adr():
+			cells.append(str(roundi(StatsMath.average_damage_per_round(stats.damage, maxi(_manager.get_rounds_played(), 1)))))
 		if _shows_money():
 			cells.append(_money_text(member))
 		# A living player's icon is in their team's colour, a dead player's in LINE.
@@ -221,6 +226,12 @@ func _add_team(team: int, members: Array[Character]) -> void:
 		row.name = String(member.name)
 		box.add_child(row)
 		_rows[member] = row
+
+
+## True if the table has an ADR column: in a rounds match (Team respawn is one long round, D-201).
+## The first round's ADR is its damage so far; after that it is the damage over the rounds played.
+func _shows_adr() -> bool:
+	return is_instance_valid(_manager) and not _manager.is_team_respawn()
 
 
 ## True if the table has a money column (the overlay, in a match with money).
@@ -286,10 +297,23 @@ func _make_row(cells: Array[String], panel_variation: StringName, label_variatio
 		if i == 0:
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		else:
-			label.custom_minimum_size.x = WIDE_COLUMN_WIDTH if i >= STAT_TITLES.size() else NUMBER_COLUMN_WIDTH
+			label.custom_minimum_size.x = _column_width(cells, i)
 			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		line.add_child(label)
 	return row
+
+
+## The width of cell [param index] of a row made of [param cells]: kills, deaths, assists and ADR are
+## numbers, the damage and the money are wider. The cells in a row are the name, K, D, A, DMG, then ADR and
+## Money when they are shown, so the row's length tells which of them are there.
+func _column_width(cells: Array[String], index: int) -> float:
+	var money_index := cells.size() - 1 if _shows_money() else -1
+	var adr_index := STAT_TITLES.size() + 1 if _shows_adr() else -1
+	if index == adr_index:
+		return NUMBER_COLUMN_WIDTH
+	if index == money_index or index == STAT_TITLES.size():
+		return WIDE_COLUMN_WIDTH
+	return NUMBER_COLUMN_WIDTH
 
 
 ## The label with the player's name in [param row] (the first label of its line).

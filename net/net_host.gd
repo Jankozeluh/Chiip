@@ -638,7 +638,9 @@ func _on_phase_changed(phase: RoundManager.Phase) -> void:
 
 func _on_damaged(amount: float, zone: Hitbox.Zone, attacker: Character, victim: Character) -> void:
 	_stats_dirty = true
-	_broadcast([NetProtocol.Event.DAMAGED, victim.net_id, amount, zone, attacker.net_id if attacker != null else 0, victim.health])
+	# The weapon (as the kill feed's KILLED event has it) lets the shooter's stats credit the right gun (M14, D-203).
+	_broadcast([NetProtocol.Event.DAMAGED, victim.net_id, amount, zone, attacker.net_id if attacker != null else 0, victim.health,
+			NetProtocol.weapon_index(victim.last_damage_source)])
 
 
 func _on_died(_killer: Character, _victim: Character) -> void:

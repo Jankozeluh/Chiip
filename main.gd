@@ -103,6 +103,9 @@ func _ready() -> void:
 		var result := settings.load_from_disk()
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
+		# Your match history (M14) is read together with the settings, under the same guards, so a test
+		# that gave the settings a file of its own (or none) never makes the game touch the real stats.
+		StatsBook.get_instance().load_from_disk()
 	settings.changed.connect(_on_setting_changed)
 	_console.main = self
 	# Menu buttons tick and click (D-084).
@@ -335,6 +338,12 @@ func _spawn_map(scene: PackedScene) -> void:
 	_net_game = null
 	if net_session != null and rules is RoundManager:
 		_start_online(rules as RoundManager, player)
+	if rules is RoundManager:
+		# Records your shots and hits, and adds the match to your history when it ends (M14, D-202).
+		var recorder := StatsRecorder.new()
+		recorder.name = "StatsRecorder"
+		rules.add_child(recorder)
+		recorder.setup(rules as RoundManager, player, _map.scene_file_path.get_file().get_basename(), net_session != null)
 	# Hides the match-end screen of the previous map; it opens when this match ends,
 	# with "Next map" when there is a rotation.
 	_match_end_screen.set_round_manager(rules as RoundManager)

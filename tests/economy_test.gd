@@ -150,7 +150,7 @@ func _test_hud_and_scoreboard() -> void:
 	var your_cells := _cells(your_row)
 	var enemy_cells := _cells(enemy_row)
 	_check("The HUD shows your money and a line for each reward; the Tab scoreboard shows your team's money, not the enemy's",
-			shown and after and your_cells.size() == 6 and your_cells[5] == "$4000" and enemy_cells[5] == "",
+			shown and after and your_cells.size() == 7 and your_cells[6] == "$4000" and enemy_cells[6] == "",
 			"label '%s', rewards '%s', your row %s, enemy row %s" % [money.text, rewards.text.replace("\n", " | "), your_cells, enemy_cells])
 	await _new_match(_settings(), RespawnMatch.new())
 	hud.set_round_manager(_rounds)
