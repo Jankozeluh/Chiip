@@ -154,6 +154,8 @@ const PATHS: Array[String] = [
 ## Throw speeds in m/s: fire throws hard, the aim button lobs gently.
 @export var throw_speed: float = 15.0
 @export var lob_speed: float = 7.0
+## Played when the pin is pulled.
+@export var pin_sound: AudioStream
 
 @export_group("Model")
 ## The generated model (tools/modelgen/weapons.py, weapon space: grip at the origin, barrel

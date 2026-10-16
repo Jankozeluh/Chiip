@@ -1073,6 +1073,22 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** One rifle hold for everything (pistols and knives held like rifles); keyframing clips by hand per weapon (a lot of work, and they'd drift from the solver's); a separate AnimationTree per hold (nine graphs to keep in step); detaching the gun from the right hand for bolt and pump actions, as real viewmodels do (the gun hangs on the hand bone here, so the left hand works them).
 
+## D-097 — Grenades: CS's three, thrown by rays, flashes that blind bots too, smoke that hides from bots (2026-10-16) — *provisional*
+
+**Decision:**
+- **Throwing** (in `Weapon`, a branch on grenade data): fire or aim pulls the pin (0.3 s); letting go throws (fire: 15 m/s) or lobs (aim: 7 m/s) at CS's angle (10° above a level view, scaled toward straight up or down) plus 1.25 times the thrower's velocity, from 0.4 m in front of the eyes (pulled back before a wall). After 0.45 s the next grenade of the kind comes out, or after the last one the weapon held before (`Inventory.remove(weapon, true)`). Switching away with the pin pulled puts it back. The body plays its throw or lob, the hand is empty until the next draw.
+- **Flight** (`Grenade`): gravity 0.4 × 800 units/s² as in CS, a ray along each tick's move against the world and characters (not the thrower for 0.25 s), a bounce keeping 45% of the speed into the surface and 75% along it, resting on a floor below 0.25 m/s. Deterministic: no rigid body.
+- **Frag:** 1.6 s fuse; 98 damage falling off as a bell curve (σ 3 m, nothing past 9 m), measured to the chest; it needs a clear line to the chest or head (walls stop it, partly covered still counts); 57.5% through armor; the thrower's kill (`Character.take_damage()` with the frag as source). It can't kill a full-health player alone, as in CS.
+- **Flashbang:** 1.6 s fuse; everyone with a clear line within 45 m (teammates and the thrower too) gets up to 4.5 s, the last 2 s fading (`Character.flash()`, `get_flash_alpha()`; a stronger flash replaces a weaker one); strength by facing (full within about 45° of the view, down to 0.35 at 90°, 0.2 behind) times distance (full to 8 m, 0.35 at 45 m). The HUD whites out the view (also a spectated teammate's) and the player's ears ring; a bot that is more than half blind sees nobody (`BotSenses.can_see()`).
+- **Smoke:** pops once resting (after at least 1 s, at the latest 3.5 s) into a `SmokeCloud`: 14 low-poly grey puffs, growing over 1.2 s, gone after 18 s with the last 2 s thinning out. It blocks the bots' lines of sight through an ellipsoid 6.8 × 4 m (`Smokes.blocks()`), greys a camera inside it (`Smokes.density_at()`, the HUD's smoke overlay), and lets bullets through.
+- **Effects** (`Explosion`): a light and a swelling fireball, `GPUParticles3D` debris and a dark puff for the frag, a white burst for the flash; the generated sounds (pin, throw, bounce, explosion, pop, hiss, ringing).
+
+**Why:** CS's numbers and rules are what make utility worth its money: a frag that can't kill alone but finishes a fight, a flash that punishes looking at it and can blind your own team, a smoke that cuts a sightline for 18 s. Flight by rays gives the same bounce every time, for tests and M9's host. Blinding bots through the same `can_see()` keeps them fair (they're flashed exactly when a player would be), and the smoke check sits in that one place too.
+
+**Checked:** a new `tests/grenade_test.tscn` (14 checks): the pin held while fire is held, a throw at 15 m/s and 10°, the last frag giving way to the rifle, a lob at 7 m/s with the second flashbang coming out, a switch putting a primed grenade back; a bounce and rest on the floor and a bounce off a wall; a hurt player killed next to a frag, the falloff at 4 m and nothing at 11 m, armor's share and a wall stopping the blast, the thrower's kill; a flash's strength facing it (1.0), looking away (0.2) and at 38 m (0.47), nothing behind a wall, the player's screen white and a bot blind, both wearing off; a smoke hiding an enemy from a bot, a clear line beside it, grey inside it, gone after 18 s. All other suites pass.
+
+**Alternatives:** Rigid-body grenades (Jolt does the bounce, but not the same way twice); damage through walls with a falloff (CS's HE is mostly stopped by walls); flashes that spare the thrower's team (CS doesn't); a volumetric fog smoke (`FogVolume`: prettier, but needs volumetric fog in every map's environment and costs more); bullets stopped by smoke (not CS).
+
 ## Open questions
 
 | Question | Decide in |

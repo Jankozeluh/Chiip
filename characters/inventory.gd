@@ -136,8 +136,9 @@ func give(data: WeaponData, mag: int = -1, spare: int = -1) -> Weapon:
 
 
 ## Takes [param weapon] out of the inventory and frees it (a grenade kind used up, a gun dropped).
-## If it was in hand, the best weapon left is taken out (with its draw time).
-func remove(weapon: Weapon) -> void:
+## If it was in hand, the best weapon left is taken out (with its draw time), or with
+## [param back_to_last] the one held before it (after throwing the last grenade, as in CS).
+func remove(weapon: Weapon, back_to_last: bool = false) -> void:
 	if weapon == null or not _weapons.has(weapon):
 		return
 	var was_held := weapon == _character.weapon
@@ -151,7 +152,7 @@ func remove(weapon: Weapon) -> void:
 	weapon.queue_free()
 	changed.emit()
 	if was_held:
-		hold(get_best())
+		hold(_last if back_to_last and _last != null and _weapons.has(_last) else get_best())
 
 
 ## Empties the inventory: nothing in hand.

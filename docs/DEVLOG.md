@@ -15,7 +15,9 @@
 
 - **Task 7, holds and animations** (D-096): the generator now solves nine animation sets (each long gun around its own points, pistols two-handed out in front, the knife low with the blade up, the grenades at the chest): aim poses, a reload per gun (the Breaker a shell at a time), the pistol kick, knife slash and stab, grenade throw and lob for the body (93 clips per class), and idle, draw, fire, reload, pump, bolt, pin, throw and lob for the first-person arms (38). The animation graph switches the upper body by the held weapon; the knife and grenades sit in the fist with a hold offset. Checked with stick-figure renders and 5 new crew checks; all 20 suites pass (651 checks).
 
-**Next:** task 8 (grenades).
+- **Task 8, grenades** (D-097): CS's three. Fire pulls the pin and throws, aim lobs; they fly by rays with a light gravity and bounce. The Frag's blast falls off like a bell curve and walls stop it (98 at most, as in CS); the Flashbang blinds everyone who looks at it (a white screen and ringing ears for you, no sight for bots); the Smoke's 18 s cloud hides what's behind it from bots and greys your view inside it. Explosions with light, a fireball and particles. New `tests/grenade_test.tscn` (14 checks); all 21 suites pass.
+
+**Next:** task 9 (power weapons on the maps).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

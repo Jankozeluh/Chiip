@@ -26,6 +26,9 @@ signal died(killer: Character)
 signal footstep(loud: bool)
 ## Emitted after [method respawn] brings the character back.
 signal respawned
+## Emitted when a flashbang blinds the character: fully white for [param full] seconds, then
+## fading for [param fade] (D-097).
+signal flashed(full: float, fade: float)
 ## Emitted when the weapon in hand changes ([member weapon]; null when there is none). Whatever
 ## follows the held weapon (HUD, body, bot brain) reconnects to the new one.
 signal weapon_changed(weapon: Weapon)
@@ -144,6 +147,12 @@ var has_defuse_kit: bool = false
 ## (kill rewards and the kill feed's icon).
 var last_damage_source: WeaponData
 
+## Blindness from a flashbang (D-097): seconds of full white left, then seconds of fading left
+## out of how long the fade is. Counted in physics ticks.
+var _flash_full_left: float = 0.0
+var _flash_fade_left: float = 0.0
+var _flash_fade_time: float = 0.0
+
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
 
@@ -210,6 +219,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_update_flash(delta)
 	if _respawned_this_tick:
 		_respawned_this_tick = false
 		return
@@ -303,6 +313,26 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character, armor_pe
 	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## Blinds the character for [param full] seconds of white and [param fade] more seconds of fading,
+## unless it's already blind for longer (a flashbang, D-097). Bots see nothing while it's thick.
+func flash(full: float, fade: float) -> void:
+	if not is_alive() or full + fade <= _flash_full_left + _flash_fade_left:
+		return
+	_flash_full_left = full
+	_flash_fade_left = fade
+	_flash_fade_time = fade
+	flashed.emit(full, fade)
+
+
+## How white the view is: 1 fully blind, fading to 0.
+func get_flash_alpha() -> float:
+	if _flash_full_left > 0.0:
+		return 1.0
+	if _flash_fade_left > 0.0 and _flash_fade_time > 0.0:
+		return _flash_fade_left / _flash_fade_time
+	return 0.0
 
 
 ## Gives the character [param points] of armor (clamped to 0–100) and, with [param helmet], a
@@ -469,6 +499,8 @@ func respawn(at: Vector3, yaw: float) -> void:
 	velocity = Vector3.ZERO
 	health = max_health
 	busy = false
+	_flash_full_left = 0.0
+	_flash_fade_left = 0.0
 	is_crouching = false
 	_set_crouch_hull(false)
 	_eye_height = stand_eye_height
@@ -484,6 +516,13 @@ func respawn(at: Vector3, yaw: float) -> void:
 	inventory.refill()
 	reset_physics_interpolation()
 	respawned.emit()
+
+
+func _update_flash(delta: float) -> void:
+	if _flash_full_left > 0.0:
+		_flash_full_left = maxf(_flash_full_left - delta, 0.0)
+	elif _flash_fade_left > 0.0:
+		_flash_fade_left = maxf(_flash_fade_left - delta, 0.0)
 
 
 func _die(killer: Character) -> void:

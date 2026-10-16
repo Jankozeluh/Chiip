@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/weapons/frag.png" id="icon"]
 [ext_resource type="Texture2D" path="res://assets/ui/weapons/frag_kill.png" id="kill_icon"]
 
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/grenade_throw.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/grenade_pin.wav" id="pin_sound"]
 [resource]
 script = ExtResource("weapon_data_script")
 id = &"frag"
@@ -41,3 +43,5 @@ icon = ExtResource("icon")
 kill_icon = ExtResource("kill_icon")
 anim_set = &"grenade"
 hold_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -0.005)
+shot_sound = ExtResource("shot_sound")
+pin_sound = ExtResource("pin_sound")

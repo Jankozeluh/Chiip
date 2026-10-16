@@ -98,7 +98,7 @@ Starting physics values, CS:GO-like *(tune)*:
   | Legs | 26.8 | 25.3 |
 
   A headshot kills an unarmored player (100 HP) at any distance on the range. Damage is shown rounded down, as in CS.
-- **Armor** reduces body damage, and a **helmet** reduces headshot damage (CS:GO's rule, D-093): see 4.10.
+- **Armor** reduces body damage, and a **helmet** reduces headshot damage (CS:GO's rule, D-093): see 4.11.
 - Later (backlog): wallbangs (shooting through thin surfaces) and tagging (getting hit slows you down).
 
 ### 4.3 Weapons
@@ -283,7 +283,17 @@ Four classes, each with its own look and **one passive perk** (D-052). Classes d
 - **Team colour** is painted at runtime: every class wears a neutral kit (olive-grey, charcoal, stone grey, moss; never desert tones, D-031) with team-colour parts: **sleeves on every class**, plus the class's own marks (shirt or jacket, helmet stripe, plate edges, scarf, back panel). They show blue on your team and red on the enemy team (D-041), and cover 11–23% of the body from every side (D-070). The names are final.
 - **Hit zones follow each body** (D-055, D-074, D-077): the Bulwark is the biggest target and the Scout the smallest (total zone volume Scout 132 L, Marksman 173 L, Rifleman 223 L, Bulwark 484 L, since the Bulwark's shoulder plates and ammo pack count as chest). Perks balance the difference. The zones are boxes on the body's bones (15 per class: head, chest, stomach, and one box per arm and leg bone), measured from the model's own parts, so they move with the animation. **Eye height stays the same for every class** (CS's 64 units standing, 46 crouched), and so does the collision hull, so cover and peeking work the same for everyone; a taller class shows its head above cover a little before it can see over it, and the Scout a little after.
 
-### 4.10 Armor
+### 4.10 Grenades
+
+CS's grenades (D-097) *(tune)*. You carry at most 1 Frag, 2 Flashbangs and 1 Smoke (4 in all); **4** takes one out (again: the next kind).
+
+- **Throwing:** press fire (or aim) to pull the pin (0.3 s); the grenade leaves your hand when you let go. **Fire throws** hard (15 m/s), **aim lobs** gently (7 m/s); either way 10° above where you look (when you look level; less looking up), plus your own movement (×1.25). After the last one of a kind, the weapon you held before comes out. Switching away with the pin pulled puts it back.
+- **Flight:** a light gravity (0.4 of the world's, as in CS), bouncing off walls, floors and people (losing half its speed into the surface each bounce), then rolling to a stop.
+- **Frag** (high explosive): goes off 1.6 s after the throw. 98 damage at the middle, falling off like a bell curve (about 87 at 1.5 m, 59 at 3 m, 13 at 6 m, nothing past 9 m). Walls stop it (it needs a clear line to your chest or head). Armor lets 57.5% through. Alone it can't kill a full-health player, as in CS. It hurts its thrower and, with friendly fire on, teammates; the kill is the thrower's, with the Frag in the kill feed.
+- **Flashbang:** goes off 1.6 s after the throw. Everyone with a clear line to it is blinded (teammates and the thrower too): up to 4.5 s, white at first and fading over the last 2 s. Full strength when you look toward it (within about 45°), less from the side, only a short flash when it's behind you; full up to 8 m, a third at 45 m, nothing farther or behind a wall. Your screen goes white and your ears ring; a blinded bot sees nothing (it can't notice or keep sight of anyone) until it fades.
+- **Smoke:** pops where it comes to rest (at least 1 s after the throw; at the latest after 3.5 s) into a grey cloud about 7 m across and 3 m high for **18 s**: it grows over a second and thins out over the last two. Bots can't see through it; inside it your view goes grey. Bullets pass through, as in CS.
+
+### 4.11 Armor
 
 CS:GO's rule (D-093), the same for every hit, in `Armor`:
 

@@ -459,11 +459,13 @@ func _on_weapon_changed(weapon: Weapon) -> void:
 			_weapon.reload_started.disconnect(_on_reload_started)
 	if _weapon != null and is_instance_valid(_weapon) and _weapon.shell_loading.is_connected(_on_shell_loading):
 		_weapon.shell_loading.disconnect(_on_shell_loading)
+		_weapon.drawn.disconnect(_on_weapon_drawn)
 	_weapon = weapon
 	if weapon != null:
 		weapon.fired.connect(_on_fired)
 		weapon.reload_started.connect(_on_reload_started)
 		weapon.shell_loading.connect(_on_shell_loading)
+		weapon.drawn.connect(_on_weapon_drawn)
 	var data := weapon.data if weapon != null else _NO_GUN
 	if data != _gun_data:
 		_show_gun(data)
@@ -489,6 +491,8 @@ func _on_fired(_spray_shot: int) -> void:
 		if attack != "":
 			_tree.set("parameters/AttackKind/transition_request", attack)
 			_tree.set("parameters/Attack/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+			if attack.begins_with("grenade"):
+				_set_gun_shown(false)
 		else:
 			_tree.set("parameters/Fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	if _gun_flash != null:
@@ -511,6 +515,17 @@ func _on_reload_started() -> void:
 	if not RELOAD_CLIPS.has(clip):
 		return
 	_play_reload(clip, duration)
+
+
+## A weapon is taken out (also the next grenade after a throw): its model is back in the hand.
+func _on_weapon_drawn() -> void:
+	_set_gun_shown(true)
+
+
+func _set_gun_shown(on: bool) -> void:
+	var model := get_gun_model()
+	if model != null:
+		model.visible = on
 
 
 ## The next shotgun shell goes in.

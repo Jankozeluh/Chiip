@@ -11,6 +11,10 @@ const LOW_AMMO_FRACTION := 0.25
 const LOW_AMMO_COLOR := Color(1.0, 0.4, 0.3)
 ## Health at or below this is shown in red.
 const LOW_HEALTH := 25.0
+## The ringing in your ears after a flashbang (D-097), as loud as the flash was strong.
+const FLASH_RING := preload("res://assets/sounds/flash_ring.wav")
+## How grey the view gets inside a smoke cloud at its thickest (1 = nothing shows through).
+const SMOKE_OPACITY := 0.97
 ## Seconds the weapon list shows after a change, and how long it then takes to fade.
 const SLOTS_SHOW_TIME := 2.5
 const SLOTS_FADE_TIME := 0.5
@@ -30,6 +34,7 @@ var _watched_weapon: Weapon
 var _slots_show_left: float = 0.0
 ## The player is dead: no crosshair until the respawn.
 var _player_dead: bool = false
+var _ring_audio: AudioStreamPlayer
 
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _ammo_label: Label = $AmmoLabel
@@ -38,6 +43,8 @@ var _player_dead: bool = false
 @onready var _armor_icon: ArmorIcon = $ArmorIcon
 @onready var _slots_label: Label = $SlotsLabel
 @onready var _scope_overlay: ScopeOverlay = $ScopeOverlay
+@onready var _smoke_overlay: ColorRect = $SmokeOverlay
+@onready var _flash_overlay: ColorRect = $FlashOverlay
 @onready var _armor_label: Label = $ArmorLabel
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
@@ -48,6 +55,7 @@ var _player_dead: bool = false
 ## Shows this player's weapon on the HUD.
 func set_player(new_player: Character) -> void:
 	player = new_player
+	player.flashed.connect(_on_player_flashed)
 	player.died.connect(_on_player_died)
 	player.respawned.connect(_on_player_respawned)
 	_crosshair.camera = player.get_camera()
@@ -110,6 +118,14 @@ func _process(delta: float) -> void:
 	if _slots_show_left > 0.0:
 		_slots_show_left -= delta
 		_slots_label.modulate.a = clampf(_slots_show_left / SLOTS_FADE_TIME, 0.0, 1.0)
+	# Blinded by a flashbang: white, fading (also a spectated teammate's). Inside smoke: grey.
+	var flash := shown.get_flash_alpha() if shown != null and is_instance_valid(shown) else 0.0
+	_flash_overlay.color.a = flash
+	_flash_overlay.visible = flash > 0.0
+	var camera := player.get_camera() if player != null and is_instance_valid(player) else null
+	var smoke := Smokes.density_at(camera.global_position) * SMOKE_OPACITY if camera != null else 0.0
+	_smoke_overlay.color.a = smoke
+	_smoke_overlay.visible = smoke > 0.0
 	# A scope shows its own view; a sniper rifle has no crosshair unscoped either, as in CS.
 	var weapon := shown.weapon if shown != null and is_instance_valid(shown) else null
 	_scope_overlay.visible = weapon != null and weapon.is_scoped()
@@ -218,6 +234,19 @@ func _update_armor() -> void:
 	_armor_label.modulate = Color(1, 1, 1, 1.0 if shown.armor > 0.0 else ArmorIcon.EMPTY_ALPHA)
 	_armor_icon.points = shown.armor
 	_armor_icon.helmet = shown.has_helmet
+
+
+## Your ears ring after a flashbang, as long as it blinds you.
+func _on_player_flashed(full: float, fade: float) -> void:
+	if Weapon.silent or DisplayServer.get_name() == "headless":
+		return
+	if _ring_audio == null:
+		_ring_audio = AudioStreamPlayer.new()
+		_ring_audio.stream = FLASH_RING
+		_ring_audio.bus = &"Effects"
+		add_child(_ring_audio)
+	_ring_audio.volume_db = linear_to_db(clampf((full + fade) / Grenade.FLASH_MAX, 0.2, 1.0))
+	_ring_audio.play()
 
 
 func _on_player_died(killer: Character) -> void:

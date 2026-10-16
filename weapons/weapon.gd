@@ -38,6 +38,8 @@ signal hit_landed(hit: Dictionary)
 signal zoom_changed(level: int)
 ## Emitted when a shotgun starts loading the next shell (after the first: [signal reload_started]).
 signal shell_loading
+## Emitted when the weapon is taken out (also a grenade after the one before it was thrown).
+signal drawn
 
 ## The generic weapon scene [method create] instantiates (loaded when needed: it uses this script).
 const SCENE_PATH := "res://weapons/weapon.tscn"
@@ -131,6 +133,18 @@ var _last_view_angles: Vector2 = Vector2.ZERO
 var _bob_phase: float = 0.0
 ## Seconds until a freshly drawn weapon can fire (see [method draw]).
 var _draw_left: float = 0.0
+## A grenade's state (D-097): ready, the pin being pulled, or just thrown.
+enum GrenadeState { READY, PRIMING, THROWN }
+## Seconds the pin takes to pull before a grenade can leave the hand, and the arm's recovery after.
+const PIN_TIME := 0.3
+const THROW_RECOVERY := 0.45
+## Where a throw leaves the hand: this far in front of the eyes (metres, CS: 16 units).
+const THROW_START := 0.4
+
+var _grenade_state: GrenadeState = GrenadeState.READY
+var _grenade_time: float = 0.0
+## The throw will be a lob (the aim button was held, not fire).
+var _grenade_lob: bool = false
 ## Arms handed over before the weapon was ready: [scene, material], put in by _ready.
 var _pending_arms: Array = []
 ## The aim button was held last tick (a scope step or a stab needs a fresh press).
@@ -178,13 +192,18 @@ static func create(weapon_data: WeaponData) -> Weapon:
 func draw(seconds: float) -> void:
 	_draw_left = maxf(seconds, 0.0)
 	_aim_was_held = aim_held
+	_grenade_state = GrenadeState.READY
+	_set_gun_visible(true)
 	_play_arms("draw", _draw_left)
+	drawn.emit()
 
 
 ## Puts the weapon away (on a switch): the trigger is let go and a reload in progress is lost,
 ## as in CS. Its ammo and recoil stay as they were.
 func holster() -> void:
 	_cycle_sound_left = -1.0
+	# A grenade with its pin pulled goes back in the pocket (it isn't thrown).
+	_grenade_state = GrenadeState.READY
 	trigger_held = false
 	aim_held = false
 	_reload_time_left = 0.0
@@ -370,6 +389,9 @@ func _physics_process(delta: float) -> void:
 	if data.is_melee():
 		_update_melee(aim_pressed)
 		_cooldown = maxf(_cooldown, 0.0)
+		return
+	if data.is_grenade():
+		_update_grenade(delta)
 		return
 	if is_reloading() and data.reload_per_shell and trigger_held and magazine > 0 and _trigger_released:
 		# Firing stops a shotgun's reload once a shell is in (CS).
@@ -715,6 +737,79 @@ func _class_factor(factor: StringName) -> float:
 	if _wielder == null or _wielder.class_data == null:
 		return 1.0
 	return float(_wielder.class_data.get(factor))
+
+
+# --- Grenades (D-097) ---
+
+
+## Fire or aim pulls the pin; letting go when it's out throws (fire) or lobs (aim). Then the arm
+## recovers, and the next grenade of the kind comes out, or the weapon held before.
+func _update_grenade(delta: float) -> void:
+	match _grenade_state:
+		GrenadeState.READY:
+			if (trigger_held or aim_held) and magazine > 0:
+				_grenade_state = GrenadeState.PRIMING
+				_grenade_time = PIN_TIME
+				_grenade_lob = aim_held and not trigger_held
+				_play(data.pin_sound, true)
+				_play_arms("pull")
+		GrenadeState.PRIMING:
+			_grenade_time -= delta
+			if trigger_held or aim_held:
+				_grenade_lob = aim_held and not trigger_held
+			elif _grenade_time <= 0.0:
+				_throw()
+		GrenadeState.THROWN:
+			_grenade_time -= delta
+			if _grenade_time <= 0.0:
+				_grenade_state = GrenadeState.READY
+				if magazine <= 0:
+					# The last of the kind: it leaves the inventory, the weapon held before comes out.
+					_wielder.inventory.remove.call_deferred(self, true)
+				else:
+					draw(_wielder.inventory.get_draw_time(data))
+
+
+## The grenade leaves the hand: a [Grenade] flies from in front of the eyes (never through a wall
+## right there), at the throw or lob speed, plus the thrower's own movement.
+func _throw() -> void:
+	var aim := _wielder.get_aim_angles()
+	var look := _direction_from_angles(aim.x, aim.y)
+	var eye := _wielder.get_eye_position()
+	var from := eye + look * THROW_START
+	var query := PhysicsRayQueryParameters3D.create(eye, from, PhysicsLayers.WORLD)
+	var wall := get_world_3d().direct_space_state.intersect_ray(query)
+	if not wall.is_empty():
+		from = wall.position - look * 0.1
+	var speed := data.lob_speed if _grenade_lob else data.throw_speed
+	Grenade.throw(_wielder.get_parent(), data, from, Grenade.throw_velocity(aim, speed, _wielder.velocity), _wielder)
+	magazine -= 1
+	last_attack = &"lob" if _grenade_lob else &"throw"
+	_play(data.shot_sound, true)
+	_play_arms("lob" if _grenade_lob else "throw")
+	_set_gun_visible(false)
+	_grenade_state = GrenadeState.THROWN
+	_grenade_time = THROW_RECOVERY
+	fired.emit(1)
+	ammo_changed.emit(magazine, reserve)
+	if _wielder.inventory != null:
+		_wielder.inventory.changed.emit()
+
+
+## True while a grenade's pin is being pulled or held, ready to throw.
+func is_priming() -> bool:
+	return _grenade_state == GrenadeState.PRIMING
+
+
+## Shows or hides the gun in the first-person hands (a thrown grenade is gone until the next).
+func _set_gun_visible(on: bool) -> void:
+	if _arms == null:
+		return
+	var mount := _arms.find_child("Gun", true, false) as Node3D
+	if mount != null:
+		var model := mount.get_child(0) as Node3D
+		if model != null and model != _muzzle_flash:
+			model.visible = on
 
 
 # --- The knife (D-095) ---
