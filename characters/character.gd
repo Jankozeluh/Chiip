@@ -42,6 +42,8 @@ const UNITS_TO_METRES := 0.0254
 const STEP_DISTANCE := 1.8
 ## Where the eyes (and a player's camera) end up after dying: close to the floor.
 const DEAD_EYE_HEIGHT := 0.35
+## How far other characters' footsteps can be heard, in metres (the FootstepAudio3D node's range).
+const FOOTSTEP_AUDIO_RANGE := 30.0
 
 @export_group("Speed")
 ## Top running speed with nothing in hand. CS: 250 units/s with the knife out.
@@ -471,8 +473,16 @@ func _update_footsteps(on_ground: bool, delta: float) -> void:
 	var loud := not is_crouching and speed > get_max_speed() * walk_speed_factor * 1.05
 	footstep.emit(loud)
 	if loud:
-		Noises.make_noise(global_position, Noises.FOOTSTEP_RANGE, self)
+		Noises.make_noise(global_position, get_footstep_range(), self)
 		_play_footstep()
+
+
+## How far (metres) this character's running steps can be heard: [constant Noises.FOOTSTEP_RANGE],
+## 70% of it for the Scout's Light Step (D-052, D-099). Bots hear it that far and the sound fades
+## out there for you too, so hearing stays symmetric (D-038's rule, with the Scout's exception).
+func get_footstep_range() -> float:
+	var factor := class_data.running_footstep_range_factor if class_data != null else 1.0
+	return Noises.FOOTSTEP_RANGE * factor
 
 
 ## Your own steps play in both ears; everyone else's come from where they are.
@@ -487,6 +497,8 @@ func _play_footstep() -> void:
 		_footstep_audio.play()
 	else:
 		_footstep_audio_3d.stream = sound
+		# The steps fade out where bots stop hearing them (shorter for the Scout's Light Step).
+		_footstep_audio_3d.max_distance = FOOTSTEP_AUDIO_RANGE * get_footstep_range() / Noises.FOOTSTEP_RANGE
 		_footstep_audio_3d.play()
 
 

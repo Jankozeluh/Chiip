@@ -55,6 +55,7 @@ func _run_all() -> void:
 	await _test_practice_mode()
 	await _test_class_menu()
 	await _test_main_scene()
+	await _test_perks()
 
 
 func _test_class_data() -> void:
@@ -478,6 +479,60 @@ func _test_main_scene() -> void:
 			player.class_data == ClassData.find(&"bulwark") and output.text.contains("only during freeze time") and not menu.is_open(),
 			"class %s" % player.class_data.id)
 	main.queue_free()
+	await _wait_ticks(2)
+
+
+## M7 (D-099): every perk works. The Rifleman's, the Bulwark's and the Marksman's have their own
+## checks in the guns and gear suites; here the Scout's Light Step, the class menu's loadouts, and
+## the class change of team respawn (any time, applied on the next respawn).
+func _test_perks() -> void:
+	Weapon.silent = true
+	_remove_map()
+	var scout := _add_bot(1, ClassData.find(&"scout"), Vector3(0, 0, -40))
+	var rifleman := _add_bot(1, ClassData.find(&"rifleman"), Vector3(4, 0, -40))
+	await _wait_ticks(2)
+	var scout_range := scout.get_footstep_range()
+	var rifleman_range := rifleman.get_footstep_range()
+	_check("The Scout's Light Step: its running steps carry 70% as far (for bots' ears and the sound alike)",
+			is_equal_approx(scout_range, Noises.FOOTSTEP_RANGE * 0.7) and is_equal_approx(rifleman_range, Noises.FOOTSTEP_RANGE),
+			"Scout %.1f m, Rifleman %.1f m" % [scout_range, rifleman_range])
+	scout.queue_free()
+	rifleman.queue_free()
+	var menu := MENU_SCENE.instantiate() as ClassMenu
+	add_child(menu)
+	var card_text := (menu.find_child("Weapon", true, false) as Label).text
+	_check("The class menu shows each class's loadout (where there's no money)", card_text.begins_with("Loadout: ") and card_text.contains("Sparrow"),
+			card_text)
+	# Team respawn: a class change in a live round waits for the next respawn, with that class's loadout.
+	var settings := _settings()
+	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+	settings.freeze_time = 0.5
+	settings.time_limit = 60.0
+	settings.respawn_delay = 0.5
+	_remove_map()
+	_map = MAP_SCENE.instantiate()
+	add_child(_map)
+	_player = _map.get_node("Player")
+	_silence(_player)
+	var respawn := RespawnMatch.new()
+	respawn.settings = settings
+	respawn.rng.seed = 3
+	_map.add_child(respawn)
+	menu.set_rules(respawn, _player)
+	await _wait_ticks(3)
+	await _wait_for_live(respawn)
+	var opens_live := menu.open()
+	var accepted := respawn.request_class(_player, ClassData.find(&"marksman"))
+	var waits := _player.class_data == ClassData.find(&"rifleman") and respawn.get_next_class(_player) == ClassData.find(&"marksman")
+	_player.take_damage(500.0, Hitbox.Zone.CHEST, null)
+	await _wait_ticks(int(0.7 * 128))
+	var applied := _player.is_alive() and _player.class_data == ClassData.find(&"marksman") and _player.weapon.data.id == &"sniper"
+	_check("Team respawn: the class menu opens in the live round, and the new class comes with the next respawn and its loadout",
+			opens_live and accepted and waits and applied, "opens %s, accepted %s, waits %s, applied %s" % [opens_live, accepted, waits, applied])
+	menu.close()
+	menu.queue_free()
+	_remove_map()
+	Weapon.silent = false
 	await _wait_ticks(2)
 
 

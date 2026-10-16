@@ -100,6 +100,9 @@ func can_open() -> bool:
 	# Not over the pause menu, the settings menu or any other open menu.
 	if MenuState.is_any_open() and not MenuState.is_open(self):
 		return false
+	if _rules is RespawnMatch:
+		# Team respawn: any time; the new class comes with the next respawn (D-099).
+		return (_rules as RespawnMatch).phase != RoundManager.Phase.MATCH_END
 	if _rules is RoundManager:
 		return (_rules as RoundManager).phase == RoundManager.Phase.FREEZE
 	return _rules is ArenaRules
@@ -180,7 +183,13 @@ func _fill_card(card: Control, index: int, data: ClassData) -> void:
 	(content.get_node("Role") as Label).text = data.role
 	(content.get_node("PerkName") as Label).text = data.perk_name
 	(content.get_node("Perk") as Label).text = data.perk_description
-	(content.get_node("Weapon") as Label).text = "Gun: %s" % data.signature_weapon
+	# The loadout it spawns with where there's no money (team respawn, practice); in rounds
+	# everyone starts with the knife and the Sparrow and buys (D-090).
+	var loadout: PackedStringArray = []
+	for weapon in data.loadout:
+		loadout.append(weapon.display_name)
+	(content.get_node("Weapon") as Label).text = "Loadout: %s" % ", ".join(loadout) if not loadout.is_empty() \
+			else "Gun: %s" % data.signature_weapon
 	# The look is too long for the card: it is the hover text.
 	(card.get_node("Select") as Button).tooltip_text = data.look
 
@@ -213,5 +222,5 @@ func _on_round_started(round_number: int) -> void:
 
 
 func _on_phase_changed(phase: RoundManager.Phase) -> void:
-	if phase != RoundManager.Phase.FREEZE:
+	if phase != RoundManager.Phase.FREEZE and not _rules is RespawnMatch:
 		close()

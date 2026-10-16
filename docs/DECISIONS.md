@@ -1120,6 +1120,16 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 
 **Alternatives:** Pickups anywhere on a timer like old arena shooters (more chaos, less CS); armor and grenade spots too (could come later); spots only in team respawn (rounds would lose the eco-round fight for a power weapon); a weapon icon over the spot instead of the name (the name reads in the font we have).
 
+## D-099 — Perks on, and bots that choose, buy, pick up and use the arsenal (2026-10-16) — *provisional*
+
+**Perks** (task 13): all four work, each read where its effect happens: the Rifleman's *Quick Hands* in the weapon's reload and the inventory's draw time (D-094, D-095), the Bulwark's *Plated* in `Character.take_damage()` (D-093), the Marksman's *Steady* in the scope (D-095), and now the Scout's *Light Step*: `Character.get_footstep_range()` is 70% of the usual 25 m, for the bots' hearing and the footstep sound's own range alike (the sound fades out where the bots stop hearing it, so hearing stays symmetric apart from this one exception, D-052). The class cards show each class's loadout ("Loadout: Ram, Sparrow, Knife, Frag"), and in team respawn the class menu works any time: a change in the live round waits for your next respawn, which brings that class's loadout (`RespawnMatch.request_class()`, `get_next_class()`). The perk values' group in `ClassData` lost its "applied from M7".
+
+**Why (perks):** The perks were designed in M6 and waited only for armor, scopes and slots. Keeping the Scout's footsteps quieter for players' ears as well as for bots' keeps D-038's promise (what bots hear, you hear). Changing class mid-match in team respawn is CoD's class change, and the next respawn is when a loadout can change without anyone switching guns in a fight.
+
+**Checked (perks):** 3 new class checks (the Scout's 17.5 m against the Rifleman's 25 m; the loadout on the card; a class change in a live team-respawn round waiting for the respawn and bringing the Heron). The other perks have their checks in the guns and gear suites.
+
+**Alternatives (perks):** The Scout's steps quieter only for bots (a hidden advantage you couldn't hear); class changes in team respawn only at the start.
+
 ## Open questions
 
 | Question | Decide in |

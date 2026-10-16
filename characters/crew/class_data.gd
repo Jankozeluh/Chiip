@@ -9,9 +9,9 @@ extends Resource
 ## The four classes are looked up through [method all] and [method find]. The numbers come from
 ## docs/GAME_DESIGN.md, section 4.9.
 ##
-## The perk values are only [i]stored[/i] for now: the perks switch on in M7, when armour, scopes
-## and weapon switching exist (D-052). Until then the classes differ in their looks and in the
-## size of their hit zones, and every perk factor of every class is applied nowhere.
+## The perks work from M7 (D-052, D-099): the Rifleman's reload and switch factors (in [Weapon] and
+## [Inventory]), the Bulwark's armor factors (in [method Character.take_damage]), the Marksman's
+## scope factors (in [Weapon]) and the Scout's footstep range ([method Character.get_footstep_range]).
 
 ## The class resources, in menu order. They are loaded when asked for (not preloaded: these
 ## files refer back to this script, and a preload would be a cycle).
@@ -55,7 +55,7 @@ const PATHS: Array[String] = [
 ## loadout instead ([member MatchSettings.round_loadout]).
 @export var loadout: Array[WeaponData] = []
 
-@export_group("Perk values (stored, applied from M7)")
+@export_group("Perk values")
 ## Multiplies the reload time. Rifleman: 0.85 (reloads 15% faster).
 @export var reload_time_factor: float = 1.0
 ## Multiplies the time to switch weapons. Rifleman: 0.85.

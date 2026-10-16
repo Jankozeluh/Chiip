@@ -25,7 +25,9 @@
 
 - **Task 12, defuse kits** (D-098): defenders buy a kit for $300 and defuse in 5 s (the bomb's `kit_check` hook); a kit icon on the HUD and "· kit" on your team's scoreboard rows; it lasts one round.
 
-**Next:** task 13 (class perks).
+- **Task 13, class perks** (D-099): the Scout's Light Step (running steps carry 70% as far, for bots and for your ears) completes the four perks; the class cards show each class's loadout; in team respawn you can change class any time and get it at your next respawn.
+
+**Next:** task 14 (bots buy, pick up and use the arsenal).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 
