@@ -2,6 +2,14 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M11 polish and M12 sharing planned
+
+**Done**
+- Your screenshot showed the UI cut off at 2920 × 1753: the UI scales by height only, so in a window narrower than 16:9 it's too wide. That's M11's first fix.
+- Planned M11 (UI scaling, weapons and models, optimization) and M12 (licences, a public repo, builds for Windows, Mac and Linux on GitHub Releases, online play through Tailscale), D-150.
+
+**Next:** the M11 and M12 sessions, merged into main as each finishes.
+
 ## 2026-10-16 — The roadmap is built
 
 **Done**

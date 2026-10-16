@@ -1641,6 +1641,25 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **`MapWeapons` with a fixed pool:** it puts guns at random places and is made for rounds.
 - **Leaving grenades to the buy menu:** the stands let you throw one after another without opening a menu.
 
+## D-150 — M11 polish and M12 sharing (2026-10-16)
+
+**Decision:**
+- **M11 Polish:** UI scaling for any window and fullscreen, weapons and models (no wall clipping, correct holds and reloads), optimization.
+- **M12 Share & playtest**, with your choices:
+  - **GPL-3.0** for the code and **CC BY-NC-SA 4.0** for art, models, maps and sounds
+  - builds on **GitHub Releases** from a **public repo**
+  - online play **only through Tailscale**, so nothing is opened on your router
+  - no Steam for now
+  - exports and the public repo only after your OK
+
+**Why:** In your words:
+- "when I expanded on the full screen it completely fucked up the UI"
+- guns must not go "through wall", "models are holding them correctly, reloading guns goes correctly"
+- "hrani s kamarady by melo jit zdarma i mimo mac" (playing with friends should be free and work beyond the Mac)
+- "repo chci verejne idealne ale chci to nasdilet nekam at si to muzem zahrat s kamosema … musi byt bezpecne nasdiletelne" (ideally a public repo, shared somewhere so friends can play it, and safe to share)
+
+**Alternatives:** MIT, or source-available only; itch.io with a restricted page; UPnP and direct-IP play (it opens a port on the host's router).
+
 ## Open questions
 
 | Question | Decide in |

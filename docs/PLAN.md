@@ -88,6 +88,8 @@ Things only you can check, kept here until done instead of moving from milestone
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | 🟨 built, waiting for your playtest | Play with friends over the LAN (one hosts), bots fill empty slots |
 | M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
+| M11 | Polish | ⬜ | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
+| M12 | Share & playtest | ⬜ | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -527,6 +529,24 @@ Not in this branch: the boot screen (it needs your studio logo as a file), the l
 The class draft (two random classes offered each match) and the random map weapons belong to M7.
 
 **Done when:** the three quick maps look furnished, a new map can be built from the kit by following the guide, and the menus look clean and modern.
+
+## M11 — Polish ⬜
+
+**Goal:** fix what playing showed, and make it run smoothly (D-150). Each part is planned in detail by its session.
+
+- [ ] **UI in any window and fullscreen** (D-151 to D-154). The UI scales by height only, so in a window narrower than 16:9 (your 2920 × 1753 screenshot) it ends up wider than the window and is cut off. Scale by whichever is tighter, width or height, re-apply on every resize and fullscreen switch, and add a layout test at several sizes (16:9, 16:10, 21:9, 4:3)
+- [ ] **Weapons and models** (D-155 to D-164): first-person guns never poke through walls (a separate viewmodel layer, as in CS and CoD); every class holds every weapon correctly (grip and off-hand, pistols, knife, grenades); reloads match each weapon's reload time in first and third person, with the sounds on cue. Checks that measure hand-to-grip distances
+- [ ] **Optimization** (D-165 to D-169): measure every map at 5v5 and as a LAN host (average frame rate and the worst 1 % of frames), find the hot spots (bot AI, vision rays, animation, shadows, physics), fix them, and add limits to the performance test
+
+## M12 — Share & playtest ⬜
+
+**Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
+
+- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files, licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
+- [ ] **Clean for public:** no personal paths (`/Users/...`) or anything private in the repo; a public README for players and contributors
+- [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows
+- [ ] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide
+- [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
 
 ## Backlog (ideas, not scheduled)
 
