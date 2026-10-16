@@ -566,6 +566,7 @@ The class draft (two random classes offered each match) and the random map weapo
 - [x] **Pre-release QA pass** (D-178): `docs/RELEASE_CHECKLIST.md`, the `qa` suite (every mode on every map), `tools/lan_check.sh` (three real processes over the LAN), two flaky tests fixed, a join timeout, `docs/KNOWN_ISSUES.md` and the v0.1.0 release notes (now the first section of `CHANGELOG.md`)
 - [x] **Contributing and credits:** `CONTRIBUTING.md` (how to submit a map as a pull request, how code and art contributions work, under which licence; maps are curated in the repo and ship with the next release) and the credit line "Created by JK · Divocakos" (D-176)
 - [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
+- [x] **v0.1.1 hotfix** (D-159): bullets went through everyone in the v0.1.0 build (the export dropped the hit zones). Fixed, and every build is now checked by shooting before it's packed (`tools/check_export.sh`). Released only after your OK
 
 ## M13 — Sound design ⬜
 

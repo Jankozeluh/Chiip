@@ -53,6 +53,12 @@ For practice on the Shooting Range (also straight into the game), add `-- --prac
 "$GODOT" --path "$PROJECT" -- --practice
 ```
 
+To check that shooting works (a shot each way at a bot on the range; it prints `Chiip hit check: PASS` or `FAIL` and quits with 0 or 1), add `-- --check-hits`. It works in an exported build too, which is what `bash tools/check_export.sh` runs (v0.1.1, D-159):
+
+```bash
+"$GODOT" --headless --path "$PROJECT" --quit-after 1500 -- --no-settings --check-hits
+```
+
 **Maps:** the three quick maps **Depot**, **Square** and **Spillway** (M8 layouts, dressed with the map kit in M10, see [docs/MAPS.md](MAPS.md)), the **Shooting Range** (practice) and the kit gallery (`-- --map res://maps/kit/kit_gallery.tscn`, everything in the map kit). The old test map is hidden from match setup and the console's map list: it is the automated tests' map, and still loads with `map test_map`. In the game, open the console and type `map depot`, `map square` or `map spillway`. On these maps a match is played as **bomb rounds**: one attacker carries the bomb; hold **E** inside site A or B to plant it, and as a defender hold E next to it to defuse (docs/GAME_DESIGN.md, 4.7).
 
 To play a different map (also straight into the game, as a match where the map allows it), add `-- --map` and the map scene, e.g. `-- --map res://maps/depot.tscn`, or the TrenchBroom comparison room:

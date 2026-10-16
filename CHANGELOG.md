@@ -2,6 +2,24 @@
 
 Every release of Chiip, newest first. The section of a version is the text of its GitHub Release (`docs/RELEASING.md`), and the website's Updates page shows it. Versions follow `config/version` in `project.godot`.
 
+## [0.1.1] - 2026-10-16
+
+**A fix for the first public playtest: bullets hit again.**
+
+**Created by JK · Divocakos.** © Divocakos.
+
+In 0.1.0 your bullets went through the enemies and hit the wall behind them, and theirs went through you: nobody could hurt anybody. The downloaded game lost every character's hit zones on the way from the project to the build (a default value in one script made the export drop the boxes' data); playing from the editor worked, so the tests didn't see it. Now every build is checked before it ships: the packaging plays a real shot each way in the exported game and stops if either does no damage.
+
+### Download
+
+| System | File |
+|---|---|
+| Windows 10 or newer, 64-bit | `Chiip-0.1.1-windows-x86_64.zip` |
+| macOS 11 or newer, Apple silicon and Intel | `Chiip-0.1.1-macos-universal.zip` |
+| Linux, 64-bit, with a Vulkan driver | `Chiip-0.1.1-linux-x86_64.zip` |
+
+Everything else is as in 0.1.0 below: unzip it anywhere and start Chiip, check the zip against `SHA256SUMS.txt`, and get past the unsigned-app warning as the [README](https://github.com/Jankozeluh/Chiip#download-and-run) says.
+
 ## [0.1.0] - 2026-10-16
 
 **The first public playtest.**
