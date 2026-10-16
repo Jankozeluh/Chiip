@@ -2,6 +2,25 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M11 optimization
+
+**Done**
+- **Measuring (D-165):** `tools/frame_timing.gd` now splits each frame into its parts (physics, scripts, drawing, the rest). It lists every spike with what was added to the scene in that frame and counts pipelines compiled while drawing (none). It also runs headless (a minute of play in ten seconds) and as a LAN host with a client it starts itself.
+- Found that all earlier frame timings had been taken during freeze time: the tool stopped waiting for the round at once.
+- **Round starts (D-166):** the bots' shopping reloaded every weapon file 83 times (`WeaponData.all()`). The shop and the network code now keep the arsenal loaded. perf_test's worst tick went from 106–153 ms to 18 ms. In a real match the buy menu already held the weapons, so there the round start stays at 14–20 ms (`Weapon.create()`, reported to the weapons session).
+- **LAN host (D-167):** lag compensation records the hit zones in 0.11 ms instead of 0.24 ms per tick.
+- **Limits in perf_test (D-168):** average tick under 2 ms, 99th percentile under 3.9 ms, no tick over 50 ms, and no pipeline compiled while drawing.
+- **Measured and left as is (D-169):** animation trees (0.15 ms per tick), sun shadows (no measurable GPU change), vision (0.01 ms), the client's traffic (23 KB/s up, 30 KB/s down), draw calls.
+- **Numbers** (Apple M5 on battery, 5v5, windowed runs with the window in front):
+  - Uncapped: 340–410 fps on every map at 1080p and at 2294 × 960 (the same world as 3440 × 1440), before and after alike.
+  - CPU per frame with a window: 0.4–0.6 ms on average, 2.5–3.3 ms at the 99th percentile.
+  - Headless: 0.6–0.8 ms per frame.
+  - The merge with main (viewmodel layer, left-hand IK) added 15–65 draw calls per map and no measurable CPU.
+- Merged main (the UI fit and the weapons and models). All 33 suites pass, 1084 checks.
+- Flaky under load from parallel sessions: netplay's spectating check once, and netrespawn's 240 s match once ended at 9–7 before reaching 15 kills. Both passed on rerun.
+
+**Next:** your check on the 3440 × 1440 monitor ("Your open checks"). The round start's weapon building is for the weapons session.
+
 ## 2026-10-16 — M11 weapons & models
 
 **Done**
@@ -29,6 +48,7 @@
 - New suite `layout` (16 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
 
 **Next:** your check: look at the Play screen in the editor's game view at 2920 × 1753. M12 writes the logo's rights into the licence files.
+
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

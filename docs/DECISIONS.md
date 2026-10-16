@@ -1748,6 +1748,90 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Drop the old magazine as a physics prop (CS doesn't; more objects each reload); animate the magazine in the generator as a bone (it would need a bone on every gun's skeleton, which guns don't have); write the moments into each clip as animation markers (glTF has no markers, and every clip shares the same moments anyway).
 
+## D-165 — How Chiip's speed is measured (2026-10-16)
+
+**Decision:** `tools/frame_timing.gd` splits every frame into its parts and is the one tool for frame times:
+- **The parts:** physics ticks (bots, movement, animation trees, the physics step), scripts (`_process`, the HUD), drawing, and the rest. Each part gets its average and 99th percentile.
+- **CPU over budget:** frames whose physics and scripts together take more than 8.33 ms (one frame at 120 Hz). Such a frame is late whatever the graphics card does.
+- **Spikes:** every frame over 12.5 ms (`--spike <ms>` changes the threshold), with the round's phase and what was added to the scene in that frame (`weapon_spot.tscn`, an explosion's lights and particles…). That names the moment that costs.
+- **Pipelines compiled while drawing:** Godot 4.4+ counts them, and they are the first-match stutter on a new computer. Chiip has none: 4.7 compiles new materials in the background.
+- **Three ways to run it:**
+  - with a window: the frame rate, the parts and the draw calls; `--vsync` keeps V-Sync on, as the settings do
+  - headless with `--fixed-fps 128`: the CPU side, about a minute of play in ten seconds
+  - `--lan`: a LAN host, with a second, headless game joining on the same computer
+
+**Why:**
+- The M8 version waited for the round to go live by counting `1 / frames per second`. While a map loads, the engine reports about 1 fps, so it stopped waiting at once, and every earlier number was measured during freeze time, with the bots standing still.
+- Its "process" column was the engine's monitor: the slowest frame of each second, including drawing and the wait for the display.
+- On macOS with V-Sync off, the system now and then holds a frame while it waits for the display. These show as 12–17 ms "draw" spikes, and a player with V-Sync on never gets them. So the slowest 1 % of frames with V-Sync off says little about stutter. The CPU parts and the spikes' causes do.
+- Metal reports no GPU times (neither `--gpu-profile` nor the viewport's measured render time), so the GPU's share is read from "draw" and the frame rate.
+
+**Alternatives:**
+- Godot's script profiler (`-d --profiling`). It prints only one frame a second, so it misses most spikes. It is still useful for one deterministic run, such as perf_test's round starts.
+- The editor's profiler: it needs clicking through by hand, and the numbers can't be compared from run to run.
+
+## D-166 — The shop and the network keep the arsenal loaded (2026-10-16)
+
+**Decision:** `Shop` builds its list of items once and keeps it (`Shop.items()` returns a copy, `Shop.find()` searches the kept list). `NetProtocol` keeps the arsenal in packet order and a table from weapon id to index. Neither calls `WeaponData.all()` again.
+
+**Why:** `WeaponData.all()` calls `load()` for every weapon file. When nothing else holds a weapon's data, that reloads it from disk: about 6 ms per call for the eleven weapons.
+- At every round start the bots' shopping called it 83 times (through `Shop.find`), and `Shop.items()` also reloaded three icons each time. In perf_test (no player, so no buy menu holding the weapons) that was a 153 ms tick. Now the worst tick is 17 ms and the average tick 0.59 ms (was 0.78).
+- In a real match the buy menu holds the weapons, so the gain there is smaller (round start 25 → 21 ms on Depot). But the network code named every character's weapon through `WeaponData.all()` in every snapshot (64 a second): 8 µs a call, now 0.2 µs.
+- Keeping the shop's list keeps the arsenal loaded, so `WeaponData.all()` is fast for every other caller as well.
+
+**Reported, not changed here:** `WeaponData.all()` itself should keep what it loads (`weapons/weapon_data.gd` belongs to the M11 weapons session).
+
+**Alternatives:** holding the weapons in `RoundManager`, which helps only offline rounds; a lookup by id in `WeaponData`, which is the weapons session's file.
+
+## D-167 — Lag compensation keeps each zone's box (2026-10-16)
+
+**Decision:** `LagCompensation.record()` finds each hit zone's box shape and half size once and keeps them on the zone as metadata (`lag_compensation_box`). Before, it searched the zone's children every tick. What is recorded is unchanged.
+
+**Why:** On a LAN host, recording took 0.15 ms of every 128 Hz tick (150 zones for ten characters), most of the 0.27 ms that being online adds to a 5v5 frame. Half of that was the search. Now record() takes 0.11 ms instead of 0.24 ms (both measured under the script profiler).
+
+**Alternatives:**
+- A dictionary from zone to box in `LagCompensation`. A freed zone's memory can be reused by a new one, and the entry would then point at a dead shape.
+- Recording every second tick. That halves the cost, but shots would be checked against poses interpolated over 15.6 ms instead of 7.8 ms, which changes hits.
+
+## D-168 — Limits in the performance test (2026-10-16)
+
+**Decision:** `tests/perf_test` (a seeded bots-only 5v5 on the test map, 20 s with two or three round starts) now checks:
+- the average tick under **2.0 ms** (was 3.9 ms; measured 0.6 ms)
+- 99 ticks in 100 under **3.9 ms** (was 7.8 ms; measured 0.9–1.6 ms)
+- **no tick over 50 ms**, round starts included (new; measured 17–20 ms, and 153 ms before D-166)
+- with `-- --window`, **no shader pipeline compiled in the middle of drawing a frame** (new)
+
+It also prints its five slowest ticks with the round's phase and time, so a failure says where to look.
+
+**Why:**
+- The old limits were about five times what the game uses, so a change could double the cost and still pass.
+- The new ones keep a margin of about three, which covers a busier computer: three sessions running suites at once measured up to 1.2 ms on average.
+- The worst-tick limit is the one that would have caught D-166's 153 ms round start. Neither of the old checks could, because a few slow ticks among 2,560 don't move the average or the 99th percentile.
+
+**Alternatives:**
+- Frame-rate limits: they depend on the monitor and on macOS's V-Sync (D-165).
+- A limit of 25 ms on the worst tick: the round start is 17–20 ms, which leaves too little margin.
+
+
+## D-169 — What was measured and left as it is (2026-10-16)
+
+**Decision:** These stay as they are. Each was measured on an Apple M5, 5v5, and costs too little to be worth a change to how the game plays or looks:
+- **Animation trees at 128 Hz for every character:** about 0.15 ms of a 0.8 ms tick for ten characters. Thinning them out for far or unseen characters would make their hit zones lag the bots' shots by a tick.
+- **The sun's four shadow cascades:** two cascades, or no shadows at all, changed the GPU's busy time by nothing measurable (30–32 % at 60 Hz). No lamp on the quick maps casts shadows.
+- **Bot vision every 0.1 s:** about 0.01 ms per tick on average (ten bots, two rays per enemy in view).
+- **The client's 128 commands a second:** 23 KB/s up for a 5v5 client and 30 KB/s down. That's fine for LAN and the internet. Sending two ticks per packet would halve the packets but delay every input by a tick (M12 can decide for Tailscale).
+- **Draw calls:** 120–300 per frame, depending on the map. The props aren't worth merging into MultiMeshes yet.
+
+**Reported to the sessions that own the code:**
+- The round start is now the slowest moment of a match, 14–20 ms in one tick on every map in rounds mode. Every character gets a new loadout, and `Weapon.create()` builds the whole weapon scene (17 nodes, the first-person model and four sound players) for bots too, about 0.45 ms per weapon.
+- A respawn costs 4–6 ms and a frag's explosion 4–7 ms (`weapons/explosion.gd`).
+- `WeaponData.all()` reloads the weapon files when nothing holds them (D-166).
+- These are in `weapons/` (the M11 weapons session's files) and in the shared notes.
+
+**Why:** The game holds a 120 Hz display with room to spare. Physics and scripts take 0.4–0.6 ms of a frame with a window and 0.6–0.8 ms headless. Uncapped, it draws 340–410 fps at 1080p and at the 3440 × 1440 world size. What players could feel were hitches, and the big one was D-166's.
+
+**Alternatives:** Spreading the round start over several ticks: the loadouts and the bots' purchases would come during the freeze time instead of at its start. That's a change to the rules' order that the round and economy tests check, for about 15 ms once a round.
+
 ## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
 
 **Decision:**

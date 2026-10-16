@@ -208,6 +208,12 @@ class Snapshot:
 	var has_pickups: bool = false
 
 
+## The arsenal in [method WeaponData.all] order and each weapon's index by its id, loaded once
+## by [method _load_weapons].
+static var _weapons: Array[WeaponData] = []
+static var _weapon_indexes: Dictionary = {}
+
+
 ## True for packets that travel reliably (they are never dropped by fake loss either).
 static func is_reliable(packet: PackedByteArray) -> bool:
 	return not packet.is_empty() and (packet[0] == Message.EVENT or packet[0] == Message.REQUEST)
@@ -339,14 +345,25 @@ static func flags_of(character: Character) -> int:
 static func weapon_index(data: WeaponData) -> int:
 	if data == null:
 		return NO_WEAPON
-	var index := WeaponData.all().map(func(other: WeaponData) -> StringName: return other.id).find(data.id)
-	return index if index >= 0 else NO_WEAPON
+	_load_weapons()
+	return _weapon_indexes.get(data.id, NO_WEAPON)
 
 
 ## The [WeaponData] of an index from [method weapon_index], or null.
 static func weapon_data(index: int) -> WeaponData:
-	var weapons := WeaponData.all()
-	return weapons[index] if index >= 0 and index < weapons.size() else null
+	_load_weapons()
+	return _weapons[index] if index >= 0 and index < _weapons.size() else null
+
+
+## Fills [member _weapons] and [member _weapon_indexes] the first time (D-165): every snapshot
+## names each character's weapon, and [method WeaponData.all] loads the weapons again whenever
+## nothing holds them.
+static func _load_weapons() -> void:
+	if not _weapons.is_empty():
+		return
+	_weapons = WeaponData.all()
+	for i in _weapons.size():
+		_weapon_indexes[_weapons[i].id] = i
 
 
 ## Writes the part of a snapshot that is the same for every client: the match, the bomb, every

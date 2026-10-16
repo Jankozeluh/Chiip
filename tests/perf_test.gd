@@ -12,9 +12,10 @@ extends Node
 ## start (the [signal SceneTree.physics_frame] signal) to the start of the frame's process step
 ## ([signal SceneTree.process_frame]), which covers what the tick costs: every node's physics
 ## code, the bots, the animation trees and skeletons, and the physics engine's step. The test
-## prints the average, the 99th percentile and the maximum in milliseconds, and checks that there
-## are ten characters, each with a running [AnimationTree], that the average tick takes under
-## half of a tick's 7.8 ms budget (3.9 ms), and that 99 ticks in 100 fit into the budget. A
+## prints the average, the 99th percentile, the maximum and the slowest ticks in milliseconds, and
+## checks that there are ten characters, each with a running [AnimationTree], and the limits of
+## M11 (D-168): an average tick under 2 ms, 99 ticks in 100 under 3.9 ms (half of a tick's 7.8 ms
+## budget), and no tick over 50 ms, round starts included. A
 ## headless run has a dummy renderer, so this measures the CPU side of the game only. Every random
 ## number is seeded, so every run plays the same match; the times are real, so they vary a little
 ## from run to run. Quits with the number of failed checks as the exit code (0 means everything
@@ -37,7 +38,8 @@ extends Node
 ## notes [method Engine.get_frames_per_second]; at the end it prints the average, the lowest and
 ## the list of those. There is no PASS or FAIL for the frame rate, since it depends on the
 ## computer and its monitor, but the timing checks above still run (with a real renderer, so the
-## times include what the skeleton updates cost it). No player means nothing captures the mouse.
+## times include what the skeleton updates cost it), and one more: no shader pipeline was compiled
+## in the middle of drawing a frame. No player means nothing captures the mouse.
 ## The scene quits itself when it is done: keep [code]--quit-after[/code] large, a frame limit
 ## would cut a fast computer's run short.
 ##
@@ -65,10 +67,15 @@ const FPS_SKIP_SECONDS := 3.0
 ## Where the windowed camera stands and what it looks at: a high corner and the middle of the map.
 const CAMERA_POSITION := Vector3(-30.0, 25.0, -30.0)
 const CAMERA_TARGET := Vector3(0.0, 0.0, 28.0)
-## A tick's budget is 1 / 128 s = 7.8 ms. On average the game may use half of it, and 99 ticks in
-## 100 must fit in it, whatever the computer does in between.
-const MAX_AVERAGE_MS := 3.9
-const MAX_P99_MS := 7.8
+## The limits (M11, D-168), from what an Apple M5 measured with a margin of about three for a
+## busier computer. A tick's budget is 1 / 128 s = 7.8 ms; the game used 0.6 ms on average,
+## 1.0–1.6 ms in 99 ticks of 100, and 17 ms in its slowest tick (a round start, when everyone gets a
+## new loadout). Before D-166 the round start took 153 ms: [constant MAX_TICK_MS] catches that.
+const MAX_AVERAGE_MS := 2.0
+const MAX_P99_MS := 3.9
+const MAX_TICK_MS := 50.0
+## How many of the slowest ticks are listed, with the round's phase and time when they ran.
+const SLOWEST_LISTED := 5
 
 var _map: Node3D
 var _rounds: RoundManager
@@ -90,6 +97,8 @@ var _previous_start_us: int = 0
 ## tick of a frame, of the process step), while settling and while measured.
 var _settle_ms: Array[float] = []
 var _physics_ms: Array[float] = []
+## For every measured tick: the round's phase and the seconds left in it ("LIVE 4.2 s").
+var _tick_moments: Array[String] = []
 ## Milliseconds from one tick's start to the next, tick and frame together. Only with
 ## [code]--fixed-fps[/code] (one tick per frame, no waiting between frames), so not in a windowed run.
 var _iteration_ms: Array[float] = []
@@ -235,6 +244,7 @@ func _on_drawing_started() -> void:
 func _record_tick(milliseconds: float) -> void:
 	if _settled():
 		_physics_ms.append(milliseconds)
+		_tick_moments.append("%s %.1f s" % [RoundManager.Phase.keys()[_rounds.phase], _rounds.time_left])
 	else:
 		_settle_ms.append(milliseconds)
 
@@ -260,6 +270,12 @@ func _finish() -> void:
 	var budget := 1000.0 / Engine.physics_ticks_per_second
 	print("Physics tick: average %.2f ms, 99th percentile %.2f ms, maximum %.2f ms over %d ticks (budget %.2f ms per tick)." % [
 			physics.average, physics.p99, physics.maximum, _physics_ms.size(), budget])
+	var order := range(_physics_ms.size())
+	order.sort_custom(func(a: int, b: int) -> bool: return _physics_ms[a] > _physics_ms[b])
+	var slowest: Array[String] = []
+	for i: int in order.slice(0, SLOWEST_LISTED):
+		slowest.append("%.2f ms (tick %d, %s left)" % [_physics_ms[i], i, _tick_moments[i]])
+	print("  The slowest ticks: %s." % ", ".join(slowest))
 	var settle := _stats(_settle_ms)
 	print("  The settling second before it (not checked): average %.2f ms, maximum %.2f ms over %d ticks." % [
 			settle.average, settle.maximum, _settle_ms.size()])
@@ -277,10 +293,16 @@ func _finish() -> void:
 	_check("%d characters play, each with a running animation tree" % (TEAM_SIZE * 2),
 			participants.size() == TEAM_SIZE * 2 and animated == TEAM_SIZE * 2,
 			"%d characters, %d animated" % [participants.size(), animated])
-	_check("The average physics tick takes under 3.9 ms (half of a 128 Hz tick)", physics.average < MAX_AVERAGE_MS,
+	_check("The average physics tick takes under %.1f ms (a quarter of a 128 Hz tick)" % MAX_AVERAGE_MS, physics.average < MAX_AVERAGE_MS,
 			"average %.2f ms over %d ticks (%.0f s)" % [physics.average, _physics_ms.size(), _physics_ms.size() / float(Engine.physics_ticks_per_second)])
-	_check("99 ticks in 100 take under 7.8 ms (a whole tick)", physics.p99 < MAX_P99_MS,
+	_check("99 ticks in 100 take under %.1f ms (half a tick)" % MAX_P99_MS, physics.p99 < MAX_P99_MS,
 			"99th percentile %.2f ms, maximum %.2f ms" % [physics.p99, physics.maximum])
+	_check("No tick takes over %.0f ms, round starts included" % MAX_TICK_MS, physics.maximum < MAX_TICK_MS,
+			"maximum %.2f ms" % physics.maximum)
+	if _windowed:
+		var compiled := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_DRAW)
+		_check("No shader pipeline is compiled in the middle of drawing a frame (a first-match stutter)", compiled == 0,
+				"%d compiled while drawing" % compiled)
 	if _failures == 0:
 		print("\nAll checks passed.")
 	else:
