@@ -160,6 +160,14 @@ const PATHS: Array[String] = [
 ## along −Z). The same model is the first-person gun, the gun in a body's hand and the gun
 ## lying on the floor (D-090).
 @export var model: PackedScene
+## The animation set its clips come from (tools/modelgen/holds.py): the body's aim poses, reload
+## and attacks, and the first-person arms' fp_<set>_<action> clips. Empty: the weapon's id. The
+## three grenades share "grenade".
+@export var anim_set: StringName = &""
+## How the model sits in the hand on top of the grip, for weapons not held by a pistol grip (the
+## knife's blade turned up along the fist, a grenade in the palm). Must match HOLD_OFFSETS in
+## tools/modelgen/holds.py, which the generator's hand poses use.
+@export var hold_offset: Transform3D = Transform3D.IDENTITY
 ## Where the model's muzzle is, in weapon space: the muzzle flash goes there.
 @export var muzzle_point: Vector3 = Vector3(0.0, 0.022, -0.58)
 ## The buy-menu icon (a shaded side view) and the kill-feed icon (a white silhouette), rendered
@@ -196,6 +204,11 @@ func get_spray_offset(spray_position: float) -> Vector2:
 	var index := clampi(floori(spray_position), 0, last)
 	var next := mini(index + 1, last)
 	return spray_pattern[index].lerp(spray_pattern[next], clampf(spray_position - index, 0.0, 1.0))
+
+
+## The animation set's name: [member anim_set], or the id when it's empty.
+func get_anim_set() -> StringName:
+	return anim_set if anim_set != &"" else id
 
 
 ## True for a weapon with a scope (the sniper rifle).

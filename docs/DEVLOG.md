@@ -13,7 +13,9 @@
 
 - **Task 6, how each gun works** (D-095): pistols fire once per click; the Breaker fires 9 pellets and loads shell by shell (fire interrupts); the Heron's scope steps on the right mouse button with CS's scope-in delay and stand-still accuracy, drops out after each shot and comes back, narrows the camera and slows the mouse, with a drawn scope view and no crosshair; the knife slashes and stabs with CS:GO's numbers and backstabs. The Rifleman reloads 15% faster and the Marksman scopes in 20% faster and recovers 30% faster. Every gun has its own generated sound (22 new sounds by a Sonnet subagent, measured but not heard: your ears decide; the rifle, hand cannon and shotgun are the closest trio). New `tests/guns_test.tscn` (16 checks); the weapon test's player is now a Scout so the rifle's M2 numbers stay perk-free. All 20 suites pass.
 
-**Next:** task 7 (holds and animations for pistols, the knife and grenades, and a reload per weapon).
+- **Task 7, holds and animations** (D-096): the generator now solves nine animation sets (each long gun around its own points, pistols two-handed out in front, the knife low with the blade up, the grenades at the chest): aim poses, a reload per gun (the Breaker a shell at a time), the pistol kick, knife slash and stab, grenade throw and lob for the body (93 clips per class), and idle, draw, fire, reload, pump, bolt, pin, throw and lob for the first-person arms (38). The animation graph switches the upper body by the held weapon; the knife and grenades sit in the fist with a hold offset. Checked with stick-figure renders and 5 new crew checks; all 20 suites pass (651 checks).
+
+**Next:** task 8 (grenades).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

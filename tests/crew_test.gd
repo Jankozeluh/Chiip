@@ -32,6 +32,9 @@ extends Node3D
 const BODY_SCENE := preload("res://characters/crew/crew_body.tscn")
 const BOT_SCENE := preload("res://bots/bot.tscn")
 const SHADER_PATH := "res://characters/crew/crew.gdshader"
+## Clips in every class model (41 in M6, plus the arsenal's holds in M7, D-096) and in the arms.
+const BODY_CLIPS := 93
+const ARMS_CLIPS := 38
 const MODEL_PATH := "res://assets/models/crew/rifleman.glb"
 const ALBEDO_PATH := "res://assets/models/crew/rifleman_albedo.png"
 const MASK_PATH := "res://assets/models/crew/rifleman_mask.png"
@@ -77,6 +80,7 @@ func _run_all() -> void:
 	await _test_first_person()
 	await _test_classes()
 	await _test_first_person_arms()
+	await _test_holds()
 
 
 func _test_model_and_material() -> void:
@@ -519,7 +523,7 @@ func _test_classes() -> void:
 		var bones := body.get_skeleton().get_bone_count()
 		var clips := player.get_animation_list().size()
 		var zones := body.get_hitboxes().size()
-		if bones != 17 or clips != 41 or zones != 15:
+		if bones != 17 or clips != BODY_CLIPS or zones != 15:
 			complete = false
 		details += " %s: %d bones, %d clips, %d zones;" % [class_id, bones, clips, zones]
 		var top := 0.0
@@ -536,7 +540,7 @@ func _test_classes() -> void:
 		details += " head top %.3f m, zones %.0f L;" % [top, volume * 1000.0]
 		body.queue_free()
 		await _wait_ticks(2)
-	_check("Every class has its model, textures and hit zones, 17 bones, 41 clips and 15 hit zones", complete, details)
+	_check("Every class has its model, textures and hit zones, 17 bones, %d clips (41 since M6, 52 more for the arsenal's holds in M7) and 15 hit zones" % BODY_CLIPS, complete, details)
 	_check("Each class's head zone reaches its height (1.72 to 1.92 m, within 2 cm)", heights_ok, details)
 	_check("The hit zones grow with the body: the Scout is the smallest target, the Bulwark the biggest",
 			volumes.size() == 4 and volumes["scout"] == volumes.values().min() and volumes["bulwark"] == volumes.values().max(),
@@ -614,6 +618,89 @@ func _test_first_person_arms() -> void:
 
 ## A crew body with the default model (the Rifleman) in the scene: still, in its rest pose,
 ## unless [param animated].
+## M7 task 7 (D-096): the body and the first-person arms follow the held weapon's animation set:
+## the hold, the fire kick, attacks and reloads, and models held with their hold offset.
+func _test_holds() -> void:
+	Weapon.silent = true
+	var player := (load("res://player/player.tscn") as PackedScene).instantiate() as Character
+	player.footstep_sound = null
+	add_child(player)
+	await _wait_ticks(3)
+	var tree := player.body.get_animation_tree()
+	var inventory := player.inventory
+	var arms_player := func() -> AnimationPlayer:
+		return player.weapon.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	inventory.give(load("res://weapons/pistol.tres"))
+	inventory.give(load("res://weapons/knife.tres"))
+	inventory.give(load("res://weapons/frag.tres"))
+	inventory.hold(inventory.get_in_slot(WeaponData.Slot.PISTOL), true)
+	await _wait_ticks(30)
+	var pistol_hold := String(tree.get("parameters/Hold/current_state")) == "pistol"
+	Input.action_press("shoot")
+	await _wait_ticks(3)
+	Input.action_release("shoot")
+	# The kick's kind is picked when the shot plays (the node only runs then).
+	var pistol_fire := String(arms_player.call().current_animation) == "fp_pistol_fire" and bool(tree.get("parameters/Fire/active")) \
+			and String(tree.get("parameters/FireKind/current_state")) == "fire_pistol"
+	await _wait_ticks(30)
+	player.weapon.magazine = 5
+	player.weapon.reload()
+	await _wait_ticks(2)
+	var reload_ok := String(tree.get("parameters/ReloadKind/current_state")) == "reload_pistol" \
+			and String(arms_player.call().current_animation) == "fp_pistol_reload" \
+			and is_equal_approx(arms_player.call().get_playing_speed(), arms_player.call().get_animation(&"fp_pistol_reload").length / player.weapon.get_reload_time())
+	_check("With the Sparrow the body takes the pistol hold and kick; its shot and its reload play the pistol's clips",
+			pistol_hold and pistol_fire and reload_ok, "hold %s, fire %s, reload %s" % [pistol_hold, pistol_fire, reload_ok])
+	await _wait_seconds_ticks(3.0)
+	var knife := inventory.get_in_slot(WeaponData.Slot.KNIFE)
+	inventory.hold(knife, true)
+	await _wait_ticks(30)
+	var knife_hold := String(tree.get("parameters/Hold/current_state")) == "knife"
+	Input.action_press("shoot")
+	await _wait_ticks(3)
+	Input.action_release("shoot")
+	var slash := String(tree.get("parameters/AttackKind/current_state")) == "knife_slash" and bool(tree.get("parameters/Attack/active")) \
+			and String(arms_player.call().current_animation) == "fp_knife_slash"
+	await _wait_ticks(140)
+	Input.action_press("aim")
+	await _wait_ticks(3)
+	Input.action_release("aim")
+	var stab := String(tree.get("parameters/AttackKind/current_state")) == "knife_stab" and String(arms_player.call().current_animation) == "fp_knife_stab"
+	var gun := player.body.get_gun_model()
+	var fp_gun := knife.find_child("Gun", true, false).get_child(0) as Node3D if knife.find_child("Gun", true, false) != null else null
+	var offset_ok := gun != null and gun.transform.is_equal_approx(knife.data.hold_offset) and fp_gun != null \
+			and fp_gun.transform.is_equal_approx(knife.data.hold_offset)
+	_check("With the knife: the knife hold, a slash and a stab on the body and the arms, and the knife turned in the fist (its hold offset)",
+			knife_hold and slash and stab and offset_ok, "hold %s, slash %s, stab %s, offset %s" % [knife_hold, slash, stab, offset_ok])
+	inventory.hold(inventory.get_grenades()[0], true)
+	await _wait_ticks(30)
+	_check("A grenade has its own hold, shared by every grenade", String(tree.get("parameters/Hold/current_state")) == "grenade",
+			"hold %s" % tree.get("parameters/Hold/current_state"))
+	var shotgun := inventory.give(load("res://weapons/shotgun.tres")) if inventory.get_in_slot(WeaponData.Slot.PRIMARY) == null else null
+	if shotgun == null:
+		inventory.remove(inventory.get_in_slot(WeaponData.Slot.PRIMARY))
+		shotgun = inventory.give(load("res://weapons/shotgun.tres"))
+	inventory.hold(shotgun, true)
+	await _wait_ticks(30)
+	shotgun.magazine = 4
+	shotgun.reload()
+	await _wait_ticks(2)
+	var first := String(arms_player.call().current_animation) == "fp_shotgun_reload" and String(tree.get("parameters/ReloadKind/current_state")) == "reload_shell"
+	await _wait_seconds_ticks(1.0)
+	var next := String(arms_player.call().current_animation) == "fp_shotgun_reload_shell"
+	_check("The Breaker's reload: bring it up and the first shell, then a shell at a time, on the body and the arms",
+			first and next and String(tree.get("parameters/Hold/current_state")) == "shotgun", "first %s, next %s" % [first, next])
+	var arms_clips := (player.weapon.find_child("AnimationPlayer", true, false) as AnimationPlayer).get_animation_list().size()
+	_check("The first-person arms have every weapon's clips (%d)" % ARMS_CLIPS, arms_clips == ARMS_CLIPS, "%d clips" % arms_clips)
+	player.queue_free()
+	Weapon.silent = false
+	await _wait_ticks(2)
+
+
+func _wait_seconds_ticks(seconds: float) -> void:
+	await _wait_ticks(ceili(seconds * 128.0))
+
+
 func _add_body(animated: bool = false) -> CrewBody:
 	var body := BODY_SCENE.instantiate() as CrewBody
 	body.animated = animated

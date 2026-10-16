@@ -40,6 +40,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import anims  # noqa: E402
 import crew  # noqa: E402
 import fparms  # noqa: E402
+import holds  # noqa: E402
 import icons  # noqa: E402
 import weapons  # noqa: E402
 from geometry import Atlas, PieceMesh  # noqa: E402
@@ -177,6 +178,10 @@ def write_arms_glb(model, path):
     g.root(node_of['view'])
     g.root(g.node('arms', mesh=mesh, skin=skin))
     clips = fparms.clips(arms)
+    # M7 (D-096): every other weapon's first-person clips, around its own points.
+    for set_name in holds.SETS:
+        if set_name != 'rifle':
+            clips += fparms.set_clips(model['body'], set_name, holds.style(set_name), holds.points(set_name))
     for clip, loop, channels in clips:
         g.animation(clip + ('-loop' if loop else ''), [(node_of[b], kind, t, v) for b, kind, t, v in channels])
     g.write(path)
@@ -367,6 +372,9 @@ def main():
         write_texture(model['albedo'], os.path.join(a.out, f'{name}_albedo.png'))
         write_texture(model['mask'], os.path.join(a.out, f'{name}_mask.png'))
         clips = anims.all_clips(model['rig'])
+        # M7 (D-096): the other weapons' holds, aim poses, reloads and attacks.
+        clips += anims.set_clips(model['body'], model['rig'].points, list(holds.SETS), holds.points, holds.style,
+                                 weapons.GUNS['rifle']()[1])
         glb_path = os.path.join(a.out, f'{name}.glb')
         # Godot's importer loops animations whose names end in "-loop" and drops the suffix.
         nv, nt = write_glb(model, glb_path, [(n + ('-loop' if loop else ''), ch) for n, loop, ch in clips])

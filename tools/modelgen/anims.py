@@ -577,3 +577,201 @@ def _with_hips(rig, pose, dy):
         rig.leg(p, side, pf, rf, knee_dir)
     rig.aim_pose(p, 0.0)
     return p
+
+
+# ---------------------------------------------------------------- M7: every weapon's hold (D-096)
+# The rifle set keeps the clips above. Every other animation set (holds.py) adds its own aim
+# poses, a reload, and (by style) a fire kick or attacks. The legs are always the stand pose's:
+# the AnimationTree only takes the upper body from these clips.
+PITCHES = (('d80', -80), ('d40', -40), ('0', 0), ('u40', 40), ('u80', 80))
+
+
+def pistol_hold(rig, pose, aim=0.0, kick=0.0, lift=0.0, pull=0.0):
+    """both hands on a pistol, arms out in front of the eyes (isosceles stance); the gun points
+    exactly `aim` degrees up. `kick` tips it up (degrees), `pull` draws it toward the chest (m)."""
+    rig.torso(pose, aim=aim, twist=6.0)
+    w = rig.world(pose)
+    rc, pc = w['chest']
+    mid = pc + rc @ ((rig.off['upper_arm_r'] + rig.off['upper_arm_l']) / 2)
+    rot = pitch_up(aim + kick)
+    reach = 0.40 * rig.body.s - pull
+    pos = mid + pitch_up(aim) @ np.array([0.035, -0.06 + lift, -reach])
+    rig.grip(pose, rot, pos)
+    return rot, pos
+
+
+def knife_hold(rig, pose, aim=0.0, hand=(0.0, 0.0, 0.0), turn=0.0, tip=0.0, roll=0.0):
+    """the knife in the right hand, low and forward with the blade up; the left hand on guard.
+    `hand` moves the fist (m, in the body's frame), `turn` swings it sideways (degrees, to the
+    right), `tip` tips the blade forward, `roll` rolls it."""
+    rig.torso(pose, aim=aim * 0.6, twist=15.0)
+    w = rig.world(pose)
+    rh = w['hips'][0]
+    rc, pc = w['chest']
+    shoulder = pc + rc @ rig.off['upper_arm_r']
+    rot = rh @ turn_right(turn) @ pitch_up(aim * 0.5 - 15.0 - tip) @ rz(roll)
+    pos = shoulder + rh @ (pitch_up(aim * 0.5) @ np.array([-0.06, -0.30, -0.30]) + np.asarray(hand, float))
+    rig.arm(pose, 'r', pos + rot @ rig.hand_r_wrist, rot @ rig.hand_r_rot, (0.8, -0.6, 0.3))
+    rig.free_arm(pose, 'l', (-0.12, -0.24, -0.28), (-0.8, -0.6, 0.2))
+    return rot, pos
+
+
+def grenade_hold(rig, pose, aim=0.0, hand=(0.0, 0.0, 0.0), turn=0.0, tip=0.0, left=None):
+    """a grenade in the right hand in front of the chest; the left hand near it (or at `left`,
+    a point in the chest's frame)."""
+    rig.torso(pose, aim=aim * 0.5, twist=10.0)
+    w = rig.world(pose)
+    rh = w['hips'][0]
+    rc, pc = w['chest']
+    shoulder = pc + rc @ rig.off['upper_arm_r']
+    rot = rh @ turn_right(turn) @ pitch_up(aim * 0.3 - tip)
+    pos = shoulder + rh @ (np.array([-0.10, -0.14, -0.30]) + np.asarray(hand, float))
+    rig.arm(pose, 'r', pos + rot @ rig.hand_r_wrist, rot @ rig.hand_r_rot, (0.8, -0.7, 0.2))
+    rig.free_arm(pose, 'l', left if left is not None else (-0.10, -0.18, -0.30), (-0.8, -0.6, 0.2))
+    return rot, pos
+
+
+HOLDS = {'pistol': pistol_hold, 'knife': knife_hold, 'grenade': grenade_hold}
+
+
+def styled_stand(rig, style, aim=0.0, **kw):
+    """standing still with the legs of stand_pose and the upper body holding a weapon in `style`."""
+    pose = stand_pose(rig, aim=aim)
+    if style != 'rifle':
+        HOLDS[style](rig, pose, aim=aim, **kw)
+    return pose
+
+
+def pistol_reload_clip(rig):
+    """a pistol's reload, 2.5 s (stretched to the weapon's): the gun comes in and tips, the left
+    hand drops the magazine, takes a fresh one from the belt, slaps it in and racks the slide."""
+    def at(pull, tilt, left):
+        p = stand_pose(rig)
+        rot, pos = pistol_hold(rig, p, pull=pull, lift=-0.04 * tilt)
+        tilted = rot @ rz(25 * tilt)
+        if left is None:
+            rig.grip(p, tilted, pos)
+            return p
+        where, pole = left
+        if isinstance(where, str):
+            wrist = pos + tilted @ (rig.gun[where] + np.array([-0.03, -0.05, 0.04]))
+        else:
+            w = rig.world(p)
+            wrist = w['chest'][1] + w['chest'][0] @ np.asarray(where, float)
+        rig.grip(p, tilted, pos, left=(wrist, tilted @ rig.hand_l_rot, pole))
+        return p
+    pole = (-0.8, -0.6, 0.1)
+    keys = [(0.0, styled_stand(rig, 'pistol')),
+            (0.30, at(0.12, 1.0, None)),
+            (0.60, at(0.12, 1.0, ('magazine', pole))),
+            (0.95, at(0.12, 1.0, ((-0.08, -0.45, -0.15), pole))),
+            (1.30, at(0.12, 1.0, ((-0.08, -0.20, -0.25), pole))),
+            (1.65, at(0.12, 1.0, ('magazine', pole))),
+            (1.95, at(0.10, 0.5, ('handle', (-0.3, 0.6, 0.4)))),
+            (2.15, at(0.10, 0.5, ('handle', (-0.3, 0.6, 0.4)))),
+            (2.50, styled_stand(rig, 'pistol'))]
+    return keyframes(rig, keys, 2.5)
+
+
+def shell_clip(rig):
+    """one shotgun shell going in, 2.5 s (stretched to the shell time): the gun tips toward the
+    body, the left hand takes a shell from the vest and pushes it into the loading port."""
+    def at(tilt, left):
+        p = stand_pose(rig)
+        rot, pos = rig.hold(0.0, 0.0, p)
+        tilted = rot @ pitch_up(-8 * tilt) @ rz(-30 * tilt)
+        pos = pos + np.array([0.0, -0.06 * tilt, 0.04 * tilt])
+        if left is None:
+            rig.grip(p, tilted, pos)
+            return p
+        where, pole = left
+        if isinstance(where, str):
+            wrist = pos + tilted @ (rig.gun[where] + np.array([-0.04, -0.06, 0.05]))
+        else:
+            w = rig.world(p)
+            wrist = w['chest'][1] + w['chest'][0] @ np.asarray(where, float)
+        rig.grip(p, tilted, pos, left=(wrist, tilted @ rig.hand_l_rot, pole))
+        return p
+    pole = (-0.8, -0.6, 0.1)
+    keys = [(0.0, at(1.0, None)),
+            (0.7, at(1.0, ((-0.05, -0.28, -0.10), pole))),
+            (1.6, at(1.0, ('magazine', pole))),
+            (2.0, at(1.0, ('magazine', pole))),
+            (2.5, at(1.0, None))]
+    return keyframes(rig, keys, 2.5)
+
+
+def knife_clips(rig):
+    """the slash (0.4 s: wind up to the right, cut across to the left) and the stab (0.6 s: a
+    thrust forward and back)."""
+    rest = styled_stand(rig, 'knife')
+    slash = [(0.0, rest),
+             (0.08, styled_stand(rig, 'knife', hand=(0.12, 0.18, 0.05), turn=-35, tip=-10, roll=-30)),
+             (0.22, styled_stand(rig, 'knife', hand=(-0.32, -0.02, -0.22), turn=45, tip=35, roll=40)),
+             (0.40, rest)]
+    stab = [(0.0, rest),
+            (0.12, styled_stand(rig, 'knife', hand=(0.0, 0.05, 0.10), tip=10)),
+            (0.25, styled_stand(rig, 'knife', hand=(-0.08, 0.08, -0.30), tip=70)),
+            (0.40, styled_stand(rig, 'knife', hand=(-0.08, 0.08, -0.28), tip=70)),
+            (0.60, rest)]
+    return [('knife_slash', False, keyed(rig, *keyframes(rig, slash, 0.4))),
+            ('knife_stab', False, keyed(rig, *keyframes(rig, stab, 0.6)))]
+
+
+def grenade_clips(rig):
+    """the throw (0.5 s: the arm goes back past the shoulder and comes over) and the lob (0.5 s:
+    an underhand swing)."""
+    rest = styled_stand(rig, 'grenade')
+    throw = [(0.0, rest),
+             (0.18, styled_stand(rig, 'grenade', hand=(0.12, 0.42, 0.30), tip=-60, left=(-0.30, 0.05, -0.30))),
+             (0.32, styled_stand(rig, 'grenade', hand=(0.0, 0.30, -0.35), tip=40, left=(-0.15, -0.25, -0.15))),
+             (0.50, rest)]
+    lob = [(0.0, rest),
+           (0.18, styled_stand(rig, 'grenade', hand=(0.08, -0.40, 0.25), tip=30)),
+           (0.34, styled_stand(rig, 'grenade', hand=(0.0, 0.05, -0.30), tip=-40)),
+           (0.50, rest)]
+    return [('grenade_throw', False, keyed(rig, *keyframes(rig, throw, 0.5))),
+            ('grenade_lob', False, keyed(rig, *keyframes(rig, lob, 0.5)))]
+
+
+def set_clips(body, bone_points, sets, points_of, style_of, base_points):
+    """the clips every non-rifle animation set adds to a class: (name, loops, channels).
+    `sets` are the set names, `points_of(set)` their gun points (with hold offsets) and
+    `style_of(set)` their styles (holds.py); `base_points` (the rifle's) fill in the points a
+    knife or a grenade doesn't have, for the stand pose underneath."""
+    clips = []
+    pistol_done = False
+    for name in sets:
+        if name == 'rifle':
+            continue
+        style = style_of(name)
+        rig = Rig(body, {**base_points, **points_of(name)})
+        rig.points = bone_points
+        for suffix, aim in PITCHES:
+            p = styled_stand(rig, style, aim=aim)
+            clips.append((f'aim_{name}_{suffix}', False, keyed(rig, np.array([0.0]), [p])))
+        if style == 'rifle':
+            if name == 'shotgun':
+                times, poses = shell_clip(rig)
+                clips.append(('reload_shell', False, keyed(rig, times, poses)))
+            times, poses = reload_clip(rig)
+            clips.append((f'reload_{name}', False, keyed(rig, times, poses)))
+        elif style == 'pistol':
+            times, poses = pistol_reload_clip(rig)
+            clips.append((f'reload_{name}', False, keyed(rig, times, poses)))
+            if not pistol_done:
+                pistol_done = True
+                base = styled_stand(rig, 'pistol')
+
+                def kick_at(t, rig=rig):
+                    k = math.exp(-t / 0.05) * min(1.0, t / 0.015) if t > 0 else 0.0
+                    p = stand_pose(rig)
+                    pistol_hold(rig, p, kick=7.0 * k, pull=0.03 * k)
+                    return p
+                times, poses = sample(kick_at, 0.2, False)
+                clips.append(('fire_pistol', False, keyed(rig, times, additive(rig, base, poses, UPPER), UPPER)))
+        elif style == 'knife':
+            clips += knife_clips(rig)
+        elif style == 'grenade':
+            clips += grenade_clips(rig)
+    return clips

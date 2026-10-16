@@ -36,6 +36,8 @@ signal reload_finished
 signal hit_landed(hit: Dictionary)
 ## Emitted when the scope steps to another zoom level (0 = unscoped).
 signal zoom_changed(level: int)
+## Emitted when a shotgun starts loading the next shell (after the first: [signal reload_started]).
+signal shell_loading
 
 ## The generic weapon scene [method create] instantiates (loaded when needed: it uses this script).
 const SCENE_PATH := "res://weapons/weapon.tscn"
@@ -58,8 +60,6 @@ const SWAY_RETURN := 12.0
 const BOB_SIDEWAYS := 0.007
 const BOB_DOWN := 0.005
 const BOB_CYCLE_DISTANCE := 3.6
-## Length of the arms' reload clip in seconds; it is stretched to the weapon's reload time.
-const ARMS_RELOAD_CLIP_TIME := 2.5
 ## Bullet holes kept per weapon; the oldest disappear first.
 const MAX_IMPACTS := 100
 const IMPACT_SCENE := preload("res://weapons/bullet_impact.tscn")
@@ -87,6 +87,8 @@ var trigger_held: bool = false
 var aim_held: bool = false
 ## The scope's zoom step: 0 unscoped, then 1 to the number of [member WeaponData.zoom_levels].
 var zoom_level: int = 0
+## What the last attack was, for the body's animation: "shot", "slash", "stab", "throw" or "lob".
+var last_attack: StringName = &"shot"
 ## Rounds in the magazine. Read-only for other scripts.
 var magazine: int = 0
 ## Spare rounds. Read-only for other scripts.
@@ -176,7 +178,7 @@ static func create(weapon_data: WeaponData) -> Weapon:
 func draw(seconds: float) -> void:
 	_draw_left = maxf(seconds, 0.0)
 	_aim_was_held = aim_held
-	_play_arms("draw")
+	_play_arms("draw", _draw_left)
 
 
 ## Puts the weapon away (on a switch): the trigger is let go and a reload in progress is lost,
@@ -239,7 +241,8 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 		mount.name = "Gun"
 		mount.bone_name = "weapon"
 		(skeletons[0] as Skeleton3D).add_child(mount)
-		var gun := model.instantiate()
+		var gun := model.instantiate() as Node3D
+		gun.transform = data.hold_offset if data != null else Transform3D.IDENTITY
 		mount.add_child(gun)
 		for node in gun.find_children("*", "MeshInstance3D", true, false):
 			(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -339,10 +342,9 @@ func reload() -> void:
 	_set_zoom(0)
 	if data.reload_per_shell:
 		_reload_time_left = data.reload_start_time * _class_factor(&"reload_time_factor") + get_reload_time()
-		_play_arms("reload", 1.0 / _class_factor(&"reload_time_factor"))
 	else:
 		_reload_time_left = get_reload_time()
-		_play_arms("reload", ARMS_RELOAD_CLIP_TIME / maxf(get_reload_time(), 0.1))
+	_play_arms("reload", _reload_time_left)
 	reload_started.emit()
 
 
@@ -430,20 +432,24 @@ func _play_shot_effects() -> void:
 
 
 ## Plays the first-person arms' clip for [param action] ("draw", "fire", "reload", "slash"...)
-## from the start at [param speed], then goes back to idling. Each weapon has its own clips,
-## [code]fp_<id>_<action>[/code]; without one the rifle's [code]fp_<action>[/code] plays (D-096).
-func _play_arms(action: String, speed: float = 1.0) -> void:
+## from the start, stretched to last [param duration] seconds (0: its own length), then goes back
+## to idling. Each animation set has its own clips, [code]fp_<set>_<action>[/code]; the rifle's
+## are [code]fp_<action>[/code], also the fallback (D-096).
+func _play_arms(action: String, duration: float = 0.0) -> void:
 	if _arms_player == null:
 		return
-	var clip := StringName("fp_%s_%s" % [data.id, action]) if data != null else &""
-	if not _arms_player.has_animation(clip):
+	var set_name := data.get_anim_set() if data != null else &"rifle"
+	var clip := StringName("fp_%s_%s" % [set_name, action])
+	if set_name == &"rifle" or not _arms_player.has_animation(clip):
 		clip = StringName("fp_" + action)
 	if not _arms_player.has_animation(clip):
 		return
+	var length := _arms_player.get_animation(clip).length
+	var speed := length / duration if duration > 0.0 else 1.0
 	_arms_player.play(clip, 0.03, speed)
 	_arms_player.seek(0.0, true)
-	var idle := StringName("fp_%s_idle" % data.id) if data != null else &""
-	_arms_player.queue(idle if _arms_player.has_animation(idle) else &"fp_idle")
+	var idle := StringName("fp_%s_idle" % set_name)
+	_arms_player.queue(idle if set_name != &"rifle" and _arms_player.has_animation(idle) else &"fp_idle")
 
 
 ## Lets the spray pattern wear off once you stop firing. While firing
@@ -475,6 +481,7 @@ func _try_fire() -> void:
 func _fire() -> void:
 	magazine -= 1
 	var spray_shot := get_spray_shot()
+	last_attack = &"shot"
 	_play(data.shot_sound, false)
 	if data.cycle_sound != null and magazine > 0:
 		_cycle_sound_left = data.cycle_sound_delay
@@ -652,7 +659,8 @@ func _update_shell_reload(delta: float) -> void:
 	ammo_changed.emit(magazine, reserve)
 	if magazine < data.magazine_size and reserve > 0:
 		_reload_time_left = get_reload_time()
-		_play_arms("reload_shell", 1.0 / _class_factor(&"reload_time_factor"))
+		_play_arms("reload_shell", _reload_time_left)
+		shell_loading.emit()
 	else:
 		_reload_time_left = 0.0
 		reload_finished.emit()
@@ -731,6 +739,7 @@ func _melee(stab: bool) -> void:
 	_time_since_shot = 0.0
 	_play(data.shot_sound, false)
 	_play_arms("stab" if stab else "slash")
+	last_attack = &"stab" if stab else &"slash"
 	fired.emit(1)
 	var result := _melee_trace(reach)
 	if result.is_empty():
