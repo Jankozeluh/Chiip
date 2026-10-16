@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** online multiplayer (M9) is being built: host or join a LAN game from the main menu (see "Playing with friends"). M1–M5 built: CS-style movement, a rifle with CS-like recoil, the retro look, bots, and full matches (main menu, match setup, 1–5 per side with bot teammates, rounds with freeze time, round HUD, kill feed, scoreboard, spectating, pause menu, settings saved to disk). The M5 playtest is pending (checklist in [docs/PLAN.md](docs/PLAN.md), "Your open checks"). Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** online multiplayer (M9) is built for LAN play: host or join a game from the main menu (see "Playing with friends"); it waits for a playtest with a friend. M1–M5 built: CS-style movement, a rifle with CS-like recoil, the retro look, bots, and full matches (main menu, match setup, 1–5 per side with bot teammates, rounds with freeze time, round HUD, kill feed, scoreboard, spectating, pause menu, settings saved to disk). The M5 playtest is pending (checklist in [docs/PLAN.md](docs/PLAN.md), "Your open checks"). Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -129,7 +129,7 @@ The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 
 One player hosts and plays, friends join, and bots fill the empty slots (D-100, D-108).
 
 1. **Main menu → Multiplayer.** Type your name (saved for next time).
-2. **The host** presses **Host game**. The lobby shows the port (26000, Quake's, unless you change it) and this Mac's LAN addresses. On a LAN that is all; over the internet the host's router must forward UDP port 26000 to the host's Mac (Steam lobbies, coming later in M9, won't need that).
+2. **The host** presses **Host game**. The lobby shows the port (26000, Quake's, unless you change it) and this Mac's LAN addresses. On a LAN that is all; over the internet the host's router must forward UDP port 26000 to the host's Mac (Steam lobbies, which wouldn't need that, are deferred for now: D-114).
 3. **Friends** type the host's address and press **Join**.
 4. In the lobby, click **Join Team 1 / Team 2** to pick a side (your team is blue, the other red). The host's **Match settings…** opens the usual match setup (mode, map or rotation, team sizes, bot difficulty, length, friendly fire); empty slots are bots. The host presses **Start match**, and everyone's game loads.
 5. Pick your class in the first freeze time (M) as offline. **Esc** opens the menu as an overlay: the game doesn't pause online. After the match the host chooses: **Next map**, **Play again** or **Lobby**; the others can only **Leave**.

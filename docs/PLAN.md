@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M7 — Arsenal, perks & economy is built (all 19 tasks, with the class draft and random map weapons of D-120) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". M10's map kit is built too (D-121 to D-129, textures redrawn in the crew's style in D-140) and waits for your check. Still in progress, each in its own branch: M9 — Multiplayer and M10's modern UI. M9 — Multiplayer is in progress in its own branch (LAN play and the arsenal online are built; LAN only for now, Steam is deferred, D-114).
+> **Current milestone:** M7 — Arsenal, perks & economy is built (all 19 tasks, with the class draft and random map weapons of D-120) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". M10's map kit is built too (D-121 to D-129, textures redrawn in the crew's style in D-140) and waits for your check. Still in progress in its own branch: M10's modern UI. M9 — Multiplayer is built in its own branch for LAN play (Steam lobbies deferred, D-114) and waits for your playtest with a friend ("M9 playtest" in "Your open checks").
 
 ## Your open checks
 
@@ -19,6 +19,13 @@ Things only you can check, kept here until done instead of moving from milestone
   8. **Looks and sounds:** each gun in your hands and in the bots' (pistols two-handed, the knife, grenades), the reloads; can you tell the guns apart by sound (the Ram, Verdict and Breaker are the closest)? The icons in the buy menu and the kill feed.
   9. **Team Deathmatch** (team respawn, now the primary mode): you spawn with your class's loadout, the signature gun in hand; walk over a dropped gun you carry to take its ammo; three map weapons are out at a time; dropped guns vanish after 30 s; M changes class any time (for your next respawn). Does the loadout plus pickups feel good, or do you run dry or miss a loadout choice?
   10. **Class draft:** the class menu at the start shows your two random classes for this match (1 or 2); M switches between them in freeze time. Does two feel like a real choice, or would you rather have three, or a new draft every round? Do the teams still feel mixed?
+- [ ] **M9 playtest: play with a friend over LAN on two Macs** (D-100 to D-114). Both Macs on the same network with the same build of the M9 branch: the project opened in Godot on both, or the exported app (README, "Exporting the game") copied to the second Mac (right-click → *Open* the first time). If macOS asks on the host's Mac whether Chiip may accept incoming connections, allow it; it's the first thing to check when Join times out.
+  1. **Host and join:** Mac 1: **Multiplayer** → your name → **Host game**; the lobby shows its LAN address. Mac 2: **Multiplayer** → that address → **Join**. Pick teams (Join Team 1 / 2); the host's **Match settings…** → **Team respawn** on Square → **Start match**. Is it quick and clear?
+  2. **Team Deathmatch first:** does your own movement feel exactly like offline, with no rubber-banding (`status` in the console counts corrections; a few a minute are fine)? Do the others move smoothly? Do hits on a strafing enemy count where your crosshair was (lag compensation)? Respawn loadouts, a class change (M, at the next respawn), dropped guns, map weapons, and the frag, flash and smoke on both screens.
+  3. **Bomb rounds:** a **Rounds** match on Depot: buying (B) in the freeze time, money after the rounds, planting and defusing, the kill feed and the scoreboard the same on both screens, the half-time swap.
+  4. **A bad connection:** `net_fakelag 50` and `net_fakeloss 5` on the friend's Mac: still playable? F3 shows the ping (about 100 ms) and the corrections.
+  5. **Coming and going:** the friend leaves mid-match (Esc → Leave match): a bot ("Name (bot)") takes over; the friend joins again: they take over a bot. The host ends the game: the friend is back in the menu with "The host ended the game."
+  6. **Decisions to confirm:** the host runs the game and the friends predict their own player (D-100, D-106), snapshots 64 times a second with the others shown about 50 ms in the past (D-104), LAN only for now (D-114: Steam lobbies wait for your approval of the GodotSteam download).
 - [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
 - [ ] **Confirm weapon names** (M7, D-090): Ram (AK-style rifle), Warden (carbine), Hornet (SMG), Breaker (pump shotgun), Heron (sniper rifle), Sparrow (service pistol), Verdict (hand cannon), Knife, Frag, Flashbang, Smoke. Keep them, or tell me the ones you'd rather have: only the data files change.
@@ -76,7 +83,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M6 | Crew & animation | 🟨 built, waiting for your playtest | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
 | M7 | Arsenal, perks & economy | 🟨 built, waiting for your playtest | Pick up and buy from the full arsenal with a light economy, fight over map weapons, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
-| M9 | Multiplayer | 🟨 in progress | Play with friends (one hosts), bots fill empty slots |
+| M9 | Multiplayer | 🟨 built, waiting for your playtest | Play with friends over the LAN (one hosts), bots fill empty slots |
 | M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | — | Backlog | — | Ideas for later |
 
@@ -371,7 +378,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 **You learn:** level design in TrenchBroom (lanes, sightlines, timing), lightmap baking, `Area3D` triggers, spawn selection, exporting a game.
 
-## M9 — Multiplayer 🟨
+## M9 — Multiplayer 🟨 *(built for LAN play, waiting for your playtest)*
 
 *Planned on 2026-10-16 in its own branch, in parallel with M7. You asked for the whole roadmap to be built and will playtest at the end, so the decisions below (D-100 to D-112) are my recommendations, applied until you say otherwise.*
 
@@ -409,11 +416,13 @@ New `tests/netarsenal_test.tscn` (17 checks for tasks 12 to 14): inventory, pred
 
 15. [-] **GodotSteam.** *Deferred (D-114).* The GodotSteam addon (GDExtension for Godot 4.7, with Valve's Steamworks runtime) from its official GitHub releases, installed under `addons/`, in CREDITS.md with its licence. Valve's public test app ID 480 while developing. The game still starts and plays everything without Steam. *(Sonnet, Opus checks)*
 16. [-] **Steam lobbies and invites.** *Deferred (D-114). Prepared: the session makes its connection through a transport (`NetTransport`, `EnetTransport` for LAN), so Steam is one more transport and a lobby button.* Host on Steam opens a friends-only lobby; **Invite friends** opens Steam's overlay; accepting an invite (or Join game in Steam's friends list) joins it. The game stream runs over Steam's networking through the same `NetSession`, so everything from phase A works unchanged. *(Opus)*
-17. [ ] **Checks and the playtest list.** All suites passing, the docs complete, and the M9 playtest list (LAN with a second Mac) in "Your open checks". *(Sonnet writes, Haiku runs and reports)*
+17. [x] **Checks and the playtest list.** All suites passing, the docs complete, and the M9 playtest list (LAN with a second Mac) in "Your open checks". *(Sonnet writes, Haiku runs and reports)* Done: all 30 suites pass (872 checks); the exported macOS app hosts and joins (two copies on one Mac: the match started with the friend loaded, the friend welcomed into it); the playtest list "M9 playtest: play with a friend over LAN on two Macs" is at the top. The main session ran and wrote it: the closing runs needed the whole milestone's context.
 
 **Done when:** you and a friend can play a full match together against bots over the LAN (Team Deathmatch first, bomb defusal too), and shooting feels fair at normal pings.
 
-**You learn:** Godot's high-level multiplayer API (`MultiplayerPeer`, `SceneMultiplayer`, `ENetMultiplayerPeer`, RPCs and authority), why `MultiplayerSynchronizer` and `MultiplayerSpawner` are great for many games and why a CS-style shooter writes its own snapshots, packing data into bytes, client-side prediction and reconciliation, entity interpolation, lag compensation, testing networked code in one process, GDExtension addons, Steamworks basics (lobbies, invites, the overlay).
+**Built:** tasks 1 to 14 and 17 on 2026-10-16 (15 and 16, Steam, deferred: D-114), decisions D-100 to D-114. Your playtest with a friend is in "Your open checks" at the top.
+
+**You learn:** Godot's high-level multiplayer API (`MultiplayerPeer`, `SceneMultiplayer`, `ENetMultiplayerPeer`, RPCs and authority), why `MultiplayerSynchronizer` and `MultiplayerSpawner` are great for many games and why a CS-style shooter writes its own snapshots, packing data into bytes, client-side prediction and reconciliation, entity interpolation, lag compensation, testing networked code in one process, keeping the connection behind a transport (GDExtension addons and Steamworks basics wait with Steam, D-114).
 
 **Decisions** (provisional, D-100 to D-112):
 

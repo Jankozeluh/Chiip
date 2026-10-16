@@ -47,7 +47,9 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 
 - **Team Deathmatch online** (the primary mode): `netrespawn_test` has five new checks, run with the bots held before its match: the respawn loadout (the same on both, primary in hand), a class picked while alive (it comes with the next respawn and its loadout, on both), a dropped gun timing out on both floors, scavenged ammo, the three map weapons. They found three things, now fixed: after a class change the client's weapons were in another order than the host's (it kept the Sparrow and knife first; `Inventory.reorder()` now follows the host's list, so the grenade key takes the same grenade), ammo scavenged from a gun on the floor never reached the client (it changes no slot; it sends the list now), and a class picked on a client didn't show as its next class there.
 
-**Next:** task 17: all suites, the LAN playtest list in "Your open checks", M9 marked built.
+- **Task 17, checks and the playtest list:** all 30 suites pass (872 checks). The exported macOS app hosts and joins: two copies on one Mac (`--host --start 2` and `--join 127.0.0.1`), the match started with the friend loaded and the friend was welcomed into it. The playtest list for two Macs on a LAN is in "Your open checks" (host and join, Team Deathmatch first, bomb rounds, a bad connection, coming and going, the decisions to confirm). **M9 is built for LAN play.**
+
+**Next:** your playtest with a friend over the LAN; Steam lobbies when you approve the GodotSteam download (Backlog, D-114). M9 and M10's UI branch both rewrite the main menu: M10's Host and Join buttons connect to the lobby (`LobbyMenu.open()`) when they meet.
 ## 2026-10-16 — Merges into main: M7 and the M10 map kit
 
 **Done**

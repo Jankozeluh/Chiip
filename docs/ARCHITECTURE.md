@@ -229,7 +229,7 @@ Chiip/
 | Classes | Four classes, each a look and one passive perk; pick one at match start, change it in freeze time; bots get a mix | M6 → M7 | Built: `ClassData`, class swap at runtime, `request_class`, the class menu, bot mix (D-078); the perks switch on in M7 |
 | Economy | Money, rewards, buy menu | M7 | Planned |
 | Bomb | Carry, drop, plant, fuse, defuse, explosion | M8 | Built: `Bomb` (`bomb/`), added by the round manager on maps with bomb sites; `BombHud` shows it (D-080) |
-| Multiplayer | Host and join over the LAN, the roster, commands, snapshots, prediction, lag compensation, lobby (Steam deferred, D-114) | M9 | In progress: `NetSession`, its `NetTransport`, `NetProtocol`, `NetHost`, `NetClient`, `NetLobby` (`net/`, D-100 to D-114). See "Multiplayer (M9)" below |
+| Multiplayer | Host and join over the LAN, the roster, commands, snapshots, prediction, lag compensation, lobby (Steam deferred, D-114) | M9 | Built for LAN play: `NetSession`, its `NetTransport`, `NetProtocol`, `NetHost`, `NetClient`, `NetLobby` (`net/`, D-100 to D-114). See "Multiplayer (M9)" below |
 
 ## Input actions
 
