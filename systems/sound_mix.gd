@@ -10,7 +10,9 @@ extends RefCounted
 ## [code]unit_size[/code] metres, -6 dB for every doubling beyond, silent at
 ## [code]max_distance[/code]). [code]own_db[/code] is the volume when the sound is your own
 ## (your gun, your steps), played without position; a category without it is never yours.
-## [code]occlusion[/code] (0 to 1) is how much of the muffling walls cause it gets (D-192).
+## [code]occlusion[/code] (0 to 1) is how much of the muffling walls cause it gets (D-192): all of
+## it for steps, reloads and impacts, three quarters for shots and explosions (a fight across the
+## map stays audible, as in CS), half for the bomb's beep.
 
 ## Shots of guns.
 const SHOT := &"shot"
@@ -46,8 +48,8 @@ const BOMB_ACTION := &"bomb_action"
 const BOMB_EXPLOSION := &"bomb_explosion"
 
 const TABLE := {
-	SHOT: {"volume_db": 0.0, "own_db": -6.0, "unit_size": 20.0, "max_distance": 120.0, "occlusion": 1.0},
-	SHOT_FAR: {"volume_db": 0.0, "unit_size": 40.0, "max_distance": 180.0, "occlusion": 1.0},
+	SHOT: {"volume_db": 0.0, "own_db": -6.0, "unit_size": 20.0, "max_distance": 120.0, "occlusion": 0.75},
+	SHOT_FAR: {"volume_db": 0.0, "unit_size": 40.0, "max_distance": 180.0, "occlusion": 0.75},
 	MELEE: {"volume_db": -4.0, "own_db": -6.0, "unit_size": 4.0, "max_distance": 25.0, "occlusion": 1.0},
 	HANDLING: {"volume_db": -6.0, "own_db": -6.0, "unit_size": 3.0, "max_distance": 15.0, "occlusion": 1.0},
 	FOOTSTEP: {"volume_db": 2.0, "own_db": -12.0, "unit_size": 10.0, "max_distance": 30.0, "occlusion": 1.0},
@@ -55,20 +57,31 @@ const TABLE := {
 	HIT: {"volume_db": -4.0, "unit_size": 4.0, "max_distance": 35.0, "occlusion": 1.0},
 	HEADSHOT: {"volume_db": 2.0, "unit_size": 8.0, "max_distance": 35.0, "occlusion": 1.0},
 	BOUNCE: {"volume_db": -6.0, "unit_size": 6.0, "max_distance": 40.0, "occlusion": 1.0},
-	EXPLOSION: {"volume_db": 0.0, "unit_size": 20.0, "max_distance": 120.0, "occlusion": 1.0},
-	EXPLOSION_FAR: {"volume_db": 0.0, "unit_size": 50.0, "max_distance": 220.0, "occlusion": 1.0},
-	FLASH: {"volume_db": 0.0, "unit_size": 15.0, "max_distance": 100.0, "occlusion": 1.0},
+	EXPLOSION: {"volume_db": 0.0, "unit_size": 20.0, "max_distance": 120.0, "occlusion": 0.75},
+	EXPLOSION_FAR: {"volume_db": 0.0, "unit_size": 50.0, "max_distance": 220.0, "occlusion": 0.75},
+	FLASH: {"volume_db": 0.0, "unit_size": 15.0, "max_distance": 100.0, "occlusion": 0.75},
 	SMOKE: {"volume_db": -12.0, "unit_size": 4.0, "max_distance": 25.0, "occlusion": 1.0},
 	BOMB_BEEP: {"volume_db": 0.0, "unit_size": 6.0, "max_distance": 60.0, "occlusion": 0.5},
 	BOMB_ACTION: {"volume_db": -4.0, "unit_size": 3.0, "max_distance": 25.0, "occlusion": 1.0},
-	BOMB_EXPLOSION: {"volume_db": 4.0, "unit_size": 30.0, "max_distance": 200.0, "occlusion": 1.0},
+	BOMB_EXPLOSION: {"volume_db": 4.0, "unit_size": 30.0, "max_distance": 200.0, "occlusion": 0.75},
 }
 
-## The bus every game sound plays on, and the two it is moved to behind walls (D-192): they
-## low-pass it and send it on to Effects, so the reverb still applies.
+## The bus every game sound plays on, and the three it is moved to when something is in the
+## way (D-192): around a corner, through a wall, through more or thicker walls. They low-pass it
+## (3.5 kHz, 1.5 kHz, 600 Hz) and send it on to Effects, so the reverb still applies.
 const BUS_EFFECTS := &"Effects"
+const BUS_MUFFLED_LIGHT := &"MuffledLight"
 const BUS_MUFFLED := &"Muffled"
 const BUS_MUFFLED_HEAVY := &"MuffledHeavy"
+
+## How walls muffle a sound (D-192): this many dB quieter for every wall crossed and for every
+## metre of wall, at most [constant MAX_WALL_LOSS_DB]; from [constant HEAVY_FROM_DB] it is
+## also low-passed hard. A sound that gets around a corner is only [constant AROUND_DB] quieter.
+const WALL_DB := 4.0
+const WALL_METRE_DB := 1.5
+const MAX_WALL_LOSS_DB := 18.0
+const HEAVY_FROM_DB := 10.0
+const AROUND_DB := 3.0
 ## Interface sounds (menus, the bomb-planted alert) and the music with its stingers (D-195).
 const BUS_INTERFACE := &"Interface"
 const BUS_MUSIC := &"Music"

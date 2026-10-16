@@ -11,7 +11,9 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 
 - **Task 2, gun signatures** (D-191): every gun has a close and a far shot (crossfaded from 15 to 40 m), its own three reload sounds and a loudness of its own; the SMG and hand cannon shots were redone so all seven differ; far explosions for the frag and the bomb. 27 new or redesigned sounds (Sonnet subagent), all at their target loudness. `sound_test` +4 checks.
 
-**Next:** muffling through walls (task 3).
+- **Task 3, muffling through walls** (D-192): rays from the sound to the camera count walls and metres of wall (from both ends), a bent path finds corners; three low-pass buses (MuffledLight, Muffled, MuffledHeavy) and a loss in dB, shared out per category. 15–17 µs per sound on the quick maps. `sound_test` +2 checks on walls it builds (a box and a trimesh).
+
+**Next:** reverb indoors and outdoors (task 4).
 
 ## 2026-10-16 — M12 share
 

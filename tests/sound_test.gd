@@ -15,7 +15,9 @@ extends Node
 ## reverb on Effects) and the mix table, and that guns, steps and impacts play by the table, your
 ## own without position and everyone else's from where they are. Every gun's own shot (any two
 ## differ), its far variant (duller, longer) and its three reload sounds, and a bot's shot
-## crossfading into the far one with distance.
+## crossfading into the far one with distance. Muffling (D-192) behind walls built by the test,
+## a box and a trimesh: none in the open, light round a corner, more for one wall, heavy for two,
+## the bomb's beep only half and never heavy, and a real shot behind a wall played muffled.
 ## Quits with the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
@@ -39,6 +41,7 @@ func _ready() -> void:
 	_test_floors()
 	_test_footsteps()
 	await _test_impacts()
+	await _test_occlusion()
 	_test_ui_sounds()
 	# Let every sound end before quitting: the map and its impacts go first.
 	remove_child(_map)
@@ -138,7 +141,7 @@ func _test_routing(bot: Character) -> void:
 	var near_far_stream := far.stream
 	var home := bot.global_position
 	var camera := Acoustics.get_listener(bot)
-	bot.global_position = camera.global_position + Vector3(0.0, 0.0, -50.0) if camera != null else home
+	bot.global_position = camera.global_position + Vector3(0.0, 50.0, 0.0) if camera != null else home
 	bot.weapon.call("_play", bot.weapon.data.shot_sound, false)
 	var far_volume := far.volume_db
 	var close_volume := shot.volume_db
@@ -203,8 +206,87 @@ func _test_signatures() -> void:
 			reloads.is_empty(), str(reloads))
 
 
+## Muffling through walls (M13, D-192), on walls the test builds high above the map: a 10 m
+## listener-to-sound line in the open, round a 1 m wide pillar, through one 0.3 m box wall and
+## through that and a 2 m trimesh wall; then the bomb's beep and a real 3D player behind them.
+func _test_occlusion() -> void:
+	var space := _map.get_world_3d().direct_space_state
+	var source := Vector3(0.0, 300.0, 0.0)
+	var listener := Vector3(0.0, 300.3, 10.0)
+	var open := Acoustics.occlusion(space, source, listener)
+	var pillar := _add_wall(Vector3(0.0, 300.0, 5.0), Vector3(1.0, 8.0, 0.3), false)
+	await _wait_ticks(2)
+	var around := Acoustics.occlusion(space, source, listener)
+	pillar.queue_free()
+	var first := _add_wall(Vector3(0.0, 300.0, 4.0), Vector3(12.0, 8.0, 0.3), false)
+	await _wait_ticks(2)
+	var one := Acoustics.occlusion(space, source, listener)
+	var second := _add_wall(Vector3(0.0, 300.0, 7.0), Vector3(12.0, 8.0, 2.0), true)
+	await _wait_ticks(2)
+	var two := Acoustics.occlusion(space, source, listener)
+	_check("Muffling: none in the open, light round a corner, then more for one wall and heavy for two (a box and a trimesh)",
+			open.loss_db == 0.0 and open.bus == SoundMix.BUS_EFFECTS
+			and around.around and around.bus == SoundMix.BUS_MUFFLED_LIGHT
+			and one.walls == 1 and absf(one.thickness - 0.3) < 0.05 and one.bus == SoundMix.BUS_MUFFLED
+			and two.walls == 2 and absf(two.thickness - 2.3) < 0.05 and two.bus == SoundMix.BUS_MUFFLED_HEAVY
+			and 0.0 < around.loss_db and around.loss_db < one.loss_db and one.loss_db < two.loss_db,
+			"open %s, corner %s, one wall %s, two walls %s" % [_describe(open), _describe(around), _describe(one), _describe(two)])
+	# Real players: a camera listens from the listener's place, the sounds play from the source.
+	var camera := Camera3D.new()
+	add_child(camera)
+	camera.global_position = listener
+	camera.make_current()
+	var beep := AudioStreamPlayer3D.new()
+	var shot := AudioStreamPlayer3D.new()
+	var step := AudioStreamPlayer3D.new()
+	for player in [beep, shot, step]:
+		add_child(player)
+		player.global_position = source
+	Acoustics.play(beep, preload("res://assets/sounds/bomb_beep.wav"), SoundMix.BOMB_BEEP)
+	Acoustics.play(shot, preload("res://assets/sounds/rifle_shot.wav"), SoundMix.SHOT)
+	Acoustics.play(step, preload("res://assets/sounds/footstep_1.wav"), SoundMix.FOOTSTEP)
+	var beep_db := beep.volume_db
+	var shot_db := shot.volume_db
+	var step_db := step.volume_db
+	_check("Behind two walls (11.5 dB) a step loses it all, filtered hard; a shot three quarters and the bomb's beep half, both filtered less",
+			is_equal_approx(beep_db, SoundMix.TABLE[SoundMix.BOMB_BEEP].volume_db - two.loss_db * 0.5) and beep.bus == SoundMix.BUS_MUFFLED
+			and is_equal_approx(shot_db, SoundMix.TABLE[SoundMix.SHOT].volume_db - two.loss_db * 0.75) and shot.bus == SoundMix.BUS_MUFFLED
+			and is_equal_approx(step_db, SoundMix.TABLE[SoundMix.FOOTSTEP].volume_db - two.loss_db) and step.bus == SoundMix.BUS_MUFFLED_HEAVY,
+			"beep %.1f dB on %s, shot %.1f dB on %s, step %.1f dB on %s" % [beep_db, beep.bus, shot_db, shot.bus, step_db, step.bus])
+	for node: Node in [beep, shot, step, camera, first, second]:
+		node.queue_free()
+	(_player.get_node("Head/Camera3D") as Camera3D).make_current()
+	await _wait_ticks(2)
+
+
+## A wall of the map's layer at [param center], [param size] big: a box, or a trimesh (as a
+## built map's faces) when [param concave].
+func _add_wall(center: Vector3, size: Vector3, concave: bool) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.collision_layer = PhysicsLayers.WORLD
+	body.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	if concave:
+		var mesh := BoxMesh.new()
+		mesh.size = size
+		shape.shape = mesh.create_trimesh_shape()
+	else:
+		var box := BoxShape3D.new()
+		box.size = size
+		shape.shape = box
+	body.add_child(shape)
+	add_child(body)
+	body.global_position = center
+	return body
+
+
+## A short line about an [method Acoustics.occlusion] result.
+func _describe(heard: Dictionary) -> String:
+	return "%d walls, %.2f m, around %s, -%.1f dB on %s" % [heard.walls, heard.thickness, heard.around, heard.loss_db, heard.bus]
+
+
 ## The bus layout (M13, D-190): a limiter last on Master so the mix can't clip, the reverb on
-## Effects, the two muffled buses low-passing into Effects (the heavy one lower), Interface and
+## Effects, the three muffled buses low-passing into Effects (each lower), Interface and
 ## Music straight to Master; and every category of the mix table complete.
 func _test_buses() -> void:
 	var master := AudioServer.get_bus_index(&"Master")
@@ -216,14 +298,16 @@ func _test_buses() -> void:
 	var sends := {}
 	for bus in AudioServer.bus_count:
 		sends[AudioServer.get_bus_name(bus)] = AudioServer.get_bus_send(bus)
+	var light := _low_pass_of(SoundMix.BUS_MUFFLED_LIGHT)
 	var muffled := _low_pass_of(SoundMix.BUS_MUFFLED)
 	var heavy := _low_pass_of(SoundMix.BUS_MUFFLED_HEAVY)
 	var effects := AudioServer.get_bus_index(SoundMix.BUS_EFFECTS)
 	var reverb := AudioServer.get_bus_effect(effects, 0) is AudioEffectReverb if AudioServer.get_bus_effect_count(effects) > 0 else false
-	_check("The buses: reverb on Effects, Muffled and MuffledHeavy low-pass into Effects (heavy lower), Interface and Music to Master",
-			reverb and sends.get(&"Effects") == &"Master" and sends.get(&"Muffled") == &"Effects" and sends.get(&"MuffledHeavy") == &"Effects"
-			and sends.get(&"Interface") == &"Master" and sends.get(&"Music") == &"Master" and muffled > heavy and heavy > 0.0,
-			"%s, low-pass %.0f / %.0f Hz, reverb %s" % [sends, muffled, heavy, reverb])
+	_check("The buses: reverb on Effects, MuffledLight, Muffled and MuffledHeavy low-pass into Effects (each lower), Interface and Music to Master",
+			reverb and sends.get(&"Effects") == &"Master" and sends.get(&"MuffledLight") == &"Effects" and sends.get(&"Muffled") == &"Effects"
+			and sends.get(&"MuffledHeavy") == &"Effects" and sends.get(&"Interface") == &"Master" and sends.get(&"Music") == &"Master"
+			and light > muffled and muffled > heavy and heavy > 0.0,
+			"%s, low-pass %.0f / %.0f / %.0f Hz, reverb %s" % [sends, light, muffled, heavy, reverb])
 	var broken: Array[String] = []
 	for category: StringName in SoundMix.TABLE:
 		var values: Dictionary = SoundMix.TABLE[category]

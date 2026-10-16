@@ -127,7 +127,7 @@ func _test_defaults() -> void:
 			"90 → %.4f°, back → %.4f°, 110 → %.2f°, 70 → %.2f°" % [fov, Settings.horizontal_fov(fov), Settings.vertical_fov(110.0), Settings.vertical_fov(70.0)])
 
 
-## The bus layout has its six buses (M13, D-190; `sound_test` checks their effects and the
+## The bus layout has its seven buses (M13, D-190; `sound_test` checks their effects and the
 ## muffled buses' sends), sends Effects and Interface to Master and ships with nothing muted.
 func _test_audio_layout() -> void:
 	var names: Array[String] = []
@@ -138,8 +138,8 @@ func _test_audio_layout() -> void:
 			problems.append("%s: mute %s, %.1f dB" % [AudioServer.get_bus_name(bus), AudioServer.is_bus_mute(bus), AudioServer.get_bus_volume_db(bus)])
 	var sends := (AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_EFFECTS)) == Settings.BUS_MASTER
 			and AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_INTERFACE)) == Settings.BUS_MASTER)
-	_check("The audio buses are Master, Effects, Muffled, MuffledHeavy, Interface and Music, Effects and Interface sending to Master, none muted, all at 0 dB",
-			names == ["Master", "Effects", "Muffled", "MuffledHeavy", "Interface", "Music"] and sends and problems.is_empty(),
+	_check("The audio buses are Master, Effects, MuffledLight, Muffled, MuffledHeavy, Interface and Music, Effects and Interface sending to Master, none muted, all at 0 dB",
+			names == ["Master", "Effects", "MuffledLight", "Muffled", "MuffledHeavy", "Interface", "Music"] and sends and problems.is_empty(),
 			"buses %s, sends to Master %s%s" % [names, sends, "" if problems.is_empty() else ", problems: " + ", ".join(problems)])
 
 
@@ -247,15 +247,16 @@ func _test_player() -> void:
 	_check("Resetting gives the camera its 73.74° and the mouse its sensitivity back",
 			absf(camera.fov - SCENE_CAMERA_FOV) < 0.01 and controller.sensitivity == 1.0 and not controller.invert_y,
 			"camera %.3f°, sensitivity %s" % [camera.fov, controller.sensitivity])
-	# The players' sounds: every audio player of the character and its rifle plays on Effects.
+	# The players' sounds: every audio player of the character and its rifle starts on Effects (walls
+	# move a sound to a muffled bus as it plays, M13 D-192; those send into Effects).
 	var players: Array[Node] = player.find_children("*", "AudioStreamPlayer", true, false)
 	players.append_array(player.find_children("*", "AudioStreamPlayer3D", true, false))
 	var off_bus: Array[String] = []
 	for audio in players:
 		if audio.get("bus") != Settings.BUS_EFFECTS:
 			off_bus.append("%s on %s" % [audio.name, audio.get("bus")])
-	_check("Every sound player of a character and its rifle (6: footsteps, shots, handling, 2D and 3D) plays on the Effects bus",
-			players.size() == 6 and off_bus.is_empty(), "%d players%s" % [players.size(), "" if off_bus.is_empty() else ", not on Effects: " + ", ".join(off_bus)])
+	_check("Every sound player of a character and its rifle (7: footsteps, shots, far shots, handling, 2D and 3D) starts on the Effects bus",
+			players.size() == 7 and off_bus.is_empty(), "%d players%s" % [players.size(), "" if off_bus.is_empty() else ", not on Effects: " + ", ".join(off_bus)])
 	player.free()
 
 
