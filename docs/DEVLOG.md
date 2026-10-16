@@ -33,7 +33,10 @@
 
 **M7 is built** (15 tasks, D-090 to D-099) and waits for your playtest. Main isn't merged: the coordinating session merges `m7-arsenal`.
 
-**Next:** M9 — Multiplayer.
+**Then your new direction (D-120) added tasks 16 to 19** (main merged in first, for the M10 plan):
+- **Task 16, random map weapons** (D-098): the fixed Heron and Breaker spots are gone. `MapWeapons` puts guns out at random places from the navmesh at runtime (on the islands the spawns stand on, never within 15 m of a spawn or on a bomb site, 8 m from respawn points in Team Deathmatch, 15 m apart), a random gun from a weighted pool (the Hornet most often, the Heron rarest), on the gold ring with a new beam of light. Two each round; three at a time in Team Deathmatch, replaced elsewhere 20 s after being taken. The map files are back to main's, so the map-kit session can edit them freely.
+
+**Next:** tasks 17 (class draft), 18 (Team Deathmatch's loadout and pickups) and 19 (checks).
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

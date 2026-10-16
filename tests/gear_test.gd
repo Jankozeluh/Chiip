@@ -469,8 +469,9 @@ func _test_respawn_and_practice_loadouts() -> void:
 	await _wait_ticks(2)
 
 
-## M7 task 9 (D-098): a power-weapon spot puts a floating gun out, a walk over takes it, the spot
-## dims, comes back after its time (team respawn, practice), and in rounds at every round start.
+## M7 tasks 9 and 16 (D-098): a map weapon floats over its ring with a beam, a walk over takes it
+## and the spot goes away; the round manager puts out new ones at random places every round (none
+## replaced during a round), and Team Deathmatch replaces a taken one somewhere else after a while.
 func _test_weapon_spots() -> void:
 	var map := MAP_SCENE.instantiate()
 	add_child(map)
@@ -478,42 +479,89 @@ func _test_weapon_spots() -> void:
 	_silence(player)
 	var spot := (load("res://weapons/weapon_spot.tscn") as PackedScene).instantiate() as WeaponSpot
 	spot.weapon = load("res://weapons/sniper.tres")
-	spot.respawn_time = 2.0
 	map.add_child(spot)
 	spot.global_position = player.global_position + Vector3(4, 0, 0)
-	spot.refill()
+	var taken_by: Array = []
+	spot.taken.connect(func(by: Character) -> void: taken_by.append(by))
 	await _wait_ticks(3)
 	var pickup := spot.get_pickup()
 	var out := pickup != null and pickup.floating and pickup.data.id == &"sniper" and pickup.magazine == 5 \
-			and pickup.global_position.y > spot.global_position.y + 0.5
+			and pickup.global_position.y > spot.global_position.y + 0.5 and spot.get_node_or_null("Beam") != null
 	player.inventory.set_loadout([KNIFE, PISTOL] as Array[WeaponData])
 	player.global_position = spot.global_position
 	await _wait_ticks(3)
 	var taken := player.inventory.get_in_slot(WeaponData.Slot.PRIMARY) != null \
-			and player.inventory.get_in_slot(WeaponData.Slot.PRIMARY).data.id == &"sniper" and not spot.has_weapon()
-	var label_hidden := not (spot.get_node("Name") as Label3D).visible
-	player.global_position += Vector3(0, 0, 6)
-	await _wait_seconds(2.1)
-	_check("A power-weapon spot shows a floating Heron; walking over it takes it, the spot dims, and it's back after its time",
-			out and taken and label_hidden and spot.has_weapon(), "out %s, taken %s, dimmed %s, back %s" % [out, taken, label_hidden, spot.has_weapon()])
+			and player.inventory.get_in_slot(WeaponData.Slot.PRIMARY).data.id == &"sniper"
+	_check("A map weapon shows a floating Heron with a beam; walking over it takes it, and the spot tells who and goes away",
+			out and taken and taken_by == [player] and not is_instance_valid(spot),
+			"out %s, taken %s, by %s, spot still there %s" % [out, taken, taken_by, is_instance_valid(spot)])
+	# Rounds: two at random places, away from the spawns; a taken one isn't replaced until the next round.
+	var settings := _settings()
+	settings.team_size = 1
+	settings.enemy_team_size = 1
 	var rounds := RoundManager.new()
-	rounds.settings = _settings()
+	rounds.settings = settings
 	rounds.rng.seed = 5
 	map.add_child(rounds)
 	await _wait_ticks(3)
-	var untimed := not spot.timed and spot.has_weapon()
+	var first := rounds.map_weapons.get_spots()
+	var first_places: Array[Vector3] = []
+	var far := true
+	for each in first:
+		first_places.append(each.global_position)
+		for group in [Teams.ATTACK_SPAWN_GROUP, Teams.DEFEND_SPAWN_GROUP]:
+			for marker in get_tree().get_nodes_in_group(group):
+				var gap := (marker as Node3D).global_position - each.global_position
+				far = far and Vector2(gap.x, gap.z).length() >= 15.0
+	_check("A round puts out two map weapons, each at least 15 m from every spawn",
+			first.size() == 2 and far, "%d out, far %s, at %s" % [first.size(), far, first_places])
+	var placed: Array = []
+	rounds.map_weapons.weapon_placed.connect(func(new_spot: WeaponSpot) -> void: placed.append(new_spot))
 	await _wait_for_live(rounds)
-	player.global_position = spot.global_position
+	player.inventory.set_loadout([KNIFE, PISTOL] as Array[WeaponData])
+	player.global_position = first[0].global_position
 	await _wait_ticks(3)
-	var gone := not spot.has_weapon()
+	var took := player.inventory.get_in_slot(WeaponData.Slot.PRIMARY) != null
 	await _wait_seconds(2.5)
-	var waits := not spot.has_weapon()
+	var none_new := placed.is_empty()
 	for enemy in rounds.get_members(1):
 		enemy.take_damage(500.0, Hitbox.Zone.CHEST, player)
 	await _wait_for_phase(rounds, RoundManager.Phase.FREEZE)
 	await _wait_ticks(2)
-	_check("In rounds the spot doesn't come back on a timer, but a fresh gun is out at the next round start",
-			untimed and gone and waits and spot.has_weapon(), "untimed %s, taken %s, still empty later %s, back next round %s" % [untimed, gone, waits, spot.has_weapon()])
+	var second := rounds.map_weapons.get_spots()
+	var moved := second.size() == 2 and second.all(func(each: WeaponSpot) -> bool: return not first_places.has(each.global_position))
+	_check("In rounds a taken one isn't replaced during the round; the next round has two new ones at other places",
+			took and none_new and moved, "took %s, none new %s, moved %s" % [took, none_new, moved])
+	remove_child(map)
+	map.queue_free()
+	await _wait_ticks(2)
+	# Team Deathmatch: three out, a taken one replaced somewhere else after the replace time.
+	map = MAP_SCENE.instantiate()
+	add_child(map)
+	player = map.get_node("Player") as Character
+	_silence(player)
+	settings = _settings()
+	settings.team_size = 1
+	settings.enemy_team_size = 1
+	settings.map_weapon_replace_time = 1.0
+	var respawn := RespawnMatch.new()
+	respawn.settings = settings
+	respawn.rng.seed = 5
+	map.add_child(respawn)
+	await _wait_ticks(3)
+	var three := respawn.map_weapons.get_spots().size()
+	await _wait_for_live(respawn)
+	var target := respawn.map_weapons.get_spots()[0]
+	var old_place := target.global_position
+	player.inventory.set_loadout([KNIFE, PISTOL] as Array[WeaponData])
+	player.global_position = old_place
+	await _wait_ticks(3)
+	var two := respawn.map_weapons.get_spots().size()
+	await _wait_seconds(1.1)
+	var again := respawn.map_weapons.get_spots()
+	var elsewhere := again.size() == 3 and again.all(func(each: WeaponSpot) -> bool: return each.global_position != old_place)
+	_check("Team Deathmatch keeps three out: a taken one comes back somewhere else after the replace time",
+			three == 3 and two == 2 and elsewhere, "%d, then %d, then %d (elsewhere %s)" % [three, two, again.size(), elsewhere])
 	remove_child(map)
 	map.queue_free()
 	await _wait_ticks(2)
@@ -533,10 +581,11 @@ func _settings() -> MatchSettings:
 	return settings
 
 
-## Every gun on the floor (under [param root], or anywhere in this test).
+## Every gun lying on the floor (under [param root], or anywhere in this test), not counting the
+## map weapons floating over their rings.
 func _pickups(root: Node = null) -> Array:
 	return get_tree().get_nodes_in_group(WeaponPickup.GROUP).filter(func(node: Node) -> bool:
-		return not node.is_queued_for_deletion() and (root == null or root.is_ancestor_of(node)))
+		return not node.is_queued_for_deletion() and (node as WeaponPickup).spot == null and (root == null or root.is_ancestor_of(node)))
 
 
 ## True if [param model] is [param data]'s model (or there's none when the weapon has no model yet).

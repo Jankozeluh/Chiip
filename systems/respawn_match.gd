@@ -97,9 +97,13 @@ func _freeze_time() -> float:
 	return minf(settings.freeze_time, FREEZE_TIME)
 
 
-## The power weapons come back 30 s after being taken (D-098).
-func _spots_timed() -> bool:
-	return true
+## Team Deathmatch keeps [member MatchSettings.respawn_map_weapons] guns out all the time: a taken
+## one is replaced somewhere else after [member MatchSettings.map_weapon_replace_time] (D-098). They
+## keep away from the respawn points too, since anyone can come back at any of them.
+func _set_up_map_weapons(weapons: MapWeapons) -> void:
+	weapons.count = settings.respawn_map_weapons
+	weapons.replace_time = settings.map_weapon_replace_time
+	weapons.avoid_respawn_points = true
 
 
 ## No money here (D-090): each class spawns with its own loadout (its signature gun, the Sparrow,

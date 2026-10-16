@@ -127,6 +127,9 @@ var rng := RandomNumberGenerator.new()
 ## [member MatchSettings.bomb_rounds] off): rounds are then won by elimination
 ## and time only.
 var bomb: Bomb
+## The guns that appear at random places on the map (D-098): a child of this node, made when the
+## match starts.
+var map_weapons: MapWeapons
 
 ## Every participant's money: Character → int.
 var _money: Dictionary = {}
@@ -266,6 +269,7 @@ func _start_match() -> void:
 	winner = -1
 	_reset_money()
 	_add_bomb()
+	_add_map_weapons()
 	_start_round()
 
 
@@ -276,7 +280,7 @@ func _start_round() -> void:
 	for team in Teams.COUNT:
 		_spawn_team(team)
 	_clear_floor()
-	_refill_spots()
+	_place_map_weapons()
 	for character in _participants:
 		if is_instance_valid(character):
 			_give_loadout(character)
@@ -635,20 +639,28 @@ func _give_loadout(character: Character) -> void:
 	character.set_defuse_kit(false)
 
 
-## The map's power-weapon spots: rounds put a fresh gun on each at every round start (D-098);
-## a [RespawnMatch] lets them come back on their own timers.
-func _refill_spots() -> void:
-	var map := get_parent()
-	for node in get_tree().get_nodes_in_group(WeaponSpot.GROUP):
-		if map.is_ancestor_of(node):
-			var spot := node as WeaponSpot
-			spot.timed = _spots_timed()
-			spot.refill()
+## Makes [member map_weapons] (D-098): [member MatchSettings.map_weapons] guns each round, away
+## from the team spawns and off the bomb sites, drawn from a generator seeded from [member rng]
+## (so placing them doesn't change the spawn spots a seed gives).
+func _add_map_weapons() -> void:
+	map_weapons = MapWeapons.new()
+	map_weapons.name = "MapWeapons"
+	map_weapons.rng.seed = rng.seed + 7919
+	_set_up_map_weapons(map_weapons)
+	add_child(map_weapons)
 
 
-## True if power-weapon spots come back by themselves after being taken (not in rounds).
-func _spots_timed() -> bool:
-	return false
+## The rounds' map weapons: a new set every round, none replaced during it.
+func _set_up_map_weapons(weapons: MapWeapons) -> void:
+	weapons.count = settings.map_weapons
+	weapons.replace_time = -1.0
+	weapons.avoid_bomb_sites = bomb != null
+
+
+## Every round start: the last round's map weapons go, new ones appear somewhere else.
+func _place_map_weapons() -> void:
+	if map_weapons != null:
+		map_weapons.replace_all()
 
 
 ## Removes every gun lying on the map's floor (a new round starts clean).

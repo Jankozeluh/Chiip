@@ -99,3 +99,12 @@ enum GameMode {
 ## The bots shop at the start of each round by their money (D-099). Tests of the money rules turn
 ## it off, so only what they do changes the numbers.
 @export var bots_buy: bool = true
+
+@export_group("Map weapons")
+## Guns that appear at random places on the map (M7 task 16, D-098, [MapWeapons]): how many each
+## round in rounds (0: none).
+@export var map_weapons: int = 2
+## How many are out at a time in a team respawn match (Team Deathmatch).
+@export var respawn_map_weapons: int = 3
+## Seconds before a taken map weapon is replaced somewhere else in a team respawn match.
+@export var map_weapon_replace_time: float = 20.0

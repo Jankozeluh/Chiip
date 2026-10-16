@@ -2,7 +2,7 @@
 
 > Living document: it changes as the game is built and playtested. Values marked *(tune)* are starting points, not final numbers.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## 1. Pitch
 
@@ -105,6 +105,8 @@ Starting physics values, CS:GO-like *(tune)*:
 
 Weapons get their own names in Chiip (provisional, D-090: your check). CS names are used here only as a reference. Every weapon is one data file (`weapons/<role>.tres`, D-091), and **`docs/weapons.csv`** is the balancing table exported from those files (`tools/export_weapon_table.gd`): every stat plus damage per second, shots to kill with and without armor, and whether a headshot kills through a helmet, at 10 and 30 m. Open it in Excel or Numbers. Starting values *(tune)*:
 
+You get weapons three ways: the **loadout** (rounds: the knife and the Sparrow; Team Deathmatch: your class's signature gun, the Sparrow, the knife and a grenade), the **buy menu** (rounds only, 4.6), and **pickups**: guns the dead drop and **map weapons** that appear at random places each round (4.6, D-098).
+
 | Slot | Weapon (role) | CS reference | Price | Kill reward | Damage | Armor pen. | Fire rate | Magazine | Reload | Speed (u/s) | Draw |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Pistol | **Sparrow** (service pistol, semi-auto) | Glock / USP | in every loadout ($200 if you lost it) | $200 | 32, ×0.90 | 50% | 400 /min | 15 + 45 | 2.2 s | 240 | 0.6 s |
@@ -181,7 +183,7 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
 - **In bomb rounds** (D-081): the attackers pick one site at random. The carrier's group takes the route that ends nearest to it, and after their routes all attackers clear around that site. The carrier plants near the site's middle, or goes straight there when less than 30 s of round time would be left for it. The attacker bot nearest a dropped bomb fetches it. After the plant the attackers watch the bomb from 5–10 m away; every defender retakes: the first at the bomb defuses and the others cover within 7 m, looking away from it. A bot planting or defusing stops to fight an enemy who shows up unless it's at least 70% done (or the fuse wouldn't allow a restart). The carrier and the fetcher don't go and check noises, and after the plant bots only check enemies within 15 m of the bomb.
 - **In the team respawn mode** (D-083) bots hunt in pairs: each team's bots form groups of about two. The member alive the longest leads: it runs to a teammate's sighting (anything a teammate saw or heard in the last 6 s) if it's within 25 m, otherwise it roams from patrol point to patrol point, looking left and right at each. Its partner follows about 6 m behind and to one side, watching that flank; the leader walks while the partner catches up. A bot only goes to check what it saw or heard within 25 m, so the fights spread over the map instead of everyone running to every gunshot.
 - **Buying** (D-099): bots buy as a team as the freeze time begins: a pistol round in the first round of each half, a full buy when the team averages $3,300 (each class its gun, a vest and a helmet, kits for defenders, grenades), a force buy (cheap guns and a vest) when a team is on match point, in the last round of a half or with $2,400 on average, and otherwise a save. At half time each bot changes class (the team stays a mix).
-- **Using the arsenal** (D-099): a gun in hand always (the pistol when the primary is empty, or instead of a reload up close), the Heron scoped and still before it fires, the shotgun only within 18 m, guns worth $500 more picked up within 10 m (power weapons within 15 m), and frags and flashbangs thrown at enemies they heard or lost sight of 6–24 m away (looking away from their own flash).
+- **Using the arsenal** (D-099): a gun in hand always (the pistol when the primary is empty, or instead of a reload up close), the Heron scoped and still before it fires, the shotgun only within 18 m, guns worth $500 more picked up within 10 m (map weapons within 15 m), and frags and flashbangs thrown at enemies they heard or lost sight of 6–24 m away (looking away from their own flash).
 - **Getting unstuck:** a bot that tries to walk but gets nowhere for 0.5 s jumps (like a CS bot); after 1.2 s it backs off to the side and finds a new path.
 - **Holding fire:** a bot doesn't shoot while a living teammate (you included) is within 0.6 m of its line of fire, whether or not friendly fire is on.
 - Measured in a bots-only 3v3 on the test map: defenders are on their spots after about 7 s, attackers are 36 m out of spawn after 10 s, the first fight starts after about 12 s, and rounds end by elimination after 27–47 s.
@@ -238,8 +240,8 @@ A mix of CS and Call of Duty (D-090, your answers of 2026-10-16): a **light econ
 
 - **Buying:** during the 15 s freeze time, when everyone stands at their spawn (so there is no buy zone): **B** opens the buy menu. Prices: Verdict $500; Hornet and Breaker $1,000; Ram and Warden $2,500; Heron $4,000; Sparrow $200 (only if you lost yours); vest $500, vest and helmet $800; defuse kit $300 (defenders); Frag $300, Flashbang $200, Smoke $300. A full buy (rifle, vest and helmet, a grenade) is $3,600, so a winning team can buy every round, and a losing team saves for a round or two, buys cheap, or takes guns off the floor.
 - **Pickups:** a gun the dead drop (their best one: the primary, else the pistol) lies on the floor for the rest of the round with its ammo. Walk over it to take it into a free slot; **E** while looking at it swaps it for the gun in that slot. **G** drops the gun you hold.
-- **Power weapons:** each quick map has two marked spots in contested places, a **Heron** and a **Breaker** on a glowing floor ring. They are back at every round start (in team respawn, 30 s after being taken).
-- **Team respawn has no money:** you spawn with your class's loadout (its signature gun, the Sparrow, the knife and one grenade); pickups and power weapons work as in rounds; the class menu works any time and your next respawn brings the new class's loadout.
+- **Map weapons** (D-098): guns appear at **random places** on the map, never within 15 m of a team's spawn (and 8 m of a respawn point in Team Deathmatch) or on a bomb site, and never always in the same place. Which gun is random too: the Hornet most often, then the Warden, the Ram and the Breaker, the Verdict and the Heron rarest. Each floats and turns over a glowing gold ring with its name and a beam of light. Rounds: **two** new ones every round. Team Deathmatch: **three** out at a time, a taken one replaced somewhere else 20 s later. Walk over one to take it, like any gun on the floor.
+- **Team respawn has no money:** you spawn with your class's loadout (its signature gun, the Sparrow, the knife and one grenade); pickups and map weapons work as in rounds; the class menu works any time and your next respawn brings the new class's loadout.
 - **Practice:** your class's loadout, and the buy menu gives anything for free, any time.
 
 ### 4.7 Bomb mode

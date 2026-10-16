@@ -1,15 +1,16 @@
 class_name WeaponSpot
 extends Node3D
-## A power-weapon spot on a map (M7 task 9, D-098): a glowing gold ring on the floor with
-## [member weapon] turning above it and its name over it, so you can see it's there from across
+## A map weapon (M7 tasks 9 and 16, D-098): a gun floating and turning over a glowing gold ring on
+## the floor, with its name over it and a thin beam of light, so you can see it's there from across
 ## the area. Walk over it to take the gun (or press E to swap it for the one in that slot), like
-## any gun on the floor ([WeaponPickup], [Inventory]). The ring dims while it's empty.
+## any gun on the floor ([WeaponPickup], [Inventory]). Once the gun is taken the spot emits
+## [signal taken] and goes away.
 ##
-## When it comes back: in rounds the [RoundManager] puts a fresh one out at every round start
-## ([method refill], [member timed] off); in team respawn and practice it comes back by itself
-## [member respawn_time] seconds after being taken. Counted in physics ticks.
-##
-## Maps put these under a "Pickups" node, in the group [constant GROUP] (docs/MAPS.md).
+## [MapWeapons] puts these out at random places (no map places them any more) and decides when
+## new ones come.
+
+## Emitted when [param by] took the gun; the spot frees itself right after.
+signal taken(by: Character)
 
 ## Group of every spot.
 const GROUP := "weapon_spots"
@@ -21,16 +22,14 @@ const RING_COLOR := Color(1.0, 0.78, 0.25)
 const FULL_GLOW := 2.0
 const EMPTY_GLOW := 0.25
 
-## The gun it puts out.
+## How tall the beam of light is (metres), and how strongly it shows.
+const BEAM_HEIGHT := 3.2
+const BEAM_ALPHA := 0.22
+
+## The gun it puts out. Set before it enters the tree.
 @export var weapon: WeaponData
-## Seconds before it comes back after being taken, when [member timed].
-@export var respawn_time: float = 30.0
-## Comes back by itself after [member respawn_time] (team respawn, practice). The round manager
-## turns it off and refills it at every round start instead.
-@export var timed: bool = true
 
 var _pickup: WeaponPickup
-var _wait_left: float = -1.0
 var _ring_material: StandardMaterial3D
 var _label: Label3D
 
@@ -39,13 +38,6 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	_build_marker()
 	refill()
-
-
-func _physics_process(delta: float) -> void:
-	if _wait_left >= 0.0 and timed:
-		_wait_left -= delta
-		if _wait_left < 0.0:
-			refill()
 
 
 ## True while a gun waits on it.
@@ -60,7 +52,6 @@ func get_pickup() -> WeaponPickup:
 
 ## Puts a fresh gun out (with full ammo) unless one is there already.
 func refill() -> void:
-	_wait_left = -1.0
 	if has_weapon() or weapon == null or not is_inside_tree():
 		_set_glow(has_weapon())
 		return
@@ -80,12 +71,13 @@ func clear() -> void:
 	_set_glow(false)
 
 
-## Called by [method Inventory.take] when someone takes the gun: the spot is empty until
-## [method refill], or for [member respawn_time] when [member timed].
-func on_taken(_by: Character) -> void:
+## Called by [method Inventory.take] when someone takes the gun: tells [signal taken] and goes away.
+func on_taken(by: Character) -> void:
 	_pickup = null
 	_set_glow(false)
-	_wait_left = respawn_time
+	remove_from_group(GROUP)
+	taken.emit(by)
+	queue_free()
 
 
 func _build_marker() -> void:
@@ -106,6 +98,24 @@ func _build_marker() -> void:
 	ring.material_override = _ring_material
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ring)
+	var beam := MeshInstance3D.new()
+	beam.name = "Beam"
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 0.035
+	cylinder.bottom_radius = 0.06
+	cylinder.height = BEAM_HEIGHT
+	cylinder.radial_segments = 6
+	cylinder.rings = 1
+	beam.mesh = cylinder
+	beam.position = Vector3.UP * (BEAM_HEIGHT * 0.5)
+	var beam_material := StandardMaterial3D.new()
+	beam_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	beam_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	beam_material.albedo_color = Color(RING_COLOR, BEAM_ALPHA)
+	beam_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	beam.material_override = beam_material
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(beam)
 	_label = Label3D.new()
 	_label.name = "Name"
 	_label.text = weapon.display_name.to_upper() if weapon != null else ""

@@ -12,9 +12,6 @@
 [ext_resource type="NavigationMesh" path="res://maps/depot_navmesh.tres" id="navmesh"]
 [ext_resource type="FontFile" path="res://assets/fonts/Silkscreen-Regular.ttf" id="pixel_font"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
-[ext_resource type="PackedScene" path="res://weapons/weapon_spot.tscn" id="weapon_spot"]
-[ext_resource type="Resource" path="res://weapons/sniper.tres" id="spot_sniper"]
-[ext_resource type="Resource" path="res://weapons/shotgun.tres" id="spot_shotgun"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_77aw4"]
 albedo_texture = ExtResource("4_77aw4")
@@ -865,13 +862,3 @@ text = "B"
 font = ExtResource("pixel_font")
 font_size = 16
 outline_size = 2
-
-[node name="Pickups" type="Node3D" parent="." unique_id=795425564]
-
-[node name="HeronSpot" parent="Pickups" unique_id=423946139 instance=ExtResource("weapon_spot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -1)
-weapon = ExtResource("spot_sniper")
-
-[node name="BreakerSpot" parent="Pickups" unique_id=947876999 instance=ExtResource("weapon_spot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
-weapon = ExtResource("spot_shotgun")

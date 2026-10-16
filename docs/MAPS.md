@@ -1,6 +1,6 @@
 # Chiip — Maps
 
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 >
 > The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed and without baked lighting. They play as bomb rounds (D-080). Decisions: D-060–D-063.
 
@@ -57,21 +57,14 @@ Every map scene has the same nodes, like the test map:
 | `Objectives` | `BombSiteA`, `BombSiteB`: `Area3D` (group `bomb_sites`) on the triggers layer, watching players and bots, with a floating letter. Saved with `monitoring` off; the bomb switches it on (D-080) | Bomb rounds |
 | `Respawns` | `North1–3`, `South1–3`, `West1–3`, `East1–3` (`respawn_points`, also `bot_spawns` and `player_spawns`) | Practice now, respawn mode later |
 | `Practice` | 14–16 `Patrol…` markers (`patrol_points`) | Practice bots |
-| `Pickups` | `HeronSpot` and `BreakerSpot`: `weapons/weapon_spot.tscn` (group `weapon_spots`, its `weapon` set to the sniper rifle or the shotgun), M7 (D-098) | Power weapons |
 | `Lamps`, `Sun`, `WorldEnvironment` | Lighting and the map's sky and fog | — |
 | `Player` | You (stands at the attackers' spawn when no rules move you) | `main.gd` |
 
-## Power weapons (M7, D-098)
+## Map weapons (M7, D-098)
 
-Each map has two power-weapon spots, a **Heron** (sniper rifle) and a **Breaker** (shotgun), on a glowing gold ring with the gun turning above it. They sit in different lanes, where both teams walk about as far (the maps test allows 12 m of difference):
+Maps place no weapons. `MapWeapons` (`systems/map_weapons.gd`) puts guns out at random places at runtime: on the walkable floor of the navmesh, on the islands the spawn markers stand on, at least 15 m from every team spawn, off the bomb sites in bomb rounds, 8 m from every respawn point in Team Deathmatch, and 15 m apart (two per round; three at a time in Team Deathmatch). So a map gets map weapons as long as it has a baked navmesh and its spawn markers; the maps test checks twenty rounds of draws on every quick map.
 
-| Map | Heron | Breaker | Walking from the defenders / attackers |
-|---|---|---|---|
-| Depot | West yard, (−12, 0, −1) | Warehouse's east side, (8, 0, 0) | Heron 27 / 36 m, Breaker 26 / 26 m |
-| Square | East, the market hall's south half, (21, 0, −2) | West alley, (−17, 0, 0) | Heron 35 / 40 m, Breaker 43 / 37 m |
-| Spillway | East, (12, 0, −3) | West, (−14, 0, 0) | Heron 28 / 33 m, Breaker 34 / 30 m |
-
-The long hall on Square and the open yards suit the Heron; the alleys and the warehouse the Breaker. They were placed on patrol points (known to be on the navmesh) with the most even walks; move them in the scene if a playtest says otherwise.
+A mapper only has to keep in mind: floor that should never get a gun must not be on the spawns' navmesh island (a roof or a closed room is fine as its own island), and a map needs enough open floor more than 15 m from its spawns (the quick maps have about 40% of their floor that far).
 
 ## Editing a map
 
