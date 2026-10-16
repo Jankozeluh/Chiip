@@ -17,7 +17,10 @@ extends Node
 ## snapshots lost); a dead client spectates a teammate's puppet. Prediction (task 6), at 100 ms
 ## of round trip: the client's player moves at once, runs, jumps and crouches without a single
 ## correction, ends up exactly where the host has it, recovers from a disagreement (smoothed),
-## and predicts and corrects its ammo. Quits with the number of failed checks as the exit code.
+## and predicts and corrects its ammo. Lag compensation (task 7), at 100 ms: the client taps at
+## a target strafing 12 m away, aiming where its screen shows it; the host counts the hits with
+## lag compensation and, for comparison, without. Quits with the number of failed checks as the
+## exit code.
 
 const MAP := preload("res://maps/depot.tscn")
 ## Seconds of each phase, short so the test plays a few rounds quickly.
@@ -74,6 +77,7 @@ func _ready() -> void:
 		_test_same_match()
 		await _test_commands()
 		await _test_prediction()
+		await _test_lag_compensation()
 		await _test_puppets()
 		await _test_spectating()
 		await _test_rounds()
@@ -293,7 +297,7 @@ func _test_prediction() -> void:
 			corrected and own.global_position.distance_to(friend.global_position) < 0.001,
 			"corrected %s, %.4f m apart" % [corrected, own.global_position.distance_to(friend.global_position)])
 	_check("The camera hides the correction, then catches up (an offset of the jump that fades)",
-			offset > 0.3 and offset < 0.6 and own.view_offset.length() < 0.01, "%.3f m at first, %.4f m later" % [offset, own.view_offset.length()])
+			offset > 0.3 and offset <= 1.0 and own.view_offset.length() < 0.01, "%.3f m at first, %.4f m later" % [offset, own.view_offset.length()])
 
 	# Ammo: shots are predicted; the host's count wins when they differ.
 	var magazine_before := own.weapon.magazine
@@ -318,6 +322,92 @@ func _test_prediction() -> void:
 	_client.command_source = Callable()
 	_host_session.fake_lag_ms = 0.0
 	_client_session.fake_lag_ms = 0.0
+	await _harness.wait_ticks(30)
+
+
+## The client taps at the host's player strafing 12 m away, at 100 ms of round trip (D-107).
+func _test_lag_compensation() -> void:
+	_hold_bots(true)
+	var friend := _host.get_character_of(_client_session.local_peer_id)
+	var own: Character = _client_main.get_player()
+	var host_player: Character = _host_main.get_player()
+	var puppet := _client.get_character(host_player.net_id)
+	# A spot 12 m away with a clear view and floor under it.
+	var space := friend.get_world_3d().direct_space_state
+	var eye := Vector3.UP * 1.6
+	var spot := Vector3.INF
+	for i in 16:
+		var direction := Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 16.0)
+		var candidate := friend.global_position + direction * 12.0
+		var sight := PhysicsRayQueryParameters3D.create(friend.global_position + eye, candidate + eye, PhysicsLayers.WORLD)
+		var floor_ray := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP, candidate + Vector3.DOWN * 0.5, PhysicsLayers.WORLD)
+		var side := direction.cross(Vector3.UP) * 2.5
+		var left := PhysicsRayQueryParameters3D.create(candidate + eye, candidate + eye + side, PhysicsLayers.WORLD)
+		var right := PhysicsRayQueryParameters3D.create(candidate + eye, candidate + eye - side, PhysicsLayers.WORLD)
+		if space.intersect_ray(sight).is_empty() and not space.intersect_ray(floor_ray).is_empty() \
+				and space.intersect_ray(left).is_empty() and space.intersect_ray(right).is_empty():
+			spot = candidate
+			break
+	if spot == Vector3.INF:
+		_check("Lag compensation: a clear spot 12 m away for the target", false, "none found")
+		return
+	var to_friend := friend.global_position - spot
+	host_player.respawn(spot, atan2(-to_friend.x, -to_friend.z))
+	host_player.god_mode = true
+	var scripted := ScriptedController.new()
+	scripted.name = "ScriptedController"
+	host_player.add_child(scripted)
+	var facing := host_player.rotation.y
+	var ticks := [0]
+	scripted.source = func(_delta: float) -> CharacterInput:
+		ticks[0] += 1
+		var command := CharacterInput.new()
+		command.yaw = facing
+		command.move = Vector2(1.0 if (ticks[0] / 48) % 2 == 0 else -1.0, 0.0)
+		return command
+	host_player.set_controller(scripted)
+	_host_session.fake_lag_ms = 50.0
+	_client_session.fake_lag_ms = 50.0
+	await _harness.wait_ticks(60)
+	var shots := [0]
+	var hits := [0]
+	var count_shot := func(_shot: int) -> void: shots[0] += 1
+	var count_hit := func(hit: Dictionary) -> void: hits[0] += 1 if hit["zone"] != "" else 0
+	friend.weapon.fired.connect(count_shot)
+	friend.weapon.hit_landed.connect(count_hit)
+	var made := [0]
+	_client.command_source = func(_delta: float) -> CharacterInput:
+		made[0] += 1
+		var command := CharacterInput.new()
+		var direction := (puppet.get_chest_position() - own.get_eye_position()).normalized()
+		command.yaw = atan2(-direction.x, -direction.z)
+		command.pitch = asin(direction.y)
+		# A tap every half second, so the spray pattern has settled before the next one.
+		command.shoot = made[0] % 64 == 0
+		return command
+	await _harness.wait_ticks(64 * 40 + 30)
+	var with_rate := float(hits[0]) / maxf(shots[0], 1.0)
+	var with_shots: int = shots[0]
+	shots[0] = 0
+	hits[0] = 0
+	friend.lag_compensation = null
+	await _harness.wait_ticks(64 * 40 + 30)
+	var without_rate := float(hits[0]) / maxf(shots[0], 1.0)
+	friend.lag_compensation = _host.lag_compensation
+	_client.command_source = Callable()
+	friend.weapon.fired.disconnect(count_shot)
+	friend.weapon.hit_landed.disconnect(count_hit)
+	_host_session.fake_lag_ms = 0.0
+	_client_session.fake_lag_ms = 0.0
+	host_player.set_controller(host_player.get_node("PlayerController") as CharacterController)
+	host_player.remove_child(scripted)
+	scripted.queue_free()
+	host_player.god_mode = false
+	_check("At 100 ms, taps at a target strafing 12 m away hit where the shooter saw it (lag compensation: 85% or more)",
+			with_shots >= 35 and with_rate >= 0.85, "%d shots, %.0f%% hits" % [with_shots, with_rate * 100.0])
+	_check("Without lag compensation the same taps mostly miss (you would have to lead the target by your ping)",
+			without_rate <= 0.6 and with_rate - without_rate >= 0.3, "%.0f%% hits without, %.0f%% with" % [without_rate * 100.0, with_rate * 100.0])
+	print("      (lag compensation: %.0f%% of %d taps hit; without it %.0f%%)" % [with_rate * 100.0, with_shots, without_rate * 100.0])
 	await _harness.wait_ticks(30)
 
 

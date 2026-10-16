@@ -8,7 +8,10 @@ extends Node
 ## with unique and cleaned names and balanced teams, team requests and full teams, messages
 ## from the host to everyone and from a client to the host, game-stream packets both ways,
 ## fake lag (counted in ticks), fake loss (unreliable packets only) with reliable packets kept in
-## order under jitter, a client leaving, and the host closing the session.
+## order under jitter, a client leaving, and the host closing the session. And lag compensation's
+## maths ([LagCompensation], D-107): the ray-against-box test agrees with the physics engine's own
+## ray test, and a shot is checked against the hit zones where they were at its view tick
+## (between two records, at most 400 ms back), with walls still in the way.
 ## Quits with the number of failed checks as the exit code.
 
 var _harness: NetHarness
@@ -19,6 +22,7 @@ func _ready() -> void:
 	_harness = NetHarness.new()
 	add_child(_harness)
 	await _test_session()
+	await _test_lag_compensation()
 	remove_child(_harness)
 	_harness.queue_free()
 	await get_tree().physics_frame
@@ -152,6 +156,107 @@ func _test_packets(host: NetSession, first: NetSession, second: NetSession) -> v
 	host.packet_received.disconnect(host_listener)
 	first.packet_received.disconnect(first_listener)
 	second.packet_received.disconnect(second_listener)
+
+
+func _test_lag_compensation() -> void:
+	# The slab test against the physics engine: 40 boxes turned every way, 300 rays.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2024
+	var arena := Node3D.new()
+	add_child(arena)
+	var boxes: Array = []
+	for i in 40:
+		var area := Area3D.new()
+		area.collision_layer = PhysicsLayers.HITBOXES
+		area.collision_mask = 0
+		area.monitoring = false
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(rng.randf_range(0.1, 0.6), rng.randf_range(0.1, 0.6), rng.randf_range(0.1, 0.6))
+		shape.shape = box
+		area.add_child(shape)
+		arena.add_child(area)
+		area.global_transform = Transform3D(Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU)),
+				Vector3(rng.randf_range(-4.0, 4.0), rng.randf_range(-4.0, 4.0), rng.randf_range(-4.0, 4.0)))
+		boxes.append([area, box.size * 0.5])
+	await _harness.wait_ticks(2)
+	var space := arena.get_world_3d().direct_space_state
+	var agree := 0
+	var worst := 0.0
+	var hits := 0
+	for i in 300:
+		var from := Vector3(rng.randf_range(-6.0, 6.0), rng.randf_range(-6.0, 6.0), 8.0)
+		var to := Vector3(rng.randf_range(-6.0, 6.0), rng.randf_range(-6.0, 6.0), -8.0)
+		var query := PhysicsRayQueryParameters3D.create(from, to, PhysicsLayers.HITBOXES)
+		query.collide_with_areas = true
+		query.collide_with_bodies = false
+		var physics := space.intersect_ray(query)
+		var nearest := INF
+		var direction := (to - from).normalized()
+		for entry: Array in boxes:
+			var hit := LagCompensation.ray_box(from, direction, (entry[0] as Node3D).global_transform, entry[1])
+			if not hit.is_empty() and hit[0] <= from.distance_to(to):
+				nearest = minf(nearest, hit[0])
+		var physics_distance := from.distance_to(physics.position) if not physics.is_empty() else INF
+		if physics.is_empty() == is_inf(nearest) and (is_inf(nearest) or absf(nearest - physics_distance) < 0.001):
+			agree += 1
+		if not is_inf(nearest) and not physics.is_empty():
+			hits += 1
+			worst = maxf(worst, absf(nearest - physics_distance))
+	_check("The ray-against-box test agrees with the physics engine's ray test (300 rays, 40 turned boxes, within 1 mm)",
+			agree == 300 and hits >= 25, "%d of 300 agree, %d hits, worst %.5f m" % [agree, hits, worst])
+	arena.queue_free()
+
+	# A character recorded at two ticks, 1 m apart: a shot is checked where it was at its view tick.
+	var target := NetHost.make_player_character(preload("res://bots/bot.tscn"))
+	var shooter := NetHost.make_player_character(preload("res://bots/bot.tscn"))
+	var ground := StaticBody3D.new()
+	ground.collision_layer = PhysicsLayers.WORLD
+	var wall_shape := CollisionShape3D.new()
+	var wall_box := BoxShape3D.new()
+	wall_box.size = Vector3(0.4, 4.0, 0.2)
+	wall_shape.shape = wall_box
+	ground.add_child(wall_shape)
+	add_child(ground)
+	ground.global_position = Vector3(30.0, 1.0, -4.0)
+	add_child(target)
+	add_child(shooter)
+	target.global_position = Vector3(0.0, 0.0, -10.0)
+	shooter.global_position = Vector3(0.0, 0.0, 0.0)
+	await _harness.wait_ticks(3)
+	var compensation := LagCompensation.new()
+	var chest_then := target.get_chest_position()
+	compensation.record(100, [target, shooter])
+	target.global_position = Vector3(1.0, 0.0, -10.0)
+	await _harness.wait_ticks(2)
+	var chest_now := target.get_chest_position()
+	compensation.record(101, [target, shooter])
+	var eye := shooter.get_eye_position()
+	var exclude := shooter.get_hitbox_rids()
+	var at_then := compensation.trace_at(shooter, 100.0, eye, eye + (chest_then - eye).normalized() * 50.0, exclude)
+	var at_then_now := compensation.trace_at(shooter, 100.0, eye, eye + (chest_now - eye).normalized() * 50.0, exclude)
+	var midway := chest_then.lerp(chest_now, 0.5)
+	var at_half := compensation.trace_at(shooter, 100.5, eye, eye + (midway - eye).normalized() * 50.0, exclude)
+	_check("A shot is checked against the zones where they were at its view tick: a hit there, a miss where they are now",
+			at_then.get("collider") is Hitbox and not at_then_now.get("collider") is Hitbox,
+			"then %s, now %s" % [at_then.get("collider"), at_then_now.get("collider")])
+	_check("Between two records the zones are interpolated; the hole goes where that spot of the body is now",
+			at_half.get("collider") is Hitbox and (at_then["impact_position"] as Vector3).distance_to(chest_now) < 0.4
+					and (at_then["position"] as Vector3).distance_to(chest_then) < 0.4,
+			"half %s, the hole %.2f m from the chest now" % [at_half.get("collider"), (at_then.get("impact_position", Vector3.INF) as Vector3).distance_to(chest_now)])
+	_check("A view tick older than 400 ms is checked at the oldest allowed moment",
+			is_equal_approx(compensation.clamp_view_tick(-500.0), 100.0) and is_equal_approx(compensation.clamp_view_tick(150.0), 101.0), "")
+	# A wall between the shooter and where the target was stops the bullet.
+	target.global_position = Vector3(30.0, 0.0, -10.0)
+	shooter.global_position = Vector3(30.0, 0.0, 0.0)
+	await _harness.wait_ticks(2)
+	compensation.record(102, [target, shooter])
+	eye = shooter.get_eye_position()
+	var blocked := compensation.trace_at(shooter, 102.0, eye, eye + (target.get_chest_position() - eye).normalized() * 50.0, exclude)
+	_check("Walls stop a rewound shot as they are now", blocked.get("collider") == ground, "%s" % [blocked.get("collider")])
+	for node in [target, shooter, ground]:
+		node.queue_free()
+	await _harness.wait_ticks(2)
 
 
 func _roster(session: NetSession) -> Array:

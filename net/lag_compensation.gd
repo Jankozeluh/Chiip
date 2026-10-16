@@ -87,11 +87,16 @@ func box_at(hitbox: Hitbox, view_tick: float) -> Variant:
 ## [code]impact_position[/code] and [code]impact_normal[/code], the same spot on the body where
 ## the zone is now (for the bullet hole). Empty when nothing was hit.
 func trace(shooter: Character, from: Vector3, to: Vector3, exclude: Array[RID]) -> Dictionary:
+	return trace_at(shooter, shooter.get_last_input().view_tick, from, to, exclude)
+
+
+## [method trace] for a shot seen at [param view_tick] (host ticks).
+func trace_at(shooter: Character, view_tick: float, from: Vector3, to: Vector3, exclude: Array[RID]) -> Dictionary:
 	var space := shooter.get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(from, to, PhysicsLayers.WORLD)
 	var wall := space.intersect_ray(query)
 	var best_distance := from.distance_to(wall.position) if not wall.is_empty() else from.distance_to(to)
-	var pair := _frames_around(clamp_view_tick(shooter.get_last_input().view_tick))
+	var pair := _frames_around(clamp_view_tick(view_tick))
 	if pair.is_empty():
 		return wall
 	var a: Frame = pair[0]

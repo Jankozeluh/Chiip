@@ -21,7 +21,9 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 
 - **Client-side prediction** (task 6): your character is simulated at once from every command; each snapshot's ack is compared with the prediction, and a difference puts you where the host says and replays the newer commands, the camera smoothing the jump over 0.1 s. Ammo is predicted and corrected by the difference. The first runs drifted: the client simulated 64-bit angles while the host got 32-bit ones (now cut before simulating), and ENet's bandwidth throttle had been dropping 31 of 32 unreliable packets in the middle of a test (now `bandwidth_limit(0, 0)` explicitly; the redundancy had hidden it). 7 new checks in `netplay_test` (34), among them 3 s of running, strafing, jumping and crouching at 100 ms of round trip with not a single correction.
 
-**Next:** task 7, lag compensation.
+- **Lag compensation** (task 7): the host records every hit-zone box at the end of every tick and checks a friend's shot against the boxes at the moment the friend's screen showed (interpolated, at most 400 ms back) with a ray-against-box test in code; walls are tested as they are. At 100 ms of round trip, taps at a target strafing 12 m away hit 100% of the time with it and 21% without. The first try tapped every 24 ticks and mostly missed both ways: the spray pattern hadn't settled between taps, so the test taps every half second now. 5 new checks in `net_test` (19), 2 in `netplay_test` (36).
+
+**Next:** task 8, the lobby.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 

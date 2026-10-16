@@ -643,3 +643,7 @@
 - `is_on_floor()` is the result of the last `move_and_slide()`, so after putting a body somewhere by hand it is stale; Chiip tells the next tick explicitly (`Character.set_floor_contact()`).
 - GDScript's `float` is 64 bits, but `Vector3` and the packets use 32. A value that travels must be cut to 32 bits *before* both sides use it (`PackedFloat32Array([value])[0]`), or the two simulations drift apart a hair per tick.
 
+**Lag compensation without moving physics bodies** (`net/lag_compensation.gd`)
+- Source's way is to move every player's hitboxes back in time, trace, and move them forward again. In Godot (with Jolt) a body or area moved from code only reaches the physics engine at the next physics step, so a ray cast right after moving it would still see the old place. Chiip keeps the hit-zone boxes as numbers (a `Transform3D` and a size per zone and tick) and tests the ray against them in GDScript: transform the ray into the box's own space with `affine_inverse()`, then the box is axis-aligned and the "slab test" (where the ray enters and leaves each pair of faces) gives the hit. A check compares it with `intersect_ray()` on 300 rays.
+- `Transform3D.interpolate_with(other, weight)` blends position and rotation between two recorded ticks, like `Vector3.lerp` plus `Quaternion.slerp` (Unity: `Vector3.Lerp` and `Quaternion.Slerp`).
+
