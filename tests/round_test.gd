@@ -1227,7 +1227,12 @@ func _test_scoreboard() -> void:
 
 
 func _test_scoreboard_action() -> void:
-	var events := InputMap.action_get_events("scoreboard") if InputMap.has_action("scoreboard") else []
+	var events: Array[InputEvent] = []
+	if InputMap.has_action("scoreboard"):
+		for event in InputMap.action_get_events("scoreboard"):
+			# Its gamepad button (D-211) has its own checks (access_test).
+			if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+				events.append(event)
 	var key := events[0] as InputEventKey if events.size() == 1 else null
 	_check("The 'scoreboard' action exists and is bound to Tab, by physical key and for all devices",
 			key != null and key.physical_keycode == KEY_TAB and key.keycode == KEY_NONE and key.device == -1,

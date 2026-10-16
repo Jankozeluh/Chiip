@@ -41,3 +41,8 @@ extends Resource
 @export var spray_length: int = 10
 ## Pause between bursts or sprays, in seconds, so recoil can wear off.
 @export var burst_pause: float = 0.35
+
+@export_group("Team play")
+## The chance that a free bot answers a teammate's call (a trade or a callout, [BotSquad]) by going there
+## (M15, D-216). One roll per call; easy bots answer less often, hard ones always.
+@export_range(0.0, 1.0) var team_play: float = 0.75

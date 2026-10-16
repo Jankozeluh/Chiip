@@ -20,7 +20,7 @@ extends Control
 ##
 ## The banners in the middle are one 48 px headline (the countdown in freeze time, the result at the
 ## round end, "Overtime") and a 16 px line under it (your side, why the round ended). What is only news
-## ("Switching sides", "Match point", "Enemy match point") is a toast ([ToastStack], handed over with
+## ("Switching sides", "Match point", "Enemy match point", a teammate bot's "Enemy spotted near A") is a toast ([ToastStack], handed over with
 ## [method set_toasts]). The respawn countdown of a team respawn match is part of the death view
 ## ([code]hud.gd[/code]).
 ##
@@ -210,7 +210,15 @@ func _manager_connections() -> Array[Array]:
 		[_manager.round_ended, _on_round_ended],
 		[_manager.sides_swapped, _on_sides_swapped],
 		[_manager.character_killed, _on_character_killed],
+		[_manager.callout, _on_callout],
 	]
+
+
+## A bot on your team called out an enemy (M15, D-216): a toast says where. The same text again only keeps it
+## up longer, so callouts of one place don't stack.
+func _on_callout(team: int, text: String) -> void:
+	if team == Teams.viewer_team:
+		_toast(ToastStack.Kind.NEUTRAL, text)
 
 
 func _is_tdm() -> bool:

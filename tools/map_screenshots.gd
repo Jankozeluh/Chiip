@@ -26,6 +26,8 @@ extends SceneTree
 ## corners and contact shadows), or that plus SDFGI (real-time bounce light).
 ## Without it the map's own environment is used.
 ##
+## [code]--team-colors colorblind[/code] (M15) draws the colour-blind-safe team colours.
+##
 ## [code]--lineup[/code] (M10) stands two bots of each team in every shot, 5 to 15 m in
 ## front of the camera and facing it, to judge the map's look next to the
 ## crew (blue and red as the player sees them). Without it characters are hidden.
@@ -49,6 +51,10 @@ func _init() -> void:
 	# Render with the default look, never the player's settings file (M5's Settings; a no-op before it exists).
 	_main.set("load_settings", false)
 	root.add_child(_main)
+	# --team-colors colorblind: the colour-blind-safe team colours (M15, D-210); never saved (the file isn't loaded).
+	var colors_index := args.find("--team-colors")
+	if colors_index >= 0 and colors_index + 1 < args.size():
+		Settings.get_instance().team_colors = args[colors_index + 1]
 	for i in 10:
 		await process_frame
 	var container := _main.get_node("World") as SubViewportContainer

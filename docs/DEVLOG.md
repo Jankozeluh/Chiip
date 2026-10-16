@@ -13,7 +13,10 @@ Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 s
 
 - **Wallbangs** (D-214, D-215): bullets go through up to three thin walls. A material's reach (wood 0.5 m, gravel 0.35, hard 0.2, metal 0.12) times the weapon's penetration (sniper 2.5 ... shotgun 0.3, knife 0) decides how much damage is kept (`1 - thickness / reach`); holes on both sides, the host decides and clients replay the walls from the eye to the reported hit (no new message). Bots that heard an enemy behind thin cover may spray through it by difficulty chance. The new `wallbang` suite checks the damage shares on convex and concave walls, slanted and double walls, what stops a bullet, the holes (also replayed), the bots and the weapon data; the weapon table has a `wall_penetration` column.
 
-**Next:** smarter team bots.
+- **Smarter team bots** (D-216, D-217; one Opus subagent designed and built it, `bots/bot_squad.gd`, 132 lines): one "call" mechanism. A killed teammate (a **trade**) and a bot that first spots an enemy while not fighting (a **callout**, at most one per bot per 6 s) send a position to the team; at most 2 free bots (PATROL, not busy with the bomb) within 25 m of navmesh path answer, by a difficulty chance (`team_play`: easy 0.4, normal 0.75, hard 1.0), with a 6 s lead into the existing search state. The player's team sees a toast ("Enemy spotted near A" within 15 m of a bomb site, else "Enemy spotted north-west" relative to you). **Spreading:** the second bot to answer comes in through a point 7 m to the side, and a retaking defender team no longer runs one path (the nearest goes straight in, the others from alternating sides). Not done: callout toasts on online clients (they need a network event; host and offline only), and respawn-mode group leaders can still converge on one sighting. New `squad` suite (14 checks).
+- **A tool:** `tools/map_screenshots.gd --team-colors colorblind` (a look at the colour-blind colours on the models; checked on Depot: blue and orange read clearly).
+
+**Next:** merge main, one full run of every suite; then your playtest of M15 (the "Your open checks" entry in PLAN.md).
 
 ## 2026-10-16 — M12 share
 

@@ -86,6 +86,9 @@ signal match_ended(winner: int)
 ## Emitted for every death. [param killer] may be null; [param headshot] is
 ## true when the killing bullet hit the head.
 signal character_killed(victim: Character, killer: Character, headshot: bool)
+## Emitted when a bot of [param team] calls out an enemy it just spotted (M15, D-216); [param text] says where
+## ([method BotSquad.callout_text], seen from this computer's player when on that team). Host and offline only.
+signal callout(team: int, text: String)
 ## Emitted when [method request_class] gave [param character] another class.
 signal class_changed(character: Character, data: ClassData)
 ## Emitted when the match starts and [param character] has been offered [param classes] (the
@@ -661,6 +664,9 @@ func _join(character: Character) -> void:
 	_money[character] = 0
 	character.damaged.connect(_on_damaged.bind(character))
 	character.died.connect(_on_died.bind(character))
+	var brain := character.get_node_or_null("BotController") as BotController
+	if brain != null:
+		brain.called_out.connect(_on_called_out.bind(character))
 
 
 ## Without the draft (M6): each team's bots cycle through the classes from a random one, so three
@@ -897,8 +903,21 @@ func _on_died(killer: Character, victim: Character) -> void:
 	_damage_this_life.erase(victim)
 	_pay_kill(victim, killer)
 	_score_kill(victim, killer)
+	if phase == Phase.LIVE and killer != null and killer.team != victim.team:
+		# A trade (D-216): the victim's teammates close by go for the killer.
+		BotSquad.call_team(victim, killer.global_position)
 	character_killed.emit(victim, killer, _last_hit_zone.get(victim, -1) == Hitbox.Zone.HEAD)
 	_check_elimination.call_deferred()
+
+
+## A bot spotted an enemy at [param enemy_position] (D-216): its free teammates close by go and look, and its
+## team hears where ([signal callout]).
+func _on_called_out(enemy_position: Vector3, caller: Character) -> void:
+	if phase != Phase.LIVE:
+		return
+	BotSquad.call_team(caller, enemy_position)
+	var listener: Character = _player if is_instance_valid(_player) and _player.team == caller.team else caller
+	callout.emit(caller.team, BotSquad.callout_text(enemy_position, get_parent(), listener))
 
 
 # --- Online: the replica on a client (M9, D-105) ---
