@@ -403,6 +403,8 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 New `tests/netarsenal_test.tscn` (17 checks for tasks 12 to 14): inventory, predicted switching, puppets' weapons, a gun given, dropped and picked up again, armor, map weapons, a frag thrown by a client, a flash, a smoke, money and its reward lines, a purchase, the draft, the kill feed's weapon. It found that the client added the host's weapons before removing its own, so a gun whose slot was still taken was refused (now removed first).
 
+*Team Deathmatch online* (the primary mode, D-120; after M7's last tasks were merged): `netrespawn_test` checks it with the bots held before its match: the respawn loadout the same on both computers with the primary in hand, a class picked while alive coming with the next respawn (with its loadout, on both), a dropped gun timing out on both floors, scavenged ammo reaching a gun that isn't in hand, and the three map weapons at the same places. Fixed on the way: the client's weapon order after a class change, scavenged ammo never reaching the client, the next class on a client. `netplay_test` checks that the dressed map (every prop, lamp and wall) is the same on both.
+
 *Phase C: Steam (deferred, D-114: LAN only for now; in the Backlog until you approve the GodotSteam download)*
 
 15. [-] **GodotSteam.** *Deferred (D-114).* The GodotSteam addon (GDExtension for Godot 4.7, with Valve's Steamworks runtime) from its official GitHub releases, installed under `addons/`, in CREDITS.md with its licence. Valve's public test app ID 480 while developing. The game still starts and plays everything without Steam. *(Sonnet, Opus checks)*

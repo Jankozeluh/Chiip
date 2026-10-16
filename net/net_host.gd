@@ -310,6 +310,10 @@ func _register(character: Character) -> void:
 	# The weapon in hand changes (M7): follow whichever it is.
 	character.weapon_changed.connect(_follow_weapon.bind(character))
 	character.inventory.changed.connect(func() -> void: _inventory_dirty[character] = true)
+	# Ammo scavenged from a gun on the floor (Team Deathmatch) changes no slot, but the reserve of
+	# a weapon that may not be in hand: the weapon in hand is corrected by the snapshots, the others
+	# only by the list.
+	character.inventory.ammo_scavenged.connect(func(_weapon: Weapon, _amount: int) -> void: _inventory_dirty[character] = true)
 	_follow_weapon(character.weapon, character)
 
 

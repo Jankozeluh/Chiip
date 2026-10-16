@@ -678,6 +678,8 @@ func _apply_inventory(weapons: Array, held: int) -> void:
 			inventory.give(data, entry[1], entry[2])
 		elif carried != player.weapon:
 			carried.set_remote_ammo(entry[1], entry[2])
+	# In the host's order: a weapon kept from before would otherwise come before the new ones.
+	inventory.reorder(wanted)
 	if held >= 0 and held < wanted.size() and (player.weapon == null or inventory.find(player.weapon.data) == null):
 		inventory.hold(inventory.find(wanted[held]), true)
 

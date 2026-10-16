@@ -45,7 +45,9 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 - **The map kit online:** a new `netplay` check compares every prop, lamp and wall of the map's scene on the host and the client (the dressed Depot: same nodes, same places). Nothing in the kit is random (the props are plain scenes; lamps and route points build themselves the same way everywhere); the only random things on a map, the map weapons, are the host's and come in the snapshots.
 - **Steam deferred** (D-114, your answer: "No, don't download GodotSteam; M9 stays LAN-only for now."): tasks 15 and 16 are deferred, Steam lobbies wait in the Backlog for a download approval, and "Done when" is LAN only. To keep that later change small the session makes its connection through a **transport** now (`NetTransport`, `EnetTransport` for LAN): nothing else in the game names ENet. All six network suites pass with it (106 checks).
 
-**Next:** make Team Deathmatch solid online (its loadouts, class changes, scavenged ammo and dropped guns that time out), then task 17 (the playtest list, M9 marked built).
+- **Team Deathmatch online** (the primary mode): `netrespawn_test` has five new checks, run with the bots held before its match: the respawn loadout (the same on both, primary in hand), a class picked while alive (it comes with the next respawn and its loadout, on both), a dropped gun timing out on both floors, scavenged ammo, the three map weapons. They found three things, now fixed: after a class change the client's weapons were in another order than the host's (it kept the Sparrow and knife first; `Inventory.reorder()` now follows the host's list, so the grenade key takes the same grenade), ammo scavenged from a gun on the floor never reached the client (it changes no slot; it sends the list now), and a class picked on a client didn't show as its next class there.
+
+**Next:** task 17: all suites, the LAN playtest list in "Your open checks", M9 marked built.
 ## 2026-10-16 — Merges into main: M7 and the M10 map kit
 
 **Done**

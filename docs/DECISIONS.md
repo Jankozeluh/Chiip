@@ -1315,6 +1315,8 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 
 **Why:** one stream (snapshots and events) for everything keeps prediction, the tests in one process and the bandwidth under our control; ids instead of nodes let each computer build its own weapon nodes, as M7's note asked.
 
+**Added while building (Team Deathmatch online):** the client keeps its weapons in the host's order (after a class change it had kept the Sparrow and the knife first and added the new class's gun behind them, so "the first grenade" could differ); ammo scavenged from a gun on the floor sends the list too (it changes no slot, so the weapons not in hand never heard of it); a class picked on a client while alive shows as its next class there as well (`RespawnMatch.get_next_class()`), until the host's change arrives with the respawn.
+
 **Alternatives:** `MultiplayerSpawner` for pickups and grenades, as M7's note suggested (it would replicate node creation by path, a second mechanism next to the snapshots, and two games in one test process share node paths); sending every client every inventory (more traffic for nothing they show); predicting pickups (the gun would sometimes jump back into the floor when the host disagreed).
 
 ## D-114 — M9 is LAN only for now; connections go through a transport, so Steam is one more later (2026-10-16) — *provisional*

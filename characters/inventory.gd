@@ -67,6 +67,20 @@ func get_weapons() -> Array[Weapon]:
 	return _weapons.duplicate()
 
 
+## Puts the carried weapons in the order of [param order] (weapon data; ones not in it go last).
+## Online, a client keeps its list in the host's order (M9), so "the first grenade" is the same one.
+func reorder(order: Array[WeaponData]) -> void:
+	var ids := order.map(func(data: WeaponData) -> StringName: return data.id)
+	var rank := func(weapon: Weapon) -> int:
+		var index := ids.find(weapon.data.id)
+		return index if index >= 0 else ids.size() + _weapons.find(weapon)
+	var sorted := _weapons.duplicate()
+	sorted.sort_custom(func(a: Weapon, b: Weapon) -> bool: return rank.call(a) < rank.call(b))
+	if sorted != _weapons:
+		_weapons = sorted
+		changed.emit()
+
+
 ## The weapon in [param slot] ([enum WeaponData.Slot]); for grenades the first one. Null if empty.
 func get_in_slot(slot: int) -> Weapon:
 	for weapon in _weapons:
