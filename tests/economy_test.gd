@@ -324,6 +324,10 @@ func _test_buy_menu() -> void:
 	_press_action("buy_menu")
 	await _wait_ticks(3)
 	_check("B closes it again", not menu.is_open() and not MenuState.is_any_open(), "open %s" % menu.is_open())
+	# M10's UI refresh restyles it through the theme alone (D-057, D-120).
+	var overrides := _theme_overrides(menu)
+	_check("The buy menu (its columns and item buttons too) has no style, font or color overrides and no tint: the theme's type variations decide its look",
+			overrides.is_empty(), "overrides on: %s" % [overrides])
 
 	# Leave nothing open behind.
 	menu.close()
@@ -333,6 +337,26 @@ func _test_buy_menu() -> void:
 	pause.queue_free()
 	MenuState.reset()
 	await _wait_ticks(2)
+
+
+## The controls under [param root] that carry a stylebox, font, font size or color override of their
+## own, or a tint (modulate).
+func _theme_overrides(root: Node) -> Array[String]:
+	var found: Array[String] = []
+	for child in root.get_children():
+		if child is Control:
+			var control := child as Control
+			var own := false
+			for stylebox in ["panel", "normal", "hover", "pressed", "disabled", "focus"]:
+				own = own or control.has_theme_stylebox_override(stylebox)
+			for color in ["font_color", "font_disabled_color", "font_hover_color", "font_pressed_color"]:
+				own = own or control.has_theme_color_override(color)
+			own = own or control.has_theme_font_override("font") or control.has_theme_font_size_override("font_size")
+			own = own or control.modulate != Color.WHITE or control.self_modulate != Color.WHITE
+			if own:
+				found.append(String(control.name))
+		found.append_array(_theme_overrides(child))
+	return found
 
 
 ## M7 task 12 (D-098): defenders buy a defuse kit for $300 on a map with the bomb; it halves the

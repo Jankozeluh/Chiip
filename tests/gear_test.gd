@@ -67,6 +67,7 @@ func _run_all() -> void:
 	await _test_round_loadouts()
 	await _test_respawn_and_practice_loadouts()
 	await _test_weapon_spots()
+	await _test_scavenging()
 
 
 # --- Armor (D-093) ---
@@ -562,6 +563,72 @@ func _test_weapon_spots() -> void:
 	var elsewhere := again.size() == 3 and again.all(func(each: WeaponSpot) -> bool: return each.global_position != old_place)
 	_check("Team Deathmatch keeps three out: a taken one comes back somewhere else after the replace time",
 			three == 3 and two == 2 and elsewhere, "%d, then %d, then %d (elsewhere %s)" % [three, two, again.size(), elsewhere])
+	remove_child(map)
+	map.queue_free()
+	await _wait_ticks(2)
+
+
+## M7 task 18: walking over a dropped gun of a kind you carry takes its ammo into your reserve (up
+## to full), and a gun left empty goes; a map weapon is never scavenged; in Team Deathmatch guns
+## dropped more than 30 s ago go away.
+func _test_scavenging() -> void:
+	var map := MAP_SCENE.instantiate()
+	add_child(map)
+	var player := map.get_node("Player") as Character
+	_silence(player)
+	player.inventory.set_loadout([KNIFE, PISTOL, RIFLE] as Array[WeaponData])
+	var rifle := player.inventory.get_in_slot(WeaponData.Slot.PRIMARY)
+	rifle.reserve = 30
+	var scavenged: Array = []
+	player.inventory.ammo_scavenged.connect(func(weapon: Weapon, amount: int) -> void: scavenged.append([weapon.data.id, amount]))
+	var dropped := WeaponPickup.spawn(map, RIFLE, 25, 20, player.global_position + Vector3(3, 0.5, 0), 0.0)
+	await _wait_ticks(20)
+	player.global_position = dropped.global_position
+	await _wait_ticks(3)
+	var took_all := rifle.reserve == 75 and not is_instance_valid(dropped) and scavenged == [[&"rifle", 45]]
+	var second := WeaponPickup.spawn(map, RIFLE, 30, 60, player.global_position + Vector3(3, 0.5, 0), 0.0)
+	await _wait_ticks(20)
+	player.global_position = second.global_position
+	await _wait_ticks(3)
+	var topped_up := rifle.reserve == RIFLE.reserve_ammo and is_instance_valid(second) and second.reserve + second.magazine == 75
+	_check("Walking over a dropped Ram while carrying one takes its ammo into your reserve (all 45, and the empty gun goes; then just the 15 that fit, the rest stays)",
+			took_all and topped_up, "reserve %d, first gone %s, second left %d, signals %s" % [rifle.reserve, not is_instance_valid(dropped),
+			second.reserve + second.magazine if is_instance_valid(second) else -1, scavenged])
+	second.queue_free()
+	rifle.reserve = 0
+	var spot := (load("res://weapons/weapon_spot.tscn") as PackedScene).instantiate() as WeaponSpot
+	spot.weapon = RIFLE
+	map.add_child(spot)
+	spot.global_position = player.global_position + Vector3(0, 0, 5)
+	await _wait_ticks(3)
+	player.global_position = spot.global_position
+	await _wait_ticks(3)
+	_check("A map weapon of the kind you carry stays where it is: it isn't scavenged",
+			rifle.reserve == 0 and spot.has_weapon(), "reserve %d, still out %s" % [rifle.reserve, spot.has_weapon()])
+	remove_child(map)
+	map.queue_free()
+	await _wait_ticks(2)
+	# Team Deathmatch clears old guns.
+	map = MAP_SCENE.instantiate()
+	add_child(map)
+	player = map.get_node("Player") as Character
+	_silence(player)
+	var settings := _settings()
+	settings.team_size = 1
+	settings.enemy_team_size = 1
+	var respawn := RespawnMatch.new()
+	respawn.settings = settings
+	respawn.rng.seed = 5
+	map.add_child(respawn)
+	await _wait_for_live(respawn)
+	var old_gun := WeaponPickup.spawn(map, SMG, 30, 0, player.global_position + Vector3(0, 0.5, 20), 0.0)
+	var new_gun := WeaponPickup.spawn(map, SMG, 30, 0, player.global_position + Vector3(0, 0.5, 24), 0.0)
+	old_gun.age = RespawnMatch.DROPPED_GUN_LIFETIME - 0.5
+	await _wait_seconds(1.0)
+	var map_weapons_out := respawn.map_weapons.get_spots().size()
+	_check("Team Deathmatch takes away a gun dropped 30 s ago, keeps a newer one and the map weapons",
+			not is_instance_valid(old_gun) and is_instance_valid(new_gun) and map_weapons_out == 3,
+			"old gone %s, new kept %s, map weapons %d" % [not is_instance_valid(old_gun), is_instance_valid(new_gun), map_weapons_out])
 	remove_child(map)
 	map.queue_free()
 	await _wait_ticks(2)

@@ -40,6 +40,9 @@ const TEAMMATE_BONUS := 4.0
 const TEAMMATE_DISTANCE := 15.0
 ## Random spread added to each spot's score, so spots that are about as good take turns.
 const SCORE_JITTER := 3.0
+## Seconds a gun dropped by the dead lies on the floor before it goes (M7 task 18): ten minutes
+## of deaths would otherwise cover the map.
+const DROPPED_GUN_LIFETIME := 30.0
 
 ## True once the time limit ran out with the score tied.
 var overtime: bool = false
@@ -133,6 +136,7 @@ func _round_duration() -> float:
 func _live_tick(delta: float) -> void:
 	for plan in _hunt_plans:
 		plan.time += delta
+	_clear_old_guns()
 	for character: Character in _respawn_left.keys():
 		if not is_instance_valid(character):
 			_respawn_left.erase(character)
@@ -225,6 +229,17 @@ func request_class(character: Character, data: ClassData) -> bool:
 ## The class [param character] will have after its next respawn (its current one if none waits).
 func get_next_class(character: Character) -> ClassData:
 	return _pending_class.get(character, character.class_data)
+
+
+## Takes away guns that have lain on the floor longer than [constant DROPPED_GUN_LIFETIME] (not
+## the map weapons, which [MapWeapons] looks after).
+func _clear_old_guns() -> void:
+	var map := get_parent()
+	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
+		var pickup := node as WeaponPickup
+		if pickup != null and pickup.spot == null and pickup.age > DROPPED_GUN_LIFETIME and map.is_ancestor_of(pickup):
+			pickup.remove_from_group(WeaponPickup.GROUP)
+			pickup.queue_free()
 
 
 ## A bot that comes back hunts with its group again (respawning reset its orders).

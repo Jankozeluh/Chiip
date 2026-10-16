@@ -31,6 +31,9 @@ var dropped_by: Character
 ## The power-weapon spot that put it out, if any (it shows the spot is empty once taken).
 var spot: Node
 ## Floats where it was put and turns, upright, instead of falling (a [WeaponSpot]'s gun).
+## Seconds it has been lying there (Team Deathmatch clears guns older than
+## [constant RespawnMatch.DROPPED_GUN_LIFETIME]).
+var age: float = 0.0
 var floating: bool = false:
 	set(value):
 		floating = value
@@ -67,6 +70,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	age += delta
 	_ignore_dropper_left = maxf(_ignore_dropper_left - delta, 0.0)
 	if floating:
 		var model := get_node_or_null("Model") as Node3D

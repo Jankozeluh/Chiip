@@ -337,7 +337,7 @@ func _test_screens_and_freeze() -> void:
 	var fired := false
 	for character: Character in before:
 		moved = maxf(moved, (after[character]["position"] as Vector3).distance_to(before[character]["position"]))
-		fired = fired or after[character]["magazine"] != before[character]["magazine"]
+		fired = fired or after[character]["weapon"] != before[character]["weapon"] or after[character]["rounds"] < before[character]["rounds"]
 	var all_frozen := _rounds.get_participants().all(func(character: Character) -> bool: return character.frozen)
 	_check("Everyone is frozen at the match end: nobody moves, fires or dies, and no round starts",
 			all_frozen and moved < 0.01 and not fired and _log.size() == results_before and _deaths.size() == kills_before
@@ -350,7 +350,10 @@ func _test_screens_and_freeze() -> void:
 func _snapshot() -> Dictionary:
 	var snapshot := {}
 	for character in _rounds.get_participants():
-		snapshot[character] = {"position": character.global_position, "magazine": character.weapon.magazine}
+		# Rounds left in all: a reload only moves them from the reserve into the magazine (frozen
+		# characters may reload, as in CS's freeze time), a shot or a throw uses one up.
+		snapshot[character] = {"position": character.global_position, "rounds": character.weapon.magazine + character.weapon.reserve,
+				"weapon": character.weapon}
 	return snapshot
 
 

@@ -129,7 +129,7 @@ var god_mode: bool = false
 ## Flies through walls in the direction it looks, ignoring gravity (console: noclip).
 var noclip: bool = false
 ## Set by the game rules during freeze time: the character can look around,
-## crouch and reload, but not move, jump or shoot. The rule is applied here,
+## crouch, reload and zoom a scope, but not move, jump, shoot, stab or throw. The rule is applied here,
 ## to whatever the controller sends, so it holds for every kind of controller.
 var frozen: bool = false
 ## Set by the bomb while this character plants or defuses it (D-080): like
@@ -237,6 +237,9 @@ func _physics_process(delta: float) -> void:
 		_input.move = Vector2.ZERO
 		_input.jump = false
 		_input.shoot = false
+		# Aim attacks too (the knife's stab, a lobbed grenade); a scope may still zoom, as in CS.
+		if weapon == null or not weapon.data.has_scope():
+			_input.aim = false
 	if is_alive():
 		# Switching, dropping and swapping for a gun on the floor; then walking over guns takes them.
 		inventory.handle_input(_input)

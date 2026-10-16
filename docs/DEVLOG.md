@@ -38,7 +38,9 @@
 
 - **Task 17, the class draft** (D-099): each match offers everyone two random classes. You start as your first and the class menu shows just your two cards (keys 1 and 2). Every offer includes a class the team doesn't have yet, and bots take the one their team has fewer of, so a team of three is still three classes. You switch only between your two (freeze time; any time in Team Deathmatch), and at half time the bots switch within their drafts. `MatchSettings.class_draft` turns it off for M6's rules, which the older class checks use. The respawn suite's check on bots walking in pairs now runs without map weapons (the new classes made a follower detour for a gun).
 
-**Next:** tasks 18 (Team Deathmatch's loadout and pickups) and 19 (checks).
+- **Task 18, Team Deathmatch's loadout and pickups** (D-094): walking over a dropped gun you already carry takes its ammo (CoD's scavenging, never from a map weapon), dropped guns vanish after 30 s in Team Deathmatch, and the respawn loadout already came out with the signature gun in hand. The buy menu was already built only on the theme's type variations (a new economy check proves it, for M10's UI refresh). ARCHITECTURE has a new section on M7's interfaces for M9: who decides what a character carries, guns on the floor, money, buying, armor, classes and grenades, and what M9 has to change. A fix found on the way: a frozen character could still stab or lob a grenade with aim; now only a scope zooms while frozen (D-097).
+
+**Next:** task 19 (checks and the playtest list).
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

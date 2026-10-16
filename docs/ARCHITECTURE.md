@@ -409,6 +409,27 @@ The round manager runs a fixed sequence and asks a few overridable methods for t
 - The viewmodel moves with the camera because it's a child of it. Shot kick is a tween back to the rest pose; the reload dip is computed every frame from the reload progress. Viewmodel meshes don't cast shadows. Known limitation: the gun pokes into walls when you stand right against them (proper viewmodel rendering later).
 - Bullet holes are parented to whatever was hit, so they move with moving targets. Each weapon keeps its last 100.
 
+## Weapons, money and buying: M7's interfaces for M9
+
+M7 kept every rule in authority code, so in M9 the host runs it and clients only show it. What multiplayer needs to know:
+
+| Thing | Who decides (host) | How clients learn of it | What the client sends |
+|---|---|---|---|
+| What a character carries | `Inventory` (a child of every `Character`): `set_loadout()` from the rules (`RoundManager._give_loadout()` at round start and respawn), `give()`, `take()`, `scavenge()`, `drop()`, `drop_on_death()`, `remove()` | `Inventory.changed`, `Inventory.ammo_scavenged(weapon, amount)`, `Character.weapon_changed(weapon)`, `Weapon.ammo_changed(mag, reserve)` | Nothing extra: switching, dropping, swapping and throwing come from the per-tick `CharacterInput` (`weapon_slot`, `last_weapon`, `drop`, a fresh press of `use`, `shoot`, `aim`), applied in `Inventory.handle_input()`; walking over a gun is `Inventory.update_pickups()` in the character's physics tick |
+| Guns on the floor | `WeaponPickup.spawn()` (drops, death drops) and `MapWeapons` (map weapons on `WeaponSpot`s); `RoundManager._clear_floor()` each round, `RespawnMatch._clear_old_guns()` after 30 s | The nodes themselves (group `weapon_pickups`, `weapon_spots`), `MapWeapons.weapon_placed(spot)`, `WeaponSpot.taken(by)`. M9 spawns them with a `MultiplayerSpawner` from their data: weapon id, ammo, position | — |
+| Money | `RoundManager`: `get_money()`, `add_money(character, amount, reason)`, `spend()`, `get_loss_money()`, `has_economy()`; pays in `_end_round()`, `_on_died()` and the bomb handlers | `money_changed(character, amount, reason)` (the HUD's reward lines and the scoreboard only listen) | — |
+| Buying | `RoundManager.request_buy(character, item_id)` returns "" or the reason; `Shop.give()` hands it over; `item_bought(character, item_id)` | `item_bought`, `money_changed`, the inventory's signals | The buy menu's request: an item id (`Shop` ids: weapon ids, `vest`, `vest_helmet`, `kit`). The menu's greyed items and prices come from `can_buy_now()`, `get_buy_time_left()`, `get_price()`, `get_buy_refusal()`, which a client can answer from replicated money and inventory |
+| Armor and kits | `Character.set_armor()`, `set_defuse_kit()` (by `Shop.give()` and the loadout); `Armor.apply()` inside `take_damage()` | `Character.gear_changed` | — |
+| Classes and the draft | `RoundManager`: `get_draft()`, `is_drafted()`, `request_class()` (`RespawnMatch`: any time, from the next respawn) | `class_drafted(character, classes)`, `class_changed(character, data)` | The class menu's request: a class id |
+| Grenades | `Weapon._throw()` makes a `Grenade` (ray-based flight, no rigid body); its `Explosion` damages, `SmokeCloud` registers with `Smokes`, a flash calls `Character.flash()` | The grenade node (spawned like a pickup), `Character.flashed` | — (fire and aim in the input) |
+| Randomness | `RoundManager.rng` and generators seeded from it: classes (`_class_rng`, the same seed), map weapons (seed + 7919), bot buying | — | — |
+
+**Where M9 has to change code:**
+- `BuyMenu` and `ClassMenu` call the rules directly (`request_buy()`, `request_class()`); in M9 those calls become requests to the host (an RPC with the item or class id), and the menus show the answer from the replicated signals.
+- `Inventory` holds `Weapon` nodes under the camera (the player) or the head (bots). Replicate what a character carries by weapon ids and ammo, not by node, and let each peer build its own nodes.
+- A `Weapon`'s hits are traced on the shooter's machine today; M9's lag compensation moves the decision to the host (see the M9 tasks).
+- `WeaponPickup.spawn()` and `MapWeapons.place_one()` add nodes directly; in M9 only the host calls them, through a `MultiplayerSpawner`.
+
 ## Physics layers
 
 Named in *Project Settings → Layer Names → 3D Physics*. Code uses the bit values from `systems/physics_layers.gd` (D-022).
@@ -451,14 +472,14 @@ bash tools/run_tests.sh
 | `class_test` | 67 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078), the perks, the class draft (D-099) | ~3 s |
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
-| `gear_test` | 36 | Armor on real characters (D-093) and the inventory (D-094): slots and limits, switching by key with draw times, Q, grenades cycling, dropping, walking over guns, the E swap, death drops, the HUD and the body following the weapon in hand, the loadouts of rounds, team respawn and practice | ~2 s |
+| `gear_test` | 39 | Armor on real characters (D-093) and the inventory (D-094): slots and limits, switching by key with draw times, Q, grenades cycling, dropping, walking over guns, the E swap, death drops, the HUD and the body following the weapon in hand, the loadouts of rounds, team respawn and practice | ~2 s |
 | `botgear_test` | 8 | Bots and the arsenal (D-099): team buying plans and purchases by class, the pistol when the rifle is empty, the scoped Heron, fetching a better gun, a frag at a heard enemy, the throw's arc | ~3 s |
-| `economy_test` | 24 | The light economy (D-098): starting money, wins, losses in a row, kill rewards by weapon, teamkills, plant and defuse, the cap, half time, team respawn without money, the HUD's money and rewards, the scoreboard's money column, the console; the buy menu (keys, clicks, refusals, closing, team respawn, practice); defuse kits | ~3 s |
+| `economy_test` | 25 | The light economy (D-098): starting money, wins, losses in a row, kill rewards by weapon, teamkills, plant and defuse, the cap, half time, team respawn without money, the HUD's money and rewards, the scoreboard's money column, the console; the buy menu (keys, clicks, refusals, closing, team respawn, practice); defuse kits | ~3 s |
 | `grenade_test` | 14 | Grenades (D-097): pin and throw or lob, speed and angle, the last grenade giving way to the weapon before, putting one back; bounces and resting; the frag's falloff, walls, armor and the thrower's kill; the flash's strength by facing, distance and walls, the white screen, a blinded bot; the smoke blocking a bot's sight, greying a camera, ending after 18 s | ~2 s |
-| `guns_test` | 16 | How each weapon works (D-095): the semi-automatic pistol, the shotgun's pellets and shell reloads, the reload perk, the sniper scope (zoom steps, camera, mouse, accuracy, the Marksman's perk, dropping out after a shot, speed, the HUD's scope view), the knife (flat damage, armor, backstabs, reach) | ~1 s |
+| `guns_test` | 17 | How each weapon works (D-095): the semi-automatic pistol, the shotgun's pellets and shell reloads, the reload perk, the sniper scope (zoom steps, camera, mouse, accuracy, the Marksman's perk, dropping out after a shot, speed, the HUD's scope view), the knife (flat damage, armor, backstabs, reach) | ~1 s |
 | `arsenal_test` | 30 | The arsenal's data files, CS's armor results, and that `docs/weapons.csv` matches the data (D-091) | under 1 s |
 
-That is 717 checks in about two minutes on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
+That is 722 checks in about two minutes on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 
 ```
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/movement_test.tscn

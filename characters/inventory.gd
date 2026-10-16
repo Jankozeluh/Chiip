@@ -20,6 +20,9 @@ extends Node
 ## Emitted when what the character carries changes: a weapon given, taken, dropped or used up,
 ## or a new loadout. The HUD's slot list listens.
 signal changed
+## Emitted when walking over a dropped gun of a kind already carried took [param amount] rounds of
+## its ammo into [param weapon]'s reserve (M7 task 18, D-094).
+signal ammo_scavenged(weapon: Weapon, amount: int)
 
 ## At most this many grenades in all (CS: 4).
 const MAX_GRENADES := 4
@@ -311,11 +314,37 @@ func update_pickups() -> void:
 		var pickup := node as WeaponPickup
 		if pickup == null or pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
 			continue
-		if not can_take(pickup.data):
-			continue
 		var offset := pickup.global_position - _character.global_position
-		if Vector2(offset.x, offset.z).length() <= PICKUP_REACH and offset.y > -0.5 and offset.y < PICKUP_HEIGHT:
+		if Vector2(offset.x, offset.z).length() > PICKUP_REACH or offset.y <= -0.5 or offset.y >= PICKUP_HEIGHT:
+			continue
+		if can_take(pickup.data):
 			take(pickup)
+		elif pickup.spot == null:
+			scavenge(pickup)
+
+
+## Takes the ammo of a dropped gun of a kind already carried into that weapon's reserve, up to its
+## full reserve (CoD's scavenging, M7 task 18): the reserve first, then the magazine. A gun left
+## with no ammo goes away. A map weapon is never scavenged (it is there to be taken). Returns the
+## rounds taken.
+func scavenge(pickup: WeaponPickup) -> int:
+	var carried := find(pickup.data)
+	if carried == null or pickup.data.is_grenade() or pickup.data.is_melee() or pickup.spot != null:
+		return 0
+	var room := pickup.data.reserve_ammo - carried.reserve
+	var amount := mini(room, pickup.reserve + pickup.magazine)
+	if amount <= 0:
+		return 0
+	var from_reserve := mini(amount, pickup.reserve)
+	pickup.reserve -= from_reserve
+	pickup.magazine -= amount - from_reserve
+	carried.reserve += amount
+	carried.ammo_changed.emit(carried.magazine, carried.reserve)
+	ammo_scavenged.emit(carried, amount)
+	if pickup.reserve + pickup.magazine <= 0:
+		pickup.remove_from_group(WeaponPickup.GROUP)
+		pickup.queue_free()
+	return amount
 
 
 ## Takes [param pickup] off the floor into its slot (with its ammo) and frees it. Returns the

@@ -305,6 +305,26 @@ func _test_knife() -> void:
 			"health %.1f, swings %d" % [out_of_reach.health, swings[0]])
 	out_of_reach.queue_free()
 	await _wait_ticks(2)
+	# Frozen (freeze time, a match end): the knife's stab and a lobbed grenade stay put too.
+	var frozen_target := await _add_target(Vector3(0, 0, -1.0), PI)
+	await _wait_seconds(1.0)
+	_player.aim_at(frozen_target.get_chest_position())
+	_player.frozen = true
+	var stabs := _count_shots(knife)
+	await _attack("aim")
+	var frag := _take(load("res://weapons/frag.tres"))
+	await _wait_seconds(0.8)
+	Input.action_press("aim")
+	await _wait_seconds(0.6)
+	var priming := frag.is_priming()
+	Input.action_release("aim")
+	await _wait_seconds(0.6)
+	_player.frozen = false
+	_check("A frozen player can't stab or lob a grenade (aim does nothing but zoom a scope)",
+			stabs[0] == 0 and frozen_target.health == 100.0 and not priming and is_instance_valid(frag) and frag.magazine == 1,
+			"stabs %d, health %.1f, priming %s" % [stabs[0], frozen_target.health, priming])
+	frozen_target.queue_free()
+	await _wait_ticks(2)
 
 
 # --- Helpers ---
