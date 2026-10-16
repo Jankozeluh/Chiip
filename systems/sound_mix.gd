@@ -32,6 +32,8 @@ const HEADSHOT := &"headshot"
 const BOUNCE := &"bounce"
 ## A frag grenade going off.
 const EXPLOSION := &"explosion"
+## A frag or the bomb heard from far away (D-191).
+const EXPLOSION_FAR := &"explosion_far"
 ## A flashbang going off.
 const FLASH := &"flash"
 ## A smoke grenade's hiss.
@@ -45,7 +47,7 @@ const BOMB_EXPLOSION := &"bomb_explosion"
 
 const TABLE := {
 	SHOT: {"volume_db": 0.0, "own_db": -6.0, "unit_size": 20.0, "max_distance": 120.0, "occlusion": 1.0},
-	SHOT_FAR: {"volume_db": -6.0, "unit_size": 40.0, "max_distance": 180.0, "occlusion": 1.0},
+	SHOT_FAR: {"volume_db": 0.0, "unit_size": 40.0, "max_distance": 180.0, "occlusion": 1.0},
 	MELEE: {"volume_db": -4.0, "own_db": -6.0, "unit_size": 4.0, "max_distance": 25.0, "occlusion": 1.0},
 	HANDLING: {"volume_db": -6.0, "own_db": -6.0, "unit_size": 3.0, "max_distance": 15.0, "occlusion": 1.0},
 	FOOTSTEP: {"volume_db": 2.0, "own_db": -12.0, "unit_size": 10.0, "max_distance": 30.0, "occlusion": 1.0},
@@ -54,6 +56,7 @@ const TABLE := {
 	HEADSHOT: {"volume_db": 2.0, "unit_size": 8.0, "max_distance": 35.0, "occlusion": 1.0},
 	BOUNCE: {"volume_db": -6.0, "unit_size": 6.0, "max_distance": 40.0, "occlusion": 1.0},
 	EXPLOSION: {"volume_db": 0.0, "unit_size": 20.0, "max_distance": 120.0, "occlusion": 1.0},
+	EXPLOSION_FAR: {"volume_db": 0.0, "unit_size": 50.0, "max_distance": 220.0, "occlusion": 1.0},
 	FLASH: {"volume_db": 0.0, "unit_size": 15.0, "max_distance": 100.0, "occlusion": 1.0},
 	SMOKE: {"volume_db": -12.0, "unit_size": 4.0, "max_distance": 25.0, "occlusion": 1.0},
 	BOMB_BEEP: {"volume_db": 0.0, "unit_size": 6.0, "max_distance": 60.0, "occlusion": 0.5},
@@ -69,6 +72,13 @@ const BUS_MUFFLED_HEAVY := &"MuffledHeavy"
 ## Interface sounds (menus, the bomb-planted alert) and the music with its stingers (D-195).
 const BUS_INTERFACE := &"Interface"
 const BUS_MUSIC := &"Music"
+
+## Where a sound with a distant variant (a gun, an explosion) starts turning into it, and
+## where it is all distant, in metres (D-191). The close one is [constant CLOSE_AT_FAR_DB]
+## quieter (on top of its own falloff) once the far one is in fully.
+const FAR_FROM := 15.0
+const FAR_TO := 40.0
+const CLOSE_AT_FAR_DB := -9.0
 
 ## How strongly 3D sounds pan between the ears: this times the project's
 ## [code]audio/general/3d_panning_strength[/code] (0.5), so 0.8. Godot's 0.5 leaves a sound
@@ -103,3 +113,9 @@ static func apply_2d(player: AudioStreamPlayer, category: StringName, offset_db:
 		return
 	player.volume_db = values.own_db + offset_db
 	player.bus = BUS_EFFECTS
+
+
+## How much of a sound with a distant variant is the distant one at [param distance] metres:
+## 0 up to [constant FAR_FROM], 1 from [constant FAR_TO], smooth in between.
+static func far_share(distance: float) -> float:
+	return smoothstep(FAR_FROM, FAR_TO, distance)

@@ -10,6 +10,8 @@ extends Node3D
 enum Kind { FRAG, FLASH, SMOKE }
 
 const FRAG_SOUND := preload("res://assets/sounds/frag_explosion.wav")
+## The frag heard from far away (M13, D-191), crossfaded in by distance.
+const FRAG_FAR_SOUND := preload("res://assets/sounds/frag_explosion_far.wav")
 const FLASH_SOUND := preload("res://assets/sounds/flash_pop.wav")
 const SMOKE_SOUND := preload("res://assets/sounds/smoke_hiss.wav")
 ## Seconds before the node frees itself.
@@ -35,7 +37,7 @@ func _ready() -> void:
 			_add_ball(Color(1.0, 0.65, 0.2), 0.6)
 			_add_particles(24, Color(0.18, 0.17, 0.16), Vector2(5.0, 10.0), 0.9, Vector3(0.06, 0.06, 0.06), true)
 			_add_particles(10, Color(0.32, 0.31, 0.3, 0.85), Vector2(0.8, 2.0), 1.6, Vector3(0.7, 0.7, 0.7), false)
-			_play(FRAG_SOUND, SoundMix.EXPLOSION)
+			_play(FRAG_SOUND, SoundMix.EXPLOSION, FRAG_FAR_SOUND)
 		Kind.FLASH:
 			_add_light(Color(1.0, 1.0, 0.95), 12.0, 16.0)
 			_add_ball(Color(1.0, 1.0, 1.0), 0.35)
@@ -115,9 +117,14 @@ func _add_particles(amount: int, color: Color, speed: Vector2, lifetime: float, 
 	add_child(particles)
 
 
-func _play(stream: AudioStream, category: StringName) -> void:
+func _play(stream: AudioStream, category: StringName, far_stream: AudioStream = null) -> void:
 	if silent:
 		return
 	var audio := AudioStreamPlayer3D.new()
 	add_child(audio)
-	Acoustics.play(audio, stream, category)
+	if far_stream == null:
+		Acoustics.play(audio, stream, category)
+		return
+	var far := AudioStreamPlayer3D.new()
+	add_child(far)
+	Acoustics.play_with_far(audio, far, stream, far_stream, category, SoundMix.EXPLOSION_FAR)

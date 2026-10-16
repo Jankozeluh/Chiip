@@ -9,7 +9,9 @@ Branch `claude/m13-sound-ebfbe2` (Opus for the audio design, Sonnet for the soun
 **Done**
 - **Task 1, the sound routing and the mix table** (D-190): every game sound plays through `Acoustics.play()` / `play_2d()` from one table (`SoundMix`); new buses Muffled, MuffledHeavy and Music, a hard limiter on Master; stronger panning (measured with the real audio driver). `tools/sound_report.gd` measures every sound file. `sound_test` has 4 new checks (13 in all).
 
-**Next:** the gun signatures (task 2).
+- **Task 2, gun signatures** (D-191): every gun has a close and a far shot (crossfaded from 15 to 40 m), its own three reload sounds and a loudness of its own; the SMG and hand cannon shots were redone so all seven differ; far explosions for the frag and the bomb. 27 new or redesigned sounds (Sonnet subagent), all at their target loudness. `sound_test` +4 checks.
+
+**Next:** muffling through walls (task 3).
 
 ## 2026-10-16 — M12 share
 

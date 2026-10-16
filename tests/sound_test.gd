@@ -13,10 +13,14 @@ extends Node
 ##
 ## M13 (D-190 to D-199): the bus layout (a limiter last on Master, the muffled buses feeding the
 ## reverb on Effects) and the mix table, and that guns, steps and impacts play by the table, your
-## own without position and everyone else's from where they are.
+## own without position and everyone else's from where they are. Every gun's own shot (any two
+## differ), its far variant (duller, longer) and its three reload sounds, and a bot's shot
+## crossfading into the far one with distance.
 ## Quits with the number of failed checks as the exit code.
 
 const MAP_SCENE := preload("res://maps/depot.tscn")
+## The guns, one per family (M13, D-191).
+const GUNS: Array[StringName] = [&"pistol", &"hand_cannon", &"smg", &"carbine", &"rifle", &"shotgun", &"sniper"]
 const BOT_SCENE := preload("res://bots/bot.tscn")
 
 var _map: Node3D
@@ -31,6 +35,7 @@ func _ready() -> void:
 	_player.footstep_sound = preload("res://assets/sounds/footsteps.tres")
 	await _wait_ticks(30)
 	_test_buses()
+	_test_signatures()
 	_test_floors()
 	_test_footsteps()
 	await _test_impacts()
@@ -127,12 +132,75 @@ func _test_routing(bot: Character) -> void:
 	var bot_shot: bool = shot.stream == bot.weapon.data.shot_sound and shot.volume_db == values.volume_db and shot.unit_size == values.unit_size \
 			and shot.max_distance == values.max_distance and is_equal_approx(shot.panning_strength, SoundMix.PANNING_STRENGTH)
 	var bot_handling: bool = handling.stream == bot.weapon.data.reload_sound and handling.unit_size == SoundMix.TABLE[SoundMix.HANDLING].unit_size
+	# 50 m away the close shot is turned down and the far one plays (only the node moves: the
+	# sound starts at once, before physics would notice).
+	var far := bot.weapon.get_node("ShotFarAudio3D") as AudioStreamPlayer3D
+	var near_far_stream := far.stream
+	var home := bot.global_position
+	var camera := Acoustics.get_listener(bot)
+	bot.global_position = camera.global_position + Vector3(0.0, 0.0, -50.0) if camera != null else home
+	bot.weapon.call("_play", bot.weapon.data.shot_sound, false)
+	var far_volume := far.volume_db
+	var close_volume := shot.volume_db
+	bot.global_position = home
+	_check("Far away a bot's shot crossfades into the gun's far variant: none at 6 m, all of it at 50 m, the close one turned down",
+			camera != null and near_far_stream == null and far.stream == bot.weapon.data.shot_far_sound
+			and is_equal_approx(far_volume, SoundMix.TABLE[SoundMix.SHOT_FAR].volume_db)
+			and is_equal_approx(close_volume, values.volume_db + SoundMix.CLOSE_AT_FAR_DB),
+			"listener %s, far stream at 6 m %s, at 50 m %s at %.1f dB, close %.1f dB" % [camera != null, near_far_stream,
+				far.stream.resource_path.get_file() if far.stream != null else "none", far_volume, close_volume])
+	far.stop()
 	_check("Guns play by the mix table: yours without position, a bot's shot and reload from where it is",
 			own_shot and bot_shot and bot_handling, "own %.1f dB on %s; bot shot %.1f dB, %.0f m unit, %.0f m max, pan %.1f; reload unit %.0f m" % [
 				own.volume_db, own.bus, shot.volume_db, shot.unit_size, shot.max_distance, shot.panning_strength, handling.unit_size])
 	own.stop()
 	shot.stop()
 	handling.stop()
+
+
+## Every gun family sounds like itself (M13, D-191), measured from the files: any two close
+## shots differ in where their energy sits (bands) or in length; each far variant is duller (70%
+## below 1 kHz, at most 8% above 4 kHz) and at least 1.5 times as long; every magazine gun has
+## three reload sounds of its own (out, in, charge), none longer than 0.35 s.
+func _test_signatures() -> void:
+	var close := {}
+	var dull: Array[String] = []
+	var reloads: Array[String] = []
+	var used := {}
+	for id in GUNS:
+		var data := WeaponData.find(id)
+		close[id] = SoundLevels.measure(data.shot_sound.resource_path)
+		var far := SoundLevels.measure(data.shot_far_sound.resource_path) if data.shot_far_sound != null else {}
+		if far.is_empty() or far.bands[0] + far.bands[1] < 0.7 or far.bands[3] > 0.08 \
+				or far.audible_seconds < 1.5 * close[id].audible_seconds:
+			dull.append(String(id))
+		if data.reload_per_shell:
+			continue
+		if data.reload_sounds.size() != GunModel.MAGAZINE_SOUNDS.size():
+			reloads.append("%s has %d" % [id, data.reload_sounds.size()])
+		for sound in data.reload_sounds:
+			var levels := SoundLevels.measure(sound.resource_path) if sound != null else {}
+			if levels.is_empty() or levels.seconds > 0.35 or used.has(sound.resource_path):
+				reloads.append("%s: %s" % [id, sound.resource_path.get_file() if sound != null else "none"])
+			elif sound != null:
+				used[sound.resource_path] = true
+	var alike: Array[String] = []
+	for i in GUNS.size():
+		for j in range(i + 1, GUNS.size()):
+			var a: Dictionary = close[GUNS[i]]
+			var b: Dictionary = close[GUNS[j]]
+			var distance := 0.0
+			for k in 4:
+				distance += absf(a.bands[k] - b.bands[k])
+			var ratio := maxf(a.audible_seconds, b.audible_seconds) / maxf(minf(a.audible_seconds, b.audible_seconds), 0.001)
+			if distance < 0.25 and ratio < 1.5:
+				alike.append("%s/%s (bands %.2f apart, %.1f× as long)" % [GUNS[i], GUNS[j], distance, ratio])
+	_check("Every gun's shot is its own: any two differ by a quarter of their energy across the bands, or one is 1.5× as long",
+			alike.is_empty(), str(alike))
+	_check("Every gun has a far variant: 70% below 1 kHz, at most 8% above 4 kHz, at least 1.5× as long as the close shot",
+			dull.is_empty(), str(dull))
+	_check("Every magazine gun has its own three reload sounds (out, in, charge), none longer than 0.35 s, none shared",
+			reloads.is_empty(), str(reloads))
 
 
 ## The bus layout (M13, D-190): a limiter last on Master so the mix can't clip, the reverb on

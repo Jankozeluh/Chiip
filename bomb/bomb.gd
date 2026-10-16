@@ -86,6 +86,8 @@ const BLINK_TIME := 0.08
 @export var defuse_sound: AudioStream = preload("res://assets/sounds/bomb_defuse.wav")
 ## The explosion.
 @export var explosion_sound: AudioStream = preload("res://assets/sounds/bomb_explosion.wav")
+## The explosion heard from far away (M13, D-191), crossfaded in by distance.
+@export var explosion_far_sound: AudioStream = preload("res://assets/sounds/bomb_explosion_far.wav")
 
 ## The rules: plant, defuse and fuse times. Set by the round manager.
 var settings: MatchSettings = MatchSettings.new()
@@ -127,6 +129,7 @@ var _blink_left: float = 0.0
 @onready var _beep_audio: AudioStreamPlayer3D = $BeepAudio
 @onready var _action_audio: AudioStreamPlayer3D = $ActionAudio
 @onready var _explosion_audio: AudioStreamPlayer3D = $ExplosionAudio
+@onready var _explosion_far_audio: AudioStreamPlayer3D = $ExplosionFarAudio
 @onready var _explosion: Node3D = $Explosion
 @onready var _blast: MeshInstance3D = $Explosion/Blast
 @onready var _blast_light: OmniLight3D = $Explosion/BlastLight
@@ -467,7 +470,8 @@ func _play_explosion() -> void:
 	tween.tween_property(material, "albedo_color:a", 0.0, 0.6)
 	tween.tween_property(_blast_light, "light_energy", 0.0, 0.8)
 	tween.chain().tween_callback(func() -> void: _explosion.visible = false)
-	Acoustics.play(_explosion_audio, explosion_sound, SoundMix.BOMB_EXPLOSION)
+	Acoustics.play_with_far(_explosion_audio, _explosion_far_audio, explosion_sound, explosion_far_sound,
+			SoundMix.BOMB_EXPLOSION, SoundMix.EXPLOSION_FAR)
 
 
 # --- Online: the replica on a client (M9, D-105) ---

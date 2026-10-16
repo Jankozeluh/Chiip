@@ -22,6 +22,24 @@ static func play(player: AudioStreamPlayer3D, stream: AudioStream, category: Str
 	player.play()
 
 
+## Plays a sound that has a distant variant (a gun's shot, an explosion; D-191): [param stream]
+## on [param close] as [param category] and, from [constant SoundMix.FAR_FROM] metres on,
+## [param far_stream] on [param far] as [param far_category], crossfading into it by
+## [constant SoundMix.FAR_TO] metres. Without a far stream or a listener only the close one plays;
+## without a close stream (a silenced test bomb) neither does.
+static func play_with_far(close: AudioStreamPlayer3D, far: AudioStreamPlayer3D, stream: AudioStream, far_stream: AudioStream,
+		category: StringName, far_category: StringName, offset_db: float = 0.0) -> void:
+	if stream == null:
+		return
+	var far_share := 0.0
+	var listener := get_listener(close) if far_stream != null and close.is_inside_tree() else null
+	if listener != null:
+		far_share = SoundMix.far_share(listener.global_position.distance_to(close.global_position))
+	play(close, stream, category, offset_db + SoundMix.CLOSE_AT_FAR_DB * far_share)
+	if far_share > 0.0:
+		play(far, far_stream, far_category, offset_db + linear_to_db(far_share))
+
+
 ## Plays [param stream] on [param player] as your own sound of [param category] (both ears,
 ## no position), [param offset_db] louder.
 static func play_2d(player: AudioStreamPlayer, stream: AudioStream, category: StringName, offset_db: float = 0.0) -> void:

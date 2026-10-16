@@ -179,6 +179,7 @@ var _cycle_sound_left: float = -1.0
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
 @onready var _shot_audio_3d: AudioStreamPlayer3D = $ShotAudio3D
+@onready var _shot_far_audio_3d: AudioStreamPlayer3D = $ShotFarAudio3D
 @onready var _handling_audio_3d: AudioStreamPlayer3D = $HandlingAudio3D
 @onready var _viewmodel: Node3D = $Viewmodel
 @onready var _muzzle_flash: Node3D = $Viewmodel/MuzzleFlash
@@ -813,7 +814,8 @@ func _play_reload_cues(before: float, after: float) -> void:
 	var cues := GunModel.SHELL_SOUNDS if data.reload_per_shell else GunModel.MAGAZINE_SOUNDS
 	for step in cues.size():
 		if before < cues[step] and after >= cues[step]:
-			_play(data.reload_sound, true)
+			var own_sound := not data.reload_per_shell and step < data.reload_sounds.size() and data.reload_sounds[step] != null
+			_play(data.reload_sounds[step] if own_sound else data.reload_sound, true)
 			reload_cue.emit(step)
 
 
@@ -1062,7 +1064,11 @@ func _play(stream: AudioStream, handling: bool) -> void:
 	if stream == null or silent:
 		return
 	var category := SoundMix.HANDLING if handling else (SoundMix.MELEE if data.is_melee() else SoundMix.SHOT)
+	var offset := data.shot_volume_db if category == SoundMix.SHOT else 0.0
 	if _wielder == null or _wielder.is_local_player():
-		Acoustics.play_2d(_handling_audio if handling else _shot_audio, stream, category)
+		Acoustics.play_2d(_handling_audio if handling else _shot_audio, stream, category, offset)
+	elif category == SoundMix.SHOT and stream == data.shot_sound:
+		# Far away the shot turns into its distant variant (D-191).
+		Acoustics.play_with_far(_shot_audio_3d, _shot_far_audio_3d, stream, data.shot_far_sound, category, SoundMix.SHOT_FAR, offset)
 	else:
-		Acoustics.play(_handling_audio_3d if handling else _shot_audio_3d, stream, category)
+		Acoustics.play(_handling_audio_3d if handling else _shot_audio_3d, stream, category, offset)
