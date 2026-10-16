@@ -12,7 +12,9 @@
 
 - The boot screen exists now (D-153): it shows once per run, any key skips it. The studio logo file was never in the project (the mockup's link was replaced by a placeholder text in the copy), so it shows the game's name until `assets/ui/studio_logo.png` is added; the main menu's small corner mark appears with it.
 
-**Next:** the layout test, then the full run.
+- New suite `layout` (11 checks, D-154): the real window resized to seven sizes, every menu and the HUD scanned for controls outside it, plus the scale rule, the loading-then-draft order and a runtime resize. It fails on the old rule.
+
+**Next:** your check: put the studio logo at `assets/ui/studio_logo.png` (send it, or its link), and look at the Play screen in the editor's game view at 2920 × 1753.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

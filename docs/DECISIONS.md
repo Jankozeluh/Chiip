@@ -1698,6 +1698,16 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** drawing a logo of our own (it is the studio's mark, yours to choose); a Godot boot splash in `project.godot` (`application/boot_splash`; shown by the engine before the game loads, can't be skipped or animated, and the menu is the first screen anyway); showing the boot screen every time the menu opens (it would delay every return from a match).
 
+## D-154 — A layout test at seven window sizes (2026-10-16)
+
+**Decision:** `tests/layout_test.tscn` (suite `layout`, in `tools/run_tests.sh`) resizes the real root window to 1280 × 720, 1920 × 1080, 2560 × 1440, 2920 × 1753 (your screenshot), 3440 × 1440, 2560 × 1600 and 1440 × 1080, by setting `Window.size` (which emits `size_changed`, so it goes through the menus' own wiring, nothing calls `apply_pixel_settings()` for them). At each size it opens every menu in turn and checks that **every visible control lies inside the window** (a scroll box's contents may run past its edge, the box may not): the main menu (page, Play with each of its three modes, the lobby's connect page, all five settings tabs, also with the pixelated HUD on), and in a real Bomb game and Team Deathmatch game the HUD, class draft, buy menu, pause menu, Tab scoreboard, console and match-end screen; then the loading screen and the boot screen. It also checks the scale rule, that **after loading nothing covers the class draft** (loading screen hidden, game unpaused, draft open, no visible layer above the draft), and that a runtime resize re-lays out a menu without anyone calling it.
+
+**Why:** The cut-off screens came from two things no existing test measured: the scale rule, and a page whose minimum width was more than the layout width. Rects in a real window are what you see; the earlier checks looked at font sizes and minimum sizes only. With the old height-only rule and the cards' text unwrapped, the new suite fails on the Play screen at 2920 × 1753, 2560 × 1600 and the pixelated 1280 × 720.
+
+**Notes:** A headless run's root window can be resized and keeps its size, so the real window sizes are tested without opening a window. The lobby's team page (needs a session) and the kill feed's moving lines aren't scanned.
+
+**Alternatives:** a screenshot comparison per size (heavy, and a human has to look); testing only the scale function (misses a page that is wider than the layout).
+
 ## Open questions
 
 | Question | Decide in |

@@ -510,6 +510,7 @@ bash tools/run_tests.sh
 | `arsenal_test` | 30 | The arsenal's data files, CS's armor results, and that `docs/weapons.csv` matches the data (D-091) | under 1 s |
 | `kit_test` | 17 | The map kit (M10): the texture library's sets, sizes, look rules and materials, see-through chain-link, sounds from texture names (D-121); every prop's model, collision and surface, its TrenchBroom entity, and props in a test `.map` (`tests/maps/kit_props.map`): built where placed, stopping rays, sounding right, cut out of a baked navmesh (D-122, D-123); every lamp's light and glow, and a lamp's entity properties (D-124); the kit gallery's entities becoming the game's markers, every prop, lamp and texture shown, see-through brushes, paths between spawns and sites (D-125, D-129) | ~2 s |
 | `range_test` | 13 | The Shooting Range (D-141, D-142): starts practice with no bots and has no team spawns; targets at every distance, moving ones moving; a stand for every gun, refilled after it's taken; distance signs and the console hint; bot spawns and patrol points reachable; the console's `bot_add`, `bot_difficulty` and `bot_kick`; the map list without the hidden test map, which still loads | ~5 s |
+| `layout_test` | 11 | The UI fits any window (M11, D-151 to D-154): the root window is resized to 1280 × 720, 1920 × 1080, 2560 × 1440, 2920 × 1753, 3440 × 1440, 2560 × 1600 and 1440 × 1080 by setting its size (which emits `size_changed`, so the menus' own wiring runs), and for each the main menu (page, Play with each mode, lobby, every settings tab; also with the pixelated HUD), a Bomb and a Team Deathmatch game (HUD, class draft, buy menu, pause menu, scoreboard, console, match end), the loading screen and the boot screen are scanned: every visible control lies inside the window. Also the scale rule, that after loading nothing covers the class draft, and that a runtime resize re-lays the menu out |
 
 | `rotation_test` | 13 | Mode and map rotation in match setup, Next map on the end screen (D-087) | ~1 s |
 | `net_test` | 25 | The network session: hosting, joining, the roster, team requests, messages, stream packets, fake lag and loss; lag compensation's maths; the lobby (M9, D-101, D-107, D-108, D-111) | ~2 s |
@@ -550,6 +551,7 @@ That is about 830 checks in about four minutes on the development Mac. A change 
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 300000 res://tests/netstress_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 200000 res://tests/netrespawn_test.tscn
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/kit_test.tscn
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/layout_test.tscn
 ```
 
 `perf_test` times every physics tick of a seeded bots-only 5v5 (the CPU side: physics, bots, animation, skeletons); with `-- --window` after it (and without `--headless`), it also prints the frame rate from a camera over the map. `zone_test` checks that every class's hit zones follow its animated bones.
