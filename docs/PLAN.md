@@ -545,7 +545,7 @@ The class draft (two random classes offered each match) and the random map weapo
 - [x] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files and the third-party notices (Godot, Silkscreen, FuncGodot) inside the builds and in **Settings → Licences** (D-170); no per-file headers, the folders decide
 - [x] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors (D-171). The history still holds the old paths: your call whether to rewrite it before the first push
 - [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows. Presets, packaging script and instructions are done (D-172); the builds themselves are made for the release, after your OK
-- [ ] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide
+- [x] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide (D-173). A join over a real Tailscale address is for your playtest
 - [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
 
 ## Backlog (ideas, not scheduled)

@@ -13,7 +13,9 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 
 - **Export presets** (D-172): `Windows`, `Linux` (both one file with the data embedded) and the updated `macOS`, each listing the licence files in its include filter; `tools/package_release.sh` for the three zips; `docs/DEVELOPING.md` has the export steps. Nothing is exported (builds only when you say); Godot lists all three presets and `release_test` checks them.
 
-**Next:** the Tailscale address in the lobby.
+- **Tailscale in the lobby** (D-173): the host's lobby shows its Tailscale address (100.64.0.0/10) first, with its port and a Copy button, then the same-network address; Join by IP takes a pasted "address:port". Two game processes joined through the Mac's LAN address and started a match (the stand-in for a Tailscale address, since none is installed here); the lobby row was looked at in a screenshot.
+
+**Phase 1 done. Next (phase 2, once main has the M11 fixes):** merge main, write docs/RELEASE_CHECKLIST.md, automate bot matches on every mode and map and a two-instance LAN run, fix small bugs, write KNOWN_ISSUES and the v0.1.0 release notes.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

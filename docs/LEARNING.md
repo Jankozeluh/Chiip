@@ -737,3 +737,10 @@
 
 **A theme reaches through layers** (`UiTheme.apply()`)
 - `Control.theme` is inherited down a tree of `Control`s, but a `CanvasLayer` is not a `Control`, so it stops inheritance. Chiip's `UiTheme.apply(root)` therefore walks through non-Control nodes and sets the theme on the first `Control`s below each layer: a `CanvasLayer` menu instanced inside another menu (the Licences screen inside the settings menu) is scaled together with it, without its own call.
+
+**Looking up this computer's addresses, and the clipboard** (`IP.get_local_addresses()`, `DisplayServer.clipboard_set()`)
+- `IP.get_local_addresses()` lists every address of every network interface, IPv4 and IPv6, including loopback and link-local ones; the game filters it (Unity: `NetworkInterface.GetAllNetworkInterfaces()`). A Tailscale device appears as one more interface, with an address in 100.64.0.0/10.
+- `DisplayServer.clipboard_set(text)` and `clipboard_get()` are the clipboard (Unity: `GUIUtility.systemCopyBuffer`). A headless run has no clipboard, so a test asks `DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD)` first.
+
+**Time in a test that runs at a fixed frame rate** (`Time.get_ticks_msec()` against `SceneTreeTimer`)
+- `--fixed-fps 128` makes every frame exactly 1/128 s of *game* time however fast it really runs, so `create_timer(1.5)` fires after 192 frames in a fraction of a second of wall-clock time. `Time.get_ticks_msec()` is the wall clock: a "Copied" label that reset itself by comparing ticks never reset in the test. The Copy button counts presses instead. (This is also why CLAUDE.md says to count time in deltas.)

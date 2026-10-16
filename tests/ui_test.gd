@@ -3765,7 +3765,12 @@ func _test_lobby_menu() -> void:
 	var address_lines: Array[String] = []
 	for address in addresses:
 		address_lines.append("%s:%d" % [address, port])
-	var hosted_text := "Hosted by you · %s" % address_lines[0] if not address_lines.is_empty() else "Hosted by you · port %d" % port
+	var tailscale := LobbyMenu.tailscale_addresses()
+	var hosted_text := "Hosted by you · port %d" % port
+	if not address_lines.is_empty():
+		hosted_text = "Hosted by you · %s" % address_lines[0]
+	elif not tailscale.is_empty():
+		hosted_text = "Hosted by you · %s:%d" % [tailscale[0], port]
 	var default_facts := {"Mode": "Bomb", "Map": "Depot", "Limit": "First to 5 rounds"}
 	_check("Host game opens a session as the host on the port in the field and shows the lobby page: titled Lobby, \"Hosted by you · address:port\" in the header with Leave in place of Back, your name fixed, the addresses friends join at (with the port) under Friends join at, you as \"You\" with the Host mark and \"Empty / Bot\" rows for the other slots of both teams, the match's mode, map and limit in the footer, Edit setup and Start (no waiting line)",
 			result == OK and session != null and session.is_host() and session.is_active() and NetLobby.find_session(tree) == session
@@ -3773,7 +3778,7 @@ func _test_lobby_menu() -> void:
 					and lobby.get_info_label().visible and lobby.get_info_label().text == hosted_text and stored.online_port == port
 					and lobby.get_leave_button().visible and lobby.get_leave_button().text == "Leave" and not lobby.get_back_button().visible
 					and not lobby.get_name_field().editable and lobby.get_name_field().text == "Jan"
-					and lobby.get_address_texts() == address_lines and lobby.get_friends_box().visible == not address_lines.is_empty()
+					and lobby.get_address_texts() == address_lines and lobby.get_friends_box().visible == (not address_lines.is_empty() or not tailscale.is_empty())
 					and not lobby.get_connect_box().visible and lobby.get_teams_box().visible and lobby.get_footer().visible
 					and team_0 == ["You Host", "Empty Bot", "Empty Bot"] and team_1 == ["Empty Bot", "Empty Bot", "Empty Bot"]
 					and lobby_node.info.get("slots", []) == [3, 3] and lobby_node.info.get("map", "") == Settings.DEFAULT_MATCH_MAP

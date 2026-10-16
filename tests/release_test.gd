@@ -24,6 +24,8 @@ func _ready() -> void:
 	await _test_licences_screen()
 	await _test_licences_from_settings()
 	_test_export_presets()
+	_test_tailscale_addresses()
+	await _test_tailscale_in_the_lobby()
 	_test_no_personal_paths()
 	_test_gitignore()
 	MenuState.reset()
@@ -213,6 +215,117 @@ func _has_secrets(config: ConfigFile) -> bool:
 				if not value.is_empty():
 					return true
 	return false
+
+
+# --- Tailscale ---
+
+
+func _test_tailscale_addresses() -> void:
+	var tailscale_ok := true
+	for address in ["100.64.0.0", "100.100.100.100", "100.127.255.255", "100.101.102.103"]:
+		tailscale_ok = tailscale_ok and LobbyMenu.is_tailscale_address(address)
+	var others_ok := true
+	for address in ["100.63.255.255", "100.128.0.1", "99.64.0.1", "10.0.0.1", "192.168.1.20", "127.0.0.1", "100.64.1", "100.64.1.256", "100.64.x.1", "fd7a:115c:a1e0::1", "", "100.64.0.1.2"]:
+		others_ok = others_ok and not LobbyMenu.is_tailscale_address(address)
+	_check("100.64.0.0/10 is Tailscale's range: 100.64.0.0 to 100.127.255.255 count, the neighbours (100.63.x, 100.128.x), private ranges, loopback and bad strings do not",
+			tailscale_ok and others_ok, "in range %s, others %s" % [tailscale_ok, others_ok])
+	var found := PackedStringArray(["127.0.0.1", "192.168.1.20", "100.101.102.103", "fd7a:115c:a1e0::1", "169.254.1.1", "100.101.102.103", "10.0.0.5", "0.0.0.0"])
+	_check("A computer's address list splits into its Tailscale addresses (once each) and the same-network ones (no loopback, link-local, IPv6 or Tailscale)",
+			LobbyMenu.tailscale_addresses(found) == ["100.101.102.103"] and LobbyMenu.local_addresses(found) == ["192.168.1.20", "10.0.0.5"]
+					and LobbyMenu.tailscale_addresses(PackedStringArray(["192.168.1.20"])).is_empty(),
+			"tailscale %s, local %s" % [LobbyMenu.tailscale_addresses(found), LobbyMenu.local_addresses(found)])
+	var with_port := LobbyMenu.split_address("100.101.102.103:26000")
+	var named := LobbyMenu.split_address("  jan-mac.tail1234.ts.net:27000 ")
+	var plain := LobbyMenu.split_address("100.101.102.103")
+	var ipv6 := LobbyMenu.split_address("fd7a:115c:a1e0::1")
+	var bad_port := LobbyMenu.split_address("host:99999")
+	var zero_port := LobbyMenu.split_address("host:0")
+	var no_host := LobbyMenu.split_address(":26000")
+	_check("Pasting \"address:port\" (what Copy puts on the clipboard) into Join by IP splits into the address and the port; a bare address, a host name, an IPv6 address or a bad port are left whole",
+			with_port == {"address": "100.101.102.103", "port": 26000} and named == {"address": "jan-mac.tail1234.ts.net", "port": 27000}
+					and plain == {"address": "100.101.102.103"} and ipv6 == {"address": "fd7a:115c:a1e0::1"}
+					and bad_port == {"address": "host:99999"} and zero_port == {"address": "host:0"} and no_host == {"address": ":26000"},
+			"%s %s %s %s %s" % [with_port, named, plain, ipv6, bad_port])
+
+
+func _test_tailscale_in_the_lobby() -> void:
+	MenuState.reset()
+	GameLaunch.clear()
+	var stored := Settings.new()
+	stored.online_name = "Tester"
+	stored.online_port = 28944
+	var lobby := (load("res://ui/lobby_menu.tscn") as PackedScene).instantiate() as LobbyMenu
+	lobby.set_settings(stored)
+	add_child(lobby)
+	await get_tree().process_frame
+	lobby.set_ui_scale(1.0)
+	lobby.address_source = func() -> PackedStringArray: return PackedStringArray(["127.0.0.1", "192.168.1.20", "100.101.102.103"])
+	lobby.open()
+	var result := lobby.host_game()
+	await get_tree().process_frame
+	_check("A host with a Tailscale address (and a LAN one) sees Friends join at: the Tailscale address with the port and a Copy button first, then \"Same network\" and the LAN address; the header names the LAN address",
+			result == OK and lobby.get_friends_box().visible and lobby.get_tailscale_box().visible
+					and lobby.get_tailscale_text() == "100.101.102.103:28944" and lobby.get_copy_button().text == "Copy"
+					and lobby.get_lan_label().visible and lobby.get_address_texts() == ["192.168.1.20:28944"]
+					and lobby.get_info_label().text == "Hosted by you · 192.168.1.20:28944"
+					and lobby.get_tailscale_box().get_index() < lobby.get_lan_label().get_index(),
+			"result %d, tailscale '%s', lan %s, header '%s'" % [result, lobby.get_tailscale_text(), lobby.get_address_texts(), lobby.get_info_label().text])
+	lobby.get_copy_button().pressed.emit()
+	await get_tree().process_frame
+	var clipboard_works := DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD)
+	_check("Copy puts \"100.101.102.103:28944\" on the clipboard (where the display server has one) and says Copied for a moment, then Copy again",
+			lobby.get_copy_button().text == "Copied" and (not clipboard_works or DisplayServer.clipboard_get() == "100.101.102.103:28944"),
+			"button '%s', clipboard %s" % [lobby.get_copy_button().text, DisplayServer.clipboard_get() if clipboard_works else "n/a in this run"])
+	await get_tree().create_timer(LobbyMenu.COPIED_MILLISECONDS / 1000.0 + 0.4).timeout
+	_check("The button goes back to Copy after the moment", lobby.get_copy_button().text == "Copy", "'%s'" % lobby.get_copy_button().text)
+	lobby.close()
+	await _wait_for_session_close(lobby)
+	# Only a Tailscale address: it is the whole list and names the host in the header.
+	lobby.address_source = func() -> PackedStringArray: return PackedStringArray(["127.0.0.1", "100.64.7.8"])
+	lobby.open()
+	result = lobby.host_game()
+	await get_tree().process_frame
+	_check("A host with only a Tailscale address still sees Friends join at (no same-network lines or caption) and the header names that address",
+			result == OK and lobby.get_friends_box().visible and lobby.get_tailscale_text() == "100.64.7.8:28944" and not lobby.get_lan_label().visible
+					and lobby.get_address_texts().is_empty() and lobby.get_info_label().text == "Hosted by you · 100.64.7.8:28944",
+			"result %d, tailscale '%s', header '%s'" % [result, lobby.get_tailscale_text(), lobby.get_info_label().text])
+	lobby.close()
+	await _wait_for_session_close(lobby)
+	# No Tailscale: the old look, the same-network lines alone.
+	lobby.address_source = func() -> PackedStringArray: return PackedStringArray(["127.0.0.1", "192.168.1.20"])
+	lobby.open()
+	result = lobby.host_game()
+	await get_tree().process_frame
+	_check("A host without Tailscale sees no Tailscale group and no caption: just the same-network address, as before",
+			result == OK and lobby.get_friends_box().visible and not lobby.get_tailscale_box().visible and lobby.get_tailscale_text().is_empty()
+					and not lobby.get_lan_label().visible and lobby.get_address_texts() == ["192.168.1.20:28944"],
+			"result %d, lan %s" % [result, lobby.get_address_texts()])
+	lobby.close()
+	await _wait_for_session_close(lobby)
+	# Joining: "address:port" in the address field fills both fields.
+	lobby.open()
+	lobby.get_address_field().text = "100.101.102.103:27001"
+	lobby.get_address_field().text_changed.emit(lobby.get_address_field().text)
+	var join_result := lobby.join_game()
+	await get_tree().process_frame
+	_check("Joining with a pasted \"address:port\" uses that port and shows the address and the port in their own fields (the connection attempt starts, then Back cancels it)",
+			join_result == OK and stored.online_address == "100.101.102.103" and stored.online_port == 27001
+					and lobby.get_address_field().text == "100.101.102.103" and lobby.get_port_field().text == "27001",
+			"result %d, address '%s' port %d" % [join_result, stored.online_address, stored.online_port])
+	lobby.close()
+	await _wait_for_session_close(lobby)
+	remove_child(lobby)
+	lobby.queue_free()
+	MenuState.reset()
+
+
+## Waits (a few seconds at most) until the lobby has let go of the session it closed: a host gives its
+## friends a moment to hear the end, and hosting again before that is refused.
+func _wait_for_session_close(lobby: LobbyMenu) -> void:
+	for step in 240:
+		if not lobby.is_closing_session():
+			return
+		await get_tree().process_frame
 
 
 # --- Safe to publish ---

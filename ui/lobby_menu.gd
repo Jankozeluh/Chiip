@@ -12,7 +12,8 @@ extends CanvasLayer
 ## for "Connecting to ...", errors and the reason the last online game ended
 ## ([member GameLaunch.notice], shown once), and "Or host a game" with the Host game button. The
 ## [b]lobby page[/b] ("Lobby") shows "Hosted by you · address:port" or "Connected to address:port" in
-## the header, your name and (for the host) the addresses friends join at on the left, the two teams
+## the header, your name and (for the host) the addresses friends join at on the left (the host's
+## Tailscale address first, with a Copy button, M12 D-173; then the same-network ones), the two teams
 ## side by side (a header with the team's name and its players out of its slots, then a row per player:
 ## you on a raised row with a lime chip, the host marked "Host", and an "Empty / Bot" row for every
 ## slot nobody has taken), a Switch team button, and the footer: the match's mode, map and limit as the
@@ -50,6 +51,10 @@ const ROW_HEIGHT := 40.0
 const CHIP_SIZE := 8.0
 ## The facts the footer shows, in order: the keys of the lobby info's [code]facts[/code] (see [method build_facts]).
 const FACT_KEYS: Array[String] = ["mode", "map", "limit"]
+## The Tailscale address's button, and what it says for a moment after copying (M12, D-173).
+const COPY_TEXT := "Copy"
+const COPIED_TEXT := "Copied"
+const COPIED_MILLISECONDS := 1500
 
 ## Where the choices are stored. The shared [Settings] when null (set before the panel is in the tree).
 var settings: Settings
@@ -65,8 +70,18 @@ var _join_failure: String = ""
 var _ui_scale: float = 1.0
 ## The match settings panel (host only), made when first needed.
 var _setup: MatchSetup
-## The addresses friends can join the host at, found when the lobby opens.
+## Where the host's addresses come from: a [Callable] returning a [PackedStringArray], or none for
+## this computer's own ([method IP.get_local_addresses]). Tests set it to pretend to have a
+## Tailscale address.
+var address_source: Callable = Callable()
+## The addresses friends can join the host at, found when the lobby opens: those on the same
+## network, and the Tailscale ones (M12, D-173).
 var _addresses: Array[String] = []
+var _tailscale: Array[String] = []
+## The clipboard text of the Copy button (the Tailscale address with the port) and how many times
+## it was pressed, so only the last press resets the button's text.
+var _copy_text: String = ""
+var _copy_presses: int = 0
 ## The session that is still closing after [method leave]: a host with friends gives them a moment
 ## to hear it ([method NetSession.close]). Every session at the root shares the tree's one
 ## multiplayer, so hosting or joining again before it is gone would be torn down by its closing;
@@ -88,6 +103,10 @@ var _published_host_team: int = -1
 @onready var _host_button: Button = %HostButton
 @onready var _friends_box: Control = %FriendsBox
 @onready var _addresses_box: VBoxContainer = %Addresses
+@onready var _tailscale_box: Control = %TailscaleBox
+@onready var _tailscale_address_label: Label = %TailscaleAddress
+@onready var _copy_button: Button = %CopyButton
+@onready var _lan_label: Label = %LanLabel
 @onready var _teams_box: Control = %Teams
 @onready var _columns: Array[Control] = [%Team0, %Team1]
 @onready var _header_panels: Array[PanelContainer] = [%Header0, %Header1]
@@ -108,6 +127,7 @@ func _ready() -> void:
 		settings = Settings.get_instance()
 	settings.changed.connect(_on_setting_changed)
 	_name_field.text_changed.connect(func(text: String) -> void: settings.online_name = text)
+	_copy_button.pressed.connect(copy_tailscale_address)
 	_address_field.text_changed.connect(func(text: String) -> void: settings.online_address = text)
 	_port_field.text_changed.connect(_on_port_text_changed)
 	_port_field.focus_exited.connect(_show_stored_port)
@@ -344,17 +364,82 @@ func _chosen_rotation() -> Array[String]:
 
 
 ## This computer's IPv4 addresses a friend on the same network can join at (not 127.x, not
-## link-local, no IPv6).
-static func local_addresses() -> Array[String]:
-	var found: Array[String] = []
-	for address: String in IP.get_local_addresses():
+## link-local, no IPv6, and not a Tailscale address: [method tailscale_addresses] has those).
+## [param found] is the list to filter, this computer's by default (tests give their own).
+static func local_addresses(found: PackedStringArray = IP.get_local_addresses()) -> Array[String]:
+	var result: Array[String] = []
+	for address: String in found:
 		if address.contains(":") or not address.contains("."):
 			continue
 		if address.begins_with("127.") or address.begins_with("169.254.") or address == "0.0.0.0":
 			continue
-		if not found.has(address):
-			found.append(address)
-	return found
+		if is_tailscale_address(address):
+			continue
+		if not result.has(address):
+			result.append(address)
+	return result
+
+
+## This computer's Tailscale addresses: the IPv4 addresses in 100.64.0.0/10 (carrier-grade NAT
+## space, which Tailscale hands out to its devices, M12, D-173). A computer without Tailscale has
+## none. [param found] is the list to filter, this computer's by default.
+static func tailscale_addresses(found: PackedStringArray = IP.get_local_addresses()) -> Array[String]:
+	var result: Array[String] = []
+	for address: String in found:
+		if is_tailscale_address(address) and not result.has(address):
+			result.append(address)
+	return result
+
+
+## True for an IPv4 address in 100.64.0.0/10: first number 100, second 64 to 127.
+static func is_tailscale_address(address: String) -> bool:
+	var parts := address.split(".")
+	if parts.size() != 4:
+		return false
+	for part in parts:
+		if part.is_empty() or _digits_only(part) != part or int(part) > 255:
+			return false
+	return int(parts[0]) == 100 and int(parts[1]) >= 64 and int(parts[1]) <= 127
+
+
+## Splits "address:port" (what the lobby's Copy button puts on the clipboard) into
+## [code]{"address": ..., "port": ...}[/code]; without a valid port (1 to 65535) after exactly one
+## colon there is no [code]port[/code] key and the address is kept whole (a host name, an IPv6 address).
+static func split_address(text: String) -> Dictionary:
+	var address := text.strip_edges()
+	if address.count(":") == 1:
+		var parts := address.split(":")
+		var host := parts[0].strip_edges()
+		var digits := parts[1].strip_edges()
+		if not host.is_empty() and not digits.is_empty() and _digits_only(digits) == digits and int(digits) >= 1 and int(digits) <= 65535:
+			return {"address": host, "port": int(digits)}
+	return {"address": address}
+
+
+## What the lobby's header names the host by: the first same-network address, else the Tailscale
+## one, with the [param port] (just the port when there is no address).
+func host_label_address(port: int) -> String:
+	if not _addresses.is_empty():
+		return "%s:%d" % [_addresses[0], port]
+	if not _tailscale.is_empty():
+		return "%s:%d" % [_tailscale[0], port]
+	return "port %d" % port
+
+
+## Puts the host's Tailscale address and port ("100.x.y.z:26000") on the clipboard, for pasting in
+## a friend's Join by IP field, and says "Copied" on the button for a moment. Does nothing without
+## a Tailscale address.
+func copy_tailscale_address() -> void:
+	if _copy_text.is_empty():
+		return
+	DisplayServer.clipboard_set(_copy_text)
+	_copy_button.text = COPIED_TEXT
+	_copy_presses += 1
+	var press := _copy_presses
+	await get_tree().create_timer(COPIED_MILLISECONDS / 1000.0).timeout
+	# A later press restarted the wait, and the lobby may be gone by now.
+	if is_instance_valid(self) and press == _copy_presses:
+		_copy_button.text = COPY_TEXT
 
 
 # --- The pages ---
@@ -394,17 +479,25 @@ func _show_lobby_page() -> void:
 	_start_button.visible = host
 	_waiting_label.visible = not host
 	if host:
-		_addresses = local_addresses()
+		var found: PackedStringArray = address_source.call() if address_source.is_valid() else IP.get_local_addresses()
+		_addresses = local_addresses(found)
+		_tailscale = tailscale_addresses(found)
 		_fill_addresses()
 		_publish()
-	_friends_box.visible = host and not _addresses.is_empty()
+	_friends_box.visible = host and (not _addresses.is_empty() or not _tailscale.is_empty())
 	_refresh_lobby()
 	if visible:
 		(_start_button if host else _leave_button).grab_focus()
 
 
-## The host's addresses under "Friends join at", one line each, with the port.
+## The host's addresses under "Friends join at": the Tailscale one first, with its Copy button,
+## then the same-network ones, one line each, with the port.
 func _fill_addresses() -> void:
+	_copy_text = "%s:%d" % [_tailscale[0], settings.online_port] if not _tailscale.is_empty() else ""
+	_tailscale_box.visible = not _tailscale.is_empty()
+	_tailscale_address_label.text = _copy_text
+	_lan_label.visible = not _tailscale.is_empty() and not _addresses.is_empty()
+	_copy_button.text = COPY_TEXT
 	for line in _addresses_box.get_children():
 		_addresses_box.remove_child(line)
 		line.queue_free()
@@ -422,7 +515,7 @@ func _refresh_lobby() -> void:
 	var host := _session.is_host()
 	var port := settings.online_port
 	if host:
-		_info_label.text = "Hosted by you · %s:%d" % [_addresses[0], port] if not _addresses.is_empty() else "Hosted by you · port %d" % port
+		_info_label.text = "Hosted by you · %s" % host_label_address(port)
 	else:
 		_info_label.text = "Connected to %s:%d" % [settings.online_address, port]
 	var info := NetLobby.of(_session).info
@@ -673,9 +766,14 @@ func _refresh_fields() -> void:
 ## port outside the allowed range is clamped, an empty one is the default.
 func _store_fields() -> void:
 	settings.online_name = _name_field.text.strip_edges()
-	settings.online_address = _address_field.text.strip_edges()
+	# "address:port" (what the host's Copy button copies) fills both fields.
+	var target := split_address(_address_field.text)
+	settings.online_address = target["address"]
 	var digits := _digits_only(_port_field.text)
-	settings.online_port = int(digits) if not digits.is_empty() else NetSession.DEFAULT_PORT
+	if target.has("port"):
+		settings.online_port = target["port"]
+	else:
+		settings.online_port = int(digits) if not digits.is_empty() else NetSession.DEFAULT_PORT
 	_refresh_fields()
 
 
@@ -883,3 +981,28 @@ func get_start_button() -> Button:
 ## The match settings panel (made if it wasn't yet).
 func get_match_setup() -> MatchSetup:
 	return _get_setup()
+
+
+## The Tailscale group of "Friends join at" (shown when this computer has a Tailscale address).
+func get_tailscale_box() -> Control:
+	return _tailscale_box
+
+
+## The Tailscale address with its port, as shown (empty without one).
+func get_tailscale_text() -> String:
+	return _tailscale_address_label.text if _tailscale_box.visible else ""
+
+
+## The button that copies the Tailscale address.
+func get_copy_button() -> Button:
+	return _copy_button
+
+
+## The "Same network" caption above the other addresses (only next to a Tailscale one).
+func get_lan_label() -> Label:
+	return _lan_label
+
+
+## True while the session [method leave] closed is still going away (Host game and Join wait for it).
+func is_closing_session() -> bool:
+	return _is_closing_session()

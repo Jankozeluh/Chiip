@@ -1700,6 +1700,20 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** A separate `.pck` next to the executable (two files to keep together); installers (.msi, .dmg: extra tooling and signing); signing and notarizing the Mac app (an Apple Developer account, $99 a year); UPX or other compression of the exe (more false virus warnings).
 
+## D-173 — Tailscale in the lobby: the address to share, with a Copy button (2026-10-16)
+
+**Decision:**
+- **Online play goes through Tailscale, and the game needs no new code to connect:** a Tailscale device is just another network interface with an IPv4 address in 100.64.0.0/10, and the ENet host already listens on all interfaces. What the game adds is *showing* that address.
+- **The lobby's "Friends join at"** lists the host's **Tailscale address first**, with the port and a **Copy** button (it copies "address:port" and says "Copied" for 1.5 s), then "Same network" and the LAN address. A host with only Tailscale still sees its address (and the header names it). `LobbyMenu.local_addresses()` no longer returns Tailscale's addresses, so the two groups don't repeat each other.
+- **Join by IP accepts "address:port"**, what Copy puts on the clipboard: it fills the address and port fields, so a friend pastes one string and presses Join. A host name (a MagicDNS name like `jan-mac`) or an IPv6 address stays whole.
+- **The range is the only test for "Tailscale":** 100.64.0.0/10 is carrier-grade NAT space, and other software can use it too; a wrongly labelled address is harmless (it is still an address the host listens on). The label says "Tailscale"; the README says to check that Tailscale is connected.
+- **README guide:** the step-by-step is in the README (install, share *only the host's computer* with friends through the admin console's **Share…**, rather than inviting them into your whole tailnet, then Host, Copy, Join), with a "if it doesn't connect" list.
+- **Checked:** two game processes on this Mac, host and client, joined through the Mac's LAN address (not 127.0.0.1) and played a match start; no real Tailscale is installed here, so a join over an actual Tailscale address is for your playtest. `release_test` covers the range, the lobby rows, Copy and the pasted address.
+
+**Why:** Your decision: online play only through Tailscale, nothing opened on the router. Sharing a Tailscale address is the whole job, and a Copy button saves typing 21 characters in chat. "Share only the host's computer" limits what a friend can reach.
+
+**Alternatives:** Detect Tailscale through its local API or CLI (`tailscale ip`; needs the CLI installed, and the address list already has it); a Tailscale-only mode that refuses other addresses; UPnP (opens the router, ruled out in D-150); a relay server or Steam lobbies (D-114).
+
 ## Open questions
 
 | Question | Decide in |
