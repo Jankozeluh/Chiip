@@ -2258,6 +2258,18 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) and v0.2.0 come first.
 
+## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
+
+**Decision:**
+- **Source:** the designer's "Chiip UI 3 - v0.2 Screens" (screens 18 to 31: Stats, the aim trainer, spray practice, the Interface, Controller and Audio settings, the FPS counter, the developer overlay, the compass with callouts, the boot screen, the credits), with its renders and the Glyph and Icon components, kept outside the repo in `Chiip-design/v0.2/`. Each screen is built into the game's existing scene for it, in the theme's roles (D-057, D-131), with a side-by-side look at the designer's render at 1280 × 720, and goes into the layout test.
+- **The gamepad glyphs** (screen 25's Controller tab uses them) are drawn by `tools/make_pad_glyphs.py`, a port of the designer's Glyph component, into `assets/ui/glyphs/<xbox|ps|generic>/<button>.png` and `<button>_mono.png`: 3 pad styles × 19 buttons, 16 × 16, one pixel per cell like the icon set, face buttons in the pad's colours. `PadGlyphs` (`ui/pad_glyphs.gd`) names a glyph by the button's place (south, east, lb, lt, ls...), so one binding shows the right picture on every pad, and picks the style of the pad plugged in for "Auto".
+- **The mono studio mark** (`assets/ui/studio_logo_mono.png`, 32 × 32) is the credits footer's; like the logo it is the studio's own, all rights reserved (docs/CREDITS.md).
+- Where the design and an earlier decision disagree, **the design wins and the decision is amended** (the compass of D-180, the boot screen of D-153); the notes say which.
+
+**Why:** The designer answered docs/DESIGN_HANDOFF.md with these pages; the first round (D-130) established that the mockups are the source of truth for the look.
+
+**Alternatives:** keeping the screens as built, in their own style (the designer asked for the reviews: the compass, the boot screen and the licences); drawing the glyphs by hand (the component is the designer's spec).
+
 ## Open questions
 
 | Question | Decide in |

@@ -2,6 +2,13 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — v0.2 screens
+
+**Done**
+- Merged main (M13 sound, M14 stats and training, M15 accessibility) and started the designer's v0.2 pages (D-230), one commit each: the glyph set and `PadGlyphs` first.
+
+**Next:** the boot screen, the compass to the new spec, the FPS counter and debug overlay, the settings tabs, Stats, training, credits, the pad prompts.
+
 ## 2026-10-16 — M15 accessibility & polish
 
 Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 stats. Decisions D-210 to D-219. One commit per task.

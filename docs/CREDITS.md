@@ -47,6 +47,8 @@ Until 2026-10-16 the textures were CC0 photo textures from ambientCG (https://am
 |---|---|---|
 | The Divocakos logo (the laughing watermelon): `assets/ui/studio_logo.png` (112 × 112, the studio's own picture) and `assets/ui/studio_logo_small.png` (56 × 56, made from it by `tools/make_studio_logo.py`) | The studio itself. Handed over by the project's owner on 2026-10-16, who confirmed it is theirs and approved the download | **All rights reserved.** The logo and the name "Divocakos" belong to the studio. They are **not** covered by the game's licences: the planned CC BY-NC-SA 4.0 for art (D-150) excludes them, so anyone who reuses the game's art or builds a fork must take them out |
 
+The 32 × 32 mono mark (`assets/ui/studio_logo_mono.png`) is the same mark for the credits footer. The gamepad glyphs (`assets/ui/glyphs/`) are drawn by `tools/make_pad_glyphs.py` from the designer's Glyph component, for Chiip.
+
 They show on the boot screen (the logo with the name under it) and in the main menu's corner and footer (D-153).
 
 - **Credit line:** "Created by JK · Divocakos" (D-176). The name Divocakos and the logo are all rights reserved (D-174); the game credits "© Divocakos" in the README, the release notes and the Licences screen.

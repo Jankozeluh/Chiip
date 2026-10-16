@@ -232,6 +232,7 @@ func _ready() -> void:
 	_test_buy_menu_roles()
 	await _test_buy_menu_look()
 	await _test_compass()
+	_test_pad_glyphs()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -3726,6 +3727,38 @@ func _test_compass() -> void:
 	MenuState.reset()
 	GameLaunch.clear()
 	Teams.friendly_fire = false
+
+
+# --- The gamepad glyphs (v0.2, D-230) ---
+
+
+## Every button of every pad style has its picture, 16 × 16, coloured and white; a binding's event names its glyph.
+func _test_pad_glyphs() -> void:
+	var missing: Array[String] = []
+	var wrong_size: Array[String] = []
+	for style in PadGlyphs.STYLES:
+		for button in PadGlyphs.all_buttons():
+			for mono in [false, true]:
+				var texture := PadGlyphs.get_texture(style, button, mono)
+				if texture == null:
+					missing.append("%s/%s%s" % [style, button, "_mono" if mono else ""])
+				elif texture.get_size() != Vector2(16, 16):
+					wrong_size.append("%s/%s" % [style, button])
+	_check("Every gamepad button has a 16 × 16 glyph on every pad style (3 styles × 19 buttons, coloured and white)",
+			missing.is_empty() and wrong_size.is_empty(), "missing %s, wrong size %s" % [missing, wrong_size])
+	var a := InputEventJoypadButton.new()
+	a.button_index = JOY_BUTTON_A
+	var trigger := InputEventJoypadMotion.new()
+	trigger.axis = JOY_AXIS_TRIGGER_RIGHT
+	var stick := InputEventJoypadMotion.new()
+	stick.axis = JOY_AXIS_LEFT_Y
+	var shoulder := InputEventJoypadButton.new()
+	shoulder.button_index = JOY_BUTTON_LEFT_SHOULDER
+	_check("A binding's event names its glyph: A is south, the right trigger rt, a left stick movement ls, the left shoulder lb, a key nothing; the explicit styles stay as chosen",
+			PadGlyphs.button_for_event(a) == "south" and PadGlyphs.button_for_event(trigger) == "rt" and PadGlyphs.button_for_event(stick) == "ls"
+					and PadGlyphs.button_for_event(shoulder) == "lb" and PadGlyphs.button_for_event(_key_event(KEY_E)) == ""
+					and PadGlyphs.style_for("ps") == "ps" and PadGlyphs.style_for("generic") == "generic",
+			"A %s, rt %s, ls %s, lb %s" % [PadGlyphs.button_for_event(a), PadGlyphs.button_for_event(trigger), PadGlyphs.button_for_event(stick), PadGlyphs.button_for_event(shoulder)])
 
 # --- The multiplayer lobby (M9, D-108) ---
 
