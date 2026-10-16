@@ -798,3 +798,8 @@
 
 **Text that sits in the 3D world at a fixed size** (`Label3D.fixed_size`, `pixel_size`, a child of the camera)
 - A `Label3D` normally shrinks with distance like any object. With `fixed_size = true` it is drawn at the same size on the screen wherever it is, and `pixel_size` then means a share of the screen's height per font pixel (1/240: one font pixel is two pixels of the 480-line world). Put it on the `Camera3D` as a child at `(0, 0.42, -1)` and it stays at the top of the screen like a HUD, but drawn with the world's pixel look; `no_depth_test = true` keeps walls from hiding it. The range's dummies use the same trick for their titles.
+
+**Many identical marks in one draw call** (`MultiMeshInstance3D`, `MultiMesh.set_instance_transform`, `use_colors`)
+- A `MultiMesh` draws one mesh many times with a transform (and a colour) for each copy, in one draw call (Unity: `Graphics.DrawMeshInstanced`). The spray wall's 150 holes and 64 ghost dots are two of them: `instance_count` is how many it can hold, `visible_instance_count` how many it shows, and `set_instance_transform(i, ...)` / `set_instance_color(i, ...)` place and tint copy `i`. `use_colors = true` plus a material with `vertex_color_use_as_albedo` makes the per-copy colour show. Each copy's size is in its transform's basis (`Basis.scaled(...)`), so one metre-wide quad can be any size.
+- A `QuadMesh` faces +Z of its node; a node that looks along -Z (as the entities of a TrenchBroom map do) needs its marks turned half a round about Y (`Basis.from_euler(Vector3(0, PI, 0))`) to face the shooter. The wall's frame was the fiddly part: its `-basis.z` is the direction it faces, `Vector3.UP.cross(normal)` is the viewer's right, and the node's own +X is the viewer's left.
+

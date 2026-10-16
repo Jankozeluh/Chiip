@@ -594,7 +594,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 2. [x] **Recording from matches** (D-202, D-203). `systems/stats_recorder.gd` follows your own shots and hits and RoundManager's numbers; saves one record when a match ends; online it reads what the host announces (its `DAMAGED` event now names the weapon). `RoundManager.get_rounds_played()` and an ADR column on the scoreboards of round matches
 3. [x] **The Stats screen** (D-204). `ui/stats_menu.tscn`, opened by a Stats button in the main menu, in the theme and the mockups' style: Overview, Weapons, History, Training
 4. [x] **Aim trainer** (D-205 to D-207). Flick targets pop up at random spots within reach for a timed run, a score and personal bests (kept in the stats file); a `range_trainer` entity on the Shooting Range; the scoring is a pure class with its own checks
-5. [ ] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
+5. [x] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
 6. [ ] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once
 
 ## M15 — Accessibility & polish ⬜

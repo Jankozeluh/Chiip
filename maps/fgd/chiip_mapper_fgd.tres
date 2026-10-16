@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=26 format=3]
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="solid_class"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://maps/kit/kit_weapon_stand.gd" id="weapon_stand_script"]
 [ext_resource type="Script" path="res://maps/kit/kit_text_sign.gd" id="text_sign_script"]
 [ext_resource type="Script" path="res://maps/props/range_trainer.gd" id="range_trainer_script"]
+[ext_resource type="Script" path="res://maps/props/range_spray_wall.gd" id="range_spray_wall_script"]
 
 [sub_resource type="Resource" id="func_glass"]
 script = ExtResource("solid_class")
@@ -247,7 +248,26 @@ meta_properties = Dictionary[String, Variant]({
 })
 node_class = "Node3D"
 
+[sub_resource type="Resource" id="range_spray_wall"]
+script = ExtResource("point_class")
+script_class = ExtResource("range_spray_wall_script")
+classname = "range_spray_wall"
+description = "The spray wall of a range (M14, D-209): draws the pattern of the gun in the player's hand (grey numbered dots, from the first shot) next to the player's own bullet holes (lime dots) on the wall, with the drift and a control percentage on a sign, and a personal best per gun. Put it at the middle of the face of a flat wall, about 3 m wide and 3 m tall, with the angle pointing away from the wall, toward the shooters (like a sign). A small orange plate in the wall's top corner resets it when shot. It needs a plain wall to draw on; it works for one bullet at a time (a shotgun has no pattern)."
+class_properties = Dictionary[String, Variant]({
+"width": 3.2,
+"height": 3.0
+})
+class_property_descriptions = Dictionary[String, Variant]({
+"width": "How wide the wall is, in metres (the marks and the reset plate stay inside it)",
+"height": "How tall the wall is, in metres"
+})
+meta_properties = Dictionary[String, Variant]({
+"color": Color(1, 0.78, 0.25, 1),
+"size": AABB(-4, -16, -16, 4, 32, 32)
+})
+node_class = "Node3D"
+
 [resource]
 script = ExtResource("fgd_file")
 fgd_name = "ChiipMapper"
-entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route"), SubResource("info_bot_spawn"), SubResource("range_target"), SubResource("range_weapon"), SubResource("range_trainer"), SubResource("sign_text")])
+entity_definitions = Array[Resource]([SubResource("func_glass"), SubResource("func_fence"), SubResource("func_clip"), SubResource("trigger_bombsite"), SubResource("info_attack_spawn"), SubResource("info_defend_spawn"), SubResource("info_respawn"), SubResource("info_patrol"), SubResource("info_hold"), SubResource("info_route"), SubResource("info_bot_spawn"), SubResource("range_target"), SubResource("range_weapon"), SubResource("range_trainer"), SubResource("range_spray_wall"), SubResource("sign_text")])

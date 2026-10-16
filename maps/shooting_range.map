@@ -538,3 +538,11 @@
 "max_distance" "20"
 "half_angle" "45"
 }
+// entity 46
+{
+"classname" "range_spray_wall"
+"origin" "-394 -472 59"
+"angle" "0"
+"width" "3.2"
+"height" "3"
+}

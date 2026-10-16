@@ -2107,6 +2107,28 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** One best for all guns (the first gun you try would set a number nobody else can beat); the trainer spawned by code on the range map (hidden from the map file); a best per run length (the run length is a map property but one length is the norm).
 
+## D-208 — Spray practice: the pattern as a ghost, your holes against it, a control percentage (2026-10-16)
+
+**Decision:** The Shooting Range's spray wall (`RangeSprayWall`, `maps/props/range_spray_wall.gd`; the existing 3.2 × 3 m wall at 10 m) now draws, in the wall's own frame and at real scale:
+- **The ghost:** the pattern of the gun in your hand (`WeaponData.spray_pattern`, in degrees) as grey dots, from the first shot, each at `distance × tan(angle)` to the right and up (`SprayChart.ghost`), numbered 1, 10, 20 and 30. Before you shoot it hangs on the wall's middle and follows your distance and your gun; once you fire a first shot of a spray it moves to **your first hole**, so it shows where the spray would go if you held the mouse still.
+- **Your holes:** lime dots for the spray you are firing, dim olive ones for the sprays before it (the last 150 are kept), from where each bullet landed (`Weapon.hit_landed`) and its number in the spray (`Weapon.fired`'s `spray_shot`).
+- **Control:** `100 × (1 − your drift ÷ the pattern's drift)`, clamped to 0..100, where drift is the average distance from the first hole over the other shots (centimetres on the sign). Holding still gives about 0, a perfect pull against the recoil about 100 (the test pulls perfectly and gets 99.7). It shows from 10 shots. A finished spray (0.8 s without a shot) of 10 shots or more with a control of at least 1 % is saved as a **personal best per gun** (`spray_<gun>`; Stats › Training shows it with its shots, drift and the pattern's drift), and only a higher control replaces it.
+- **Reset:** shoot the orange plate in the wall's top right corner, or type `spray_reset`. Shots that miss the wall are skipped (the pattern is compared over the shots that landed).
+- Dots keep the same size on your screen (0.5° and 0.4° across) at any distance, as the aim balls do; at 6 m a spray's pattern is about 60 px tall at 720p, which is how big recoil really is on a screen.
+- One bullet at a time: a shotgun's pellets have no pattern, and the sign says so.
+
+**Why:** "Recoil control" is the skill of CS spray practice, and one number that falls when you hold still and rises when you pull makes it visible; a ghost from your own first hole shows the pull you needed at each shot, and the real scale means what you see on the wall is what a bullet did. Comparing against the pattern's own drift makes control comparable between guns (the Ram's pattern is larger than the Hornet's, and 100 % means all of it cancelled for either).
+
+**Alternatives:** The ghost always at the aim mark (it would not line up with your first hole, which has the gun's random spread); a magnified chart off to the side (easier to read, but not your wall: possible later); one score for how many holes land in a head-sized circle (depends on how good your first shot was, not on the recoil); control measured against the aim point rather than the first hole (a spray 30 cm off but tight would score badly).
+
+## D-209 — The spray wall in the map (2026-10-16)
+
+**Decision:** A new TrenchBroom point entity, **`range_spray_wall`** (in `chiip_mapper_fgd.tres`; `width` and `height` properties), placed at the middle of the wall's face with its angle pointing at the shooters, like a sign; the Shooting Range's has it at the existing wall (`origin -394 -472 59`, angle 0), so the layout is unchanged. The ghost and the holes are two `MultiMeshInstance3D`s of one-metre quads scaled to their size (150 + 64 instances, unshaded, drawn 1.2 cm in front of the wall), the numbers and the sign `Label3D`s of fixed screen size (the pixel look of the dummies' titles), the plate a flat quad and a rectangle in wall points. Console: `spray_reset`. A map without the entity has no spray wall.
+
+**Why:** The same reasons as the aim trainer's pad (D-207): the range stays editable in TrenchBroom, and a map maker can put a spray wall on any flat wall.
+
+**Alternatives:** A `Decal` per hole (a node each, and the pixel look and palette effect make small decals muddy); drawing in a `SubViewport` texture on the wall (a second world to keep in step with the first); a `Label3D` for the numbers of every dot (30 labels, mostly overlapping).
+
 ## Open questions
 
 | Question | Decide in |
