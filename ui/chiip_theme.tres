@@ -704,6 +704,22 @@ bg_color = Color(0.15686275, 0.17254902, 0.19607843, 0.55)
 border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="hud_debug_panel"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 0.86)
+border_color = Color(1, 1, 1, 0)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="hud_debug_rule"]
+content_margin_top = 0.0
+bg_color = Color(1, 1, 1, 0)
+border_width_bottom = 2
+border_color = Color(0.10980392, 0.14509805, 0.2, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="hud_enemy_bar_fill"]
 bg_color = Color(1, 0.3019608, 0.23921569, 1)
 border_color = Color(1, 1, 1, 0)
@@ -778,6 +794,15 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="hud_fps_panel"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.02745098, 0.03529412, 0.050980393, 0.72)
+border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="hud_friendly_bar_fill"]
@@ -2364,8 +2389,18 @@ Hud/constants/compass_thickness = 2
 Hud/constants/compass_tick_large = 12
 Hud/constants/compass_tick_small = 8
 Hud/constants/compass_tick_step = 15
+Hud/constants/debug_key_width = 144
+Hud/constants/debug_width = 416
 Hud/constants/feed_height = 32
 Hud/constants/feed_time_ms = 6000
+Hud/constants/fps_gap = 16
+Hud/constants/fps_small_width = 40
+Hud/constants/fps_value_width = 48
+Hud/constants/graph_bars = 64
+Hud/constants/graph_height = 48
+Hud/constants/graph_limit = 167
+Hud/constants/graph_max = 46
+Hud/constants/graph_scale = 130
 Hud/constants/hit_inner = 14
 Hud/constants/hit_length = 12
 Hud/constants/hit_thickness = 4
@@ -2414,6 +2449,12 @@ HudCountdownLabel/font_sizes/font_size = 96
 HudCountdownLabel/fonts/font = SubResource("hud_font_hero_bold")
 HudDeadTint/base_type = &"Panel"
 HudDeadTint/styles/panel = SubResource("hud_dead_tint")
+HudDebugPanel/base_type = &"PanelContainer"
+HudDebugPanel/styles/panel = SubResource("hud_debug_panel")
+HudDebugRule/base_type = &"PanelContainer"
+HudDebugRule/styles/panel = SubResource("hud_debug_rule")
+HudDebugSections/base_type = &"VBoxContainer"
+HudDebugSections/constants/separation = 12
 HudDimLabel/base_type = &"Label"
 HudDimLabel/colors/font_color = Color(0.6039216, 0.65882355, 0.7411765, 1)
 HudDimLabel/colors/font_shadow_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
@@ -2445,6 +2486,10 @@ HudFeedPlateDeath/base_type = &"PanelContainer"
 HudFeedPlateDeath/styles/panel = SubResource("hud_feed_plate_death")
 HudFeedPlateYou/base_type = &"PanelContainer"
 HudFeedPlateYou/styles/panel = SubResource("hud_feed_plate_you")
+HudFpsPanel/base_type = &"PanelContainer"
+HudFpsPanel/styles/panel = SubResource("hud_fps_panel")
+HudFpsRow/base_type = &"HBoxContainer"
+HudFpsRow/constants/separation = 16
 HudFriendlyBarFill/base_type = &"Panel"
 HudFriendlyBarFill/styles/panel = SubResource("hud_friendly_bar_fill")
 HudFriendlyPipAlive/base_type = &"Panel"
@@ -2754,9 +2799,11 @@ Palette/colors/accent_bright = Color(0.9019608, 1, 0.5411765, 1)
 Palette/colors/accent_dark = Color(0.78431374, 0.9411765, 0.23529412, 0.35)
 Palette/colors/alert = Color(1, 0.6901961, 0.18039216, 1)
 Palette/colors/compass_backing = Color(0.02745098, 0.03529412, 0.050980393, 0.6)
+Palette/colors/debug_backing = Color(0.02745098, 0.03529412, 0.050980393, 0.86)
 Palette/colors/enemy = Color(0.72, 0.22, 0.18, 1)
 Palette/colors/enemy_fill = Color(0.56078434, 0.13333334, 0.08627451, 1)
 Palette/colors/enemy_text = Color(1, 0.3019608, 0.23921569, 1)
+Palette/colors/fps_backing = Color(0.02745098, 0.03529412, 0.050980393, 0.72)
 Palette/colors/friendly = Color(0.25, 0.4, 0.7, 1)
 Palette/colors/friendly_fill = Color(0.12156863, 0.2901961, 0.61960787, 1)
 Palette/colors/friendly_text = Color(0.3529412, 0.5803922, 1, 1)

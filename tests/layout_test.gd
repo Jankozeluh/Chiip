@@ -223,6 +223,15 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 				crowded.append("%s %s over the compass %s" % [other_path, other.get_global_rect(), compass.get_global_rect()])
 		if not crowded.is_empty():
 			failures["compass at %s" % [size]] = crowded
+		# 2c. The FPS counter and the developer readout (F3), online rows included (v0.2, D-233).
+		var overlay := main.get_node("DebugOverlay") as DebugOverlay
+		for mode in ["player", "developer"]:
+			overlay.set_mode(mode)
+			overlay.get_net_row().visible = true
+			await _settle(size)
+			await get_tree().process_frame
+			_collect(failures, "%s overlay at %s" % [mode, size], [overlay], size)
+		overlay.set_mode("off")
 		# 3. The buy menu (freeze time), in a match with rounds.
 		if buy_menu.open():
 			await _settle(size)
@@ -250,7 +259,7 @@ func _test_game(game_name: String, rules: MatchSettings) -> void:
 			await _settle(size)
 			_collect(failures, "match end at %s" % [size], [end_screen], size)
 			end_screen.visible = false
-	_check("%s: the HUD (its compass clear of the top bar and the toasts), class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
+	_check("%s: the HUD (its compass clear of the top bar and the toasts), the FPS counter and developer overlay, class draft, buy menu, pause menu, scoreboard, console and match-end screen lie inside the window at all %d sizes × UI scales" % [game_name, _cases.size()],
 			failures.is_empty(), _describe(failures))
 	remove_child(main)
 	main.queue_free()

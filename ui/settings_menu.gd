@@ -429,6 +429,11 @@ func _build_interface_tab() -> void:
 			"Standard is blue against red. Colour-blind safe is a dark blue against a light orange: it stays apart for red-green and blue-yellow colour blindness, and in greyscale.")
 	_choices[&"team_colors"] = _add_segments(team_row, &"team_colors", ["Standard", "Colour-blind safe"], Teams.SCHEME_NAMES)
 	_track(&"team_colors")
+	var fps_row := _add_row(_interface_rows, &"fps_counter", "FPS counter",
+			"F3 steps through off, player and developer. Player: a small block with the frame rate, frame time and, online, ping and loss. Developer: the full readout.")
+	_choices[&"fps_counter"] = _add_segments(fps_row, &"fps_counter", ["Off", "Player", "Developer"], Settings.FPS_COUNTER_MODES)
+	_track(&"fps_counter")
+	_add_toggle_row(_interface_rows, &"net_stats", "Net stats", "Ping and packet loss in the player's FPS counter, online only.")
 	_add_toggle_row(_interface_rows, &"compass", "Compass", "The strip under the score that shows where enemies fire.")
 
 

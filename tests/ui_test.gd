@@ -1682,20 +1682,52 @@ func _color_literal_lines(source: String) -> Array[String]:
 	return found
 
 
-## The F3 overlay starts hidden (a first look at the game shows the game, D-133); F3
-## (the toggle_debug action) shows it and hides it again.
+## The F3 overlay starts off (a first look at the game shows the game, D-133); F3 steps through the player's FPS block and
+## the developer readout and off again (v0.2, D-233); the numbers are the game's own, the alert colour shows below 60 FPS
+## and the frame graph keeps 64 frames.
 func _test_debug_overlay() -> void:
 	MenuState.reset()
+	Settings.get_instance().reset_to_defaults()
 	var main: Node = await _new_game()
-	var overlay := main.get_node("DebugOverlay") as CanvasLayer
-	var hidden_at_first := not overlay.visible
+	var overlay := main.get_node("DebugOverlay") as DebugOverlay
+	var off_at_first := not overlay.visible and overlay.get_mode() == "off"
 	_send(_action_event("toggle_debug"))
-	var shown := overlay.visible
+	var player_mode := overlay.visible and overlay.get_mode() == "player" and overlay.get_player_panel().visible and not overlay.get_developer_panel().visible
 	_send(_action_event("toggle_debug"))
-	var hidden_again := not overlay.visible
-	_check("The F3 overlay starts hidden, F3 shows it and F3 hides it again",
-			hidden_at_first and shown and hidden_again,
-			"hidden at first %s, shown after F3 %s, hidden after F3 again %s" % [hidden_at_first, shown, hidden_again])
+	var developer_mode := overlay.visible and overlay.get_mode() == "developer" and overlay.get_developer_panel().visible and not overlay.get_player_panel().visible
+	_send(_action_event("toggle_debug"))
+	var off_again := not overlay.visible and Settings.get_instance().fps_counter == "off"
+	_check("The F3 overlay starts off, F3 shows the player's FPS block, then the developer readout, then off again (and the setting follows)",
+			off_at_first and player_mode and developer_mode and off_again,
+			"off at first %s, player %s, developer %s, off again %s" % [off_at_first, player_mode, developer_mode, off_again])
+	# The player block: the frame rate and time; the alert colour below 60 FPS.
+	overlay.set_mode("player")
+	for i in 3:
+		await get_tree().process_frame
+	overlay.refresh_now()
+	var labels := overlay.get_player_labels()
+	var fps_shown := int(labels[0].text) > 0 and labels[1].text.is_valid_float()
+	overlay.get_player_labels()[0].text = "48"
+	overlay.call(&"_set_alert", labels[0], 48.0 < DebugOverlay.LOW_FPS)
+	var alert := labels[0].theme_type_variation == &"HudAlertLabel"
+	overlay.call(&"_set_alert", labels[0], 144.0 < DebugOverlay.LOW_FPS)
+	var normal := labels[0].theme_type_variation == &"HudSmallLabel"
+	_check("The player block shows the frame rate and the frame time, and a number below 60 FPS turns to the alert colour (back to normal above)",
+			fps_shown and alert and normal and not overlay.get_net_row().visible, "fps %s, ms %s, alert %s, normal %s, net row %s" % [labels[0].text, labels[1].text, alert, normal, overlay.get_net_row().visible])
+	# The developer readout: its sections, the numbers of the game, the graph.
+	overlay.set_mode("developer")
+	for i in 70:
+		await get_tree().process_frame
+	_player.global_position += Vector3(0, 0, 0)
+	_check("The developer readout has four sections, shows the player's speed, position, stance and weapon, and the graph keeps one bar per frame (64 at most)",
+			overlay.get_section_titles() == ["PERFORMANCE", "NETWORK", "MOVEMENT", "WEAPON"] and overlay.get_value_text("MOVEMENT/SPEED").contains("M/S")
+					and overlay.get_value_text("MOVEMENT/STANCE").contains("STAND") and overlay.get_value_text("WEAPON/INACCURACY").ends_with("°")
+					and overlay.get_value_text("PERFORMANCE/FPS").contains("MIN") and overlay.get_graph().get_frames().size() == Tokens.HUD_GRAPH_BARS,
+			"sections %s, speed '%s', stance '%s', frames %d" % [overlay.get_section_titles(), overlay.get_value_text("MOVEMENT/SPEED"), overlay.get_value_text("MOVEMENT/STANCE"), overlay.get_graph().get_frames().size()])
+	overlay.set_ui_scale(1.0)
+	var graph := overlay.get_graph()
+	_check("The frame graph draws a 16.7 ms frame about 22 pixels tall and never past 46",
+			is_equal_approx(graph.bar_height(16.7), 22.0) and is_equal_approx(graph.bar_height(100.0), 46.0), "16.7 ms → %.0f px, 100 ms → %.0f px" % [graph.bar_height(16.7), graph.bar_height(100.0)])
 	main.queue_free()
 	await get_tree().process_frame
 	MenuState.reset()

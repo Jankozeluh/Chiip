@@ -11,7 +11,9 @@
 
 - Compass to the designer's page (D-232): under the score, 90° each side with a heading box, marks that step down over 3 s, a callout tag and a kill-feed line for the bots' callouts; a new Settings → Interface tab (UI scale, team colours, compass).
 
-**Next:** the FPS counter and debug overlay, the settings tabs, Stats, training, credits, the pad prompts.
+- FPS counter and developer overlay (D-233): F3 steps off, player, developer; the Interface tab has the FPS counter and Net stats rows.
+
+**Next:** the settings tabs, Stats, training, credits, the pad prompts.
 
 ## 2026-10-16 — M15 accessibility & polish
 

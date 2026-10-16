@@ -86,7 +86,7 @@ func _palette() -> void:
 		"friendly": Teams.FRIENDLY_COLOR, "enemy": Teams.ENEMY_COLOR,
 		"friendly_text": Palette.FRIENDLY, "enemy_text": Palette.ENEMY,
 		"friendly_fill": Palette.FRIENDLY_FILL, "enemy_fill": Palette.ENEMY_FILL,
-		"compass_backing": Palette.COMPASS_BACKING,
+		"compass_backing": Palette.COMPASS_BACKING, "fps_backing": Palette.FPS_BACKING, "debug_backing": Palette.DEBUG_BACKING,
 	})
 
 
@@ -460,7 +460,10 @@ func _hud() -> void:
 		"compass_step_ms": Palette.HUD_COMPASS_STEP_MS, "compass_alpha_1": Palette.HUD_COMPASS_ALPHA_1,
 		"compass_alpha_2": Palette.HUD_COMPASS_ALPHA_2, "compass_alpha_3": Palette.HUD_COMPASS_ALPHA_3,
 		"compass_tag": Palette.HUD_COMPASS_TAG, "compass_tag_ms": Palette.HUD_COMPASS_TAG_MS,
-		"callout_edge": Palette.HUD_CALLOUT_EDGE,
+		"callout_edge": Palette.HUD_CALLOUT_EDGE, "fps_gap": Palette.HUD_FPS_GAP, "fps_value_width": Palette.HUD_FPS_VALUE_WIDTH,
+		"fps_small_width": Palette.HUD_FPS_SMALL_WIDTH, "debug_width": Palette.HUD_DEBUG_WIDTH, "debug_key_width": Palette.HUD_DEBUG_KEY_WIDTH,
+		"graph_height": Palette.HUD_GRAPH_HEIGHT, "graph_bars": Palette.HUD_GRAPH_BARS, "graph_scale": Palette.HUD_GRAPH_SCALE,
+		"graph_max": Palette.HUD_GRAPH_MAX, "graph_limit": Palette.HUD_GRAPH_LIMIT,
 	})
 	var regular: Font = load(Palette.FONT)
 	var bold: Font = load(Palette.FONT_BOLD)
@@ -534,6 +537,12 @@ func _hud() -> void:
 	var feed_margin := Vector4(Palette.HUD_FEED_PAD, 0, Palette.HUD_FEED_PAD, 0)
 	var feed_frame := Palette.HUD_FEED_FRAME_PAD + Palette.BORDER
 	_hud_plate("HudFeedPlate", _box("hud_feed_plate", Palette.PLATE, Color.TRANSPARENT, 0, feed_margin))
+	# The FPS counter's block, the developer overlay's panel and the rule under a section's title (v0.2, D-233).
+	_hud_plate("HudFpsPanel", _box("hud_fps_panel", Palette.FPS_BACKING, Color.TRANSPARENT, 0, Vector4(Palette.HUD_FPS_PAD.x, Palette.HUD_FPS_PAD.y, Palette.HUD_FPS_PAD.x, Palette.HUD_FPS_PAD.y)))
+	_hud_plate("HudDebugPanel", _box("hud_debug_panel", Palette.DEBUG_BACKING, Color.TRANSPARENT, 0, _even(Palette.HUD_DEBUG_PAD)))
+	_hud_plate("HudDebugRule", _underline("hud_debug_rule", Palette.PANEL_RAISED))
+	_hud_gap("HudFpsRow", "HBoxContainer", Palette.HUD_FPS_GAP)
+	_hud_gap("HudDebugSections", "VBoxContainer", Palette.HUD_DEBUG_SECTION_GAP)
 	_hud_plate("HudFeedPlateCall", _box("hud_feed_plate_call", Palette.PLATE, Color.TRANSPARENT, 0, Vector4(0, 0, Palette.HUD_FEED_PAD, 0)))
 	_hud_plate("HudFeedPlateYou", _box("hud_feed_plate_you", Palette.INK, Palette.TEXT, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))
 	_hud_plate("HudFeedPlateDeath", _box("hud_feed_plate_death", Palette.INK, Palette.ENEMY, Palette.BORDER, Vector4(feed_frame, 0, feed_frame, 0)))

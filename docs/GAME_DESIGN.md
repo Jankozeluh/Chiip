@@ -372,7 +372,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 | Pause menu (frees the mouse) | Esc (fixed); Esc again resumes |
 | Capture the mouse again (after alt-tab, with no menu open) | Click in the window |
 | Settings menu | The main menu's Settings button, the pause menu's Settings button, or the console command `settings` in the game |
-| Debug overlay (hidden at start, D-133) | F3 |
+| FPS counter and debug overlay (off at start, D-133): F3 steps off, player, developer (D-233) | F3 |
 
 **Gamepad (M15, D-211):** left stick moves, right stick looks (rate-based, with a dead zone and a look curve, D-212); RT shoot, LT aim, A jump, B crouch, X reload, Y last weapon, LB use, RB buy menu, R3 class menu, L3 walk, Back scoreboard, Start pause, D-pad weapons 1 to 4. Every button except Start and the sticks can be rebound in Settings → Controls → Pad (one button per action, and a button belongs to one action). In menus B backs out like Esc; prompts show the buttons of the device used last (D-213).
 
@@ -394,6 +394,8 @@ Settings are saved in a file (`settings.cfg` in the game's user data folder, D-0
 | Video | Palette effect, the retro color limit and dithering (D-030) | on | |
 | Video | Pixelated HUD, the whole window at the low resolution (D-027) | off | |
 | Interface | **UI scale** (D-181): how big the menus and the HUD are, as a share of the biggest size that fits the window. Auto keeps the pixel font even (steps of half: 1×, 1.5×, 2× ...); 100 % fills the window exactly; 75 % and 50 % are smaller. Applies at once | Auto | Auto, 50, 75, 100 % |
+| Interface | **FPS counter** (D-233): Off, Player (a small block top left: frame rate, frame time, and online ping and loss; amber below 60 FPS, above 100 ms ping or 1 % loss) or Developer (the full readout: performance with a frame-time graph, network, movement, weapon). F3 steps through them | Off | Off, Player, Developer |
+| Interface | **Net stats**: ping and loss in the player's FPS block, online only | on | |
 | Audio | Master, Effects (footsteps and shots) and Interface (menus) volume, each on its own audio bus | 1.0 each | 0 – 1 |
 | Crosshair | Color (swatches or a hex code) and opacity, size (line length), gap, thickness, outline, center dot and dynamic, like CS's crosshair settings; the menu shows a live preview on a dark and a light background (the sizes are in pixels at 720p and scale with the window) | green `#36D07A` (the mockup's, D-137), 7 px, gap 4, thickness 2, outline on, no dot, static (D-021) | size 1 – 30, gap 0 – 20, thickness 1 – 8 |
 | Controls | Keys and mouse buttons of move, jump, crouch, walk, shoot, aim, reload, scoreboard, debug overlay and console, each with a primary and a secondary binding; Esc stays fixed. A key is bound by physical position (D-012). The **Pad** column binds a gamepad button or trigger to each action (D-211); the Game tab also has the pad's sensitivity, stick dead zone, look curve and Y inversion (D-212). In the menu you click a slot and press the new key or mouse button (Esc cancels, Backspace clears the slot). **A key belongs to one action:** binding it takes it from whatever had it, and the menu says which action lost it (D-059) | section 6 | |

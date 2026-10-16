@@ -2288,6 +2288,18 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** keeping the compass on top and only adding the tag (the page puts everything under the score, with room for the heading box); calling out groups ("2 ENEMIES MID", on the page's third line): the bots call out one enemy at a time.
 
+## D-233 — The FPS counter and the developer overlay follow the designer's pages (2026-10-16)
+
+**Decision:**
+- **F3 steps through three states, off, player, developer**, kept in a setting (`Settings.fps_counter`, also a row in Settings → Interface; **Net stats** is another: `Settings.net_stats`, on by default). It starts off, as the old overlay did (D-133), and a choice saved in the settings stays for the next run.
+- **Player** ("27 FPS player"): a block at the top left on 72 % VOID (padded 12 × 8): the frame rate and the frame time, and online the ping and the share of snapshots lost (a host shows 0 ms and 0 %). The numbers are averaged over a quarter of a second so they don't flicker; they turn the alert colour below 60 FPS, above 100 ms of ping and above 1 % loss. It never grows wider than its text.
+- **Developer** ("28 Debug developer"): a 416 px panel on 86 % VOID with four sections: PERFORMANCE (FPS and the lowest of the last 64 frames, frame time and the longest, and a 64-bar frame-time graph: 1.3 px per millisecond up to 46, a line at 16.7 ms, frames over it in amber), NETWORK (online only), MOVEMENT (speed in m/s and Quake-style units, vertical speed, position, jump peak, stance) and WEAPON (inaccuracy, recoil built up, the last hit's zone, damage and distance). The old overlay's other lines (the shoot/aim buttons, the online status lines) are gone from it; the console's `status` still prints the session.
+- The panels and labels are theme roles (`HudFpsPanel`, `HudDebugPanel`, `HudDebugRule`) and tokens (`HUD_FPS_*`, `HUD_DEBUG_*`, `HUD_GRAPH_*`); the overlay is `class_name DebugOverlay` now.
+
+**Why:** The handoff asked for two levels, "for players (like CS's net graph) ... a small, unobtrusive corner block", and "for developers: the full readout, with speed, position, stance, weapon inaccuracy and recoil, the last hit's zone and damage, and a small frame-time graph".
+
+**Alternatives:** a separate key for each level (F3 stays the one key CS players know); drawing the overlay as one multi-line label (the page has sections and a graph).
+
 ## Open questions
 
 | Question | Decide in |

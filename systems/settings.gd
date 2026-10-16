@@ -62,6 +62,9 @@ const PIXEL_HEIGHTS: Array[int] = [270, 360, 480, 540, 720]
 ## (the biggest whole or half step that fits, so the pixel font stays even), 50 and 75 are smaller, 100 fills the
 ## window exactly.
 const UI_SCALES: Array[int] = [0, 50, 75, 100]
+## What F3 and the Interface tab's FPS counter show (v0.2, D-233): nothing, a small block for players (FPS, frame time,
+## online ping and loss) or the developer's full readout.
+const FPS_COUNTER_MODES: Array[String] = ["off", "player", "developer"]
 ## The frame rate limits the menu offers (0 = unlimited). Any value from 30 to 1000 works.
 const FPS_CAPS: Array[int] = [0, 60, 120, 144, 240]
 ## The match lengths match setup offers: rounds a team must win (D-044).
@@ -142,6 +145,8 @@ const SCHEMA := {
 	&"pixelate_hud": {"section": "video", "default": false},
 	&"ui_scale": {"section": "video", "default": 0, "choices": UI_SCALES},
 	&"compass": {"section": "video", "default": true},
+	&"fps_counter": {"section": "video", "default": "off", "choices": FPS_COUNTER_MODES},
+	&"net_stats": {"section": "video", "default": true},
 	# M15 (D-212): the gamepad's look: degrees per second at full tilt are PlayerController.PAD_DEGREES_PER_SECOND times
 	# this, the dead zone is the stick's flat middle, and the curve is the power the stick's reach is raised to (1 = linear).
 	&"pad_sensitivity": {"section": "game", "default": 1.0, "min": 0.1, "max": 4.0},
@@ -287,6 +292,14 @@ var palette_effect: bool:
 var pixelate_hud: bool:
 	get: return _values[&"pixelate_hud"]
 	set(value): set_value(&"pixelate_hud", value)
+## What the FPS counter shows: one of [constant FPS_COUNTER_MODES] ("off", "player", "developer"); F3 steps through them.
+var fps_counter: String:
+	get: return _values[&"fps_counter"]
+	set(value): set_value(&"fps_counter", value)
+## Ping and packet loss in the player's FPS counter, online only (v0.2, D-233).
+var net_stats: bool:
+	get: return _values[&"net_stats"]
+	set(value): set_value(&"net_stats", value)
 ## Show the compass strip on the HUD (v0.2, D-232).
 var compass: bool:
 	get: return _values[&"compass"]

@@ -532,6 +532,27 @@ const HUD_COMPASS_ALPHA_2 := 60
 const HUD_COMPASS_ALPHA_3 := 30
 const HUD_COMPASS_TAG := 24
 const HUD_COMPASS_TAG_MS := 4000
+## The FPS counter (v0.2, D-233, the designer's "27 FPS player"): a block at the top left on VOID at 72 %, padded this much, its rows
+## [constant HUD_FPS_GAP] apart with the number this wide (and the second pair of numbers [constant HUD_FPS_SMALL_WIDTH] wide).
+const FPS_BACKING := Color("07090d", 0.72)
+const HUD_FPS_PAD := Vector2i(12, 8)
+const HUD_FPS_GAP := 16
+const HUD_FPS_VALUE_WIDTH := 48
+const HUD_FPS_SMALL_WIDTH := 40
+## The developer overlay ("28 Debug developer"): a panel this wide on VOID at 86 %, padded this much, a key column this wide, and
+## the frame-time graph: this high with this many bars, [constant HUD_GRAPH_SCALE] hundredths of a pixel per millisecond up to
+## [constant HUD_GRAPH_MAX] pixels, a line at [constant HUD_GRAPH_LIMIT] tenths of a millisecond (a 60 FPS frame).
+const DEBUG_BACKING := Color("07090d", 0.86)
+const HUD_DEBUG_WIDTH := 416
+const HUD_DEBUG_PAD := 16
+const HUD_DEBUG_KEY_WIDTH := 144
+## The space between the developer overlay's sections.
+const HUD_DEBUG_SECTION_GAP := 12
+const HUD_GRAPH_HEIGHT := 48
+const HUD_GRAPH_BARS := 64
+const HUD_GRAPH_SCALE := 130
+const HUD_GRAPH_MAX := 46
+const HUD_GRAPH_LIMIT := 167
 ## The bar at the left of a callout line in the kill feed.
 const HUD_CALLOUT_EDGE := 4
 ## The compass strip's backing: VOID at 60 %.
