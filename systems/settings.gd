@@ -53,6 +53,10 @@ const BUS_INTERFACE := &"Interface"
 
 ## The world image heights the pixel resolution can take; other values snap to the nearest.
 const PIXEL_HEIGHTS: Array[int] = [270, 360, 480, 540, 720]
+## The UI scales the video settings offer, as a percent of the biggest scale that fits the window (D-181): 0 is Auto
+## (the biggest whole or half step that fits, so the pixel font stays even), 50 and 75 are smaller, 100 fills the
+## window exactly.
+const UI_SCALES: Array[int] = [0, 50, 75, 100]
 ## The frame rate limits the menu offers (0 = unlimited). Any value from 30 to 1000 works.
 const FPS_CAPS: Array[int] = [0, 60, 120, 144, 240]
 ## The match lengths match setup offers: rounds a team must win (D-044).
@@ -110,6 +114,7 @@ const SCHEMA := {
 	&"pixel_height": {"section": "video", "default": 480, "choices": PIXEL_HEIGHTS},
 	&"palette_effect": {"section": "video", "default": true},
 	&"pixelate_hud": {"section": "video", "default": false},
+	&"ui_scale": {"section": "video", "default": 0, "choices": UI_SCALES},
 	&"master_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"effects_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"interface_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
@@ -220,6 +225,11 @@ var palette_effect: bool:
 var pixelate_hud: bool:
 	get: return _values[&"pixelate_hud"]
 	set(value): set_value(&"pixelate_hud", value)
+## How big the UI is, as a percent of the biggest scale that fits the window: one of [constant UI_SCALES]
+## (0 = Auto, D-181). See [method PixelView.ui_scale_for].
+var ui_scale: int:
+	get: return _values[&"ui_scale"]
+	set(value): set_value(&"ui_scale", value)
 
 ## Volume of everything, 0 to 1 (linear; the bus gets [method @GlobalScope.linear_to_db] of it).
 var master_volume: float:

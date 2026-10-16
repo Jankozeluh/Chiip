@@ -352,6 +352,9 @@ func _build_video_tab() -> void:
 		"tip": "The height of the 3D image in lines; it is scaled up with sharp pixels. Fewer lines = chunkier."})
 	_add_toggle_row(_video_rows, &"palette_effect", "Palette effect", "Limit the world's colours, with light dithering.")
 	_add_toggle_row(_video_rows, &"pixelate_hud", "Pixelated HUD", "Draw the HUD at the low resolution too.")
+	_add_choice_row(_video_rows, &"ui_scale", "UI scale", Settings.UI_SCALES,
+			func(value: int) -> String: return "Auto" if value == 0 else "%d %%" % value,
+			"Auto: the biggest even step that fits the window. 100 % fills it exactly, 75 % and 50 % are smaller.")
 
 
 func _build_audio_tab() -> void:

@@ -17,9 +17,11 @@ const UI_DESIGN_HEIGHT := 720.0
 ## narrower than 16:9 (2920 × 1753, 1440 × 1080) shows the whole layout, and a wider one
 ## (3440 × 1440) gets more room at the sides.
 const UI_DESIGN_WIDTH := 1280.0
+## A scale under 1.0 is multiplied by this, so the rounding up of small text and boxes can't push a page past the window.
+const SMALL_SCALE_AIR := 0.95
 
 
-## Applies [member Settings.pixel_height], [member Settings.pixelate_hud] and
+## Applies [member Settings.pixel_height], [member Settings.pixelate_hud], [member Settings.ui_scale] and
 ## [member Settings.palette_effect] from [param settings] to [param window],
 ## [param world] and [param palette_effect], and returns the UI scale factor: 1.0 is the
 ## 1280 × 720 layout (see [method ui_scale_for]).
@@ -46,26 +48,35 @@ static func apply(settings: Settings, window: Window, world: SubViewportContaine
 		window.content_scale_size = low_res
 		window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
 		world.stretch_shrink = 1
-		return ui_scale_for(Vector2(low_res))
+		return ui_scale_for(Vector2(low_res), settings.ui_scale)
 	window.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	# The SubViewport renders at the container's size divided by this.
 	world.stretch_shrink = scale
-	return ui_scale_for(Vector2(window.size))
+	return ui_scale_for(Vector2(window.size), settings.ui_scale)
 
 
-## The UI scale factor for a screen [param size] pixels big (D-151): the tighter of width / 1280 and
-## height / 720, so the 1280 × 720 layout always fits, rounded down to a half step from 1.0 up (the
-## pixel font draws every one of its pixels as a whole number of screen pixels at 1, 1.5, 2, 2.5 ...;
-## in between they come out uneven). 1.0 at 1280 × 720, 1.5 at 1920 × 1080, 2.0 at 2560 × 1440, at
-## 3440 × 1440 (the ultrawide's extra width is room at the sides), at 2560 × 1600 and at 2920 × 1753
-## (width-bound: the old height-only rule gave 2.43 and a layout 1199 pixels wide, so the sides were
-## cut off), and 1.0 at 1440 × 1080. Below 1.0 (a small window, or the pixelated HUD's low-res image)
-## it is the exact fit.
-static func ui_scale_for(size: Vector2) -> float:
+## The UI scale factor for a screen [param size] pixels big (D-151, D-181). [param percent] is
+## [member Settings.ui_scale]. The biggest scale that fits is the tighter of width / 1280 and height / 720, so
+## the 1280 × 720 layout always fits. **Auto** (0) is that rounded down to a half step from 1.0 up (the pixel font
+## draws every one of its pixels as a whole number of screen pixels at 1, 1.5, 2, 2.5 ...; in between they come out
+## uneven): 1.0 at 1280 × 720, 1.5 at 1920 × 1080, 2.0 at 2560 × 1440, at 3440 × 1440, at 2560 × 1600 and at
+## 2920 × 1753 (width-bound: the old height-only rule gave 2.43 and a layout 1199 pixels wide, so the sides were
+## cut off), 3.0 at 3840 × 2160, 1.0 at 1440 × 1080. **100** fills the window exactly (2.28 at 2920 × 1753, 1.41 at
+## 1920 × 1017): the biggest the UI can be, with a font that may come out uneven. **75** and **50** are that
+## fraction of the biggest, as half steps from 1.0 up. Below 1.0 (a small window, a small percent, or the
+## pixelated HUD's low-res image) a scale is exact, never under 0.5 for a percent.
+static func ui_scale_for(size: Vector2, percent: int = 0) -> float:
 	var fit := maxf(minf(size.x / UI_DESIGN_WIDTH, size.y / UI_DESIGN_HEIGHT), 0.01)
-	if fit < 1.0:
-		return fit
-	return floorf(fit * 2.0 + 0.001) / 2.0
+	var target := fit
+	if percent > 0 and percent < 100:
+		target = maxf(fit * percent / 100.0, minf(0.5, fit))
+	if target < 1.0:
+		# Below 1.0 the sizes of text and boxes are rounded to whole pixels, mostly up, and the Play screen then needs
+		# up to 3 % more than the layout (the pixelated HUD at 1440p and 2160p): a little air.
+		return target * SMALL_SCALE_AIR
+	if percent >= 100:
+		return target
+	return floorf(target * 2.0 + 0.001) / 2.0
 
 
 ## The whole number of window pixels per image pixel for a window

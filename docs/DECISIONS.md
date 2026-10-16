@@ -1765,6 +1765,24 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Leaving the bar where it was and putting the compass under the toasts:** the toasts come and go below it and the compass would jump around.
 
 
+## D-181 — A UI scale setting, and what Auto gives (2026-10-16)
+
+**Decision:**
+- **Settings → Video has a UI scale row: Auto, 50 %, 75 %, 100 %**, saved (`Settings.ui_scale`: 0, 50, 75, 100) and applied at once (the menus and the HUD listen to the setting, like to the pixel height). The percent is a share of **the biggest scale that fits the window**, the tighter of width / 1280 and height / 720 (D-151):
+  - **Auto (0):** that, rounded down to a half step from 1.0 up, so the pixel font stays even (16 px text is 2 px per font pixel at 1×, 3 at 1.5×, 4 at 2×: multiples of 8 px).
+  - **100 %:** the biggest scale exactly (a fraction is fine here, the font may come out uneven): for a window between two steps, say a 1920 × 1017 one (Auto 1.0, 100 % 1.41).
+  - **75 %, 50 %:** that share of the biggest, rounded down to half steps from 1.0 up.
+- **Under 1.0 a scale is multiplied by 0.95** (`PixelView.SMALL_SCALE_AIR`): text and boxes are rounded to whole pixels, mostly up, and at 0.57 to 0.67 (the pixelated HUD at 1440p and 2160p) the Play screen needed up to 3 % more than the window.
+- **What Auto gives** (text of 16 px design size in brackets): 1280 × 720 → 1.0 (16 px); 1920 × 1080 → 1.5 (24, the mockups' look); 2560 × 1440 → 2.0 (32); **2920 × 1753 → 2.0 (32, width-bound: the exact fit is 2.28)**; 3440 × 1440 → 2.0 (32); 2560 × 1600 → 2.0; 3840 × 2160 → 3.0 (48); 1440 × 1080 → 1.0. The 16 px text is 2.2 % of the window's height at 720p, 1080p, 1440p and 2160p (the same look on every 16:9 size), 1.8 % at 2920 × 1753.
+- **No option is bigger than the biggest that fits:** 125 % or 150 % would put a 1280 × 720 layout into 1024 × 576 or less, and the Play screen alone needs 707 px of height. The layout test goes through every size × Auto, 50, 75 and 100 %.
+
+**Why:** Your words, with the compass: *"at rovnou mysli i na scale toho UI, at to neni zbytecne velke ani male"* (think about the scale too, so it isn't needlessly big or small). Auto already keeps the same look at every 16:9 resolution; what it can't do is use the space between two steps (a 1000-pixel-tall window gets 1.0 where 1080 gets 1.5), and some people want it smaller or bigger than the mockups' look, so the setting does both: 100 % fills the window, 75 % and 50 % shrink it.
+
+**Alternatives:**
+- **Finer automatic steps** (quarter steps, or the exact fit): a 1.25× scale draws 16 px text at 20 px, 2.5 px per font pixel, so every second pixel is wider.
+- **Sizes above the fit (125 %, 150 %):** menus would be cut off, which is what D-151 fixed. Bigger text needs a redesigned layout.
+- **Reading the display's DPI** to pick the size: Windows and Linux report 96 dpi regardless of the monitor, so it can't be trusted.
+
 ## Open questions
 
 | Question | Decide in |
