@@ -9,7 +9,8 @@ extends Node
 ## markers, so a new map gets map weapons for free), on the navmesh islands the spawns stand on
 ## (not on a roof nobody can reach), at least [member spawn_clearance] from every team spawn,
 ## [member respawn_clearance] from every respawn point when [member avoid_respawn_points] is on,
-## off the bomb sites when [member avoid_bomb_sites] is on, and [member spacing] apart. When the
+## off the bomb sites when [member avoid_bomb_sites] is on, [member spacing] apart, and with
+## [constant ROOM] to the nearest wall or crate. When the
 ## map is too small for that, the spacing shrinks first, then the other distances, until it fits.
 ##
 ## Which gun: a weighted draw from [member pool] (the Hornet most often, the Heron rarest), never
@@ -38,6 +39,9 @@ const RELAX_STEPS := 4
 const RELAX_FACTOR := 0.7
 ## Random floor points tried per gun at each distance.
 const TRIES := 64
+## A gun needs this much room around it (metres, to walls and crates), so its ring doesn't run into
+## a wall and it's easy to see and walk over.
+const ROOM := 0.8
 
 ## Which guns appear, by weapon id, with their weights (out of the sum).
 @export var pool: Dictionary = {&"smg": 30, &"carbine": 20, &"rifle": 15, &"shotgun": 15, &"hand_cannon": 10, &"sniper": 10}
@@ -177,7 +181,9 @@ func pick_place() -> Dictionary:
 			var point := _random_floor_point()
 			if _keeps_away(point, spawns, spawn_clearance * clear) and _keeps_away(point, respawns, respawn_clearance * clear) \
 					and _keeps_away(point, others, apart) and not _on_site(point, sites):
-				return {"position": _floor_under(point)}
+				var floor_point := _floor_under(point)
+				if _has_room(floor_point):
+					return {"position": floor_point}
 	# Nothing kept every distance even at the smallest: anywhere on the floor will do.
 	return {"position": _floor_under(_random_floor_point())}
 
@@ -301,6 +307,20 @@ func _floor_under(point: Vector3) -> Vector3:
 ## The map: the round manager's parent (this node is the round manager's child), else the parent.
 func _map() -> Node:
 	return get_parent().get_parent() if get_parent() is RoundManager else get_parent()
+
+
+## True if nothing solid is within [constant ROOM] of the gun's spot, from knee to head height.
+func _has_room(floor_point: Vector3) -> bool:
+	var world := get_viewport().find_world_3d() if get_viewport() != null else null
+	if world == null:
+		return true
+	var sphere := SphereShape3D.new()
+	sphere.radius = ROOM
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = sphere
+	query.transform = Transform3D(Basis.IDENTITY, floor_point + Vector3.UP * (ROOM + 0.25))
+	query.collision_mask = PhysicsLayers.WORLD
+	return world.direct_space_state.intersect_shape(query, 1).is_empty()
 
 
 func _positions(groups: Array) -> Array[Vector3]:

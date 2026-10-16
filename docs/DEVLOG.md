@@ -40,7 +40,11 @@
 
 - **Task 18, Team Deathmatch's loadout and pickups** (D-094): walking over a dropped gun you already carry takes its ammo (CoD's scavenging, never from a map weapon), dropped guns vanish after 30 s in Team Deathmatch, and the respawn loadout already came out with the signature gun in hand. The buy menu was already built only on the theme's type variations (a new economy check proves it, for M10's UI refresh). ARCHITECTURE has a new section on M7's interfaces for M9: who decides what a character carries, guns on the floor, money, buying, armor, classes and grenades, and what M9 has to change. A fix found on the way: a frozen character could still stab or lob a grenade with aim; now only a scope zooms while frozen (D-097).
 
-**Next:** task 19 (checks and the playtest list).
+- **Task 19, checks and the playtest list:** screenshots in the real game: the class menu with your two cards; map weapons on Depot, which led to three fixes (the beam now rises from above the name instead of hiding the gun, the name is half as big again, and guns keep 0.8 m from walls and crates). All 23 suites pass (722 checks). The M7 playtest list has the map weapons, Team Deathmatch's loadout and pickups, and the class draft.
+
+**M7 is built** (19 tasks, D-090 to D-099) and waits for your playtest. Main (with 008feed) is merged into `m7-arsenal`; the coordinating session merges it into main.
+
+**Next:** M9 — Multiplayer (in its own branch), and M10.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

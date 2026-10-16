@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M7 — Arsenal, perks & economy: tasks 1–15 are built; the class draft and random map weapons (D-120) are being added. M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". Also in progress, each in its own branch: M9 — Multiplayer and M10 — Look & feel (map kit and a modern UI).
+> **Current milestone:** M7 — Arsenal, perks & economy is built (all 19 tasks, with the class draft and random map weapons of D-120) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". Also in progress, each in its own branch: M9 — Multiplayer and M10 — Look & feel (map kit and a modern UI).
 
 ## Your open checks
 
@@ -68,7 +68,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M4 | Bots | ✅ | Bots hunt you and shoot back |
 | M5 | Rounds & game flow | ✅ | Full matches against bots, with teammates, menus and settings |
 | M6 | Crew & animation | 🟨 built, waiting for your playtest | Four distinct classes that run, crouch, jump, aim, shoot, reload and die, in blue and red; your own arms and rifle on screen |
-| M7 | Arsenal, perks & economy | 🟨 being finished (class draft, random map weapons) | Pick up and buy from the full arsenal with a light economy, fight over map weapons, and play each class a little differently |
+| M7 | Arsenal, perks & economy | 🟨 built, waiting for your playtest | Pick up and buy from the full arsenal with a light economy, fight over map weapons, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | ⬜ | Play with friends (one hosts), bots fill empty slots |
 | M10 | Look & feel: map kit and a modern UI | ⬜ | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
@@ -285,7 +285,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 | Class choice | At match start, changeable during freeze time |
 | Class names | Rifleman, Bulwark, Marksman, Scout: final (D-070) |
 
-## M7 — Arsenal, perks & economy 🟨 *(being finished: class draft and random map weapons)*
+## M7 — Arsenal, perks & economy 🟨 *(built, waiting for your playtest)*
 
 **Goal:** a mix of CS and Call of Duty, built around picking weapons up: a light economy where money still matters (spend or save every round), a fresh loadout every round like CoD's Search & Destroy, guns taken from the fallen and power weapons on the maps worth fighting for, and classes that each play a little differently.
 
@@ -316,9 +316,9 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 16. [x] **Random map weapons** (replaces task 9's fixed spots, D-098). Every round (and all the time in Team Deathmatch) guns appear at random places on the map: picked at runtime from the walkable floor of the navmesh (no markers in the map files), never within 15 m of a team's spawn (8 m of a respawn point in Team Deathmatch), never on a bomb site, and spread out, from the round manager's seeded random generator so tests repeat. Which gun is random too, from a weighted pool (the Hornet most often, the Heron rarest). Each one floats and turns over a glowing ring with its name and a beam of light, so you can spot it from across the map. Rounds: two per round, gone at the next round start. Team Deathmatch: three at a time, a new one somewhere else 20 s after one is taken. *(Opus: placement rules)* Built (D-098): `MapWeapons` (`systems/map_weapons.gd`) samples the navmesh islands the spawns stand on, the spots got a beam, the three maps' fixed spots are gone (the map files are as on main), `MatchSettings` group *Map weapons*; 2 gear checks and 3 maps checks more.
 17. [x] **Class draft.** Each match offers you **two random classes** and you choose one; you can switch between your two in any freeze time (any time in Team Deathmatch, with the next respawn). Bots draft the same way, and each offer includes a class the team doesn't have yet while there is one, so each team still gets a mix. The class menu shows your two cards; at half time each bot may switch to its other drafted class. Practice keeps all four. *(Opus: the rules; the menu rework in the main session)* Built (D-099): `get_draft()`, `class_drafted`, the draft rule in `_draw_offer()`, `request_class()` only within the draft, the class menu's two cards and footer, the console's answer, half-time switches within the draft, `MatchSettings.class_draft`; 7 new class checks.
 18. [x] **Team Deathmatch loadout and pickups feel good.** Walking over a dropped gun you already carry takes its ammo (CoD's scavenging; never from a map weapon), dropped guns vanish after 30 s so the map doesn't fill up, and the respawn loadout (the class's signature gun, the Sparrow, the knife and a grenade) comes out ready with the primary in hand. The buy menu uses only the theme's type variations so the UI refresh (M10) restyles it, and M7's interfaces (inventory, money, buying, pickups, the draft) are written up in ARCHITECTURE.md for M9. *(Opus)* Built (D-094): `Inventory.scavenge()` and `ammo_scavenged`, `RespawnMatch._clear_old_guns()`, the loadout already came out ready; the buy menu had no overrides (an economy check now proves it); ARCHITECTURE's "Weapons, money and buying: M7's interfaces for M9"; 4 new checks.
-19. [ ] **Checks and the playtest list again.** All suites passing, the M7 playtest list updated for the draft and the random map weapons. *(Haiku runs the tests)*
+19. [x] **Checks and the playtest list again.** All suites passing, the M7 playtest list updated for the draft and the random map weapons. *(Haiku runs the tests)* Done: screenshots in the real game (the two-card class menu; map weapons on Depot, which moved the beam above the name, made the name bigger and keep guns 0.8 m from walls), all 23 suites passing (722 checks), and the playtest list's items 3, 9 and 10. The main session ran the suites itself this time: each change needed its failures read at once.
 
-**Built:** tasks 1–15 on 2026-10-16, decisions D-090 to D-099. Tasks 16–19 are being built.
+**Built:** all 19 tasks on 2026-10-16, decisions D-090 to D-099. Your playtest is in "Your open checks" at the top.
 
 **Done when:** you play several rounds where money matters (you save for a rifle, or take one off the floor), the map weapons are worth fighting for, and each class plays a little differently.
 

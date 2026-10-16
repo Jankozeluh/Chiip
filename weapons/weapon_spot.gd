@@ -22,8 +22,10 @@ const RING_COLOR := Color(1.0, 0.78, 0.25)
 const FULL_GLOW := 2.0
 const EMPTY_GLOW := 0.25
 
-## How tall the beam of light is (metres), and how strongly it shows.
-const BEAM_HEIGHT := 3.2
+## The beam of light rises from above the name (so it never hides the gun) this high (metres),
+## and how strongly it shows.
+const BEAM_BOTTOM := 1.8
+const BEAM_HEIGHT := 2.8
 const BEAM_ALPHA := 0.22
 
 ## The gun it puts out. Set before it enters the tree.
@@ -107,7 +109,7 @@ func _build_marker() -> void:
 	cylinder.radial_segments = 6
 	cylinder.rings = 1
 	beam.mesh = cylinder
-	beam.position = Vector3.UP * (BEAM_HEIGHT * 0.5)
+	beam.position = Vector3.UP * (BEAM_BOTTOM + BEAM_HEIGHT * 0.5)
 	var beam_material := StandardMaterial3D.new()
 	beam_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	beam_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -121,7 +123,7 @@ func _build_marker() -> void:
 	_label.text = weapon.display_name.to_upper() if weapon != null else ""
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.position = Vector3.UP * (FLOAT_HEIGHT + 0.55)
-	_label.pixel_size = 0.004
+	_label.pixel_size = 0.006
 	_label.font_size = 32
 	_label.outline_size = 8
 	_label.modulate = RING_COLOR
