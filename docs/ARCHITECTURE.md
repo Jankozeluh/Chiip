@@ -37,6 +37,7 @@ Chiip/
 ├── LICENSE            GPL-3.0, the code (D-170)
 ├── LICENSE-ASSETS     CC BY-NC-SA 4.0, art, models, maps and sounds, with the folders it covers
 ├── THIRD_PARTY_NOTICES.md  Godot, FuncGodot, Silkscreen: shipped inside every build
+├── CONTRIBUTING.md    How to submit a map or code, and under which licence (D-176)
 ├── CLAUDE.md          Working rules for Claude, including documentation rules
 ├── docs/              All documentation
 ├── addons/            Third-party Godot plugins only (func_godot)
@@ -522,7 +523,7 @@ bash tools/run_tests.sh
 | `netjoin_test` | 6 | Players coming and going: a bot takes over a leaver, a latecomer takes over a bot, the host ends the game (D-110) | ~2 s |
 | `netrespawn_test` | 5 | An online team respawn match to 15 kills: kills with the score, respawns of puppets and of your own player, the end (D-082 online) | ~20 s |
 | `netstress_test` | 11 | A 5v5 with two clients, one at 100 ms with 5% loss and jitter: four bomb rounds the same everywhere, few small corrections, gliding puppets, traffic per client (M9 task 11) | ~30 s |
-| `release_test` | 32 | Ready to share (M12, D-170): the licence files, the Licences screen and its button in the settings menu, the three export presets, Tailscale addresses in the lobby (the address ranges, Copy, "address:port" in Join by IP), no personal path in the project's text files, the ignore file | ~1 s |
+| `release_test` | 35 | Ready to share (M12, D-170): the licence files, the Licences screen and its button in the settings menu, the three export presets, CONTRIBUTING.md and the credit line, Tailscale addresses in the lobby (the address ranges, Copy, "address:port" in Join by IP), no personal path in the project's text files, the ignore file | ~1 s |
 
 That is about 830 checks in about four minutes on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:
 

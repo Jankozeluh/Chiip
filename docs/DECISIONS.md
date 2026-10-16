@@ -1729,7 +1729,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **No personal absolute path or user name in any project text file.** Commands in the docs use `$GODOT` and `$PROJECT` (set once at the top of `docs/DEVELOPING.md`) or `--path .`; CLAUDE.md uses `--path .`. A link to a private Claude page became plain text. `tests/release_test.gd` reads every text file of the project and fails on a home-folder path (macOS or Windows style), the user name or such a link.
 - **README.md is the player's guide** (what Chiip is, download and run per system with the unsigned-app steps, playing, controls, playing with friends over Tailscale, settings, licences). The old developer README moved to **docs/DEVELOPING.md** (running from the editor, tests, TrenchBroom, generators, exporting), and the README links to it.
 - **`.gitignore`** keeps out `.godot/`, `/builds/`, Godot's export passwords (`export_credentials.cfg`), signing keys (`*.p12`, `*.pfx`, `*.keystore`, `*.jks`), `.env` and Claude's per-machine files.
-- **Scan result:** no secrets, tokens, keys, e-mail addresses or private network addresses in HEAD or in the history (patterns checked across all 187 commits). What stays public on purpose: the author's name (Jan Koželuh) and GitHub no-reply address in the commits and the copyright line. **Left for you to decide** (reported, not changed): CLAUDE.md describes you and quotes you in Czech; DECISIONS.md and DEVLOG.md quote your words, one with a swear word; the history before this commit still contains the old absolute paths of your Mac (about 25 commits) and your user name. Rewriting the history into one clean first commit would remove them; not doing it keeps the full history of how the game was built.
+- **Scan result:** no secrets, tokens, keys, e-mail addresses or private network addresses in HEAD or in the history (patterns checked across all 187 commits). What stays public on purpose: the author name and GitHub no-reply address in the commits (the copyright line names the studio, D-174; whether the commit author name is rewritten is up to you, D-176). **Left for you to decide** (reported, not changed): CLAUDE.md describes you and quotes you in Czech; DECISIONS.md and DEVLOG.md quote your words, one with a swear word; the history before this commit still contains the old absolute paths of your Mac (about 25 commits) and your user name. Rewriting the history into one clean first commit would remove them; not doing it keeps the full history of how the game was built.
 
 **Why:** Your words: it "musi byt bezpecne nasdiletelne". A path with your user name tells strangers little, but nothing private should be public by accident, and a test keeps it that way when later changes add a path again.
 
@@ -1781,6 +1781,30 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 **Why:** Your words: "Keep them forever, they are good."
 
 **Alternatives:** Plain descriptions ("Rifle", "Carbine"...) or other names (D-090 weighed both; files and code use role ids, so renaming would only have touched the data files).
+
+## D-176 — The credit line, and community maps curated in the repository (2026-10-16)
+
+**Decision:**
+- **The credit is "Created by JK · Divocakos"** in the Licences screen (the in-game credits), the README and the release notes; the legal line stays "© Divocakos" (D-174). **The full name appears nowhere in tracked files.** (The GitHub account in the repository's address is the one place a name-like word remains; it is the account that hosts the repo.) `tests/release_test.gd` fails on the full name.
+- **Maps are curated in the repository.** Community maps come in as pull requests, are looked at and played by the maintainer, and ship with the next release. `CONTRIBUTING.md` (linked from the README) says how: build from the map kit, follow the look and building rules, pass the maps test, add the map to `GameLaunch.ROTATION_MAPS` and the maps test's list, credit under "Community maps" in CREDITS.md. A map the maintainer doesn't accept is not merged.
+- **Contributions go in under the licence of their folder:** a map, texture, model or sound is **CC BY-NC-SA 4.0**; code is **GPL-3.0**; the contributor keeps their copyright and is credited. The studio's name and logo are never part of a contribution. Third-party material is allowed only when its licence is compatible, and is recorded in CREDITS.md.
+- **The commits' author name** is still the full name (the e-mail is GitHub's no-reply address). Whether to rewrite it to "JK" before the repository goes public is for you to decide; nothing is pushed before you do.
+
+**Why:** Your words: "Divocakos is the studio name, JK is my name", and you want community maps in the game with you in control of what ships.
+
+**Alternatives:** An open contribution flow where anything that passes the tests ships (no curation); contributions under a contributor licence agreement that lets you relicense them (more legal paper; with CC BY-NC-SA inbound the game stays non-commercial, which is the plan); credit with the full name.
+
+## D-177 — The roadmap after v0.1: M13 sound, M14 stats and training, M15 accessibility (2026-10-16)
+
+**Decision:** Three milestones follow the first release (PLAN.md has their task lists):
+- **M13 Sound design:** distinct gun signatures, muffling through walls, reverb indoors and outdoors, a mix pass, menu music and round stingers.
+- **M14 Stats & training:** match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range.
+- **M15 Accessibility & polish:** a colourblind-safe team-colour option, gamepad support, a Czech translation, wallbangs, smarter team bots.
+The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray practice, match statistics) moved into these milestones.
+
+**Why:** Your plan for after v0.1. Sound is what the game most lacks next to a shooter's feel; stats and training suit a CS player; the last milestone widens who can play. Each starts only when you say so (CLAUDE.md).
+
+**Alternatives:** Steam lobbies and a dedicated server first (they stay in the Backlog); more maps first (they come through pull requests as they arrive, D-176).
 
 ## Open questions
 

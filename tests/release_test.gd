@@ -24,6 +24,7 @@ func _ready() -> void:
 	await _test_licences_screen()
 	await _test_licences_from_settings()
 	_test_export_presets()
+	_test_contributing()
 	_test_tailscale_addresses()
 	await _test_tailscale_in_the_lobby()
 	_test_no_personal_paths()
@@ -219,6 +220,27 @@ func _has_secrets(config: ConfigFile) -> bool:
 	return false
 
 
+# --- Contributing and credits ---
+
+
+func _test_contributing() -> void:
+	var contributing := FileAccess.get_file_as_string("res://CONTRIBUTING.md")
+	var readme := FileAccess.get_file_as_string("res://README.md")
+	_check("CONTRIBUTING.md says how to submit a map (the map kit, MAPPING.md, MAPS.md, the maps test, the map lists), that maps are CC BY-NC-SA 4.0 and code GPL-3.0, and the README links to it",
+			contributing.contains("docs/MAPPING.md") and contributing.contains("docs/MAPS.md") and contributing.contains("maps_test")
+					and contributing.contains("ROTATION_MAPS") and contributing.contains("CC BY-NC-SA 4.0") and contributing.contains("GPL-3.0")
+					and contributing.contains("pull request") and readme.contains("CONTRIBUTING.md"),
+			"%d characters" % contributing.length())
+	_check("The README credits \"Created by JK · Divocakos\" and keeps the studio's rights note; the Licences screen's overview credits it too",
+			readme.contains("Created by JK · Divocakos") and readme.contains("all rights reserved")
+					and LicensesMenu.overview_text().contains("Created by JK · Divocakos"),
+			"")
+	var maps_test := FileAccess.get_file_as_string("res://tests/maps_test.gd")
+	var launch := FileAccess.get_file_as_string("res://systems/game_launch.gd")
+	_check("The two lists CONTRIBUTING.md tells map authors to extend still exist (GameLaunch.ROTATION_MAPS and the maps test's MAPS)",
+			launch.contains("const ROTATION_MAPS") and maps_test.contains("const MAPS"), "")
+
+
 # --- Tailscale ---
 
 
@@ -335,7 +357,7 @@ func _wait_for_session_close(lobby: LobbyMenu) -> void:
 
 func _test_no_personal_paths() -> void:
 	# Built from parts so this file doesn't contain the text it looks for.
-	var forbidden: Array[String] = ["/Us" + "ers/", "C:\\Us" + "ers\\", "kozel" + "uhj", "claude.ai/" + "artifact"]
+	var forbidden: Array[String] = ["/Us" + "ers/", "C:\\Us" + "ers\\", "kozel" + "uhj", "claude.ai/" + "artifact", "Kože" + "luh", "Koze" + "luh"]
 	var files := _text_files("res://")
 	var hits: Array[String] = []
 	for path in files:

@@ -138,6 +138,7 @@ static func overview_text() -> String:
 	var version := str(ProjectSettings.get_setting("application/config/version", ""))
 	var lines: Array[String] = []
 	lines.append("Chiip%s" % ((" " + version) if not version.is_empty() else ""))
+	lines.append("Created by JK · Divocakos")
 	lines.append("© 2026 Divocakos")
 	lines.append("A tactical shooter against bots with a retro Quake look. Online games run by IP address over a LAN or Tailscale.")
 	lines.append("")

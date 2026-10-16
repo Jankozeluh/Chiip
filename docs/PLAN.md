@@ -91,6 +91,9 @@ Things only you can check, kept here until done instead of moving from milestone
 | M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | M11 | Polish | ⬜ | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
 | M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
+| M13 | Sound design | ⬜ | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
+| M14 | Stats & training | ⬜ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
+| M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, a Czech translation, wallbangs, smarter team bots |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -547,16 +550,45 @@ The class draft (two random classes offered each match) and the random map weapo
 - [x] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors (D-171). The history still holds the old paths: your call whether to rewrite it before the first push
 - [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows. Presets, packaging script and instructions are done (D-172); the builds themselves are made for the release, after your OK
 - [x] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide (D-173). A join over a real Tailscale address is for your playtest
+- [x] **Contributing and credits:** `CONTRIBUTING.md` (how to submit a map as a pull request, how code and art contributions work, under which licence; maps are curated in the repo and ship with the next release) and the credit line "Created by JK · Divocakos" (D-176)
 - [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
+
+## M13 — Sound design ⬜
+
+**Goal:** Chiip sounds like a shooter, and its sound tells you things: where a shot came from, how far, and whether a wall is in between (D-177, after v0.1).
+
+- [ ] **Distinct gun signatures:** every weapon family gets its own shot, tail and reload sounds (rifle, carbine, SMG, shotgun, sniper, pistol, hand cannon, knife, grenades), each with a close and a far variant, from `tools/generate_sounds.gd` or a generator of its own
+- [ ] **Muffling through walls:** a sound whose straight path to the listener is blocked is low-passed and quieter, more for more or thicker walls (a ray test against the map)
+- [ ] **Reverb indoors and outdoors:** a reverb that fits the place (a small room, a hall, an open yard) on the Effects bus, switched by the listener's zone
+- [ ] **A mix pass:** loudness balanced per bus (weapons, footsteps, bomb, interface), your own shots against distant ones, the bomb's beep and alerts always audible; a test measures it so it stays balanced
+- [ ] **Menu music and round stingers:** a short looping menu track and stingers for round start, round won and lost, bomb planted, bomb defused and match end, made for Chiip (their licence follows D-170)
+- [ ] **Tests and docs:** `sound_test` checks the new sounds, the muffling and the zones; GAME_DESIGN and CREDITS updated
+
+## M14 — Stats & training ⬜
+
+**Goal:** see how you are doing and practise on purpose (D-177, after v0.1).
+
+- [ ] **Match history:** every finished match is saved on your computer (map, mode, score, date, your numbers), with a Stats screen in the main menu; nothing goes online
+- [ ] **Stats:** K/D, ADR, headshot % and accuracy per weapon (shots, hits and hits by body zone), for each match and over all of them; the scoreboard shows ADR
+- [ ] **Aim trainer** in the Shooting Range: flick targets and a tracking target, with a score and a personal best
+- [ ] **Spray practice:** the spray wall shows each weapon's pattern, and your own spray is drawn against it
+- [ ] **Tests and docs:** the stats maths and the history file are tested (a damaged file falls back safely)
+
+## M15 — Accessibility & polish ⬜
+
+**Goal:** more people can play comfortably, and the game's biggest rough edges go (D-177, after v0.1).
+
+- [ ] **A colourblind-safe team-colour option:** a setting that swaps blue and red for a pair that stays apart for the common colour blindnesses, in the HUD, scoreboard, kill feed, outlines and the players' own colours
+- [ ] **Gamepad support:** move, aim (dead zone, sensitivity and response curve), fire, every action, menu navigation, rebinding and prompts that follow the device last used
+- [ ] **A Czech translation:** every text of the game goes through `tr()`, a language setting, a translation file, a test that finds missing or unused keys, and menus that still fit with the longer text
+- [ ] **Wallbangs:** bullets go through thin materials with a damage loss by material (the surface types the footstep sounds already know), for the player and the bots
+- [ ] **Smarter team bots:** callouts, trades, coordinated site takes and grenades thrown together (the Backlog's "smarter team AI")
 
 ## Backlog (ideas, not scheduled)
 
 - Ragdoll deaths (`PhysicalBone3D`) instead of, or blended with, the death animations (M6 uses animations)
 - More maps and map voting
-- Wallbangs and tagging
-- Smarter team AI: callouts, trades, coordinated site takes
-- Training modes: aim trainer, spray practice, movement maps (KZ- or surf-style)
-- Match statistics (K/D, ADR, headshot %) and a stats screen
+- Movement maps (KZ- or surf-style) for training (the aim trainer and spray practice are in M14)
 - Demo recording and replays
 - A dedicated server: a host without a player of its own (`--server`, headless), for a match that runs on a spare computer (D-100)
 - Finding LAN games by themselves (a broadcast) instead of typing the host's IP (D-108)
