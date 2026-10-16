@@ -33,6 +33,10 @@ extends Node
 ## the groups from [method Teams.spawn_group]; each team spawns at its side's
 ## end of the map.
 ##
+## Loadouts (D-090, D-094): every round starts with a fresh loadout for everyone,
+## [member MatchSettings.round_loadout] (the knife and the Sparrow), no armor and no kit, and the
+## guns left on the floor last round are gone. Whatever is bought or picked up lasts one round.
+##
 ## Classes (D-052, D-078): the bots get a mix when the match starts, the player keeps their own
 ## class (or [member MatchSettings.player_class]), and [method request_class] changes a class
 ## during freeze time only.
@@ -252,6 +256,10 @@ func _start_round() -> void:
 	_damage_this_life.clear()
 	for team in Teams.COUNT:
 		_spawn_team(team)
+	_clear_floor()
+	for character in _participants:
+		if is_instance_valid(character):
+			_give_loadout(character)
 	if bomb != null:
 		bomb.start_round(_pick_bomb_carrier(), attacking_team)
 	_plan_bots()
@@ -298,6 +306,11 @@ func _after_round_end() -> void:
 ## Gives the bots their orders for the round that is starting.
 func _plan_bots() -> void:
 	BotTactics.plan_round(get_members(attacking_team), get_members(get_defending_team()), get_parent(), rng, settings.round_time)
+
+
+## The weapons [param character] gets at a round start: the same fresh loadout for everyone.
+func _loadout_for(_character: Character) -> Array[WeaponData]:
+	return settings.round_loadout
 
 
 ## Seconds the live part of a round lasts.
@@ -433,6 +446,24 @@ func _spawn_team(team: int) -> void:
 	for i in members.size():
 		var marker := markers[i % markers.size()] as Node3D
 		members[i].respawn(marker.global_position, marker.global_rotation.y)
+
+
+## Gives [param character] its loadout ([method _loadout_for]) and takes away armor and kit.
+func _give_loadout(character: Character) -> void:
+	var loadout := _loadout_for(character)
+	if not loadout.is_empty():
+		character.inventory.set_loadout(loadout)
+	character.set_armor(0.0, false)
+	character.set_defuse_kit(false)
+
+
+## Removes every gun lying on the map's floor (a new round starts clean).
+func _clear_floor() -> void:
+	var map := get_parent()
+	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
+		if map.is_ancestor_of(node) and not (node as WeaponPickup).spot:
+			node.remove_from_group(WeaponPickup.GROUP)
+			node.queue_free()
 
 
 func _set_frozen(frozen: bool) -> void:

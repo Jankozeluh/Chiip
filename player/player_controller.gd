@@ -55,6 +55,10 @@ var _pitch: float = 0.0
 var _jump_queued: bool = false
 ## Set when reload is pressed and used up by the next command.
 var _reload_queued: bool = false
+## A weapon slot (keys 1 to 4), Q or G pressed, used up by the next command (D-094).
+var _slot_queued: int = -1
+var _last_weapon_queued: bool = false
+var _drop_queued: bool = false
 ## True while a click shouldn't shoot: for the click that captures a free mouse
 ## again, and after the game is resumed with the fire button still held, until
 ## the button is released.
@@ -84,9 +88,8 @@ func _notification(what: int) -> void:
 	# its _process and get_input() don't run meanwhile, so what they would clear
 	# when a menu closes is done here, when the pause starts and ends.
 	if what == NOTIFICATION_PAUSED:
-		# A jump or reload pressed just before Esc shouldn't happen after Resume.
-		_jump_queued = false
-		_reload_queued = false
+		# A jump, reload or weapon switch pressed just before Esc shouldn't happen after Resume.
+		_clear_queued()
 	elif what == NOTIFICATION_UNPAUSED:
 		# A fire button still held (Esc pressed mid-burst) waits until it is let go.
 		_shooting_blocked = Input.is_action_pressed("shoot")
@@ -103,6 +106,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_jump_queued = true
 	elif event.is_action_pressed("reload"):
 		_reload_queued = true
+	elif event.is_action_pressed("slot_primary"):
+		_slot_queued = WeaponData.Slot.PRIMARY
+	elif event.is_action_pressed("slot_pistol"):
+		_slot_queued = WeaponData.Slot.PISTOL
+	elif event.is_action_pressed("slot_knife"):
+		_slot_queued = WeaponData.Slot.KNIFE
+	elif event.is_action_pressed("slot_grenade"):
+		_slot_queued = WeaponData.Slot.GRENADE
+	elif event.is_action_pressed("last_weapon"):
+		_last_weapon_queued = true
+	elif event.is_action_pressed("drop_weapon"):
+		_drop_queued = true
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		# This click only captures the mouse; it shouldn't also fire a shot.
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -122,8 +137,7 @@ func get_input(_delta: float) -> CharacterInput:
 	if MenuState.blocks_gameplay():
 		# Typing in the console or clicking in a menu shouldn't move or shoot,
 		# and a jump or reload pressed just before it opened shouldn't happen after.
-		_jump_queued = false
-		_reload_queued = false
+		_clear_queued()
 		input.yaw = _yaw
 		input.pitch = _pitch
 		return input
@@ -132,11 +146,14 @@ func get_input(_delta: float) -> CharacterInput:
 	input.pitch = _pitch
 	input.jump = _jump_queued
 	input.reload = _reload_queued
-	_jump_queued = false
-	_reload_queued = false
+	input.weapon_slot = _slot_queued
+	input.last_weapon = _last_weapon_queued
+	input.drop = _drop_queued
+	_clear_queued()
 	input.crouch = Input.is_action_pressed("crouch")
 	input.walk = Input.is_action_pressed("walk")
 	input.use = Input.is_action_pressed("use")
+	input.aim = Input.is_action_pressed("aim")
 	input.shoot = Input.is_action_pressed("shoot") and not _shooting_blocked
 	return input
 
@@ -155,8 +172,7 @@ func is_local() -> bool:
 
 
 func on_respawned() -> void:
-	_jump_queued = false
-	_reload_queued = false
+	_clear_queued()
 	# A new round: back to your own eyes, with your rifle in hand again.
 	_set_view_target(null)
 	if character.weapon != null:
@@ -251,6 +267,15 @@ func _apply_settings() -> void:
 func _on_setting_changed(key: StringName) -> void:
 	if key == &"sensitivity" or key == &"invert_y" or key == &"fov":
 		_apply_settings()
+
+
+## Forgets the key presses waiting for the next command (jump, reload, a weapon slot, Q, G).
+func _clear_queued() -> void:
+	_jump_queued = false
+	_reload_queued = false
+	_slot_queued = -1
+	_last_weapon_queued = false
+	_drop_queued = false
 
 
 ## Turns the view by a mouse movement measured in mouse counts.

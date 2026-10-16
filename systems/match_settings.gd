@@ -71,3 +71,9 @@ enum GameMode {
 ## The class the player starts the match with. Null keeps the class of the map's [code]Player[/code]
 ## character (the Rifleman); the class menu changes it during freeze time (D-052, D-078).
 @export var player_class: ClassData
+
+@export_group("Loadout")
+## What everyone has at the start of every round (D-090: a fresh loadout every round, like CoD's
+## Search & Destroy): the knife and the Sparrow. Whatever is bought or picked up lasts one round.
+## Team respawn uses each class's own loadout instead ([member ClassData.loadout]).
+@export var round_loadout: Array[WeaponData] = [preload("res://weapons/knife.tres"), preload("res://weapons/pistol.tres")]

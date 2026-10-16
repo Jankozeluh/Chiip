@@ -25,5 +25,14 @@ var walk: bool = false
 var shoot: bool = false
 ## Reload was pressed this tick.
 var reload: bool = false
-## Use is held: plants the bomb in a bomb site, or defuses a planted bomb (D-080).
+## Use is held: plants the bomb in a bomb site, or defuses a planted bomb (D-080). A fresh press
+## while looking at a gun on the floor swaps it for the one in that slot (D-094).
 var use: bool = false
+## Aim (the right mouse button) is held: the sniper rifle's scope, the knife's stab, a grenade's lob.
+var aim: bool = false
+## A weapon slot was picked this tick ([enum WeaponData.Slot]: keys 1 to 4), or -1.
+var weapon_slot: int = -1
+## Switch back to the weapon held before (Q) was pressed this tick.
+var last_weapon: bool = false
+## Drop the gun in hand (G) was pressed this tick.
+var drop: bool = false

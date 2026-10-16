@@ -406,10 +406,10 @@ func _test_console() -> void:
 	var scaled_size := output.get_theme_font_size("font_size")
 	var scaled_input := input.get_theme_font_size("font_size")
 	console.set_ui_scale(1.0)
-	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), 16 px at 1.0 and 24 px at 1.5, its panel 360 → 540 px minimum height (18 lines, D-065)",
+	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), 16 px at 1.0 and 24 px at 1.5, its panel 480 → 720 px minimum height (24 lines, D-065; 18 until M7 added commands)",
 			panel.theme_type_variation == &"ConsolePanel" and style != null and style.border_color == _theme.get_color("accent", "Palette")
 					and not output.has_theme_font_size_override("font_size") and not panel.has_theme_stylebox_override("panel")
-					and base_size == 16 and scaled_size == 24 and scaled_input == 24 and panel.custom_minimum_size.y == 360.0
+					and base_size == 16 and scaled_size == 24 and scaled_input == 24 and panel.custom_minimum_size.y == 480.0
 					and (input.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == _theme.get_stylebox("normal", "LineEdit").bg_color,
 			"font %d → %d, input %d, panel minimum back at %.0f" % [base_size, scaled_size, scaled_input, panel.custom_minimum_size.y])
 	remove_child(console)

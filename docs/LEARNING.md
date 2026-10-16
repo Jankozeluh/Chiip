@@ -611,3 +611,11 @@
 **Playing clips from code, and moving a node to another parent** (`weapons/weapon.gd`)
 - `AnimationPlayer.play("fp_fire", blend, speed)` plays a clip (with a short cross-fade and a speed factor, here to stretch the reload to the weapon's reload time), `seek(0.0, true)` restarts it when the same clip is already playing, and `queue("fp_idle")` plays the idle clip once it ends: Unity's `Animator.Play()` and a transition back, without a state machine. Setting `active = false` stops a player from doing any work, which the hidden arms of every bot use.
 - `node.reparent(new_parent)` moves a node to another parent in one call (Unity: `transform.SetParent()`); with `keep_global_transform = false` it keeps its *local* position instead. The muzzle flash moves onto the gun's bone attachment this way, so it follows the gun's kick and reload.
+
+### M7 — Arsenal, perks & economy
+
+**Composition: an inventory node instead of a weapon class hierarchy** (`characters/inventory.gd`)
+- A character's weapons are plain `Weapon` nodes, one per weapon, all made from one generic scene with different data (`Weapon.create(data)`, a *static* function: Godot's version of a factory method). What a weapon does comes from its `WeaponData` resource, not from a subclass per gun. The `Inventory` is a child node that owns them, like a component in Unity: the character asks it, the HUD listens to it. Godot favours this: a node has one script, and behaviour is added by adding child nodes.
+- Weapons not in hand are switched off with `process_mode = PROCESS_MODE_DISABLED` (no `_process` / `_physics_process` for the node and its children; Unity: disabling a component) and hidden with `visible = false` (Unity: `SetActive(false)` does both at once).
+- When the thing a listener follows can change (the weapon in hand), the owner emits a signal (`weapon_changed`) and each listener disconnects from the old one and connects to the new one. Disconnecting from a node that is about to be freed is fine as long as it isn't freed yet: `queue_free()` waits until the end of the frame.
+- `@onready` variables are null until a node enters the tree. A method called on a node that was made but not added yet (`Weapon.set_arms()`) has to keep its work for `_ready()`; `is_node_ready()` tells which case it is.

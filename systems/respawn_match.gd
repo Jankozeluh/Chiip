@@ -88,6 +88,14 @@ func _add_bomb() -> void:
 	pass
 
 
+## No money here (D-090): each class spawns with its own loadout (its signature gun, the Sparrow,
+## the knife and a grenade), the round loadout for a class without one.
+func _loadout_for(character: Character) -> Array[WeaponData]:
+	if character.class_data != null and not character.class_data.loadout.is_empty():
+		return character.class_data.loadout
+	return settings.round_loadout
+
+
 ## The bots of each team hunt in groups of about two, sharing what they see (D-083).
 func _plan_bots() -> void:
 	_hunt_plans.clear()
@@ -116,6 +124,7 @@ func _live_tick(delta: float) -> void:
 			_respawn_left.erase(character)
 			var spot := pick_spawn(character)
 			character.respawn(spot.origin, spot.basis.get_euler().y)
+			_give_loadout(character)
 			_rejoin_hunt(character)
 
 

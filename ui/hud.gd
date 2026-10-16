@@ -11,6 +11,9 @@ const LOW_AMMO_FRACTION := 0.25
 const LOW_AMMO_COLOR := Color(1.0, 0.4, 0.3)
 ## Health at or below this is shown in red.
 const LOW_HEALTH := 25.0
+## Seconds the weapon list shows after a change, and how long it then takes to fade.
+const SLOTS_SHOW_TIME := 2.5
+const SLOTS_FADE_TIME := 0.5
 
 ## The player whose weapon the HUD shows. Set with [method set_player].
 var player: Character
@@ -21,11 +24,17 @@ var shown: Character
 ## in a match the dead wait for the next round).
 var respawn_hint: bool = true
 
+## The weapon whose ammo the labels follow.
+var _watched_weapon: Weapon
+## Seconds the weapon list keeps showing.
+var _slots_show_left: float = 0.0
+
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _ammo_label: Label = $AmmoLabel
 @onready var _weapon_label: Label = $WeaponLabel
 @onready var _health_label: Label = $HealthLabel
 @onready var _armor_icon: ArmorIcon = $ArmorIcon
+@onready var _slots_label: Label = $SlotsLabel
 @onready var _armor_label: Label = $ArmorLabel
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
@@ -55,18 +64,18 @@ func set_round_manager(manager: RoundManager) -> void:
 ## [signal PlayerController.view_target_changed] is connected to this.
 func set_view_target(target: Character) -> void:
 	if shown != null and is_instance_valid(shown):
-		shown.weapon.ammo_changed.disconnect(_on_ammo_changed)
-		shown.weapon.reload_started.disconnect(_update_weapon_label)
-		shown.weapon.reload_finished.disconnect(_update_weapon_label)
+		_watch_weapon(null)
+		shown.weapon_changed.disconnect(_on_shown_weapon_changed)
 		shown.damaged.disconnect(_on_shown_damaged)
 		shown.gear_changed.disconnect(_update_armor)
+		shown.inventory.changed.disconnect(_update_slots)
 	shown = target
 	_bomb_hud.set_view_target(target)
-	shown.weapon.ammo_changed.connect(_on_ammo_changed)
-	shown.weapon.reload_started.connect(_update_weapon_label)
-	shown.weapon.reload_finished.connect(_update_weapon_label)
+	_watch_weapon(shown.weapon)
+	shown.weapon_changed.connect(_on_shown_weapon_changed)
 	shown.damaged.connect(_on_shown_damaged)
 	shown.gear_changed.connect(_update_armor)
+	shown.inventory.changed.connect(_update_slots)
 	var spectating := shown != player
 	_spectate_label.visible = spectating
 	if spectating:
@@ -74,8 +83,8 @@ func set_view_target(target: Character) -> void:
 		_death_label.visible = false
 	_update_health()
 	_update_armor()
-	_on_ammo_changed(shown.weapon.magazine, shown.weapon.reserve)
-	_update_weapon_label()
+	_update_slots()
+	_show_weapon()
 
 
 ## Scales the HUD layout; 1.0 is the size it's designed for (a 720-pixel-tall window).
@@ -85,6 +94,7 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_health_label, factor)
 	UiScale.apply(_armor_icon, factor)
 	UiScale.apply(_armor_label, factor)
+	UiScale.apply(_slots_label, factor)
 	UiScale.apply(_death_label, factor)
 	UiScale.apply(_spectate_label, factor)
 	_crosshair.set_ui_scale(factor)
@@ -92,21 +102,92 @@ func set_ui_scale(factor: float) -> void:
 	_bomb_hud.set_ui_scale(factor)
 
 
-func _process(_delta: float) -> void:
-	if player != null and _crosshair.dynamic:
+func _process(delta: float) -> void:
+	if _slots_show_left > 0.0:
+		_slots_show_left -= delta
+		_slots_label.modulate.a = clampf(_slots_show_left / SLOTS_FADE_TIME, 0.0, 1.0)
+	if player != null and player.weapon != null and _crosshair.dynamic:
 		_crosshair.spread_degrees = player.weapon.get_inaccuracy()
 		_crosshair.queue_redraw()
 
 
+## Connects the ammo and reload labels to [param weapon] (null: to nothing), dropping the old one.
+func _watch_weapon(weapon: Weapon) -> void:
+	if _watched_weapon != null and is_instance_valid(_watched_weapon):
+		_watched_weapon.ammo_changed.disconnect(_on_ammo_changed)
+		_watched_weapon.reload_started.disconnect(_update_weapon_label)
+		_watched_weapon.reload_finished.disconnect(_update_weapon_label)
+	_watched_weapon = weapon
+	if weapon != null:
+		weapon.ammo_changed.connect(_on_ammo_changed)
+		weapon.reload_started.connect(_update_weapon_label)
+		weapon.reload_finished.connect(_update_weapon_label)
+
+
+## The character on show took out another weapon (D-094).
+func _on_shown_weapon_changed(weapon: Weapon) -> void:
+	_watch_weapon(weapon)
+	_show_weapon()
+	_update_slots()
+
+
+## Shows the ammo and name of the weapon in the shown character's hand.
+func _show_weapon() -> void:
+	var weapon := shown.weapon
+	if weapon == null:
+		_ammo_label.text = ""
+		_weapon_label.text = ""
+		return
+	_on_ammo_changed(weapon.magazine, weapon.reserve)
+	_update_weapon_label()
+
+
 func _on_ammo_changed(magazine: int, reserve: int) -> void:
+	var weapon := shown.weapon
+	if weapon == null or weapon.data.is_melee():
+		_ammo_label.text = ""
+		return
+	if weapon.data.is_grenade():
+		_ammo_label.text = "× %d" % magazine
+		_ammo_label.modulate = Color.WHITE
+		return
 	_ammo_label.text = "%d / %d" % [magazine, reserve]
-	var low := magazine <= shown.weapon.data.magazine_size * LOW_AMMO_FRACTION
+	var low := magazine <= weapon.data.magazine_size * LOW_AMMO_FRACTION
 	_ammo_label.modulate = LOW_AMMO_COLOR if low else Color.WHITE
 
 
 func _update_weapon_label() -> void:
 	var weapon := shown.weapon
+	if weapon == null:
+		_weapon_label.text = ""
+		return
 	_weapon_label.text = weapon.data.display_name + ("  ·  reloading" if weapon.is_reloading() else "")
+
+
+## Lists what the shown character carries, one line per slot, the held one bright (D-094). It
+## shows for a few seconds after a change, as CS's weapon list does.
+func _update_slots() -> void:
+	var lines: PackedStringArray = []
+	var held := shown.weapon
+	for slot in [WeaponData.Slot.PRIMARY, WeaponData.Slot.PISTOL, WeaponData.Slot.KNIFE, WeaponData.Slot.GRENADE]:
+		var text := ""
+		var holding := false
+		if slot == WeaponData.Slot.GRENADE:
+			var names: PackedStringArray = []
+			for grenade in shown.inventory.get_grenades():
+				names.append(grenade.data.display_name + (" ×%d" % grenade.magazine if grenade.magazine > 1 else ""))
+				holding = holding or grenade == held
+			text = ", ".join(names)
+		else:
+			var weapon := shown.inventory.get_in_slot(slot)
+			if weapon != null:
+				text = weapon.data.display_name
+				holding = weapon == held
+		if text != "":
+			lines.append(("» " if holding else "") + "%d  %s" % [slot + 1, text])
+	_slots_label.text = "\n".join(lines)
+	_slots_label.modulate.a = 1.0
+	_slots_show_left = SLOTS_SHOW_TIME
 
 
 func _on_shown_damaged(_amount: float, _zone: Hitbox.Zone, _attacker: Character) -> void:

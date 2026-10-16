@@ -68,6 +68,8 @@ const JUMP_SPEED := 0.5
 
 ## One shared material per class model, by model path.
 static var _materials: Dictionary = {}
+## What the hands show while the character holds nothing: a weapon without a model.
+static var _NO_GUN := WeaponData.new()
 
 ## The colour to paint the team parts in, kept until the model is built.
 var _team_color: Color = Teams.FRIENDLY_COLOR
@@ -83,6 +85,11 @@ var _hitbox_shapes: Array[CollisionShape3D] = []
 var _character: Character
 var _tree: AnimationTree
 var _gun_flash: Node3D
+## The bone attachment the gun hangs on, and the gun's data shown there (the held weapon's, M7).
+var _gun_mount: BoneAttachment3D
+var _gun_data: WeaponData
+## The weapon whose shots and reloads the body plays (the character's held one).
+var _weapon: Weapon
 var _flash_time_left: float = 0.0
 ## Smoothed 0..1 amounts for the crouch and the falling pose.
 var _crouch: float = 0.0
@@ -147,9 +154,8 @@ func attach(character: Character) -> void:
 	character.damaged.connect(_on_damaged)
 	character.died.connect(_on_died)
 	character.respawned.connect(_on_respawned)
-	if character.weapon != null:
-		character.weapon.fired.connect(_on_fired)
-		character.weapon.reload_started.connect(_on_reload_started)
+	character.weapon_changed.connect(_on_weapon_changed)
+	_on_weapon_changed(character.weapon)
 
 
 ## Makes this body that of another class: the model and the hit zones are replaced by those of
@@ -174,6 +180,7 @@ func set_class(data: ClassData) -> void:
 	_skeleton = null
 	_tree = null
 	_gun_flash = null
+	_gun_mount = null
 	_flash_time_left = 0.0
 	model = data.model
 	hit_zones = data.hit_zones
@@ -367,10 +374,35 @@ func _build_gun() -> void:
 	mount.name = "Gun"
 	mount.bone_name = "weapon"
 	_skeleton.add_child(mount)
-	mount.add_child(GUN_SCENE.instantiate())
+	_gun_mount = mount
 	_gun_flash = GUN_FLASH_SCENE.instantiate()
 	_gun_flash.position = GUN_MUZZLE
 	mount.add_child(_gun_flash)
+	_show_gun(_gun_data)
+
+
+## Shows [param data]'s model in the hands (the rifle's for null data, as the body scene was made
+## with; nothing for a weapon without a model), with the muzzle flash at its muzzle.
+func _show_gun(data: WeaponData) -> void:
+	_gun_data = data
+	if _gun_mount == null:
+		return
+	var old := _gun_mount.get_node_or_null("GunModel")
+	if old != null:
+		_gun_mount.remove_child(old)
+		old.queue_free()
+	var scene: PackedScene = GUN_SCENE if data == null else data.model
+	if scene == null:
+		return
+	var model := scene.instantiate() as Node3D
+	model.name = "GunModel"
+	_gun_mount.add_child(model)
+	_gun_flash.position = data.muzzle_point if data != null else GUN_MUZZLE
+
+
+## The gun in the hands, for tests: the model node on the weapon bone (null if none).
+func get_gun_model() -> Node3D:
+	return _gun_mount.get_node_or_null("GunModel") as Node3D if _gun_mount != null else null
 
 
 ## Adds the AnimationTree next to the model's AnimationPlayer. Its root node is the model's root
@@ -399,6 +431,21 @@ func _first_shape_of(zone: Hitbox.Zone) -> CollisionShape3D:
 		if _hitboxes[i].zone == zone:
 			return _hitbox_shapes[i]
 	return null
+
+
+## The character took out another weapon: play its shots and reloads, and hold its model.
+func _on_weapon_changed(weapon: Weapon) -> void:
+	if _weapon != null and is_instance_valid(_weapon):
+		if _weapon.fired.is_connected(_on_fired):
+			_weapon.fired.disconnect(_on_fired)
+			_weapon.reload_started.disconnect(_on_reload_started)
+	_weapon = weapon
+	if weapon != null:
+		weapon.fired.connect(_on_fired)
+		weapon.reload_started.connect(_on_reload_started)
+	var data := weapon.data if weapon != null else _NO_GUN
+	if data != _gun_data:
+		_show_gun(data)
 
 
 func _on_fired(_spray_shot: int) -> void:

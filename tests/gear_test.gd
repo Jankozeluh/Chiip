@@ -1,5 +1,6 @@
 extends Node3D
-## Automated checks of a character's gear (M7): armor and helmet (D-093). Run without a window:
+## Automated checks of a character's gear (M7): armor and helmet (D-093), and the inventory:
+## slots, loadouts, switching, dropping and picking up (D-094). Run without a window:
 ##
 ##     Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/gear_test.tscn
 ##
@@ -7,21 +8,38 @@ extends Node3D
 ## and without a helmet, legs never covered, armor giving out, the Bulwark's Plated perk, the
 ## bomb's damage ignoring armor, death taking the gear away, a real bullet passing its weapon on,
 ## the HUD's armor number and shield, and the console's armor command in the real game scene.
+## The inventory: what fits in which slot, switching through the real keys with draw times (the
+## Rifleman's Quick Hands), Q, grenades cycling, G dropping a gun with its ammo, walking over a gun,
+## E swapping for one, the best gun dropping on death, the HUD and the body following the weapon
+## in hand, and the loadouts the rules hand out (a fresh one every round, the class's in team
+## respawn and practice).
 ## Quits with the number of failed checks as the exit code (0 means everything passed).
 
 const PLAYER_SCENE := preload("res://player/player.tscn")
 const CHARACTER_SCENE := preload("res://characters/character.tscn")
 const HUD_SCENE := preload("res://ui/hud.tscn")
 const MAIN_SCENE := preload("res://main.tscn")
+const BOT_SCENE := preload("res://bots/bot.tscn")
+## How long the HUD's slot list takes to fade out after a change (shows 2.5 s, fades in the last 0.5 s).
+const HUD_SLOTS_TIME := 2.7
 const RIFLE := preload("res://weapons/rifle.tres")
 const CARBINE := preload("res://weapons/carbine.tres")
 const BULWARK := preload("res://characters/crew/classes/bulwark.tres")
+const SCOUT := preload("res://characters/crew/classes/scout.tres")
+const PISTOL := preload("res://weapons/pistol.tres")
+const KNIFE := preload("res://weapons/knife.tres")
+const SMG := preload("res://weapons/smg.tres")
+const FRAG := preload("res://weapons/frag.tres")
+const FLASHBANG := preload("res://weapons/flashbang.tres")
+const SMOKE := preload("res://weapons/smoke.tres")
+const MAP_SCENE := preload("res://maps/test_map.tscn")
 
 var _failures: int = 0
 var _player: Character
 
 
 func _ready() -> void:
+	Weapon.silent = true
 	_add_box(Vector3(0, -0.5, 0), Vector3(100, 1, 100))
 	_player = PLAYER_SCENE.instantiate()
 	_silence(_player)
@@ -41,7 +59,13 @@ func _run_all() -> void:
 	await _test_death_takes_gear()
 	await _test_real_bullet()
 	await _test_hud()
+	await _test_slots()
+	await _test_switching()
+	await _test_dropping_and_picking_up()
+	await _test_hud_and_body_follow()
 	await _test_console()
+	await _test_round_loadouts()
+	await _test_respawn_and_practice_loadouts()
 
 
 # --- Armor (D-093) ---
@@ -165,6 +189,182 @@ func _test_hud() -> void:
 	await _wait_ticks(2)
 
 
+# --- The inventory (D-094) ---
+
+
+func _test_slots() -> void:
+	var inventory := _player.inventory
+	var starts := inventory.get_in_slot(WeaponData.Slot.PRIMARY) == _player.weapon and _player.weapon.data.id == &"rifle"
+	var pistol := inventory.give(PISTOL)
+	var knife := inventory.give(KNIFE)
+	var second_pistol := inventory.give(PISTOL)
+	var frag := inventory.give(FRAG)
+	var flash := inventory.give(FLASHBANG)
+	var flash_again := inventory.give(FLASHBANG)
+	var third_flash := inventory.give(FLASHBANG)
+	var second_frag := inventory.give(FRAG)
+	var smoke := inventory.give(SMOKE)
+	_check("The scene's rifle is the primary in hand; a pistol, the knife and grenades go into their slots, and nothing more than fits",
+			starts and pistol != null and knife != null and second_pistol == null and frag != null and flash == flash_again
+					and flash.magazine == 2 and third_flash == null and second_frag == null and smoke != null
+					and inventory.get_grenade_count() == 4 and _player.weapon.data.id == &"rifle",
+			"in hand %s, flashbangs %d, grenades %d" % [_player.weapon.data.id, flash.magazine, inventory.get_grenade_count()])
+	_check("Weapons not in hand are hidden and idle",
+			not pistol.visible and pistol.process_mode == Node.PROCESS_MODE_DISABLED and _player.weapon.visible,
+			"pistol visible %s" % pistol.visible)
+
+
+func _test_switching() -> void:
+	var inventory := _player.inventory
+	var rifle := _player.weapon
+	var pistol := inventory.get_in_slot(WeaponData.Slot.PISTOL)
+	await _wait_ticks(2)
+	_press("slot_pistol")
+	await _wait_ticks(2)
+	var drawing := _player.weapon == pistol and pistol.is_drawing()
+	var shots := [0]
+	pistol.fired.connect(func(_n: int) -> void: shots[0] += 1)
+	Input.action_press("shoot")
+	await _wait_ticks(20)
+	Input.action_release("shoot")
+	var during_draw: int = shots[0]
+	var draw_time := inventory.get_draw_time(PISTOL)
+	await _wait_seconds(draw_time)
+	Input.action_press("shoot")
+	await _wait_ticks(3)
+	Input.action_release("shoot")
+	await _wait_ticks(3)
+	_check("Key 2 takes out the pistol: it can't fire for its draw time (%.2f s), then it does" % draw_time,
+			drawing and during_draw == 0 and shots[0] == 1, "drawing %s, shots during the draw %d, after %d" % [drawing, during_draw, shots[0]])
+	_check("The Rifleman's Quick Hands draws 15% faster than the Scout",
+			_near(draw_time, PISTOL.draw_time * 0.85) and _player.class_data.id == &"rifleman", "%.3f s" % draw_time)
+	_press("last_weapon")
+	await _wait_ticks(2)
+	var back := _player.weapon == rifle
+	_press("slot_grenade")
+	await _wait_ticks(2)
+	var first := _player.weapon.data.id
+	_press("slot_grenade")
+	await _wait_ticks(2)
+	var second := _player.weapon.data.id
+	_press("slot_grenade")
+	await _wait_ticks(2)
+	var third := _player.weapon.data.id
+	_press("slot_grenade")
+	await _wait_ticks(2)
+	_check("Q goes back to the last weapon; 4 cycles through the grenades",
+			back and first == &"frag" and second == &"flashbang" and third == &"smoke" and _player.weapon.data.id == &"frag",
+			"back %s, grenades %s %s %s %s" % [back, first, second, third, _player.weapon.data.id])
+	_press("slot_knife")
+	await _wait_ticks(2)
+	_check("Key 3 takes out the knife", _player.weapon.data.id == &"knife", "in hand %s" % _player.weapon.data.id)
+	_press("slot_primary")
+	await _wait_seconds(1.0)
+
+
+func _test_dropping_and_picking_up() -> void:
+	var inventory := _player.inventory
+	_player.global_position = Vector3.ZERO
+	_player.aim_at(_player.get_eye_position() + Vector3(0, 0, -5))
+	await _wait_ticks(2)
+	var rifle := _player.weapon
+	rifle.magazine = 17
+	_press("drop_weapon")
+	await _wait_ticks(2)
+	var pickups := _pickups()
+	var pickup: WeaponPickup = pickups[0] if pickups.size() == 1 else null
+	var dropped := pickup != null and pickup.data.id == &"rifle" and pickup.magazine == 17 and pickup.reserve == 90 \
+			and inventory.get_in_slot(WeaponData.Slot.PRIMARY) == null and _player.weapon.data.id == &"pistol"
+	await _wait_seconds(0.6)
+	_check("G drops the rifle in front of you with its ammo, and the pistol comes out",
+			dropped and pickup.has_landed() and _player.weapon.data.id == &"pistol",
+			"pickups %d, landed %s, in hand %s" % [pickups.size(), pickup.has_landed() if pickup else false, _player.weapon.data.id])
+	# Walking over it within a second doesn't take it back; after that, it does.
+	_player.global_position = pickup.global_position * Vector3(1, 0, 1)
+	await _wait_ticks(4)
+	var kept_off := inventory.get_in_slot(WeaponData.Slot.PRIMARY) == null
+	await _wait_seconds(0.6)
+	var primary := inventory.get_in_slot(WeaponData.Slot.PRIMARY)
+	_check("You can't take back a gun you just dropped for a second; then walking over it takes it, ammo and all, without switching",
+			kept_off and primary != null and primary.magazine == 17 and _pickups().is_empty() and _player.weapon.data.id == &"pistol",
+			"kept off %s, primary %s, in hand %s" % [kept_off, primary.data.id if primary else &"none", _player.weapon.data.id])
+	# A gun on the floor doesn't go into a full slot by walking over it; E swaps.
+	var smg_pickup := WeaponPickup.spawn(self, SMG, 30, 120, Vector3(0, 0.5, -1.2), 0.0)
+	_player.global_position = Vector3(0, 0, -1.2)
+	await _wait_seconds(0.4)
+	var not_taken := _pickups().size() == 1 and inventory.get_in_slot(WeaponData.Slot.PRIMARY).data.id == &"rifle"
+	_player.global_position = Vector3.ZERO
+	await _wait_ticks(2)
+	_player.aim_at(smg_pickup.global_position)
+	await _wait_ticks(1)
+	Input.action_press("use")
+	await _wait_ticks(2)
+	Input.action_release("use")
+	await _wait_ticks(2)
+	var after := _pickups()
+	_check("Walking over a gun doesn't take it into a full slot; E while looking at it swaps: it's in hand and your rifle is on the floor",
+			not_taken and _player.weapon.data.id == &"smg" and after.size() == 1 and (after[0] as WeaponPickup).data.id == &"rifle"
+					and (after[0] as WeaponPickup).magazine == 17,
+			"walked over %s, in hand %s, on the floor %s" % [not_taken, _player.weapon.data.id, after.map(func(p: WeaponPickup) -> StringName: return p.data.id)])
+	for node in _pickups():
+		node.queue_free()
+	await _wait_ticks(2)
+	# Death: the best gun falls where the character was.
+	var victim := await _add_target(Vector3(4, 0, 0))
+	victim.inventory.give(PISTOL)
+	victim.inventory.give(SMG)
+	victim.take_damage(500.0, Hitbox.Zone.CHEST, _player)
+	await _wait_ticks(3)
+	var left := _pickups()
+	_check("Dying drops your best gun (the primary) where you fell; the pistol and the rest are lost with you",
+			left.size() == 1 and (left[0] as WeaponPickup).data.id == &"smg" and (left[0] as WeaponPickup).global_position.distance_to(victim.global_position) < 1.5,
+			"on the floor %s" % [left.map(func(p: WeaponPickup) -> StringName: return p.data.id)])
+	for node in _pickups():
+		node.queue_free()
+	victim.queue_free()
+	await _wait_ticks(2)
+
+
+func _test_hud_and_body_follow() -> void:
+	var hud := HUD_SCENE.instantiate()
+	add_child(hud)
+	hud.set_player(_player)
+	var bot := BOT_SCENE.instantiate() as Character
+	bot.team = 1
+	bot.position = Vector3(-6, 0, 0)
+	add_child(bot)
+	await _wait_ticks(2)
+	bot.inventory.set_loadout([KNIFE, PISTOL] as Array[WeaponData])
+	await _wait_ticks(2)
+	var body_gun := bot.body.get_gun_model()
+	var body_ok := _shows_model(body_gun, PISTOL)
+	bot.inventory.hold(bot.inventory.get_in_slot(WeaponData.Slot.KNIFE))
+	await _wait_ticks(2)
+	_check("A body holds the model of the weapon in hand, and follows a switch",
+			body_ok and _shows_model(bot.body.get_gun_model(), KNIFE), "pistol shown %s" % body_ok)
+	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.PISTOL), true)
+	await _wait_ticks(2)
+	var ammo := hud.get_node("AmmoLabel") as Label
+	var name_label := hud.get_node("WeaponLabel") as Label
+	var slots := hud.get_node("SlotsLabel") as Label
+	var held_pistol := _player.weapon
+	var shows_pistol := ammo.text == "%d / %d" % [held_pistol.magazine, held_pistol.reserve] and name_label.text == PISTOL.display_name
+	_player.weapon.magazine = 3
+	_player.weapon.ammo_changed.emit(3, 45)
+	var follows := ammo.text == "3 / 45"
+	_check("The HUD follows the weapon in hand: its ammo, its name and the slot list with it marked",
+			shows_pistol and follows and slots.text.contains("» 2  " + PISTOL.display_name) and slots.text.contains("1  ") and slots.modulate.a > 0.9,
+			"ammo '%s', name '%s', slots '%s'" % [ammo.text, name_label.text, slots.text.replace("\n", " | ")])
+	_player.inventory.hold(_player.inventory.get_in_slot(WeaponData.Slot.KNIFE), true)
+	await _wait_ticks(2)
+	_check("...the knife shows no ammo", ammo.text == "" and name_label.text == "Knife", "ammo '%s'" % ammo.text)
+	await _wait_seconds(HUD_SLOTS_TIME)
+	_check("...and the slot list fades out a few seconds after a change", slots.modulate.a < 0.05, "alpha %.2f" % slots.modulate.a)
+	hud.queue_free()
+	bot.queue_free()
+	await _wait_ticks(2)
+
+
 func _test_console() -> void:
 	_player.queue_free()
 	await _wait_ticks(2)
@@ -186,7 +386,128 @@ func _test_console() -> void:
 	await _wait_ticks(2)
 
 
+func _test_round_loadouts() -> void:
+	var map := MAP_SCENE.instantiate()
+	add_child(map)
+	var player := map.get_node("Player") as Character
+	_silence(player)
+	var rounds := RoundManager.new()
+	rounds.settings = _settings()
+	rounds.rng.seed = 3
+	map.add_child(rounds)
+	await _wait_ticks(3)
+	var everyone_ok := rounds.get_participants().all(func(c: Character) -> bool:
+		return c.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id) == [&"knife", &"pistol"] and c.weapon.data.id == &"pistol")
+	_check("A round starts everyone with the knife and the Sparrow in hand, nothing else (D-090)", everyone_ok,
+			"you: %s" % [player.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id)])
+	await _wait_for_live(rounds)
+	player.inventory.give(SMG)
+	player.set_armor(100.0, true)
+	WeaponPickup.spawn(map, SMG, 10, 0, player.global_position + Vector3(3, 1, 0), 0.0)
+	rounds.get_members(1)[0].take_damage(500.0, Hitbox.Zone.CHEST, player)
+	for mate in rounds.get_members(1):
+		mate.take_damage(500.0, Hitbox.Zone.CHEST, player)
+	await _wait_for_phase(rounds, RoundManager.Phase.FREEZE)
+	await _wait_ticks(2)
+	var fresh := player.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id) == [&"knife", &"pistol"] \
+			and player.armor == 0.0 and not player.has_helmet
+	var floor_clear := _pickups(map).is_empty()
+	_check("The next round starts fresh: the bought SMG and armor are gone, and so are the guns on the floor",
+			fresh and floor_clear, "you: %s, armor %.0f, guns on the floor %d" % [
+				player.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id), player.armor, _pickups(map).size()])
+	remove_child(map)
+	map.queue_free()
+	await _wait_ticks(2)
+
+
+func _test_respawn_and_practice_loadouts() -> void:
+	var map := MAP_SCENE.instantiate()
+	map.get_node("Player").free()
+	add_child(map)
+	var match_rules := RespawnMatch.new()
+	match_rules.settings = _settings()
+	match_rules.rng.seed = 4
+	map.add_child(match_rules)
+	await _wait_ticks(3)
+	var by_class := match_rules.get_participants().all(func(c: Character) -> bool:
+		return c.weapon != null and c.weapon.data == c.class_data.loadout[0] and c.inventory.get_weapons().size() == 4)
+	var scout: Character = null
+	for c in match_rules.get_participants():
+		if c.class_data == SCOUT:
+			scout = c
+	_check("Team respawn: everyone spawns with their class's loadout (the Scout: Hornet, Sparrow, knife, Flashbang)",
+			by_class and scout != null and scout.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id) == [&"smg", &"pistol", &"knife", &"flashbang"],
+			"Scout: %s" % [scout.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id) if scout else []])
+	remove_child(map)
+	map.queue_free()
+	await _wait_ticks(2)
+	var practice_map := MAP_SCENE.instantiate()
+	add_child(practice_map)
+	_silence(practice_map.get_node("Player"))
+	var arena := ArenaRules.new()
+	arena.bot_count = 2
+	practice_map.add_child(arena)
+	await _wait_ticks(3)
+	var practice_player := practice_map.get_node("Player") as Character
+	var practice_ok := arena.get_bots().all(func(c: Character) -> bool: return c.weapon != null and c.weapon.data == c.class_data.loadout[0])
+	_check("Practice: you and the bots get your classes' loadouts", practice_ok and practice_player.weapon.data.id == &"rifle"
+			and practice_player.inventory.get_weapons().size() == 4, "you: %s" % [practice_player.inventory.get_weapons().map(func(w: Weapon) -> StringName: return w.data.id)])
+	remove_child(practice_map)
+	practice_map.queue_free()
+	await _wait_ticks(2)
+
+
 # --- Helpers ---
+
+
+func _settings() -> MatchSettings:
+	var settings := MatchSettings.new()
+	settings.freeze_time = 0.5
+	settings.round_time = 30.0
+	settings.round_end_time = 0.5
+	settings.rounds_to_win = 15
+	settings.bomb_rounds = false
+	return settings
+
+
+## Every gun on the floor (under [param root], or anywhere in this test).
+func _pickups(root: Node = null) -> Array:
+	return get_tree().get_nodes_in_group(WeaponPickup.GROUP).filter(func(node: Node) -> bool:
+		return not node.is_queued_for_deletion() and (root == null or root.is_ancestor_of(node)))
+
+
+## True if [param model] is [param data]'s model (or there's none when the weapon has no model yet).
+func _shows_model(model: Node3D, data: WeaponData) -> bool:
+	if data.model == null:
+		return model == null
+	return model != null and model.scene_file_path == data.model.resource_path
+
+
+## Sends an action press and release the way a key does (through the input system).
+func _press(action: String) -> void:
+	for pressed in [true, false]:
+		var event := InputEventAction.new()
+		event.action = action
+		event.pressed = pressed
+		Input.parse_input_event(event)
+
+
+func _wait_seconds(seconds: float) -> void:
+	await _wait_ticks(ceili(seconds * Engine.physics_ticks_per_second) + 1)
+
+
+func _wait_for_live(manager: RoundManager) -> void:
+	var ticks := 0
+	while manager.phase != RoundManager.Phase.LIVE and ticks < 128 * 10:
+		await get_tree().physics_frame
+		ticks += 1
+
+
+func _wait_for_phase(manager: RoundManager, phase: RoundManager.Phase) -> void:
+	var ticks := 0
+	while manager.phase != phase and ticks < 128 * 10:
+		await get_tree().physics_frame
+		ticks += 1
 
 
 ## A character without a controller (it stands still) on team 1, with the class [param data].

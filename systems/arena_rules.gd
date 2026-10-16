@@ -56,7 +56,15 @@ func add_bot(difficulty: BotDifficulty = bot_difficulty, team: int = 1) -> Chara
 	bot.rotation.y = spot.basis.get_euler().y
 	get_parent().add_child(bot)
 	bot.died.connect(_on_died.bind(bot))
+	give_loadout(bot)
 	return bot
+
+
+## Gives [param character] its class's loadout (D-090: practice has no money; the buy menu gives
+## anything for free). A class without a loadout keeps what it carries.
+func give_loadout(character: Character) -> void:
+	if character.class_data != null and not character.class_data.loadout.is_empty():
+		character.inventory.set_loadout(character.class_data.loadout)
 
 
 ## Gives [param character] the class [param data]. Practice mode has no freeze time, so it
@@ -88,6 +96,8 @@ func get_bots() -> Array[Character]:
 
 
 func _add_starting_bots() -> void:
+	if _player != null:
+		give_loadout(_player)
 	for i in bot_count:
 		add_bot()
 
@@ -98,6 +108,7 @@ func _on_died(_killer: Character, victim: Character) -> void:
 		return
 	var spot := _pick_from_group(PLAYER_SPAWN_GROUP, _player_start) if victim == _player else _pick_bot_spawn()
 	victim.respawn(spot.origin, spot.basis.get_euler().y)
+	give_loadout(victim)
 
 
 func _pick_bot_spawn() -> Transform3D:

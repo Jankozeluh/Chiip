@@ -149,6 +149,10 @@ func _play_rounds() -> void:
 	settings.freeze_time = 0.5
 	settings.round_end_time = 0.5
 	settings.rounds_to_win = 15
+	# The maps' timing rules (D-061) are measured at rifle speed: everyone carries the Ram here, as
+	# when this check was written. M7's fresh pistol rounds run about 10% faster (240 u/s).
+	settings.round_loadout = [preload("res://weapons/knife.tres"), preload("res://weapons/pistol.tres"),
+			preload("res://weapons/rifle.tres")] as Array[WeaponData]
 	_rounds = RoundManager.new()
 	_rounds.settings = settings
 	_rounds.rng.seed = 7

@@ -5,6 +5,12 @@
 [ext_resource type="Resource" path="res://assets/models/crew/marksman_hit_zones.tres" id="hit_zones"]
 [ext_resource type="PackedScene" path="res://assets/models/crew/marksman_arms.glb" id="arms_model"]
 
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="Resource" path="res://weapons/sniper.tres" id="loadout_sniper"]
+[ext_resource type="Resource" path="res://weapons/pistol.tres" id="loadout_pistol"]
+[ext_resource type="Resource" path="res://weapons/knife.tres" id="loadout_knife"]
+[ext_resource type="Resource" path="res://weapons/smoke.tres" id="loadout_smoke"]
+
 [resource]
 script = ExtResource("class_script")
 id = &"marksman"
@@ -20,3 +26,4 @@ perk_name = "Steady"
 perk_description = "Scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster."
 scoped_recovery_factor = 1.3
 scope_in_time_factor = 0.8
+loadout = Array[ExtResource("weapon_data_script")]([ExtResource("loadout_sniper"), ExtResource("loadout_pistol"), ExtResource("loadout_knife"), ExtResource("loadout_smoke")])

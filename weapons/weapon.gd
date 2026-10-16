@@ -6,6 +6,11 @@ extends Node3D
 ## every physics tick and calls [method reload]. Other nodes (HUD, debug
 ## overlay) listen to the signals instead of polling.
 ##
+## Every weapon a character carries is one of these nodes (M7, D-094): the character's [Inventory]
+## makes them with [method create] from a [WeaponData] (the generic scene weapons/weapon.tscn),
+## keeps the ones it isn't holding hidden and idle ([method holster]), and [method draw]s the one it
+## switches to: it can't fire until its draw time has passed.
+##
 ## First person (M6, D-079): the [code]Viewmodel[/code] holds the holder's class arms
 ## ([method set_arms], a generated [code]<class>_arms.glb[/code]) with [member gun_model] on their
 ## weapon bone. Their clips play the draw, the shot kick and the reload; sway (the gun lags
@@ -21,6 +26,9 @@ signal reload_started
 signal reload_finished
 ## Emitted when a bullet hits something. See [member last_hit] for the keys.
 signal hit_landed(hit: Dictionary)
+
+## The generic weapon scene [method create] instantiates (loaded when needed: it uses this script).
+const SCENE_PATH := "res://weapons/weapon.tscn"
 
 ## When the reload sound plays, as fractions of the reload time: magazine out, magazine in, bolt.
 const RELOAD_SOUND_STEPS: Array[float] = [0.1, 0.6, 0.85]
@@ -51,6 +59,10 @@ const HIT_HEAD_SOUND := preload("res://assets/sounds/hit_head.wav")
 ## How much louder a headshot sounds than other hits, in dB, and how far it carries (unit size, metres).
 const HEADSHOT_VOLUME_DB := 6.0
 const HEADSHOT_UNIT_SIZE := 8.0
+
+## Plays no sounds at all, for every weapon (tests: headless runs have no audio device, and
+## sounds that never finish "playing" would be reported as leaks at exit).
+static var silent: bool = false
 
 ## The weapon's stats.
 @export var data: WeaponData
@@ -101,6 +113,10 @@ var _arms_color: Color = Teams.FRIENDLY_COLOR
 var _sway: Vector2 = Vector2.ZERO
 var _last_view_angles: Vector2 = Vector2.ZERO
 var _bob_phase: float = 0.0
+## Seconds until a freshly drawn weapon can fire (see [method draw]).
+var _draw_left: float = 0.0
+## Arms handed over before the weapon was ready: [scene, material], put in by _ready.
+var _pending_arms: Array = []
 
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
@@ -113,6 +129,41 @@ var _bob_phase: float = 0.0
 func _ready() -> void:
 	magazine = data.magazine_size
 	reserve = data.reserve_ammo
+	if not _pending_arms.is_empty():
+		set_arms(_pending_arms[0], _pending_arms[1])
+		_pending_arms.clear()
+
+
+## A new weapon node for [param weapon_data]: the generic scene with the weapon's own model and
+## muzzle. Its magazine and reserve fill up when it enters the tree.
+static func create(weapon_data: WeaponData) -> Weapon:
+	var weapon := (load(SCENE_PATH) as PackedScene).instantiate() as Weapon
+	weapon.name = String(weapon_data.id).to_pascal_case() if weapon_data.id != &"" else "Weapon"
+	weapon.data = weapon_data
+	weapon.gun_model = weapon_data.model
+	weapon.muzzle_point = weapon_data.muzzle_point
+	return weapon
+
+
+## Takes the weapon out (on a switch): it can't fire or start a reload for [param seconds], and
+## the first-person arms play the draw.
+func draw(seconds: float) -> void:
+	_draw_left = maxf(seconds, 0.0)
+	_trigger_released = false
+	_play_arms("fp_draw")
+
+
+## Puts the weapon away (on a switch): the trigger is let go and a reload in progress is lost,
+## as in CS. Its ammo and recoil stay as they were.
+func holster() -> void:
+	trigger_held = false
+	_reload_time_left = 0.0
+	_draw_left = 0.0
+
+
+## True while the weapon is being drawn and can't fire yet.
+func is_drawing() -> bool:
+	return _draw_left > 0.0
 
 
 ## Shows or hides the first-person model (gun, muzzle flash, kick). Only whoever looks through
@@ -130,12 +181,17 @@ func set_viewmodel_visible(on: bool) -> void:
 ## body's texture, see [method CrewBody.material_for]). The gun goes on their weapon bone with the
 ## muzzle flash at its muzzle, and the arms draw the gun. Calling it again swaps the arms.
 func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
+	if not is_node_ready():
+		# Not in the game yet (a character outside the tree got a weapon): put them in on _ready.
+		_pending_arms = [arms_scene, material]
+		return
 	if _arms != null:
 		_muzzle_flash.reparent(_viewmodel, false)
 		_viewmodel.remove_child(_arms)
 		_arms.queue_free()
 	_arms_meshes.clear()
 	_arms = arms_scene.instantiate() as Node3D
+	var model := gun_model if gun_model != null else (data.model if data != null else null)
 	_arms.name = "Arms"
 	_viewmodel.add_child(_arms)
 	for node in _arms.find_children("*", "MeshInstance3D", true, false):
@@ -145,12 +201,12 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 		_arms_meshes.append(mesh)
 	set_arms_team_color(_arms_color)
 	var skeletons := _arms.find_children("*", "Skeleton3D", true, false)
-	if not skeletons.is_empty() and gun_model != null:
+	if not skeletons.is_empty() and model != null:
 		var mount := BoneAttachment3D.new()
 		mount.name = "Gun"
 		mount.bone_name = "weapon"
 		(skeletons[0] as Skeleton3D).add_child(mount)
-		var gun := gun_model.instantiate()
+		var gun := model.instantiate()
 		mount.add_child(gun)
 		for node in gun.find_children("*", "MeshInstance3D", true, false):
 			(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -202,10 +258,13 @@ func is_reloading() -> bool:
 	return _reload_time_left > 0.0
 
 
-## Full magazine and reserve again, no reload or recoil in progress (on respawn).
+## Full magazine and reserve again, no reload or recoil in progress (on respawn). A grenade keeps
+## its count (its "magazine" is how many you carry).
 func refill() -> void:
-	magazine = data.magazine_size
-	reserve = data.reserve_ammo
+	if not data.is_grenade():
+		magazine = data.magazine_size
+		reserve = data.reserve_ammo
+	_draw_left = 0.0
 	_reload_time_left = 0.0
 	_spray_position = 0.0
 	_cooldown = 0.0
@@ -218,7 +277,7 @@ func refill() -> void:
 
 ## Starts a reload if the magazine isn't full and there are spare rounds.
 func reload() -> void:
-	if is_reloading() or magazine >= data.magazine_size or reserve <= 0:
+	if is_reloading() or is_drawing() or magazine >= data.magazine_size or reserve <= 0:
 		return
 	_reload_time_left = data.reload_time
 	reload_started.emit()
@@ -230,6 +289,13 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown -= delta
 	_time_since_shot += delta
+	if _draw_left > 0.0:
+		_draw_left = maxf(_draw_left - delta, 0.0)
+		if not trigger_held:
+			_trigger_released = true
+		_recover_recoil(delta)
+		_cooldown = maxf(_cooldown, 0.0)
+		return
 	if is_reloading():
 		_update_reload(delta)
 	elif trigger_held:
@@ -307,6 +373,8 @@ func _recover_recoil(delta: float) -> void:
 func _try_fire() -> void:
 	if _cooldown > 0.0:
 		return
+	if data.is_melee() or data.is_grenade():
+		return  # The knife and grenades attack their own way (M7 tasks 6 and 8).
 	if not data.automatic and not _trigger_released:
 		return
 	if magazine <= 0:
@@ -424,7 +492,7 @@ func _spawn_impact(hit_position: Vector3, normal: Vector3, collider: Object) -> 
 ## surface it hit (gravel, metal, wood or hard, see [Surfaces]), a thwack on a
 ## body, a louder "dink" on a head. A weapon without a shot sound (tests) is silent here too.
 func _play_impact_sound(hit: Dictionary) -> void:
-	if data.shot_sound == null or _impacts.is_empty():
+	if silent or data.shot_sound == null or _impacts.is_empty():
 		return
 	var audio := _impacts.back().get_node_or_null("Audio") as AudioStreamPlayer3D
 	if audio == null:
@@ -466,7 +534,7 @@ func _update_reload(delta: float) -> void:
 ## other characters' guns sound from where they are. [param handling] is for
 ## clicks and reloads, otherwise it's a shot.
 func _play(stream: AudioStream, handling: bool) -> void:
-	if stream == null:
+	if stream == null or silent:
 		return
 	# Changing the stream stops sounds that are still playing (e.g. the previous
 	# shot), so only change it when it's a different sound.

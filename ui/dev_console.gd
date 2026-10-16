@@ -12,9 +12,9 @@ extends CanvasLayer
 ## scroll back through the last [constant HISTORY_LINES], so a long answer such
 ## as [code]help[/code] is never lost.
 
-## How many output lines show at once. The panel is as tall as this many lines
+## How many output lines show at once (24 since M7 added commands). The panel is as tall as this many lines
 ## need: [code]help[/code] (one line per command, plus the echo of the command) fits.
-const VISIBLE_LINES := 18
+const VISIBLE_LINES := 24
 ## How many output lines are kept to scroll back through.
 const HISTORY_LINES := 200
 ## How many lines the mouse wheel scrolls per notch.

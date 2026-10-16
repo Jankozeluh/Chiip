@@ -49,6 +49,12 @@ const PATHS: Array[String] = [
 ## What the perk does, in plain words, as the menu shows it.
 @export_multiline var perk_description: String = ""
 
+@export_group("Loadout")
+## What the class spawns with where there is no money (team respawn and practice, D-090): its
+## signature gun, the Sparrow, the knife and one grenade. Rounds give everyone the same fresh
+## loadout instead ([member MatchSettings.round_loadout]).
+@export var loadout: Array[WeaponData] = []
+
 @export_group("Perk values (stored, applied from M7)")
 ## Multiplies the reload time. Rifleman: 0.85 (reloads 15% faster).
 @export var reload_time_factor: float = 1.0

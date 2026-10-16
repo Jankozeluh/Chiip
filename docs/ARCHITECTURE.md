@@ -114,6 +114,9 @@ Chiip/
 | `weapons/rifle.tres` | The Ram's data (the AK-style rifle; the M2 rifle's numbers) |
 | `weapons/carbine.tres`, `smg.tres`, `shotgun.tres`, `sniper.tres`, `pistol.tres`, `hand_cannon.tres`, `knife.tres`, `frag.tres`, `flashbang.tres`, `smoke.tres` | The rest of the arsenal (D-091), one data file per weapon, named after its role; only `display_name` holds its (provisional) name |
 | `ui/armor_icon.gd` | `ArmorIcon`: the HUD's pixel-art shield drawn in code (an "H" on it with a helmet, dimmed at 0 armor), next to the HUD's `ArmorLabel` (D-093) |
+| `characters/inventory.gd` | `Inventory` (a child node of every character, D-094): the weapons carried by slot, the one in hand (`hold()`, draw times with the Rifleman's Quick Hands), `give()`, `remove()`, `drop()`, `drop_on_death()`, `set_loadout()`, walking over guns (`update_pickups()`), the E swap (`try_swap()`), signal `changed` |
+| `weapons/weapon.tscn` | The generic weapon scene: `Weapon` script, audio players and the viewmodel; `Weapon.create(data)` makes every carried weapon from it with the data's model (`rifle.tscn` stays the scenes' starting rifle) |
+| `weapons/weapon_pickup.gd` | `WeaponPickup`: a gun lying on the floor with its ammo (group `weapon_pickups`), falling to the floor when dropped, ignoring its dropper for 1 s; only the model, no collision |
 | `characters/armor.gd` | `Armor` (static, D-093): CS:GO's armor rule, `apply()` (health damage and armor left for one hit), `covers()`, `hits_to_kill()`. Used by `Character.take_damage()` and the balancing table |
 | `tools/weapon_table.gd`, `tools/export_weapon_table.gd` | `WeaponTable` builds the balancing table from the data files (stats plus shots to kill, damage per second and helmet headshots at 10 and 30 m, through `Armor`); the tool writes it to `docs/weapons.csv` (D-091) |
 | `docs/weapons.csv` (+ `.import`) | The exported balancing table (open it in a spreadsheet). The `.import` file (importer "keep") stops Godot from importing it as a translation |
@@ -222,7 +225,9 @@ Defined in *Project → Project Settings → Input Map* (stored in `project.godo
 | `toggle_debug` | F3 | Debug overlay |
 | `toggle_console` | key left of 1 (`` ` `` / `~`; on Czech keyboards the key under Esc) | Developer console |
 | `scoreboard` | Tab (hold) | Scoreboard overlay (polls `Input.is_action_pressed`; ignored while the console is open) |
-| `use` | E (hold) | PlayerController → `CharacterInput.use` → the bomb (plant, defuse) |
+| `use` | E (hold) | PlayerController → `CharacterInput.use` → the bomb (plant, defuse); a fresh press swaps for the gun on the floor you look at (`Inventory.try_swap()`) |
+| `slot_primary` / `slot_pistol` / `slot_knife` / `slot_grenade` | 1 / 2 / 3 / 4 | PlayerController → `CharacterInput.weapon_slot` → `Inventory.select_slot()` (D-094) |
+| `last_weapon` / `drop_weapon` | Q / G | PlayerController → `CharacterInput.last_weapon` / `drop` → `Inventory` |
 | `class_menu` | M | Class menu: opens or closes it during freeze time (any time in practice mode); ignored while the console is open. The digit keys 1 to 4 and Esc are read from the key events while the menu is open, not bound as actions |
 
 ## How the player camera works
@@ -374,6 +379,7 @@ The round manager runs a fixed sequence and asks a few overridable methods for t
 
 ## How a character and its weapon work together
 
+- **Several weapons, one in hand (M7, D-094):** a character's `Inventory` (child node `Inventory`) carries a primary, a pistol, the knife and grenades as `Weapon` nodes under the same parent as the scene's own weapon (the camera or the head). `Character.weapon` is the one in hand; the others are hidden with `process_mode` disabled. `Character.weapon_changed(weapon)` tells whoever follows the weapon in hand to reconnect: the HUD, the body (`CrewBody`, which also swaps the gun model on its weapon bone) and the bot brain. Weapons are made with `Weapon.create(data)` from the generic `weapons/weapon.tscn`. Switching goes through `CharacterInput` (`weapon_slot`, `last_weapon`, `drop`, a press of `use`), so bots follow the same rules. Guns on the floor are `WeaponPickup` nodes (group `weapon_pickups`): no collision, only the model; walking over one takes it into a free slot.
 - The player's weapon scene sits under the camera, so the first-person model follows the view. Bots' weapons sit under their `Head`; their viewmodel is hidden (`Character.set_first_person(false)`) and their body shows its own third-person gun on the hand, until a spectator looks through their eyes (M6, D-076).
 - The character sets `weapon.trigger_held` from the command. The character processes first and its children after, so the weapon sees the new value in the same tick.
 - The weapon sets the character's top speed (`Character.get_max_speed()`).
@@ -428,7 +434,7 @@ bash tools/run_tests.sh
 | `class_test` | 57 | `ClassData`, the four classes and their hit zones, the class pick in matches and practice, the class menu (D-078) | ~1 s |
 | `zone_test` | 24 | Hit zones follow the animated body for every class (D-074) | under 1 s |
 | `perf_test` | 3 | Ten animated characters on the test map, CPU side only when headless (M6 task 10) | ~1 s |
-| `gear_test` | 13 | Armor on real characters: hits with and without a helmet, legs, worn-out armor, the Bulwark's Plated, the bomb ignoring armor, death taking the gear, the HUD's armor, the console's `armor` (D-093) | ~1 s |
+| `gear_test` | 31 | Armor on real characters (D-093) and the inventory (D-094): slots and limits, switching by key with draw times, Q, grenades cycling, dropping, walking over guns, the E swap, death drops, the HUD and the body following the weapon in hand, the loadouts of rounds, team respawn and practice | ~2 s |
 | `arsenal_test` | 28 | The arsenal's data files, CS's armor results, and that `docs/weapons.csv` matches the data (D-091) | under 1 s |
 
 That is 555 checks in about 75 s on the development Mac. A change to one system can break a check in another, so run them all before a commit; run one suite alone when you want to read its output. The commands for a single suite are:

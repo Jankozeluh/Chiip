@@ -187,6 +187,10 @@ var _hunt_plan: HuntPlan
 var _roam_look_left: float = 0.0
 ## Randomness for aim error and decisions. Seed it for repeatable tests.
 var rng := RandomNumberGenerator.new()
+## The weapon in hand whose shots this brain counts.
+var _weapon: Weapon
+## The trigger was held last tick: a semi-automatic weapon needs it let go between shots.
+var _trigger_was_held: bool = false
 
 @onready var _agent: NavigationAgent3D = get_parent().get_node("NavigationAgent3D")
 @onready var _senses: BotSenses = get_parent().get_node("BotSenses")
@@ -194,7 +198,8 @@ var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_senses.enemy_spotted.connect(_on_enemy_spotted)
-	character.weapon.fired.connect(_on_weapon_fired)
+	character.weapon_changed.connect(_on_weapon_changed)
+	_on_weapon_changed(character.weapon)
 
 
 ## Walks to a point on the map along the navigation mesh.
@@ -485,6 +490,8 @@ func _search(input: CharacterInput, delta: float) -> void:
 
 
 func _engage(input: CharacterInput, delta: float) -> void:
+	if character.weapon == null:
+		return
 	_time_on_target += delta
 	_reaction_left -= delta
 	_pause_left -= delta
@@ -521,6 +528,10 @@ func _engage(input: CharacterInput, delta: float) -> void:
 	input.shoot = (_reaction_left <= 0.0 and stopped and off_target <= ON_TARGET_DEGREES
 			and _pause_left <= 0.0 and not character.weapon.is_reloading()
 			and not _teammate_in_line_of_fire())
+	# A semi-automatic weapon (the pistols) fires once per pull: let go every other tick.
+	if input.shoot and not character.weapon.data.automatic and _trigger_was_held:
+		input.shoot = false
+	_trigger_was_held = input.shoot
 
 
 ## True when a living teammate stands close to the line from the bot's eyes to
@@ -542,6 +553,15 @@ func _teammate_in_line_of_fire() -> bool:
 			if along > 0.0 and along < reach and (from + direction * along).distance_to(point) < LINE_OF_FIRE_CLEARANCE:
 				return true
 	return false
+
+
+## Listens to the weapon in hand (it changes with every switch, D-094).
+func _on_weapon_changed(weapon: Weapon) -> void:
+	if _weapon != null and is_instance_valid(_weapon) and _weapon.fired.is_connected(_on_weapon_fired):
+		_weapon.fired.disconnect(_on_weapon_fired)
+	_weapon = weapon
+	if weapon != null:
+		weapon.fired.connect(_on_weapon_fired)
 
 
 func _on_weapon_fired(_spray_shot: int) -> void:

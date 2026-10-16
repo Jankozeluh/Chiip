@@ -5,6 +5,12 @@
 [ext_resource type="Resource" path="res://assets/models/crew/scout_hit_zones.tres" id="hit_zones"]
 [ext_resource type="PackedScene" path="res://assets/models/crew/scout_arms.glb" id="arms_model"]
 
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="Resource" path="res://weapons/smg.tres" id="loadout_smg"]
+[ext_resource type="Resource" path="res://weapons/pistol.tres" id="loadout_pistol"]
+[ext_resource type="Resource" path="res://weapons/knife.tres" id="loadout_knife"]
+[ext_resource type="Resource" path="res://weapons/flashbang.tres" id="loadout_flashbang"]
+
 [resource]
 script = ExtResource("class_script")
 id = &"scout"
@@ -19,3 +25,4 @@ look = "Beanie, balaclava and glowing goggles, fitted team-colour jacket, slim r
 perk_name = "Light Step"
 perk_description = "Running footsteps carry 70% as far."
 running_footstep_range_factor = 0.7
+loadout = Array[ExtResource("weapon_data_script")]([ExtResource("loadout_smg"), ExtResource("loadout_pistol"), ExtResource("loadout_knife"), ExtResource("loadout_flashbang")])

@@ -7,7 +7,9 @@
 **Done**
 - **The plan, revised after your answers** (D-090): weapons mostly come from picking them up, a light economy where money still matters, and a fresh loadout every round. Every round starts with the knife and the Sparrow; money carries over, gear doesn't. Prices are round by tier ($500 / $1,000 / $2,500 / $4,000), every kill pays $200 ($500 with the knife), a win $3,000, a loss $1,500 rising to $3,000. Dead players' guns stay on the floor for the round, and each quick map gets two power-weapon spots (a Heron and a Breaker). Team respawn has no money: your class is your loadout. Tasks 5 and 9–14 changed, a new task 9 (power weapons on the maps), 15 tasks in all. The data files and `docs/weapons.csv` have the new prices and rewards; GAME_DESIGN 4.3 and 4.6 describe it.
 
-**Next:** task 3 (weapon models and icons) and task 5 (slots, loadouts, switching, dropping and picking up).
+- **Task 5, slots, loadouts, switching, dropping and picking up** (D-094): an `Inventory` node per character; keys 1–4, Q and G (rebindable), E to swap for a gun on the floor, walking over a gun takes it; draw times (the Rifleman's Quick Hands); guns lie on the floor with their ammo, and the dead drop their best one. Every round starts with the knife and the Sparrow; team respawn and practice give each class its loadout. The HUD, the body and the bots follow the weapon in hand; bots tap semi-automatic pistols. The console shows 24 lines so `help` still fits. `gear_test` has 31 checks; the maps test measures first contact with rifles, as D-061 meant (pistol rounds are about 10% faster).
+
+**Next:** task 3 (weapon models and icons, a Sonnet subagent is building them), then task 6 (how each gun works).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

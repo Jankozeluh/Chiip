@@ -5,6 +5,12 @@
 [ext_resource type="Resource" path="res://assets/models/crew/rifleman_hit_zones.tres" id="hit_zones"]
 [ext_resource type="PackedScene" path="res://assets/models/crew/rifleman_arms.glb" id="arms_model"]
 
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
+[ext_resource type="Resource" path="res://weapons/rifle.tres" id="loadout_rifle"]
+[ext_resource type="Resource" path="res://weapons/pistol.tres" id="loadout_pistol"]
+[ext_resource type="Resource" path="res://weapons/knife.tres" id="loadout_knife"]
+[ext_resource type="Resource" path="res://weapons/frag.tres" id="loadout_frag"]
+
 [resource]
 script = ExtResource("class_script")
 id = &"rifleman"
@@ -20,3 +26,4 @@ perk_name = "Quick Hands"
 perk_description = "Reloads and weapon switches 15% faster."
 reload_time_factor = 0.85
 weapon_switch_time_factor = 0.85
+loadout = Array[ExtResource("weapon_data_script")]([ExtResource("loadout_rifle"), ExtResource("loadout_pistol"), ExtResource("loadout_knife"), ExtResource("loadout_frag")])

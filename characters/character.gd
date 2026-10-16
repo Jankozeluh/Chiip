@@ -26,6 +26,9 @@ signal died(killer: Character)
 signal footstep(loud: bool)
 ## Emitted after [method respawn] brings the character back.
 signal respawned
+## Emitted when the weapon in hand changes ([member weapon]; null when there is none). Whatever
+## follows the held weapon (HUD, body, bot brain) reconnects to the new one.
+signal weapon_changed(weapon: Weapon)
 ## Emitted when [member armor], [member has_helmet] or [member has_defuse_kit] change (bought,
 ## worn down by a hit, lost on death).
 signal gear_changed
@@ -110,7 +113,8 @@ const DEAD_EYE_HEIGHT := 0.35
 @export var footstep_sound: AudioStream = preload("res://assets/sounds/footsteps.tres")
 
 @export_group("")
-## The gun this character holds.
+## The weapon in hand (null when there is none). The scene's own weapon is the first one the
+## [member inventory] carries; from M7 the inventory changes it ([signal weapon_changed]).
 @export var weapon: Weapon
 
 ## Current health; 0 means dead. Read-only for other scripts (use [method take_damage]).
@@ -165,6 +169,8 @@ var _respawned_this_tick: bool = false
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
+## The weapons carried, in slots (D-094).
+@onready var inventory: Inventory = $Inventory
 ## The visible body with its hit zones and animations (characters/crew/crew_body.tscn, a
 ## generated class model from M6). It paints its team parts through
 ## [method CrewBody.set_team_color] and animates from this character's state.
@@ -197,8 +203,7 @@ func _ready() -> void:
 			break
 	if _controller != null:
 		_controller.set_look_angles(_input.yaw, _input.pitch)
-	if weapon != null:
-		weapon.equip(self)
+	inventory.set_up(self, weapon, head)
 	_set_up_arms()
 	# Only the player at this computer looks through these eyes; everyone else sees the body.
 	set_first_person(is_local_player())
@@ -220,6 +225,10 @@ func _physics_process(delta: float) -> void:
 		_input.move = Vector2.ZERO
 		_input.jump = false
 		_input.shoot = false
+	if is_alive():
+		# Switching, dropping and swapping for a gun on the floor; then walking over guns takes them.
+		inventory.handle_input(_input)
+		inventory.update_pickups()
 	# Face where the command looks, so "forward" is where you look. The head
 	# tilts up and down, which points a third-person gun (bots) at the target.
 	rotation.y = _input.yaw
@@ -323,8 +332,7 @@ func is_holding_use() -> bool:
 ## teammate switches that teammate too. The hit zones stay active either way.
 func set_first_person(on: bool) -> void:
 	(get_node("Body") as Node3D).visible = not on
-	if weapon != null:
-		weapon.set_viewmodel_visible(on)
+	inventory.set_first_person(on)
 
 
 ## True for the player at this computer (see [method CharacterController.is_local]).
@@ -362,8 +370,9 @@ func get_chest_position() -> Vector3:
 ## viewer sees it (see [method Teams.color_for]). Call it after the viewer's team changes.
 func update_team_color() -> void:
 	body.set_team_color(Teams.color_for(team))
-	if weapon != null:
-		weapon.set_arms_team_color(Teams.color_for(team))
+	if inventory != null:
+		for carried in inventory.get_weapons():
+			carried.set_arms_team_color(Teams.color_for(team))
 
 
 ## Physics IDs of this character's hit zones, so its own shots can ignore them.
@@ -469,8 +478,7 @@ func respawn(at: Vector3, yaw: float) -> void:
 	if _controller != null:
 		_controller.set_look_angles(yaw, 0.0)
 		_controller.on_respawned()
-	if weapon != null:
-		weapon.refill()
+	inventory.refill()
 	reset_physics_interpolation()
 	respawned.emit()
 
@@ -478,6 +486,8 @@ func respawn(at: Vector3, yaw: float) -> void:
 func _die(killer: Character) -> void:
 	if weapon != null:
 		weapon.trigger_held = false
+	# The best gun falls to the floor (D-090), once this hit has been fully dealt with.
+	inventory.drop_on_death.call_deferred()
 	# The dead lose their armor, helmet and kit (CS): they start the next round without them.
 	armor = 0.0
 	has_helmet = false
@@ -530,13 +540,20 @@ func _apply_class() -> void:
 			hitbox.collision_layer = 0
 
 
-## Puts the class's first-person arms into the weapon's viewmodel (D-079): its own sleeves
-## and gloves, painted with the class's material in this character's team colour.
+## Puts the class's first-person arms into every carried weapon's viewmodel (D-079): its own
+## sleeves and gloves, painted with the class's material in this character's team colour.
 func _set_up_arms() -> void:
-	if weapon == null or class_data == null or class_data.arms_model == null:
+	for carried in inventory.get_weapons():
+		set_up_arms_for(carried)
+
+
+## Puts the class's first-person arms into [param carried]'s viewmodel. The [Inventory] calls it
+## for every weapon it adds.
+func set_up_arms_for(carried: Weapon) -> void:
+	if carried == null or class_data == null or class_data.arms_model == null:
 		return
-	weapon.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
-	weapon.set_arms_team_color(Teams.color_for(team))
+	carried.set_arms(class_data.arms_model, CrewBody.material_for(class_data.model.resource_path))
+	carried.set_arms_team_color(Teams.color_for(team))
 
 
 func _on_hitbox_hit(damage: float, zone: Hitbox.Zone, _hit_position: Vector3, attacker: Node,

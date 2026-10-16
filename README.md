@@ -74,6 +74,9 @@ To play a different map (also straight into the game, as a match where the map a
 | Shoot | Left mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
+| Weapons: primary, pistol, knife, grenades (4 again: the next grenade) | 1, 2, 3, 4 |
+| Last weapon / drop the gun in hand | Q / G |
+| Pick up a gun: walk over it (into a free slot), or look at it and press E to swap | E |
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
 | Class menu (opens by itself at the start of a match; during freeze time, any time in practice mode; then click a card or press 1 to 4) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |
