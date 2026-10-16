@@ -112,6 +112,8 @@ var _preview_cards: Array[PanelContainer] = []
 var _stick_preview: StickPreview
 var _pad_rows: VBoxContainer
 var _settings_scale_applied: bool = false
+## What the pad hints were last drawn for ("pad/style"), so they are redrawn only when that changes.
+var _pad_hint_key: String = ""
 var _ui_scale: float = 1.0
 ## Tab name → keys of the settings on that tab (what "Reset tab" puts back).
 var _tab_keys: Dictionary = {}
@@ -158,6 +160,8 @@ var _previews: Array[Crosshair] = []
 @onready var _light_preview: Crosshair = %LightCrosshair
 @onready var _notice: Label = %Notice
 @onready var _reset_button: Button = %ResetButton
+@onready var _pad_hints: HBoxContainer = %PadHints
+@onready var _tab_glyphs: HBoxContainer = %TabGlyphs
 @onready var _back_button: Button = %BackButton
 @onready var _licenses_button: Button = %LicensesButton
 @onready var _licenses: LicensesMenu = $LicensesMenu
@@ -194,6 +198,18 @@ func _exit_tree() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# The pad: the shoulder buttons turn the tabs and Y puts the tab's settings back (the designer's hints, D-238).
+	if event is InputEventJoypadButton and event.pressed and _listening_action == &"" and MenuState.is_top(self):
+		match (event as InputEventJoypadButton).button_index:
+			JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER:
+				var step := -1 if (event as InputEventJoypadButton).button_index == JOY_BUTTON_LEFT_SHOULDER else 1
+				_tabs.current_tab = posmod(_tabs.current_tab + step, _tabs.get_tab_count())
+				get_viewport().set_input_as_handled()
+				return
+			JOY_BUTTON_Y:
+				_on_reset_pressed()
+				get_viewport().set_input_as_handled()
+				return
 	if _listening_action != &"":
 		if listen(event):
 			get_viewport().set_input_as_handled()
@@ -203,6 +219,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_update_pad_hints()
 	# The dynamic crosshair of the preview breathes, so the setting can be judged.
 	if visible and _previews[0].dynamic:
 		_preview_time += delta
@@ -243,10 +260,36 @@ func is_open() -> bool:
 	return visible
 
 
+## The pad hints (LB and RB "Tabs" at the top, Y on Reset, B on Back) show while the pad is the device used last, in the style
+## of the pad ([member Settings.pad_prompts]); they follow the device at once.
+func _update_pad_hints() -> void:
+	var pad := LastInput.gamepad
+	var style := PadGlyphs.style_for(_settings.pad_prompts)
+	var key := "%s/%s" % [pad, style]
+	if key == _pad_hint_key:
+		return
+	_pad_hint_key = key
+	_pad_hints.visible = pad
+	for child in _tab_glyphs.get_children():
+		_tab_glyphs.remove_child(child)
+		child.queue_free()
+	var steps := maxi(1, floori(_ui_scale))
+	if pad:
+		for button in ["lb", "rb"]:
+			var rect := TextureRect.new()
+			rect.texture = PadGlyphs.get_scaled_texture(style, button, steps)
+			rect.stretch_mode = TextureRect.STRETCH_KEEP
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_tab_glyphs.add_child(rect)
+	_reset_button.icon = PadGlyphs.get_scaled_texture(style, "north", steps) if pad else null
+	_back_button.icon = PadGlyphs.get_scaled_texture(style, "east", steps) if pad else null
+
+
 ## Scales the menu; 1.0 is the size it is designed for (a 720-pixel-tall
 ## window). Hands it the theme scaled for the window ([UiTheme]); the crosshair
 ## previews are not themed and take the factor themselves.
 func set_ui_scale(factor: float) -> void:
+	_pad_hint_key = ""
 	_ui_scale = factor
 	_settings_scale_applied = true
 	UiTheme.apply(self, factor)

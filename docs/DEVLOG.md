@@ -21,7 +21,9 @@
 
 - Credits screen to the designer's page (D-237): "Created by JK", the document list with a dot and the licence's name, the text frame, the mono mark and the rights line.
 
-**Next:** the pad prompts, the app icon (if the assets file comes), the bomb timer's colour-blind rule.
+- Pad prompts with glyphs (D-238): the bomb prompt, the settings menu's LB/RB tabs (which now work), Y reset and B back.
+
+**Next:** the full run; the app icon, map thumbnails and portraits wait for the designer's assets file.
 
 ## 2026-10-16 — M15 accessibility & polish
 

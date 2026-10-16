@@ -74,6 +74,28 @@ static func get_texture(style: String, button: String, mono: bool = false) -> Te
 	return _cache[key]
 
 
+## The glyph of the pad button [param action] is bound to ([member Settings.pad_prompts] decides the style), or null when the
+## action has no pad binding. [param settings] defaults to the shared one.
+static func for_action(action: StringName, settings: Settings = null, mono: bool = false) -> Texture2D:
+	if settings == null:
+		settings = Settings.get_instance()
+	var button := button_for_event(settings.get_pad_binding(action))
+	return get_texture(style_for(settings.pad_prompts), button, mono) if button != "" else null
+
+
+## A glyph enlarged by a whole [param scale] with sharp pixels (a button's icon can't be scaled by the theme): 16 px at 1, 32 px at 2.
+static func get_scaled_texture(style: String, button: String, scale: int, mono: bool = false) -> Texture2D:
+	var source := get_texture(style, button, mono)
+	if source == null or scale <= 1:
+		return source
+	var key := "%s/%s%s@%d" % [style, button, "_mono" if mono else "", scale]
+	if not _cache.has(key):
+		var image := source.get_image()
+		image.resize(image.get_width() * scale, image.get_height() * scale, Image.INTERPOLATE_NEAREST)
+		_cache[key] = ImageTexture.create_from_image(image)
+	return _cache[key]
+
+
 ## Every glyph name there is, as the designer's component lists them.
 static func all_buttons() -> Array[String]:
 	return ["south", "east", "west", "north", "lb", "rb", "lt", "rt", "ls", "rs", "l3", "r3",

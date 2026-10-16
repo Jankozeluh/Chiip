@@ -2344,6 +2344,16 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** a main menu entry for it (the page doesn't draw one; the settings footer reaches it from the main menu and the pause menu).
 
+## D-238 — Pad prompts show the pad's glyphs (2026-10-16)
+
+**Decision:**
+- **A pad prompt is a glyph, not a letter,** in the style of the pad (Settings → Controller → Button prompts: Auto, Xbox, PS, Generic; D-234): `PadGlyphs.for_action(action)` gives the picture of the button an action is bound to, `get_scaled_texture()` enlarges it by whole steps (a button's icon can't follow the theme's scale). Built so far: the **bomb prompt's key cap** (the glyph of Use while the pad is the device used last, the key's letter otherwise), the **Controller tab's bindings table** (D-234) and the **settings menu**: LB and RB with "Tabs" at the top right, the Y glyph on Reset tab to defaults and the B glyph on Back, shown only while the pad is the device last used. **LB and RB turn the settings' tabs and Y puts the tab's settings back** (they did nothing before; B already backs out, D-213).
+- **Not done:** the class draft's text hint ("D-pad and A pick a class · B keeps your class") and the other hints in running text stay words (a glyph in the middle of a sentence needs a rich label); the in-game bomb timer rule of page 24 (amber only in the last 10 s in colour-blind mode) has nothing to apply to yet: the HUD's planted plate says "Bomb" with its icon and shows no countdown.
+
+**Why:** The designer's gamepad glyph set and the settings pages (D-230); the handoff's "gamepad button prompts ... used in hints and the Controls tab".
+
+**Alternatives:** replacing every hint with a rich text with inline images (a larger rewrite of the hint labels); mono glyphs tinted to the HUD (the coloured face buttons help find the right button at a glance).
+
 ## Open questions
 
 | Question | Decide in |

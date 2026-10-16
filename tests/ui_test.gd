@@ -234,6 +234,7 @@ func _ready() -> void:
 	await _test_compass()
 	await _test_training_ui()
 	_test_pad_glyphs()
+	await _test_pad_prompts()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -3874,6 +3875,64 @@ func _test_training_ui() -> void:
 	GameLaunch.clear()
 	Teams.friendly_fire = false
 	Settings.get_instance().reset_to_defaults()
+
+# --- The gamepad prompts with the glyphs (v0.2, D-238) ---
+
+
+## An action's glyph follows its pad binding and the chosen style; the settings menu shows its pad hints (LB RB tabs, Y reset, B back) only
+## while the pad is the device used last, LB and RB turn its tabs, Y resets the tab; the bomb prompt shows the glyph of Use.
+func _test_pad_prompts() -> void:
+	var settings := Settings.get_instance()
+	settings.reset_to_defaults()
+	var reload_xbox := PadGlyphs.for_action(&"reload", settings)
+	settings.pad_prompts = "ps"
+	var reload_ps := PadGlyphs.for_action(&"reload", settings)
+	settings.pad_prompts = "xbox"
+	var scaled := PadGlyphs.get_scaled_texture("xbox", "south", 2)
+	_check("An action's glyph follows its pad binding and the pad style: Reload (X) is the Xbox X disc or the PlayStation square, an unbound action has none, a glyph scales by whole steps (32 px at 2)",
+			reload_xbox != null and reload_ps != null and reload_xbox != reload_ps and PadGlyphs.for_action(&"move_forward", settings) == null and scaled.get_size() == Vector2(32, 32),
+			"xbox %s, ps %s, scaled %s" % [reload_xbox, reload_ps, scaled.get_size()])
+	var menu := SETTINGS_MENU_SCENE.instantiate() as SettingsMenu
+	add_child(menu)
+	menu.set_ui_scale(1.0)
+	menu.open()
+	LastInput.gamepad = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var hidden: bool = not menu.get_node("%PadHints").visible and menu.get_reset_button().icon == null and menu.get_back_button().icon == null
+	LastInput.gamepad = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var shown: bool = menu.get_node("%PadHints").visible and menu.get_node("%TabGlyphs").get_child_count() == 2 and menu.get_reset_button().icon != null and menu.get_back_button().icon != null
+	_check("The pad hints show only while the pad is the device used last: LB and RB for the tabs at the top, the Y glyph on Reset and the B glyph on Back",
+			hidden and shown, "hidden with keyboard %s, shown with the pad %s" % [hidden, shown])
+	var first_tab := menu.get_tabs().current_tab
+	var rb := InputEventJoypadButton.new()
+	rb.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	rb.pressed = true
+	_send(rb)
+	var after_rb := menu.get_tabs().current_tab
+	var lb := InputEventJoypadButton.new()
+	lb.button_index = JOY_BUTTON_LEFT_SHOULDER
+	lb.pressed = true
+	_send(lb)
+	var after_lb := menu.get_tabs().current_tab
+	settings.sensitivity = 3.0
+	menu.get_tabs().current_tab = menu.get_tab_names().find("Game")
+	var y := InputEventJoypadButton.new()
+	y.button_index = JOY_BUTTON_Y
+	y.pressed = true
+	_send(y)
+	_check("RB turns to the next tab and LB back; Y puts the settings of the tab back to their defaults",
+			after_rb == first_tab + 1 and after_lb == first_tab and is_equal_approx(settings.sensitivity, Settings.get_default(&"sensitivity")),
+			"tabs %d, %d, %d; sensitivity %.2f" % [first_tab, after_rb, after_lb, settings.sensitivity])
+	LastInput.gamepad = false
+	menu.close()
+	remove_child(menu)
+	menu.queue_free()
+	MenuState.reset()
+	settings.reset_to_defaults()
+
 
 # --- The gamepad glyphs (v0.2, D-230) ---
 

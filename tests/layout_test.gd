@@ -134,6 +134,14 @@ func _test_main_menu(pixelated: bool) -> void:
 			settings_menu.get_tabs().current_tab = tab
 			await _settle(size)
 			_collect(failures, "settings tab %d at %s" % [tab, size], [menu], size)
+		# With the pad as the device used last the title row gets the LB RB hints and the buttons their glyphs (v0.2, D-238).
+		LastInput.gamepad = true
+		for tab in [0, settings_menu.get_tab_names().find("Controller")]:
+			settings_menu.get_tabs().current_tab = tab
+			await _settle(size)
+			await get_tree().process_frame
+			_collect(failures, "settings tab %d with the pad hints at %s" % [tab, size], [menu], size)
+		LastInput.gamepad = false
 		# The Licences screen over the settings (M12): the longest document, the GPL, and the engine's.
 		var licences := settings_menu.get_licenses_menu()
 		licences.open()
