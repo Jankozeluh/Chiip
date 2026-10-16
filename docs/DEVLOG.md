@@ -2,6 +2,19 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M11 weapons & models
+
+**Done**
+- **Guns never poke through walls (D-155):** the viewmodel (arms, gun, muzzle flash) is drawn by viewmodel shaders with its own field of view and in the nearest sliver of the depth buffer, in the same low-res image as the world, so it keeps the pixel look, the palette effect and the map's lighting. New `weapons/viewmodel.gd` (`Viewmodel`), `shaders/viewmodel.gdshaderinc`, `characters/crew/crew_viewmodel.gdshader`, `weapons/viewmodel_gun.gdshader`, `weapons/viewmodel_flash.gdshader`; the crew's surface moved to `crew_surface.gdshaderinc`. New suite `holds` (viewmodel layer and the wall check).
+- New tool `tools/hold_sheet.gd`: a contact sheet per weapon with the four classes in several poses.
+- **Holds (D-156, D-157):** the guns' points are nodes in their models now (`point_foregrip`...; the magazine and the shotgun's shell are nodes of their own too). Third person: a left-hand IK (`characters/crew/hand_ik.gd`) on every body, and aim poses every 20°: the left hand was up to 34.6 cm off the gun when the game blended poses, now at most 0.9 cm. First person: the left arm didn't reach the long guns (17 cm short on the Breaker's pump); each class's left shoulder now sits where it reaches every foregrip. New `weapons/gun_model.gd` (`GunModel`). The `holds` suite measures both.
+
+- **Reloads (D-158):** every reload clip is keyed to one timeline; the magazine leaves the gun in the left hand and comes back into its seat (within 0.7 cm), the shotgun's shell sits in the palm and goes into the port, the sounds come on their cues (they were early), the body's reload lasts exactly the reload (its own clip length; a first-shell clip for the shotgun; a 0.05 s fade-out), and a reload cut short stops showing.
+
+- **Checks:** the `holds` suite (11 checks) measures all of it; main merged in; all 33 suites pass (1083 checks).
+
+**Next:** your check of the weapons ("Your open checks" in PLAN.md); M11's optimization.
+
 ## 2026-10-16 — M11 UI fit
 
 **Done**

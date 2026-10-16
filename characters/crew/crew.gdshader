@@ -14,27 +14,7 @@ shader_type spatial;
 // the colour is an *instance* uniform, set per character from code with
 // GeometryInstance3D.set_instance_shader_parameter(), so two soldiers of the same class
 // can be blue and red while using the same material (and the same draw settings).
+//
+// The surface itself is in crew_surface.gdshaderinc, shared with the first-person arms.
 
-// Palette colours. Team parts hold a grey here.
-uniform sampler2D albedo_texture : source_color, filter_nearest_mipmap_anisotropic, repeat_disable;
-// Red = team colour texels, green = glowing texels. Plain data, not a colour (no source_color).
-uniform sampler2D mask_texture : filter_nearest_mipmap_anisotropic, repeat_disable;
-// How strongly glowing texels are emitted.
-uniform float glow_energy = 1.5;
-// The colour of this character's team as the viewer sees it (Teams.color_for). Per instance.
-instance uniform vec4 team_color : source_color = vec4(0.25, 0.4, 0.7, 1.0);
-
-// Linear brightness of a team texel that shows the team colour unchanged.
-// Must match TEAM_BASE in tools/modelgen/paint.py.
-const float TEAM_BASE = 0.5;
-
-void fragment() {
-	vec3 albedo = texture(albedo_texture, UV).rgb;
-	vec4 mask = texture(mask_texture, UV);
-	vec3 team = team_color.rgb * (albedo.g / TEAM_BASE);
-	ALBEDO = mix(albedo, team, mask.r);
-	EMISSION = albedo * mask.g * glow_energy;
-	ROUGHNESS = 1.0;
-	SPECULAR = 0.2;
-	METALLIC = 0.0;
-}
+#include "res://characters/crew/crew_surface.gdshaderinc"

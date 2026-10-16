@@ -1709,6 +1709,45 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** a screenshot comparison per size (heavy, and a human has to look); testing only the scale function (misses a page that is wider than the layout).
 
+## D-155 — The viewmodel is drawn in its own depth range, by its shaders (2026-10-16)
+
+**Decision:** The first-person arms, gun and muzzle flash keep rendering in the world's own low-res viewport, but with viewmodel shaders (`shaders/viewmodel.gdshaderinc`): in `vertex()` they write `POSITION` themselves, with their own vertical field of view (`Viewmodel.FOV`, 73.74°: the camera's at the default FOV, so the gun looks the same at every FOV setting) and with their depth squeezed into the nearest 2 % of the depth buffer (from 1 cm in front of the eye). Nothing in the world can then cover them: a wall would have to be nearer than the camera's own near plane. `Viewmodel.prepare()` gives every mesh in a viewmodel its viewmodel material: the crew's arms a viewmodel copy of the crew shader (same surface, so the team colour works), every gun surface a gun shader with its own texture, made once per source material. Lighting uses the real position, so the gun is lit by the map where it is.
+
+**Why:** It keeps everything that makes the picture Chiip's: the 480-line world (D-048), the palette effect and the map's lights apply to the gun for free, because it is in the same image. It costs nothing per frame (no second render). The old viewmodel poked into every wall you stood against (the known limitation since M2).
+
+**Alternatives:**
+- **A second camera** for the viewmodel with its own cull layer, in a second SubViewport composited over the world: what Unity tutorials do. It needs a second full render pass at the same low resolution, its own lights or shared ones, and the palette effect would have to run over the composite. More cost and more parts for the same picture.
+- **Godot's own viewmodel options** (`BaseMaterial3D.use_fov_override` and `use_z_clip_scale`, new in 4.x): they exist only on the standard material, not on the crew's custom shader; with two different formulas the arms and the gun could disagree. Our own include does the same for both.
+- **Pulling the gun back** when near a wall (a ray from the eye): many games do it as well, but it changes how the gun looks while you hug walls, and still clips at corners.
+
+## D-156 — A left-hand IK on the body, and aim poses every 20° (2026-10-16)
+
+**Decision:** Every crew body has a `HandIK` (a `SkeletonModifier3D`, two-bone IK for the left arm) that puts the left wrist where it holds the gun's foregrip, every tick, after the animation graph. The target comes from the gun model itself: the generator writes every gun point as an empty node (`point_foregrip`, `point_magazine`...), and `GunModel.left_hand_target()` adds rig.py's left-hand-on-foregrip offset. The elbow stays on the side the animation put it. The body fades the IK out (0.12 s) while reloading, dead, or holding the knife or a grenade. The aim poses come every 20° instead of every 40° (129 clips per class), so the right arm and the gun drift less between two poses too.
+
+**Why:** Each clip holds the foregrip exactly (the generator solves the same IK), but the game blends them: two aim pitches, locomotion, crouching, the kick. A blend of two arm poses doesn't keep a hand on a point. Measured (`holds` suite, 4 classes × 7 guns × 14 blended poses): without the IK the left hand was up to **34.6 cm** off the gun (the Bulwark aiming up 50°), and the 20° poses alone still left 15 cm; with both, at most **0.9 cm**.
+
+**Alternatives:** More aim poses only (still centimetres off between them, and nothing for the kick or locomotion blends); Godot's `TwoBoneIK3D` node (sets only the wrist position, so the hand's rotation needs a second modifier and a target node per character; our script is 40 lines and reads the target straight from the weapon bone); attaching the left hand to the gun with a `BoneAttachment3D` (bones can't follow a node).
+
+## D-157 — First-person left shoulders reach every long gun (2026-10-16)
+
+**Decision:** The first-person arms' left shoulder (out of view below the camera) is placed per class: `fparms.left_shoulder()` moves it from where it was toward the long guns' foregrips until the left hand reaches every one of them at rest (97 % of the arm's length).
+
+**Why:** It didn't reach: the left hand stopped short of the foregrip and floated in the air, by up to **17 cm** on the Breaker's pump (the Scout's arms are the shortest) and 4 to 8 cm on the rifles. Now the first-person idle, kick and draw hold every foregrip within 0.1 cm (`holds` suite). The shoulder stays below the picture, so the view looks the same.
+
+**Alternatives:** Pull each gun back toward the camera until the hand reaches (the Breaker would sit 14 cm closer, a very different viewmodel); longer arms in first person (the body's and the arms' proportions are the same on purpose, D-079).
+
+## D-158 — Reloads on one timeline: magazine and shell in the hand, sounds on cue (2026-10-16)
+
+**Decision:**
+- **One timeline:** every reload clip, first and third person, is keyed to the same moments, as fractions of the reload: a magazine is taken at 0.24, swapped for a fresh one at the vest at 0.38, in at 0.66, the handle at 0.80; a shotgun shell is taken from the vest at 0.28 and in at 0.80 (`holds.RELOAD_EVENTS`, `GunModel.MAGAZINE_EVENTS` / `SHELL_EVENTS`).
+- **The magazine moves:** it is a node of its own in the gun model; from 0.24 to 0.66 it goes with the left hand, then back into its seat (`GunModel.update()`, in both views). The shotgun has a `Shell` that sits in the left palm from 0.28 to 0.80, when the hand puts it into the loading port. The pistols' magazines have a body inside the grip, so a whole magazine comes out.
+- **Sounds on cue:** magazine out 0.28, in 0.66, the handle 0.80 (they were at 0.10, 0.60 and 0.85, before the hand even reached the magazine); a shell's sound as it goes in (0.80), not when it counts at the end. `Weapon.reload_cue(step)` fires with each.
+- **Exactly the reload's length:** the body's clip is stretched by its own length (all were assumed 2.5 s). The shotgun's first shell has its own body clip, `reload_shotgun`: the gun brought up, then the shell, like the first-person one. The reload one-shot fades out in 0.05 s instead of 0.15 s (a fade counts real seconds, and a shell lasts only 0.43 s, so the fade pulled the hand off the port). A reload cut short (a shot during a shotgun reload, a weapon switch) fades out on the body; the arms play the shot.
+
+**Why:** In your words, "reloading guns goes correctly". The magazine never left the gun (the hand went to it and back while it stayed in), the sounds came early, and the body's shotgun reload counted the first shell's lead-in as part of the shell.
+
+**Alternatives:** Drop the old magazine as a physics prop (CS doesn't; more objects each reload); animate the magazine in the generator as a bone (it would need a bone on every gun's skeleton, which guns don't have); write the moments into each clip as animation markers (glTF has no markers, and every clip shares the same moments anyway).
+
 ## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
 
 **Decision:**
@@ -1724,6 +1763,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Using `noise_made` itself:** it also carries footsteps, grenade blasts and the bomb's noise, which would need telling apart by their range, and a client never gets a noise for another player's shot (the replay `play_remote_shot()` makes none, on purpose: a global bus is shared by two games in one test process, and bots listen to it).
 - **Marking every enemy continuously, or on sight:** wallhack-like; the point is to answer the shot you heard but couldn't place.
 - **Leaving the bar where it was and putting the compass under the toasts:** the toasts come and go below it and the compass would jump around.
+
 
 ## Open questions
 

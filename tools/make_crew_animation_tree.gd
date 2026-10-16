@@ -41,7 +41,8 @@ const ARM_BONES: Array[String] = ["upper_arm_l", "forearm_l", "hand_l", "upper_a
 ## The animation sets (tools/modelgen/holds.py, WeaponData.anim_set). The rifle's aim clips keep
 ## their M6 names (aim_d80...); every other set's are aim_<set>_<pitch>.
 const SETS: Array[String] = ["rifle", "carbine", "smg", "shotgun", "sniper", "pistol", "hand_cannon", "knife", "grenade"]
-const PITCHES := [["d80", -80.0], ["d40", -40.0], ["0", 0.0], ["u40", 40.0], ["u80", 80.0]]
+const PITCHES := [["d80", -80.0], ["d60", -60.0], ["d40", -40.0], ["d20", -20.0], ["0", 0.0], ["u20", 20.0],
+		["u40", 40.0], ["u60", 60.0], ["u80", 80.0]]
 ## Reload clips: one per set with a magazine (the rifle's is "reload"), and one shotgun shell.
 const RELOADS: Array[String] = ["reload", "reload_carbine", "reload_smg", "reload_shotgun", "reload_shell",
 		"reload_sniper", "reload_pistol", "reload_hand_cannon"]
@@ -150,7 +151,10 @@ func _init() -> void:
 	tree.add_node("ReloadKind", _kinds(tree, RELOADS, Vector2(x - 400, 900)), Vector2(x - 200, 400))
 	tree.add_node("ReloadSpeed", AnimationNodeTimeScale.new(), Vector2(x - 60, 400))
 	tree.connect_node("ReloadSpeed", 0, "ReloadKind")
-	var reload := _one_shot(0.12, 0.15, false)
+	# A short fade-out (M11, D-158): fades count real seconds, and a shotgun shell lasts only
+	# 0.43 s, so a longer one pulled the hand off the loading port before the shell was in. The
+	# magazine reloads end on the hold pose anyway.
+	var reload := _one_shot(0.1, 0.05, false)
 	_filter(reload, ARM_BONES)
 	tree.add_node("Reload", reload, Vector2(x, 100))
 	tree.connect_node("Reload", 0, "Attack")

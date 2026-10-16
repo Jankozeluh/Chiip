@@ -296,34 +296,55 @@ def build_item(name):
     return dict(name=name, pieces=pieces, points=points, atlas=atlas, meshes=meshes, albedo=albedo)
 
 
+# Named pieces that get their own node in a weapon's .glb (weapons.py, M11 D-158): the node's name
+# and the point its origin sits at (None: the weapon's origin).
+PART_NODES = {'magazine': ('Magazine', 'magazine'), 'magazine_hidden': ('Magazine', 'magazine'),
+              'shell': ('Shell', None)}
+# Parts the icons leave out (inside the grip, or only in the hand while reloading).
+NOT_IN_ICONS = ('magazine_hidden', 'shell')
+
+
 def write_gun(item, out_dir):
     """a static model in weapon space (weapons.py), with its own palette texture; returns
-    its triangle count."""
-    name, atlas, meshes = item['name'], item['atlas'], item['meshes']
-    pos, nrm, uv, idx = [], [], [], []
-    verts = {}
+    its triangle count. The magazine and the shell are child nodes of their own (PART_NODES),
+    and every point is an empty child node `point_<name>`."""
+    name, atlas, meshes, points = item['name'], item['atlas'], item['meshes'], item['points']
+    groups = {}
     for pm in meshes:
-        basis = pm.piece.basis()
-        for tri, normals, texel in pm.triangles(atlas):
-            for k in range(3):
-                v = pm.piece.pos + basis @ tri[k]
-                n = basis @ normals[k]
-                t = (texel[k, 0] / atlas.width, texel[k, 1] / atlas.height())
-                key = tuple(np.round(v, 5)) + tuple(np.round(n, 4)) + tuple(np.round(t, 6))
-                if key not in verts:
-                    verts[key] = len(pos)
-                    pos.append(v)
-                    nrm.append(n / np.linalg.norm(n))
-                    uv.append(t)
-                idx.append(verts[key])
+        node_name, origin = PART_NODES.get(pm.piece.name, (name, None))
+        groups.setdefault(node_name, (origin, []))[1].append(pm)
     os.makedirs(out_dir, exist_ok=True)
     write_texture(item['albedo'], os.path.join(out_dir, f'{name}_albedo.png'))
     g = Glb()
     mat = g.material(name, g.texture(f'{name}_albedo.png'))
-    mesh = g.mesh(name, np.array(pos), np.array(nrm), np.array(uv), np.array(idx, np.uint32), mat)
-    g.root(g.node(name, mesh=mesh))
+    triangles = 0
+    built = {}
+    for node_name, (origin, pms) in groups.items():
+        shift = np.asarray(points[origin], float) if origin is not None else np.zeros(3)
+        pos, nrm, uv, idx = [], [], [], []
+        verts = {}
+        for pm in pms:
+            basis = pm.piece.basis()
+            for tri, normals, texel in pm.triangles(atlas):
+                for k in range(3):
+                    v = pm.piece.pos + basis @ tri[k] - shift
+                    n = basis @ normals[k]
+                    t = (texel[k, 0] / atlas.width, texel[k, 1] / atlas.height())
+                    key = tuple(np.round(v, 5)) + tuple(np.round(n, 4)) + tuple(np.round(t, 6))
+                    if key not in verts:
+                        verts[key] = len(pos)
+                        pos.append(v)
+                        nrm.append(n / np.linalg.norm(n))
+                        uv.append(t)
+                    idx.append(verts[key])
+        mesh = g.mesh(node_name, np.array(pos), np.array(nrm), np.array(uv), np.array(idx, np.uint32), mat)
+        built[node_name] = (mesh, shift)
+        triangles += len(idx) // 3
+    kids = [g.node(part, translation=shift, mesh=mesh) for part, (mesh, shift) in built.items() if part != name]
+    kids += [g.node(f'point_{p}', translation=np.asarray(v, float)) for p, v in points.items()]
+    g.root(g.node(name, mesh=built[name][0], children=kids))
     g.write(os.path.join(out_dir, f'{name}.glb'))
-    return len(idx) // 3
+    return triangles
 
 
 def write_weapons(gun_dir, icon_dir, sheets=None):
@@ -333,7 +354,8 @@ def write_weapons(gun_dir, icon_dir, sheets=None):
     problems = []
     for name in list(weapons.GUNS) + list(weapons.GEAR):
         item = build_item(name)
-        tris[name] = icons.item_triangles(item['meshes'], item['atlas'], item['albedo'])
+        shown = [pm for pm in item['meshes'] if pm.piece.name not in NOT_IN_ICONS]
+        tris[name] = icons.item_triangles(shown, item['atlas'], item['albedo'])
         if name in weapons.GEAR:
             print(f'{name}: {len(item["pieces"])} pieces, icon only')
             continue
