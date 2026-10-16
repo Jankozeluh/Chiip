@@ -10,6 +10,15 @@ Every release of Chiip, newest first. The section of a version is the text of it
 
 In 0.1.0 your bullets went through the enemies and hit the wall behind them, and theirs went through you: nobody could hurt anybody. The downloaded game lost every character's hit zones on the way from the project to the build (a default value in one script made the export drop the boxes' data); playing from the editor worked, so the tests didn't see it. Now every build is checked before it ships: the packaging plays a real shot each way in the exported game and stops if either does no damage.
 
+
+### Fixed
+
+- **Shots not registering in exported builds** (the downloads of 0.1.0): bullets hit characters again, and the game's tests include a check run against an exported build.
+
+### Update
+
+Download 0.1.1 and use it instead of 0.1.0; nothing else changed, and your settings are kept (unzip the new version anywhere and start it). For an online game everyone should update: a host on 0.1.0 can't hurt anyone, so the host has to be on 0.1.1.
+
 ### Download
 
 | System | File |
@@ -22,7 +31,7 @@ Everything else is as in 0.1.0 below: unzip it anywhere and start Chiip, check t
 
 ## [0.1.0] - 2026-10-16
 
-**The first public playtest.**
+**The first public playtest. Superseded by 0.1.1: in this build shots did not register (bullets went through the characters). Please use 0.1.1.**
 
 **Created by JK · Divocakos.** © Divocakos.
 
