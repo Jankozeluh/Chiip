@@ -45,7 +45,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **HUD, part B** (Sonnet): kill-feed plates with weapon icons (your kills framed white, your deaths red), the amber Bomb plate when you carry it, the plant/defuse prompt with its bar, toasts (switching sides, match point, bomb planted, low ammo) and a hit marker (white, amber on a headshot). All 30 suites pass (1018 checks).
 
-**Next:** class-draft cards and buy menu.
+- **Class draft** (task 12, Sonnet): the mockup's two big cards with the class picture, key chip, height, role, perk in lime and the signature gun with its icon; compact cards when all four show. ui 268, class 68, crew 54 checks pass.
+
+**Next:** the buy menu.
 
 ## 2026-10-16 — M9 multiplayer
 

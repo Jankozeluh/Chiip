@@ -60,6 +60,8 @@ const MAIN_MENU_SCENE := preload("res://ui/main_menu.tscn")
 const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const PAUSE_MENU_SCENE := preload("res://ui/pause_menu.tscn")
 const CLASS_MENU_SCENE := preload("res://ui/class_menu.tscn")
+## The window height the menus are laid out for (720p).
+const DESIGN_HEIGHT := 720.0
 const LOADING_SCENE := preload("res://ui/loading_screen.tscn")
 const THEME_PATH := "res://ui/chiip_theme.tres"
 ## The design tokens the theme is built from (D-131). Checks of the look compare
@@ -113,6 +115,13 @@ const VARIATIONS := {
 	"AlertLabel": "Label", "TeamTitleFriendly": "PanelContainer", "TeamTitleEnemy": "PanelContainer", "EmptySlotPanel": "PanelContainer",
 	"FooterPanel": "PanelContainer", "PageRow": "HBoxContainer", "SideColumn": "VBoxContainer", "SideBox": "VBoxContainer",
 	"TightBox": "VBoxContainer", "FieldRow": "HBoxContainer", "SlotRow": "HBoxContainer", "SlotMargin": "MarginContainer",
+	# M10 task 12 (D-142): the class draft as in mockup 08: the card (a button with a PANEL frame the focus lights), its footer
+	# edge, the key chip (empty or lit) and the number on it (ink on the lit one), the perk text on its 24 px lines, the title
+	# block, the frame's and the body's margins, the blocks of text and the rows of cards (full size and compact).
+	"ClassCardButton": "Button", "ClassFooterPanel": "PanelContainer", "KeyChip": "PanelContainer", "KeyChipLit": "PanelContainer",
+	"LargeInkLabel": "Label", "PerkLabel": "Label", "ClassHeaderBox": "VBoxContainer", "FrameMargin": "MarginContainer",
+	"ClassBodyMargin": "MarginContainer", "ClassBodyBox": "VBoxContainer", "ClassTextBox": "VBoxContainer",
+	"ClassRow": "HBoxContainer", "ClassRowCompact": "HBoxContainer",
 }
 ## The roles the HUD uses (M10 task 6, D-133; the mockups' look, task 14, D-141): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -210,6 +219,8 @@ func _ready() -> void:
 	await _test_loading_screen_look()
 	await _test_loading_screen_in_the_game()
 	await _test_lobby_menu()
+	_test_class_draft_roles()
+	await _test_class_draft_look()
 	_test_real_file_untouched()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -4089,6 +4100,209 @@ func _test_lobby_menu() -> void:
 	GameLaunch.clear()
 	GameLaunch.notice = ""
 	shared.reset_to_defaults()
+
+## The class draft's roles (M10, the mockup's "08 Class draft"): the card's frame, the key chip, the footer's edge, the
+## perk's lines, the gaps and the sizes the menu reads all carry their tokens.
+func _test_class_draft_roles() -> void:
+	var rest := _theme.get_stylebox("normal", "ClassCardButton") as StyleBoxFlat
+	var lit := _theme.get_stylebox("hover", "ClassCardButton") as StyleBoxFlat
+	var focus := _theme.get_stylebox("focus", "ClassCardButton") as StyleBoxFlat
+	var footer := _theme.get_stylebox("panel", "ClassFooterPanel") as StyleBoxFlat
+	_check("A class card is a PANEL block with a 2 px frame of its own colour at rest and in the accent when hovered or focused; its footer has a 2 px LINE edge along the top with 16 px under it",
+			rest.bg_color == Tokens.PANEL and rest.border_color == Tokens.PANEL and rest.border_width_left == Tokens.BORDER
+					and _theme.get_stylebox("pressed", "ClassCardButton") == rest
+					and lit.border_color == Tokens.ACCENT and lit.bg_color == Tokens.PANEL and focus.border_color == Tokens.ACCENT and not focus.draw_center
+					and footer.border_color == Tokens.LINE_COLOR and footer.border_width_top == Tokens.LINE and footer.border_width_bottom == 0
+					and footer.content_margin_top == Tokens.LINE + Tokens.CLASS_FOOTER_PAD_TOP,
+			"rest %s / %s, lit frame %s, footer edge %d, space %.0f" % [rest.bg_color, rest.border_color, lit.border_color, footer.border_width_top, footer.content_margin_top])
+	_check("The key chip is empty, or filled with the accent with ink on it (LargeInkLabel: 32 px, the on-fill colour); the perk text is DIM with a 3 px line spacing (24 px lines)",
+			_theme.get_stylebox("panel", "KeyChip") is StyleBoxEmpty
+					and (_theme.get_stylebox("panel", "KeyChipLit") as StyleBoxFlat).bg_color == Tokens.ACCENT
+					and _theme.get_color("font_color", "LargeInkLabel") == Tokens.TEXT_ON_FILL
+					and _theme.get_font_size("font_size", "LargeInkLabel") == Tokens.TEXT_SIZE_LARGE
+					and _theme.get_color("font_color", "PerkLabel") == Tokens.TEXT_DIM
+					and _theme.get_constant("line_spacing", "PerkLabel") == Tokens.CLASS_PERK_LINE_SPACING and Tokens.CLASS_PERK_LINE_SPACING == 3,
+			"")
+	_check("The gaps are the tokens: 12 under the title, 32 between cards (16 compact), 16 between the body's blocks, 8 inside a block; the body's padding is 24 and the frame's 2",
+			_theme.get_constant("separation", "ClassHeaderBox") == Tokens.CLASS_HEADER_GAP and Tokens.CLASS_HEADER_GAP == 12
+					and _theme.get_constant("separation", "ClassRow") == Tokens.CLASS_CARD_GAP and Tokens.CLASS_CARD_GAP == 32
+					and _theme.get_constant("separation", "ClassRowCompact") == Tokens.CLASS_CARD_GAP_COMPACT and Tokens.CLASS_CARD_GAP_COMPACT == 16
+					and _theme.get_constant("separation", "ClassBodyBox") == Tokens.CLASS_BODY_GAP and Tokens.CLASS_BODY_GAP == 16
+					and _theme.get_constant("separation", "ClassTextBox") == Tokens.CLASS_TEXT_GAP and Tokens.CLASS_TEXT_GAP == 8
+					and _theme.get_constant("margin_left", "ClassBodyMargin") == Tokens.CLASS_BODY_PAD and Tokens.CLASS_BODY_PAD == 24
+					and _theme.get_constant("margin_top", "FrameMargin") == Tokens.BORDER,
+			"")
+	_check("The sizes the menu reads are the tokens: a card 400 x 480 (288 wide when compact) and a row at most 1216 wide, so that four compact cards (4 x 288 + 3 x 16 = 1200) fit the 1280 canvas",
+			_theme.get_constant("card_width", "ClassDraft") == Tokens.CLASS_CARD_WIDTH and Tokens.CLASS_CARD_WIDTH == 400
+					and _theme.get_constant("card_height", "ClassDraft") == Tokens.CLASS_CARD_HEIGHT and Tokens.CLASS_CARD_HEIGHT == 480
+					and _theme.get_constant("card_width_compact", "ClassDraft") == Tokens.CLASS_CARD_WIDTH_COMPACT and Tokens.CLASS_CARD_WIDTH_COMPACT == 288
+					and _theme.get_constant("row_max_width", "ClassDraft") == Tokens.CLASS_ROW_MAX_WIDTH
+					and 4 * Tokens.CLASS_CARD_WIDTH_COMPACT + 3 * Tokens.CLASS_CARD_GAP_COMPACT <= Tokens.CLASS_ROW_MAX_WIDTH
+					and 3 * Tokens.CLASS_CARD_WIDTH + 2 * Tokens.CLASS_CARD_GAP > Tokens.CLASS_ROW_MAX_WIDTH
+					and 2 * Tokens.CLASS_CARD_WIDTH + Tokens.CLASS_CARD_GAP <= Tokens.CLASS_ROW_MAX_WIDTH,
+			"")
+
+
+## A match on the test map with the class draft on or off and a long freeze time, so that the class menu that opens by
+## itself stays open. Returns the game; its class menu is scaled by 1.0 (a headless window is tiny).
+func _class_draft_game(draft: bool) -> Node:
+	if _map != null and is_instance_valid(_map):
+		remove_child(_map)
+		_map.queue_free()
+		_map = null
+	var rules := MatchSettings.new()
+	rules.freeze_time = 60.0
+	rules.class_draft = draft
+	GameLaunch.start_match(Settings.DEFAULT_MAP, rules)
+	var main := MAIN_SCENE.instantiate()
+	main.load_settings = false
+	main.loading_screen = false
+	add_child(main)
+	for i in 3:
+		await get_tree().physics_frame
+	await get_tree().process_frame
+	_rounds = main.get_map().get_node("RoundManager") as RoundManager
+	_player = main.get_map().get_node("Player") as Character
+	for character in _rounds.get_participants():
+		_silence(character)
+	return main
+
+
+## The class draft as in the mockup's "08 Class draft", at 720p and at 1.5 times (1080p): two cards (a draft) are 400 x 480
+## and 32 apart, four (no draft) the compact 288 wide and 16 apart; the parts stand where the mockup has them; the focused card is
+## lit (lime key chip), hovering moves it, the number keys pick; the title block and the hint say what the game says.
+func _test_class_draft_look() -> void:
+	GameLaunch.clear()
+	MenuState.reset()
+	for case: Array in [[true, 2, Tokens.CLASS_CARD_WIDTH, Tokens.CLASS_CARD_GAP], [false, 4, Tokens.CLASS_CARD_WIDTH_COMPACT, Tokens.CLASS_CARD_GAP_COMPACT]]:
+		var draft: bool = case[0]
+		var count: int = case[1]
+		var card_width: int = case[2]
+		var gap: int = case[3]
+		var main := await _class_draft_game(draft)
+		var menu := main.get_node("ClassMenu") as ClassMenu
+		var view := get_viewport().get_visible_rect().size
+		var classes := menu.get_classes()
+		_check("%s: the class menu opened by itself in freeze time with %d cards, your class (the first of a draft) is the lit one, and the title block says \"%d of 4 offered · starts in N\""
+				% ["A draft" if draft else "Without the draft", count, count],
+				menu.is_open() and classes.size() == count and menu.get_lit_index() == classes.find(_player.class_data) and menu.get_title_label().text == "Pick a class"
+						and menu.get_subtitle_label().text.begins_with("%d of 4 offered · starts in " % count),
+				"open %s, cards %d, lit %d, subtitle '%s'" % [menu.is_open(), classes.size(), menu.get_lit_index(), menu.get_subtitle_label().text])
+		var rows := {}
+		for factor: float in [1.0, 1.5]:
+			menu.set_ui_scale(factor)
+			for i in 4:
+				await get_tree().process_frame
+			var row := menu.get_card_row()
+			var parts: Dictionary = {}
+			var cards := menu.get_cards()
+			var first := cards[0].get_global_rect()
+			var width := roundf(card_width * factor)
+			var lit_ok := true
+			var detail_ok := true
+			var text_ok := true
+			var icon_ok := true
+			for i in count:
+				var data := classes[i]
+				var rect := cards[i].get_global_rect()
+				var picture := cards[i].find_child("Picture", true, false) as Control
+				var pic := picture.get_global_rect()
+				var chip := menu.get_part(i, "Chip").get_global_rect()
+				var height_rect := menu.get_part(i, "Height").get_global_rect()
+				var icon := menu.get_part(i, "Icon") as TextureRect
+				var gun_icon := menu.get_part(i, "GunIcon") as TextureRect
+				var inner := roundf(Tokens.BORDER * factor)
+				# The mockup's numbers, times the scale: the picture area, the chip's corner, the height's corner, the icons.
+				detail_ok = detail_ok and rect.size.x == width and rect.size.y >= roundf(Tokens.CLASS_CARD_HEIGHT * factor) \
+						and pic.position == rect.position + Vector2.ONE * inner and pic.size.y == roundf(Tokens.CLASS_PICTURE_HEIGHT * factor) \
+						and pic.size.x == width - 2.0 * inner \
+						and chip == Rect2(pic.position + Vector2.ONE * roundf(Tokens.CLASS_CHIP_INSET * factor), Vector2.ONE * roundf(Tokens.CLASS_CHIP_SIZE * factor)) \
+						and height_rect.end.x == pic.end.x - roundf(Tokens.CLASS_HEIGHT_INSET * factor) and height_rect.position.y == pic.position.y + roundf(Tokens.CLASS_HEIGHT_TOP * factor) \
+						and icon.get_global_rect().size == Vector2.ONE * roundf(Tokens.CLASS_ICON_SIZE * factor) and icon.get_global_rect().end.y == pic.end.y \
+						and absf(icon.get_global_rect().get_center().x - pic.get_center().x) <= 1.0 \
+						and gun_icon.get_global_rect().size == Vector2(Tokens.CLASS_GUN_ICON) * factor \
+						and gun_icon.get_global_rect().end.x == rect.end.x - roundf((Tokens.BORDER + Tokens.CLASS_BODY_PAD) * factor)
+				text_ok = text_ok and (menu.get_part(i, "Key") as Label).text == str(i + 1) and (menu.get_part(i, "Name") as Label).text == data.display_name \
+						and (menu.get_part(i, "Role") as Label).text == data.role and (menu.get_part(i, "PerkName") as Label).text == data.perk_name \
+						and (menu.get_part(i, "Perk") as Label).text == data.perk_description and (menu.get_part(i, "Gun") as Label).text == data.signature_weapon \
+						and (menu.get_part(i, "Height") as Label).text == "%.2f m" % data.height
+				# The class icon is the class's slot in the friendly colour, the gun's is the first weapon's slot in the text colour.
+				icon_ok = icon_ok and icon.texture == UiIcons.get_icon(icon, data.id) and icon.texture != null and icon.modulate == Tokens.FRIENDLY \
+						and gun_icon.texture == UiIcons.get_icon(gun_icon, data.loadout[0].id) and gun_icon.texture != null and gun_icon.modulate == Tokens.TEXT
+				var is_lit := i == menu.get_lit_index()
+				lit_ok = lit_ok and menu.get_part(i, "Chip").theme_type_variation == (&"KeyChipLit" if is_lit else &"KeyChip") \
+						and menu.get_part(i, "Key").theme_type_variation == (&"LargeInkLabel" if is_lit else &"LargeLabel") \
+						and (menu.get_part(i, "Key") as Label).get_theme_color("font_color") == (Tokens.TEXT_ON_FILL if is_lit else Tokens.TEXT)
+			parts["row top"] = row.get_global_rect().position.y == roundf(Tokens.CLASS_ROW_TOP * factor)
+			parts["cards"] = cards.size() >= count and cards[count - 1].visible and (count == 4 or not cards[2].visible)
+			parts["gap"] = count < 2 or cards[1].get_global_rect().position.x - first.end.x == roundf(gap * factor)
+			parts["centred"] = absf(first.position.x + (cards[count - 1].get_global_rect().end.x - first.position.x) / 2.0 - view.x / 2.0) <= 1.0
+			parts["fits"] = cards[count - 1].get_global_rect().end.x - first.position.x <= roundf(Tokens.CLASS_ROW_MAX_WIDTH * factor)
+			parts["variation"] = row.theme_type_variation == (&"ClassRow" if draft else &"ClassRowCompact")
+			parts["title"] = menu.get_title_label().get_theme_font_size("font_size") == roundi(Tokens.TEXT_SIZE_TITLE * factor)
+			var hint_rect := menu.get_hint_label().get_global_rect()
+			var trim := menu.get_title_label().get_parent() as Control
+			parts["hint"] = hint_rect.end.y == view.y - roundf(Tokens.CLASS_HINT_BOTTOM * factor) \
+					and cards[0].get_global_rect().end.y <= roundf(DESIGN_HEIGHT * factor) - hint_rect.size.y - roundf(Tokens.CLASS_HINT_BOTTOM * factor)
+			parts["header"] = trim.get_parent().get_global_rect().position.y == roundf(Tokens.CLASS_TITLE_TOP * factor) \
+					and absf(trim.get_global_rect().size.y - Tokens.TEXT_SIZE_TITLE * factor) <= 1.0 \
+					and absf(menu.get_subtitle_label().get_global_rect().position.y - trim.get_global_rect().end.y - Tokens.CLASS_HEADER_GAP * factor) <= 1.0
+			parts["details"] = detail_ok
+			parts["texts"] = text_ok
+			parts["icons"] = icon_ok
+			parts["lit"] = lit_ok
+			rows[factor] = parts
+			print("  [%s cards at %s] card %s, first at %s, row %s, hint %s, header %s" % [count, factor, cards[0].get_global_rect().size,
+					first.position, row.get_global_rect(), menu.get_hint_label().get_global_rect(), menu.get_title_label().get_global_rect()])
+		for factor: float in rows:
+			var failed: Array = []
+			for part: String in rows[factor]:
+				if not rows[factor][part]:
+					failed.append(part)
+			_check("%d cards at %s times the size: %d wide (at least %d high), %d apart, centred in the window, the picture, key chip, height, icons, texts and lit chip where the mockup has them, the hint %d from the bottom"
+					% [count, factor, roundi(card_width * factor), roundi(Tokens.CLASS_CARD_HEIGHT * factor), roundi(gap * factor), roundi(Tokens.CLASS_HINT_BOTTOM * factor)],
+					failed.is_empty(), "failed parts %s" % [failed])
+		menu.set_ui_scale(1.0)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if draft:
+			await _check_class_draft_input(menu)
+		else:
+			_check("Without the draft the hint lists all four keys and the gun icons are by weapon id: the Rifleman's rifle, the Bulwark's shotgun, the Marksman's sniper, the Scout's smg",
+					menu.get_hint_label().text == "Click or press 1 / 2 / 3 / 4 · Esc keeps your class"
+							and menu.get_gun_id(ClassData.find(&"rifleman")) == &"rifle" and menu.get_gun_id(ClassData.find(&"bulwark")) == &"shotgun"
+							and menu.get_gun_id(ClassData.find(&"marksman")) == &"sniper" and menu.get_gun_id(ClassData.find(&"scout")) == &"smg",
+					menu.get_hint_label().text)
+		remove_child(main)
+		main.queue_free()
+		await get_tree().process_frame
+		MenuState.reset()
+		GameLaunch.clear()
+
+
+## Hovering a card lights it (the focus follows the mouse and the lime key chip with it), and the number keys pick.
+func _check_class_draft_input(menu: ClassMenu) -> void:
+	var before := menu.get_lit_index()
+	var other := 1 - before
+	(menu.get_part(other, "Select") as Button).mouse_entered.emit()
+	await get_tree().process_frame
+	var hovered := menu.get_lit_index() == other and menu.get_part(other, "Chip").theme_type_variation == &"KeyChipLit" \
+			and menu.get_part(before, "Chip").theme_type_variation == &"KeyChip" and menu.get_part(other, "Select").has_focus()
+	var classes := menu.get_classes()
+	_send(_key_event(KEY_2))
+	_send(_key_event(KEY_2, false))
+	await get_tree().process_frame
+	var picked_second := not menu.is_open() and _player.class_data == classes[1]
+	menu.open()
+	await get_tree().process_frame
+	_send(_key_event(KEY_1))
+	_send(_key_event(KEY_1, false))
+	await get_tree().process_frame
+	var picked_first := not menu.is_open() and _player.class_data == classes[0]
+	_check("Hovering the other card moves the focus, the lime frame and the lime key chip to it; key 2 then picks the second class and key 1 the first (the menu closes each time)",
+			hovered and picked_second and picked_first,
+			"hovered %s, second %s, first %s, lit before %d" % [hovered, picked_second, picked_first, before])
+
 
 
 ## The real settings file is exactly as it was when the test started.

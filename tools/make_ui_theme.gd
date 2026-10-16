@@ -49,6 +49,7 @@ func _init() -> void:
 	_containers()
 	_hud()
 	_console()
+	_class_draft()
 	_buttons()
 	_toggles()
 	_line_edit()
@@ -121,6 +122,14 @@ func _labels() -> void:
 	_font_sizes("HeroLabel", {"font_size": Palette.TEXT_SIZE_HERO})
 	_fonts("HeroLabel", {"font": bold})
 	_colors("HeroLabel", {"font_color": Palette.TEXT})
+	# 32 px text in ink: the number on a lit key chip (the class draft).
+	_variation("LargeInkLabel", "Label")
+	_font_sizes("LargeInkLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
+	_colors("LargeInkLabel", {"font_color": Palette.TEXT_ON_FILL})
+	# A class's perk text: dim, with the draft's 24 px lines (the line box and a little space between lines).
+	_variation("PerkLabel", "Label")
+	_colors("PerkLabel", {"font_color": Palette.TEXT_DIM})
+	_constants("PerkLabel", {"line_spacing": Palette.CLASS_PERK_LINE_SPACING})
 	# The Play screen's mode cards: the mode's name (32 px) and its lines (dim).
 	_variation("ModeTitleLabel", "Label")
 	_font_sizes("ModeTitleLabel", {"font_size": Palette.TEXT_SIZE_LARGE})
@@ -213,6 +222,17 @@ func _panels() -> void:
 	# A raised area (a class card's picture).
 	_variation("RaisedPanel", "PanelContainer")
 	_styles("RaisedPanel", {"panel": _box("raised_panel", Palette.PANEL_RAISED)})
+	# The class draft's key chip: nothing behind the number, or (the focused card's) filled with the accent.
+	_variation("KeyChip", "PanelContainer")
+	_styles("KeyChip", {"panel": _empty("key_chip", _even(0))})
+	_variation("KeyChipLit", "PanelContainer")
+	_styles("KeyChipLit", {"panel": _box("key_chip_lit", Palette.ACCENT, Color.TRANSPARENT, 0, _even(0))})
+	# A class card's footer: a 2 px LINE edge along its top and the space between that line and the gun's name.
+	_variation("ClassFooterPanel", "PanelContainer")
+	var class_footer := _box("class_footer_panel", Color.TRANSPARENT, Palette.LINE_COLOR)
+	class_footer.border_width_top = Palette.LINE
+	class_footer.content_margin_top = Palette.LINE + Palette.CLASS_FOOTER_PAD_TOP
+	_styles("ClassFooterPanel", {"panel": class_footer})
 	# A plate on the game (ink, 72%): kill-feed lines, toasts.
 	_variation("PlatePanel", "PanelContainer")
 	_styles("PlatePanel", {"panel": _box("plate_panel", Palette.PLATE)})
@@ -320,6 +340,22 @@ func _containers() -> void:
 	_constants("ModeText", {"separation": Palette.MODE_LINE_GAP})
 	_variation("CardRow", "HBoxContainer")
 	_constants("CardRow", {"separation": Palette.CARD_GAP})
+	# The class draft: the title block, a card's frame (the 2 px the focus colours), its body and its blocks of text,
+	# and the row of cards (full size, or compact when all four classes are shown).
+	_variation("ClassHeaderBox", "VBoxContainer")
+	_constants("ClassHeaderBox", {"separation": Palette.CLASS_HEADER_GAP})
+	_variation("FrameMargin", "MarginContainer")
+	_margins("FrameMargin", Palette.BORDER, Palette.BORDER)
+	_variation("ClassBodyMargin", "MarginContainer")
+	_margins("ClassBodyMargin", Palette.CLASS_BODY_PAD, Palette.CLASS_BODY_PAD)
+	_variation("ClassBodyBox", "VBoxContainer")
+	_constants("ClassBodyBox", {"separation": Palette.CLASS_BODY_GAP})
+	_variation("ClassTextBox", "VBoxContainer")
+	_constants("ClassTextBox", {"separation": Palette.CLASS_TEXT_GAP})
+	_variation("ClassRow", "HBoxContainer")
+	_constants("ClassRow", {"separation": Palette.CLASS_CARD_GAP})
+	_variation("ClassRowCompact", "HBoxContainer")
+	_constants("ClassRowCompact", {"separation": Palette.CLASS_CARD_GAP_COMPACT})
 	# A full-screen page's column of sections, and a row's parts.
 	_variation("PageColumn", "VBoxContainer")
 	_constants("PageColumn", {"separation": Palette.PAGE_GAP})
@@ -533,6 +569,16 @@ func _trimmed(id: String, font: Font, trim: Vector2i) -> FontVariation:
 	return trimmed
 
 
+## The class draft's sizes that code reads (the custom type "ClassDraft", scaled with the UI like every constant): a
+## card's size at full and compact width, and the widest row of cards, so that the menu picks the compact cards when
+## the full ones would not fit.
+func _class_draft() -> void:
+	_constants("ClassDraft", {
+		"card_width": Palette.CLASS_CARD_WIDTH, "card_height": Palette.CLASS_CARD_HEIGHT,
+		"card_width_compact": Palette.CLASS_CARD_WIDTH_COMPACT, "row_max_width": Palette.CLASS_ROW_MAX_WIDTH,
+	})
+
+
 ## The developer console (mockup 17), on top of the ConsolePanel strip: the output's lines in the
 ## pixel font like all text, in four colours (normal TEXT here, echoed commands DimLabel, notes
 ## MuteLabel, errors ALERT), and an input row on INK with a lime prompt, a flat input with a block
@@ -660,6 +706,15 @@ func _buttons() -> void:
 		"hover_pressed": _box("mode_button_hover_pressed", Palette.PANEL_OPAQUE, Palette.ACCENT, Palette.BORDER, card),
 		"disabled": _box("mode_button_disabled", Palette.PANEL_OPAQUE, Palette.PANEL_OPAQUE, Palette.BORDER, card),
 		"focus": _ring("mode_button_focus", Palette.ACCENT, card),
+	})
+	# A class card of the draft: a panel whose 2 px frame is the panel's own colour at rest and the accent on hover and
+	# focus (the focus ring; the card that has the focus is the lit one). The current class's pressed card looks like the rest.
+	_variation("ClassCardButton", "Button")
+	var class_rest := _box("class_card_rest", Palette.PANEL, Palette.PANEL, Palette.BORDER, card)
+	var class_lit := _box("class_card_lit", Palette.PANEL, Palette.ACCENT, Palette.BORDER, card)
+	_styles("ClassCardButton", {
+		"normal": class_rest, "pressed": class_rest, "disabled": class_rest, "hover": class_lit, "hover_pressed": class_lit,
+		"focus": _ring("class_card_focus", Palette.ACCENT, card),
 	})
 	# The picked mode card: framed in the accent at rest too ("click to play").
 	_variation("ModeButtonPicked", "ModeButton")

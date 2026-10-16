@@ -16,298 +16,634 @@ grow_vertical = 2
 mouse_filter = 0
 theme_type_variation = &"BackdropPanel"
 
-[node name="Panel" type="PanelContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+[node name="Header" type="VBoxContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 48.0
+offset_bottom = 48.0
 grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 0
-theme_type_variation = &"ModalPanel"
+mouse_filter = 2
+theme_type_variation = &"ClassHeaderBox"
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="TitleTrim" type="MarginContainer" parent="Header"]
 layout_mode = 2
-theme_type_variation = &"PanelMarginWide"
+mouse_filter = 2
+theme_type_variation = &"TitleTrim"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
-layout_mode = 2
-theme_type_variation = &"ContentBox"
-
-[node name="Title" type="Label" parent="Panel/Margin/Content"]
+[node name="Title" type="Label" parent="Header/TitleTrim"]
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
-text = "Choose your class"
+text = "Pick a class"
 horizontal_alignment = 1
 
-[node name="Classes" type="HBoxContainer" parent="Panel/Margin/Content"]
+[node name="Subtitle" type="Label" parent="Header"]
 layout_mode = 2
-theme_type_variation = &"FormRow"
+theme_type_variation = &"DimLabel"
+horizontal_alignment = 1
 
-[node name="Card1" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
-layout_mode = 2
-custom_minimum_size = Vector2(208, 0)
-size_flags_horizontal = 3
+[node name="Cards" type="HBoxContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 160.0
+offset_bottom = 640.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"ClassRow"
+alignment = 1
 
-[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card1"]
+[node name="Card1" type="MarginContainer" parent="Cards"]
 layout_mode = 2
+mouse_filter = 2
+
+[node name="Select" type="Button" parent="Cards/Card1"]
+layout_mode = 2
+theme_type_variation = &"ClassCardButton"
 toggle_mode = true
 
-[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card1"]
+[node name="Frame" type="MarginContainer" parent="Cards/Card1"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"PanelMargin"
+theme_type_variation = &"FrameMargin"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card1/Margin"]
+[node name="Column" type="VBoxContainer" parent="Cards/Card1/Frame"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"ContentBox"
+theme_type_variation = &"StackBox"
 
-[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="Picture" type="PanelContainer" parent="Cards/Card1/Frame/Column"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 200)
+mouse_filter = 2
+theme_type_variation = &"RaisedPanel"
+
+[node name="Overlay" type="Control" parent="Cards/Card1/Frame/Column/Picture"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content/Top"]
+[node name="Icon" type="TextureRect" parent="Cards/Card1/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(160, 160)
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Chip" type="PanelContainer" parent="Cards/Card1/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_type_variation = &"KeyChip"
+
+[node name="KeyTrim" type="MarginContainer" parent="Cards/Card1/Frame/Column/Picture/Overlay/Chip"]
 layout_mode = 2
-theme_type_variation = &"HeaderLabel"
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Key" type="Label" parent="Cards/Card1/Frame/Column/Picture/Overlay/Chip/KeyTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "1"
+horizontal_alignment = 1
 
-[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content/Top"]
-layout_mode = 2
-size_flags_horizontal = 3
+[node name="Height" type="Label" parent="Cards/Card1/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -16.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 24.0
+grow_horizontal = 0
 theme_type_variation = &"DimLabel"
-horizontal_alignment = 2
 
-[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="Body" type="MarginContainer" parent="Cards/Card1/Frame/Column"]
 layout_mode = 2
-theme_type_variation = &"BrightLabel"
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassBodyMargin"
+
+[node name="Content" type="VBoxContainer" parent="Cards/Card1/Frame/Column/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassBodyBox"
+
+[node name="NameBox" type="VBoxContainer" parent="Cards/Card1/Frame/Column/Body/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
+
+[node name="NameTrim" type="MarginContainer" parent="Cards/Card1/Frame/Column/Body/Content/NameBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Name" type="Label" parent="Cards/Card1/Frame/Column/Body/Content/NameBox/NameTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "Rifleman"
 
-[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="Role" type="Label" parent="Cards/Card1/Frame/Column/Body/Content/NameBox"]
 layout_mode = 2
 theme_type_variation = &"DimLabel"
-text = "1.82 m"
 
-[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="PerkBox" type="VBoxContainer" parent="Cards/Card1/Frame/Column/Body/Content"]
 layout_mode = 2
-text = "Stocky and upright: the all-rounder"
-autowrap_mode = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
 
-[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="PerkName" type="Label" parent="Cards/Card1/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderLabel"
-text = "Quick Hands"
 
-[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="Perk" type="Label" parent="Cards/Card1/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
-text = "Reloads and weapon switches 15% faster."
+theme_type_variation = &"PerkLabel"
 autowrap_mode = 3
 
-[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card1/Margin/Content"]
+[node name="Footer" type="PanelContainer" parent="Cards/Card1/Frame/Column/Body/Content"]
 layout_mode = 2
-theme_type_variation = &"DimLabel"
-text = "Gun: AK-style rifle"
-autowrap_mode = 3
+mouse_filter = 2
+theme_type_variation = &"ClassFooterPanel"
 
-[node name="Card2" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+[node name="FooterRow" type="HBoxContainer" parent="Cards/Card1/Frame/Column/Body/Content/Footer"]
 layout_mode = 2
-custom_minimum_size = Vector2(208, 0)
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Gun" type="Label" parent="Cards/Card1/Frame/Column/Body/Content/Footer/FooterRow"]
+layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_type_variation = &"DimLabel"
+autowrap_mode = 3
 
-[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card2"]
+[node name="GunIcon" type="TextureRect" parent="Cards/Card1/Frame/Column/Body/Content/Footer/FooterRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(64, 32)
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Card2" type="MarginContainer" parent="Cards"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Select" type="Button" parent="Cards/Card2"]
+layout_mode = 2
+theme_type_variation = &"ClassCardButton"
 toggle_mode = true
 
-[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card2"]
+[node name="Frame" type="MarginContainer" parent="Cards/Card2"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"PanelMargin"
+theme_type_variation = &"FrameMargin"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card2/Margin"]
+[node name="Column" type="VBoxContainer" parent="Cards/Card2/Frame"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"ContentBox"
+theme_type_variation = &"StackBox"
 
-[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="Picture" type="PanelContainer" parent="Cards/Card2/Frame/Column"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 200)
+mouse_filter = 2
+theme_type_variation = &"RaisedPanel"
+
+[node name="Overlay" type="Control" parent="Cards/Card2/Frame/Column/Picture"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content/Top"]
+[node name="Icon" type="TextureRect" parent="Cards/Card2/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(160, 160)
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Chip" type="PanelContainer" parent="Cards/Card2/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_type_variation = &"KeyChip"
+
+[node name="KeyTrim" type="MarginContainer" parent="Cards/Card2/Frame/Column/Picture/Overlay/Chip"]
 layout_mode = 2
-theme_type_variation = &"HeaderLabel"
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Key" type="Label" parent="Cards/Card2/Frame/Column/Picture/Overlay/Chip/KeyTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "2"
+horizontal_alignment = 1
 
-[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content/Top"]
-layout_mode = 2
-size_flags_horizontal = 3
+[node name="Height" type="Label" parent="Cards/Card2/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -16.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 24.0
+grow_horizontal = 0
 theme_type_variation = &"DimLabel"
-horizontal_alignment = 2
 
-[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="Body" type="MarginContainer" parent="Cards/Card2/Frame/Column"]
 layout_mode = 2
-theme_type_variation = &"BrightLabel"
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassBodyMargin"
+
+[node name="Content" type="VBoxContainer" parent="Cards/Card2/Frame/Column/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassBodyBox"
+
+[node name="NameBox" type="VBoxContainer" parent="Cards/Card2/Frame/Column/Body/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
+
+[node name="NameTrim" type="MarginContainer" parent="Cards/Card2/Frame/Column/Body/Content/NameBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Name" type="Label" parent="Cards/Card2/Frame/Column/Body/Content/NameBox/NameTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "Bulwark"
 
-[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="Role" type="Label" parent="Cards/Card2/Frame/Column/Body/Content/NameBox"]
 layout_mode = 2
 theme_type_variation = &"DimLabel"
-text = "1.92 m"
 
-[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="PerkBox" type="VBoxContainer" parent="Cards/Card2/Frame/Column/Body/Content"]
 layout_mode = 2
-text = "Tall and broad: the anchor"
-autowrap_mode = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
 
-[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="PerkName" type="Label" parent="Cards/Card2/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderLabel"
-text = "Plated"
 
-[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="Perk" type="Label" parent="Cards/Card2/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
-text = "With armor on, takes 10% less damage and the armor wears down 30% slower."
+theme_type_variation = &"PerkLabel"
 autowrap_mode = 3
 
-[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card2/Margin/Content"]
+[node name="Footer" type="PanelContainer" parent="Cards/Card2/Frame/Column/Body/Content"]
 layout_mode = 2
-theme_type_variation = &"DimLabel"
-text = "Gun: Pump shotgun"
-autowrap_mode = 3
+mouse_filter = 2
+theme_type_variation = &"ClassFooterPanel"
 
-[node name="Card3" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+[node name="FooterRow" type="HBoxContainer" parent="Cards/Card2/Frame/Column/Body/Content/Footer"]
 layout_mode = 2
-custom_minimum_size = Vector2(208, 0)
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Gun" type="Label" parent="Cards/Card2/Frame/Column/Body/Content/Footer/FooterRow"]
+layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_type_variation = &"DimLabel"
+autowrap_mode = 3
 
-[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card3"]
+[node name="GunIcon" type="TextureRect" parent="Cards/Card2/Frame/Column/Body/Content/Footer/FooterRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(64, 32)
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Card3" type="MarginContainer" parent="Cards"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Select" type="Button" parent="Cards/Card3"]
+layout_mode = 2
+theme_type_variation = &"ClassCardButton"
 toggle_mode = true
 
-[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card3"]
+[node name="Frame" type="MarginContainer" parent="Cards/Card3"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"PanelMargin"
+theme_type_variation = &"FrameMargin"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card3/Margin"]
+[node name="Column" type="VBoxContainer" parent="Cards/Card3/Frame"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"ContentBox"
+theme_type_variation = &"StackBox"
 
-[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="Picture" type="PanelContainer" parent="Cards/Card3/Frame/Column"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 200)
+mouse_filter = 2
+theme_type_variation = &"RaisedPanel"
+
+[node name="Overlay" type="Control" parent="Cards/Card3/Frame/Column/Picture"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content/Top"]
+[node name="Icon" type="TextureRect" parent="Cards/Card3/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(160, 160)
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Chip" type="PanelContainer" parent="Cards/Card3/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_type_variation = &"KeyChip"
+
+[node name="KeyTrim" type="MarginContainer" parent="Cards/Card3/Frame/Column/Picture/Overlay/Chip"]
 layout_mode = 2
-theme_type_variation = &"HeaderLabel"
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Key" type="Label" parent="Cards/Card3/Frame/Column/Picture/Overlay/Chip/KeyTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "3"
+horizontal_alignment = 1
 
-[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content/Top"]
-layout_mode = 2
-size_flags_horizontal = 3
+[node name="Height" type="Label" parent="Cards/Card3/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -16.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 24.0
+grow_horizontal = 0
 theme_type_variation = &"DimLabel"
-horizontal_alignment = 2
 
-[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="Body" type="MarginContainer" parent="Cards/Card3/Frame/Column"]
 layout_mode = 2
-theme_type_variation = &"BrightLabel"
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassBodyMargin"
+
+[node name="Content" type="VBoxContainer" parent="Cards/Card3/Frame/Column/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassBodyBox"
+
+[node name="NameBox" type="VBoxContainer" parent="Cards/Card3/Frame/Column/Body/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
+
+[node name="NameTrim" type="MarginContainer" parent="Cards/Card3/Frame/Column/Body/Content/NameBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Name" type="Label" parent="Cards/Card3/Frame/Column/Body/Content/NameBox/NameTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "Marksman"
 
-[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="Role" type="Label" parent="Cards/Card3/Frame/Column/Body/Content/NameBox"]
 layout_mode = 2
 theme_type_variation = &"DimLabel"
-text = "1.88 m"
 
-[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="PerkBox" type="VBoxContainer" parent="Cards/Card3/Frame/Column/Body/Content"]
 layout_mode = 2
-text = "Lanky, in a long coat: the long-range pick"
-autowrap_mode = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
 
-[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="PerkName" type="Label" parent="Cards/Card3/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderLabel"
-text = "Steady"
 
-[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="Perk" type="Label" parent="Cards/Card3/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
-text = "Scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster."
+theme_type_variation = &"PerkLabel"
 autowrap_mode = 3
 
-[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card3/Margin/Content"]
+[node name="Footer" type="PanelContainer" parent="Cards/Card3/Frame/Column/Body/Content"]
 layout_mode = 2
-theme_type_variation = &"DimLabel"
-text = "Gun: Sniper rifle"
-autowrap_mode = 3
+mouse_filter = 2
+theme_type_variation = &"ClassFooterPanel"
 
-[node name="Card4" type="MarginContainer" parent="Panel/Margin/Content/Classes"]
+[node name="FooterRow" type="HBoxContainer" parent="Cards/Card3/Frame/Column/Body/Content/Footer"]
 layout_mode = 2
-custom_minimum_size = Vector2(208, 0)
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Gun" type="Label" parent="Cards/Card3/Frame/Column/Body/Content/Footer/FooterRow"]
+layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_type_variation = &"DimLabel"
+autowrap_mode = 3
 
-[node name="Select" type="Button" parent="Panel/Margin/Content/Classes/Card4"]
+[node name="GunIcon" type="TextureRect" parent="Cards/Card3/Frame/Column/Body/Content/Footer/FooterRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(64, 32)
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Card4" type="MarginContainer" parent="Cards"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Select" type="Button" parent="Cards/Card4"]
+layout_mode = 2
+theme_type_variation = &"ClassCardButton"
 toggle_mode = true
 
-[node name="Margin" type="MarginContainer" parent="Panel/Margin/Content/Classes/Card4"]
+[node name="Frame" type="MarginContainer" parent="Cards/Card4"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"PanelMargin"
+theme_type_variation = &"FrameMargin"
 
-[node name="Content" type="VBoxContainer" parent="Panel/Margin/Content/Classes/Card4/Margin"]
+[node name="Column" type="VBoxContainer" parent="Cards/Card4/Frame"]
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"ContentBox"
+theme_type_variation = &"StackBox"
 
-[node name="Top" type="HBoxContainer" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="Picture" type="PanelContainer" parent="Cards/Card4/Frame/Column"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 200)
+mouse_filter = 2
+theme_type_variation = &"RaisedPanel"
+
+[node name="Overlay" type="Control" parent="Cards/Card4/Frame/Column/Picture"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Key" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content/Top"]
+[node name="Icon" type="TextureRect" parent="Cards/Card4/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(160, 160)
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Chip" type="PanelContainer" parent="Cards/Card4/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_type_variation = &"KeyChip"
+
+[node name="KeyTrim" type="MarginContainer" parent="Cards/Card4/Frame/Column/Picture/Overlay/Chip"]
 layout_mode = 2
-theme_type_variation = &"HeaderLabel"
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Key" type="Label" parent="Cards/Card4/Frame/Column/Picture/Overlay/Chip/KeyTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "4"
+horizontal_alignment = 1
 
-[node name="Current" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content/Top"]
-layout_mode = 2
-size_flags_horizontal = 3
+[node name="Height" type="Label" parent="Cards/Card4/Frame/Column/Picture/Overlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -16.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 24.0
+grow_horizontal = 0
 theme_type_variation = &"DimLabel"
-horizontal_alignment = 2
 
-[node name="Name" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="Body" type="MarginContainer" parent="Cards/Card4/Frame/Column"]
 layout_mode = 2
-theme_type_variation = &"BrightLabel"
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassBodyMargin"
+
+[node name="Content" type="VBoxContainer" parent="Cards/Card4/Frame/Column/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassBodyBox"
+
+[node name="NameBox" type="VBoxContainer" parent="Cards/Card4/Frame/Column/Body/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
+
+[node name="NameTrim" type="MarginContainer" parent="Cards/Card4/Frame/Column/Body/Content/NameBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"LargeTrim"
+
+[node name="Name" type="Label" parent="Cards/Card4/Frame/Column/Body/Content/NameBox/NameTrim"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
 text = "Scout"
 
-[node name="Height" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="Role" type="Label" parent="Cards/Card4/Frame/Column/Body/Content/NameBox"]
 layout_mode = 2
 theme_type_variation = &"DimLabel"
-text = "1.72 m"
 
-[node name="Role" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="PerkBox" type="VBoxContainer" parent="Cards/Card4/Frame/Column/Body/Content"]
 layout_mode = 2
-text = "Short and slim: the lurker"
-autowrap_mode = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"ClassTextBox"
 
-[node name="PerkName" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="PerkName" type="Label" parent="Cards/Card4/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderLabel"
-text = "Light Step"
 
-[node name="Perk" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="Perk" type="Label" parent="Cards/Card4/Frame/Column/Body/Content/PerkBox"]
 layout_mode = 2
-text = "Running footsteps carry 70% as far."
+theme_type_variation = &"PerkLabel"
 autowrap_mode = 3
 
-[node name="Weapon" type="Label" parent="Panel/Margin/Content/Classes/Card4/Margin/Content"]
+[node name="Footer" type="PanelContainer" parent="Cards/Card4/Frame/Column/Body/Content"]
 layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ClassFooterPanel"
+
+[node name="FooterRow" type="HBoxContainer" parent="Cards/Card4/Frame/Column/Body/Content/Footer"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"RowBox"
+
+[node name="Gun" type="Label" parent="Cards/Card4/Frame/Column/Body/Content/Footer/FooterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 theme_type_variation = &"DimLabel"
-text = "Gun: SMG"
 autowrap_mode = 3
 
-[node name="Footer" type="Label" parent="Panel/Margin/Content"]
+[node name="GunIcon" type="TextureRect" parent="Cards/Card4/Frame/Column/Body/Content/Footer/FooterRow"]
 layout_mode = 2
-theme_type_variation = &"DimLabel"
-text = "M: change class during freeze time."
+custom_minimum_size = Vector2(64, 32)
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Hint" type="Label" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"MuteLabel"
 horizontal_alignment = 1
-autowrap_mode = 3

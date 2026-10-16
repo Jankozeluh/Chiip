@@ -15,7 +15,7 @@
 script = ExtResource("class_script")
 id = &"scout"
 display_name = "Scout"
-role = "Short and slim: the lurker"
+role = "Flanker"
 height = 1.72
 model = ExtResource("model")
 hit_zones = ExtResource("hit_zones")

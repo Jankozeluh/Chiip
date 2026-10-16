@@ -305,6 +305,53 @@ content_margin_top = 4.0
 content_margin_right = 8.0
 content_margin_bottom = 4.0
 
+[sub_resource type="StyleBoxFlat" id="class_card_rest"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="class_card_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 0)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="class_card_lit"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.078431375, 0.105882354, 0.14509805, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="class_footer_panel"]
+content_margin_top = 18.0
+bg_color = Color(1, 1, 1, 0)
+border_width_top = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="console_input_row"]
 content_margin_left = 32.0
 content_margin_right = 32.0
@@ -869,6 +916,21 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="key_chip"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="key_chip_lit"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.78431374, 0.9411765, 0.23529412, 1)
+border_color = Color(1, 1, 1, 0)
 anti_aliasing = false
 
 [sub_resource type="StyleBoxEmpty" id="key_slot_button_disabled"]
@@ -1980,6 +2042,34 @@ CheckButton/styles/normal = SubResource("check_button_normal")
 CheckButton/styles/pressed = SubResource("check_button_pressed")
 ChipRow/base_type = &"HBoxContainer"
 ChipRow/constants/separation = 6
+ClassBodyBox/base_type = &"VBoxContainer"
+ClassBodyBox/constants/separation = 16
+ClassBodyMargin/base_type = &"MarginContainer"
+ClassBodyMargin/constants/margin_bottom = 24
+ClassBodyMargin/constants/margin_left = 24
+ClassBodyMargin/constants/margin_right = 24
+ClassBodyMargin/constants/margin_top = 24
+ClassCardButton/base_type = &"Button"
+ClassCardButton/styles/disabled = SubResource("class_card_rest")
+ClassCardButton/styles/focus = SubResource("class_card_focus")
+ClassCardButton/styles/hover = SubResource("class_card_lit")
+ClassCardButton/styles/hover_pressed = SubResource("class_card_lit")
+ClassCardButton/styles/normal = SubResource("class_card_rest")
+ClassCardButton/styles/pressed = SubResource("class_card_rest")
+ClassDraft/constants/card_height = 480
+ClassDraft/constants/card_width = 400
+ClassDraft/constants/card_width_compact = 288
+ClassDraft/constants/row_max_width = 1216
+ClassFooterPanel/base_type = &"PanelContainer"
+ClassFooterPanel/styles/panel = SubResource("class_footer_panel")
+ClassHeaderBox/base_type = &"VBoxContainer"
+ClassHeaderBox/constants/separation = 12
+ClassRow/base_type = &"HBoxContainer"
+ClassRow/constants/separation = 32
+ClassRowCompact/base_type = &"HBoxContainer"
+ClassRowCompact/constants/separation = 16
+ClassTextBox/base_type = &"VBoxContainer"
+ClassTextBox/constants/separation = 8
 ConsoleBox/base_type = &"VBoxContainer"
 ConsoleBox/constants/separation = 0
 ConsoleErrorLabel/base_type = &"ConsoleLabel"
@@ -2062,6 +2152,11 @@ FormGrid/constants/h_separation = 64
 FormGrid/constants/v_separation = 16
 FormRow/base_type = &"HBoxContainer"
 FormRow/constants/separation = 16
+FrameMargin/base_type = &"MarginContainer"
+FrameMargin/constants/margin_bottom = 2
+FrameMargin/constants/margin_left = 2
+FrameMargin/constants/margin_right = 2
+FrameMargin/constants/margin_top = 2
 FriendlyChip/base_type = &"Panel"
 FriendlyChip/styles/panel = SubResource("friendly_chip")
 FriendlyChipButton/base_type = &"Button"
@@ -2400,6 +2495,10 @@ KeyCapButton/styles/normal = SubResource("key_cap_button_normal")
 KeyCapButton/styles/pressed = SubResource("key_slot_lit")
 KeyCapLabel/base_type = &"Label"
 KeyCapLabel/styles/normal = SubResource("key_cap")
+KeyChip/base_type = &"PanelContainer"
+KeyChip/styles/panel = SubResource("key_chip")
+KeyChipLit/base_type = &"PanelContainer"
+KeyChipLit/styles/panel = SubResource("key_chip_lit")
 KeySlotButton/base_type = &"Button"
 KeySlotButton/colors/font_color = Color(0.37254903, 0.42352942, 0.5019608, 1)
 KeySlotButton/colors/font_hover_pressed_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
@@ -2413,6 +2512,9 @@ KeySlotButton/styles/pressed = SubResource("key_slot_lit")
 Label/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 Label/colors/font_outline_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
 Label/colors/font_shadow_color = Color(0.02745098, 0.03529412, 0.050980393, 1)
+LargeInkLabel/base_type = &"Label"
+LargeInkLabel/colors/font_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
+LargeInkLabel/font_sizes/font_size = 32
 LargeLabel/base_type = &"Label"
 LargeLabel/font_sizes/font_size = 32
 LargeTrim/base_type = &"MarginContainer"
@@ -2530,6 +2632,9 @@ PanelMarginWide/constants/margin_bottom = 32
 PanelMarginWide/constants/margin_left = 32
 PanelMarginWide/constants/margin_right = 32
 PanelMarginWide/constants/margin_top = 32
+PerkLabel/base_type = &"Label"
+PerkLabel/colors/font_color = Color(0.6039216, 0.65882355, 0.7411765, 1)
+PerkLabel/constants/line_spacing = 3
 PlatePanel/base_type = &"PanelContainer"
 PlatePanel/styles/panel = SubResource("plate_panel")
 PopupMenu/colors/font_accelerator_color = Color(0.6039216, 0.65882355, 0.7411765, 1)

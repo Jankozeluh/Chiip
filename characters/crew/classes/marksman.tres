@@ -15,7 +15,7 @@
 script = ExtResource("class_script")
 id = &"marksman"
 display_name = "Marksman"
-role = "Lanky, in a long coat: the long-range pick"
+role = "Long range"
 height = 1.88
 model = ExtResource("model")
 hit_zones = ExtResource("hit_zones")
@@ -23,7 +23,7 @@ arms_model = ExtResource("arms_model")
 signature_weapon = "Heron (sniper rifle)"
 look = "Knee-length moss-grey coat with team-colour sleeves, a team panel across the back and a hood, a team-colour scarf over the face, lean chest rig."
 perk_name = "Steady"
-perk_description = "Scoped accuracy recovers 30% faster after moving, and scoping in is 20% faster."
+perk_description = "Scoped aim settles 30% faster, scoping in is 20% faster."
 scoped_recovery_factor = 1.3
 scope_in_time_factor = 0.8
 loadout = Array[ExtResource("weapon_data_script")]([ExtResource("loadout_sniper"), ExtResource("loadout_pistol"), ExtResource("loadout_knife"), ExtResource("loadout_smoke")])

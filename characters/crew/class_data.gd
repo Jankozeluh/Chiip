@@ -26,7 +26,7 @@ const PATHS: Array[String] = [
 @export var id: StringName = &""
 ## The name shown in menus ("Rifleman").
 @export var display_name: String = ""
-## What the class is for, in one line ("Stocky and upright: the all-rounder").
+## What the class is for, in a word or two: the class card's second line ("All-round", "Anchor", "Long range", "Flanker").
 @export var role: String = ""
 ## How tall the body is, in metres (the top of the head zone). The model is made exactly this
 ## tall by tools/modelgen. Eye height and the collision hull are the same for every class.
@@ -46,12 +46,12 @@ const PATHS: Array[String] = [
 @export_multiline var look: String = ""
 ## The name of the passive perk ("Quick Hands").
 @export var perk_name: String = ""
-## What the perk does, in plain words, as the menu shows it.
+## What the perk does, in plain words, as the menu shows it: kept to two lines on the class card (about 60 characters).
 @export_multiline var perk_description: String = ""
 
 @export_group("Loadout")
 ## What the class spawns with where there is no money (team respawn and practice, D-090): its
-## signature gun, the Sparrow, the knife and one grenade. Rounds give everyone the same fresh
+## signature gun (first: the class card shows its icon), the Sparrow, the knife and one grenade. Rounds give everyone the same fresh
 ## loadout instead ([member MatchSettings.round_loadout]).
 @export var loadout: Array[WeaponData] = []
 

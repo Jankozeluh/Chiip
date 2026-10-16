@@ -343,6 +343,48 @@ const LOADING_CHIP := 12
 ## How many progress squares there are: the hold time is shared out between them.
 const LOADING_CHIPS := 12
 
+# --- Class draft (the mockup's "08 Class draft", M7's class menu on the M10 look) ---
+# The world dimmed behind it, a title block 48 from the top, a row of cards centred 160 from the top (two of four
+# classes in a match, all four in practice) and a hint 24 from the bottom. A card is a PANEL block in a 2 px frame
+# (the focused or current card's is the accent): a RAISED picture area (the class icon at scale 10, a key chip, the
+# height), a body (name, role, perk) and a footer under a LINE edge (the gun's name, its icon at scale 2).
+
+## Where the title block starts, from the top edge, and the gap between the title and the "2 of 4 offered" line.
+const CLASS_TITLE_TOP := 48
+const CLASS_HEADER_GAP := 12
+## Where the row of cards starts, from the top edge.
+const CLASS_ROW_TOP := 160
+## A card at full size (two cards fit like this): width, height (the least it gets: the text may need more), and the gap between cards.
+const CLASS_CARD_WIDTH := 400
+const CLASS_CARD_HEIGHT := 480
+const CLASS_CARD_GAP := 32
+## The widest a row of cards may be: the 1280 px canvas less a 32 px safe margin on each side. A row of full cards that
+## would be wider (three or four classes) takes the compact card and gap below, so that all four still fit.
+const CLASS_ROW_MAX_WIDTH := 1216
+## The compact card's width (the height is the same) and the gap between compact cards: 4 x 288 + 3 x 16 = 1200.
+const CLASS_CARD_WIDTH_COMPACT := 288
+const CLASS_CARD_GAP_COMPACT := 16
+## The picture area's height, and the class icon in it: the 16 x 16 icon at scale 10, bottom-centred.
+const CLASS_PICTURE_HEIGHT := 200
+const CLASS_ICON_SIZE := 160
+## The key chip (the card's number, 32 px) in the picture's top-left corner: its side and how far it stands from the left and top edges.
+const CLASS_CHIP_SIZE := 40
+const CLASS_CHIP_INSET := 16
+## The class's height in the picture's top-right corner: how far from the right edge and from the top edge.
+const CLASS_HEIGHT_INSET := 16
+const CLASS_HEIGHT_TOP := 24
+## The body's padding on every side, the gap between its blocks (name and role, perk, footer) and between the lines of a block.
+const CLASS_BODY_PAD := 24
+const CLASS_BODY_GAP := 16
+const CLASS_TEXT_GAP := 8
+## Extra space between the lines of the perk's text: Silkscreen's line box is 21 px and the mockup sets 24 (21 + 3).
+const CLASS_PERK_LINE_SPACING := 3
+## The footer: the space between its LINE edge and the gun's name, and the gun's icon at scale 2 (the 32 x 16 icon).
+const CLASS_FOOTER_PAD_TOP := 16
+const CLASS_GUN_ICON := Vector2i(64, 32)
+## The hint at the bottom: its distance from the bottom edge.
+const CLASS_HINT_BOTTOM := 24
+
 # --- Developer console (mockup 17) ---
 # A strip across the top of the screen: the output (Silkscreen 16 on a 24 px line, bottom-aligned) over an
 # input row on INK. The strip's colour and its LINE edge are CONSOLE and the ConsolePanel role.

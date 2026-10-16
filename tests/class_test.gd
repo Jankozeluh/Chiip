@@ -315,27 +315,28 @@ func _test_class_menu() -> void:
 	add_child(menu)
 	await _new_match(settings, true, menu)
 	var controller := _player.get_node("PlayerController") as PlayerController
-	var cards := menu.get_node("Panel/Margin/Content/Classes").get_children()
+	var cards := menu.get_cards()
 	_check("The class menu opens by itself when round 1's freeze time begins",
 			menu.is_open() and menu.visible and _rounds.phase == RoundManager.Phase.FREEZE,
 			"open %s, visible %s" % [menu.is_open(), menu.visible])
 	var names: Array = []
 	var current_marked: Array = []
-	for card in cards:
-		names.append((card.get_node("Margin/Content/Name") as Label).text)
-		current_marked.append((card.get_node("Select") as Button).button_pressed)
+	for i in cards.size():
+		names.append((menu.get_part(i, "Name") as Label).text)
+		current_marked.append((menu.get_part(i, "Select") as Button).button_pressed)
 	_check("It shows the four classes in order, with your current class (the Rifleman) pressed",
 			names == ["Rifleman", "Bulwark", "Marksman", "Scout"] and current_marked == [true, false, false, false],
 			"%s, pressed %s" % [names, current_marked])
-	var focus_on_current := get_viewport().gui_get_focus_owner() == cards[0].get_node("Select")
+	var focus_on_current := get_viewport().gui_get_focus_owner() == menu.get_part(0, "Select")
 	var card_text := ""
-	for card in cards:
-		card_text += (card.get_node("Margin/Content/Perk") as Label).text + (card.get_node("Margin/Content/Height") as Label).text
-	_check("Each card has the class's height and its perk text, the title and footer are there, and the current card has the focus",
-			focus_on_current and card_text.contains("1.92 m") and card_text.contains("Reloads and weapon switches 15% faster.")
-			and (menu.get_node("Panel/Margin/Content/Title") as Label).text == "Choose your class"
-			and (menu.get_node("Panel/Margin/Content/Footer") as Label).text == "M: change class during freeze time.",
-			"")
+	for i in cards.size():
+		card_text += (menu.get_part(i, "Perk") as Label).text + (menu.get_part(i, "Height") as Label).text
+	_check("Each card has the class's height and its perk text, the title, the line under it and the hint are there, and the current card has the focus and is the lit one",
+			focus_on_current and menu.get_lit_index() == 0 and card_text.contains("1.92 m") and card_text.contains("Reloads and weapon switches 15% faster.")
+			and menu.get_title_label().text == "Pick a class"
+			and menu.get_subtitle_label().text.begins_with("4 of 4 offered · starts in ")
+			and menu.get_hint_label().text == "Click or press 1 / 2 / 3 / 4 · Esc keeps your class",
+			"subtitle '%s', hint '%s'" % [menu.get_subtitle_label().text, menu.get_hint_label().text])
 	var background := menu.get_node("Background") as Control
 	_check("The dimmed background takes every click, and the menu blocks the trigger while it is open",
 			background.mouse_filter == Control.MOUSE_FILTER_STOP and controller._shooting_blocked,
@@ -360,8 +361,8 @@ func _test_class_menu() -> void:
 			"opened %s, open now %s, class %s" % [opened_by_key, menu.is_open(), _player.class_data.id])
 	# A click on a card.
 	menu.open()
-	var select := menu.get_node("Panel/Margin/Content/Classes/Card2/Select") as Button
-	var pressed_on_open := (menu.get_node("Panel/Margin/Content/Classes/Card3/Select") as Button).button_pressed
+	var select := menu.get_part(1, "Select") as Button
+	var pressed_on_open := (menu.get_part(2, "Select") as Button).button_pressed
 	select.pressed.emit()
 	await _wait_ticks(3)
 	_check("Clicking the Bulwark's card (it was Marksman before, and its card was pressed) makes you the Bulwark and closes the menu",
@@ -393,7 +394,7 @@ func _test_class_menu() -> void:
 			not opened_with_console and not key_with_console, "open() %s, M %s" % [opened_with_console, key_with_console])
 	# Scaling and theme.
 	menu.open()
-	var title := menu.get_node("Panel/Margin/Content/Title") as Label
+	var title := menu.get_title_label()
 	var card := cards[0] as Control
 	var base_size := title.get_theme_font_size("font_size")
 	var base_card := card.custom_minimum_size.x
@@ -403,10 +404,10 @@ func _test_class_menu() -> void:
 	var scaled_card := card.custom_minimum_size.x
 	menu.set_ui_scale(1.0)
 	await _wait_ticks(2)
-	_check("The menu takes its look from the theme (a ModalPanel and a TitleLabel, no overrides) and scales with it: 48 -> 72 px title, cards 208 -> 312 px",
-			(menu.get_node("Panel") as Control).theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel"
+	_check("The menu takes its look from the theme (a BackdropPanel and a TitleLabel, no overrides) and scales with it: 48 -> 72 px title, the four compact cards 288 -> 432 px wide",
+			(menu.get_node("Background") as Control).theme_type_variation == &"BackdropPanel" and title.theme_type_variation == &"TitleLabel"
 			and not title.has_theme_font_size_override("font_size") and base_size == 48 and scaled_size == 72
-			and base_card == 208.0 and scaled_card == 312.0 and title.get_theme_font_size("font_size") == 48,
+			and base_card == 288.0 and scaled_card == 432.0 and title.get_theme_font_size("font_size") == 48,
 			"title %d -> %d, card %.0f -> %.0f" % [base_size, scaled_size, base_card, scaled_card])
 	# Freeze time ends: it closes itself.
 	_check("The menu is open late in freeze time", menu.is_open() and _rounds.phase == RoundManager.Phase.FREEZE, "")
@@ -443,10 +444,11 @@ func _test_class_menu() -> void:
 	_map.add_child(arena)
 	menu.set_rules(arena, _player)
 	var practice_open := menu.open()
+	var practice_line := menu.get_subtitle_label().text
 	var practice_pick := menu.pick(3)
-	_check("In practice mode the menu opens at any time and a pick always works",
-			practice_open and practice_pick and _player.class_data == ClassData.find(&"scout"),
-			"opened %s, picked %s, class %s" % [practice_open, practice_pick, _player.class_data.id])
+	_check("In practice mode the menu opens at any time (\"4 of 4 offered · any time\") and a pick always works",
+			practice_open and practice_pick and _player.class_data == ClassData.find(&"scout") and practice_line == "4 of 4 offered · any time",
+			"opened %s, picked %s, class %s, line '%s'" % [practice_open, practice_pick, _player.class_data.id, practice_line])
 	menu.queue_free()
 
 
@@ -500,9 +502,14 @@ func _test_perks() -> void:
 	rifleman.queue_free()
 	var menu := MENU_SCENE.instantiate() as ClassMenu
 	add_child(menu)
-	var card_text := (menu.find_child("Weapon", true, false) as Label).text
-	_check("The class menu shows each class's loadout (where there's no money)", card_text.begins_with("Loadout: ") and card_text.contains("Sparrow"),
-			card_text)
+	var gun_texts: Array = []
+	var gun_icons := true
+	for i in menu.get_cards().size():
+		gun_texts.append((menu.get_part(i, "Gun") as Label).text)
+		gun_icons = gun_icons and (menu.get_part(i, "GunIcon") as TextureRect).texture != null
+	_check("The class menu shows each class's gun (the first of its loadout, where there's no money) by name and with its icon",
+			gun_texts == ["Ram (AK-style rifle)", "Breaker (pump shotgun)", "Heron (sniper rifle)", "Hornet (SMG)"] and gun_icons,
+			"%s, icons %s" % [gun_texts, gun_icons])
 	# Team respawn: a class change in a live round waits for the next respawn, with that class's loadout.
 	var settings := _settings()
 	settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
@@ -577,15 +584,16 @@ func _test_class_draft() -> void:
 	var not_offered: ClassData = ClassData.all().filter(func(data: ClassData) -> bool: return not yours.has(data))[0]
 	var refused := not _rounds.request_class(_player, not_offered) and _player.class_data == yours[0]
 	var names: Array = []
-	var cards := menu.get_node("Panel/Margin/Content/Classes").get_children()
-	for card in cards:
-		if (card as Control).visible:
-			names.append((card.get_node("Margin/Content/Name") as Label).text)
-	var footer := (menu.get_node("Panel/Margin/Content/Footer") as Label).text
-	_check("The class menu shows your two cards (the others hidden) and says they're yours this match; a class you weren't offered is refused",
-			menu.is_open() and names == [yours[0].display_name, yours[1].display_name] and footer.begins_with("Your two classes")
+	var cards := menu.get_cards()
+	for i in cards.size():
+		if cards[i].visible:
+			names.append((menu.get_part(i, "Name") as Label).text)
+	var subtitle := menu.get_subtitle_label().text
+	_check("The class menu shows your two cards (the others hidden), says \"2 of 4 offered\" and lets keys 1 and 2 pick; a class you weren't offered is refused",
+			menu.is_open() and names == [yours[0].display_name, yours[1].display_name] and subtitle.begins_with("2 of 4 offered · starts in ")
+			and menu.get_hint_label().text == "Click or press 1 / 2 · Esc keeps your class"
 			and menu.get_classes() == yours and refused,
-			"cards %s, footer '%s', refused %s" % [names, footer, refused])
+			"cards %s, subtitle '%s', refused %s" % [names, subtitle, refused])
 	_press_key(KEY_3)
 	await _wait_ticks(2)
 	var key_3_nothing := menu.is_open() and _player.class_data == yours[0]
@@ -644,6 +652,11 @@ func _test_class_draft() -> void:
 	_check("Team respawn drafts too: your other class is accepted, one you weren't offered isn't",
 			respawn.request_class(_player, respawn_draft[1]) and not respawn.request_class(_player, outside),
 			"draft %s" % [_ids(respawn_draft)])
+	menu.set_rules(respawn, _player)
+	menu.open()
+	_check("The class menu of team respawn says any time, and that the new class comes with the next respawn",
+			menu.is_open() and menu.get_subtitle_label().text == "2 of 4 offered · any time" and menu.get_hint_label().text.ends_with("the new class comes with your next respawn"),
+			"'%s' / '%s'" % [menu.get_subtitle_label().text, menu.get_hint_label().text])
 	menu.queue_free()
 	_remove_map()
 	await _wait_ticks(2)

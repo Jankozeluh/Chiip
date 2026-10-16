@@ -1,9 +1,14 @@
 class_name ClassMenu
 extends CanvasLayer
-## The class menu (D-052, D-078, D-099): cards side by side, one per class you may take, with its
-## key, name, height, role, perk and loadout. In a match those are the two classes of your draft
-## ([method RoundManager.get_draft]: keys 1 and 2, the other cards hidden); in practice all four.
-## Click a card or press its key to take that class; the card of your current class is pressed.
+## The class menu, as the mockup's "08 Class draft" (D-052, D-078, D-099): the world dimmed, a title
+## ("Pick a class") with how many classes are offered and when the round starts, and cards side by
+## side, one per class you may take: a picture area (the class icon, its key, its height), the name
+## and role, the perk, and the gun's name and icon. In a match those are the two classes of your draft
+## ([method RoundManager.get_draft]: keys 1 and 2, the other cards hidden); in practice, or with the
+## draft off, all four (then the cards are the compact size, see [method _fit_cards]).
+## Click a card or press its key to take that class. The lit card (lime frame and key chip) is the one
+## with the keyboard focus: your current class when the menu opens, then whichever the mouse
+## hovers or the arrow keys reach ([method get_lit_index]).
 ## Esc, or the [code]class_menu[/code] key (M), closes it without a change.
 ##
 ## When it shows: in a match it opens by itself once, when round 1's freeze time begins, and M
@@ -18,8 +23,9 @@ extends CanvasLayer
 ## is never also a shot ([method PlayerController.block_shooting]). It stays shut while the
 ## developer console is open, and ignores keys the console would be typing.
 ##
-## Its look comes from the UI theme (D-057): the panel, title, cards and labels use theme type
-## variations, and [method set_ui_scale] hands it a theme scaled for the window ([UiTheme]).
+## Its look comes from the UI theme (D-057): the title, cards and labels use theme type variations
+## (the numbers are the "Class draft" tokens in tools/ui_palette.gd), and [method set_ui_scale] hands
+## it a theme scaled for the window ([UiTheme]), so at 1080 p it is exactly 1.5 times as big.
 
 ## The physical keys that pick a class, in menu order.
 const PICK_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4]
@@ -32,15 +38,47 @@ var _rules: Node
 var _player: Character
 var _is_open: bool = false
 
-@onready var _card_row: HBoxContainer = $Panel/Margin/Content/Classes
-@onready var _footer: Label = $Panel/Margin/Content/Footer
+## The theme type that holds the sizes the menu reads (card width and height, the widest row).
+const SIZES_TYPE := &"ClassDraft"
+## The theme type of the palette's named colours.
+const PALETTE_TYPE := &"Palette"
+## The type variations of a lit and an unlit key chip and of the number on them.
+const CHIP_LIT := &"KeyChipLit"
+const CHIP_UNLIT := &"KeyChip"
+const KEY_LIT := &"LargeInkLabel"
+const KEY_UNLIT := &"LargeLabel"
+## The type variations of the row of cards at full size and compact.
+const ROW_FULL := &"ClassRow"
+const ROW_COMPACT := &"ClassRowCompact"
+
+## The card nodes, one per possible class, in order.
+var _cards: Array[Control] = []
+## Each card's parts by node name ("Select", "Icon", "Chip", "Key", "Height", "Name", "Role", "PerkName",
+## "Perk", "Gun", "GunIcon"), found once.
+var _parts: Array[Dictionary] = []
+## The card that is lit (has the focus), or -1.
+var _lit: int = -1
+
+@onready var _card_row: HBoxContainer = $Cards
+@onready var _title: Label = $Header/TitleTrim/Title
+@onready var _subtitle: Label = $Header/Subtitle
+@onready var _hint: Label = $Hint
 
 
 func _ready() -> void:
 	visible = false
-	var cards := _card_row.get_children()
-	for i in cards.size():
-		(cards[i].get_node("Select") as Button).pressed.connect(pick.bind(i))
+	set_process(false)
+	for card in _card_row.get_children():
+		var parts := {}
+		for part in ["Select", "Icon", "Chip", "Key", "Height", "Name", "Role", "PerkName", "Perk", "Gun", "GunIcon"]:
+			parts[part] = card.find_child(part, true, false)
+		var index := _cards.size()
+		_cards.append(card as Control)
+		_parts.append(parts)
+		var select := parts["Select"] as Button
+		select.pressed.connect(pick.bind(index))
+		# Hovering a card moves the focus to it, and the focus is what lights a card up.
+		select.mouse_entered.connect(_on_card_hovered.bind(index))
 	_show_classes()
 
 
@@ -73,7 +111,7 @@ func _input(event: InputEvent) -> void:
 ## rules and, in a match, opens when round 1's freeze time begins (at once if it already has).
 func set_rules(rules: Node, player: Character) -> void:
 	close()
-	if _rules is RoundManager and is_instance_valid(_rules):
+	if is_instance_valid(_rules) and _rules is RoundManager:
 		var old := _rules as RoundManager
 		old.round_started.disconnect(_on_round_started)
 		old.phase_changed.disconnect(_on_phase_changed)
@@ -91,6 +129,9 @@ func set_rules(rules: Node, player: Character) -> void:
 ## Scales the layout; 1.0 is the size it is designed for (a 720-pixel-tall window).
 func set_ui_scale(factor: float) -> void:
 	UiTheme.apply(self, factor)
+	# The apply gave the cards back their scene size (none): the cards' size comes from the theme. The
+	# icons are the new theme's (scaled) ones.
+	_show_classes()
 
 
 ## True while the menu is showing.
@@ -123,6 +164,7 @@ func open() -> bool:
 		return false
 	_is_open = true
 	visible = true
+	set_process(true)
 	# MenuState frees the mouse and makes the player controls stand still.
 	MenuState.open(self)
 	var controller := _get_controller()
@@ -139,6 +181,7 @@ func close() -> void:
 		return
 	_is_open = false
 	visible = false
+	set_process(false)
 	# A card that keeps the keyboard focus would take the next Space (jump) as a click.
 	var focused := get_viewport().gui_get_focus_owner()
 	if focused != null and is_ancestor_of(focused):
@@ -181,64 +224,173 @@ func _request(data: ClassData) -> bool:
 	return false
 
 
-## Shows the texts of one class on its card.
-func _fill_card(card: Control, index: int, data: ClassData) -> void:
-	var content := card.get_node("Margin/Content")
-	(content.get_node("Top/Key") as Label).text = str(index + 1)
-	(content.get_node("Name") as Label).text = data.display_name
-	(content.get_node("Height") as Label).text = "%.2f m" % data.height
-	(content.get_node("Role") as Label).text = data.role
-	(content.get_node("PerkName") as Label).text = data.perk_name
-	(content.get_node("Perk") as Label).text = data.perk_description
-	# The loadout it spawns with where there's no money (team respawn, practice); in rounds
-	# everyone starts with the knife and the Sparrow and buys (D-090).
-	var loadout: PackedStringArray = []
-	for weapon in data.loadout:
-		loadout.append(weapon.display_name)
-	(content.get_node("Weapon") as Label).text = "Loadout: %s" % ", ".join(loadout) if not loadout.is_empty() \
-			else "Gun: %s" % data.signature_weapon
+## Shows one class on its card: the texts, and the icons of the class and of its gun.
+func _fill_card(index: int, data: ClassData) -> void:
+	var parts := _parts[index]
+	(parts["Key"] as Label).text = str(index + 1)
+	(parts["Name"] as Label).text = data.display_name
+	(parts["Height"] as Label).text = "%.2f m" % data.height
+	(parts["Role"] as Label).text = data.role
+	(parts["PerkName"] as Label).text = data.perk_name
+	(parts["Perk"] as Label).text = data.perk_description
+	(parts["Gun"] as Label).text = data.signature_weapon
+	# The class icon, in the UI's friendly colour; the gun's icon, in the text colour, is the first of the
+	# loadout (where there is none, or no icon is drawn for it, the card has no icon).
+	_set_icon(parts["Icon"] as TextureRect, data.id, &"friendly_text")
+	_set_icon(parts["GunIcon"] as TextureRect, get_gun_id(data), &"text")
 	# The look is too long for the card: it is the hover text.
-	(card.get_node("Select") as Button).tooltip_text = data.look
+	(parts["Select"] as Button).tooltip_text = data.look
+
+
+## The id of the gun [param data]'s card shows (the first of its loadout), or an empty name.
+func get_gun_id(data: ClassData) -> StringName:
+	return data.loadout[0].id if not data.loadout.is_empty() and data.loadout[0] != null else &""
+
+
+## Puts the icon of [param slot] in [param rect], tinted with the palette colour [param tint]; the
+## rect hides when the slot is empty.
+func _set_icon(rect: TextureRect, slot: StringName, tint: StringName) -> void:
+	var icon := UiIcons.get_icon(rect, slot) if slot != &"" else null
+	rect.texture = icon
+	rect.visible = icon != null
+	rect.modulate = rect.get_theme_color(tint, PALETTE_TYPE)
 
 
 ## Puts the classes the player may take on the cards (see [method get_classes]), hides the
-## cards left over, and says on the footer when a change is allowed.
+## cards left over, and says in the title block and the hint when a change is allowed.
 func _show_classes() -> void:
-	if _rules is RoundManager and is_instance_valid(_rules) and is_instance_valid(_player):
+	if is_instance_valid(_rules) and _rules is RoundManager and is_instance_valid(_player):
 		_classes = (_rules as RoundManager).get_draft(_player)
 	else:
 		_classes = ClassData.all()
-	var cards := _card_row.get_children()
-	for i in cards.size():
-		var card := cards[i] as Control
-		card.visible = i < _classes.size()
-		if card.visible:
-			_fill_card(card, i, _classes[i])
-	if _footer == null:
-		return
-	if _rules is RespawnMatch:
-		_footer.text = "Your two classes this match. M: switch any time; the new class comes with your next respawn."
-	elif _rules is RoundManager and _classes.size() < ClassData.all().size():
-		_footer.text = "Your two classes this match. M: switch between them in any freeze time."
-	elif _rules is RoundManager:
-		_footer.text = "M: change class during freeze time."
-	else:
-		_footer.text = "Practice: any class, any time (M)."
+	for i in _cards.size():
+		_cards[i].visible = i < _classes.size()
+		if _cards[i].visible:
+			_fill_card(i, _classes[i])
+	_fit_cards()
+	_update_header()
+	_update_hint()
 
 
-## Marks the player's current class: its card is pressed and says "current".
+## Sizes the cards and the gaps between them. A card is [code]card_width[/code] by [code]card_height[/code]
+## (theme type [constant SIZES_TYPE], scaled with the UI) and the cards stand [code]ClassRow[/code]'s gap
+## apart; when the row of the cards shown would be wider than [code]row_max_width[/code] (three or
+## four classes, i.e. practice and matches without the draft) they take the compact width and the
+## [code]ClassRowCompact[/code] gap instead, so that all four still fit the 1280 px canvas. The card
+## grows when its text needs more room than the height.
+func _fit_cards() -> void:
+	var count := _classes.size()
+	var full_width := _size_of(&"card_width")
+	var full_gap := _card_row.get_theme_constant(&"separation", ROW_FULL)
+	var compact := count * full_width + maxi(count - 1, 0) * full_gap > _size_of(&"row_max_width")
+	_card_row.theme_type_variation = ROW_COMPACT if compact else ROW_FULL
+	var card_size := Vector2(_size_of(&"card_width_compact" if compact else &"card_width"), _size_of(&"card_height"))
+	for card in _cards:
+		card.custom_minimum_size = card_size
+
+
+## One of the theme's "ClassDraft" sizes, scaled for the menu's scale.
+func _size_of(item: StringName) -> int:
+	return _card_row.get_theme_constant(item, SIZES_TYPE)
+
+
+## The title block's second line: how many classes are offered and when the round starts
+## ("2 of 4 offered · starts in 12", the freeze time left; "any time" where there is no freeze time to wait for).
+func _update_header() -> void:
+	var offered := "%d of %d offered" % [_classes.size(), ClassData.all().size()]
+	var when := "any time"
+	if is_instance_valid(_rules) and _rules is RoundManager and not _rules is RespawnMatch and (_rules as RoundManager).phase == RoundManager.Phase.FREEZE:
+		when = "starts in %d" % maxi(ceili((_rules as RoundManager).time_left), 0)
+	_subtitle.text = "%s · %s" % [offered, when]
+
+
+## The hint at the bottom of the screen: which keys pick a class (and, with team respawn, when the new class arrives).
+func _update_hint() -> void:
+	var keys: PackedStringArray = []
+	for i in _classes.size():
+		keys.append(str(i + 1))
+	var hint := "Click or press %s · Esc keeps your class" % " / ".join(keys)
+	if is_instance_valid(_rules) and _rules is RespawnMatch:
+		hint += " · the new class comes with your next respawn"
+	_hint.text = hint
+
+
+## Marks the player's current class: its card gets the focus (and with it the lime frame and key chip).
 func _refresh() -> void:
-	var cards := _card_row.get_children()
-	var current: Button = null
-	for i in mini(cards.size(), _classes.size()):
+	var current := -1
+	for i in mini(_cards.size(), _classes.size()):
 		var is_current := is_instance_valid(_player) and _player.class_data == _classes[i]
-		var select := cards[i].get_node("Select") as Button
-		select.set_pressed_no_signal(is_current)
-		(cards[i].get_node("Margin/Content/Top/Current") as Label).text = "current" if is_current else ""
+		(_parts[i]["Select"] as Button).set_pressed_no_signal(is_current)
 		if is_current:
-			current = select
-	if current != null:
-		current.grab_focus()
+			current = i
+	# A class that is not on the cards (it can't be, in a match) lights the first card.
+	if current < 0 and not _classes.is_empty():
+		current = 0
+	if current >= 0:
+		(_parts[current]["Select"] as Button).grab_focus()
+	_update_lit()
+
+
+## Lights the card that has the focus: its key chip is filled with the accent (the frame is the
+## button's focus ring) and the others' are empty.
+func _update_lit() -> void:
+	var focus := get_viewport().gui_get_focus_owner() if is_inside_tree() else null
+	var lit := -1
+	for i in _cards.size():
+		if _cards[i].visible and focus == _parts[i]["Select"]:
+			lit = i
+	if lit == _lit:
+		return
+	_lit = lit
+	for i in _cards.size():
+		(_parts[i]["Chip"] as Control).theme_type_variation = CHIP_LIT if i == lit else CHIP_UNLIT
+		(_parts[i]["Key"] as Control).theme_type_variation = KEY_LIT if i == lit else KEY_UNLIT
+
+
+func _process(_delta: float) -> void:
+	if not _is_open:
+		return
+	_update_lit()
+	_update_header()
+
+
+func _on_card_hovered(index: int) -> void:
+	if _is_open and _cards[index].visible:
+		(_parts[index]["Select"] as Button).grab_focus()
+
+
+## The card nodes, one per class the menu can show (the ones left over are hidden).
+func get_cards() -> Array[Control]:
+	return _cards
+
+
+## One part of card [param index] by its node name ("Select", "Icon", "Chip", "Key", "Height", "Name", "Role",
+## "PerkName", "Perk", "Gun", "GunIcon").
+func get_part(index: int, part: String) -> Control:
+	return _parts[index][part] as Control
+
+
+## The row the cards stand in.
+func get_card_row() -> HBoxContainer:
+	return _card_row
+
+
+## The title ("Pick a class"), the line under it ("2 of 4 offered · starts in 12") and the hint at the bottom.
+func get_title_label() -> Label:
+	return _title
+
+
+func get_subtitle_label() -> Label:
+	return _subtitle
+
+
+func get_hint_label() -> Label:
+	return _hint
+
+
+## The card that is lit (has the focus: lime frame and key chip), counting from 0, or -1 if none.
+func get_lit_index() -> int:
+	return _lit
 
 
 func _get_controller() -> PlayerController:
