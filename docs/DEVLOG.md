@@ -8,9 +8,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 **Done**
 - **Planned the UI part of M10** (PLAN.md, seven tasks). You design the look in Claude Design (UI_MOCKUPS.md), and your mockups will be the source of truth (D-130). Until they arrive today's look stays, and this branch builds what any look needs: the one-click mode choice with Team Deathmatch first (D-132), the HUD's layout and readability (D-133), a theme where every visual value is a token and every screen uses roles, and slots for a pixel icon set (D-131).
-- Took "before" pictures of all 13 screens through the real game.
+- **New `tools/ui_screenshots.gd`:** pictures of all 13 screens through the real scenes (main menu, match setup, settings tabs, class menu, HUD in freeze time and live with kills, Tab scoreboard, pause menu, console, match end, a Team Deathmatch HUD) without taking the mouse, at 720p or 1080p. The "before" set is taken.
 
-**Next:** the screenshot tool, then theme tokens and icon slots, then the main menu's mode choice.
+**Next:** theme tokens and icon slots, then the main menu's mode choice.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

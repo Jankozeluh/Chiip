@@ -2,7 +2,7 @@
 
 > How the project is organized and which rules the code follows. Updated whenever a folder, system or convention is added.
 >
-> Last updated: 2026-10-15. The Godot project exists; the folders below are created, systems are added milestone by milestone.
+> Last updated: 2026-10-16. The Godot project exists; the folders below are created, systems are added milestone by milestone.
 
 ## Engine
 
@@ -131,6 +131,7 @@ Chiip/
 | `tools/build_maps.gd` | Builds every `FuncGodotMap` in the given scenes from their `.map` files and saves the scenes (the editor's *Build Map* button, headless) |
 | `tools/map_report.gd` | Measures maps: walkable size, walking distances (spawns, sites, attack routes) and sightlines (eye-height rays between reachable spots), D-061 |
 | `tools/map_screenshots.gd` | Screenshots of a map through `main.tscn` (overview, both spawns, both sites, mid), read from the World SubViewport at 854 × 480; keeps `DevConsole.is_open` set every frame so the game ignores the mouse |
+| `tools/ui_screenshots.gd` | Screenshots of every UI screen through the real scenes (M10, D-130): the main menu, match setup, three settings tabs, then a bomb-rounds match on Depot (class menu, HUD in freeze time and in a live round with scripted kills, Tab scoreboard, pause menu, console, match-end screen announced by the round manager's own signal) and a Team Deathmatch HUD on Square. Saves `<number>_<name>.png` at the window's size (`--resolution` picks 720p or 1080p); keeps the mouse visible every frame and the console flag set except for the shots that need it off, so it never takes the mouse. Settings are the defaults |
 | `tools/export_trenchbroom_config.gd` | Writes Chiip's TrenchBroom game configuration (GameConfig.cfg, icon, FGD) into TrenchBroom's games folder |
 | `tools/generate_sounds.gd` | Generates the placeholder sounds into `assets/sounds/` (gunshot, empty click, reload clack) |
 | `tools/ui_palette.gd` | The UI colors as constants (D-057), shared by the two tools below |
