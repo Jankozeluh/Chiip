@@ -214,6 +214,16 @@ func _after_round_end() -> void:
 func request_class(character: Character, data: ClassData) -> bool:
 	if data == null or not is_instance_valid(character) or phase == Phase.MATCH_END or not is_drafted(character, data):
 		return false
+	if replica:
+		# Online, on a client: the host decides; its answer comes back as a class change (at once,
+		# or with the next respawn). Until then the choice shows as the next class here too.
+		if class_request.is_valid():
+			class_request.call(character, data)
+		if character.class_data != data:
+			_pending_class[character] = data
+		else:
+			_pending_class.erase(character)
+		return true
 	if phase == Phase.FREEZE or not character.is_alive():
 		_pending_class.erase(character)
 		if character.class_data != data:
@@ -235,9 +245,8 @@ func get_next_class(character: Character) -> ClassData:
 ## the map weapons, which [MapWeapons] looks after).
 func _clear_old_guns() -> void:
 	var map := get_parent()
-	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
-		var pickup := node as WeaponPickup
-		if pickup != null and pickup.spot == null and pickup.age > DROPPED_GUN_LIFETIME and map.is_ancestor_of(pickup):
+	for pickup in WeaponPickup.all_in_world(map):
+		if pickup.spot == null and pickup.age > DROPPED_GUN_LIFETIME and map.is_ancestor_of(pickup):
 			pickup.remove_from_group(WeaponPickup.GROUP)
 			pickup.queue_free()
 
@@ -297,3 +306,18 @@ func _can_see_spot(enemy: Character, spot: Vector3, character: Character) -> boo
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## Online, on a client (M9): the host changed [param character]'s class; a choice waiting for the
+## respawn is done.
+func replica_class_changed(character: Character, data: ClassData) -> void:
+	_pending_class.erase(character)
+	super(character, data)
+
+
+## Online, on a client (M9, D-105): the host's match went into overtime. Emits [signal overtime_started].
+func replica_overtime() -> void:
+	overtime = true
+	time_left = 0.0
+	overtime_started.emit()
+

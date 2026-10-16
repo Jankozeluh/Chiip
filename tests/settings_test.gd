@@ -45,6 +45,8 @@ const DEFAULTS := {
 	&"match_map": "res://maps/depot.tscn", &"match_mode": "respawn", &"match_kill_limit": 50, &"match_rotation": true,
 	# M10 (D-135): Team Deathmatch lasts 10 minutes unless chosen otherwise.
 	&"match_time_limit": 10,
+	# M9 (D-108): online name, the last host joined, Quake's port.
+	&"online_name": "Player", &"online_address": "127.0.0.1", &"online_port": 26000,
 }
 
 var _failures: int = 0
@@ -421,14 +423,17 @@ func _test_saving() -> void:
 	writer.match_kill_limit = 75
 	writer.match_rotation = false
 	writer.match_time_limit = 15
+	writer.online_name = "Jan"
+	writer.online_address = "192.168.1.20"
+	writer.online_port = 27015
 	writer.set_binding(&"reload", _key(KEY_T))
 	writer.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
 	writer.clear_binding(&"crouch")
 	writer.set_binding(&"shoot", _key(KEY_F), 1)
 	saved = _read_cfg(TEMP_PATH)
 	var sections := saved.get_sections() if saved != null else PackedStringArray()
-	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match and controls (the crosshair's keys without their prefix)",
-			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "controls"]) and saved.has_section_key("crosshair", "gap")
+	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online and controls (the crosshair's keys without their prefix)",
+			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls"]) and saved.has_section_key("crosshair", "gap")
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
@@ -442,6 +447,10 @@ func _test_saving() -> void:
 					and saved.get_value("match", "setup_version", 0) == Settings.MATCH_SETUP_VERSION
 					and saved.get_section_keys("match").size() == 11,
 			"keys %s" % [saved.get_section_keys("match")])
+	_check("Your online name and the last host are the [online] section: name, address and port (M9)",
+			saved.get_value("online", "name", "") == "Jan" and saved.get_value("online", "address", "") == "192.168.1.20"
+					and saved.get_value("online", "port", 0) == 27015 and saved.get_section_keys("online").size() == 3,
+			"keys %s" % [saved.get_section_keys("online")])
 	var reader := Settings.new()
 	var loaded := reader.load_from_disk(TEMP_PATH)
 	var differing: Array[String] = []
@@ -631,29 +640,28 @@ func _test_main_and_console() -> void:
 			all_right, "window → image: %s" % ", ".join(sizes.map(func(entry: Array) -> String: return "%s → %s" % [entry[0], entry[1]])))
 	_settings.reset_to_defaults()
 	var console := main.get_node("DevConsole") as DevConsole
-	var output := console.find_child("Output", true, false) as Label
 	console.run("sensitivity 2.5")
-	var sensitivity_set := _settings.sensitivity == 2.5 and output.text.contains("sensitivity = 2.5")
+	var sensitivity_set := _settings.sensitivity == 2.5 and console.get_output_text().contains("sensitivity = 2.5")
 	console.run("sensitivity")
 	console.run("fov 200")
 	console.run("volume 0.3")
 	console.run("fps_max 120")
 	_check("The console commands sensitivity, fov, volume and fps_max change the setting (clamped: fov 200 gives 110) and say what it is now",
 			sensitivity_set and _settings.fov == 110.0 and is_equal_approx(_settings.master_volume, 0.3) and _settings.fps_cap == 120 and Engine.max_fps == 120
-					and output.text.contains("fov = 110.0") and output.text.contains("volume = 0.3") and output.text.contains("fps_max = 120"),
+					and console.get_output_text().contains("fov = 110.0") and console.get_output_text().contains("volume = 0.3") and console.get_output_text().contains("fps_max = 120"),
 			"sensitivity %s, fov %s, volume %s, fps cap %s" % [_settings.sensitivity, _settings.fov, _settings.master_volume, _settings.fps_cap])
 	console.run("clear")
 	console.run("sensitivity")
 	console.run("fov")
 	console.run("sensitivity fast")
 	_check("Without a value a command shows the current one, and a value that isn't a number gets the usage line",
-			output.text.contains("sensitivity = 2.5") and output.text.contains("fov = 110.0") and output.text.contains("Usage: sensitivity [value]") and _settings.sensitivity == 2.5,
-			"output: %s" % output.text.replace("\n", " | "))
+			console.get_output_text().contains("sensitivity = 2.5") and console.get_output_text().contains("fov = 110.0") and console.get_output_text().contains("Usage: sensitivity [value]") and _settings.sensitivity == 2.5,
+			"output: %s" % console.get_output_text().replace("\n", " | "))
 	console.run("settings_reset")
 	var back := true
 	for key: StringName in DEFAULTS:
 		back = back and _same(_settings.get_value(key), DEFAULTS[key])
-	_check("settings_reset puts everything back", back and Engine.max_fps == 0 and output.text.contains("back to their defaults"), "all defaults %s, max fps %d" % [back, Engine.max_fps])
+	_check("settings_reset puts everything back", back and Engine.max_fps == 0 and console.get_output_text().contains("back to their defaults"), "all defaults %s, max fps %d" % [back, Engine.max_fps])
 	main.queue_free()
 	await _wait_ticks(2)
 

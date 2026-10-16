@@ -5,6 +5,8 @@ extends CanvasLayer
 
 ## The player to show information about. Set by the main scene.
 var player: Character
+## Online (M9): the [NetHost] or [NetClient] whose ping, loss and corrections are shown; null offline.
+var net_game: Node
 
 ## Feet height the last time the player stood on the ground.
 var _ground_height: float = 0.0
@@ -57,10 +59,11 @@ func _process(_delta: float) -> void:
 		"Walking    %s" % _yes_no(Input.is_action_pressed("walk")),
 		"Shoot/Aim  %s / %s" % [_yes_no(Input.is_action_pressed("shoot")), _yes_no(Input.is_action_pressed("aim"))],
 		"",
-		"Inaccuracy %5.2f°" % player.weapon.get_inaccuracy(),
-		"Recoil     %d shot(s) built up" % (player.weapon.get_spray_shot() - 1),
-		"Last hit   %s" % _describe_hit(player.weapon.last_hit),
+		"Inaccuracy %5.2f°" % (player.weapon.get_inaccuracy() if player.weapon != null else 0.0),
+		"Recoil     %d shot(s) built up" % ((player.weapon.get_spray_shot() - 1) if player.weapon != null else 0),
+		"Last hit   %s" % _describe_hit(player.weapon.last_hit if player.weapon != null else {}),
 		"",
+	] + (net_game.get_status_lines() + [""] if net_game != null and is_instance_valid(net_game) else []) + [
 		"F3 hide · Esc pause menu",
 	])
 

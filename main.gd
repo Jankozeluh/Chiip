@@ -19,7 +19,8 @@ extends Node
 ## first, is announced by the [LoadingScreen] (D-138): the world and the match
 ## stand still behind its band and the HUD is hidden until its hold time is over.
 ## Restarting a match, the console's [code]map[/code] and the command-line
-## shortcuts don't show it.
+## shortcuts don't show it, and neither does an online game (M9, D-109): the band
+## pauses the game, and nobody can pause the other players.
 ##
 ## Every map scene must contain a [Character] node named "Player" (the local player).
 ## Maps hold only the level: geometry, navigation and markers. The game rules
@@ -28,6 +29,12 @@ extends Node
 ## [member MatchSettings.game_mode] is team respawn), practice ([ArenaRules]:
 ## bots that respawn) on other maps with navigation, and nothing (free roaming)
 ## on the rest.
+##
+## Online (M9, D-100): with a [member net_session] the match is played over the network. On
+## the host the rules run as offline and a [NetHost] adds the friends' characters and keeps the
+## clients up to date; on a client the rules are a replica (D-105) and a [NetClient] shows the
+## host's game and drives this computer's player. The map's "Player" node is renamed after the
+## player then.
 ##
 ## Two pixel styles (see docs/DECISIONS.md):
 ## - Pixelated HUD: the whole window renders at the low resolution, HUD included.
@@ -62,6 +69,10 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 ## and hidden behind it (unless the check is about the loading screen itself).
 @export var loading_screen: bool = true
 
+## Online (M9): the session this match is played in, or null offline. The lobby leaves it in
+## [member GameLaunch.net_session]; the network tests set it before the scene enters the tree.
+var net_session: NetSession
+
 @onready var _world: SubViewportContainer = $World
 @onready var _viewport: SubViewport = $World/SubViewport
 @onready var _hud: Node = $HUD
@@ -78,6 +89,10 @@ const UI_DESIGN_HEIGHT := PixelView.UI_DESIGN_HEIGHT
 
 ## The map currently loaded.
 var _map: Node
+## The map's player node (the player at this computer).
+var _player: Character
+## Online: the [NetHost] or [NetClient] of the current map, or null offline.
+var _net_game: Node
 ## The maps of the rotation (empty without one), and which of them is playing.
 var _rotation: Array[String] = []
 var _rotation_index: int = 0
@@ -85,7 +100,7 @@ var _rotation_index: int = 0
 
 func _ready() -> void:
 	var settings := Settings.get_instance()
-	if load_settings and not settings.is_loaded():
+	if load_settings and not settings.is_loaded() and not OS.get_cmdline_user_args().has("--no-settings"):
 		var result := settings.load_from_disk()
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
@@ -112,6 +127,16 @@ func get_map() -> Node:
 	return _map
 
 
+## The player at this computer: the map's player node (online it is renamed after the player).
+func get_player() -> Character:
+	return _player
+
+
+## Online: the current map's [NetHost] (on the host) or [NetClient] (on a client); null offline.
+func get_net_game() -> Node:
+	return _net_game
+
+
 ## Opens the settings menu over the game (console: settings, and the pause
 ## menu's Settings button). The main menu opens the same menu; it reports back
 ## with its [signal SettingsMenu.closed].
@@ -129,7 +154,8 @@ func get_pause_menu() -> PauseMenu:
 	return _pause_menu
 
 
-## Replaces the current map with the scene at [param path] (console: map).
+## Replaces the current map with the scene at [param path] (console: map). Offline only: online
+## the host starts a new match for everyone instead ([method NetLobby.start_match]).
 func change_map(path: String) -> void:
 	if _map != null:
 		_viewport.remove_child(_map)
@@ -138,8 +164,13 @@ func change_map(path: String) -> void:
 
 
 ## Plays the current map again in the current mode, with a fresh match
-## (the match-end screen's "Play again" button).
+## (the match-end screen's "Play again" button). Online only the host can, and everyone
+## comes along.
 func restart_match() -> void:
+	if net_session != null:
+		if net_session.is_host():
+			NetLobby.of(net_session).start_match(_map.scene_file_path, match_settings, _rotation_from(_rotation_index))
+		return
 	change_map(_map.scene_file_path)
 
 
@@ -152,6 +183,11 @@ func restart_match() -> void:
 ## stays for what is left of its hold time.
 func next_map() -> void:
 	if _rotation.is_empty() or _loading_screen.visible:
+		return
+	if net_session != null:
+		if net_session.is_host():
+			var next := (_rotation_index + 1) % _rotation.size()
+			NetLobby.of(net_session).start_match(_rotation[next], match_settings, _rotation_from(next))
 		return
 	_rotation_index = (_rotation_index + 1) % _rotation.size()
 	var path := _rotation[_rotation_index]
@@ -167,6 +203,16 @@ func next_map() -> void:
 	_loading_screen.map_loaded()
 
 
+## The rotation turned so that it starts at [param index] (an online start message carries it
+## like that: its first map is the one to play).
+func _rotation_from(index: int) -> Array[String]:
+	if _rotation.is_empty():
+		return []
+	var turned: Array[String] = _rotation.slice(index)
+	turned.append_array(_rotation.slice(0, index))
+	return turned
+
+
 ## The scene path of the map [method next_map] would play, or "" without a rotation.
 func get_next_map() -> String:
 	return _rotation[(_rotation_index + 1) % _rotation.size()] if not _rotation.is_empty() else ""
@@ -178,6 +224,23 @@ func get_next_map() -> String:
 ## with it. The game is unpaused first: the pause is a property of the tree, not
 ## of the scene, so the main menu would otherwise start frozen (and deaf to clicks).
 func return_to_menu() -> void:
+	get_tree().paused = false
+	if net_session != null and is_instance_valid(net_session) and net_session.is_active():
+		if net_session.is_host():
+			# Online, the host takes everyone back to the lobby (D-108).
+			NetLobby.of(net_session).return_to_lobby()
+			return
+		# A client leaves the session.
+		net_session.close()
+	get_tree().change_scene_to_file(GameLaunch.MENU_SCENE)
+
+
+## Online: leaves the session (the host ends it for everyone) and goes to the main menu
+## (console: disconnect). Offline the same as [method return_to_menu].
+func leave_online() -> void:
+	if net_session != null and is_instance_valid(net_session):
+		net_session.close()
+		net_session = null
 	get_tree().paused = false
 	get_tree().change_scene_to_file(GameLaunch.MENU_SCENE)
 
@@ -215,6 +278,7 @@ func _load_map() -> void:
 func _take_launch() -> PackedScene:
 	mode = Mode.PRACTICE if GameLaunch.practice else Mode.MATCH
 	match_settings = GameLaunch.match_settings
+	net_session = GameLaunch.net_session
 	_rotation = GameLaunch.rotation.duplicate()
 	_rotation_index = 0
 	var scene := load(GameLaunch.map_path) as PackedScene
@@ -223,8 +287,10 @@ func _take_launch() -> PackedScene:
 
 
 ## True when a map that comes from the menu or the rotation is announced by the loading screen.
+## Never online: the screen pauses the game, and an online game must keep running for everyone
+## (M9, D-109).
 func _shows_loading_screen() -> bool:
-	return loading_screen and LoadingScreen.enabled
+	return loading_screen and LoadingScreen.enabled and net_session == null
 
 
 ## Shows the loading screen for the map at [param path] (lines from [MatchText]) and hides the HUD under it.
@@ -245,11 +311,16 @@ func _spawn_map(scene: PackedScene) -> void:
 	_map = scene.instantiate()
 	_viewport.add_child(_map)
 	var player := _map.get_node("Player") as Character
+	_player = player
 	Teams.friendly_fire = false
 	var rules := _add_game_rules()
+	_net_game = null
+	if net_session != null and rules is RoundManager:
+		_start_online(rules as RoundManager, player)
 	# Hides the match-end screen of the previous map; it opens when this match ends,
 	# with "Next map" when there is a rotation.
 	_match_end_screen.set_round_manager(rules as RoundManager)
+	_match_end_screen.set_online(net_session != null, net_session != null and net_session.is_host())
 	_match_end_screen.set_next_map(GameLaunch.map_title(get_next_map()) if not _rotation.is_empty() else "")
 	# The round HUD (top bar, kill feed, banners) shows only in a match; null hides it.
 	_hud.set_round_manager(rules as RoundManager)
@@ -265,9 +336,14 @@ func _spawn_map(scene: PackedScene) -> void:
 	# Only practice says "Respawning..." in the death message: a team respawn match counts
 	# the seconds in the round HUD ("Respawning in 3"), and in rounds the dead wait for the next one.
 	_hud.respawn_hint = rules is ArenaRules
-	_pause_menu.set_leave_text("Leave match" if rules is RoundManager else ("Leave practice" if rules is ArenaRules else "Leave"))
+	_pause_menu.set_online(net_session != null)
+	if net_session != null:
+		_pause_menu.set_leave_text("Back to lobby" if net_session.is_host() else "Leave match")
+	else:
+		_pause_menu.set_leave_text("Leave match" if rules is RoundManager else ("Leave practice" if rules is ArenaRules else "Leave"))
 	_set_up_spectating(player, rules is RoundManager and not respawning)
 	_debug_overlay.player = player
+	_debug_overlay.net_game = _net_game
 	Teams.set_viewer_team(player.team)
 
 
@@ -292,6 +368,11 @@ func _add_game_rules() -> Node:
 		var team_respawn := match_settings.game_mode == MatchSettings.GameMode.TEAM_RESPAWN
 		var rounds: RoundManager = RespawnMatch.new() if team_respawn else RoundManager.new()
 		rounds.settings = match_settings
+		if net_session != null:
+			# Online: the host starts when everyone has loaded; a client only shows the host's match.
+			rounds.player_team = maxi(net_session.get_team(net_session.local_peer_id), 0)
+			rounds.autostart = false
+			rounds.replica = not net_session.is_host()
 		rules = rounds
 	elif has_navigation:
 		var arena := ArenaRules.new()
@@ -303,6 +384,20 @@ func _add_game_rules() -> Node:
 		rules.name = rules.get_script().get_global_name()
 		_map.add_child(rules)
 	return rules
+
+
+## Online: adds the [NetHost] (host) or [NetClient] (client) to the map and starts it.
+func _start_online(rules: RoundManager, player: Character) -> void:
+	if net_session.is_host():
+		var host := NetHost.new()
+		_map.add_child(host)
+		host.setup(net_session, _map, rules, player)
+		_net_game = host
+	else:
+		var client := NetClient.new()
+		_map.add_child(client)
+		client.setup(net_session, _map, rules, player)
+		_net_game = client
 
 
 func _map_has_group(group: String) -> bool:

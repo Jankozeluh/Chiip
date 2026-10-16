@@ -59,6 +59,10 @@ var age: float = 0.0
 ## True once it lies still.
 var resting: bool = false
 
+## Online, on a client (M9, D-113): a copy of the host's grenade, moved by the snapshots; it
+## neither flies nor goes off by itself.
+var replica: bool = false
+
 var _done: bool = false
 var _model: Node3D
 var _audio: AudioStreamPlayer3D
@@ -104,6 +108,11 @@ func _physics_process(delta: float) -> void:
 	if _done:
 		return
 	age += delta
+	if replica:
+		# Online, on a client: the host's snapshots move it and its events set it off.
+		if _model != null and not resting:
+			_model.rotate_x(-delta * 12.0)
+		return
 	if not resting:
 		_fly(delta)
 	if _model != null and not resting:
@@ -185,8 +194,7 @@ func _explode() -> void:
 	_done = true
 	var at := global_position + Vector3.UP * 0.15
 	var space := get_world_3d().direct_space_state
-	for node in get_tree().get_nodes_in_group("characters"):
-		var victim := node as Character
+	for victim in Character.all_in_world(self):
 		if not victim.is_alive():
 			continue
 		var target := victim.get_chest_position()
@@ -211,8 +219,7 @@ func _explode() -> void:
 func _flash() -> void:
 	_done = true
 	var at := global_position + Vector3.UP * 0.1
-	for node in get_tree().get_nodes_in_group("characters"):
-		var viewer := node as Character
+	for viewer in Character.all_in_world(self):
 		var amount := get_flash_amount(viewer, at)
 		if amount > 0.0:
 			var total := FLASH_MAX * amount

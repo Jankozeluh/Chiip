@@ -54,6 +54,12 @@ extends Node
 ## This is authority code (docs/ARCHITECTURE.md, "Keeping multiplayer
 ## possible"): in M9 only the host runs it, and the clients show what it
 ## announces. Add it as a child of the map, with [member settings] set first.
+##
+## Online (M9): on the host the friends' characters join first ([member extra_players]) and the
+## match starts when everyone has loaded ([member autostart] off, [method start]). On a client
+## it is a [member replica] (D-105): the same fields and signals, filled in by the network code
+## from the host's snapshots and events with the [code]replica_*[/code] methods, and no
+## decisions of its own.
 
 ## The parts of a match. [constant MATCH_END] comes once a team has won the
 ## match and never ends: everyone stays frozen.
@@ -114,6 +120,22 @@ class Stats:
 @export var settings: MatchSettings = MatchSettings.new()
 ## Which team you (the map's Player node) play on.
 @export var player_team: int = 0
+## Start the match by itself once the map is ready. Online the host turns it off and calls
+## [method start] when every friend has loaded the map.
+@export var autostart: bool = true
+## Online, on a client (M9, D-105): a copy that shows the host's match and decides nothing. The
+## network code fills in its fields and emits its signals; the clock only counts down between
+## the host's updates, so the timer runs smoothly. Set before the node enters the tree.
+@export var replica: bool = false
+
+## Online, on the host (M9): the friends' characters (already on the map, each with its
+## [member Character.team]). They join right after the host's player, before the bots that fill
+## the rest of each team. Set before the match starts.
+var extra_players: Array[Character] = []
+## Online, on a client: what [method request_class] does instead of deciding (asks the host).
+var class_request: Callable
+## Online, on a client: what [method request_buy] does instead of buying (asks the host, D-113).
+var buy_request: Callable
 
 ## The current phase. Read-only for other scripts.
 var phase: Phase = Phase.FREEZE
@@ -167,12 +189,26 @@ func _ready() -> void:
 	_player = get_parent().get_node_or_null("Player") as Character
 	if _player != null:
 		_player.team = player_team
+	if replica or not autostart:
+		return
 	# Wait for the whole map (navigation, spawn markers) to be ready.
 	_start_match.call_deferred()
 
 
+## Starts the match now (when [member autostart] is off; online the host waits for everyone to
+## load). Does nothing once the match has started.
+func start() -> void:
+	if round_number == 0 and score.is_empty() and not replica:
+		_start_match()
+
+
 func _physics_process(delta: float) -> void:
 	if round_number == 0 or phase == Phase.MATCH_END:
+		return
+	if replica:
+		# Only the clock, between the host's updates; the host decides when a phase ends.
+		if not (phase == Phase.LIVE and _clock_stopped()):
+			time_left = maxf(time_left - delta, 0.0)
 		return
 	if phase == Phase.LIVE:
 		_live_tick(delta)
@@ -245,6 +281,11 @@ func is_team_respawn() -> bool:
 func request_class(character: Character, data: ClassData) -> bool:
 	if phase != Phase.FREEZE or data == null or not is_instance_valid(character) or not is_drafted(character, data):
 		return false
+	if replica:
+		# Online, on a client: the host decides; its answer comes back as a class change.
+		if class_request.is_valid():
+			class_request.call(character, data)
+		return true
 	if character.class_data != data:
 		character.class_data = data
 		class_changed.emit(character, data)
@@ -434,7 +475,11 @@ func _add_bomb() -> void:
 		return
 	bomb = BOMB_SCENE.instantiate()
 	bomb.settings = settings
+	bomb.replica = replica
 	map.add_child(bomb)
+	if replica:
+		# The host ends the rounds; the replica only shows them.
+		return
 	bomb.planted.connect(_on_bomb_planted)
 	bomb.exploded.connect(_on_bomb_exploded)
 	bomb.defused.connect(_on_bomb_defused)
@@ -510,6 +555,11 @@ func request_buy(character: Character, item_id: StringName) -> String:
 	var reason := get_buy_refusal(character, item_id)
 	if reason != "":
 		return reason
+	if replica:
+		# Online, on a client: the host decides; the money and what you carry come back from it.
+		if buy_request.is_valid():
+			buy_request.call(character, item_id)
+		return ""
 	spend(character, get_price(character, item_id))
 	Shop.give(character, item_id)
 	item_bought.emit(character, item_id)
@@ -621,14 +671,22 @@ func _join_in_turn() -> void:
 	for team in Teams.COUNT:
 		class_offsets.append(_class_rng.randi_range(0, classes.size() - 1))
 	var bots_on_player_team := settings.team_size
+	var bots_on_enemy_team := settings.enemy_team_size
 	if _player != null:
 		if settings.player_class != null:
 			_player.class_data = settings.player_class
 		_join(_player)
 		bots_on_player_team -= 1
+	# Online: the friends fill their teams' slots before the bots do (D-108).
+	for other in extra_players:
+		_join(other)
+		if other.team == player_team:
+			bots_on_player_team -= 1
+		else:
+			bots_on_enemy_team -= 1
 	for i in bots_on_player_team:
 		_add_bot(player_team, classes[(class_offsets[player_team] + i) % classes.size()])
-	for i in settings.enemy_team_size:
+	for i in bots_on_enemy_team:
 		_add_bot(Teams.other(player_team), classes[(class_offsets[Teams.other(player_team)] + i) % classes.size()])
 
 
@@ -652,8 +710,21 @@ func _join_drafted() -> void:
 		_join(_player)
 		class_drafted.emit(_player, offer)
 		bots_on_player_team -= 1
+	# Online: the friends are drafted like you, before the bots (D-108).
+	var bots_on_enemy_team := settings.enemy_team_size
+	for other in extra_players:
+		var friend_offer := _draw_offer(on_team[other.team])
+		other.class_data = friend_offer[0]
+		on_team[other.team].append(other.class_data)
+		_drafts[other] = friend_offer
+		_join(other)
+		class_drafted.emit(other, friend_offer)
+		if other.team == player_team:
+			bots_on_player_team -= 1
+		else:
+			bots_on_enemy_team -= 1
 	var teams: Array[int] = [player_team, Teams.other(player_team)]
-	var counts: Array[int] = [bots_on_player_team, settings.enemy_team_size]
+	var counts: Array[int] = [bots_on_player_team, bots_on_enemy_team]
 	for t in teams.size():
 		var team := teams[t]
 		for i in counts[t]:
@@ -680,6 +751,11 @@ func _draw_offer(on_team: Array) -> Array[ClassData]:
 	return offer
 
 
+## True for a bot (the player and, online, the friends pick their own classes).
+static func _is_bot(member: Character) -> bool:
+	return member.get_node_or_null("BotController") is BotController
+
+
 ## The class of [param offer] that [param on_team] has fewer of (the first on a tie).
 func _less_played(offer: Array[ClassData], on_team: Array) -> ClassData:
 	var best := offer[0]
@@ -702,7 +778,7 @@ func _rechoose_bot_classes() -> void:
 		# The same shift for every bot of the team keeps their classes different from each other.
 		var offset := _class_rng.randi_range(1, classes.size() - 1)
 		for member in get_members(team):
-			if member.is_local_player():
+			if not _is_bot(member):
 				continue
 			var current := classes.find(member.class_data)
 			var data := classes[(maxi(current, 0) + offset) % classes.size()]
@@ -715,7 +791,7 @@ func _redraft_bots() -> void:
 	for team in Teams.COUNT:
 		var members := get_members(team)
 		for member in members:
-			if member.is_local_player() or not _drafts.has(member):
+			if not _is_bot(member) or not _drafts.has(member):
 				continue
 			var others: Array = members.filter(func(other: Character) -> bool: return other != member).map(
 					func(other: Character) -> ClassData: return other.class_data)
@@ -728,7 +804,9 @@ func _redraft_bots() -> void:
 
 ## Puts every member of [param team] on its own spawn marker of the team's side.
 func _spawn_team(team: int) -> void:
-	var markers := get_tree().get_nodes_in_group(Teams.spawn_group(get_side(team)))
+	var map := get_parent()
+	var markers := get_tree().get_nodes_in_group(Teams.spawn_group(get_side(team))).filter(
+			func(node: Node) -> bool: return map.is_ancestor_of(node))
 	if markers.is_empty():
 		push_error("RoundManager: the map has no '%s' markers." % Teams.spawn_group(get_side(team)))
 		return
@@ -775,7 +853,7 @@ func _place_map_weapons() -> void:
 ## Removes every gun lying on the map's floor (a new round starts clean).
 func _clear_floor() -> void:
 	var map := get_parent()
-	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
+	for node in WeaponPickup.all_in_world(map):
 		if map.is_ancestor_of(node) and not (node as WeaponPickup).spot:
 			node.remove_from_group(WeaponPickup.GROUP)
 			node.queue_free()
@@ -821,3 +899,115 @@ func _on_died(killer: Character, victim: Character) -> void:
 	_score_kill(victim, killer)
 	character_killed.emit(victim, killer, _last_hit_zone.get(victim, -1) == Hitbox.Zone.HEAD)
 	_check_elimination.call_deferred()
+
+
+# --- Online: the replica on a client (M9, D-105) ---
+
+
+## Sets the replica up for the host's match: the friendly-fire rule (bullets pass through
+## teammates in your own predicted shots too), an empty score and, on maps with bomb sites, the
+## replica bomb. Call it once, before the first state arrives.
+func replica_start() -> void:
+	Teams.friendly_fire = settings.friendly_fire
+	score.clear()
+	for team in Teams.COUNT:
+		score.append(0)
+	_add_bomb()
+
+
+## Adds [param character] to the match as the host's does (the host's join order).
+func replica_join(character: Character) -> void:
+	if not _participants.has(character):
+		_participants.append(character)
+		_stats[character] = Stats.new()
+		_money[character] = 0
+
+
+## The host's money of [param character]: [param total] now, changed by [param amount] for
+## [param reason]. Emits [signal money_changed] (the HUD's reward lines) when it changed.
+func replica_set_money(character: Character, total: int, amount: int, reason: String) -> void:
+	if not _participants.has(character):
+		return
+	_money[character] = total
+	if amount != 0:
+		money_changed.emit(character, amount, reason)
+
+
+## The classes the host's draft offered [param character]: emits [signal class_drafted].
+func replica_drafted(character: Character, classes: Array[ClassData]) -> void:
+	_drafts[character] = classes
+	class_drafted.emit(character, classes)
+
+
+## Drops [param character] from the match (it left the game).
+func replica_leave(character: Character) -> void:
+	_participants.erase(character)
+	_stats.erase(character)
+
+
+## Sets the scoreboard numbers of [param character] to the host's.
+func replica_set_stats(character: Character, kills: int, deaths: int, assists: int, damage: float) -> void:
+	var stats: Stats = _stats.get(character)
+	if stats == null:
+		return
+	stats.kills = kills
+	stats.deaths = deaths
+	stats.assists = assists
+	stats.damage = damage
+
+
+## The host's match state: the phase with its clock, the round, the sides and the score.
+## Emits [signal phase_changed] when the phase changed.
+func replica_set_state(new_phase: Phase, new_time_left: float, new_round: int, attackers: int, new_score: Array) -> void:
+	var changed := new_phase != phase or new_round != round_number
+	round_number = new_round
+	attacking_team = attackers
+	score.assign(new_score)
+	if changed:
+		_set_phase(new_phase, new_time_left)
+	else:
+		time_left = new_time_left
+
+
+## Corrects the clock to the host's (snapshots carry it).
+func replica_set_clock(new_time_left: float) -> void:
+	time_left = new_time_left
+
+
+## The host's round started: emits [signal round_started].
+func replica_round_started(new_round: int) -> void:
+	round_number = new_round
+	round_started.emit(new_round)
+
+
+## The host's round ended: the score already counts it. Emits [signal round_ended].
+func replica_round_ended(round_winner: int, reason: EndReason, new_score: Array) -> void:
+	score.assign(new_score)
+	round_ended.emit(round_winner, reason)
+
+
+## The host swapped the sides: emits [signal sides_swapped].
+func replica_sides_swapped(attackers: int) -> void:
+	attacking_team = attackers
+	sides_swapped.emit()
+
+
+## The host's match ended: emits [signal match_ended].
+func replica_match_ended(match_winner: int, new_score: Array) -> void:
+	winner = match_winner
+	score.assign(new_score)
+	_set_phase(Phase.MATCH_END, 0.0)
+	match_ended.emit(match_winner)
+
+
+## Someone died on the host: emits [signal character_killed] (the kill feed).
+func replica_killed(victim: Character, killer: Character, headshot: bool) -> void:
+	character_killed.emit(victim, killer, headshot)
+
+
+## The host gave [param character] another class: swaps it here and emits [signal class_changed].
+func replica_class_changed(character: Character, data: ClassData) -> void:
+	if character.class_data != data:
+		character.class_data = data
+	class_changed.emit(character, data)
+

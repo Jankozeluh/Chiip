@@ -4,7 +4,7 @@ extends Node
 ## project's main scene; the mockup's "02 Main menu" since M10, D-135): a dark
 ## column on the left with the game's name and its three chips, the menu items
 ## **Play** (focused), **Practice**, **Settings** and **Quit**, a line, and
-## **Host** and **Join** (marked "soon" until M9), over a slow camera flight
+## **Host** and **Join** (the online games of M9), over a slow camera flight
 ## across the test map; the build at the bottom left and the map's name at the
 ## bottom right.
 ##
@@ -14,6 +14,13 @@ extends Node
 ##   game scene; playing Practice starts the respawning bot arena ([ArenaRules])
 ##   on the test map, with the bot difficulty of the custom rows.
 ## - **Practice** starts that arena at once.
+## - **Host** and **Join** open the lobby ([LobbyMenu], M9). Host opens it and starts
+##   hosting at once with the name and port last used (a problem, such as a port in use,
+##   shows on the lobby's connect page); Join opens its connect page with the address
+##   field focused. Closing the lobby gives the focus back to the item that opened it.
+##   When the menu starts with an online session still running (back from an online match)
+##   or with a reason an online game ended ([member GameLaunch.notice]), it opens the lobby
+##   by itself.
 ## - **Settings** opens the same [SettingsMenu] the game has.
 ## - **Quit** closes the game.
 ##
@@ -25,8 +32,8 @@ extends Node
 ## map: the bots are never added. A [MenuFlight] moves the camera.
 ##
 ## The menu loads the player's settings once at startup ([method Settings.load_from_disk])
-## and registers with [MenuState], so the mouse is shown. Esc closes match setup
-## or the settings menu, whichever is on top ([MenuState] decides); on the main
+## and registers with [MenuState], so the mouse is shown. Esc closes match setup,
+## the lobby or the settings menu, whichever is on top ([MenuState] decides); on the main
 ## page it does nothing.
 ##
 ## The command line skips the menu: [code]-- --match[/code], [code]-- --practice[/code]
@@ -43,9 +50,13 @@ extends Node
 ## Becomes true once the command line has been looked at, so that a game started
 ## with a shortcut and left for the menu shows the menu instead of starting again.
 static var _command_line_checked: bool = false
+## The same for the online shortcuts ([code]--host[/code], [code]--join[/code]).
+static var _online_command_line_checked: bool = false
 
 ## The map of the background (without a player).
 var _background: Node
+## The item (Host or Join) that opened the lobby: it gets the focus back when the lobby closes.
+var _lobby_opener: Button
 
 @onready var _world: SubViewportContainer = $World
 @onready var _viewport: SubViewport = $World/SubViewport
@@ -60,12 +71,14 @@ var _background: Node
 @onready var _join_button: Button = %JoinButton
 @onready var _map_name: Label = %MapName
 @onready var _setup: MatchSetup = $MatchSetup
+@onready var _lobby: LobbyMenu = $LobbyMenu
 @onready var _settings_menu: SettingsMenu = $SettingsMenu
 
 
 func _ready() -> void:
 	var settings := Settings.get_instance()
-	if load_settings and not settings.is_loaded():
+	# -- --no-settings: scripted runs (the two-process online check) leave your settings file alone.
+	if load_settings and not settings.is_loaded() and not OS.get_cmdline_user_args().has("--no-settings"):
 		var result := settings.load_from_disk()
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
@@ -73,11 +86,14 @@ func _ready() -> void:
 		return
 	settings.changed.connect(_on_setting_changed)
 	_play_button.pressed.connect(open_match_setup)
+	_host_button.pressed.connect(host_online)
+	_join_button.pressed.connect(join_online)
 	_practice_button.pressed.connect(start_practice)
 	_settings_button.pressed.connect(open_settings)
 	_quit_button.pressed.connect(get_tree().quit)
 	_setup.started.connect(start_picked)
 	_setup.closed.connect(_play_button.grab_focus)
+	_lobby.closed.connect(_on_lobby_closed)
 	_settings_menu.closed.connect(_settings_button.grab_focus)
 	_map_name.text = GameLaunch.map_title(map_scene.resource_path)
 	_build_background()
@@ -85,6 +101,12 @@ func _ready() -> void:
 	apply_pixel_settings()
 	MenuState.open(self)
 	_play_button.grab_focus()
+	# Back from an online match, or from one that ended: the lobby (or the reason) comes first.
+	var session := NetLobby.find_session(get_tree())
+	if (session != null and session.is_active()) or not GameLaunch.notice.is_empty():
+		open_lobby()
+	# Deferred: the root is still busy adding the menu, so a session couldn't join it yet.
+	_go_online_for_command_line.call_deferred()
 
 
 func _exit_tree() -> void:
@@ -101,6 +123,28 @@ static func wants_game(args: PackedStringArray) -> bool:
 ## Opens the Play screen (the Play button).
 func open_match_setup() -> void:
 	_setup.open()
+
+
+## Opens the multiplayer lobby: the connect page, or the lobby page when an online session is
+## running.
+func open_lobby() -> void:
+	_lobby.open()
+
+
+## The Host item: opens the lobby and starts hosting with the name and port in its fields. A
+## failure (a port in use) shows on the lobby's connect page.
+func host_online() -> void:
+	_lobby_opener = _host_button
+	open_lobby()
+	_lobby.host_game()
+
+
+## The Join item: opens the lobby's connect page with the address field focused.
+func join_online() -> void:
+	_lobby_opener = _join_button
+	open_lobby()
+	if _lobby.get_page() == LobbyMenu.Page.CONNECT:
+		_lobby.get_address_field().grab_focus()
 
 
 ## Opens the settings menu (the Settings button).
@@ -164,6 +208,7 @@ func apply_pixel_settings() -> void:
 	var factor := ui_height / PixelView.UI_DESIGN_HEIGHT
 	UiTheme.apply(_page, factor)
 	_setup.set_ui_scale(factor)
+	_lobby.set_ui_scale(factor)
 	_settings_menu.set_ui_scale(factor)
 
 
@@ -185,6 +230,43 @@ func _skip_for_command_line() -> bool:
 	return false
 
 
+## For trying online play with two windows on one Mac (M9): [code]-- --host[/code] opens the
+## lobby and hosts, [code]-- --join <address>[/code] joins that host, and [code]--name <name>[/code]
+## plays under that name ([code]--port <port>[/code] on another port); [code]--start <players>[/code]
+## makes the host start the match by itself once that many players are in the lobby. Only at the
+## first start, like the other shortcuts.
+func _go_online_for_command_line() -> void:
+	if _online_command_line_checked:
+		return
+	_online_command_line_checked = true
+	var args := OS.get_cmdline_user_args()
+	var join_at := args.find("--join")
+	var joining := join_at >= 0 and join_at + 1 < args.size()
+	if not args.has("--host") and not joining:
+		return
+	# The lobby fills its fields from the settings when it opens: the shortcuts' values go in after.
+	open_lobby()
+	var name_at := args.find("--name")
+	if name_at >= 0 and name_at + 1 < args.size():
+		_lobby.get_name_field().text = args[name_at + 1]
+	var port_at := args.find("--port")
+	if port_at >= 0 and port_at + 1 < args.size():
+		_lobby.get_port_field().text = args[port_at + 1]
+	if joining:
+		_lobby.get_address_field().text = args[join_at + 1]
+		_lobby.join_game()
+		return
+	if _lobby.host_game() != OK:
+		return
+	var start_at := args.find("--start")
+	if start_at >= 0 and start_at + 1 < args.size() and args[start_at + 1].is_valid_int():
+		var wanted := int(args[start_at + 1])
+		var session := _lobby.get_session()
+		session.roster_changed.connect(func() -> void:
+			if session.get_players().size() >= wanted and not NetLobby.of(session).in_game:
+				_lobby.start_match())
+
+
 ## Puts the test map into the world viewport, without its player: the map is
 ## taken apart before it enters the tree, so nothing of the player (camera, mouse
 ## capture, input) ever runs. No game rules are added either: nobody plays.
@@ -195,6 +277,11 @@ func _build_background() -> void:
 		_background.remove_child(player)
 		player.free()
 	_viewport.add_child(_background)
+
+
+## The lobby closed: the focus goes back to Host or Join, whichever opened it.
+func _on_lobby_closed() -> void:
+	(_lobby_opener if _lobby_opener != null else _host_button).grab_focus()
 
 
 func _on_setting_changed(key: StringName) -> void:
@@ -220,6 +307,11 @@ func get_match_setup() -> MatchSetup:
 	return _setup
 
 
+## The multiplayer lobby.
+func get_lobby_menu() -> LobbyMenu:
+	return _lobby
+
+
 ## The settings menu.
 func get_settings_menu() -> SettingsMenu:
 	return _settings_menu
@@ -230,7 +322,7 @@ func get_buttons() -> Array[Button]:
 	return [_play_button, _practice_button, _settings_button, _quit_button]
 
 
-## Host and Join (disabled until M9).
+## Host and Join, the two small items under the line.
 func get_online_buttons() -> Array[Button]:
 	return [_host_button, _join_button]
 

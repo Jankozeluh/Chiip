@@ -121,8 +121,7 @@ func get_notice_time(other: Character) -> float:
 func _look_for_enemies(step: float) -> void:
 	var closest: Character = null
 	var closest_distance := INF
-	for node in get_tree().get_nodes_in_group("characters"):
-		var other := node as Character
+	for other in Character.all_in_world(_character):
 		var awareness: float = _awareness.get(other, 0.0)
 		if can_see(other):
 			# Keep noticing an enemy already being fought; build up awareness of new ones.

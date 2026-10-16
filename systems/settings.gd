@@ -133,6 +133,10 @@ const SCHEMA := {
 	&"match_rotation": {"section": "match", "default": true},
 	# M10 (D-135): Team Deathmatch's time limit in minutes.
 	&"match_time_limit": {"section": "match", "default": 10, "choices": TIME_LIMITS},
+	# M9 (D-108): your name in online games, and the last host you joined.
+	&"online_name": {"section": "online", "default": "Player"},
+	&"online_address": {"section": "online", "default": "127.0.0.1"},
+	&"online_port": {"section": "online", "default": 26000, "min": 1024, "max": 65535},
 }
 
 ## The names of the mouse buttons a binding can use, by button index (for menus).
@@ -300,6 +304,19 @@ var match_kill_limit: int:
 var match_rotation: bool:
 	get: return _values[&"match_rotation"]
 	set(value): set_value(&"match_rotation", value)
+## The name you play under online (M9). The host makes it unique and cleans it
+## ([NetSession], at most 16 characters).
+var online_name: String:
+	get: return _values[&"online_name"]
+	set(value): set_value(&"online_name", value)
+## The host you joined last: an IP address or a host name.
+var online_address: String:
+	get: return _values[&"online_address"]
+	set(value): set_value(&"online_address", value)
+## The UDP port you host on and join at (26000, Quake's, by default).
+var online_port: int:
+	get: return _values[&"online_port"]
+	set(value): set_value(&"online_port", value)
 
 
 func _init() -> void:

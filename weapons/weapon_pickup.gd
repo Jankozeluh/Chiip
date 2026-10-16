@@ -9,6 +9,9 @@ extends Node3D
 ## Pickups are found through the group [constant GROUP]. The [RoundManager] clears them at every
 ## round start (a fresh loadout, D-090). Authority code decides who takes one; the node itself is
 ## what everyone sees.
+##
+## Online, on a client (M9, D-113) a pickup is a [member replica]: the host's snapshots place it
+## and remove it; it doesn't fall by itself and nobody takes it here.
 
 ## Group of every gun lying on the floor.
 const GROUP := "weapon_pickups"
@@ -41,6 +44,9 @@ var floating: bool = false:
 		if model != null:
 			model.rotation = Vector3.ZERO if floating else Vector3(0.0, 0.0, PI * 0.5)
 
+## Online, on a client (M9): a copy of the host's gun on the floor, placed by the snapshots.
+var replica: bool = false
+
 var _ignore_dropper_left: float = 0.0
 var _fall_speed: float = 0.0
 var _floor_y: float = NAN
@@ -72,6 +78,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	age += delta
 	_ignore_dropper_left = maxf(_ignore_dropper_left - delta, 0.0)
+	if replica and not floating:
+		return
 	if floating:
 		var model := get_node_or_null("Model") as Node3D
 		if model != null:
@@ -81,6 +89,18 @@ func _physics_process(delta: float) -> void:
 		return
 	_fall_speed += FALL_GRAVITY * delta
 	global_position.y = maxf(global_position.y - _fall_speed * delta, _floor_y)
+
+
+## Every gun on the floor in the same 3D world as [param node] (see [method Character.all_in_world]:
+## the network tests run two games in one tree).
+static func all_in_world(node: Node) -> Array[WeaponPickup]:
+	var pickups: Array[WeaponPickup] = []
+	var world := node.get_viewport().find_world_3d()
+	for other in node.get_tree().get_nodes_in_group(GROUP):
+		var pickup := other as WeaponPickup
+		if pickup != null and pickup.is_inside_tree() and pickup.get_viewport().find_world_3d() == world:
+			pickups.append(pickup)
+	return pickups
 
 
 ## True if [param character] may take it now (not the one who just dropped it).
@@ -100,7 +120,7 @@ func get_center() -> Vector3:
 
 ## Finds the floor under the drop point; the gun falls there.
 func _find_floor() -> void:
-	if not is_inside_tree() or floating:
+	if not is_inside_tree() or floating or replica:
 		return
 	var from := global_position + Vector3.UP * 0.3
 	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * FLOOR_SEARCH, PhysicsLayers.WORLD)

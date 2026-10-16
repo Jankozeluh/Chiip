@@ -25,6 +25,10 @@ extends CanvasLayer
 ## ignore the keyboard and mouse and the mouse is shown, and closing it gives
 ## the mouse back.
 ##
+## **Online (M9, D-109) it doesn't pause** ([method set_online]): nobody can stop the other
+## players' game. It is an overlay then: it still registers with [MenuState], so your character
+## stands still and doesn't shoot while it is open, and the mouse is free; the game goes on.
+##
 ## It only reports button clicks: [code]main.gd[/code] opens the settings menu
 ## on [signal settings_pressed] and leaves for the main menu on
 ## [signal leave_pressed]. Its look is the mockup's (D-137): the game dimmed by
@@ -45,6 +49,9 @@ signal settings_pressed
 ## Emitted when the player presses the leave button (it does not unpause: the
 ## owner leaves the scene, see [code]Main.return_to_menu()[/code]).
 signal leave_pressed
+
+## Online (M9): the menu is an overlay and never pauses the game. main.gd sets it on every map load.
+var online: bool = false
 
 @onready var _column: VBoxContainer = $Column
 @onready var _background: Panel = $Background
@@ -75,7 +82,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	# Freed or removed while open (the game scene changes under it): don't leave
 	# the next scene paused, or the game waiting for a menu.
-	if MenuState.is_open(self):
+	if MenuState.is_open(self) and not online:
 		get_tree().paused = false
 	MenuState.close(self)
 
@@ -101,7 +108,8 @@ func open() -> void:
 		return
 	visible = true
 	MenuState.open(self)
-	get_tree().paused = true
+	if not online:
+		get_tree().paused = true
 	_resume_button.grab_focus()
 
 
@@ -113,7 +121,19 @@ func close() -> void:
 		return
 	visible = false
 	MenuState.close(self)
-	get_tree().paused = false
+	if not online:
+		get_tree().paused = false
+
+
+## Online (M9): [param on] makes the menu an overlay that doesn't pause the game (offline it
+## pauses). The title says "Menu" instead of "Paused" then, and the mockup's line "Online ·
+## the match keeps running" shows under the items ([method set_online_note_visible]).
+func set_online(on: bool) -> void:
+	if is_open():
+		close()
+	online = on
+	_title.text = "Menu" if on else "Paused"
+	set_online_note_visible(on)
 
 
 ## True while the game is paused by this menu (also while the settings menu is
@@ -146,7 +166,7 @@ func set_leave_text(text: String) -> void:
 
 ## Shows or hides the mockup's line under the items, "Online · the match keeps
 ## running". It is hidden: in single player the pause really stops the match.
-## Multiplayer (M9) turns it on, since the match goes on there (D-065).
+## [method set_online] (M9) turns it on, since the match goes on there (D-065).
 func set_online_note_visible(shown: bool) -> void:
 	_online_note.visible = shown
 

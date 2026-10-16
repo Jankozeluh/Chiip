@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://ui/match_setup.tscn" id="setup_scene"]
 [ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="settings_menu_scene"]
 [ext_resource type="Texture2D" path="res://assets/ui/chip.png" id="chip"]
+[ext_resource type="PackedScene" path="res://ui/lobby_menu.tscn" id="lobby_scene"]
 
 [sub_resource type="ShaderMaterial" id="palette_material"]
 shader = ExtResource("palette_shader")
@@ -151,49 +152,15 @@ theme_type_variation = &"LineSeparator"
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"SmallItemButton"
-disabled = true
 text = "Host"
 alignment = 0
-
-[node name="Soon" type="Label" parent="Page/Items/HostButton"]
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -96.0
-offset_top = -12.0
-offset_right = -16.0
-offset_bottom = 12.0
-grow_horizontal = 0
-grow_vertical = 2
-theme_type_variation = &"MuteLabel"
-text = "Soon"
-horizontal_alignment = 2
 
 [node name="JoinButton" type="Button" parent="Page/Items"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"SmallItemButton"
-disabled = true
 text = "Join"
 alignment = 0
-
-[node name="Soon" type="Label" parent="Page/Items/JoinButton"]
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -96.0
-offset_top = -12.0
-offset_right = -16.0
-offset_bottom = 12.0
-grow_horizontal = 0
-grow_vertical = 2
-theme_type_variation = &"MuteLabel"
-text = "Soon"
-horizontal_alignment = 2
 
 [node name="Build" type="Label" parent="Page"]
 anchors_preset = 2
@@ -224,5 +191,7 @@ theme_type_variation = &"ShadowLabel"
 horizontal_alignment = 2
 
 [node name="MatchSetup" parent="." instance=ExtResource("setup_scene")]
+
+[node name="LobbyMenu" parent="." instance=ExtResource("lobby_scene")]
 
 [node name="SettingsMenu" parent="." instance=ExtResource("settings_menu_scene")]

@@ -2,7 +2,7 @@
 
 A single-player tactical FPS in the spirit of Counter-Strike, played against bots, with the look of a 1990s Quake-era shooter. Built with Godot 4.7.2.
 
-> **Status:** M1–M5 built: CS-style movement, a rifle with CS-like recoil, the retro look, bots, and full matches (main menu, match setup, 1–5 per side with bot teammates, rounds with freeze time, round HUD, kill feed, scoreboard, spectating, pause menu, settings saved to disk). The M5 playtest is pending (checklist in [docs/PLAN.md](docs/PLAN.md), "Your open checks"). Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
+> **Status:** online multiplayer (M9) is built for LAN play: host or join a game from the main menu (see "Playing with friends"); it waits for a playtest with a friend. M1–M5 built: CS-style movement, a rifle with CS-like recoil, the retro look, bots, and full matches (main menu, match setup, 1–5 per side with bot teammates, rounds with freeze time, round HUD, kill feed, scoreboard, spectating, pause menu, settings saved to disk). The M5 playtest is pending (checklist in [docs/PLAN.md](docs/PLAN.md), "Your open checks"). Progress is tracked in [docs/PLAN.md](docs/PLAN.md).
 
 ## Requirements
 
@@ -123,6 +123,22 @@ Open the **settings menu** with **Settings** in the main menu, or by typing `set
 | `settings_reset` | Everything back to its default, key bindings and the remembered match setup included | |
 
 The file also holds Y inversion, fullscreen, V-Sync, the pixel resolution (270, 360, 480, 540 or 720 lines), the palette effect, the pixelated HUD, the effects and interface volumes, the crosshair (color, length, gap, thickness, outline, dot, dynamic) the key bindings (`"key:87"` is the W key, `"mouse:1"` the left button; two per action) and, in a `[match]` section, your last match setup (mode, team sizes, difficulty, match length or kill limit, friendly fire, rotation and map). A value that is out of range is clamped and a missing or unreadable one falls back to the default, so deleting the file, or a line in it, is always safe: **delete `settings.cfg` to start from the defaults**.
+
+## Playing with friends (M9)
+
+One player hosts and plays, friends join, and bots fill the empty slots (D-100, D-108).
+
+1. **Main menu → Multiplayer.** Type your name (saved for next time).
+2. **The host** presses **Host game**. The lobby shows the port (26000, Quake's, unless you change it) and this Mac's LAN addresses. On a LAN that is all; over the internet the host's router must forward UDP port 26000 to the host's Mac (Steam lobbies, which wouldn't need that, are deferred for now: D-114).
+3. **Friends** type the host's address and press **Join**.
+4. In the lobby, click **Join Team 1 / Team 2** to pick a side (your team is blue, the other red). The host's **Match settings…** opens the usual match setup (mode, map or rotation, team sizes, bot difficulty, length, friendly fire); empty slots are bots. The host presses **Start match**, and everyone's game loads.
+5. Pick your class in the first freeze time (M) as offline. **Esc** opens the menu as an overlay: the game doesn't pause online. After the match the host chooses: **Next map**, **Play again** or **Lobby**; the others can only **Leave**.
+
+Someone who leaves during a match is taken over by a bot ("Name (bot)"); someone who joins a running match takes over a bot of their team. When the host quits, everyone goes back to the menu.
+
+Console commands online: `status` (the session, ping, snapshot loss, prediction corrections, traffic), `net_fakelag <ms>` and `net_fakeloss <percent>` (make your connection worse on purpose, like CS's), `disconnect` (leave; for the host, end the game). Cheats (`god`, `noclip`), `mp_friendlyfire` and `map` only work offline. **F3** shows the same network lines as `status`.
+
+To try it on one Mac, start the game twice: host in one window and join `127.0.0.1` in the other. Shortcuts skip the typing (add them after the run command's `--path`): `-- --host --name Jan --start 2` (hosts and starts the match once a second player is in the lobby) and `-- --join 127.0.0.1 --name Friend`; `--port <port>` picks another port, `--no-settings` leaves your settings file alone.
 
 ## Exporting the game
 

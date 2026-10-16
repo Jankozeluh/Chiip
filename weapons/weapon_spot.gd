@@ -30,6 +30,9 @@ const BEAM_ALPHA := 0.22
 
 ## The gun it puts out. Set before it enters the tree.
 @export var weapon: WeaponData
+## Online, on a client (M9, D-113): only the ring, the name and the light of the host's spot; the
+## gun floating over it is the host's too (a copied [WeaponPickup]). Set before it enters the tree.
+var replica: bool = false
 
 var _pickup: WeaponPickup
 var _ring_material: StandardMaterial3D
@@ -54,6 +57,9 @@ func get_pickup() -> WeaponPickup:
 
 ## Puts a fresh gun out (with full ammo) unless one is there already.
 func refill() -> void:
+	if replica:
+		_set_glow(true)
+		return
 	if has_weapon() or weapon == null or not is_inside_tree():
 		_set_glow(has_weapon())
 		return

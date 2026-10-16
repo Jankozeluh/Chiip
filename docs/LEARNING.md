@@ -678,3 +678,41 @@
 
 **One icon, coloured per state** (the menu items' chip)
 - A `Button`'s icon is drawn through the theme colours `icon_normal_color`, `icon_hover_color`, `icon_focus_color`, `icon_pressed_color`... (white icons take them exactly). Making `icon_normal_color` transparent and the others ink gives the mockup's focus chip that appears only on the focused or hovered item, with no code.
+
+### M9 — Multiplayer
+
+**Godot's high-level multiplayer** (`net/net_session.gd`)
+- Every node can reach `multiplayer`, a `MultiplayerAPI` (in practice a `SceneMultiplayer`), Godot's counterpart of Unity Netcode's `NetworkManager`. What actually sends packets is its `multiplayer_peer`: an `ENetMultiplayerPeer` (UDP through the ENet library, like Unity Transport), a `WebSocketMultiplayerPeer`, a `WebRTCMultiplayerPeer` or, later in M9, a Steam peer. Swapping the peer swaps the transport; the rest of the code stays.
+- `peer.create_server(port, max_clients, channels)` hosts, `peer.create_client(address, port, channels)` joins; assign the peer to `multiplayer.multiplayer_peer` and the signals `peer_connected`, `peer_disconnected`, `connected_to_server`, `connection_failed` and `server_disconnected` tell you what happens. Every computer gets a *peer id*: the server is always 1, clients get random numbers (`multiplayer.get_unique_id()`).
+- ENet *channels* are independent queues: a lost unreliable snapshot on one channel never holds up reliable events on another.
+
+**RPCs** (`@rpc`)
+- A function marked `@rpc` can be called on the same node on another computer: `my_function.rpc(args)` calls it on everyone, `my_function.rpc_id(peer_id, args)` on one computer. Unity's `[ServerRpc]` / `[ClientRpc]` are the same idea, but Godot uses one annotation with options: `"any_peer"` (any computer may call it; check `multiplayer.get_remote_sender_id()` to see who did) or `"authority"` (only the node's *multiplayer authority*, the server by default); `"call_remote"` (not on yourself) or `"call_local"`; `"reliable"`, `"unreliable"` or `"unreliable_ordered"`; and a channel number.
+- The call finds its node by **path**, so the node must exist at the same path on both computers. That is why the session node always has the same name (`NetSession`) and the same place below its multiplayer root.
+
+**One process, several "computers"** (`SceneTree.set_multiplayer()`, `tests/net_harness.gd`)
+- `get_tree().set_multiplayer(SceneMultiplayer.new(), ^"/root/Test/Host")` gives one branch of the tree its own multiplayer API: nodes below it use that one, with paths counted from the branch. Two branches with their own APIs connected over localhost behave like two computers, which is how Chiip's network tests run a host and clients in one test run. Unity has nothing built in for this (its multiplayer play mode starts extra editor processes).
+
+**Raw packets next to RPCs** (`SceneMultiplayer.send_bytes()`, `peer_packet`)
+- `SceneMultiplayer` can also send plain byte arrays, with no node and no path: `send_bytes(bytes, peer_id, transfer_mode, channel)`, received through the `peer_packet(id, bytes)` signal. Chiip uses them for the game stream, where it wants its own compact format and tick numbers (D-101), and RPCs for the lobby.
+
+**Running code in a set order within a tick** (`process_physics_priority`)
+- Every node's `_physics_process` runs once per tick, normally in tree order (parents before children, earlier siblings first). `process_physics_priority` changes that: lower numbers run first, across the whole tree (Unity's *Script Execution Order*, but per node and changeable at runtime). Online, the session hands out the packets at -1000, the network code runs the friends' commands at -100, everything else runs at 0, and the host sends its snapshots from a node at 1000, after everyone has moved.
+
+**A world of its own** (`SubViewport.own_world_3d`, `Viewport.find_world_3d()`)
+- A `SubViewport` normally shares the 3D world (rendering *and* physics) of the window it is in, so two maps in two SubViewports would collide with each other's walls. `own_world_3d = true` gives it a separate `World3D` with its own physics space, which is how the network tests keep the host's and the client's maps apart in one process. `node.get_viewport().find_world_3d()` tells which world a node lives in. Groups, however, are per tree, not per world: that is why `Character.all_in_world()` filters the `characters` group.
+
+**ENet's throttle**
+- ENet slows down unreliable traffic on its own when it thinks the connection is congested: it drops a share of unreliable packets when the round-trip time rises. That suits bulk data, not a game stream that already repeats what matters, so Chiip switches it off per connection with `ENetPacketPeer.throttle_configure(interval, acceleration, 0)`.
+
+**Client-side prediction, in Godot terms** (`net/net_client.gd`)
+- Unity's Netcode for GameObjects has no built-in prediction either (Netcode for Entities does); in both engines you write it yourself. The trick that makes it work here is that a `CharacterBody3D`'s `move_and_slide()` can be called several times in one physics tick: replaying ten commands is ten calls in a row, each starting where the last one ended. The physics engine only learns the body's final position at the next physics step, which doesn't matter for the body's own moves (`move_and_slide()` starts from the node's transform).
+- `is_on_floor()` is the result of the last `move_and_slide()`, so after putting a body somewhere by hand it is stale; Chiip tells the next tick explicitly (`Character.set_floor_contact()`).
+- GDScript's `float` is 64 bits, but `Vector3` and the packets use 32. A value that travels must be cut to 32 bits *before* both sides use it (`PackedFloat32Array([value])[0]`), or the two simulations drift apart a hair per tick.
+
+**Lag compensation without moving physics bodies** (`net/lag_compensation.gd`)
+- Source's way is to move every player's hitboxes back in time, trace, and move them forward again. In Godot (with Jolt) a body or area moved from code only reaches the physics engine at the next physics step, so a ray cast right after moving it would still see the old place. Chiip keeps the hit-zone boxes as numbers (a `Transform3D` and a size per zone and tick) and tests the ray against them in GDScript: transform the ray into the box's own space with `affine_inverse()`, then the box is axis-aligned and the "slab test" (where the ray enters and leaves each pair of faces) gives the hit. A check compares it with `intersect_ray()` on 300 rays.
+- `Transform3D.interpolate_with(other, weight)` blends position and rotation between two recorded ticks, like `Vector3.lerp` plus `Quaternion.slerp` (Unity: `Vector3.Lerp` and `Quaternion.Slerp`).
+
+**The peer is the swappable part** (`net/net_transport.gd`, D-114)
+- In Godot everything above the connection talks to a `MultiplayerPeer`: RPCs, `send_bytes()`, peer ids, `peer_connected`. ENet (`ENetMultiplayerPeer`), WebSocket, WebRTC and GodotSteam's `SteamMultiplayerPeer` are all `MultiplayerPeer`s, so changing how computers reach each other means making a different peer and nothing else. Unity's Netcode works the same way: its `NetworkManager` has a *transport* component (Unity Transport, or a community Steam transport) you swap without touching game code. Chiip puts the making of the peer in one small class (`EnetTransport`), so a Steam one can sit next to it later.

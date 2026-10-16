@@ -67,6 +67,20 @@ func get_weapons() -> Array[Weapon]:
 	return _weapons.duplicate()
 
 
+## Puts the carried weapons in the order of [param order] (weapon data; ones not in it go last).
+## Online, a client keeps its list in the host's order (M9), so "the first grenade" is the same one.
+func reorder(order: Array[WeaponData]) -> void:
+	var ids := order.map(func(data: WeaponData) -> StringName: return data.id)
+	var rank := func(weapon: Weapon) -> int:
+		var index := ids.find(weapon.data.id)
+		return index if index >= 0 else ids.size() + _weapons.find(weapon)
+	var sorted := _weapons.duplicate()
+	sorted.sort_custom(func(a: Weapon, b: Weapon) -> bool: return rank.call(a) < rank.call(b))
+	if sorted != _weapons:
+		_weapons = sorted
+		changed.emit()
+
+
 ## The weapon in [param slot] ([enum WeaponData.Slot]); for grenades the first one. Null if empty.
 func get_in_slot(slot: int) -> Weapon:
 	for weapon in _weapons:
@@ -299,20 +313,21 @@ func handle_input(input: CharacterInput) -> void:
 		select_slot(input.weapon_slot)
 	elif input.last_weapon:
 		select_last()
-	if input.drop:
+	# Online, on a client, dropping and swapping are the host's to do (M9, D-113): what you carry
+	# then comes back from it.
+	if input.drop and not _character.replica:
 		drop(_character.weapon)
 	var use_pressed := input.use and not _use_was_held
 	_use_was_held = input.use
-	if use_pressed:
+	if use_pressed and not _character.replica:
 		try_swap()
 
 
 ## Takes every gun on the floor the character's feet touch whose slot is free (walking over a
 ## gun picks it up, as in CS). It doesn't take it out: that's still your choice.
 func update_pickups() -> void:
-	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
-		var pickup := node as WeaponPickup
-		if pickup == null or pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
+	for pickup in WeaponPickup.all_in_world(_character):
+		if pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
 			continue
 		var offset := pickup.global_position - _character.global_position
 		if Vector2(offset.x, offset.z).length() > PICKUP_REACH or offset.y <= -0.5 or offset.y >= PICKUP_HEIGHT:
@@ -368,9 +383,8 @@ func get_looked_at_pickup() -> WeaponPickup:
 	var look := -Basis.from_euler(Vector3(aim.y, aim.x, 0.0)).z
 	var best: WeaponPickup = null
 	var best_angle := SWAP_ANGLE
-	for node in get_tree().get_nodes_in_group(WeaponPickup.GROUP):
-		var pickup := node as WeaponPickup
-		if pickup == null or pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
+	for pickup in WeaponPickup.all_in_world(_character):
+		if pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
 			continue
 		var to := pickup.get_center() - eye
 		if to.length() > SWAP_REACH:

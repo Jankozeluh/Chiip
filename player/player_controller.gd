@@ -243,8 +243,9 @@ func _process(_delta: float) -> void:
 	_was_blocked = blocked
 	var source := get_view_target()
 	var head := source.head.get_global_transform_interpolated()
-	# Position: where the head is drawn this frame (smoothed between physics ticks).
-	camera.global_position = head.origin
+	# Position: where the head is drawn this frame (smoothed between physics ticks), and online
+	# the fading share of a prediction correction (zero offline).
+	camera.global_position = head.origin + source.view_offset
 	# Rotation: your own view comes straight from the mouse, so looking around is
 	# instant. A teammate's is the way their head is drawn this frame, which is
 	# their aim smoothed between physics ticks like the position (the head turns
@@ -321,8 +322,7 @@ func _on_character_died(_killer: Character) -> void:
 ## one alive.
 func _find_next_teammate() -> Character:
 	var teammates: Array[Character] = []
-	for node in get_tree().get_nodes_in_group("characters"):
-		var other := node as Character
+	for other in Character.all_in_world(character):
 		if other != character and other.team == character.team:
 			teammates.append(other)
 	var start := teammates.find(_view_target)

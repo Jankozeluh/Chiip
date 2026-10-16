@@ -36,3 +36,32 @@ var weapon_slot: int = -1
 var last_weapon: bool = false
 ## Drop the gun in hand (G) was pressed this tick.
 var drop: bool = false
+## Online (M9, D-103): the command's number, counted up by the player's computer from 1. The
+## host runs each number once and in order, tells the client the last one it ran, and seeds
+## the shot spread from it. 0 for commands that never travel (bots, single-player).
+var tick: int = 0
+## Online (M9, D-107): the host tick the player's screen showed the other characters at when
+## this command was made (between two snapshots, so it has a fraction). The host checks the
+## command's shots against the hit zones as they were then.
+var view_tick: float = 0.0
+
+
+## A copy of this command.
+func copy() -> CharacterInput:
+	var other := CharacterInput.new()
+	other.move = move
+	other.yaw = yaw
+	other.pitch = pitch
+	other.jump = jump
+	other.crouch = crouch
+	other.walk = walk
+	other.shoot = shoot
+	other.reload = reload
+	other.use = use
+	other.aim = aim
+	other.weapon_slot = weapon_slot
+	other.last_weapon = last_weapon
+	other.drop = drop
+	other.tick = tick
+	other.view_tick = view_tick
+	return other

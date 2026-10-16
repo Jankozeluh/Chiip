@@ -15,6 +15,10 @@ extends CanvasLayer
 ## scores and buttons use theme type variations. The result picks "VictoryLabel"
 ## or "DefeatLabel" by name (your team's colour or the enemy's), and the two scores
 ## are a "FriendlyLargeLabel" and an "EnemyLargeLabel" in the scene.
+##
+## Online (M9, D-109) the host decides what comes next: the host's screen offers Next map,
+## Play again and "Lobby" (everyone comes along), a client's only "Leave" (the
+## host decides; [method set_online]).
 
 ## Emitted when the player clicks "Play again".
 signal play_again_pressed
@@ -24,6 +28,9 @@ signal main_menu_pressed
 signal next_map_pressed
 
 var _manager: RoundManager
+## Online on a client: only the leave button shows.
+var _client: bool = false
+var _next_map_title: String = ""
 
 @onready var _title: Label = %Result
 @onready var _your_score: Label = %YourScore
@@ -48,7 +55,18 @@ func _ready() -> void:
 ## [param title] (no rotation). main.gd calls it whenever a map is loaded.
 func set_next_map(title: String) -> void:
 	_next_map.text = "Next map · %s" % title
-	_next_map.visible = not title.is_empty()
+	_next_map.visible = not title.is_empty() and not _client
+	_next_map_title = title
+
+
+## Online (M9): [param online] true shows the online buttons, for the host when [param host]
+## (Next map, Play again, Lobby) or for a client (only Leave, the host decides what comes next);
+## false brings back the offline ones. main.gd calls it whenever a map is loaded.
+func set_online(online: bool, host: bool) -> void:
+	_client = online and not host
+	_play_again.visible = not _client
+	_main_menu.text = ("Lobby" if host else "Leave") if online else "Main menu"
+	set_next_map(_next_map_title)
 
 
 # --- Test hooks ---
@@ -59,12 +77,12 @@ func get_next_map_button() -> Button:
 	return _next_map
 
 
-## The "Play again" button, the filled one with the chip.
+## The "Play again" button, the filled one with the chip (hidden on an online client).
 func get_play_again_button() -> Button:
 	return _play_again
 
 
-## The "Main menu" button.
+## The "Main menu" button ("Lobby" for an online host, "Leave" for a client).
 func get_main_menu_button() -> Button:
 	return _main_menu
 

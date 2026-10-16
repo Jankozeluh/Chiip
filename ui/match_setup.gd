@@ -12,7 +12,8 @@ extends CanvasLayer
 ##
 ## It only collects the choices and reports [signal started] and
 ## [signal closed]; the main menu starts the game ([GameLaunch]) for
-## [method get_picked_mode]. Every choice is written to [Settings] (its
+## [method get_picked_mode]; the online lobby ([LobbyMenu]) holds one too, for the host's
+## match settings. Every choice is written to [Settings] (its
 ## [code][match][/code] section) the moment it changes, so the next start offers
 ## the same match; picking Team Deathmatch or Bomb stores the mode too. The
 ## screen follows [signal Settings.changed]. [member settings] is the shared
@@ -128,6 +129,12 @@ func close() -> void:
 ## True while the screen is shown.
 func is_open() -> bool:
 	return visible
+
+
+## Changes what the Start button says. The online lobby (M9) opens this panel to edit the match
+## and calls it "Done": the panel still only reports [signal started].
+func set_start_text(text: String) -> void:
+	_start_button.text = text
 
 
 ## Scales the screen; 1.0 is the size it is designed for (a 720-pixel-tall
