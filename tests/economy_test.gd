@@ -162,11 +162,10 @@ func _test_console() -> void:
 	add_child(main)
 	await _wait_ticks(4)
 	var console := main.get_node("DevConsole") as DevConsole
-	var output := console.get_node("Panel/Margin/Box/Output") as Label
 	var rounds := main.get_map().get_node("RoundManager") as RoundManager
 	var player := main.get_map().get_node("Player") as Character
 	console.run("money 2500")
-	_check("The console's money command sets and shows your money", rounds.get_money(player) == 2500 and output.text.contains("You have $2500."),
+	_check("The console's money command sets and shows your money", rounds.get_money(player) == 2500 and console.get_output_text().contains("You have $2500."),
 			"$%d" % rounds.get_money(player))
 	main.queue_free()
 	await _wait_ticks(2)

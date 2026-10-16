@@ -104,9 +104,6 @@ const HANDLE_GROOVE_DARKEN := 0.0
 const FONT := "res://assets/fonts/Silkscreen-Regular.ttf"
 ## Its bold cut: the 48 and 96 px titles (D-134).
 const FONT_BOLD := "res://assets/fonts/Silkscreen-Bold.ttf"
-## The developer console's monospaced system font: the first of these that the
-## computer has (macOS has Menlo; the last name is the generic fallback).
-const FONT_MONO_NAMES: Array[String] = ["Menlo", "Monaco", "Courier New", "monospace"]
 
 # --- Text sizes (Foundations: TYPE) ---
 
@@ -311,6 +308,26 @@ const TRIM_LARGE_BOTTOM := -4
 ## 96 px text: 123 - 27 = 96.
 const TRIM_HERO_TOP := -14
 const TRIM_HERO_BOTTOM := -13
+
+# --- Developer console (mockup 17) ---
+# A strip across the top of the screen: the output (Silkscreen 16 on a 24 px line, bottom-aligned) over an
+# input row on INK. The strip's colour and its LINE edge are CONSOLE and the ConsolePanel role.
+
+## The strip's height at 720p: the output has room for 11 lines (11 x 24 + 10 x 2 = 284) between the paddings and the input row.
+const CONSOLE_HEIGHT := 384
+## The output's space to the left and right edge, and the input row's.
+const CONSOLE_PAD_X := 32
+## The output's space above its lines and below them.
+const CONSOLE_PAD_TOP := 24
+const CONSOLE_PAD_BOTTOM := 8
+## The height of one output line (the 16 px text is centred in it) and the space between two lines.
+const CONSOLE_LINE_HEIGHT := 24
+const CONSOLE_LINE_GAP := 2
+## The input row's height, its top edge (a LINE) included, and the space between the prompt, the input and the hint.
+const CONSOLE_ROW_HEIGHT := 48
+const CONSOLE_ROW_GAP := 12
+## The input's caret is a 10 px wide block (the mockup's lime block, 10 x 18).
+const CONSOLE_CARET_WIDTH := 10
 
 # --- HUD (the overlay of a running game; D-133) ---
 #

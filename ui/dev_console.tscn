@@ -11,25 +11,52 @@ script = ExtResource("console_script")
 anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
-custom_minimum_size = Vector2(0, 480)
+custom_minimum_size = Vector2(0, 384)
 theme_type_variation = &"ConsolePanel"
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Box" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
-theme_type_variation = &"PanelMargin"
+theme_type_variation = &"ConsoleBox"
 
-[node name="Box" type="VBoxContainer" parent="Panel/Margin"]
-layout_mode = 2
-theme_type_variation = &"ContentBox"
-
-[node name="Output" type="Label" parent="Panel/Margin/Box"]
+[node name="OutputMargin" type="MarginContainer" parent="Panel/Box"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_type_variation = &"ConsoleOutputMargin"
+
+[node name="Lines" type="VBoxContainer" parent="Panel/Box/OutputMargin"]
+layout_mode = 2
+theme_type_variation = &"ConsoleLines"
+alignment = 2
+
+[node name="Line" type="Label" parent="Panel/Box/OutputMargin/Lines"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 24)
 theme_type_variation = &"ConsoleLabel"
-vertical_alignment = 2
+vertical_alignment = 1
 clip_text = true
 
-[node name="Input" type="LineEdit" parent="Panel/Margin/Box"]
+[node name="InputRow" type="PanelContainer" parent="Panel/Box"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 48)
+theme_type_variation = &"ConsoleInputRow"
+
+[node name="Row" type="HBoxContainer" parent="Panel/Box/InputRow"]
+layout_mode = 2
+theme_type_variation = &"ConsoleInputBox"
+
+[node name="Prompt" type="Label" parent="Panel/Box/InputRow/Row"]
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+vertical_alignment = 1
+text = ">"
+
+[node name="Input" type="LineEdit" parent="Panel/Box/InputRow/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"ConsoleLineEdit"
-placeholder_text = "type a command, e.g. help"
+
+[node name="Hint" type="Label" parent="Panel/Box/InputRow/Row"]
+layout_mode = 2
+theme_type_variation = &"MuteLabel"
+vertical_alignment = 1
+text = "Tab completes · Up history"

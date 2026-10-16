@@ -33,7 +33,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Pause menu, Tab scoreboard and match end** (task 11, Sonnet): as in your mockups; class icons and team lines in the tables, your row framed in lime, dead players muted; 812 checks pass.
 
-**Next:** console, loading screen, HUD and kill feed, class-draft cards and buy menu.
+- **Console** (task 13, Sonnet): the mockup's strip, in the pixel font instead of a system monospace; echoes dim, errors in amber; the input row with a lime prompt and block caret; Tab completes command names (a second Tab lists the matches). ui 198 checks pass.
+
+**Next:** loading screen, HUD and kill feed, class-draft cards and buy menu.
 
 ## 2026-10-16 — Merges into main: M7 and the M10 map kit
 

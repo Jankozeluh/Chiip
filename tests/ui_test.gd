@@ -71,7 +71,7 @@ const VARIATIONS := {
 	"SegmentRow": "HBoxContainer", "ModeList": "VBoxContainer", "ModeText": "VBoxContainer",
 	"ModeMargin": "MarginContainer", "PageMargin": "MarginContainer",
 	# M10 (D-131): roles that replaced the menus' own colours, fonts and spacing: team-coloured scores and
-	# match result, the console's monospace font, the crosshair colour swatches, the dim behind a modal menu.
+	# match result, the console's line label, the crosshair colour swatches, the dim behind a modal menu.
 	"FriendlyScoreLabel": "Label", "EnemyScoreLabel": "Label", "VictoryLabel": "Label", "DefeatLabel": "Label",
 	"ConsoleLabel": "Label", "ConsoleLineEdit": "LineEdit", "SwatchRow": "HBoxContainer", "SwatchMargin": "MarginContainer",
 	"BackdropPanel": "Panel",
@@ -88,6 +88,10 @@ const VARIATIONS := {
 	"TitleTrim": "MarginContainer", "LargeTrim": "MarginContainer", "HeroTrim": "MarginContainer",
 	"TallButton": "Button", "TallPrimaryButton": "PrimaryButton", "CenteredItemButton": "BigButton", "InkChip": "Panel",
 	"PageColumn": "VBoxContainer", "MuteLabel": "Label",
+	# M10 task 13: the developer console as in mockup 17: its column, the output's margin and line box, the alert-coloured
+	# error line, the input row (INK, a LINE edge above) and the row's box.
+	"ConsoleBox": "VBoxContainer", "ConsoleOutputMargin": "MarginContainer", "ConsoleLines": "VBoxContainer",
+	"ConsoleErrorLabel": "ConsoleLabel", "ConsoleInputRow": "PanelContainer", "ConsoleInputBox": "HBoxContainer",
 }
 ## The roles the HUD uses (M10 task 6, D-133): name → the type it varies.
 const HUD_VARIATIONS := {
@@ -432,7 +436,7 @@ func _test_settings_roles() -> void:
 
 
 ## The roles that replaced what menus once set per node (M10, D-131): team-coloured scores and the match
-## result, the console's font, the crosshair swatches' spacing, the dim behind a modal menu, and the two
+## result, the console's lines, the crosshair swatches' spacing, the dim behind a modal menu, and the two
 ## palette colours the scoreboard table reads.
 func _test_restyle_roles() -> void:
 	var holder := Control.new()
@@ -453,15 +457,14 @@ func _test_restyle_roles() -> void:
 					friendly_score.get_theme_font_size("font_size"), victory.get_theme_font_size("font_size")])
 	var console_label := _variation_node(Label.new(), "ConsoleLabel", holder)
 	var console_input := _variation_node(LineEdit.new(), "ConsoleLineEdit", holder)
+	var console_error := _variation_node(Label.new(), "ConsoleErrorLabel", holder)
 	var plain := Label.new()
 	holder.add_child(plain)
-	var label_font := console_label.get_theme_font("font") as SystemFont
-	var input_font := console_input.get_theme_font("font") as SystemFont
-	_check("The console roles use a system font built from the FONT_MONO_NAMES token (not the pixel font), at the body size",
-			label_font != null and input_font != null and label_font.font_names == PackedStringArray(Tokens.FONT_MONO_NAMES)
-					and input_font.font_names == label_font.font_names and plain.get_theme_font("font").resource_path == FONT_PATH
+	_check("The console roles use the pixel font like all text (the theme's default font, no longer a monospaced system font), at the body size",
+			console_label.get_theme_font("font").resource_path == FONT_PATH and console_input.get_theme_font("font").resource_path == FONT_PATH
+					and console_error.get_theme_font("font").resource_path == FONT_PATH and plain.get_theme_font("font").resource_path == FONT_PATH
 					and console_label.get_theme_font_size("font_size") == Tokens.TEXT_SIZE and console_input.get_theme_font_size("font_size") == Tokens.TEXT_SIZE,
-			"label font %s, input font %s" % [label_font.font_names if label_font != null else "none", input_font.font_names if input_font != null else "none"])
+			"label font %s, input font %s" % [console_label.get_theme_font("font").resource_path, console_input.get_theme_font("font").resource_path])
 	var swatch_row := _variation_node(HBoxContainer.new(), "SwatchRow", holder)
 	var swatch_margin := _variation_node(MarginContainer.new(), "SwatchMargin", holder)
 	var backdrop := _variation_node(Panel.new(), "BackdropPanel", holder)
@@ -780,35 +783,113 @@ func _test_preview() -> void:
 	preview.queue_free()
 
 
-## The console takes its look from the theme and scales with it.
+## The console takes its look from the theme and scales with it; its lines are coloured by kind
+## (mockup 17), Tab completes a command's name and Up recalls the last command.
 func _test_console() -> void:
 	var console := CONSOLE_SCENE.instantiate() as DevConsole
 	add_child(console)
+	# Open: a hidden console's containers don't lay their children out.
+	console.set_open(true)
 	await get_tree().process_frame
 	var panel := console.get_node("Panel") as PanelContainer
-	var output := console.get_node("Panel/Margin/Box/Output") as Label
-	var input := console.get_node("Panel/Margin/Box/Input") as LineEdit
-	var base_size := output.get_theme_font_size("font_size")
+	var lines_box := console.get_node("Panel/Box/OutputMargin/Lines") as VBoxContainer
+	var input_row := console.get_node("Panel/Box/InputRow") as PanelContainer
+	var input := console.get_node("Panel/Box/InputRow/Row/Input") as LineEdit
+	var banner := lines_box.get_child(0) as Label
+	var banner_color := banner.get_theme_color("font_color")
+	var banner_text := banner.text
+	var line_count := lines_box.get_child_count()
+	for i in 12:
+		console.print_line("line %d" % i)
+	var base_size := banner.get_theme_font_size("font_size")
 	var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
+	var row_style := input_row.get_theme_stylebox("panel") as StyleBoxFlat
+	await get_tree().process_frame
+	var base_height := panel.size.y
+	var base_line := banner.size.y
+	var base_row := input_row.size.y
 	console.set_ui_scale(1.5)
 	await get_tree().process_frame
-	var scaled_size := output.get_theme_font_size("font_size")
+	var scaled_size := banner.get_theme_font_size("font_size")
 	var scaled_input := input.get_theme_font_size("font_size")
+	var scaled_height := panel.size.y
+	var scaled_line := banner.size.y
+	var scaled_caret := input.get_theme_constant("caret_width")
+	var scaled_gap := lines_box.get_theme_constant("separation")
+	var scaled_minimum := panel.custom_minimum_size.y
 	console.set_ui_scale(1.0)
-	_check("The developer console is themed (a ConsolePanel with a line along its bottom edge, a themed input line, no overrides of its own), the body size at 1.0 and 1.5 times it at 1.5, its panel 480 → 720 px minimum height (24 lines, D-065; 18 until M7 added commands)",
-			panel.theme_type_variation == &"ConsolePanel" and style != null and style.border_color == Tokens.LINE_COLOR
-					and not output.has_theme_font_size_override("font_size") and not panel.has_theme_stylebox_override("panel")
-					and base_size == Tokens.TEXT_SIZE and scaled_size == _x(Tokens.TEXT_SIZE, 1.5) and scaled_input == _x(Tokens.TEXT_SIZE, 1.5)
-					and panel.custom_minimum_size.y == 480.0
-					and (input.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == _theme.get_stylebox("normal", "LineEdit").bg_color,
-			"font %d → %d, input %d, panel minimum back at %.0f" % [base_size, scaled_size, scaled_input, panel.custom_minimum_size.y])
-	var output_font := output.get_theme_font("font") as SystemFont
-	var input_font := input.get_theme_font("font") as SystemFont
-	_check("The console's monospace font comes from the theme (ConsoleLabel and ConsoleLineEdit, the FONT_MONO_NAMES token), not from the scene: the output and the input line use it, with no font override of their own",
-			output.theme_type_variation == &"ConsoleLabel" and input.theme_type_variation == &"ConsoleLineEdit"
-					and output_font != null and input_font != null and output_font.font_names == PackedStringArray(Tokens.FONT_MONO_NAMES)
-					and input_font.font_names == output_font.font_names and not output.has_theme_font_override("font") and not input.has_theme_font_override("font"),
-			"output font %s, input font %s" % [output_font.font_names if output_font != null else "none", input_font.font_names if input_font != null else "none"])
+	await get_tree().process_frame
+	_check("The developer console is themed as in the mockup (a ConsolePanel strip in the CONSOLE colour with a LINE edge along the bottom, an input row on INK with a LINE edge above it, a themed input line, no overrides of its own), the body size at 1.0 and 1.5 times it at 1.5",
+			panel.theme_type_variation == &"ConsolePanel" and style != null and style.bg_color == Tokens.CONSOLE and style.border_color == Tokens.LINE_COLOR
+					and style.border_width_bottom == Tokens.BORDER and style.border_width_top == 0
+					and input_row.theme_type_variation == &"ConsoleInputRow" and row_style != null and row_style.bg_color == Tokens.INK
+					and row_style.border_color == Tokens.LINE_COLOR and row_style.border_width_top == Tokens.LINE and row_style.border_width_bottom == 0
+					and input.theme_type_variation == &"ConsoleLineEdit" and not banner.has_theme_font_size_override("font_size")
+					and not panel.has_theme_stylebox_override("panel") and not input.has_theme_stylebox_override("normal")
+					and (input.get_theme_stylebox("normal") as StyleBoxEmpty) != null
+					and base_size == Tokens.TEXT_SIZE and scaled_size == _x(Tokens.TEXT_SIZE, 1.5) and scaled_input == _x(Tokens.TEXT_SIZE, 1.5),
+			"font %d → %d, input %d" % [base_size, scaled_size, scaled_input])
+	_check("The strip is 384 px high at 720p (CONSOLE_HEIGHT) and 1.5 times that at 1080p with %d lines of 24 px (CONSOLE_LINE_HEIGHT) in it, 2 px apart, so the lines never push it taller; the input row is 48 px (CONSOLE_ROW_HEIGHT), a lime block caret 10 px wide (15 at 1.5)" % line_count,
+			line_count == DevConsole.VISIBLE_LINES and panel.custom_minimum_size.y == float(Tokens.CONSOLE_HEIGHT) and is_equal_approx(base_height, float(Tokens.CONSOLE_HEIGHT))
+					and base_line == float(Tokens.CONSOLE_LINE_HEIGHT) and base_row == float(Tokens.CONSOLE_ROW_HEIGHT)
+					and is_equal_approx(scaled_minimum, float(_x(Tokens.CONSOLE_HEIGHT, 1.5))) and is_equal_approx(scaled_height, float(_x(Tokens.CONSOLE_HEIGHT, 1.5)))
+					and scaled_line == float(_x(Tokens.CONSOLE_LINE_HEIGHT, 1.5)) and scaled_gap == _x(Tokens.CONSOLE_LINE_GAP, 1.5)
+					and scaled_caret == _x(Tokens.CONSOLE_CARET_WIDTH, 1.5) and input.get_theme_constant("caret_width") == Tokens.CONSOLE_CARET_WIDTH
+					and input.get_theme_color("caret_color") == Tokens.ACCENT,
+			"panel %.0f (1.5×: %.0f of %.0f), line %.0f (1.5×: %.0f), row %.0f, caret %d (1.5×: %d), %d lines" % [base_height, scaled_height, scaled_minimum,
+					base_line, scaled_line, base_row, input.get_theme_constant("caret_width"), scaled_caret, line_count])
+	# The colours of the kinds of line: the opening banner MUTE, an echoed command TEXT_DIM, an answer TEXT, an error ALERT.
+	console.run("clear")
+	console.print_line("Chiip banner", DevConsole.ROLE_NOTE)
+	console.run("fov")
+	console.run("nosuch 1")
+	var shown: Array[Label] = []
+	for child in lines_box.get_children():
+		if (child as Label).visible:
+			shown.append(child as Label)
+	var texts := shown.map(func(label: Label) -> String: return label.text)
+	var colors := shown.map(func(label: Label) -> Color: return label.get_theme_color("font_color"))
+	_check("The console's lines are coloured by kind from the theme: the opening banner reads \"Chiip M10 · Godot x.y.z · type help\" in MUTE, an echoed command (\"> fov\") in TEXT_DIM, an answer in TEXT, \"Unknown command: nosuch\" in ALERT",
+			banner_text.begins_with("Chiip %s · Godot %d.%d.%d · type help" % [DevConsole.BANNER_MILESTONE, Engine.get_version_info().major,
+					Engine.get_version_info().minor, Engine.get_version_info().patch])
+					and banner_color == Tokens.MUTE
+					and texts.size() == 5 and texts[1] == "> fov" and colors[1] == Tokens.TEXT_DIM and texts[2].begins_with("fov = ") and colors[2] == Tokens.TEXT
+					and texts[3] == "> nosuch 1" and colors[3] == Tokens.TEXT_DIM and texts[4] == "Unknown command: nosuch" and colors[4] == Tokens.ALERT
+					and colors[0] == Tokens.MUTE and texts[0] == "Chiip banner" and (shown[-1].theme_type_variation == &"ConsoleErrorLabel"),
+			"lines %s, colours %s" % [texts, colors])
+	# The lines sit at the bottom of the strip: the newest is the last label shown, just above the padding.
+	await get_tree().process_frame
+	var last := shown[-1]
+	var area := console.get_node("Panel/Box/OutputMargin") as Control
+	_check("Few lines stay at the bottom of the output (bottom-aligned): the newest line ends at the output area's bottom padding, the oldest of the few is well below the top",
+			is_equal_approx(last.get_global_rect().end.y, area.get_global_rect().end.y - Tokens.CONSOLE_PAD_BOTTOM)
+					and shown[0].get_global_rect().position.y > area.get_global_rect().position.y + Tokens.CONSOLE_PAD_TOP + Tokens.CONSOLE_LINE_HEIGHT,
+			"newest ends at %.0f, area ends at %.0f, oldest starts at %.0f" % [last.get_global_rect().end.y, area.get_global_rect().end.y, shown[0].get_global_rect().position.y])
+	# Tab completes a command's name; it doesn't move the focus; Up recalls the last command.
+	var completed: Array[String] = []
+	for typed in ["fo", "FO", "settings_r", "set", "zzz", "map de", "bot_"]:
+		input.text = typed
+		input.caret_column = typed.length()
+		_send(_key_event(KEY_TAB))
+		_send(_key_event(KEY_TAB, false))
+		completed.append(input.text)
+	var focus_kept := get_viewport().gui_get_focus_owner() == input
+	var listed := shown[0].get_parent().get_children().filter(func(label: Label) -> bool: return label.visible)
+	var last_line := (listed[-1] as Label).text
+	_check("Tab completes the command's name: \"fo\" → \"fov \" (any case), \"settings_r\" → \"settings_reset \", \"set\" → \"settings\" (what settings and settings_reset share), nothing for \"zzz\" or once there is an argument; on \"bot_\" (nothing more to add) a second Tab lists bot_add, bot_difficulty and bot_kick; the focus stays on the input",
+			completed == ["fov ", "fov ", "settings_reset ", "settings", "zzz", "map de", "bot_"] and focus_kept
+					and last_line.contains("bot_add") and last_line.contains("bot_difficulty") and last_line.contains("bot_kick")
+					and console.complete("") == "" and console.complete("bo") == "bot_" and console.get_matches("m") == ["map", "money", "mp_friendlyfire"],
+			"completed %s, focus kept %s, last line '%s'" % [completed, focus_kept, last_line])
+	input.text_submitted.emit("fov")
+	_send(_key_event(KEY_UP))
+	_send(_key_event(KEY_UP, false))
+	var recalled := input.text
+	_send(_key_event(KEY_DOWN))
+	_send(_key_event(KEY_DOWN, false))
+	_check("Up recalls the last command typed and Down brings back an empty line", recalled == "fov" and input.text == "", "recalled '%s', after Down '%s'" % [recalled, input.text])
+	console.set_open(false)
+	MenuState.reset()
 	remove_child(console)
 	console.queue_free()
 
@@ -2042,12 +2123,13 @@ func _test_console_and_menus() -> void:
 		seen.append_array(console.get_visible_lines())
 		pages += 1
 	var listed := names.all(func(command_name: String) -> bool: return seen.any(func(line: String) -> bool: return line.begins_with(command_name)))
-	var fits := first_screen[0] == "> help" and first_screen.size() == names.size() + 1
+	var full := first_screen.size() == DevConsole.VISIBLE_LINES and first_screen[0] != "> help"
+	var as_columns := seen.filter(func(line: String) -> bool: return line.contains(" · ")).size() >= names.size()
 	console.scroll_output(-10000)
-	_check("`help` lists every command, `settings` included, and all of it can be read: the echo and %d command lines %s (room for %d lines, the rest scrolls back)" % [
-			names.size(), "fit on the screen at once" if fits else "need scrolling", DevConsole.VISIBLE_LINES],
-			listed and names.has("settings") and fits, "%d commands, %d lines on the first screen, %d page(s) back to the echo, fits at once: %s" % [
-					names.size(), first_screen.size(), pages, fits])
+	_check("`help` lists every command, `settings` included, one line each as \"usage · description\" (no padded columns, the font isn't monospaced), and all of it can be read: the strip shows %d lines at a time and the rest scrolls back to the echo of the command" % DevConsole.VISIBLE_LINES,
+			listed and names.has("settings") and full and as_columns and console.get_visible_lines()[0] != "> help",
+			"%d commands, %d lines on the first screen, %d page(s) back to the echo, lines with ' · ': %s" % [
+					names.size(), first_screen.size(), pages, as_columns])
 	for i in 40:
 		console.print_line("line %d" % i)
 	var at_end := console.get_visible_lines()

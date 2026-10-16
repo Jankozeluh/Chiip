@@ -418,17 +418,34 @@ func _team_box(color: Color) -> Color:
 	return Color(color.darkened(Palette.HUD_SCORE_BOX_DARKEN), Palette.HUD_SCORE_BOX_ALPHA)
 
 
-## The developer console's text is monospace, so its columns line up. A system
-## font made from the names in the tokens; one font shared by the output and the
-## input line (the size is the body size, as everywhere).
+## The developer console (mockup 17), on top of the ConsolePanel strip: the output's lines in the
+## pixel font like all text, in four colours (normal TEXT here, echoed commands DimLabel, notes
+## MuteLabel, errors ALERT), and an input row on INK with a lime prompt, a flat input with a block
+## caret and a MUTE hint. The input line has no frame of its own: the row is its box.
 func _console() -> void:
-	var mono := SystemFont.new()
-	mono.resource_scene_unique_id = "mono_font"
-	mono.font_names = PackedStringArray(Palette.FONT_MONO_NAMES)
+	_variation("ConsoleBox", "VBoxContainer")
+	_constants("ConsoleBox", {"separation": Palette.FLUSH_GAP})
+	_variation("ConsoleOutputMargin", "MarginContainer")
+	_constants("ConsoleOutputMargin", {"margin_left": Palette.CONSOLE_PAD_X, "margin_top": Palette.CONSOLE_PAD_TOP,
+			"margin_right": Palette.CONSOLE_PAD_X, "margin_bottom": Palette.CONSOLE_PAD_BOTTOM})
+	_variation("ConsoleLines", "VBoxContainer")
+	_constants("ConsoleLines", {"separation": Palette.CONSOLE_LINE_GAP})
 	_variation("ConsoleLabel", "Label")
-	_fonts("ConsoleLabel", {"font": mono})
+	_colors("ConsoleLabel", {"font_color": Palette.TEXT})
+	_variation("ConsoleErrorLabel", "ConsoleLabel")
+	_colors("ConsoleErrorLabel", {"font_color": Palette.ALERT})
+	_variation("ConsoleInputRow", "PanelContainer")
+	var row := _box("console_input_row", Palette.INK, Palette.LINE_COLOR)
+	row.border_width_top = Palette.LINE
+	row.content_margin_left = Palette.CONSOLE_PAD_X
+	row.content_margin_right = Palette.CONSOLE_PAD_X
+	_styles("ConsoleInputRow", {"panel": row})
+	_variation("ConsoleInputBox", "HBoxContainer")
+	_constants("ConsoleInputBox", {"separation": Palette.CONSOLE_ROW_GAP})
 	_variation("ConsoleLineEdit", "LineEdit")
-	_fonts("ConsoleLineEdit", {"font": mono})
+	var bare := _empty("console_input", Vector4.ZERO)
+	_styles("ConsoleLineEdit", {"normal": bare, "focus": bare, "read_only": bare})
+	_constants("ConsoleLineEdit", {"caret_width": Palette.CONSOLE_CARET_WIDTH})
 
 
 func _buttons() -> void:

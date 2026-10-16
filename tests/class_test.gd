@@ -465,19 +465,18 @@ func _test_main_scene() -> void:
 		_silence(character)
 	_check("In the real game the class menu opens at the start of the match",
 			menu.is_open() and rounds.phase == RoundManager.Phase.FREEZE, "open %s" % menu.is_open())
-	var output := console.get_node("Panel/Margin/Box/Output") as Label
 	console.run("class")
-	var listed := output.text.contains("bulwark") and output.text.contains("You are the Rifleman.")
+	var listed := console.get_output_text().contains("bulwark") and console.get_output_text().contains("You are the Rifleman.")
 	console.run("class nobody")
-	var unknown := output.text.contains("Unknown class 'nobody'")
+	var unknown := console.get_output_text().contains("Unknown class 'nobody'")
 	console.run("class Bulwark")
 	_check("The console's class command lists the classes, names yours, rejects unknown names and gives you a class in freeze time",
-			listed and unknown and player.class_data == ClassData.find(&"bulwark") and output.text.contains("You are the Bulwark now."),
+			listed and unknown and player.class_data == ClassData.find(&"bulwark") and console.get_output_text().contains("You are the Bulwark now."),
 			"listed %s, unknown %s, class %s" % [listed, unknown, player.class_data.id])
 	await _wait_for_live(rounds)
 	console.run("class scout")
 	_check("...and says so when the round is live and refuses",
-			player.class_data == ClassData.find(&"bulwark") and output.text.contains("only during freeze time") and not menu.is_open(),
+			player.class_data == ClassData.find(&"bulwark") and console.get_output_text().contains("only during freeze time") and not menu.is_open(),
 			"class %s" % player.class_data.id)
 	main.queue_free()
 	await _wait_ticks(2)

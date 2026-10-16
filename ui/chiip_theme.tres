@@ -305,8 +305,19 @@ content_margin_top = 4.0
 content_margin_right = 8.0
 content_margin_bottom = 4.0
 
-[sub_resource type="SystemFont" id="mono_font"]
-font_names = PackedStringArray("Menlo", "Monaco", "Courier New", "monospace")
+[sub_resource type="StyleBoxFlat" id="console_input_row"]
+content_margin_left = 32.0
+content_margin_right = 32.0
+bg_color = Color(0.043137256, 0.0627451, 0.09019608, 1)
+border_width_top = 2
+border_color = Color(0.2, 0.2509804, 0.3529412, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="console_input"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
 
 [sub_resource type="StyleBoxFlat" id="console_panel"]
 bg_color = Color(0.02745098, 0.03529412, 0.050980393, 0.94)
@@ -1729,10 +1740,28 @@ CheckButton/styles/normal = SubResource("check_button_normal")
 CheckButton/styles/pressed = SubResource("check_button_pressed")
 ChipRow/base_type = &"HBoxContainer"
 ChipRow/constants/separation = 6
+ConsoleBox/base_type = &"VBoxContainer"
+ConsoleBox/constants/separation = 0
+ConsoleErrorLabel/base_type = &"ConsoleLabel"
+ConsoleErrorLabel/colors/font_color = Color(1, 0.6901961, 0.18039216, 1)
+ConsoleInputBox/base_type = &"HBoxContainer"
+ConsoleInputBox/constants/separation = 12
+ConsoleInputRow/base_type = &"PanelContainer"
+ConsoleInputRow/styles/panel = SubResource("console_input_row")
 ConsoleLabel/base_type = &"Label"
-ConsoleLabel/fonts/font = SubResource("mono_font")
+ConsoleLabel/colors/font_color = Color(0.9019608, 0.9254902, 0.9607843, 1)
 ConsoleLineEdit/base_type = &"LineEdit"
-ConsoleLineEdit/fonts/font = SubResource("mono_font")
+ConsoleLineEdit/constants/caret_width = 10
+ConsoleLineEdit/styles/focus = SubResource("console_input")
+ConsoleLineEdit/styles/normal = SubResource("console_input")
+ConsoleLineEdit/styles/read_only = SubResource("console_input")
+ConsoleLines/base_type = &"VBoxContainer"
+ConsoleLines/constants/separation = 2
+ConsoleOutputMargin/base_type = &"MarginContainer"
+ConsoleOutputMargin/constants/margin_bottom = 8
+ConsoleOutputMargin/constants/margin_left = 32
+ConsoleOutputMargin/constants/margin_right = 32
+ConsoleOutputMargin/constants/margin_top = 24
 ConsolePanel/base_type = &"PanelContainer"
 ConsolePanel/styles/panel = SubResource("console_panel")
 ContentBox/base_type = &"VBoxContainer"

@@ -460,7 +460,7 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 10. [x] **Settings** as a full screen: underlined tabs, 48 px rows, segments for on/off, slim sliders with value boxes, the crosshair preview, the controls table, Reset and Back (D-137). *(Sonnet)* Built; the default crosshair colour is the mockup's `#36D07A`.
 11. [x] **Pause menu, Tab scoreboard and match-end screen** (D-137). *(Sonnet)* Built: the pause list centred over the dimmed game; the scoreboard and match end with the mockup's table (class icons, K / D / A / DMG, team lines, your row framed in lime, dead rows muted) and headers (mode · map, the clock); Play again, Next map · Square, Main menu.
 12. [ ] **Class menu** in the draft's card style (all four classes until M7's draft offers two) (D-137). *(Sonnet)*
-13. [ ] **Developer console** (D-137). *(Sonnet)*
+13. [x] **Developer console** (D-137). *(Sonnet)* Built: the mockup's strip in Silkscreen, line colours by kind, the input row with a lime prompt and caret, Tab completes command names.
 14. [ ] **HUD**: the Team Deathmatch and Bomb top bars, banners, the death screen with the big countdown, spectating, health and ammo with icons and chips, kill-feed plates, toasts, hit marker (D-136). *(Opus direction, Sonnet builds; the parts in `hud.gd` and the kill feed wait for M7's merge)*
 15. [ ] **Loading screen** between maps (D-138). *(Sonnet)*
 16. [ ] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)*

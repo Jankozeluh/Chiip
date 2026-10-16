@@ -389,9 +389,8 @@ func _test_console() -> void:
 	var player := main.get_map().get_node("Player") as Character
 	_silence(player)
 	var console := main.get_node("DevConsole") as DevConsole
-	var output := console.get_node("Panel/Margin/Box/Output") as Label
 	console.run("armor 75 helmet")
-	var set_ok := _near(player.armor, 75.0) and player.has_helmet and output.text.contains("Armor 75 with a helmet.")
+	var set_ok := _near(player.armor, 75.0) and player.has_helmet and console.get_output_text().contains("Armor 75 with a helmet.")
 	console.run("armor 50")
 	_check("The console's armor command sets and shows your armor and helmet",
 			set_ok and _near(player.armor, 50.0) and not player.has_helmet, "armor %.1f, helmet %s" % [player.armor, player.has_helmet])
