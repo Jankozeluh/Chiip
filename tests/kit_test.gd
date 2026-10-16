@@ -14,6 +14,12 @@ extends Node
 ## of, and are cut out of a navmesh baked around them.
 ## The lamps (D-124): every lamp makes its light and has a glowing part, and a
 ## lamp placed in a .map takes the colour, brightness and range set there.
+## The kit gallery (D-125, D-129), built only from TrenchBroom entities: its
+## spawns, bomb sites, routes, hold spots, respawn and patrol points become
+## the same markers as in the hand-made maps, it shows every prop, lamp and
+## set texture, its see-through brushes block only movement, and both spawns
+## can walk to both sites. (tests/maps_test.tscn -- --map
+## res://maps/kit/kit_gallery.tscn plays bomb rounds and a respawn match on it.)
 ## Quits with the number of failed checks as the exit code.
 
 const TextureReport := preload("res://tools/texture_report.gd")
@@ -25,6 +31,7 @@ const KIT_FGD := "res://maps/fgd/chiip_kit_fgd.tres"
 const CHIIP_FGD := "res://maps/fgd/chiip_fgd.tres"
 const MAP_SETTINGS := "res://maps/chiip_map_settings.tres"
 const FIXTURE_MAP := "res://tests/maps/kit_props.map"
+const GALLERY := "res://maps/kit/kit_gallery.tscn"
 ## TrenchBroom units per metre (maps/chiip_map_settings.tres).
 const TB_SCALE := 39.37
 
@@ -38,6 +45,7 @@ func _ready() -> void:
 	_test_prop_entities()
 	await _test_lamps()
 	await _test_props_in_a_map()
+	await _test_gallery()
 	await get_tree().process_frame
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -64,7 +72,7 @@ func _test_textures() -> void:
 	var counts: Array[String] = []
 	for set_name: String in TEXTURE_SETS:
 		counts.append("%s %d" % [set_name, names.filter(func(n: String) -> bool: return n.begins_with(set_name + "/")).size()])
-	_check("The texture library has 28 textures in four sets", names.size() >= 28 and not counts.any(func(c: String) -> bool: return c.ends_with(" 0")),
+	_check("The texture library has at least 28 textures in four sets", names.size() >= 28 and not counts.any(func(c: String) -> bool: return c.ends_with(" 0")),
 			", ".join(counts))
 
 	var wrong_size: Array[String] = []
@@ -99,11 +107,11 @@ func _test_textures() -> void:
 				holes += 1
 	var map_material := load(TEXTURE_FOLDER + "industrial/chainlink.tres") as StandardMaterial3D
 	var csg_material := load(MATERIAL_FOLDER + "industrial/chainlink.tres") as StandardMaterial3D
-	_check("The chain-link has holes, and its map and CSG materials cut them out (alpha scissor, both sides drawn)",
+	_check("The chain-link has holes, and its map and CSG materials cut them out (alpha scissor; a brush draws each side once)",
 			holes > 64 * 64 / 3 and map_material != null and csg_material != null
 			and map_material.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 			and csg_material.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-			and map_material.cull_mode == BaseMaterial3D.CULL_DISABLED,
+			and map_material.cull_mode == BaseMaterial3D.CULL_BACK,
 			"%d%% holes" % roundi(holes * 100.0 / (64 * 64)))
 
 
@@ -301,6 +309,89 @@ func _test_props_in_a_map() -> void:
 				street_lamp.light_energy if street_lamp else 0.0])
 	map.queue_free()
 	await get_tree().process_frame
+
+
+# --- The kit gallery (D-125, D-129) ---
+
+
+func _test_gallery() -> void:
+	var gallery := (load(GALLERY) as PackedScene).instantiate() as Node3D
+	add_child(gallery)
+	var navigation: RID = gallery.get_world_3d().navigation_map
+	await _wait_for_navigation(gallery)
+	var counts := {}
+	for group: String in ["attack_spawns", "defend_spawns", "hold_points", "respawn_points", "patrol_points", "bomb_sites", "attack_routes"]:
+		counts[group] = get_tree().get_nodes_in_group(group).filter(func(node: Node) -> bool: return gallery.is_ancestor_of(node))
+	var sites: Array = counts["bomb_sites"]
+	var site_names := sites.map(func(site: Node) -> String: return String(site.name))
+	site_names.sort()
+	var sites_ok := site_names == ["BombSiteA", "BombSiteB"] and sites.all(func(site: Node) -> bool:
+		return site.get_node_or_null("Shape") is CollisionShape3D and (site.get_node("Shape") as CollisionShape3D).shape is BoxShape3D \
+				and site.get_node_or_null("Letter") is Label3D and (site as Area3D).collision_layer == PhysicsLayers.TRIGGERS)
+	var routes: Array = counts["attack_routes"]
+	var routes_ok := routes.size() == 3 and routes.all(func(route: Node) -> bool:
+		var orders := route.get_children().map(func(point: Node) -> int: return (point as KitRoutePoint).order)
+		var sorted_orders := orders.duplicate()
+		sorted_orders.sort()
+		return orders.size() == 5 and orders == sorted_orders)
+	_check("The gallery's entities become the game's markers: 5 + 5 spawns, sites A and B (box, letter, triggers layer), 3 routes in order, holds, respawns, patrols",
+			counts["attack_spawns"].size() == 5 and counts["defend_spawns"].size() == 5 and sites_ok and routes_ok
+			and counts["hold_points"].size() >= 5 and counts["respawn_points"].size() >= 8 and counts["patrol_points"].size() >= 8,
+			"%s; sites %s; routes %s" % [", ".join(counts.keys().map(func(group: String) -> String: return "%s %d" % [group, counts[group].size()])),
+				site_names, routes.map(func(route: Node) -> String: return "%s %d" % [route.name, route.get_child_count()])])
+
+	var shown := {}
+	for node in gallery.get_node("Map").get_children():
+		if not String(node.scene_file_path).is_empty():
+			shown[node.scene_file_path] = true
+	var missing := _prop_scenes().filter(func(path: String) -> bool: return not shown.has(path))
+	var world_body := gallery.get_node("Map").find_children("*_worldspawn", "StaticBody3D", false, false)[0] as StaticBody3D
+	var texture_names: Array = (world_body.get_meta(Surfaces.META_KEY) as Dictionary).get("texture_names", [])
+	var unshown := _set_textures().filter(func(name: String) -> bool:
+		return not name in texture_names and not name in ["interior/glass", "industrial/chainlink"])
+	_check("The gallery shows every kit prop and lamp and every set texture", missing.is_empty() and unshown.is_empty(),
+			"missing props: %s; missing textures: %s" % [missing, unshown] if missing or unshown else "%d props and lamps, %d textures" % [
+				_prop_scenes().size(), texture_names.size()])
+
+	var see_through := gallery.get_node("Map").get_children().filter(func(node: Node) -> bool:
+		return String(node.name).ends_with("func_glass") or String(node.name).ends_with("func_fence") or String(node.name).ends_with("func_clip"))
+	var layers_ok := see_through.size() == 3 and see_through.all(func(node: Node) -> bool:
+		return node is StaticBody3D and (node as StaticBody3D).collision_layer == PhysicsLayers.BOTS)
+	var glass_visible := see_through.any(func(node: Node) -> bool: return String(node.name).ends_with("func_glass") and not node.find_children("*", "MeshInstance3D").is_empty())
+	var clip_invisible := see_through.any(func(node: Node) -> bool: return String(node.name).ends_with("func_clip") and node.find_children("*", "MeshInstance3D").is_empty())
+	_check("Glass, fence and clip brushes block only movement (layer 3); glass is drawn, a clip isn't",
+			layers_ok and glass_visible and clip_invisible, "%d see-through brushes" % see_through.size())
+
+	var lines: Array[String] = []
+	var reachable := true
+	for group: String in ["attack_spawns", "defend_spawns"]:
+		var start := (counts[group][2] as Node3D).global_position
+		for site: Node3D in sites:
+			var goal := NavigationServer3D.map_get_closest_point(navigation, site.global_position + Vector3.DOWN * 1.5)
+			var nav_path := NavigationServer3D.map_get_path(navigation, start, goal, true)
+			var ok := not nav_path.is_empty() and nav_path[-1].distance_to(goal) < 1.0
+			reachable = reachable and ok
+			lines.append("%s → %s %s" % [group.trim_suffix("_spawns"), site.name.trim_prefix("BombSite"), "ok" if ok else "NO PATH"])
+	_check("In the gallery both spawns can walk to both bomb sites", reachable, ", ".join(lines))
+	gallery.queue_free()
+	await get_tree().process_frame
+
+
+## Waits until the navigation map uses [param scene]'s navmesh (a few physics
+## frames after it enters the tree; like tests/maps_test.gd).
+func _wait_for_navigation(scene: Node) -> void:
+	var region := scene.find_children("*", "NavigationRegion3D", true, false)[0] as NavigationRegion3D
+	var nav: RID = (scene as Node3D).get_world_3d().navigation_map
+	var synced_from := -1
+	for i in 120:
+		await get_tree().physics_frame
+		var regions := NavigationServer3D.map_get_regions(nav)
+		if not regions.has(region.get_rid()):
+			continue
+		if synced_from < 0:
+			synced_from = NavigationServer3D.map_get_iteration_id(nav)
+		elif NavigationServer3D.map_get_iteration_id(nav) >= synced_from + 2:
+			return
 
 
 ## The built node of the first entity of [param classname] in [param map].

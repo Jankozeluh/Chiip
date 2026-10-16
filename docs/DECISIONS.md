@@ -986,6 +986,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Every texture gets a material** in `assets/materials/<set>/` (world triplanar, like today's, for CSG maps and props). A texture that needs more than func_godot's default material (the chain-link's see-through holes) also gets a `.tres` next to the PNG, which func_godot uses instead of generating one.
 - **Footsteps and impacts know new textures by name:** `Surfaces` matches words in the texture's file name (metal, steel, plate, grate, rust → metal; wood, plank, parquet → wood; gravel, dirt, grass, ground → gravel-like ground). A mapper who names a new texture `blue_metal` gets metal steps without touching code.
 - **Picked and checked against the look rules** (D-031, D-063): no saturated red or blue on surfaces, no sand or desert tones; greens and ochres muted. Measured on the processed textures, not judged by eye: the new `tools/texture_report.gd` counts a texture's strong team-red and team-blue pixels (at most 3 %) and its average saturation (at most 0.45, which wood just passes). Calibrated on the base set: it fails `bricks_red` with 21 % strong reds, as MAPS.md measured. All 28 pass with 0 % team colours; everything but wood stays at 0.30 saturation or less.
+- **Three textures drawn, not downloaded** (`tools/make_kit_textures.py`): `interior/glass` (see-through, for `func_glass`), `industrial/hazard_stripes` and `industrial/floor_line` (trims), in the props' palette.
 - **Eight sources prepared first** by `tools/texture_prep.py`: their colour maps alone become flat grey or noise at 64 × 64 (the ribs, lugs and holes of corrugated steel, diamond plate, perforated sheet and dark tiles live in the asset's displacement map), the rust's hue counted as team red (36 %), and two patterns are drawn instead (roof shingles that became plaid, and the chain-link's mesh, finer than a pixel). Details in CREDITS.md.
 - **Downloads:** 28 of the 1K-JPG zips (1.8–11 MB each, about 170 MB in all, kept in the session's scratchpad and deleted afterwards; only the 64 × 64 PNGs enter the project), within your approval of about 30 (D-120). Most were above the 2–5 MB estimated then, because ambientCG's zips hold every map (normal, roughness…), and nature textures are the biggest.
 
@@ -1018,6 +1019,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Small clutter has no collision:** debris, litter, tufts of grass, wall-mounted things above head height. There are no steps (MAPS.md), so anything low that you could walk into either blocks fully (you jump onto it, as on a crate) or has no collision at all.
 - **Props are cover like the maps' boxes:** low cover 1.2 m or less, tall cover 2.2 m or more, so the building rules still hold for props.
 
+- **For brushes** (D-125): `func_glass` (with `interior/glass`) and `func_fence` (with `industrial/chainlink`) are drawn and block only movement; `func_clip` is an invisible movement-only wall (to keep players off roofs) that, unlike Quake's clip texture, never stops a bullet. Glass doesn't break.
+
 **Why:** Fairness between players and bots is the clarity rule's twin: the same things hide everyone. Reusing layer 3 needs no change to characters, bots or weapons.
 
 **Alternatives:** Mesh-shaped collision (expensive, catches on edges); a new "clip" physics layer (cleaner name, but every character scene and the navmesh settings would change in several branches); collision on everything (debris would stop players like a wall).
@@ -1035,6 +1038,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 ## D-125 — Gameplay markers can be placed in TrenchBroom (2026-10-16) — *provisional*
 
 **Decision:** Point entities for every marker the game reads: `info_attack_spawn`, `info_defend_spawn`, `info_respawn`, `info_patrol`, `info_hold`, `info_route` (route name and order), and a brush entity `trigger_bombsite` (A or B). They build into the same nodes and groups as the hand-placed markers in today's maps (MAPS.md, "Markers in each map scene"), so the game needs no change. The three quick maps keep their markers in the scene; the kit gallery map uses only entities.
+
+**How:** spawns, respawn, patrol and hold points are `Marker3D` nodes put in the right groups by func_godot (an entity definition's `node_groups`), turned by the entity's angle (the way the spawn or hold spot faces). Two small scripts handle the rest at run time: `KitBombSite` renames the area `BombSiteA` or `BombSiteB` (the bomb's messages read the letter from the name), replaces the brush's convex shapes with one box (the bomb finds the site's floor at the bottom of a box) and adds the floating letter; `KitRoutePoint` gathers the points of each route under one `Route_<name>` node in the `attack_routes` group, sorted by `order` (bots read routes when a round goes live). `tools/new_map.gd` turns a `.map` into a playable scene from `maps/kit/map_template.tscn` (sky, sun, player, navigation) and bakes its navmesh. Ladders aren't part of the kit: movement has none, so ramps it is.
 
 **Why:** "so that I and or the community can build maps": with markers in TrenchBroom a whole map is one `.map` file plus a template scene, without learning Godot's editor first.
 
@@ -1067,6 +1072,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 ## D-129 — A kit gallery map and a kit test (2026-10-16) — *provisional*
 
 **Decision:** `maps/kit/kit_gallery.map` lays out every texture and entity of the kit, built only from TrenchBroom entities (D-125), and doubles as the guide's picture source and a playable example. `tests/kit_test.tscn` checks the kit: every prop scene loads with a model and the collision its kind needs, every FGD entity has a scene, the gallery's markers and bomb sites work, and a bot round plays on it.
+
+**Built:** `tools/make_kit_gallery.py` writes the gallery's `.map` from the kit itself (every wall texture on a panel of the west wall, every floor texture on a tile, every prop in rows, wall props along the east wall, ceiling lamps under a canopy, glass, fence and clip brushes, and all the gameplay entities), so it stays complete when the kit grows; it is generated, not edited by hand. `tests/maps_test.tscn -- --map res://maps/kit/kit_gallery.tscn` plays bomb rounds and a respawn match on it, with every marker on the navmesh; its first contact is quicker than 5 s, as expected in an open yard that isn't a tuned map.
 
 **Why:** A kit nobody can see is hard to use, and generated files need a check that they still fit together after the next run of the generator.
 

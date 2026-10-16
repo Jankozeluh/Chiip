@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="fgd_file"]
 [ext_resource type="Resource" path="res://addons/func_godot/fgd/phong_base.tres" id="phong_base"]
@@ -10,8 +10,9 @@
 [ext_resource type="Resource" path="res://addons/func_godot/fgd/func_illusionary.tres" id="func_illusionary"]
 [ext_resource type="Resource" path="res://addons/func_godot/fgd/func_detail_illusionary.tres" id="func_detail_illusionary"]
 [ext_resource type="Resource" path="res://maps/fgd/chiip_kit_fgd.tres" id="kit"]
+[ext_resource type="Resource" path="res://maps/fgd/chiip_mapper_fgd.tres" id="mapper"]
 
 [resource]
 script = ExtResource("fgd_file")
-base_fgd_files = Array[Resource]([ExtResource("kit")])
+base_fgd_files = Array[Resource]([ExtResource("kit"), ExtResource("mapper")])
 entity_definitions = Array[Resource]([ExtResource("phong_base"), ExtResource("vertex_merge"), ExtResource("cull_interior"), ExtResource("worldspawn"), ExtResource("func_geo"), ExtResource("func_detail"), ExtResource("func_detail_illusionary"), ExtResource("func_illusionary")])

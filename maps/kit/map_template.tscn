@@ -1,0 +1,41 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Environment" path="res://assets/environments/clear_noon.tres" id="environment"]
+[ext_resource type="Script" path="res://addons/func_godot/src/map/func_godot_map.gd" id="func_godot_map"]
+[ext_resource type="Resource" path="res://maps/chiip_map_settings.tres" id="map_settings"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="player_scene"]
+[ext_resource type="Script" path="res://characters/character.gd" id="character_script"]
+
+[sub_resource type="NavigationMesh" id="navmesh"]
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 5
+geometry_source_geometry_mode = 1
+geometry_source_group_name = &"navigation_source"
+agent_height = 2.0
+agent_max_slope = 46.0
+
+[node name="MapTemplate" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.61532354, -0.48517048, 0.62127817, 0, 0.78814936, 0.61548406, -0.78827465, -0.37872183, 0.48496684, 0, 0, 0)
+light_color = Color(0.96, 0.97, 1, 1)
+light_energy = 1.2
+shadow_enabled = true
+directional_shadow_max_distance = 80.0
+
+[node name="Map" type="Node3D" parent="." groups=["navigation_source"]]
+script = ExtResource("func_godot_map")
+map_settings = ExtResource("map_settings")
+build_flags = 1
+
+[node name="Navigation" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("navmesh")
+
+[node name="Player" parent="." node_paths=PackedStringArray("weapon") instance=ExtResource("player_scene")]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("character_script")
+weapon = NodePath("Head/Camera3D/Weapon")
