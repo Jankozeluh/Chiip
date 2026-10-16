@@ -9,7 +9,9 @@ Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessio
 **Done**
 - **Licences** (D-170): `LICENSE` (GPL-3.0, for the code), `LICENSE-ASSETS` (CC BY-NC-SA 4.0, for art, models, maps and sounds, with the folders each covers) and `THIRD_PARTY_NOTICES.md` (Godot, FuncGodot, Silkscreen; built from CREDITS.md). **Settings → Licences** shows them in the game (`ui/licenses_menu.*`, plus Godot's own notices from the engine). The project has a version now (`config/version`, 0.1.0) and the main menu's build label reads it. New suite `release_test` (licence files, the screen, and later the export presets and the clean-for-public checks).
 
-**Next:** clean the repo for public (no personal paths), the player README, the export presets, and the Tailscale address in the lobby.
+- **Clean for public and a player README** (D-171). No personal path or private link is left in the project's text files (a test guards it), `.gitignore` also keeps export passwords and signing keys out, and the history has no secrets (checked for keys, tokens, e-mail and private addresses). The old README (editor, tests, TrenchBroom, generators) moved to `docs/DEVELOPING.md` with `$GODOT` and `$PROJECT`; the new README is for players: download and run per system (with the unsigned-app steps), controls, playing with friends through Tailscale step by step, settings, licences. `docs/KNOWN_ISSUES.md` has its first list.
+
+**Next:** the export presets, and the Tailscale address in the lobby.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 
@@ -81,7 +83,7 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Merged main (the Shooting Range, D-141):** Practice (the main menu's card and item, `-- --practice`) opens the Shooting Range, so the Play screen's Practice card now reads "Shooting range. No rounds, no clock." and its summary names the range (bots only from the console). The test map is hidden from the maps row and the lobby (never offered, as before for the main menu's flight, which keeps it). The lobby's fallback map is now `Settings.DEFAULT_MATCH_MAP` (Depot) in place of `DEFAULT_MAP`; `ui_test` starts its matches on the test map by path, and its map-row check also asserts that neither hidden map is offered. `Settings.DEFAULT_MAP` stays the range, `KILL_LIMITS` is the mockup's 25 / 50 / 75 / 100.
 
-- **Side by side and the full run:** the page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) shows each of your mockups (rendered live from your markup) next to the game's screen at 1280 × 720, with what differs on purpose. All 31 suites pass (1056 checks). M10's UI part is built.
+- **Side by side and the full run:** the page "Chiip UI Side by Side" (a private Claude page, not in the repo) shows each of your mockups (rendered live from your markup) next to the game's screen at 1280 × 720, with what differs on purpose. All 31 suites pass (1056 checks). M10's UI part is built.
 
 **Next:** your check ("M10 UI check" in PLAN's open checks), then the merge into main.
 

@@ -4,9 +4,17 @@ extends Node
 ##     Godot --headless --path . --fixed-fps 128 --quit-after 60000 res://tests/release_test.tscn
 ##
 ## The licences: the licence files exist with the right words, the Licences screen reads every one of
-## them and opens from the settings menu. Quits with the number of failed checks as the exit code.
+## them and opens from the settings menu. Safe to publish: no personal path in a project text file,
+## and the ignore file keeps the build and the editor's cache out of git. Quits with the number of
+## failed checks as the exit code.
 
 const SETTINGS_MENU_SCENE := preload("res://ui/settings_menu.tscn")
+## File types that are plain text and checked for personal paths.
+const TEXT_EXTENSIONS: Array[String] = [
+	"md", "gd", "tscn", "tres", "cfg", "py", "sh", "txt", "json", "map", "godot", "csv", "html", "gdshader", "import",
+]
+## Folders that are not part of the project's sources.
+const SKIPPED_FOLDERS: Array[String] = [".git", ".godot", "builds", ".claude", "__pycache__"]
 
 var _failures: int = 0
 
@@ -15,6 +23,8 @@ func _ready() -> void:
 	_test_licence_files()
 	await _test_licences_screen()
 	await _test_licences_from_settings()
+	_test_no_personal_paths()
+	_test_gitignore()
 	MenuState.reset()
 	await get_tree().process_frame
 	if _failures == 0:
@@ -127,6 +137,48 @@ func _test_licences_from_settings() -> void:
 	remove_child(settings)
 	settings.queue_free()
 	MenuState.reset()
+
+
+# --- Safe to publish ---
+
+
+func _test_no_personal_paths() -> void:
+	# Built from parts so this file doesn't contain the text it looks for.
+	var forbidden: Array[String] = ["/Us" + "ers/", "C:\\Us" + "ers\\", "kozel" + "uhj", "claude.ai/" + "artifact"]
+	var files := _text_files("res://")
+	var hits: Array[String] = []
+	for path in files:
+		var text := FileAccess.get_file_as_string(path)
+		for needle in forbidden:
+			if text.contains(needle):
+				hits.append("%s (%s)" % [path, needle])
+				break
+	_check("No project text file names a personal path, a user name or a link to a private page (%d files read)" % files.size(), hits.is_empty() and files.size() > 100,
+			"%d hits, first: %s" % [hits.size(), hits.slice(0, 5)])
+
+
+func _test_gitignore() -> void:
+	var ignore := FileAccess.get_file_as_string("res://.gitignore")
+	_check("The ignore file keeps the editor's cache (.godot/) and the exported builds (/builds/) out of git",
+			ignore.contains(".godot/") and ignore.contains("/builds/"), "%d characters" % ignore.length())
+	_check("It also keeps export passwords and signing keys out (export_credentials.cfg, .p12, .keystore) and the per-machine Claude files",
+			ignore.contains("export_credentials.cfg") and ignore.contains("*.p12") and ignore.contains("*.keystore") and ignore.contains(".claude/worktrees/"),
+			"")
+
+
+## Every plain-text project file under [param folder] (not the editor's cache, git, builds).
+func _text_files(folder: String) -> Array[String]:
+	var found: Array[String] = []
+	var dir := DirAccess.open(folder)
+	if dir == null:
+		return found
+	for entry in dir.get_directories():
+		if not SKIPPED_FOLDERS.has(entry):
+			found.append_array(_text_files(folder.path_join(entry)))
+	for file in dir.get_files():
+		if TEXT_EXTENSIONS.has(file.get_extension()):
+			found.append(folder.path_join(file))
+	return found
 
 
 func _check(check_name: String, passed: bool, detail: String) -> void:

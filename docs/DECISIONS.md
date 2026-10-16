@@ -1468,7 +1468,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Pick a modern look now and adjust it to the mockups later (two rounds of restyling, and the first one biases your design); wait and build nothing (the mode choice and HUD layout don't depend on the look); build each screen straight from a mockup without tokens (every screen would carry its own copy of the colours, and the next change would mean editing all of them).
 
-**Built** (M10 UI, 2026-10-16): every screen in your three mockup files is in the game except the boot screen (it waits for the logo file, D-138): main menu, Play, pause, settings, lobby, loading, class draft, the HUD screens 09–13, buy menu, scoreboard, match end and console, each exactly 1.5× at 1080p. The page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) puts each mockup (rendered from your markup) next to the game's screen; the deliberate differences are listed there and in the "Built" notes of D-135 to D-138. All 31 suites pass (1056 checks).
+**Built** (M10 UI, 2026-10-16): every screen in your three mockup files is in the game except the boot screen (it waits for the logo file, D-138): main menu, Play, pause, settings, lobby, loading, class draft, the HUD screens 09–13, buy menu, scoreboard, match end and console, each exactly 1.5× at 1080p. The page "Chiip UI Side by Side" (a private Claude page, not in the repo) puts each mockup (rendered from your markup) next to the game's screen; the deliberate differences are listed there and in the "Built" notes of D-135 to D-138. All 31 suites pass (1056 checks).
 
 ## D-131 — Theme tokens, roles and icon slots (2026-10-16) — *provisional*
 
@@ -1673,6 +1673,18 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 **Why:** Your decision: GPL-3.0 for the code and CC BY-NC-SA 4.0 for art, models, maps and sounds. GPL keeps every copy of the game's code free; NC-SA keeps the art from being sold by someone else while letting friends remix it. "Version 3 only" instead of "or later" because you named version 3 and, as the only copyright holder, you can always widen it later, while a wider licence can't be taken back. The GPL and the asset licence apply to different parts: the code treats the art as data it loads, so neither extends over the other (GPL §5, aggregation).
 
 **Alternatives:** MIT or Apache for the code (anyone could close it, D-150); one licence for everything (CC licences are not meant for code, GPL is not meant for art); "GPL-3.0-or-later"; a header in every file (REUSE-style); a copy of the CC legal text in the repo (needs a download).
+
+## D-171 — Clean for public: no personal paths, a player README, a developer guide (2026-10-16)
+
+**Decision:**
+- **No personal absolute path or user name in any project text file.** Commands in the docs use `$GODOT` and `$PROJECT` (set once at the top of `docs/DEVELOPING.md`) or `--path .`; CLAUDE.md uses `--path .`. A private-page link (`claude.ai/artifact/...`) became plain text. `tests/release_test.gd` reads every text file of the project and fails on `/Users/`, `C:\Users\`, the user name or such a link.
+- **README.md is the player's guide** (what Chiip is, download and run per system with the unsigned-app steps, playing, controls, playing with friends over Tailscale, settings, licences). The old developer README moved to **docs/DEVELOPING.md** (running from the editor, tests, TrenchBroom, generators, exporting), and the README links to it.
+- **`.gitignore`** keeps out `.godot/`, `/builds/`, Godot's export passwords (`export_credentials.cfg`), signing keys (`*.p12`, `*.pfx`, `*.keystore`, `*.jks`), `.env` and Claude's per-machine files.
+- **Scan result:** no secrets, tokens, keys, e-mail addresses or private network addresses in HEAD or in the history (patterns checked across all 187 commits). What stays public on purpose: the author's name (Jan Koželuh) and GitHub no-reply address in the commits and the copyright line. **Left for you to decide** (reported, not changed): CLAUDE.md describes you and quotes you in Czech; DECISIONS.md and DEVLOG.md quote your words, one with a swear word; the history before this commit still contains the old absolute paths of your Mac (about 25 commits) and your user name. Rewriting the history into one clean first commit would remove them; not doing it keeps the full history of how the game was built.
+
+**Why:** Your words: it "musi byt bezpecne nasdiletelne". A path with your user name tells strangers little, but nothing private should be public by accident, and a test keeps it that way when later changes add a path again.
+
+**Alternatives:** Rewrite the history before the first push (cleaner, but the history of 187 commits is part of the project's story and of the DEVLOG's references); keep `/Users/...` paths and ignore them; a separate "public" branch without docs.
 
 ## Open questions
 
