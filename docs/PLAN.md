@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M7 — Arsenal, perks & economy is built (all 19 tasks, with the class draft and random map weapons of D-120) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". M10's map kit is built too (D-121 to D-129, textures redrawn in the crew's style in D-140, the Shooting Range for practice and the test map hidden in D-141 and D-142) and waits for your check. Still in progress in its own branch: M10's modern UI (its part now applies your Claude Design mockups, D-134 to D-139). M9 — Multiplayer is built in its own branch for LAN play (Steam lobbies deferred, D-114) and waits for your playtest with a friend ("M9 playtest" in "Your open checks").
+> **Current milestone:** M7 — Arsenal, perks & economy is built (all 19 tasks, with the class draft and random map weapons of D-120) and waits for your playtest ("M7 playtest" in "Your open checks"). M5 — Rounds & game flow, M6 — Crew & animation and M8 — Modes & 3 quick maps are built and wait for your playtest in "Your open checks". M10's map kit is built too (D-121 to D-129, textures redrawn in the crew's style in D-140, the Shooting Range for practice and the test map hidden in D-141 and D-142) and waits for your check. M10's modern UI is built in its own branch from your Claude Design mockups (D-130 to D-139: every menu, the HUD, kill feed, class draft, buy menu, lobby, console and loading screen) and waits for your check ("M10 UI check" in "Your open checks"). M9 — Multiplayer is built in its own branch for LAN play (Steam lobbies deferred, D-114) and waits for your playtest with a friend ("M9 playtest" in "Your open checks").
 
 ## Your open checks
 
@@ -63,7 +63,7 @@ Things only you can check, kept here until done instead of moving from milestone
   6. **Spectating:** after dying, the teammate you watch shows their own first-person arms.
   7. **Smoothness:** no stutter with ten characters (a 5v5 from match setup, or `bot_add` in practice).
 
-- [ ] **M10 UI check: the mode choice** (branch `claude/m10-ui-f5de0b` until it's merged; D-132, D-133). Start the game: does the main menu make the modes simple enough? One click on **Team Deathmatch** should start a match on Depot (Square next); **Bomb** and **Practice** the same; **Custom match** keeps every old option and the big buttons' lines follow it. In Team Deathmatch, die once: "Killed by …" with "Respawning in 3, 2, 1" under it. F3 still shows the debug overlay. The look is still the old one: it changes when your Claude Design mockups are applied.
+- [ ] **M10 UI check: your mockups in the game** (branch `claude/m10-ui-f5de0b` until it's merged; D-130 to D-139). First compare the screens on the page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) (each mockup next to the game at 1280 × 720; each pair lists what differs on purpose). Then play: the main menu's column, **Play** → the three cards (one click on the lime Team Deathmatch card starts it on Depot, Square next, with the loading band first), the Custom rows; Settings' tabs and segments; Esc's pause menu. In Team Deathmatch check the HUD (health with its chips, armor, the weapon icon and ammo, the score bars, the kill-feed plates, the hit marker), die once (grey screen, the big countdown, "Killed by" plate), hold Tab, open the console (Tab completes) and play to the match end. In Bomb: the class draft cards, B's buy menu (four columns), the alive chips, the carry plate, planting with its bar, the toasts, spectating after death. Host from the main menu for the lobby. Try it at 1920 × 1080 too (everything 1.5× and crisp). Does it read as minimal and modern, not childish? What should change?
 
 ## How this plan works
 
@@ -488,9 +488,9 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 
 **You learn** (map kit): set dressing for a competitive map (cover stays cover, clutter stays out of the way), TrenchBroom entities end to end, and how a generated asset pipeline (Python → glTF → Godot scene → editor entity) fits together.
 
-**Modern, minimal UI and simpler modes** (decisions D-130 to D-139):
-- [ ] A UI refresh: minimal and more modern, with clear hierarchy, spacing and fewer boxes, keeping the pixel font and the pixelated look, nothing childish. Main menu, match setup, settings, pause, HUD, scoreboard, match-end screen and kill feed
-- [ ] A simpler mode choice: **Team Deathmatch is the primary mode** (first and the default), then Bomb and Practice; one click to play, with the details behind "Custom"
+**Modern, minimal UI and simpler modes** (decisions D-130 to D-139) ✅ *built in the `claude/m10-ui-f5de0b` branch from your Claude Design mockups; waiting for your check in "Your open checks"*
+- [x] A UI refresh: minimal and more modern, with clear hierarchy, spacing and fewer boxes, keeping the pixel font and the pixelated look, nothing childish. Main menu, match setup, settings, pause, HUD, scoreboard, match-end screen and kill feed
+- [x] A simpler mode choice: **Team Deathmatch is the primary mode** (first and the default), then Bomb and Practice; one click to play, with the details behind "Custom"
 
 *Planned 2026-10-16 in the `claude/m10-ui-f5de0b` branch, in parallel with the map kit, M7 and M9.* **You design the look** in Claude Design ([UI_MOCKUPS.md](UI_MOCKUPS.md) lists the screens), and your mockups are the source of truth (D-130). Until they arrive, this part builds what holds whatever the look: the simpler mode choice, the HUD's layout and readability, a theme that takes a new palette, sizes and spacing in minutes, and slots for a pixel icon set. Today's look stays meanwhile.
 
@@ -514,9 +514,9 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 13. [x] **Developer console** (D-137). *(Sonnet)* Built: the mockup's strip in Silkscreen, line colours by kind, the input row with a lime prompt and caret, Tab completes command names.
 14. [x] **HUD**: the Team Deathmatch and Bomb top bars, banners, the death screen with the big countdown, spectating, health and ammo with icons and chips, kill-feed plates, toasts, hit marker (D-136). *(Opus direction, Sonnet builds; the parts in `hud.gd` and the kill feed wait for M7's merge)* Built in two parts: corners, top bars, banners, death screen, spectating; then the kill-feed plates, the carry plate and prompts, toasts and the hit marker.
 15. [x] **Loading screen** between maps (D-138). *(Sonnet)* Built: the mockup's band with the map's name, shown when a match starts from the menu and when the rotation moves on; the world stands still behind it for 1.5 s.
+16. [x] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)* Built: a page with each of your mockups (rendered live from your markup) next to the game's screen at 1280 × 720 ([Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn), private until you share it); all 31 suites pass (1056 checks); the open check below is updated.
 17. [x] **Multiplayer lobby** (M9's, merged from main) in the mockup's look (D-137). *(Sonnet)* Built: the Lobby page (name, the host's addresses, two team columns with empty "Bot" slots, Switch team, the mode · map · limit footer, Edit setup and Start) and the Join page; match setup opened from the lobby hides Practice.
 18. [x] **Buy menu** (M7's) in the mockup's look, and the HUD hidden behind the class and buy menus (D-137). *(Sonnet)*
-16. [ ] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)*
 
 Not in this branch: the boot screen (it needs your studio logo as a file), the lobby (M9), the buy menu and the class draft itself (M7).
 

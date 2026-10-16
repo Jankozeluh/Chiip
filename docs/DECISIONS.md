@@ -1468,6 +1468,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Pick a modern look now and adjust it to the mockups later (two rounds of restyling, and the first one biases your design); wait and build nothing (the mode choice and HUD layout don't depend on the look); build each screen straight from a mockup without tokens (every screen would carry its own copy of the colours, and the next change would mean editing all of them).
 
+**Built** (M10 UI, 2026-10-16): every screen in your three mockup files is in the game except the boot screen (it waits for the logo file, D-138): main menu, Play, pause, settings, lobby, loading, class draft, the HUD screens 09–13, buy menu, scoreboard, match end and console, each exactly 1.5× at 1080p. The page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) puts each mockup (rendered from your markup) next to the game's screen; the deliberate differences are listed there and in the "Built" notes of D-135 to D-138. All 31 suites pass (1056 checks).
+
 ## D-131 — Theme tokens, roles and icon slots (2026-10-16) — *provisional*
 
 **Decision:**

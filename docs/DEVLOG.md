@@ -51,7 +51,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Merged main (the Shooting Range, D-141):** Practice (the main menu's card and item, `-- --practice`) opens the Shooting Range, so the Play screen's Practice card now reads "Shooting range. No rounds, no clock." and its summary names the range (bots only from the console). The test map is hidden from the maps row and the lobby (never offered, as before for the main menu's flight, which keeps it). The lobby's fallback map is now `Settings.DEFAULT_MATCH_MAP` (Depot) in place of `DEFAULT_MAP`; `ui_test` starts its matches on the test map by path, and its map-row check also asserts that neither hidden map is offered. `Settings.DEFAULT_MAP` stays the range, `KILL_LIMITS` is the mockup's 25 / 50 / 75 / 100.
 
-**Next:** the side-by-sides with your mockups, one full test run.
+- **Side by side and the full run:** the page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) shows each of your mockups (rendered live from your markup) next to the game's screen at 1280 × 720, with what differs on purpose. All 31 suites pass (1056 checks). M10's UI part is built.
+
+**Next:** your check ("M10 UI check" in PLAN's open checks), then the merge into main.
 
 ## 2026-10-16 — M10: the Shooting Range, and the test map hidden
 
