@@ -2290,6 +2290,17 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** A logger of our own (`Logger` subclass, Godot 4.5+) with levels and categories (more code; the engine's file has what's needed). The build date instead of the commit (doesn't say which code). Writing the commit into a tracked file before each export (dirties the working tree, easy to forget). Sending reports to a server (needs a server and a privacy policy; a zip the player looks at and attaches is under their control). Putting the whole user folder in the zip (stats history and old reports are noise).
 
+## D-225 — M16: debug commands in the console: debug_hitboxes, net_stats, debug_perf (2026-10-16)
+
+**Decision:** Three console commands, so a problem can be seen rather than guessed:
+- **`debug_hitboxes`** draws every character's hit zones over the world, through walls, half see-through, one colour per zone (head red, stomach and chest amber, arms green, legs blue), and lists each body's zones in the console ("Ana: 15 zones (head 1, …)", or "no hit zones" in the error colour). Again hides them. **Offline only** (D-109): it shows everyone through walls. `HitboxDebug` (on the map, so a new map starts without it) hangs each zone shape's own debug mesh (`Shape3D.get_debug_mesh()`) under the shape, so it follows the animated bones; it looks for new bodies twice a second. The local player's zones aren't drawn (they would sit around the camera).
+- **`net_stats`** prints the ping, the snapshot loss and the snapshot size: on a client its ping, the share of snapshots lost and the size of the last snapshot with a recent average; on the host each friend's ping and the size of the snapshots it sends. The developer panel (F3) gets a SNAPSHOT row, and `status` and bug reports the size too. Allowed online and for clients: it shows only your own connection.
+- **`debug_perf`** shows or hides F3's developer panel (its frame-time graph, D-233) for this run, without changing the F3 setting, and prints the engine's timings once (frame, scripts and process, physics tick, draw calls, objects drawn, nodes). Allowed everywhere.
+
+**Why:** v0.1.0's exported builds had bodies without hit zones (D-159): with `debug_hitboxes` a player would have seen, and the console said, "no hit zones" at once. Snapshot size is the number that grows with every networked feature (M17's chat, killcam); measuring it now gives a baseline. The frame-time graph already existed (D-233); a command makes it reachable when F3 is rebound or the setting says otherwise, and the printed line goes into a bug report's log.
+
+**Alternatives:** Drawing hitboxes with Godot's *Debug → Visible Collision Shapes* (editor runs only, draws every collision shape, not just hit zones, and has no zone colours). Wireframes from an `ImmediateMesh` (more code; the debug mesh is the shape's own). `debug_hitboxes` for the host online (the host is a player too: wallhack). A separate perf panel (two places for the same numbers).
+
 ## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
 
 **Decision:**

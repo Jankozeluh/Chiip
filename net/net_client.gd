@@ -106,6 +106,10 @@ var corrections: int = 0
 var largest_correction: float = 0.0
 var teleports: int = 0
 ## The last second's snapshots per second and the share of them that never arrived.
+## The size of the last snapshot in bytes (the largest of the last send on the host), and a recent
+## average (each new one counts a twentieth), for net_stats and the overlay (M16, D-225).
+var snapshot_bytes: int = 0
+var snapshot_bytes_average: float = 0.0
 var snapshot_rate: float = 0.0
 var snapshot_loss: float = 0.0
 ## The last second's traffic, in KB a second.
@@ -237,11 +241,23 @@ func get_status_lines() -> Array[String]:
 	lines.append("Online     client of %s (you: %s)" % [String(session.get_player(1).get("name", "?")), session.local_name])
 	lines.append("Ping       %s ms%s" % [str(roundi(ping_ms)) if ping_ms >= 0.0 else "?",
 			" (the connection itself: %d ms)" % link if link >= 0 and session.fake_lag_ms > 0.0 else ""])
-	lines.append("Snapshots  %d/s, %.0f%% lost%s" % [roundi(snapshot_rate), snapshot_loss * 100.0, "  (fake loss %d%%)" % roundi(session.fake_loss * 100.0) if session.fake_loss > 0.0 else ""])
+	lines.append("Snapshots  %d/s, %.0f%% lost, %d B each%s" % [roundi(snapshot_rate), snapshot_loss * 100.0, snapshot_bytes,
+			"  (fake loss %d%%)" % roundi(session.fake_loss * 100.0) if session.fake_loss > 0.0 else ""])
 	lines.append("Shown      %.0f ms behind the host" % ((float(newest_snapshot) - get_render_tick()) * 1000.0 / Engine.physics_ticks_per_second))
 	lines.append("Predicted  %d corrections, largest %.2f m (and %d teleports)" % [corrections, largest_correction, teleports])
 	lines.append("Traffic    %.1f KB/s in, %.1f KB/s out" % [kilobytes_in, kilobytes_out])
 	return lines
+
+
+## The console's net_stats (M16, D-225): ping, snapshot loss and the snapshots' size.
+func get_net_stats_lines() -> Array[String]:
+	if session == null:
+		return ["The session has ended."]
+	return [
+		"Ping       %s ms" % (str(roundi(ping_ms)) if ping_ms >= 0.0 else "?"),
+		"Loss       %.1f%% of the snapshots (%d a second arrive)" % [snapshot_loss * 100.0, roundi(snapshot_rate)],
+		"Snapshot   %d B, recent average %d B" % [snapshot_bytes, roundi(snapshot_bytes_average)],
+	]
 
 
 func _physics_process(delta: float) -> void:
@@ -393,6 +409,8 @@ func _on_packet(_peer_id: int, packet: PackedByteArray) -> void:
 		NetProtocol.Message.EVENT:
 			_on_event(NetProtocol.unpack_values(packet))
 		NetProtocol.Message.SNAPSHOT:
+			snapshot_bytes = packet.size()
+			snapshot_bytes_average = lerpf(snapshot_bytes_average, snapshot_bytes, 0.05) if snapshot_bytes_average > 0.0 else float(snapshot_bytes)
 			if _welcomed:
 				var snapshot := NetProtocol.read_snapshot(packet)
 				if snapshot != null:

@@ -12,7 +12,9 @@ Branch `m16`, one code branch at a time (D-220). Decisions from D-222. One commi
 
 - Logs and bug reports (D-224): the engine's rotating log in `user://logs` (explicit in project.godot, flushed every line, a version header); `BuildInfo` (version and git commit; an export plugin writes the commit into exports); "Build 0.1.1 (a3e34a5)" in the main menu's and the pause menu's footers; "Report a bug" (pause menu) and `bug_report` (console) pack the log, info, and settings into a zip without the online address or home path, and open the folder; a GitHub issue template. New suite `debug` (15 checks).
 
-**Next:** debug commands, the architecture review.
+- Debug commands (D-225): `debug_hitboxes` (offline; the zones half see-through over every body, through walls, and a list that says "no hit zones" for an empty body), `net_stats` (ping, loss, snapshot size on a client; each friend's ping and the snapshot size on the host; a SNAPSHOT row in F3's developer panel), `debug_perf` (F3's developer panel with the frame-time graph for this run, and the engine's timings). The `debug` suite has 23 checks, with a host and a client for `net_stats`.
+
+**Next:** the architecture review.
 
 ## 2026-10-16 — v0.2 screens
 

@@ -165,6 +165,11 @@ func get_settings_menu() -> SettingsMenu:
 	return _settings_menu
 
 
+## The F3 overlay (the console's debug_perf shows its developer panel, M16).
+func get_debug_overlay() -> DebugOverlay:
+	return _debug_overlay as DebugOverlay
+
+
 ## The pause menu (Esc).
 func get_pause_menu() -> PauseMenu:
 	return _pause_menu

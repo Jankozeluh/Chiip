@@ -146,7 +146,7 @@ Someone who leaves during a match is taken over by a bot ("Name (bot)"); someone
 
 ### Online commands
 
-Console commands online: `status` (the session, ping, packet loss, prediction corrections, traffic), `net_fakelag <ms>` and `net_fakeloss <percent>` (make your connection worse on purpose, like CS's), `disconnect` (leave; for the host, end the game). Cheats (`god`, `noclip`), `mp_friendlyfire` and `map` only work offline. **F3** shows the same network lines as `status`.
+Console commands online: `status` (the session, ping, packet loss, prediction corrections, traffic), `net_fakelag <ms>` and `net_fakeloss <percent>` (make your connection worse on purpose, like CS's), `disconnect` (leave; for the host, end the game). `net_stats` shows your ping, the snapshots lost and their size. Cheats (`god`, `noclip`), `debug_hitboxes`, `mp_friendlyfire` and `map` only work offline. **F3** shows the same network lines as `status`.
 
 To try online play on one computer, start the game twice: host in one window and join `127.0.0.1` in the other.
 

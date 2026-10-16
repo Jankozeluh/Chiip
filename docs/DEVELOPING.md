@@ -171,6 +171,16 @@ To look at them on a turntable (Space pauses, arrow keys turn, T switches betwee
 ```
 
 
+## Debugging
+
+Console commands (the key left of 1) that show what the game is doing (M16, D-225):
+- `debug_hitboxes`: every character's hit zones drawn through walls (head red, chest and stomach amber, arms green, legs blue) and listed in the console; a body listed with "no hit zones" can't be hit. Offline only.
+- `net_stats`: online, the ping, the snapshot loss and the snapshot size (on the host: each friend's ping and the size it sends). `status` has more (corrections, traffic); `net_fakelag` and `net_fakeloss` make the connection worse on purpose.
+- `debug_perf`: F3's developer panel with the frame-time graph, and the engine's timings once (frame, scripts, physics tick, draw calls, nodes).
+- `bug_report`: the zip of a bug report (the log, the build, the computer, the settings) in the user folder; the pause menu's "Report a bug" does the same.
+
+The game's log is `user://logs/godot.log` (on macOS `~/Library/Application Support/Godot/app_userdata/Chiip/logs/`), one file per run, the last five kept; its first line says the build. An exported build can check itself: `-- --check-hits` and `-- --check-round` (see "Exporting the game").
+
 ## Tests
 
 Run all the automated checks with one command (no window, about a minute and a quarter in all):

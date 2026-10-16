@@ -843,6 +843,9 @@
 **Zip files** (D-224; .NET's `System.IO.Compression.ZipArchive`)
 - `ZIPPacker` writes a zip: `open(path)`, then for each file `start_file(name)`, `write_file(bytes)`, `close_file()`, and `close()`. `ZIPReader` reads one back (`get_files()`, `read_file(name)`). `OS.shell_show_in_file_manager(path)` opens Finder or Explorer at a file.
 
+**Drawing a shape for debugging** (D-225; Unity's `Gizmos.DrawWireCube`, but in the game)
+- Every `Shape3D` (box, capsule, sphere) has `get_debug_mesh()`: the mesh Godot's *Visible Collision Shapes* draws, edges and faces. A `MeshInstance3D` with that mesh, placed as a child of the `CollisionShape3D`, follows the shape wherever it moves (here: with the animated bones). A `StandardMaterial3D` with `shading_mode = UNSHADED`, `no_depth_test = true` and alpha transparency draws it in one flat colour, on top of walls, see-through.
+
 **`user://` lives under `$HOME`** (D-222): on macOS it is `~/Library/Application Support/Godot/app_userdata/<project name>/`, on Linux `~/.local/share/godot/app_userdata/...`. Starting Godot with `HOME=<another folder>` gives it an empty `user://` there, which is how the test runner keeps each suite away from the player's files (Unity has no equivalent switch for `Application.persistentDataPath`).
 
 ## M15: accessibility and polish

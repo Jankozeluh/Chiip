@@ -186,7 +186,7 @@ func _set_alert(label: Label, alert: bool) -> void:
 ## The sections of the developer panel: title, and its rows' keys.
 const SECTION_ROWS := {
 	"PERFORMANCE": ["FPS", "FRAME"],
-	"NETWORK": ["PING", "LOSS"],
+	"NETWORK": ["PING", "LOSS", "SNAPSHOT"],
 	"MOVEMENT": ["SPEED", "VERTICAL", "POSITION", "JUMP PEAK", "STANCE"],
 	"WEAPON": ["INACCURACY", "RECOIL", "LAST HIT"],
 }
@@ -260,6 +260,7 @@ func _refresh_developer() -> void:
 		_asides["NETWORK"].text = "ONLINE"
 		_set_value("NETWORK/PING", "%d MS" % roundi(net.x))
 		_set_value("NETWORK/LOSS", "%.1f%%" % net.y)
+		_set_value("NETWORK/SNAPSHOT", "%d B   AVG %d" % [net_game.get("snapshot_bytes"), roundi(net_game.get("snapshot_bytes_average"))])
 	if player == null:
 		return
 	var velocity := player.velocity

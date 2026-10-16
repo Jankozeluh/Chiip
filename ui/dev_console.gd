@@ -284,6 +284,9 @@ func _register_commands() -> void:
 	register_command("money", _cmd_money, "money [amount]", "Set your money in a match (no value: show)")
 	register_command("status", _cmd_status, "status", "Online: the session, the players, ping, loss and corrections")
 	register_command("net_fakelag", _cmd_fake.bind("lag"), "net_fakelag [ms]", "Online: delay everything this computer receives (no value: show)")
+	register_command("debug_hitboxes", _cmd_debug_hitboxes, "debug_hitboxes", "Offline: draw every character's hit zones (through walls) and list them; again to stop")
+	register_command("debug_perf", _cmd_debug_perf, "debug_perf", "Show or hide the frame-time graph (F3's developer panel) and print the engine's timings")
+	register_command("net_stats", _cmd_net_stats, "net_stats", "Online: ping, packet loss and snapshot size")
 	register_command("bug_report", _cmd_bug_report, "bug_report", "Pack the log, version, computer and settings into a zip for a bug report, and open its folder")
 	register_command("net_fakeloss", _cmd_fake.bind("loss"), "net_fakeloss [percent]", "Online: drop this share of the snapshots or commands received (no value: show)")
 
@@ -521,6 +524,50 @@ func _cmd_fake(args: Array, which: String) -> void:
 	else:
 		session.fake_loss = clampf(value / 100.0, 0.0, 0.9)
 		print_line("%d%% of the unreliable packets this computer receives are dropped." % roundi(session.fake_loss * 100.0))
+
+
+## debug_hitboxes (M16, D-225): draws the hit zones ([HitboxDebug]) and lists them. Offline only:
+## it shows everyone through walls.
+func _cmd_debug_hitboxes(_args: Array) -> void:
+	if _refuse_online("debug_hitboxes"):
+		return
+	var map := _get_map()
+	if map == null:
+		print_error("No map loaded.")
+		return
+	if not HitboxDebug.toggle(map, _get_player()):
+		print_line("Hit zones hidden.")
+		return
+	print_line("Hit zones drawn (head red, chest and stomach amber, arms green, legs blue):")
+	for line in HitboxDebug.describe(Character.all_in_world(map)):
+		print_line("  " + line, ROLE_ERROR if line.ends_with("no hit zones") else ROLE_NORMAL)
+
+
+## debug_perf (M16, D-225): shows or hides the developer panel with its frame-time graph (for this
+## run; the F3 setting stays), and prints the engine's own timings.
+func _cmd_debug_perf(_args: Array) -> void:
+	var overlay: DebugOverlay = main.get_debug_overlay() if main != null and main.has_method("get_debug_overlay") else null
+	if overlay != null:
+		var saved := Settings.get_instance().fps_counter
+		if overlay.get_mode() == "developer":
+			overlay.set_mode("off" if saved == "developer" else saved)
+		else:
+			overlay.set_mode("developer")
+	print_line("Frame %.1f ms (%d FPS): scripts and process %.2f ms, physics tick %.2f ms; %d draw calls, %d objects drawn, %d nodes" % [
+			1000.0 / maxf(Engine.get_frames_per_second(), 1.0), Engine.get_frames_per_second(),
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			roundi(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+			roundi(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)), roundi(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))])
+
+
+## net_stats (M16, D-225): ping, packet loss and snapshot size, from the network code of the game.
+func _cmd_net_stats(_args: Array) -> void:
+	var net_game: Node = main.get_net_game() if main != null and main.has_method("get_net_game") else null
+	if net_game == null:
+		print_line("Not online. Multiplayer is in the main menu.")
+		return
+	for line: String in net_game.get_net_stats_lines():
+		print_line(line)
 
 
 ## bug_report (M16, D-224): main.gd packs the report ([BugReport]); the console says where it is.

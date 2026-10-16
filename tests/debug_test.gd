@@ -8,13 +8,18 @@ extends Node
 ## settings), the export plugin that writes the build into exports, "Report a bug" (the zip's files,
 ## the settings without the online address, the home folder's path left out, old reports pruned)
 ## from the pause menu and the console, and the GitHub issue template. Reports go to a folder of the
-## test's own, deleted afterwards. Quits with the number of failed checks as the exit code.
+## test's own, deleted afterwards. The console's debug commands (D-225): debug_hitboxes draws every
+## zone of every body in its zone's colour and lists them ("no hit zones" for an empty body, v0.1.0's
+## bug), and stops again; debug_perf shows the frame-time graph for this run only; net_stats gives ping,
+## loss and snapshot size on a host and a client (a session in this process, tests/net_harness.gd), and
+## debug_hitboxes is refused online. Quits with the number of failed checks as the exit code.
 
 const MAIN_SCENE := preload("res://main.tscn")
 const MENU_SCENE := preload("res://ui/main_menu.tscn")
 const PAUSE_SCENE := preload("res://ui/pause_menu.tscn")
 ## The test's own report folder ([member BugReport.folder]); deleted at the end.
 const REPORT_FOLDER := "user://test_bug_reports"
+const NET_MAP := preload("res://maps/test_map.tscn")
 
 var _failures: int = 0
 
@@ -30,6 +35,7 @@ func _ready() -> void:
 	await _test_pause_menu_footer()
 	await _test_main_menu_footer()
 	await _test_in_game()
+	await _test_online()
 	_clear_reports()
 	BugReport.folder = BugReport.FOLDER
 	if _failures == 0:
@@ -182,10 +188,135 @@ func _test_in_game() -> void:
 			main.get_pause_menu().get_bug_report_button().text)
 	main.get_pause_menu().close()
 	get_tree().paused = false
+	await _test_debug_hitboxes(main, console)
+	await _test_debug_perf(main, console)
+	console.run("net_stats")
+	_check("net_stats offline says it needs a game online", console.get_output_text().ends_with("Not online. Multiplayer is in the main menu."), "")
 	remove_child(main)
 	main.queue_free()
 	GameLaunch.clear()
 	await get_tree().process_frame
+
+
+# --- Debug commands (D-225) ---
+
+
+func _test_debug_hitboxes(main: Node, console: DevConsole) -> void:
+	console.run("bot_add normal enemy")
+	for i in 20:
+		await get_tree().physics_frame
+	var map: Node = main.get_map()
+	var bots := Character.all_in_world(map).filter(func(c: Character) -> bool: return c != main.get_player())
+	console.run("debug_hitboxes")
+	await get_tree().process_frame
+	var debug := map.get_node_or_null(HitboxDebug.NODE_NAME) as HitboxDebug
+	var wires: Array[MeshInstance3D] = debug.get_wires() if debug != null else []
+	var shapes := 0
+	var colours_right := true
+	for bot: Character in bots:
+		for hitbox in bot.body.get_hitboxes():
+			for child in hitbox.get_children():
+				if child is CollisionShape3D:
+					shapes += 1
+					var wire := child.get_node_or_null(HitboxDebug.WIRE_NAME) as MeshInstance3D
+					if wire == null or (wire.material_override as StandardMaterial3D).albedo_color != Color(HitboxDebug.ZONE_COLORS[hitbox.zone], HitboxDebug.WIRE_ALPHA) \
+							or not (wire.material_override as StandardMaterial3D).no_depth_test or not wire.visible:
+						colours_right = false
+	var output := console.get_output_text()
+	_check("debug_hitboxes draws every zone of every bot in its zone's colour, through walls, and lists them",
+			not bots.is_empty() and shapes >= 6 * bots.size() and wires.size() == shapes and colours_right
+					and output.contains("Hit zones drawn") and output.contains("%s: %d zones (head " % [bots[0].name, shapes / bots.size()]),
+			"%d bots, %d shapes, %d wires" % [bots.size(), shapes, wires.size()])
+	# A body that lost its zones (v0.1.0's export) is named in the list.
+	var bot: Character = bots[0]
+	var saved := {}
+	for hitbox in bot.body.get_hitboxes():
+		var shape := hitbox.get_node("Shape") as CollisionShape3D
+		saved[shape] = shape.shape
+		shape.shape = null
+	var empty := HitboxDebug.describe([bot] as Array[Character])
+	for shape: CollisionShape3D in saved:
+		shape.shape = saved[shape]
+	_check("A body without hit zones is listed as \"no hit zones\" (what v0.1.0's builds would have shown)",
+			empty.size() == 1 and empty[0] == "%s: no hit zones" % bot.name, "%s" % [empty])
+	console.run("debug_hitboxes")
+	await get_tree().process_frame
+	var left := 0
+	for wire in wires:
+		if is_instance_valid(wire) and not wire.is_queued_for_deletion():
+			left += 1
+	_check("debug_hitboxes again hides them: the node and every wire are gone",
+			map.get_node_or_null(HitboxDebug.NODE_NAME) == null and left == 0 and console.get_output_text().ends_with("Hit zones hidden."),
+			"%d wires left" % left)
+
+
+func _test_debug_perf(main: Node, console: DevConsole) -> void:
+	var overlay: DebugOverlay = main.get_debug_overlay()
+	var saved := Settings.get_instance().fps_counter
+	console.run("debug_perf")
+	await get_tree().process_frame
+	var shown := overlay.get_mode() == "developer" and overlay.get_graph().is_visible_in_tree()
+	var printed := console.get_output_text().get_slice("\n", console.get_output_text().count("\n"))
+	console.run("debug_perf")
+	await get_tree().process_frame
+	_check("debug_perf shows the frame-time graph (F3's developer panel) and the engine's timings; again hides it; the F3 setting stays",
+			shown and printed.begins_with("Frame ") and printed.contains("physics tick") and printed.contains("draw calls")
+					and overlay.get_mode() == ("off" if saved == "developer" else saved) and Settings.get_instance().fps_counter == saved,
+			printed)
+
+
+## A host and a client in this process (as the network suites do): net_stats on both, and
+## debug_hitboxes refused online.
+func _test_online() -> void:
+	var harness := NetHarness.new()
+	add_child(harness)
+	var host_session := harness.start_host("Host", "Host")
+	var client_session := harness.start_client("Client", "Jan")
+	var games: Array[Node] = []
+	if await harness.wait_until(client_session.is_active):
+		var rules := MatchSettings.new()
+		rules.team_size = 1
+		rules.enemy_team_size = 1
+		games.append(harness.start_game(host_session.get_parent(), host_session, NET_MAP, rules))
+		await harness.wait_ticks(10)
+		games.append(harness.start_game(client_session.get_parent(), client_session, NET_MAP, rules))
+		for game in games:
+			harness.silence(game.get_player())
+		var client := games[1].get_net_game() as NetClient
+		await harness.wait_until(func() -> bool: return client.is_welcomed() and client.snapshot_rate > 0.0, 900)
+	if games.size() < 2:
+		_check("A host and a client start a match for the online checks", false, "the client didn't join")
+	else:
+		var lines: Array[String] = []
+		for game in games:
+			var console := game.get_node("DevConsole") as DevConsole
+			console.run("net_stats")
+			lines.append(console.get_output_text())
+		var host := games[0].get_net_game() as NetHost
+		var client := games[1].get_net_game() as NetClient
+		_check("net_stats on the host: each friend's ping and the snapshots' size",
+				host.snapshot_bytes > 20 and lines[0].contains("Hosting: 1 friend(s)") and lines[0].contains("Jan")
+						and lines[0].contains("Snapshot   %d B" % host.snapshot_bytes),
+				lines[0].get_slice("net_stats", 1).strip_edges().replace("\n", " | "))
+		_check("net_stats on the client: ping, loss and the size of the snapshots it receives (the host's)",
+				client.snapshot_bytes > 20 and lines[1].contains("Ping ") and lines[1].contains("Loss ")
+						and lines[1].contains("Snapshot   %d B" % client.snapshot_bytes) and absi(client.snapshot_bytes - host.snapshot_bytes) < 64,
+				lines[1].get_slice("net_stats", 1).strip_edges().replace("\n", " | "))
+		var client_console := games[1].get_node("DevConsole") as DevConsole
+		client_console.run("debug_hitboxes")
+		_check("debug_hitboxes is refused online (it would show everyone through walls)",
+				client_console.get_output_text().ends_with("debug_hitboxes only works offline.")
+						and games[1].get_map().get_node_or_null(HitboxDebug.NODE_NAME) == null, "")
+	for game in games:
+		game.get_parent().remove_child(game)
+		game.queue_free()
+	for session in [client_session, host_session]:
+		if is_instance_valid(session):
+			session.close()
+	remove_child(harness)
+	harness.queue_free()
+	for i in 5:
+		await get_tree().physics_frame
 
 
 # --- Helpers ---

@@ -69,6 +69,10 @@ var rules: RoundManager
 var player: Character
 ## Host ticks since the match began (snapshots and lag compensation count in them).
 var tick: int = 0
+## The size of the last snapshot in bytes (the largest of the last send on the host), and a recent
+## average (each new one counts a twentieth), for net_stats and the overlay (M16, D-225).
+var snapshot_bytes: int = 0
+var snapshot_bytes_average: float = 0.0
 ## The hit-zone history for the friends' shots.
 var lag_compensation := LagCompensation.new()
 
@@ -200,7 +204,22 @@ func get_status_lines() -> Array[String]:
 		var controller := character.get_controller() as NetworkController
 		lines.append("  %-12s ping %s ms, %d command(s) waiting" % [String(character.name), str(session.get_ping_ms(peer_id)),
 				controller.pending() if controller != null else 0])
+	lines.append("Snapshots  %d/s to each friend, %d B each (recent average %d B)" % [
+			Engine.physics_ticks_per_second / SNAPSHOT_INTERVAL, snapshot_bytes, roundi(snapshot_bytes_average)])
 	lines.append("Traffic    %.1f KB sent so far" % (session.bytes_sent / 1024.0))
+	return lines
+
+
+## The console's net_stats (M16, D-225): each friend's ping and the snapshots' size. The host
+## receives no snapshots, so its loss is on each friend's net_stats.
+func get_net_stats_lines() -> Array[String]:
+	var lines: Array[String] = ["Hosting: %d friend(s); snapshot loss shows on each friend's screen" % _ready_peers.size()]
+	for peer_id: int in _characters_by_peer:
+		var character: Character = _characters_by_peer[peer_id]
+		if is_instance_valid(character):
+			lines.append("  %-12s ping %s ms" % [String(character.name), str(session.get_ping_ms(peer_id)) if session != null else "?"])
+	lines.append("Snapshot   %d B, recent average %d B, %d a second to each friend" % [
+			snapshot_bytes, roundi(snapshot_bytes_average), Engine.physics_ticks_per_second / SNAPSHOT_INTERVAL])
 	return lines
 
 
@@ -525,12 +544,18 @@ func _send_snapshots() -> void:
 	var body := StreamPeerBuffer.new()
 	var with_pickups := (tick / SNAPSHOT_INTERVAL) % PICKUP_SNAPSHOTS == 0
 	NetProtocol.write_snapshot_body(body, rules, _all_characters(), _effects, _entities(with_pickups), with_pickups)
+	var largest := 0
 	for peer_id in _ready_peers:
 		var own: Character = _characters_by_peer.get(peer_id)
 		var ack := 0
 		if own != null and own.get_controller() is NetworkController:
 			ack = (own.get_controller() as NetworkController).last_run
-		session.send_packet(peer_id, NetProtocol.pack_snapshot(tick, own, ack, body.data_array), false)
+		var packet := NetProtocol.pack_snapshot(tick, own, ack, body.data_array)
+		largest = maxi(largest, packet.size())
+		session.send_packet(peer_id, packet, false)
+	if largest > 0:
+		snapshot_bytes = largest
+		snapshot_bytes_average = lerpf(snapshot_bytes_average, largest, 0.05) if snapshot_bytes_average > 0.0 else float(largest)
 
 
 ## The world objects for a snapshot: every grenade in flight and, with [param with_pickups], every
