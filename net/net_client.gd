@@ -446,6 +446,8 @@ func _on_event(values: Array) -> void:
 		NetProtocol.Event.DAMAGED:
 			var hurt := get_character(values[1])
 			if hurt != null:
+				# The weapon of the hit, for the stats (M14, D-203); older hosts don't send it.
+				hurt.last_damage_source = NetProtocol.weapon_data(values[6]) if values.size() > 6 else null
 				hurt.apply_remote_damage(values[2], values[3], get_character(values[4]), values[5])
 		NetProtocol.Event.RESPAWNED:
 			_on_respawned(get_character(values[1]), values[2], values[3], values[4])

@@ -735,3 +735,110 @@
 **Skeleton modifiers** (`SkeletonModifier3D`, the left-hand IK, D-156)
 - A node under a `Skeleton3D` that changes bone poses after the animation, every update: override `_process_modification()`, read poses with `get_bone_global_pose()` and write them with `set_bone_global_pose()`. `influence` (0 to 1) blends its result with the animated pose, `active` switches it off. Unity's counterpart is the Animation Rigging package (a *Rig* with a `TwoBoneIKConstraint`), or `OnAnimatorIK` with `SetIKPosition`. Godot 4.6+ also ships ready ones (`TwoBoneIK3D`, `FABRIK3D`, `LookAtModifier3D`...).
 - The result lives in the poses only while the skeleton draws: Godot puts the animated poses back afterwards, so modifiers don't pile up from frame to frame. To read what a modifier did, connect to `Skeleton3D.skeleton_updated` (a `BoneAttachment3D` does the same).
+
+### M11 — Optimization
+
+**Measuring a frame** (`tools/frame_timing.gd`, D-165)
+- Unity has the Profiler window and `FrameTimingManager`. Godot's editor has a Profiler tab too, but a tool needs numbers it can compare from run to run, so Chiip times the frame itself. `SceneTree.physics_frame` fires at the start of every physics tick and `process_frame` at the start of the process step. `RenderingServer.frame_pre_draw` and `frame_post_draw` bracket drawing. The gaps between them are the frame's parts.
+- A node's `process_priority` orders `_process` calls: higher runs later (Unity's Script Execution Order). A helper node with a huge priority marks the end of the scripts in a run without a window, where no drawing signals fire.
+- `Performance.get_monitor(TIME_PROCESS)` is not one frame's time: the engine updates it once a second with the slowest frame of that second, and it includes drawing and the wait for the display.
+- `RenderingServer.get_rendering_info(RENDERING_INFO_PIPELINE_COMPILATIONS_DRAW)` counts shader pipelines compiled in the middle of a frame: the "first time I see a smoke, it hitches" stutter. Unity's equivalent is `ShaderVariantCollection` warm-up. Godot 4.4+ compiles most of them in the background ("specialization").
+- `-d --profiling` on the command line prints GDScript's own profiler (time per function) once a second: like Unity's Deep Profile, for scripts only.
+
+**Loading versus finding a resource** (`systems/shop.gd`, D-166)
+- `load()` returns the copy already in memory as long as something holds it. When nothing does, the resource was freed and `load()` parses the file again, like `Resources.Load` after `Resources.UnloadUnusedAssets`. Code that runs often keeps what it loaded in a `static var`. The class keeps it, as in a C# static field.
+- `set_meta()` / `get_meta()` hang a value on any `Object` (Unity: a component, or a dictionary keyed by the object). Chiip keeps a hit zone's box on the zone (`net/lag_compensation.gd`): it goes away with the zone, while a dictionary keyed by the zone could match a new zone that got a freed one's memory.
+
+## M12: sharing the game
+
+**Never trust the other side of a network** (`@rpc("any_peer")`, `get_remote_sender_id()`, `bytes_to_var`)
+- `@rpc("authority")` means only the node's authority (the host, peer 1) may call it, and Godot drops a call from anyone else; `"any_peer"` lets every connected computer call it, so the body must check who is calling (`multiplayer.get_remote_sender_id()`) and whether it should be listening at all (`is_host()`). Chiip has three any_peer functions and every one starts with that check. Unity's Netcode has the same split (`ServerRpc` with or without `RequireOwnership`).
+- A packet is just bytes: `bytes_to_var()` turns them into numbers, text, arrays and dictionaries and never into objects, while `bytes_to_var_with_objects()` can create objects (and run their scripts' setters): never use it, or `str_to_var()`, on network data. `SceneMultiplayer.allow_object_decoding` must stay false for the same reason.
+- A value can have the right type and still be hostile: a `float` can be NaN or infinite, an `int` negative or huge, a `String` megabytes long. Check the shape, then the type, then the range, then the size, and drop what doesn't fit, as `NetProtocol.unpack_commands()` and `NetHost._on_request()` do.
+- Limits count something per second (here: per second of physics ticks, `NetSession.allow()`), so a flood costs the sender and nobody else.
+
+
+**Files that are not resources in an export** (`include_filter` of an export preset, `FileAccess` on `res://`)
+- An export packs the project's *resources* (scenes, scripts, textures, imported assets) into one `.pck` file. A plain file such as `LICENSE`, which has no importer, is left out unless the preset's **Resources → Filters to export non-resource files** lists it (`LICENSE, LICENSE-ASSETS, ...`, comma separated, glob patterns). Once listed it sits in the pck and `FileAccess.get_file_as_string("res://LICENSE")` reads it exactly as in the editor. Unity's counterpart is the `StreamingAssets` folder, whose files are copied untouched into the build and read with normal file calls.
+- Checking for it: `FileAccess.file_exists()` is false for a file the export left out, so the Licences screen shows "not in this build" instead of an empty page (`LicensesMenu.read_file()`), and a test can catch it.
+
+**Godot's own licence texts** (`Engine.get_license_text()`, `get_license_info()`, `get_copyright_info()`)
+- The engine carries its licence, the list of every third-party library inside it with its copyright lines, and the text of each licence. A game that ships the engine must show these notices (MIT asks for the copyright line, the libraries' licences for theirs); `Engine.get_*_info()` returns them, so a credits screen is a few lines of code and always matches the engine of the build. Unity keeps its third-party notices in a separate "Third Party Notices" file you ship by hand.
+
+**Toggle buttons in a group** (`Button.toggle_mode`, `ButtonGroup`)
+- A `Button` with `toggle_mode = true` stays pressed after a click. Give several buttons the same `ButtonGroup` and pressing one releases the others: a radio-button list without a special control. The Licences list uses it so the picked document stays highlighted; `set_pressed_no_signal(true)` marks one from code without firing `pressed` (Unity's `ToggleGroup` and `Toggle.SetIsOnWithoutNotify`).
+
+**A theme reaches through layers** (`UiTheme.apply()`)
+- `Control.theme` is inherited down a tree of `Control`s, but a `CanvasLayer` is not a `Control`, so it stops inheritance. Chiip's `UiTheme.apply(root)` therefore walks through non-Control nodes and sets the theme on the first `Control`s below each layer: a `CanvasLayer` menu instanced inside another menu (the Licences screen inside the settings menu) is scaled together with it, without its own call.
+
+**Looking up this computer's addresses, and the clipboard** (`IP.get_local_addresses()`, `DisplayServer.clipboard_set()`)
+- `IP.get_local_addresses()` lists every address of every network interface, IPv4 and IPv6, including loopback and link-local ones; the game filters it (Unity: `NetworkInterface.GetAllNetworkInterfaces()`). A Tailscale device appears as one more interface, with an address in 100.64.0.0/10.
+- `DisplayServer.clipboard_set(text)` and `clipboard_get()` are the clipboard (Unity: `GUIUtility.systemCopyBuffer`). A headless run has no clipboard, so a test asks `DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD)` first.
+
+**Time in a test that runs at a fixed frame rate** (`Time.get_ticks_msec()` against `SceneTreeTimer`)
+- `--fixed-fps 128` makes every frame exactly 1/128 s of *game* time however fast it really runs, so `create_timer(1.5)` fires after 192 frames in a fraction of a second of wall-clock time. `Time.get_ticks_msec()` is the wall clock: a "Copied" label that reset itself by comparing ticks never reset in the test. The Copy button counts presses instead. (This is also why CLAUDE.md says to count time in deltas.)
+
+## M14: stats and training
+
+**Data classes and a file that reads and writes them** (`RefCounted`, `JSON`, `FileAccess`, typed `Dictionary`)
+- A class that only holds data extends `RefCounted` (Unity: a plain C# class, no `MonoBehaviour`, no `ScriptableObject`): it is counted and freed by itself and never enters the scene tree. `StatsMatch`, `StatsWeapon` and `StatsTotals` are such classes; each has `to_dict()` and a static `from_dict()` (Unity: `JsonUtility.ToJson` / `FromJson`, but written by hand, because a damaged file must give a safe value instead of throwing).
+- `JSON.stringify(data, "\t")` writes a dictionary or array as text; `JSON.new().parse(text)` reads it back and returns an error code instead of printing one (the static `JSON.parse_string()` just returns `null`). **JSON has no integers: every number comes back as a `float`**, so `from_dict()` turns counts back with `int()` (`StatsMath.clean_count()`), and a test that compares must too.
+- `Dictionary[String, StatsWeapon]` is a typed dictionary (Godot 4.4+; Unity: `Dictionary<string, StatsWeapon>`): the editor and the compiler know what comes out of it.
+- A file is never trusted: any value read from it is cleaned (the right type, in a range, finite: `is_finite()` catches NaN and infinity), a list entry that isn't one is skipped, and a file that can't be read at all is moved aside (`DirAccess.rename_absolute()`) rather than overwritten, so the player's data is never lost to a bug.
+- Saving writes `stats.json.tmp` and then renames it over the real file (`DirAccess.rename_absolute()`): a rename is one step, so a crash in the middle leaves the old file or the new one, never half of either.
+
+**Building a table in code** (`HFlowContainer`, `ProgressBar`, `Label.clip_text`)
+- `HFlowContainer` lays its children out in a row and wraps to a new line when the row is full (CSS flex-wrap; Unity: a `GridLayoutGroup` with a flexible column count): the Overview's tiles fill the width at any window size.
+- `ProgressBar` with `show_percentage = false` is a bar for any 0–100 value (here the share of matches won). Its look comes from the theme like every control's.
+- A table is a column of rows, each an `HBoxContainer` of `Label`s with a fixed `custom_minimum_size.x`, one expanding (`SIZE_EXPAND_FILL`) and `clip_text` so a long text can't push the others around. Dynamic rows are built after the UI scale is known and sized with `UiTheme.apply_sizes()`.
+
+**Checking what is in the way** (`PhysicsRayQueryParameters3D`, `collide_with_areas`, `exclude`)
+- A ray from the eyes to a point tells whether the point can be seen: `intersect_ray()` returns an empty dictionary when nothing is in between (Unity: `Physics.Linecast`). The bullets of Chiip hit areas (the hit zones are `Area3D`s on their own layer), so the aim trainer's check sets `query.collide_with_areas = true` and uses the same mask as the weapon (`PhysicsLayers.WORLD | PhysicsLayers.HITBOXES`); `query.exclude` lists the shooter's own zones (`Character.get_hitbox_rids()`), and the ray stops just short of the ball, or it would hit the ball's own zone.
+- Scaling a node scales its collision shapes too: the ball's picture grows in a blink (`create_tween().tween_property(ball, "scale", ...)`), and that tween first ran on the whole target, so a shot in the first 80 ms met a hit zone a fifth as big. The tween belongs on the mesh child, not the root (Unity: scaling a parent scales its colliders in the same way).
+
+**Text that sits in the 3D world at a fixed size** (`Label3D.fixed_size`, `pixel_size`, a child of the camera)
+- A `Label3D` normally shrinks with distance like any object. With `fixed_size = true` it is drawn at the same size on the screen wherever it is, and `pixel_size` then means a share of the screen's height per font pixel (1/240: one font pixel is two pixels of the 480-line world). Put it on the `Camera3D` as a child at `(0, 0.42, -1)` and it stays at the top of the screen like a HUD, but drawn with the world's pixel look; `no_depth_test = true` keeps walls from hiding it. The range's dummies use the same trick for their titles.
+
+**Many identical marks in one draw call** (`MultiMeshInstance3D`, `MultiMesh.set_instance_transform`, `use_colors`)
+- A `MultiMesh` draws one mesh many times with a transform (and a colour) for each copy, in one draw call (Unity: `Graphics.DrawMeshInstanced`). The spray wall's 150 holes and 64 ghost dots are two of them: `instance_count` is how many it can hold, `visible_instance_count` how many it shows, and `set_instance_transform(i, ...)` / `set_instance_color(i, ...)` place and tint copy `i`. `use_colors = true` plus a material with `vertex_color_use_as_albedo` makes the per-copy colour show. Each copy's size is in its transform's basis (`Basis.scaled(...)`), so one metre-wide quad can be any size.
+- A `QuadMesh` faces +Z of its node; a node that looks along -Z (as the entities of a TrenchBroom map do) needs its marks turned half a round about Y (`Basis.from_euler(Vector3(0, PI, 0))`) to face the shooter. The wall's frame was the fiddly part: its `-basis.z` is the direction it faces, `Vector3.UP.cross(normal)` is the viewer's right, and the node's own +X is the viewer's left.
+
+### v0.1.1 hotfix
+
+**What an export does to your resources** (D-159)
+- An exported game doesn't read your `.tres` files: the export converts text resources to binary (`.res`, reached through `.remap` files) and caches each conversion by the file's content in `.godot/exported/`. Godot 4.7 dropped the values of an exported packed array whose default was an Array literal (`= []`) on the way, while the editor build, which reads the text, worked. Give packed arrays typed defaults (`PackedStringArray()`). Unity's counterpart is a build-only bug from serialization (a field Unity can't serialize, or code stripping): in both engines, test the built game, not only the editor.
+- An exported game ignores `--script`, so a check that has to run inside a build is part of the game (Chiip's `-- --check-hits`), like a Unity development build's test hooks.
+
+## M13: sound design
+
+**Audio buses and their effects** (`AudioBusLayout`, `AudioEffect*`, `AudioServer`)
+- Godot's buses are Unity's **AudioMixer groups**: each bus has a volume, a chain of effects (a reverb, a low-pass, a limiter…) and sends its output to one other bus, ending at Master. `default_bus_layout.tres` is the mixer asset; the editor's Audio panel at the bottom edits it (and saves it, so never save it with a bus muted).
+- A bus can only send to a bus *above* it in the list, so Muffled sits below Effects to feed it.
+- Effects are resources: `AudioServer.get_bus_effect(bus, index)` returns the live one, and changing its properties (the reverb's `wet`, a filter's `cutoff_hz`) is heard at once, like Unity's exposed mixer parameters.
+- There are no effects on a single player (Unity can't either, apart from the AudioSource's own filters); to filter one sound you play it on another bus. That's how sounds behind walls are muffled.
+- `AudioEffectHardLimiter` (Godot 4.3+) is a brick-wall limiter: last on Master, the mix never goes over its ceiling.
+
+**How a 3D sound gets quieter with distance** (`AudioStreamPlayer3D`)
+- Unity's AudioSource has a rolloff curve between Min and Max Distance; Godot's default model (`ATTENUATION_INVERSE_DISTANCE`) is full volume within `unit_size` metres and −6 dB for every doubling beyond, capped at `max_db` (+3 dB by default, which is why close sounds can get *louder* than their `volume_db`). `max_distance` then fades the result linearly to silence, which acts like Unity's Max Distance.
+- `panning_strength` (times the project setting `audio/general/3d_panning_strength`, 0.5) is how hard a sound pans between the ears: Unity's Spread and Stereo Pan in one number.
+- A centred 3D sound is 3 dB quieter than the same sound on a plain `AudioStreamPlayer` (equal-power panning), measured with an `AudioEffectCapture` on Master. A headless run (`--headless`) uses a dummy audio driver that mixes nothing; `--display-driver headless --audio-driver CoreAudio` mixes for real without a window.
+
+**Asking the physics world questions from code** (`PhysicsDirectSpaceState3D.intersect_ray()`)
+- `get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, mask))` is Unity's `Physics.Raycast` / `Linecast`: it returns a dictionary (`position`, `normal`, `collider`, …), empty when nothing is hit. Only the first hit: to find every wall along a line, cast again from just past the last hit (Unity has `RaycastAll`).
+- `hit_back_faces` (default on) decides whether a trimesh's faces count from behind, and `hit_from_inside` (default off) whether a convex shape you start inside counts. With both off, a ray only reports a surface it *enters*: cast from each end and the entries from one side are the exits for the other, which gives the wall's thickness.
+
+**A looping WAV and a fade** (`.import` loop settings, `Tween` on `volume_db`)
+- A WAV loops when its import settings say so (`edit/loop_mode=2`, forward, in its `.import` file; the Import dock in the editor), like Unity's AudioClip "Loop" on the AudioSource instead. Re-importing keeps it, so the setting lives next to the generated file.
+- A fade is a tween on the player's `volume_db` (`player.create_tween().tween_property(player, "volume_db", -60.0, 1.2)`), like a coroutine lerping `AudioSource.volume`. A tween made from a node stops while that node is paused, so the music's players are `PROCESS_MODE_ALWAYS`.
+- A static class can't add a node to the root from inside another node's `_ready()` (the root is busy adding children): `add_child.call_deferred()` and act on the node's `ready` signal.
+
+## M15: accessibility and polish
+
+**Gamepads in Godot** (D-211, D-212; Unity's old Input Manager axes, or the new Input System's actions)
+- Godot's `InputMap` actions can hold keys, mouse buttons, **joypad buttons** (`InputEventJoypadButton`) and **joypad axes** (`InputEventJoypadMotion`, one event per direction: axis 1 with value -1 is "stick up"). Code that reads actions (`Input.is_action_pressed("jump")`) doesn't care which device pressed. That's the same idea as the new Input System's actions; the difference is that bindings live in `project.godot`, not in an asset.
+- `Input.get_vector(left, right, up, down, deadzone)` turns four actions into one stick vector (what Unity's `Input.GetAxis` pair does), with a circular dead zone. Chiip passes 0 and cuts its own dead zone and response curve in `PlayerController.pad_response()`, because those are settings.
+- A stick is read every frame (a **rate**: degrees per second times the push), while the mouse arrives as events (a **distance** per count). Multiply by `delta` in `_process`.
+- Menus: Godot's `Control` focus does the navigation (`ui_up`/`ui_down`... from the D-pad and left stick, `ui_accept` presses). Nothing is focused until code calls `grab_focus()`.
+- `Input.parse_input_event()` queues an event; it reaches the action states at the next frame, or at once after `Input.flush_buffered_events()` (what a test does).
+
+**`WeakRef`** (D-210): a reference that doesn't keep an object alive. `UiTheme` keeps a list of the theme copies it handed out as weak references, so it can recolour the ones still in use without keeping dead ones.

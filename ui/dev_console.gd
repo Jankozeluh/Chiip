@@ -266,6 +266,8 @@ func _register_commands() -> void:
 	register_command("bot_add", _cmd_bot_add, "bot_add [easy|normal|hard] [ally|enemy]", "Add a bot (ally = on your team)")
 	register_command("bot_kick", _cmd_bot_kick, "bot_kick [all]", "Remove the newest bot, or all bots")
 	register_command("bot_difficulty", _cmd_bot_difficulty, "bot_difficulty <easy|normal|hard>", "Set the skill of all bots, including new ones")
+	register_command("aim", _cmd_aim, "aim [stop]", "Shooting Range: start an aim trainer run (or stop it)")
+	register_command("spray_reset", _cmd_spray_reset, "spray_reset", "Shooting Range: clear the spray wall")
 	register_command("god", _cmd_god, "god", "Toggle taking no damage")
 	register_command("noclip", _cmd_noclip, "noclip", "Toggle flying through walls")
 	register_command("mp_friendlyfire", _cmd_friendly_fire, "mp_friendlyfire [0|1]", "Teammates can hurt each other (no argument: show)")
@@ -324,6 +326,37 @@ func _cmd_bot_kick(args: Array) -> void:
 		if args.is_empty() or args[0] != "all":
 			break
 	print_line("Removed %d bot(s)." % kicked if kicked > 0 else "There are no bots.")
+
+
+## aim: starts the aim trainer for you (the pad's job without the shot), `aim stop` stops it.
+func _cmd_aim(args: Array) -> void:
+	var map := _get_map()
+	var trainers := map.find_children("*", "RangeTrainer", true, false) if map != null else []
+	if trainers.is_empty():
+		print_error("This map has no aim trainer (the Shooting Range does).")
+		return
+	var trainer := trainers[0] as RangeTrainer
+	if not args.is_empty() and args[0] == "stop":
+		trainer.stop()
+		print_line("Aim trainer stopped.")
+		return
+	var player := _get_player()
+	if player == null or not trainer.start(player):
+		print_error("The aim trainer didn't start: %s." % (trainer.get_notice().to_lower() if trainer.get_notice() != "" else "a run is already on"))
+		return
+	print_line("Aim trainer: %d s of flick targets after the countdown." % roundi(trainer.run_time))
+
+
+## spray_reset: clears the Shooting Range's spray wall (every hole, the ghost back to its middle).
+func _cmd_spray_reset(_args: Array) -> void:
+	var map := _get_map()
+	var walls := map.find_children("*", "RangeSprayWall", true, false) if map != null else []
+	if walls.is_empty():
+		print_error("This map has no spray wall (the Shooting Range does).")
+		return
+	for wall: RangeSprayWall in walls:
+		wall.reset()
+	print_line("The spray wall is clear.")
 
 
 func _cmd_bot_difficulty(args: Array) -> void:

@@ -960,7 +960,7 @@ All numbers live in difficulty data files (Easy / Normal / Hard).
 ## D-090 — The M7 plan: pickups first, a light economy, a fresh loadout every round (2026-10-15, revised 2026-10-16) — *provisional*
 
 **Decision** (the open choices of the M7 plan; the PLAN.md table has them side by side). Revised on 2026-10-16 after your answers: "I would build it around picking up weapons pretty much, more like combination of cs and call of duty", "light economy + pickups", "fresh loadout every round", "but economy has to be there".
-- **Weapon names**, provisional: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. Files, ids and code use the weapon's role (`rifle`, `carbine`, `smg`, `shotgun`, `sniper`, `pistol`, `hand_cannon`, `knife`, `frag`, `flashbang`, `smoke`); only `display_name` in the data files carries the name. "Confirm weapon names" is in your open checks.
+- **Weapon names**, final since D-175: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. Files, ids and code use the weapon's role (`rifle`, `carbine`, `smg`, `shotgun`, `sniper`, `pistol`, `hand_cannon`, `knife`, `frag`, `flashbang`, `smoke`); only `display_name` in the data files carries the name. Confirmed as final in D-175.
 - **A fresh loadout every round** (bomb rounds), like CoD's Search & Destroy: at each round start everyone has the knife and the Sparrow and nothing else. Bought and picked-up guns, armor, grenades and kits last one round. Money carries over.
 - **A light economy, round numbers:** $1,000 at the start of each half, $10,000 at most. Win $3,000. Loss $1,500, then $2,000, $2,500 and $3,000 for losses in a row; a win starts the count again. $200 a kill, $500 with the knife, −$200 for a teamkill. A plant gives every attacker $200, win or lose; a defuse gives the defuser $200.
 - **Round prices by tier:** Verdict $500; Hornet and Breaker $1,000; Ram and Warden $2,500; Heron $4,000; Sparrow $200 (only if you lost yours); vest $500, vest and helmet $800; defuse kit $300 (defenders only); Frag $300, Flashbang $200, Smoke $300.
@@ -1468,7 +1468,7 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Pick a modern look now and adjust it to the mockups later (two rounds of restyling, and the first one biases your design); wait and build nothing (the mode choice and HUD layout don't depend on the look); build each screen straight from a mockup without tokens (every screen would carry its own copy of the colours, and the next change would mean editing all of them).
 
-**Built** (M10 UI, 2026-10-16): every screen in your three mockup files is in the game except the boot screen (it waits for the logo file, D-138): main menu, Play, pause, settings, lobby, loading, class draft, the HUD screens 09–13, buy menu, scoreboard, match end and console, each exactly 1.5× at 1080p. The page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) puts each mockup (rendered from your markup) next to the game's screen; the deliberate differences are listed there and in the "Built" notes of D-135 to D-138. All 31 suites pass (1056 checks).
+**Built** (M10 UI, 2026-10-16): every screen in your three mockup files is in the game except the boot screen (it waits for the logo file, D-138): main menu, Play, pause, settings, lobby, loading, class draft, the HUD screens 09–13, buy menu, scoreboard, match end and console, each exactly 1.5× at 1080p. The page "Chiip UI Side by Side" (a private Claude page, not in the repo) puts each mockup (rendered from your markup) next to the game's screen; the deliberate differences are listed there and in the "Built" notes of D-135 to D-138. All 31 suites pass (1056 checks).
 
 ## D-131 — Theme tokens, roles and icon slots (2026-10-16) — *provisional*
 
@@ -1748,6 +1748,90 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Drop the old magazine as a physics prop (CS doesn't; more objects each reload); animate the magazine in the generator as a bone (it would need a bone on every gun's skeleton, which guns don't have); write the moments into each clip as animation markers (glTF has no markers, and every clip shares the same moments anyway).
 
+## D-165 — How Chiip's speed is measured (2026-10-16)
+
+**Decision:** `tools/frame_timing.gd` splits every frame into its parts and is the one tool for frame times:
+- **The parts:** physics ticks (bots, movement, animation trees, the physics step), scripts (`_process`, the HUD), drawing, and the rest. Each part gets its average and 99th percentile.
+- **CPU over budget:** frames whose physics and scripts together take more than 8.33 ms (one frame at 120 Hz). Such a frame is late whatever the graphics card does.
+- **Spikes:** every frame over 12.5 ms (`--spike <ms>` changes the threshold), with the round's phase and what was added to the scene in that frame (`weapon_spot.tscn`, an explosion's lights and particles…). That names the moment that costs.
+- **Pipelines compiled while drawing:** Godot 4.4+ counts them, and they are the first-match stutter on a new computer. Chiip has none: 4.7 compiles new materials in the background.
+- **Three ways to run it:**
+  - with a window: the frame rate, the parts and the draw calls; `--vsync` keeps V-Sync on, as the settings do
+  - headless with `--fixed-fps 128`: the CPU side, about a minute of play in ten seconds
+  - `--lan`: a LAN host, with a second, headless game joining on the same computer
+
+**Why:**
+- The M8 version waited for the round to go live by counting `1 / frames per second`. While a map loads, the engine reports about 1 fps, so it stopped waiting at once, and every earlier number was measured during freeze time, with the bots standing still.
+- Its "process" column was the engine's monitor: the slowest frame of each second, including drawing and the wait for the display.
+- On macOS with V-Sync off, the system now and then holds a frame while it waits for the display. These show as 12–17 ms "draw" spikes, and a player with V-Sync on never gets them. So the slowest 1 % of frames with V-Sync off says little about stutter. The CPU parts and the spikes' causes do.
+- Metal reports no GPU times (neither `--gpu-profile` nor the viewport's measured render time), so the GPU's share is read from "draw" and the frame rate.
+
+**Alternatives:**
+- Godot's script profiler (`-d --profiling`). It prints only one frame a second, so it misses most spikes. It is still useful for one deterministic run, such as perf_test's round starts.
+- The editor's profiler: it needs clicking through by hand, and the numbers can't be compared from run to run.
+
+## D-166 — The shop and the network keep the arsenal loaded (2026-10-16)
+
+**Decision:** `Shop` builds its list of items once and keeps it (`Shop.items()` returns a copy, `Shop.find()` searches the kept list). `NetProtocol` keeps the arsenal in packet order and a table from weapon id to index. Neither calls `WeaponData.all()` again.
+
+**Why:** `WeaponData.all()` calls `load()` for every weapon file. When nothing else holds a weapon's data, that reloads it from disk: about 6 ms per call for the eleven weapons.
+- At every round start the bots' shopping called it 83 times (through `Shop.find`), and `Shop.items()` also reloaded three icons each time. In perf_test (no player, so no buy menu holding the weapons) that was a 153 ms tick. Now the worst tick is 17 ms and the average tick 0.59 ms (was 0.78).
+- In a real match the buy menu holds the weapons, so the gain there is smaller (round start 25 → 21 ms on Depot). But the network code named every character's weapon through `WeaponData.all()` in every snapshot (64 a second): 8 µs a call, now 0.2 µs.
+- Keeping the shop's list keeps the arsenal loaded, so `WeaponData.all()` is fast for every other caller as well.
+
+**Reported, not changed here:** `WeaponData.all()` itself should keep what it loads (`weapons/weapon_data.gd` belongs to the M11 weapons session).
+
+**Alternatives:** holding the weapons in `RoundManager`, which helps only offline rounds; a lookup by id in `WeaponData`, which is the weapons session's file.
+
+## D-167 — Lag compensation keeps each zone's box (2026-10-16)
+
+**Decision:** `LagCompensation.record()` finds each hit zone's box shape and half size once and keeps them on the zone as metadata (`lag_compensation_box`). Before, it searched the zone's children every tick. What is recorded is unchanged.
+
+**Why:** On a LAN host, recording took 0.15 ms of every 128 Hz tick (150 zones for ten characters), most of the 0.27 ms that being online adds to a 5v5 frame. Half of that was the search. Now record() takes 0.11 ms instead of 0.24 ms (both measured under the script profiler).
+
+**Alternatives:**
+- A dictionary from zone to box in `LagCompensation`. A freed zone's memory can be reused by a new one, and the entry would then point at a dead shape.
+- Recording every second tick. That halves the cost, but shots would be checked against poses interpolated over 15.6 ms instead of 7.8 ms, which changes hits.
+
+## D-168 — Limits in the performance test (2026-10-16)
+
+**Decision:** `tests/perf_test` (a seeded bots-only 5v5 on the test map, 20 s with two or three round starts) now checks:
+- the average tick under **2.0 ms** (was 3.9 ms; measured 0.6 ms)
+- 99 ticks in 100 under **3.9 ms** (was 7.8 ms; measured 0.9–1.6 ms)
+- **no tick over 50 ms**, round starts included (new; measured 17–20 ms, and 153 ms before D-166)
+- with `-- --window`, **no shader pipeline compiled in the middle of drawing a frame** (new)
+
+It also prints its five slowest ticks with the round's phase and time, so a failure says where to look.
+
+**Why:**
+- The old limits were about five times what the game uses, so a change could double the cost and still pass.
+- The new ones keep a margin of about three, which covers a busier computer: three sessions running suites at once measured up to 1.2 ms on average.
+- The worst-tick limit is the one that would have caught D-166's 153 ms round start. Neither of the old checks could, because a few slow ticks among 2,560 don't move the average or the 99th percentile.
+
+**Alternatives:**
+- Frame-rate limits: they depend on the monitor and on macOS's V-Sync (D-165).
+- A limit of 25 ms on the worst tick: the round start is 17–20 ms, which leaves too little margin.
+
+
+## D-169 — What was measured and left as it is (2026-10-16)
+
+**Decision:** These stay as they are. Each was measured on an Apple M5, 5v5, and costs too little to be worth a change to how the game plays or looks:
+- **Animation trees at 128 Hz for every character:** about 0.15 ms of a 0.8 ms tick for ten characters. Thinning them out for far or unseen characters would make their hit zones lag the bots' shots by a tick.
+- **The sun's four shadow cascades:** two cascades, or no shadows at all, changed the GPU's busy time by nothing measurable (30–32 % at 60 Hz). No lamp on the quick maps casts shadows.
+- **Bot vision every 0.1 s:** about 0.01 ms per tick on average (ten bots, two rays per enemy in view).
+- **The client's 128 commands a second:** 23 KB/s up for a 5v5 client and 30 KB/s down. That's fine for LAN and the internet. Sending two ticks per packet would halve the packets but delay every input by a tick (M12 can decide for Tailscale).
+- **Draw calls:** 120–300 per frame, depending on the map. The props aren't worth merging into MultiMeshes yet.
+
+**Reported to the sessions that own the code:**
+- The round start is now the slowest moment of a match, 14–20 ms in one tick on every map in rounds mode. Every character gets a new loadout, and `Weapon.create()` builds the whole weapon scene (17 nodes, the first-person model and four sound players) for bots too, about 0.45 ms per weapon.
+- A respawn costs 4–6 ms and a frag's explosion 4–7 ms (`weapons/explosion.gd`).
+- `WeaponData.all()` reloads the weapon files when nothing holds them (D-166).
+- These are in `weapons/` (the M11 weapons session's files) and in the shared notes.
+
+**Why:** The game holds a 120 Hz display with room to spare. Physics and scripts take 0.4–0.6 ms of a frame with a window and 0.6–0.8 ms headless. Uncapped, it draws 340–410 fps at 1080p and at the 3440 × 1440 world size. What players could feel were hitches, and the big one was D-166's.
+
+**Alternatives:** Spreading the round start over several ticks: the loadouts and the bots' purchases would come during the freeze time instead of at its start. That's a change to the rules' order that the round and economy tests check, for about 15 ms once a round.
+
 ## D-180 — A minimal compass on the HUD that shows where enemies shoot (2026-10-16)
 
 **Decision:**
@@ -1783,11 +1867,484 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Sizes above the fit (125 %, 150 %):** menus would be cut off, which is what D-151 fixed. Bigger text needs a redesigned layout.
 - **Reading the display's DPI** to pick the size: Windows and Linux report 96 dpi regardless of the monitor, so it can't be trusted.
 
+## D-170 — Licences: GPL-3.0 for the code, CC BY-NC-SA 4.0 for the art (2026-10-16)
+
+**Decision:**
+- **Code:** GNU GPL version 3, "version 3 only" (`LICENSE`, the standard 35 KB text). It covers everything that is not listed below: scripts, scenes, resources, tools, tests, docs.
+- **Art, models, maps and sounds:** CC BY-NC-SA 4.0 (`LICENSE-ASSETS`). It covers `assets/` (except the font files and the studio logo, D-174), `maps/`, `docs/mapping/`, `docs/maps/` and `icon.svg`. The generated models, textures and sounds are the *output* of GPL tools and are CC BY-NC-SA.
+- **Third-party material** keeps its own licence: Godot (MIT), FuncGodot (MIT, `addons/func_godot/LICENSE`), Silkscreen (OFL 1.1, `assets/fonts/Silkscreen-OFL.txt`). `THIRD_PARTY_NOTICES.md` lists them, built from `docs/CREDITS.md`.
+- **Every build ships the licences**, in two ways: the three files and the font's and addon's licence are listed in the export presets' include filter (so they sit inside the game's data), and the game's **Settings → Licences** screen (`ui/licenses_menu.*`) shows them, plus "Godot Engine", which the engine writes itself (`Engine.get_license_text()`, `get_license_info()`, `get_copyright_info()`) so the notice of every library inside the engine is always right for the engine in the build.
+- **No per-file licence headers.** The licence is chosen by folder (`LICENSE-ASSETS` lists them) and `tests/release_test.gd` checks the files and the screen. A header on 160 scripts and 100 scenes would say the same as one line in `LICENSE-ASSETS`, and the generated files could not carry one.
+- **The CC licence is linked, not copied.** `LICENSE-ASSETS` has the licence's name, its short summary and the link to the legal code; CC's own guidance accepts that. Adding the 20 KB legal text would need a download, which is for you to approve (CLAUDE.md).
+
+**Why:** Your decision: GPL-3.0 for the code and CC BY-NC-SA 4.0 for art, models, maps and sounds. GPL keeps every copy of the game's code free; NC-SA keeps the art from being sold by someone else while letting friends remix it. "Version 3 only" instead of "or later" because you named version 3 and, as the only copyright holder, you can always widen it later, while a wider licence can't be taken back. The GPL and the asset licence apply to different parts: the code treats the art as data it loads, so neither extends over the other (GPL §5, aggregation).
+
+**Alternatives:** MIT or Apache for the code (anyone could close it, D-150); one licence for everything (CC licences are not meant for code, GPL is not meant for art); "GPL-3.0-or-later"; a header in every file (REUSE-style); a copy of the CC legal text in the repo (needs a download).
+
+## D-171 — Clean for public: no personal paths, a player README, a developer guide (2026-10-16)
+
+**Decision:**
+- **No personal absolute path or user name in any project text file.** Commands in the docs use `$GODOT` and `$PROJECT` (set once at the top of `docs/DEVELOPING.md`) or `--path .`; CLAUDE.md uses `--path .`. A link to a private Claude page became plain text. `tests/release_test.gd` reads every text file of the project and fails on a home-folder path (macOS or Windows style), the user name or such a link.
+- **README.md is the player's guide** (what Chiip is, download and run per system with the unsigned-app steps, playing, controls, playing with friends over Tailscale, settings, licences). The old developer README moved to **docs/DEVELOPING.md** (running from the editor, tests, TrenchBroom, generators, exporting), and the README links to it.
+- **`.gitignore`** keeps out `.godot/`, `/builds/`, Godot's export passwords (`export_credentials.cfg`), signing keys (`*.p12`, `*.pfx`, `*.keystore`, `*.jks`), `.env` and Claude's per-machine files.
+- **Scan result:** no secrets, tokens, keys, e-mail addresses or private network addresses in HEAD or in the history (patterns checked across all 187 commits). What stays public on purpose: the author name and GitHub no-reply address in the commits (the copyright line names the studio, D-174; the commits keep their author name and the history is not rewritten, D-176). **Left for you to decide** (reported, not changed): CLAUDE.md describes you and quotes you in Czech; DECISIONS.md and DEVLOG.md quote your words, one with a swear word; the history before this commit still contains the old absolute paths of your Mac (about 25 commits) and your user name. Rewriting the history into one clean first commit would remove them; not doing it keeps the full history of how the game was built.
+
+**Why:** Your words: it "musi byt bezpecne nasdiletelne". A path with your user name tells strangers little, but nothing private should be public by accident, and a test keeps it that way when later changes add a path again.
+
+**Alternatives:** Rewrite the history before the first push (cleaner, but the history of 187 commits is part of the project's story and of the DEVLOG's references); keep the home-folder paths and ignore them; a separate "public" branch without docs.
+
+## D-172 — Export presets and the release packaging (2026-10-16)
+
+**Decision:**
+- **Three presets:** `macOS` (universal, ad-hoc signed, as before), `Windows` (x86_64) and `Linux` (x86_64). Windows and Linux **embed the data in the one executable** (`embed_pck`), so a friend gets a single file; the Mac app is a bundle as usual. Windows and Linux ship S3TC / BPTC textures (desktop GPUs); the project's ETC2 / ASTC import stays on for the Mac.
+- **Licences inside:** every preset's include filter lists `LICENSE`, `LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`, the font's licence and FuncGodot's licence, because a file that is not a resource is left out of an export otherwise. `tests/*` and `tools/*` are excluded.
+- **Release zips:** `tools/package_release.sh` makes `Chiip-<version>-windows-x86_64.zip`, `…-linux-x86_64.zip` and `…-macos-universal.zip`, each a folder with the game and the three notice files beside it (the licences thus ship twice: next to the game and inside it).
+- **Version 0.1.0:** `config/version` in `project.godot` is the single number; the Mac preset repeats it (a test compares). Minimum macOS 11.
+- **No icon on the Windows exe**, no code signing or notarization: setting the icon needs `rcedit` (a download to approve), and signing costs money every year. The README explains the warnings.
+- **Test export, done (2026-10-16, with your OK, into the scratchpad, not `builds/`):** all three presets export without errors. Sizes: `Chiip.x86_64` 77 MiB, `Chiip.exe` 111 MiB (the data is inside each), `Chiip.app` 170 MB (a 7 MB `Chiip.pck` next to the universal binary); zips 32 MiB (Linux), 41 MiB (Windows), 63 MiB (macOS). The export lists show `LICENSE`, `LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`, the font's and FuncGodot's licences packed and `tests/`, `tools/`, `docs/` and `site/` left out (`docs/*` was added to the exclude filters after the first test export found `docs/weapons.csv` in). Loading each build's pack from a neutral folder (`--main-pack`) reads all five licence files and lists the three maps. The Mac app runs headless (`--match`, `--practice`, a respawn game, a rotation) and windowed with no script error, its ad-hoc signature verifies (also after unzipping), it is universal (x86_64 and arm64) and its Info.plist says 0.1.0. The Windows and Linux files can't run on this Mac: their packs were read, not played. `tools/package_release.sh` takes `BUILDS=<folder>` and zips the Mac app with `ditto --norsrc --noextattr` (no `._` files).
+
+**Why:** Friends should double-click one file. The licences must be in the game, not only on the web page. Windows and Linux builds can't be tried on this Mac, so the presets stay close to Godot's defaults, with only the options that matter set.
+
+**Alternatives:** A separate `.pck` next to the executable (two files to keep together); installers (.msi, .dmg: extra tooling and signing); signing and notarizing the Mac app (an Apple Developer account, $99 a year); UPX or other compression of the exe (more false virus warnings).
+
+## D-173 — Tailscale in the lobby: the address to share, with a Copy button (2026-10-16)
+
+**Decision:**
+- **Online play goes through Tailscale, and the game needs no new code to connect:** a Tailscale device is just another network interface with an IPv4 address in 100.64.0.0/10, and the ENet host already listens on all interfaces. What the game adds is *showing* that address.
+- **The lobby's "Friends join at"** lists the host's **Tailscale address first**, with the port and a **Copy** button (it copies "address:port" and says "Copied" for 1.5 s), then "Same network" and the LAN address. A host with only Tailscale still sees its address (and the header names it). `LobbyMenu.local_addresses()` no longer returns Tailscale's addresses, so the two groups don't repeat each other.
+- **Join by IP accepts "address:port"**, what Copy puts on the clipboard: it fills the address and port fields, so a friend pastes one string and presses Join. A host name (a MagicDNS name like `jan-mac`) or an IPv6 address stays whole.
+- **The range is the only test for "Tailscale":** 100.64.0.0/10 is carrier-grade NAT space, and other software can use it too; a wrongly labelled address is harmless (it is still an address the host listens on). The label says "Tailscale"; the README says to check that Tailscale is connected.
+- **README guide:** the step-by-step is in the README (install, share *only the host's computer* with friends through the admin console's **Share…**, rather than inviting them into your whole tailnet, then Host, Copy, Join), with a "if it doesn't connect" list.
+- **Checked:** two game processes on this Mac, host and client, joined through the Mac's LAN address (not 127.0.0.1) and played a match start; no real Tailscale is installed here, so a join over an actual Tailscale address is for your playtest. `release_test` covers the range, the lobby rows, Copy and the pasted address.
+
+**Why:** Your decision: online play only through Tailscale, nothing opened on the router. Sharing a Tailscale address is the whole job, and a Copy button saves typing 21 characters in chat. "Share only the host's computer" limits what a friend can reach.
+
+**Alternatives:** Detect Tailscale through its local API or CLI (`tailscale ip`; needs the CLI installed, and the address list already has it); a Tailscale-only mode that refuses other addresses; UPnP (opens the router, ruled out in D-150); a relay server or Steam lobbies (D-114).
+
+## D-174 — The studio is Divocakos; its name and logo are all rights reserved (2026-10-16)
+
+**Decision:**
+- **The studio's name is Divocakos.** The game, the README, the release notes and the Licences screen credit "© Divocakos"; `LICENSE-ASSETS`, the Mac app's copyright line and `docs/CREDITS.md` name it as the copyright holder of the art (instead of a person's name).
+- **The name "Divocakos" and the studio logo (`assets/ui/studio_logo.png`, D-153) are all rights reserved.** They are explicitly excluded from the CC BY-NC-SA licence of the other art (`LICENSE-ASSETS`, `THIRD_PARTY_NOTICES.md`, `docs/CREDITS.md`): nobody may copy, adapt or redistribute them or use the name or logo for their own work. The logo file stays in the repository because the game shows it (the notice, not the file's place, decides what is allowed).
+- `release_test` checks that the licence files carry this exclusion and that the Licences screen names the studio.
+
+**Why:** Your decision (via the coordinating session): a studio name and mark you keep to yourself, while the game's art stays free to remix non-commercially. A trademark-like name and logo are the usual exception in an open-licensed project.
+
+**Alternatives:** Licence the logo under CC BY-NC-SA with the rest (anyone could reuse your mark); leave the logo out of the public repository (the boot screen would show a placeholder in a fresh clone); credit a person instead of the studio.
+
+## D-175 — The weapon names are final (2026-10-16)
+
+**Decision:** The M7 weapon names are final: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke** (D-090). "Confirm weapon names" in "Your open checks" is done and the open question is closed.
+
+**Why:** Your words: "Keep them forever, they are good."
+
+**Alternatives:** Plain descriptions ("Rifle", "Carbine"...) or other names (D-090 weighed both; files and code use role ids, so renaming would only have touched the data files).
+
+## D-176 — The credit line, and community maps curated in the repository (2026-10-16)
+
+**Decision:**
+- **The credit is "Created by JK · Divocakos"** in the Licences screen (the in-game credits), the README and the release notes; the legal line stays "© Divocakos" (D-174). **The full name appears nowhere in tracked files.** (The GitHub account in the repository's address, your personal one, is the one place a name-like word remains.) `tests/release_test.gd` fails on the full name.
+- **Maps are curated in the repository.** Community maps come in as pull requests, are looked at and played by the maintainer, and ship with the next release. `CONTRIBUTING.md` (linked from the README) says how: build from the map kit, follow the look and building rules, pass the maps test, add the map to `GameLaunch.ROTATION_MAPS` and the maps test's list, credit under "Community maps" in CREDITS.md. A map the maintainer doesn't accept is not merged.
+- **Contributions go in under the licence of their folder:** a map, texture, model or sound is **CC BY-NC-SA 4.0**; code is **GPL-3.0**; the contributor keeps their copyright and is credited. The studio's name and logo are never part of a contribution. Third-party material is allowed only when its licence is compatible, and is recorded in CREDITS.md.
+- **The commits keep their author name** (the e-mail is GitHub's no-reply address) and the history is **not rewritten**. Your words: "v commitech muze byt moje jmeno, stejne to bude moje otevrene repo, ale ve hre JK a na github page to staci" (my name can be in the commits, it's my open repo anyway; JK in the game and on the GitHub page is enough). So the old absolute paths in about 25 commits stay in the history too (D-171). The repository goes on your **personal GitHub account**, no organisation.
+
+**Why:** Your words: "Divocakos is the studio name, JK is my name", and you want community maps in the game with you in control of what ships.
+
+**Alternatives:** An open contribution flow where anything that passes the tests ships (no curation); contributions under a contributor licence agreement that lets you relicense them (more legal paper; with CC BY-NC-SA inbound the game stays non-commercial, which is the plan); credit with the full name; rewriting every commit's author to "JK" before publishing (asked for, then cancelled by you).
+
+## D-177 — The roadmap after v0.1: M13 sound, M14 stats and training, M15 accessibility (2026-10-16)
+
+**Decision:** Three milestones follow the first release (PLAN.md has their task lists):
+- **M13 Sound design:** distinct gun signatures, muffling through walls, reverb indoors and outdoors, a mix pass, menu music and round stingers.
+- **M14 Stats & training:** match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range.
+- **M15 Accessibility & polish:** a colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots. A Czech translation was planned and dropped at your word: "czech translation neni potreba".
+The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray practice, match statistics) moved into these milestones.
+
+**Why:** Your plan for after v0.1. Sound is what the game most lacks next to a shooter's feel; stats and training suit a CS player; the last milestone widens who can play. Each starts only when you say so (CLAUDE.md).
+
+**Alternatives:** Steam lobbies and a dedicated server first (they stay in the Backlog); more maps first (they come through pull requests as they arrive, D-176).
+
+## D-178 — The pre-release QA pass: what is automated, what was fixed (2026-10-16)
+
+**Decision:**
+- **Test plan:** `docs/RELEASE_CHECKLIST.md`: gates, every mode on every map, every menu, settings and rebinding, fullscreen and resizing, class draft, buying, pickups and the bomb, online (LAN and Tailscale), the builds, and the checks before going public. Automatic lines say the command; hand lines say what to do and what to see.
+- **Automated, new:** the `qa` suite plays Bomb and Team Deathmatch on Depot, Square and Spillway and Practice on three maps through the real game scene with a player in it (70 s of game time each: rules, 3v3, bots walking and fighting, rounds or respawns, nobody falling through the world), and the console's `bot_add` / `bot_kick` on the Shooting Range. `tools/lan_check.sh` runs a host and two friends as three real processes over this computer's LAN address (one joins and leaves, the second joins the running match). The suites now count 35.
+- **Two flaky tests fixed at the root.** (1) `match` (and `ui`, `settings`) compared a checksum of the real `settings.cfg` before and after, which fails whenever *another* game on the computer writes that file (every worktree and the player share it). `Settings.real_file_accesses` now counts this process's own reads and writes of that file, and the tests require 0. (2) `netjoin` measured the distance a joined player walked in a second, which depends on which bot he takes over (a wall a metre ahead gives 1 m): it measures the top speed in a window in which the round stays live and he stays alive.
+- **A bug fixed:** joining an address where no game runs left "Connecting…" up for the better part of a minute (ENet gives up after about 30 s). The session now gives up after `NetSession.JOIN_TIMEOUT` (10 s of game time) with a message that names the usual causes (address and port, the host's game, Tailscale). A test covers it.
+- **A tool fixed:** `tools/ui_screenshots.gd` showed the boot screen in its first seven pictures; it turns the boot screen off now.
+- **Not found:** no script error or engine error in any suite's log apart from the known exit-time leak warnings and the two expected lines (ENet port in use, the broken-settings parse error). Full run: 35 suites, 1,150+ checks pass.
+- **Release notes** for v0.1.0 are the first section of `CHANGELOG.md` (D-179); `docs/KNOWN_ISSUES.md` lists what is known and unchecked (the Windows and Linux builds on real computers, a real Tailscale join, Ctrl-click on macOS, fullscreen by hand).
+
+**Why:** Your brief: check, polish and finish what can be finished before the first release. A test that fails when someone else plays is worse than no test; a hang that looks like a crash is the first thing a friend with a typo in the address would meet.
+
+**Alternatives:** Give each test run its own user-data folder (Godot has no command-line switch for it on macOS); skip the player in the QA games (the real flow has one); a join timeout in the transport only (ENet's connecting peers can't be given a shorter timeout through Godot's API in a way that worked here).
+
+## D-179 — A website on GitHub Pages, a changelog, and the release routine (2026-10-16)
+
+**Decision:**
+- **A small static website in `site/`**, published to GitHub Pages: plain HTML and CSS and one small script, no build tools, no frameworks, nothing loaded from another site. Pages: what Chiip is (with five screenshots from the game, taken without the mouse by `tools/ui_screenshots.gd`), Download, Updates, Play with friends (the Tailscale guide), Community maps (a link to CONTRIBUTING.md), and About (credits and licences). It is in the game's look: Silkscreen for headings and labels (a copy of the font with its OFL licence in `site/fonts/`), body text in the system font for readability, the UI theme's own colours (`release_test` compares the CSS's hex values with `tools/ui_palette.gd`), square boxes, 2 px borders and hard shadows; "Created by JK · Divocakos" with the logo in every footer.
+- **Updates need no edit to the site.** The script reads GitHub's public releases API: the Download buttons point to the files of the **latest release** (found by `windows`, `mac` or `linux` in the file name), the visitor's system is highlighted, and the Updates page lists every release's notes, with a tiny markdown renderer that escapes everything first. Without JavaScript, offline, rate-limited or before the first release, every button keeps the plain link to `releases/latest` that is written in the HTML. The answers are remembered for ten minutes in the browser (the API allows 60 requests an hour per visitor).
+- **`CHANGELOG.md` is the source of the release notes.** Each version's section is the text of its GitHub Release; `tools/release_notes.sh <version>` prints it for `gh release create --notes-file`. v0.1.0's notes (first drafted as `docs/RELEASE_NOTES_v0.1.0.md`) are its first section.
+- **`.github/workflows/pages.yml`** publishes `site/` on every push to main, with only GitHub's own actions pinned to exact versions: `actions/checkout@v4.2.2`, `actions/upload-pages-artifact@v3.0.1`, `actions/deploy-pages@v4.0.5` (the three release pages were checked to exist). Pages is switched on once, with the Actions source (RELEASING.md).
+- **`docs/RELEASING.md`** is the routine for every later release: bump the version (`project.godot`, the Mac preset, a CHANGELOG section), run the checks, export the three builds (only when the owner says), zip them, tag and `gh release create`; the site picks it up.
+- **The repository's name is one line in the script** (`const REPO`), and the links in the pages name `Jankozeluh/Chiip`; a test checks they agree. The site's address would be `https://jankozeluh.github.io/Chiip/` once Pages is on.
+- **Checked** in a browser: every page at desktop and phone widths, the script with a pretend API answer (buttons, system highlight, file sizes, release notes, draft releases hidden, markup in the notes shown as text, a `javascript:` link not made into a link) and without it (the fallback links). `release_test` covers the files, the links and pictures, the tokens, the workflow and the changelog extraction.
+
+**Why:** Your words: "chtelo by to jeste pripravit i github page, kde to bude popsane a tak a budeme tam vzdy releasovat updaty" (also prepare a GitHub Page where it is described, and where updates are always released). A page that reads the API means a release is one command; a changelog in the repository is the notes' source of truth and shows on both GitHub and the site.
+
+**Alternatives:** A static site generator such as Jekyll or Hugo (a build step to keep alive); a framework (more to maintain for six pages); a single page (the Tailscale guide and the updates deserve their own); release notes written only in GitHub's web form (no copy in the repository); third-party actions or a deploy branch (more trust, or a second branch to keep).
+
+## D-180 — The security review before the first public release (2026-10-16)
+
+**Decision:** Your words: "hlavne dbejme na tu bezpecnost" (above all, let's take care of security). A review of six things, with what was fixed and what stays; the checks are in `docs/RELEASE_CHECKLIST.md`, section 9, and in `release_test` and the new `netsec` suite (36 suites now).
+- **The whole history was scanned**, not only the files (`tools/scan_history.py`, every line of every commit ever added): no key, token, secret, e-mail address, sensitive file name or stray big file. Only the known notes: the owner's old home-folder path (accepted, D-176), a third-party icon's metadata, the no-reply commit identity. Only `main` will be pushed (the other branches and the stash stay local). Nothing was rewritten.
+- **The host no longer trusts the computers that join it.** What was already right: three client-to-host RPCs only (hello, team request, message), each starting with `is_host()`, the rest `authority` only; object decoding off in the engine and no `bytes_to_var_with_objects` or `str_to_var` anywhere; commands with angles that are not numbers dropped, a speed budget, a queue cap, lag compensation clamped. What was added: packets over 8 KB dropped and only introduced players heard; 400 packets a second at most and a three-second flood removes the sender; a computer that connects and says no hello is removed after 5 s, and a fourth hello is ignored; session messages must be a few short plain entries, and rates are limited for messages, team requests and requests; requests are checked for shape, type, range and item id length; commands with an impossible yaw or pitch are dropped and a weapon slot that doesn't exist means "no change"; names lose control characters and the invisible ones that reverse or hide text. A new `netsec_test` feeds the host 60 kinds of broken, cut, random, oversized, NaN, infinite, nested and wrongly typed input, then floods it, then connects a computer that never speaks, and checks that the host runs, the friend's character is whole, and nobody was added or kept.
+- **What stays, said out loud:** a friend is trusted only so far: the host decides hits and checks speed, but an aim bot or a lag switch can't be told from a good player; the game does not encrypt its traffic (**Tailscale does**, WireGuard; a LAN or a forwarded port does not: one more reason for Tailscale); a malformed packet makes the engine print a decode error in the host's log (noise). Listed in KNOWN_ISSUES.
+- **The website** got a content security policy on every page (scripts, styles, pictures and fonts from the site itself; the one outside connection is GitHub's API; no inline script or style, so the few inline styles became classes) and a check that the API read can fail and the notes are only ever escaped text.
+- **The workflow** pins the three official actions to the full commit SHA of their release (looked up from GitHub's API; the version stays in a comment), keeps the least permissions, no secrets, no `pull_request` or `pull_request_target`, and `.github/dependabot.yml` proposes updates weekly.
+- **Settings for the public repository** are one script, `tools/harden_repo.sh <owner>/<repo>` (read-only workflow token, approval for first-time contributors' workflows, Dependabot alerts and updates, secret scanning with push protection, private vulnerability reporting, no wiki or projects; `--protect-main` for pull-request-only main once friends contribute; `--dry-run`). It was dry-run tested; running it is part of phase 3 and needs your OK and a login. `SECURITY.md` says where to report a problem (private vulnerability reporting).
+- **Releases carry SHA-256 checksums:** `tools/package_release.sh` writes `SHA256SUMS.txt`, the release routine uploads it, the README and the download page say how to check a zip.
+- **For you:** turn on two-factor authentication on the GitHub account (a passkey or a security key is best), and know that pushing `.github/workflows/` needs the `workflow` scope on the login (`gh auth refresh -s workflow` if the push is refused).
+
+**Why:** A friend's computer is the thing most likely to send the host something odd, by accident or on purpose; a public repository with releases is only as safe as its settings and its owner's account; downloads that can be checked make a fake download easier to spot.
+
+**Alternatives:** Rewriting the history to remove the old path and the name (you decided against it); trusting the friends because they are invited (one broken client could still hang the host); encrypting the game's own traffic (Tailscale already does, and DTLS would add certificates to a hobby game); pinning actions to tags only (a moved tag would run new code unseen); signing the builds (costs money every year; checksums are the cheap part of it).
+
+## D-200 — Stats are kept on your computer, in one text file (2026-10-16)
+
+**Decision:** M14's history and lifetime numbers live in one JSON file, `user://stats.json` (`StatsBook`, in `systems/stats_book.gd`), and never go anywhere else, online games included (each player records their own).
+- **What's in it:** the last 300 finished matches (`StatsMatch`: date, mode, map, result, score, rounds, duration, kills, deaths, assists, damage, headshot kills, and per weapon the bullets fired, the hits and the hits by zone), the **lifetime totals** (`StatsTotals`; they are added to as each match ends, so they stay right after the oldest matches drop out of the list), and the personal bests of the training (`submit_best`, D-205).
+- **A damaged file never costs a crash or a silent loss:** a file that isn't JSON, has the wrong shape or comes from a newer version (`version` above 1) is moved aside as `stats.json.bad` and an empty book starts; one bad match inside a good file is skipped; every number is cleaned on reading (the right type, in range, hits never over shots, headshots never over kills, unknown zones dropped); missing totals are counted again from the history. Saving writes a temporary file and renames it over the real one.
+- **Like Settings, it saves only after something loaded it** (the main menu or `main.gd`, unless `--no-settings` or `load_settings` is off), so tests and tools can't write your file; `stats_test` checks the real file's checksum before and after.
+- **JSON, not a binary resource or a `ConfigFile`:** you are a data analyst, so the file can be opened, read, copied or analysed as it is; it also stays readable when the game changes (a `version` field). A CSV of the history can be written next to it (`StatsBook.export_csv`; the Stats screen's button, D-204).
+
+**Why:** Stats are a small amount of data that you will want to look at outside the game, and that must survive a bad write or an edit by hand. A game that crashes on load because its stats file is damaged is worse than one that starts a fresh book and keeps the old file for you.
+
+**Alternatives:** A Godot `Resource` (`.tres`/`.res`: a parse error or a changed script can make the whole resource fail to load, and it is not a format a spreadsheet reads); a `ConfigFile` like the settings (fine for a flat list of options, awkward for a list of matches); a database such as SQLite (a new addon and a download for a few hundred rows); no cap on the history (the file would grow for ever, though 300 matches is only about 150 KB, and the totals keep counting anyway).
+
+## D-201 — The definitions: K/D, ADR, HS %, accuracy (2026-10-16)
+
+**Decision:** Each number has one definition (`StatsMath`), used by every screen and by the tests.
+- **K/D** = kills ÷ deaths with deaths counted as at least 1 (no deaths shows the kills, not infinity). Teamkills are not kills (RoundManager already scores them as −1).
+- **ADR** = damage dealt to enemies ÷ rounds played, **for round (bomb) matches only.** Team respawn is one long round, so "damage per round" would just be its total; a respawn match has no ADR, and the lifetime ADR counts only the round matches' damage and rounds. The scoreboard of a round match gets an ADR column (D-202); respawn matches keep the DMG column alone.
+- **HS %** = headshot kills ÷ kills, as in CS. The weapons table shows the other number too, the **share of hits that were head hits**, from the zone counts.
+- **Accuracy** = bullets that hit an enemy ÷ bullets fired. **A shotgun's pellets count one by one** (the Breaker fires 9 per pull), so accuracy never goes over 100 % and a pull that hits with three pellets counts as three hits out of nine. Only guns count: the knife and grenades have no shots; hits on teammates (friendly fire) and on yourself are not hits.
+- **Win %** counts draws as played. Wins are kept per mode (`rounds`, `respawn`) and per map, next to the matches played, so "5 of 8" is possible.
+
+**Why:** Numbers that could be read two ways would make the screen hard to trust; these are CS's own definitions (K/D, ADR, HS %) except where Chiip's modes make one meaningless (ADR in a respawn match), and where a pump shotgun would otherwise break accuracy. Counting pellets keeps the maths simple and the table comparable between weapons.
+
+**Alternatives:** An ADR for respawn matches too, with a "round" of 60 seconds or a life (invented units that look like CS's but mean something else); counting a shotgun pull as one shot that hits when any pellet lands (a 9-pellet blast and a 1-pellet shot would look the same, and the Breaker's accuracy would be flattering and unlike the zone counts); head hits per kill instead of kills with a headshot (HS % is the number CS players know).
+
+## D-202 — Recording: you only, finished matches only, the scoreboard's own numbers (2026-10-16)
+
+**Decision:** `StatsRecorder` (`systems/stats_recorder.gd`) is added by `main.gd` under the rules of every match (rounds and Team respawn, offline and online; practice has no rules to record) and saves one `StatsMatch` when `RoundManager.match_ended` comes.
+- **It watches only you** (the map's Player): your **bullets** from `Weapon.fired` of the gun in your hand (following `Character.weapon_changed`, like the HUD does), your **hits** from `Character.damaged` of every other character (a new `RoundManager.participant_joined` signal tells it about bots and friends arriving, on the host and on a client), your **headshot kills** from `character_killed`, and the time played. A hit counts only on an enemy and only for a gun (the knife, grenades, teammates and yourself don't), in the gun's own row, by zone.
+- **Kills, deaths, assists and damage are read from the rules' scoreboard numbers** at the end (`RoundManager.get_stats`; online the host's, sent by STATS events long before the match ends, because a round ends several seconds after its last kill), so the history and the match-end screen always say the same. A teamkill takes a point off the scoreboard's kills; the history never goes below 0.
+- **Only finished matches are saved.** Leaving a match (Esc → Leave, Main menu), the host ending it, or closing the game saves nothing; the numbers of a match nobody finished would skew the averages.
+- **`RoundManager.get_rounds_played()`** (the rounds won by both teams; 0 in Team respawn) is the round count behind ADR. Round matches' scoreboards (Tab and the match end) get an **ADR column** after DMG: the damage over the rounds played, and in the first round the damage so far; Team respawn has none (D-201).
+- **Tests and tools can't write your file:** the book saves only once it has been loaded, and `main.gd` loads it under the same two guards as the settings (`load_settings`, and no `--no-settings`). `statsrec_test` plays real shots and whole matches in memory and checks the real file's checksum.
+
+**Why:** Recording at the player level (not the match level) gives per-weapon accuracy and zone counts that no scoreboard has, while reading the final kills and damage from the scoreboard avoids two sources that could disagree by one. Saving only finished matches keeps "a match" meaning one thing.
+
+**Alternatives:** Recording every player's shots (the host sees them all, but the stats are yours and a friend's numbers aren't yours to keep); counting kills and damage in the recorder itself (a second tally that could differ from the scoreboard, e.g. on a client that missed an event); saving a partial record when you leave (half a match's ADR and K/D, and no result); the recorder as an autoload (one more global; the game scene already owns the rules it watches).
+
+## D-203 — Online: each player records their own stats from what the host announced (2026-10-16)
+
+**Decision:** Nothing about your stats is sent anywhere. The client's recorder is the same code as the host's and the offline one, fed by what the host announces: damage through the `DAMAGED` event (which now also carries the weapon's index as a seventh value, as `KILLED` already did for the kill feed's icon; a client sets `last_damage_source` from it before applying the damage, and an older host that doesn't send it makes the recorder credit the gun the player fired last), kills through `KILLED`, the scoreboard numbers through `STATS`, the end through `MATCH_ENDED`. Bullets are your own, counted on your computer when you fire (the client predicts its shots).
+- So a hit the host didn't decide (a shot the host's lag compensation judged a miss, a pellet it didn't count) is **not a hit in your stats** either: the accuracy is the host's verdict, not your screen's.
+- Each player's file is their own; the host's file records the host's match, the friend's the friend's. `statsrec_test` plays a host and a client in one process, each with a book of its own: the client's real shots, the host's announced hits, one record with the host's kills and damage.
+- The protocol change is one appended value, read only when present (`values.size() > 6`): old and new builds still talk. `netsec`/`net*` suites pass unchanged.
+
+**Why:** Letting the host decide is the game's rule everywhere else (D-100 to D-114), and it keeps a client from padding its stats; copying the kill feed's weapon field was the smallest way to know which gun a hit came from (the other way, guessing from what the player holds, credits a knife stab to the rifle).
+
+**Alternatives:** The client counting its own predicted hits (it would see hits the host later rejects, and its accuracy would differ from the host's view of the same match); a new "stats" message at the match end (more protocol, and a place to cheat); guessing the weapon from the one in hand (wrong for grenades and anything after a quick switch).
+
+## D-204 — The Stats screen: a main-menu item with four tabs (2026-10-16)
+
+**Decision:** **Stats** is a menu item between Practice and Settings (the main menu's items are now Play, Practice, Stats, Settings, Quit) and opens `StatsMenu` (`ui/stats_menu.tscn`), a full-screen menu in the mockups' style: the `InkPanel` page with the `TitleLabel`, a `TabContainer` and a footer, no colour, size or style of its own (theme type variations only; `ui_test` and `layout_test` check it).
+- **Overview:** ten tiles (K/D, ADR, HS %, accuracy, wins, matches, kills, deaths, damage, time played) and bars for the wins per mode and per map ("6 of 9 · 67 %").
+- **Weapons:** per gun its icon and name, the bullets, the hits, the accuracy and the share of hits by zone, the most fired first.
+- **History:** the last 100 matches, newest first: when (your time zone), mode · map, result, score, K, D, K/D, ADR (a dash in Team Deathmatch), HS %, accuracy.
+- **Training:** the personal bests (D-205, D-208).
+- **Footer:** **Export CSV** writes the history to `user://stats_history.csv` and says the real path (for a spreadsheet; you are a data analyst), **Reset stats** asks twice (the first press says "Press again to delete" and is forgotten after 4 s or when the screen closes) and Back; Esc closes it like every menu (`MenuState`).
+- **Tables are rows of labels like the scoreboard's** (`RowPanel`, `CellMargin`, `FlushRow`), not a `GridContainer`: the scoreboard's rows scale with the UI theme and a grid's default gaps would not.
+- **What the tabs say is made by static functions of plain numbers** (`tile_values`, `weapon_rows`, `history_rows`, `win_rows`, `training_rows`), checked in the `stats` suite without a window; the menu only puts it on screen.
+- The book is read when the main menu (or the game, `-- --match`) loads the settings, under the same guards, so a test that gave the settings a file of its own, or none, can never make the game read or write your real stats (found the hard way: `ui_test`'s real-flow check does exactly that, and wrote to the real file until the guard was the settings' own).
+
+**Why:** Stats are for looking at between matches, so they belong in the main menu next to Practice and Settings, not behind the pause menu; four tabs keep each table narrow enough for 1280 × 720 and keep K/D and ADR (the numbers you check first) on the first one. A CSV button costs nothing and makes the analysis your own.
+
+**Alternatives:** Stats in the match-end screen only (no way to look at the lifetime numbers); a link in the small "Host / Join" row (hidden away); one long page (the history would push everything else off the screen); charts of K/D over time (a good later idea; a table and a CSV come first); a `GridContainer` for tables (no theme scaling).
+
+## D-205 — The aim trainer: one flick ball at a time, in plain view, a timed run (2026-10-16)
+
+**Decision:** The Shooting Range has an aim trainer (`RangeTrainer`, `maps/props/range_trainer.gd`, with `AimTarget` for the balls). A gold coin on the range, off to the side of the start (a floating pad about 1 m right of the start and 1.2 m ahead, at 1.3 m), starts a run when you **shoot it**; the console's `aim` does the same (`aim stop` stops it), and shooting the coin again during a run stops it without a score.
+- **A run:** a 3 s countdown (a big 3-2-1 on your screen), then **30 s** in which **one ball at a time** pops up at a random spot **in plain view** from your eyes: 7 to 20 m away, up to 45° to each side of where you looked when the countdown ended (so turn back downrange during the countdown), 0.6 to 2.3 m above the floor, and **at least 12° from the last ball** so every ball is a flick. A ball lives 1.5 s; the next appears 0.12 s after one is hit or times out. A spot a wall or a dummy hides is skipped (40 tries, a ray from your eyes), and **a ball that something walks in front of** (the range's moving dummy) **moves to a spot in view** at once and doesn't count as timed out.
+- **Every ball is the same size on your screen** (3.2° across: 24 cm at 8.6 m, 55 cm at 20 m), so distance doesn't make a ball harder; the picture grows from small in 80 ms but the hit zone is full size from the first tick.
+- **Feedback** is in the world's own pixel font, not the 2D HUD: a `Label3D` on your camera (fixed screen size, the world's low resolution, like the dummies' damage numbers): the countdown, "27.4 S  1250 PTS" during the run, and the result (score, hits, misses, timed out, accuracy, average reaction, "NEW BEST!") for 8 s. The pad's label says how to start and your best for the gun in hand. No sounds (M13's); hits show on the hit marker as usual.
+- **It needs a gun in hand** (a knife or a grenade says "Take a gun first") and follows the shooter's `Weapon.fired`, so what counts as a shot is what the weapon fired; only the person at this computer can start it (a bot's stray bullet can't).
+- **Only flick targets for now:** the plan's "tracking target" is the range's moving dummy at 15 m (walking pace) for the moment; a tracking run with its own scoring is a possible later addition.
+
+**Why:** A flick is what CS players mean by aim practice (and the thing the existing static dummies don't train); one ball at a time keeps the score honest (no choosing the easy one), spots in plain view and the same angular size make runs comparable, and a start you shoot needs no menu or key (as in aim maps on Steam).
+
+**Alternatives:** Several balls at once (a choice of target muddies the score); balls at fixed places (learnable, and a layout change in the map file); a 2D HUD readout (needs the HUD's scale logic, and a pixel-font label in the world looks like the rest of the range); a ball scaled by distance in metres (far balls would be harder, and a score would say little about aim); the pad as a key press (a key to bind, and a mouse-first game).
+
+## D-206 — The aim score (2026-10-16)
+
+**Decision:** `AimScore` (`systems/aim_score.gd`) is the whole scoring: **100 points for every ball hit plus up to 100 for speed** (the full amount for a hit the moment it pops up, falling in a straight line to nothing at the end of its life, so 150 at 0.75 s of 1.5 s), **minus 25 for every shot that hit no ball**, never below 0. A ball that times out earns nothing. The result also shows hits, misses, timed-out balls, **accuracy** (hits ÷ shots) and the **average reaction** (the hits' seconds from popping up to being hit). Shots are the trigger pulls of the gun in hand while the run is on (the shot that starts a run and shots in the countdown don't count); a shotgun pull that hits counts as one shot and one hit.
+- A good run is around 40 balls at 150 to 190 points each; a spray at the balls scores 0.
+
+**Why:** The speed bonus rewards what a flick drill is for (fast and right), the miss penalty makes spraying pointless without a long list of rules, and the numbers behind the score are shown, so you can see whether you are fast, accurate or both.
+
+**Alternatives:** Score by distance from the ball's centre (a bullseye bonus: a precision trainer; the hit zone is one flat sphere and a chest hit is a hit in CS); a time bonus for streaks (more rules to explain); no miss penalty (a spray wins); ranking by hits only (accuracy and speed would not show).
+
+## D-207 — The trainer in the map, and personal bests (2026-10-16)
+
+**Decision:** The pad is a new TrenchBroom point entity, **`range_trainer`** (in `chiip_mapper_fgd.tres`, MAPPING.md's training-maps table): its `run_time`, `target_lifetime`, `min_distance`, `max_distance` and `half_angle` are properties, the rest are exports. It is in `maps/shooting_range.map` (the source) and the scene was rebuilt with `tools/build_maps.gd`; the layout is unchanged (the pad floats), so the navmesh needed no new bake. A map without the entity has no trainer, so a custom range can leave it out.
+- **Personal bests are per gun** (`aim_flick_<gun>`: the Ram's runs against the Ram's), kept in the stats file next to the match history (`StatsBook.submit_best`: only a higher score replaces a best, a run without a hit saves nothing) and shown on the Stats screen's Training tab ("Aim trainer · Ram — 4200 — Hits 31, Misses 3, Accuracy % 62.5, Reaction ms 412").
+- **Tests use a book of their own** (`RangeTrainer.book`) and never your file.
+
+**Why:** A gun's recoil, fire rate and accuracy change what a good score is, so a best against the Warden would be a different thing from one against the Heron. The entity keeps the range editable in TrenchBroom as the other range parts are.
+
+**Alternatives:** One best for all guns (the first gun you try would set a number nobody else can beat); the trainer spawned by code on the range map (hidden from the map file); a best per run length (the run length is a map property but one length is the norm).
+
+## D-208 — Spray practice: the pattern as a ghost, your holes against it, a control percentage (2026-10-16)
+
+**Decision:** The Shooting Range's spray wall (`RangeSprayWall`, `maps/props/range_spray_wall.gd`; the existing 3.2 × 3 m wall at 10 m) now draws, in the wall's own frame and at real scale:
+- **The ghost:** the pattern of the gun in your hand (`WeaponData.spray_pattern`, in degrees) as grey dots, from the first shot, each at `distance × tan(angle)` to the right and up (`SprayChart.ghost`), numbered 1, 10, 20 and 30. Before you shoot it hangs on the wall's middle and follows your distance and your gun; once you fire a first shot of a spray it moves to **your first hole**, so it shows where the spray would go if you held the mouse still.
+- **Your holes:** lime dots for the spray you are firing, dim olive ones for the sprays before it (the last 150 are kept), from where each bullet landed (`Weapon.hit_landed`) and its number in the spray (`Weapon.fired`'s `spray_shot`).
+- **Control:** `100 × (1 − your drift ÷ the pattern's drift)`, clamped to 0..100, where drift is the average distance from the first hole over the other shots (centimetres on the sign). Holding still gives about 0, a perfect pull against the recoil about 100 (the test pulls perfectly and gets 99.7). It shows from 10 shots. A finished spray (0.8 s without a shot) of 10 shots or more with a control of at least 1 % is saved as a **personal best per gun** (`spray_<gun>`; Stats › Training shows it with its shots, drift and the pattern's drift), and only a higher control replaces it.
+- **Reset:** shoot the orange plate in the wall's top right corner, or type `spray_reset`. Shots that miss the wall are skipped (the pattern is compared over the shots that landed).
+- Dots keep the same size on your screen (0.5° and 0.4° across) at any distance, as the aim balls do; at 6 m a spray's pattern is about 60 px tall at 720p, which is how big recoil really is on a screen.
+- One bullet at a time: a shotgun's pellets have no pattern, and the sign says so.
+
+**Why:** "Recoil control" is the skill of CS spray practice, and one number that falls when you hold still and rises when you pull makes it visible; a ghost from your own first hole shows the pull you needed at each shot, and the real scale means what you see on the wall is what a bullet did. Comparing against the pattern's own drift makes control comparable between guns (the Ram's pattern is larger than the Hornet's, and 100 % means all of it cancelled for either).
+
+**Alternatives:** The ghost always at the aim mark (it would not line up with your first hole, which has the gun's random spread); a magnified chart off to the side (easier to read, but not your wall: possible later); one score for how many holes land in a head-sized circle (depends on how good your first shot was, not on the recoil); control measured against the aim point rather than the first hole (a spray 30 cm off but tight would score badly).
+
+## D-209 — The spray wall in the map (2026-10-16)
+
+**Decision:** A new TrenchBroom point entity, **`range_spray_wall`** (in `chiip_mapper_fgd.tres`; `width` and `height` properties), placed at the middle of the wall's face with its angle pointing at the shooters, like a sign; the Shooting Range's has it at the existing wall (`origin -394 -472 59`, angle 0), so the layout is unchanged. The ghost and the holes are two `MultiMeshInstance3D`s of one-metre quads scaled to their size (150 + 64 instances, unshaded, drawn 1.2 cm in front of the wall), the numbers and the sign `Label3D`s of fixed screen size (the pixel look of the dummies' titles), the plate a flat quad and a rectangle in wall points. Console: `spray_reset`. A map without the entity has no spray wall.
+
+**Why:** The same reasons as the aim trainer's pad (D-207): the range stays editable in TrenchBroom, and a map maker can put a spray wall on any flat wall.
+
+**Alternatives:** A `Decal` per hole (a node each, and the pixel look and palette effect make small decals muddy); drawing in a `SubViewport` texture on the wall (a second world to keep in step with the first); a `Label3D` for the numbers of every dot (30 labels, mostly overlapping).
+
+## D-159 — v0.1.1: hit zones survive the export, and every build is checked by shooting (2026-10-16)
+
+**Decision:**
+- **The cause:** `HitZones` (`characters/crew/hit_zones.gd`) declared its arrays as `@export var bones: PackedStringArray = []`. When the export converts text resources to binary, a packed-array property whose default is an Array literal lost its stored values: every class's hit-zone file shipped empty (378 bytes instead of 1 KB), so the bodies had no hit zones and every bullet flew through to the wall behind. Playing from the editor reads the text files and worked, and every test runs there, so nothing saw it before the release. Weapon and class data were fine (their defaults are typed).
+- **The fix:** typed defaults (`PackedStringArray()`, `PackedInt32Array()`, `PackedVector3Array()`). The hit-zone files also name themselves now (`resource_name`, written by the generator): the export caches its conversions by a file's content, so a checkout that had exported before would otherwise have kept shipping the empty ones.
+- **The guard:** the game has a shooting self-check, `--check-hits` (`HitCheck`: practice on the range, an enemy bot 5 m ahead, one shot each way, exit code 0 or 1), because an exported build can't run `--script`. `tools/check_export.sh` exports a release build into a temporary folder (or takes `APP=`) and runs it; `tools/package_release.sh` runs it on the Mac build before it packs anything. The `release` suite runs the same self-check in the editor, fails on any exported packed array with an Array-literal default in the game's scripts, and checks that the packaging runs the check.
+- **Version 0.1.1**, with its CHANGELOG section.
+
+**Why:** Your report: bullets fly through enemies to the wall, and nobody takes damage, in the build. Reproduced in a release export (the editor build hits); the check fails on 0.1.0's files and passes with the fix.
+
+**Alternatives:** Turn off the export's conversion of text resources to binary (it would hide this case but not the next one, and makes the build bigger); build the hit zones from the model at runtime instead of a file (a bigger change for a hotfix); a check that compares every converted resource with its source (worth it later; the shot covers what players feel).
+
+## D-210 — Colour-blind-safe team colours: a second scheme, applied everywhere at once (2026-10-16)
+
+**Decision:** Settings → Video → **Team colours** has two choices, Standard (blue against red, as before) and Colour-blind safe (a dark blue against a light orange). The pair was picked, and is tested, for the three common deficiencies and for greyscale:
+- **Why not just "another hue pair":** the standard blue and red are far apart in hue (CIELAB distance 69 to 101 under every simulated deficiency) but **equally light** (the models differ by 0.9 L*), so in greyscale, or for anyone who leans on lightness, the two teams merge. The colour-blind scheme keeps a big hue gap (blue/orange is the pair that stays apart for red-green and blue-yellow deficiencies) **and** a lightness gap: the models differ by 19 to 32 L*, the UI fills by 21 to 31. The UI's text pair is close in lightness (both are bright on a dark panel) and leans on the hue gap (ΔE 105 to 123).
+- **The pair:** models blue `(0.10, 0.36, 0.76)` and orange `(0.97, 0.55, 0.10)`; UI text `#66b3ff` / `#ff7a1a`; fills `#0a3d6b` / `#b86a00`. The orange is not the UI's amber alert colour (`#ffb02e`: the bomb, low health, ammo), so those stay readable as a different thing.
+- **`access_test` simulates** protanopia, deuteranopia and tritanopia (Machado et al. 2009, full severity, linear RGB) and checks every role pair: ΔE ≥ 70 under each, and ≥ 15 L* for the models and fills. The standard pair is checked to fail the lightness test, so the test records why the option exists.
+- **One table, `Teams.SCHEMES`:** six colours per scheme (models, UI text, UI fills, for friendly and enemy). `Teams.color_for()` and `Teams.ui_color_for()` read the current scheme; the shared `Settings` applies it (`Teams.set_color_scheme()` recolours every character in the world, `UiTheme.apply_team_scheme()` the UI). `Teams.FRIENDLY_COLOR` / `ENEMY_COLOR` stay the standard pair.
+- **The theme is recoloured in place, not rebuilt:** `ui/chiip_theme.tres` is generated with the standard colours baked into label colours and styleboxes (the score boxes, pips, scoreboard lines, the death frame in the kill feed...). `UiTheme` swaps every colour that *is* one of the standard scheme's six for its partner, in the base theme and in every scaled copy still alive (a weak list; menus hold theme copies), and remembers which scheme a theme shows in a meta entry. The HUD, which keeps its own scaled copy of some styleboxes (`UiScale`), is scaled again by `main.gd` when the setting changes. Code that picked team colours from the theme (kill feed, round HUD, HUD, compass, scoreboard icons) now asks `Teams`.
+- **Not done:** a shape cue (a marker over enemies). The lightness gap already carries the difference for the common cases, and a marker would need design of its own; it is in the Backlog.
+
+**Why:** the user's roadmap item (D-177) asked for a pair that stays apart for the common colour blindnesses. Making it a measured property, with a test, beats choosing colours by eye.
+
+**Alternatives:** One extra preset per deficiency (more choices, no better for the player); swapping only the HUD (the models are where it matters in a fight); rebuilding the theme from `make_ui_theme.gd` at runtime (the tool is not in exported builds); a shape cue instead of a lightness gap (more work, and a colour that is hard to tell still tires the eyes).
+
+## D-211 — Gamepad: what is bindable, and how menus work with it (2026-10-16)
+
+**Decision:** A gamepad plays the whole game, and the keyboard and mouse keep working beside it (any device, at any time).
+- **Sticks are fixed, buttons are bindable.** The left stick moves (action vector `pad_move_*`), the right stick looks (`pad_look_*`); they are not rebindable and the Controls tab shows "L-Stick" for the movement rows. Every other action has a **Pad** column next to Key 1 and Key 2, with one button or trigger per action: jump A, crouch B (held), walk L3, fire RT, aim LT, reload X, use LB, last weapon Y, scoreboard Back, buy menu RB, class menu R3, weapon 1 to 4 on the D-pad (up, right, down, left), pause Start. The console, debug overlay and drop have no default.
+- **Clean events, like keys:** a binding is a `InputEventJoypadButton` or a trigger (`InputEventJoypadMotion` on axis 4 or 5 at 1.0), device -1 (all pads). Start (it is `pause`) and the sticks can't be bound. It is a single slot per action, stored in a `[pad]` section (`pad:2`, `trigger:5`); a damaged entry falls back to the default and an empty one unbinds. A button belongs to one action (the later bind wins), as with keys (D-059). `Settings._apply_bindings()` writes the pad event into the `InputMap` next to the keys, so the game keeps reading actions and never a device.
+- **Menus:** the D-pad and left stick are Godot's `ui_*` navigation already; this engine build gives `ui_accept` and `ui_cancel` no pad button, so `PadInput` adds A and B once. Chiip's menus close on the `pause` action (Esc), which is Start, and B is crouch in the game: while a menu is open `PadInput` turns a B press into a `pause` press, so B backs out of every menu like Esc without any menu knowing about pads. A pad press in a menu with no focused control gives the first button the focus. The player ignores pad input while a menu is open, like keys.
+- **Ground movement is all or nothing, as in CS:** the stick gives a direction (past its dead zone); the walk button (L3) is the only way to go slow. A half-pushed stick is not half speed.
+
+**Why:** the user's roadmap (D-177) asked for every action, rebinding and menu navigation. Keeping the game on actions (not devices) means no code outside input knows a pad exists; turning B into Esc in one node avoids changing nine menus.
+
+**Alternatives:** Adding a third key slot (the table is two keys wide already, and a pad button is a different kind of thing); letting sticks be rebound (rarely wanted, and half the table would need axis handling); changing every menu to also accept `ui_cancel` (nine places, and `pause` is the shared "back").
+
+## D-212 — Gamepad look: dead zone, sensitivity and a response curve (2026-10-16)
+
+**Decision:** The right stick turns the view at a **rate**, not by distance: a full push turns `220° × pad sensitivity` per second (sensitivity 1.0 is a quarter turn in about 0.4 s; the setting is 0.1 to 4). The push goes through `PlayerController.pad_response()`: a circular **dead zone** is cut out (default 15 %, 0 to 60 %; the left stick uses the same one), the rest is stretched back to 0..1, and the length is raised to the **curve** power (default 1.5, 1 to 3): a small push turns slowly for fine aim while a full push is still full speed. Y can be inverted for the pad on its own. Through a scope the turn is scaled down by the same ratio as the mouse's (CS's `zoom_sensitivity_ratio` 1.0). All four are Settings (Game tab) and apply live.
+
+**Why:** a stick's range is a speed, and an exponent curve is the usual, easy-to-explain response; the dead zone is the setting that fixes a worn stick. The numbers were picked to feel like a console shooter's defaults, and are settings because that is a personal thing; they need your hands to tune (an open check).
+
+**Alternatives:** Acceleration while a stick is held (CoD style: harder to explain and test); aim assist (a bot game for one person doesn't need it, and it would change what a hit means); a separate vertical speed (one more slider; the pad invert covers the common ask).
+
+## D-213 — Prompts follow the device used last (2026-10-16)
+
+**Decision:** `LastInput` (a static class) remembers whether the last real input was a gamepad (a button, or a stick or trigger pushed past 0.5, so a resting stick's drift doesn't count) or the keyboard and mouse (a key, a mouse button, or a mouse move over 2 px). `PadInput` feeds it. `LastInput.prompt_for(action)` answers with the pad button ("LB") or the key ("E"). The bomb prompt's key cap and the class menu's hint use it; the settings menu always shows both, in columns. A new prompt asks for its text when it is shown, never stores it.
+
+**Why:** a prompt that says "E" to someone holding a pad is a bug the user would hit in their first minute. A static class (like `MenuState`) keeps the rule in one place and testable.
+
+**Alternatives:** Reading `Input.get_connected_joypads()` (a pad plugged in is not a pad in use: the user plays with the mouse and has a pad connected); a signal from an autoload (autoloads don't exist in tool scripts, D-066).
+
+## D-214 — Wallbangs: a bullet goes through thin walls, and loses damage by material and thickness (2026-10-16)
+
+**Decision:** A hitscan bullet that hits the world can go on. Each surface kind (D-084: hard, gravel, metal, wood) has a **reach**: how many metres of it stop a bullet of penetration power 1.0 (hard 0.20, gravel 0.35, metal 0.12, wood 0.50 in `Surfaces.REACH`). Each weapon has a `penetration` power in its data (`WeaponData.penetration`: rifle 1.0, carbine 0.8, SMG and pistol 0.5, hand cannon 1.3, Heron sniper rifle 2.5, shotgun 0.3 per pellet, knife and grenades 0; it is a column in `docs/weapons.csv`). A bullet that went `t` metres through a wall keeps `1 - t / (reach × power)` of its damage; at `t ≥ reach × power` it stops. So a rifle bullet through a 10 cm plaster or brick wall (hard) keeps half, through 10 cm of planks 80 %, a 20 cm concrete wall stops it, and the sniper rifle goes through 25 cm of concrete. A bullet goes through at most **three** walls; the damage falloff by distance counts the whole path as before, and the kept share multiplies the damage of whatever it hits beyond (the hit-zone multiplier, armour and headshot rules are unchanged).
+- **How the thickness is measured:** from the entry point, a ray goes back from `reach × power` metres further along the path; the first surface it meets is the far side. A wall thicker than that has the ray start inside it, and a ray from inside sees nothing (convex shapes) or the entry face from behind (a closed trimesh), which `normal · direction ≤ 0` rejects, so thick walls and crates stop the bullet either way. Tested on both kinds of collision shape and on a slanted wall (the path is longer through it).
+- **`last_hit` has `first_position`:** where the bullet first met something (the near face of the first wall it went through, else the hit itself). The Shooting Range's spray wall draws its holes there, because the range's walls are thin and the bullet goes on through them (found when M14's `spray` suite failed after the merge).
+- **Holes on both sides:** a bullet that goes through leaves a hole and plays the impact sound at the near face, leaves a hole at the far face, and then whatever hits after. A bullet that leaves the wall and hits nothing is reported (`last_hit` with `walls` and the exit point) like a hit, which is how the other computers learn about it.
+- **Online:** the host decides damage with the same function, through lag compensation (each segment is traced from where the last wall ended; D-107). A client that sees someone else's shot replays the *walls* between the eye and the reported hit with the same function on the same static map (`Weapon.play_remote_shot`), so every computer draws the same holes with no new network message; the hit position the host reports is already the last thing the bullet touched. `netplay` and `netarsenal` still pass.
+- **Bots:** their bullets go through walls like anybody's. Bots can also *use* it, a little (D-215).
+
+**Why:** a CS-like feel (the user asked for wallbangs for the player and the bots), and the surface kinds were already there for the footstep and impact sounds. One number per material and one per weapon is easy to read and to tune in `docs/weapons.csv`; the whole rule is in `Weapon.wall_through()` (one function, tested directly).
+
+**Alternatives:** CS's own model (a material "penetration modifier" and a maximum distance, then damage lost per unit distance: more numbers per weapon for the same feel); real thickness from the map's brush data (it exists only for TrenchBroom maps, not props or CSG test maps); letting bullets through characters too (a bullet that kills one enemy and hits the next is a bigger change to the kill rules, and not asked for).
+
+## D-215 — Bots fire through thin cover at sounds, behind a difficulty chance (2026-10-16)
+
+**Decision:** A bot that heard an enemy, or just lost sight of one, within `WALLBANG_WINDOW` (2 s) and is in the search state turns to the spot (chest height) and shoots through the wall, but only when `Weapon.get_wall_factor(point)` says the bullet would keep at least 40 % (and not 100 %: with nothing in the way it would see the enemy), with a gun that can (not the scoped rifle, shotgun, knife or grenades). The chance is `BotDifficulty.wallbang_chance` (easy 0, normal 0.35, hard 0.8), rolled once per lead (per new last-known position), so the same bot isn't spraying through every wall it passes.
+
+**Why:** "the player and the bots" (the task): bullets going through walls is symmetrical by itself, and a bot that never uses it would be the one that does not play like a CS player; but constant wall-spraying with perfect knowledge would feel unfair, so it is by chance and by what it heard.
+
+**Alternatives:** Always (unfair, and a bot that has heard you behind a wall would kill you through it); never (the player gets a trick the bots don't have); firing at any known enemy position (it would use information the bot does not have).
+
+## D-216 — Team bots trade and call out: one "call" that a few free teammates answer (2026-10-16)
+
+**Decision:** Both behaviours are one mechanism, a **call**: a place a teammate points at, handed by `BotSquad.call_team(caller, point)` to the bots of the caller's team that can take it.
+- **Trades:** when anyone dies to an enemy in the live phase, `RoundManager._on_died` calls the victim's team to where the killer stood (the dying player's "he's at X"). Works in bomb rounds and in team respawn (the `RespawnMatch` runs the same `_on_died`). Deaths only, not "hit hard": a hit already gives the hit bot a lead (`BotSenses`), and a callout covers seeing the enemy.
+- **Callouts:** a bot that spots an enemy while it wasn't fighting (the rising edge) emits `BotController.called_out`, at most every `BotSquad.CALLOUT_WAIT` (6 s) per bot; the `RoundManager` (connected in `_join`) calls the team to the enemy's position and emits `callout(team, text)`. The round HUD shows the text as a toast to the player on that team. The text (`BotSquad.callout_text`) names the bomb site within `SITE_NEAR` (15 m) of the enemy ("Enemy spotted near A"; the sites exist on the quick maps in team respawn too), otherwise the compass direction from the player (or from the caller), in eight steps the way the HUD's compass turns ("Enemy spotted north-west"). The toast stack merges the same text (it only stays up longer), which is the per-area limit for the player.
+- **Who answers:** at most `MAX_ANSWERS` (2) bots, nearest first by **walking distance** along the navigation mesh (`map_get_path`, a few paths per event; a bot 14 m away in a straight line but behind a wall doesn't come) within `REACH` (25 m), each with the chance `BotDifficulty.team_play` (easy 0.4, normal 0.75, hard 1.0; one roll per call). Only a **free** bot (`can_answer_call`): alive, in the patrol state (not fighting, not already searching), and not busy with the bomb — the existing `_wants_to_check` rules (the carrier and the bot fetching a dropped bomb never leave; after the plant only places within 15 m of the bomb count; defenders only within their 35 m rotate distance; hunters within 25 m) plus not planting or defusing.
+- **What answering is:** `answer_call()` gives the bot a lead that lasts only `ANSWER_TIME` (6 s, `BotSenses.hear_call`; anything it sees or hears itself replaces it with a normal 8 s lead) and puts it in the search state: it runs there looking that way, fights whatever it meets, looks around, and when the lead runs out goes back to its orders. Reusing the search state means the trade gets the existing fighting, wallbang (D-215) and grenade rules for free.
+- **Online:** the bots, and so the calls, run on the host (and offline). The callout toast shows on the host's (offline) player only. Sending it to the clients would need a new network event, its validation (the security review's checks) and a text made from each client's own position; left out (more than the ~30 lines it was worth). The bots' behaviour is the same in every mode.
+
+**Why:** in CS a teammate who dies or spots someone gives the team information, and a team that answers it (a trade) is what makes bots feel like a team rather than five solo players. One call mechanism for both keeps the code small (one file, `bots/bot_squad.gd`, 130 lines with comments) and the limits (two answer, 25 m walk, 6 s) keep it from becoming a stampede that empties the bomb sites or leaves the routes.
+
+**Alternatives:** Telling the whole team (everyone runs to every fight; sites left empty); straight-line reach (bots behind a wall would walk all the way round); a shared team "blackboard" that every bot polls (like `HuntPlan`; more state per mode, while a call is an event); voice-like callouts with named map areas (the maps have no area names; sites and compass directions need nothing new from the mappers); showing callouts on the compass (the compass shows only enemy shots by design, D-180 the compass).
+
+## D-217 — Teammates come at one place from more than one side (2026-10-16)
+
+**Decision:** Where several bots head for one place, the first goes straight in and the others go first to a **side point** (`BotSquad.flank_point`): `FLANK_OFFSET` (7 m) to the side of the line the first comes in on, the second on its own side of that line, the third on the other side, and so on; then on to the place itself. A side point that is a wall (it snaps back closer than half the offset) or a detour of more than `FLANK_DETOUR` (15 m) is not used. Two places use it, the biggest gaps found in the code:
+- **Answering a call (D-216):** of the two bots that answer, the second takes the side point.
+- **The retake:** after the plant every defender used to run the shortest path to the bomb, one behind the other. Now the defending bot nearest the bomb goes straight in and the others (by distance) take side points on alternating sides; the first one there defuses and the others cover from where they arrive, as before.
+
+What already spread out and was left alone: attack groups take different routes (D-045) and spread their waypoints; defenders hold different spots; hunting groups roam to goals 10 m apart (D-083). Groups in team respawn still all head for the team's freshest sighting when it's within 25 m; the two nearest free bots now answer that callout from two sides first, which covers most of it.
+
+**Why:** a team that walks into a fight in single file loses it one by one; coming from two sides is the cheapest part of CS team play to give bots. A fixed offset to the side is simple to test and to tune, and on the quick maps 7 m to the side of a site's middle usually lies in its other entrance.
+
+**Alternatives:** Real lane choice (paths that avoid each other's corridors, e.g. raising the cost of the first bot's path for the second: more code and more path queries); waiting so the bots arrive together (a timed retake: worth doing later, more state); randomising every approach (not repeatable and often the same lane anyway).
+
+## D-220 — M16: maintainability and debugging; one branch at a time after M15 (2026-10-16)
+
+**Decision:** After M15 comes M16:
+- tests on exported release builds
+- logs, a version display and bug-report bundles, plus a GitHub Issue template
+- debug commands in the console
+- an architecture review
+- a rule against flaky tests
+The new way of working starts once the work in progress (the v0.1.1 hotfix and M13–M15) has finished and been checked:
+- **Code** (game, network, UI, bots): one short branch at a time, merged soon after.
+- **Content** (maps, textures, props, sounds, docs): may run in one extra parallel branch, because it barely touches code.
+- **Inside a session**, cheap subagents (Sonnet, Haiku) still take on the small tasks.
+
+**Why:** v0.1.0 shipped with a bug that existed only in the exported build: shots didn't hit characters. The 1181 checks all run in the editor, so none could catch it. You asked whether the project will stay easy to debug as it grows ("po tomto pridavani po m15 by ses mel zamyslet nad tim, jestli se to takto bude dobre debugovat").
+
+**Alternatives:** Keep working in parallel branches (2–3× faster, but more tokens, the usage limit runs out sooner, and each merge mixes many changes, so it's harder to tell which one broke something).
+
+## D-221 — M17: features for playing with friends (2026-10-16)
+
+**Decision:** After M16 and v0.2.0, M17 adds:
+- a free-for-all deathmatch (only if it stays simple)
+- a LAN/Tailscale game browser and text chat
+- a killcam
+- map voting and 1–2 new maps
+
+Not now: first-launch tips, crosshair share codes, replays.
+
+**Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) and v0.2.0 come first.
+
 ## Open questions
 
 | Question | Decide in |
 |---|---|
 | On macOS, does Ctrl + click clash with crouch + shoot? | M3 (your check) |
-| Weapon names: proposed and applied provisionally (D-090) | Your check |
 | Team names and the game's setting/theme | Any time |
 | Publishing on Steam: Steamworks account, $100 fee per game, store page, "coming soon" at least 2 weeks before launch | Later |
+
+## D-190 — M13's sound routing: one mix table, one play function, buses for walls and music (2026-10-16)
+
+**Decision:**
+- **One mix table** (`systems/sound_mix.gd`, `SoundMix.TABLE`): every kind of game sound is a category (shot, far shot, melee, handling, footstep, impact, hit, headshot, bounce, explosion, flash, smoke, bomb beep, bomb action, bomb explosion) with its 3D volume, its `own_db` (the volume when it's your own sound, without position), its unit size, its range and how much walls muffle it. The scenes' audio players no longer carry their own numbers.
+- **One way to play:** `Acoustics.play(player, stream, category)` for a sound from a position and `Acoustics.play_2d()` for your own (`systems/acoustics.gd`). Weapons, footsteps, impacts, grenades, explosions and the bomb all use them. This is where M13's muffling (D-192) and the far shots (D-191) hook in; the reverb (D-193) is a node of the same class.
+- **Buses:** Master (with a **hard limiter** at −0.5 dB as its last effect, so a pile of loud sounds is squeezed instead of clipping), Effects (all game sounds; the listener's reverb), **Muffled** and **MuffledHeavy** (low-passes at 1.8 kHz and 700 Hz that send into Effects, for sounds behind walls), Interface (menus, the bomb-planted alert) and **Music** (the menu track and the round stingers, D-195). All at 0 dB and unmuted, as `settings_test` requires.
+- **Stronger panning:** 3D players pan with `panning_strength` 1.6 (× the project's 0.5 = 0.8). Measured with the real audio driver: at Godot's default a sound right at your side is only 6 dB louder in the near ear; at 0.8 it's 14 dB, at 1.0 it would be in one ear only. A centred 3D sound plays 3 dB below the same sound without position (equal-power panning), which the mix pass (D-194) takes into account.
+- **Online** play hears the same: the muffling, the far shots and the reverb are worked out on each computer for its own listener, from the map (the same everywhere) and the positions the network already sends (puppets' shots and steps, the bomb). No new network data.
+
+**Why:** A mix you can balance and test needs the numbers in one place; spread over five scenes and four scripts they drifted (an enemy's step played +2 dB with Godot's +3 dB near-field boost on top, so a step next to you could clip). Moving players between buses is the only way Godot gives to filter one sound and not another (effects live on buses), so walls get their own buses. A limiter on Master is the standard guarantee against clipping, whatever piles up in a fight.
+
+**Alternatives:** Buses per category (weapons, footsteps, world) with the volumes on the buses: a sound behind a wall must move to a muffled bus, so a category bus couldn't stay its home; the volumes went into the table instead. `Area3D` reverb and bus overrides placed in the maps (map edits for every room, and Godot picks them by where the *sound* is, not the listener). A compressor on Effects for "consistent loudness" (it would duck the footsteps whenever a gun fires, the opposite of readable). HRTF or a front/back filter (Godot has neither built in; a possible later step).
+
+## D-191 — Gun signatures: a close and a far shot per gun, crossfaded by distance, and reloads per gun (2026-10-16)
+
+**Decision:**
+- **Seven close shots, each its own.** The rifle's approved shot (M2) stays byte-identical, and so do the empty click, the rifle's old reload clack and the hard footsteps. The SMG's shot was a 0.06 s click 9 dB quieter than the others; it is now a light, papery shot with a thin mid body (0.16 s, still short for its fire rate). The hand cannon had the rifle's energy spread (75 % below 250 Hz against 78 %); it got a sharp crack (24 % in 1–4 kHz), so the two can't be confused. `sound_test` checks that any two guns differ by a quarter of their energy across four bands or in length by 1.5×.
+- **A far variant per gun** (`<id>_shot_far.wav`, `WeaponData.shot_far_sound`): what the shot sounds like from 40 m or more, a soft attack, a thump at the gun's pitch (from the SMG's 220 Hz down to the sniper rifle's 60 Hz) and a darker echo tail, 70–95 % of its energy below 1 kHz and 1.7–2.3× as long as the close shot. Another player's shot plays the close one up to 15 m; from there to 40 m the far one fades in (`SoundMix.FAR_FROM`, `FAR_TO`, a smoothstep) and the close one goes down by up to 9 dB on top of its own distance falloff (`CLOSE_AT_FAR_DB`). The frag grenade and the bomb have far explosions the same way. Your own shots are always close.
+- **Reloads per gun:** each magazine gun has three sounds of its own (`<id>_mag_out`, `_mag_in`, `_charge`; `WeaponData.reload_sounds`), on the reload's three cues (M11's timeline, D-158): the rifle's heavy steel clacks, the carbine's lighter and higher ones, the SMG's small plastic snaps, the sniper rifle's thick clunks and four-click bolt, the pistol's tight snaps, the hand cannon's heavy rack. The shotgun keeps its shell and pump.
+- **A per-gun loudness** (`WeaponData.shot_volume_db`): sniper +2 dB, hand cannon and shotgun +1, rifle and carbine 0, SMG −1, pistol −2, on top of the files' common loudness (D-194).
+- **Generator:** new and redesigned sounds take their own random seed from their file name (`_rng_for()`), so a sound no longer changes when another one is added before it, and are levelled by `_finish_loudness()` to their category's short-term loudness with a peak of at most −1 dBFS (close shots −9 dB, far shots −12, reloads −14, far explosions −11). Made by a Sonnet subagent from a sound-by-sound brief and measured with `tools/sound_report.gd`.
+
+**Why:** In CS you know what's being fired from the sound alone, and how far away: a distant AWP is a deep roll, a close one a crack. A single shot that only gets quieter can't tell a quiet gun nearby from a loud one far away; a far variant that is duller and echoing can. Reload sounds are information too (an enemy reloading behind a wall is a chance to peek), and the same clack for every gun hid what was being reloaded.
+
+**Alternatives:** One shot per gun with Godot's distance filter only (it dulls but doesn't add the distant echo, and it filters by loudness, not by distance); choosing close or far at a fixed distance (a jump you can hear); several random variants per shot (more files, little gain at a 22 kHz crushed sound); a mechanical "action" layer for your own shots, as in CS2 (left for later); recorded samples (D-020: no downloads).
+
+## D-192 — Muffling through walls: rays through the map, three filter buses, a path round corners (2026-10-16)
+
+**Decision:**
+- **When a sound starts**, `Acoustics.occlusion()` traces the straight line from it (lifted 0.3 m, so the floor under a step doesn't count) to the listener's camera against the map (the World layer: walls, floors, props; not characters or smoke). Clear: nothing changes.
+- **Round a corner:** if the line is blocked but a bent path is open (through a point 1.5 m to either side of, or above, either end, both legs clear), the sound is only 3 dB quieter and lightly low-passed (bus **MuffledLight**, 3.5 kHz). A crate or a pillar between you and a step, or a door frame right next to you, doesn't make it sound like another room.
+- **Through walls:** otherwise it counts the walls crossed (rays from both ends; entries from one side are the exits from the other, so the metres of wall between them are known, overlapping brushes counted once): 4 dB per wall plus 1.5 dB per metre of wall, at most 18 dB, on bus **Muffled** (1.5 kHz) or, from 10 dB, **MuffledHeavy** (600 Hz). One plaster wall: −4.5 dB, muffled; two walls with 2 m of concrete: −11.5 dB, heavy.
+- **Per category** (`SoundMix.TABLE`'s `occlusion`): steps, reloads, impacts, bounces and the bomb's handling get all of it; shots and explosions three quarters (a fight across the map stays audible, as in CS: at most −13.5 dB); the bomb's beep half (at most −9 dB, never the heavy filter). The filter follows the loss the sound actually gets.
+- **Cost:** one ray for a clear line, up to 12 for a corner and 8 for the walls. Measured on the three quick maps over every pair of their markers (about 6,000 paths each): 15–17 µs per sound. About a fifth of the paths are clear, a tenth go round a corner, the rest are behind walls (the maps' buildings are solid brushes).
+- **Fixed when the sound starts:** the sounds are short (a long one, the smoke's hiss, lasts 2 s), so a shot doesn't change while it plays. Online every computer works it out for its own listener (D-190).
+
+**Why:** Hearing whether a wall is between you and a sound is half of CS's sound information (a step on the other side of a wall is not a threat right now). Godot has no occlusion of its own; rays against the map are cheap, need no map work and stay right when maps change. Steps of filtering on buses, plus a loss in dB that grows smoothly, keep it readable: three distinct "colours" (round the corner, next room, far away) instead of a continuous blur.
+
+**Alternatives:** A path-finding approach (sound travelling through doorways, as CS2 does): far more work and cost; a later step if the corner test proves too coarse. Muffling by material (metal and wood thinner than concrete): M15's wallbangs will know material thickness and could share it. Re-tracing long sounds while they play: none are long enough to need it. Godot's per-player attenuation filter: it only works with distance, not with walls.
+
+## D-193 — Reverb by the listener's zone, worked out at run time from rays (2026-10-16)
+
+**Decision:**
+- **Four zones** (`SoundMix.Zone`): an **open** yard, a **yard** between walls, a small **room** and a **hall**. Each has a preset of the Effects bus's reverb (`SoundMix.REVERB`): open almost dry (3 % wet, a faint late slap), yard a short slap echo (9 %), room short and close (15 %), hall bigger and longer (20 %). Dry stays at 1 and the reverb's high-pass keeps the low thumps out of it, so it never muddies a step.
+- **Found at run time:** an `Acoustics` node in the world's viewport (`main.gd` adds it) looks around the listener's camera four times a second with 13 rays (`Acoustics.probe()`): five up (straight and at 45° four ways, 40 m) and eight level ones (30 m). Under a roof (a ceiling straight up, at most two of the five up rays reach the sky): a hall if the ceiling is 5 m up or more, or 3.5 m with the walls 10 m away on average, otherwise a room (a low, wide room still sounds like a room); under the sky: a yard if three quarters of the way round is walled within 20 m, otherwise open. No map has zones drawn in, so every map, also a community one, gets them.
+- **The reverb glides** to the new zone's values (a 0.4 s time constant), so walking through a door crossfades; the first look sets it at once. When the game scene ends, the layout's dry values come back (the menu is dry).
+- **It is the listener's reverb:** everything you hear on Effects (your own shots, others' shots, steps, muffled sounds) gets the reverb of the place you stand in. Online, each computer does it for its own camera (D-190).
+- Measured on the quick maps' markers: Depot 59 yard / 7 room / 1 open, Square 54 yard / 14 room, Spillway 63 yard / 7 room; no hall (their interiors are 2.5–3.5 m high). The Shooting Range is yards and open.
+
+**Why:** A shot in a hall should sound like a hall, and outdoors it shouldn't, so you hear where you are and how the place will carry your own noise. Godot's own way (`Area3D` reverb buses) needs zones drawn into every map, and it picks the reverb by where the *sound* is, not where you are; the task asked for zones without map edits. Rays are cheap at four looks a second, and the thresholds are easy to tune.
+
+**Alternatives:** Areas from the map kit's indoor brushes (only the kit's own maps would have them, and a hand-built map wouldn't); a continuous reverb from the measured sizes (harder to test, and to read: four distinct places are clearer); one reverb per sound source (sends from the source's place; Godot can't send a single player to two reverbs, and it costs more).
+
+## D-194 — The mix pass: files levelled by category, the table set from a model of Godot's falloff (2026-10-16)
+
+**Decision:**
+- **Every file at its category's loudness.** Loudness is measured as the short-term loudness: the RMS of the loudest 50 ms, in dB below full scale (`SoundLevels`, `tools/sound_report.gd`); peaks don't say how loud a click or a blast feels. Targets (`file_db` in `SoundMix.TABLE`): close shots −9, far shots −12, the knife's swing −12, handling (reloads, pumps, bolts, pins, throws, the empty click, the knife's hit) −14, footsteps −15 (all twelve, whatever the floor: gravel had been 4 dB quieter than concrete), impacts −14, body and head hits −13, bounces −15, frag and bomb explosions −8, far explosions −11, flashbang −10, smoke −14, the bomb's beep −6, plant and defuse −14, menu sounds −12. Every file peaks at −1 dBFS at most. 34 files were levelled by the generator (`_finish_loudness()`, recipes unchanged); 18 of them had to get louder than their peak allowed and went through the soft clipper (the hard impact +8 dB, the pistol's reload +9 dB). The rifle's approved shot was on target already and is unchanged.
+- **The table set from a model.** `SoundMix.level_at()` models what you hear in each ear: the file's loudness, the category's volume, Godot's inverse-distance falloff (no near-field boost: `max_db` is 0, so a sound never plays louder than its file), the linear fade to `max_distance`, and the −3 dB of a centred 3D sound (measured, D-190). `shot_level_at()` adds the far crossfade. Values were tuned so that (all per ear):
+  - your own rifle shot is −15 dB; an enemy's is −15.8 at 10 m, −23.5 at 20 m, −28.8 at 40 m, −37 at 80 m;
+  - an enemy's running step is −21.6 at 5 m, −22.7 at 8 m, −31.5 at 15 m and gone at 30 m; your own steps −27;
+  - the bomb's beep is −17.6 at 10 m, −23 at 15 m (8 dB over a step there) and −45 at 50 m;
+  - a reload is −25 at 5 m, an impact −24 at 5 m.
+- **Nothing clips alone:** no category or gun plays above 0 dB, no near boost, files peak at −1 dBFS, and the limiter on Master (D-190) takes what piles up.
+- **Godot's distance filter** (a high shelf over 5 kHz that deepens as a sound fades) is at half its default (−12 dB), since the far shots already sound distant and a step at 15 m should keep its click.
+- **`sound_test` keeps it:** every file the game plays, found from the game's own data (arsenal, floors, impacts, grenades, bomb, menus: 74 files), is within 1.5 dB of its category's loudness, peaks below −0.5 dBFS, has no DC and ends quietly; footsteps are within 1.5 dB of each other; no gain is above 0 dB; your shot is within 3 dB of an enemy's at 10 m and 10 dB over one at 40 m; an enemy's step at 8 m is at most 10 dB under your shot and your own steps are quieter than an enemy's at 5 m; the beep is 6 dB over a step at 15 m and audible at 50 m; nothing gets louder farther away.
+
+**Why:** A mix you can't measure drifts with every new sound, and here nobody listens before the playtest. With the files levelled, every sound's place in the mix is one number in the table, and the rules CS players rely on (a step in a fight is audible, your gun doesn't drown the world, a far fight is quieter than a near one, the bomb is never lost) are checked rather than hoped for.
+
+**Alternatives:** Peak normalisation (the old way: a 50 ms click and a 1 s blast end up 15 dB apart in feel); loudness by LUFS (K-weighting and gating: more exact for music, little different for short effects at 22 kHz); a compressor on Effects (ducks the steps when guns fire); measuring the real mixed output in a test (needs a real audio device and real time; used once to calibrate the model instead).
+
+## D-195 — Menu music and round stingers, on a Music bus with its own volume (2026-10-16)
+
+**Decision:**
+- **The menu track:** a 35 s loop (E minor, about 110 BPM: a pulsing filtered saw bass, a detuned pad under a slow sweep, a sparse kit of noise and sine drums, a short lead in the second half), dark and driving, made to loop without a seam (what rings past the end is added onto the start). Not bit-crushed (48 levels hiss under a quiet pad); the stingers are, like the other sounds. It plays in the main menu (fading in over 1.2 s, 4 dB under the stingers' level) and keeps playing across the menu's screens; a game fades it out; going back to the menu starts it again.
+- **Six stingers** in the same key and sounds: round start (a punchy "go", 0.8 s), round won (a rising phrase, 1.6 s), round lost (a falling one, 1.6 s), bomb defused (relief, 1.8 s, for both teams: it says what happened), match won and match lost (3 s cadences). They replace M8's three interface stingers; the bomb-planted alert stays an interface sound (it is gameplay information, so the music volume can't hide it) and was levelled to the menu sounds' −12 dB.
+- **A Music bus and a Music volume** in Settings → Audio (default 100 %), next to Master, Effects and Interface. The menu track, the stingers and the bus are `Music`'s (`systems/music.gd`); the round HUD, the match-end screen and the main menu only call it.
+- **Generated** by `tools/generate_music.gd` (a Sonnet subagent from a brief), levelled by short-term loudness: the theme at −18 dB, the stingers at −12 dB. Made for Chiip, under CC BY-NC-SA 4.0 like the other sounds (D-170). Nobody has listened yet: the loop and the stingers are on your playtest list.
+- **Online:** the stingers follow the round manager's signals, which a client gets from the host (M9), so everyone hears the stinger of their own result at the same moment.
+
+**Why:** Music gives the menu a mood and makes a round's end a moment; a separate volume is what every shooter offers, since some players want silence and their own music. Generating it keeps the project free of downloads and licences, and in the same retro sound as the rest.
+
+**Alternatives:** Music during play (CS has none in rounds: it would cover steps); a stinger for an exploded bomb (the explosion itself says it); stingers on the Interface bus as before (then turning the music down would also silence the menu clicks, or the other way round); a licensed or CC0 track (a download, a licence to track, and a different sound).

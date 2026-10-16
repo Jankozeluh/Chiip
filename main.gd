@@ -103,7 +103,12 @@ func _ready() -> void:
 		var result := settings.load_from_disk()
 		if result != OK and result != ERR_FILE_NOT_FOUND:
 			push_warning("Chiip: the settings file couldn't be read (error %d), using the defaults." % result)
+		# Your match history (M14) is read together with the settings, under the same guards, so a test
+		# that gave the settings a file of its own (or none) never makes the game touch the real stats.
+		StatsBook.get_instance().load_from_disk()
 	settings.changed.connect(_on_setting_changed)
+	# Gamepad menus and prompts (D-211, D-213): it only watches the input.
+	add_child(PadInput.new())
 	_console.main = self
 	# Menu buttons tick and click (D-084).
 	UiSounds.attach(_match_end_screen)
@@ -119,6 +124,9 @@ func _ready() -> void:
 	# The class menu and the buy menu show only the dimmed world (mockups 08 and 14): the HUD steps aside while one is open.
 	_class_menu.visibility_changed.connect(_update_hud_visibility)
 	_buy_menu.visibility_changed.connect(_update_hud_visibility)
+	# The reverb follows the listener's place: open yard, walled yard, room or hall (M13, D-193).
+	_viewport.add_child(Acoustics.new())
+	Music.stop()
 	_load_map()
 	get_tree().root.size_changed.connect(apply_pixel_settings)
 	apply_pixel_settings()
@@ -267,7 +275,10 @@ func _load_map() -> void:
 	var map_arg := args.find("--map")
 	if map_arg >= 0 and map_arg + 1 < args.size():
 		scene = load(args[map_arg + 1])
-	if args.has("--practice"):
+	if args.has(HitCheck.FLAG):
+		# The shooting self-check (v0.1.1, D-159): practice on the range, with the check running.
+		add_child(HitCheck.new())
+	if args.has("--practice") or args.has(HitCheck.FLAG):
 		mode = Mode.PRACTICE
 		# Practice plays the Shooting Range unless --map says otherwise (D-141).
 		if map_arg < 0:
@@ -335,6 +346,12 @@ func _spawn_map(scene: PackedScene) -> void:
 	_net_game = null
 	if net_session != null and rules is RoundManager:
 		_start_online(rules as RoundManager, player)
+	if rules is RoundManager:
+		# Records your shots and hits, and adds the match to your history when it ends (M14, D-202).
+		var recorder := StatsRecorder.new()
+		recorder.name = "StatsRecorder"
+		rules.add_child(recorder)
+		recorder.setup(rules as RoundManager, player, _map.scene_file_path.get_file().get_basename(), net_session != null)
 	# Hides the match-end screen of the previous map; it opens when this match ends,
 	# with "Next map" when there is a rotation.
 	_match_end_screen.set_round_manager(rules as RoundManager)
@@ -448,5 +465,5 @@ func apply_pixel_settings() -> void:
 
 
 func _on_setting_changed(key: StringName) -> void:
-	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect" or key == &"ui_scale":
+	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect" or key == &"ui_scale" or key == &"team_colors":
 		apply_pixel_settings()

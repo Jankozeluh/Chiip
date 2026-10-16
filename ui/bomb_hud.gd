@@ -175,7 +175,8 @@ func _update_prompt() -> void:
 	_seconds.visible = holding
 	_key.visible = not holding
 	_set_icon(slot)
-	_key.text = key_name(&"use")
+	# The key cap follows the device used last (D-213): LB on a gamepad.
+	_key.text = LastInput.prompt_for(&"use") if LastInput.gamepad else key_name(&"use")
 	if holding:
 		_bar_fill.set_anchor(SIDE_RIGHT, progress, true)
 		_seconds.text = "%.1f" % maxf(0.0, (1.0 - progress) * total)

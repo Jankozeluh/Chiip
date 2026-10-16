@@ -37,8 +37,17 @@ extends CharacterController
 ## see (looking away from its own flash). It switches, drops, swaps and throws through the same
 ## commands as you ([CharacterInput]).
 ##
+## Team play (M15, D-216, D-217; see [BotSquad]): a bot calls out an enemy it first spots ([signal called_out]),
+## and a free bot answers a teammate's call (a callout, or a teammate killed nearby: a trade) by going there for
+## a few seconds ([method answer_call]); the second to answer comes in from the side. Retaking defenders come
+## in from more than one side too.
+##
 ## What it knows comes from its [BotSenses]; how well it fights comes from its
 ## [BotDifficulty]. Movement uses a [NavigationAgent3D] (sibling node).
+
+## Emitted when the bot spots an enemy while it wasn't fighting, at most every [constant BotSquad.CALLOUT_WAIT]
+## seconds: [param enemy_position] is where. The [RoundManager] passes the callout on to the team (D-216).
+signal called_out(enemy_position: Vector3)
 
 enum State { PATROL, ENGAGE, SEARCH }
 ## What the bot does when it isn't fighting or searching.
@@ -84,6 +93,12 @@ const LOOK_AWAY_TIME := 1.8
 const TURN_RESPONSIVENESS := 7.0
 ## How close the aim must be to where the bot wants it before it pulls the trigger, in degrees.
 const ON_TARGET_DEGREES := 2.5
+## How long after hearing or losing an enemy a bot may fire through a wall at the spot (seconds, D-215).
+const WALLBANG_WINDOW := 2.0
+## The share of its damage a bullet must keep through the wall for the bot to fire at the sound.
+const WALLBANG_MIN_KEPT := 0.4
+## How high above the floor a bot aims at a sound behind a wall (a chest, metres).
+const WALLBANG_HEIGHT := 1.1
 ## How long the bot looks around after reaching the last known position, in seconds.
 const LOOK_AROUND_TIME := 2.4
 ## How far the bot looks to each side while looking around, in degrees.
@@ -194,6 +209,9 @@ var _start_delay: float = 0.0
 var _hold_spot: Transform3D = Transform3D.IDENTITY
 var _hold_spots: Array[Transform3D] = []
 var _hold_time: float = 0.0
+## The lead (last known position, raised) the bot rolled its wallbang chance for, and the roll (D-215).
+var _wallbang_lead: Vector3 = Vector3.INF
+var _wallbang_wanted: bool = false
 ## Seconds left in which this attacker closes in on far enemies instead of shooting at them.
 var _close_in_left: float = 0.0
 ## Bomb rounds: the round's bomb (null without one), the site this bot's team
@@ -203,6 +221,12 @@ var _bomb: Bomb
 var _target_site: Area3D
 var _plant_spot: Vector3 = Vector3.INF
 var _guard_spot: Vector3 = Vector3.INF
+## A retaking defender's way in: the point it goes through first (D-217), or INF until the plant.
+var _retake_from: Vector3 = Vector3.INF
+## Team play (D-216): seconds until the bot calls out again, and the side point it goes through first when it
+## answers a call from the side ([method answer_call]; INF: straight).
+var _callout_wait: float = 0.0
+var _approach: Vector3 = Vector3.INF
 ## Seconds of live round so far, and when the carrier stops following its
 ## route and goes straight to plant.
 var _live_time: float = 0.0
@@ -321,6 +345,23 @@ func hunt(plan: HuntPlan) -> void:
 	_roam_look_left = 0.0
 
 
+## True when this bot is free to answer a teammate's call at [param point] ([BotSquad], D-216): alive, not
+## fighting or searching, and not busy with the bomb (planting, defusing, carrying or fetching it, or guarding
+## or retaking it far from [param point]; the rules of [method _wants_to_check]).
+func can_answer_call(point: Vector3) -> bool:
+	return character.is_alive() and state == State.PATROL and _wants_to_check(point) \
+			and not (_objective_live() and _bomb.actor == character)
+
+
+## Answers a teammate's call: heads for [param point] for [constant BotSquad.ANSWER_TIME] seconds, looking
+## that way, through [param approach] first when that isn't the point itself (coming in from the side).
+func answer_call(point: Vector3, approach: Vector3) -> void:
+	_senses.hear_call(point, BotSquad.ANSWER_TIME)
+	_start_search(approach)
+	if not approach.is_equal_approx(point):
+		_approach = approach
+
+
 ## The site this bot's team attacks this round, or null.
 func get_target_site() -> Area3D:
 	return _target_site
@@ -333,6 +374,7 @@ func get_hunt_plan() -> HuntPlan:
 
 func get_input(delta: float) -> CharacterInput:
 	_close_in_left = maxf(_close_in_left - delta, 0.0)
+	_callout_wait = maxf(_callout_wait - delta, 0.0)
 	if not character.frozen:
 		_live_time += delta
 	_update_state()
@@ -373,11 +415,7 @@ func _update_state() -> void:
 	elif state == State.ENGAGE or (state == State.PATROL and _senses.has_lead()):
 		if _wants_to_check(_senses.last_known_position):
 			# Lost sight of the enemy, or heard one: go and check.
-			state = State.SEARCH
-			_target = null
-			move_to(_senses.last_known_position)
-			_look_around_left = LOOK_AROUND_TIME
-			_look_around_yaw = NAN
+			_start_search(_senses.last_known_position)
 		elif state == State.ENGAGE:
 			# A defender that lost sight of a distant enemy keeps holding instead of chasing.
 			state = State.PATROL
@@ -414,6 +452,19 @@ func _wants_to_check(point: Vector3) -> bool:
 func _on_enemy_spotted(enemy: Character) -> void:
 	if state != State.ENGAGE:
 		_start_engaging(enemy)
+		if _callout_wait <= 0.0:
+			_callout_wait = BotSquad.CALLOUT_WAIT
+			called_out.emit(enemy.global_position)
+
+
+## Into the search state, walking to [param goal] (the last known position, or a side point first).
+func _start_search(goal: Vector3) -> void:
+	state = State.SEARCH
+	_target = null
+	_approach = Vector3.INF
+	move_to(goal)
+	_look_around_left = LOOK_AROUND_TIME
+	_look_around_yaw = NAN
 
 
 func _start_engaging(enemy: Character) -> void:
@@ -526,6 +577,12 @@ func _flat_distance(a: Vector3, b: Vector3) -> float:
 
 
 func _search(input: CharacterInput, delta: float) -> void:
+	if _wallbang(input, delta):
+		return
+	if _approach != Vector3.INF and has_arrived():
+		# Came in from the side (answering a call): now on to the place itself.
+		_approach = Vector3.INF
+		move_to(_senses.last_known_position)
 	if not has_arrived():
 		# Walk there while looking toward where the enemy was (holding the angle).
 		_walk(input, delta, false)
@@ -540,6 +597,38 @@ func _search(input: CharacterInput, delta: float) -> void:
 	_turn_toward(_look_around_yaw + deg_to_rad(LOOK_AROUND_DEGREES) * side, 0.0, WALK_TURN_SPEED, delta)
 	if _look_around_left <= 0.0:
 		_senses.forget()
+
+
+## A bot that heard an enemy (or lost sight of one) behind thin cover sprays at the spot through the wall, when
+## its gun's bullets keep at least [constant WALLBANG_MIN_KEPT] of their damage there (D-215; the weapon says
+## with [method Weapon.get_wall_factor]) and the difficulty's wallbang chance came up for this lead.
+## Returns true while it is doing that (it stands and aims instead of walking on).
+func _wallbang(input: CharacterInput, delta: float) -> bool:
+	var weapon := character.weapon
+	if weapon == null or difficulty.wallbang_chance <= 0.0 or _senses.get_lead_age() > WALLBANG_WINDOW:
+		return false
+	var data := weapon.data
+	if data.is_melee() or data.is_grenade() or data.has_scope() or data.pellets > 1 or data.penetration <= 0.0 \
+			or weapon.is_reloading() or weapon.magazine <= 0:
+		return false
+	var point := _senses.last_known_position + Vector3.UP * WALLBANG_HEIGHT
+	if point != _wallbang_lead:
+		_wallbang_lead = point
+		_wallbang_wanted = rng.randf() < difficulty.wallbang_chance
+	if not _wallbang_wanted:
+		return false
+	var kept := weapon.get_wall_factor(point)
+	if kept < WALLBANG_MIN_KEPT or kept >= 1.0:
+		return false
+	var to_point := point - character.get_eye_position()
+	var desired := Vector2(atan2(-to_point.x, -to_point.z), asin(to_point.normalized().y))
+	_turn_toward(desired.x, desired.y, difficulty.aim_turn_speed, delta)
+	var off_target := rad_to_deg(Vector2(angle_difference(_yaw, desired.x), _pitch - desired.y).length())
+	input.shoot = off_target <= ON_TARGET_DEGREES * 2.0 and not _teammate_in_line_of_fire(to_point.length())
+	if input.shoot and not data.automatic and _trigger_was_held:
+		input.shoot = false
+	_trigger_was_held = input.shoot
+	return true
 
 
 func _engage(input: CharacterInput, delta: float) -> void:
@@ -600,10 +689,10 @@ func _engage(input: CharacterInput, delta: float) -> void:
 ## its target, so a shot now could hit them. Bots hold fire then, like a player
 ## waiting for a teammate to clear the angle (with friendly fire off the bullet
 ## would pass through, but spraying through a friend still isn't how people play).
-func _teammate_in_line_of_fire() -> bool:
+func _teammate_in_line_of_fire(reach_to: float = -1.0) -> bool:
 	var from := character.get_eye_position()
 	var direction := -Basis.from_euler(Vector3(_pitch, _yaw, 0.0)).z
-	var reach := from.distance_to(_target.get_eye_position())
+	var reach := reach_to if reach_to >= 0.0 else from.distance_to(_target.get_eye_position())
 	for mate in Character.all_in_world(character):
 		if mate == character or mate.team != character.team or not mate.is_alive():
 			continue
@@ -902,6 +991,7 @@ func _reset_objective() -> void:
 	_target_site = null
 	_plant_spot = Vector3.INF
 	_guard_spot = Vector3.INF
+	_retake_from = Vector3.INF
 	_live_time = 0.0
 	_plant_deadline = INF
 
@@ -992,6 +1082,18 @@ func _defend_objective(input: CharacterInput, delta: float) -> bool:
 	if _bomb.actor == null and distance <= Bomb.DEFUSE_DISTANCE - 0.3:
 		input.use = true
 		return true
+	if _retake_from == Vector3.INF:
+		# Not all down one lane (D-217): the defending bot nearest the bomb goes straight in, the next ones
+		# through points to either side of its way.
+		var team := BotSquad.bots_by_distance(character, _bomb.global_position)
+		_retake_from = BotSquad.flank_point(character, _bomb.global_position, team[0].character.global_position, team.find(self))
+	if not _retake_from.is_equal_approx(_bomb.global_position):
+		if _flat_distance(character.global_position, _retake_from) > 1.5 \
+				and not (has_arrived() and _agent.target_position.is_equal_approx(_retake_from)):
+			_go_to(_retake_from)
+			_walk(input, delta, true)
+			return true
+		_retake_from = _bomb.global_position
 	_go_to(_bomb.global_position)
 	_walk(input, delta, true)
 	if has_arrived():

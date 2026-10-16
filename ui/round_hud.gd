@@ -20,7 +20,7 @@ extends Control
 ##
 ## The banners in the middle are one 48 px headline (the countdown in freeze time, the result at the
 ## round end, "Overtime") and a 16 px line under it (your side, why the round ended). What is only news
-## ("Switching sides", "Match point", "Enemy match point") is a toast ([ToastStack], handed over with
+## ("Switching sides", "Match point", "Enemy match point", a teammate bot's "Enemy spotted near A") is a toast ([ToastStack], handed over with
 ## [method set_toasts]). The respawn countdown of a team respawn match is part of the death view
 ## ([code]hud.gd[/code]).
 ##
@@ -210,7 +210,15 @@ func _manager_connections() -> Array[Array]:
 		[_manager.round_ended, _on_round_ended],
 		[_manager.sides_swapped, _on_sides_swapped],
 		[_manager.character_killed, _on_character_killed],
+		[_manager.callout, _on_callout],
 	]
+
+
+## A bot on your team called out an enemy (M15, D-216): a toast says where. The same text again only keeps it
+## up longer, so callouts of one place don't stack.
+func _on_callout(team: int, text: String) -> void:
+	if team == Teams.viewer_team:
+		_toast(ToastStack.Kind.NEUTRAL, text)
 
 
 func _is_tdm() -> bool:
@@ -332,9 +340,10 @@ func _theme_size(constant_name: StringName) -> int:
 	return get_theme_constant(constant_name, THEME_TYPE)
 
 
-## The palette's UI colour of [param team]: friendly for the viewer's team, enemy for the other.
+## The UI colour of [param team]: friendly for the viewer's team, enemy for the other (the
+## colour-blind scheme's, D-210, when it is on).
 func _team_color(team: int) -> Color:
-	return get_theme_color(&"friendly_text" if team == Teams.viewer_team else &"enemy_text", PALETTE_TYPE)
+	return Teams.ui_color_for(team)
 
 
 # --- Messages in the middle: freeze time, round end, half time ---
@@ -343,7 +352,7 @@ func _team_color(team: int) -> Color:
 func _on_phase_changed(_phase: RoundManager.Phase) -> void:
 	if _manager.phase == RoundManager.Phase.LIVE:
 		_just_swapped = false
-		UiSounds.play(UiSounds.ROUND_START)
+		Music.play_stinger(Music.ROUND_START)
 	_refresh()
 	_show_phase_message()
 
@@ -360,7 +369,7 @@ func _on_sides_swapped() -> void:
 
 func _on_round_ended(winner: int, reason: RoundManager.EndReason) -> void:
 	var won := winner == Teams.viewer_team
-	UiSounds.play(UiSounds.ROUND_WON if won else UiSounds.ROUND_LOST)
+	Music.play_stinger(Music.stinger_for_round(won, reason))
 	_clear_messages()
 	if _manager.is_team_respawn():
 		_set_tinted_message(_title, "Your team wins" if won else "The enemy team wins", _team_color(winner))

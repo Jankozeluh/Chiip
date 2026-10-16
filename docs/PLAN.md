@@ -2,13 +2,17 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M11 Polish: the UI fit and the weapons and models are built; the optimization is in progress. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval.
+> **Current milestone:** M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK). **M13 Sound design is built** on its branch (gun signatures with far variants, muffling through walls, reverb by place, a measured mix, menu music and stingers), waiting for your listen. **M14 Stats & training is built** (D-200 to D-209) and waits for your checks: the Stats screen in the main menu, the aim trainer and spray practice in the Shooting Range.
 
 ## Your open checks
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M15 accessibility & polish.** (1) **Team colours:** Settings → Video → Team colours → "Colour-blind safe": the other team is orange, yours dark blue, in the models, HUD, kill feed, scoreboard and compass; try it in a match (and with a greyscale filter on the screen). (2) **Gamepad:** plug in a pad (an Xbox or PlayStation one), press a button, play a Team Deathmatch round: do the look speed, the 15 % dead zone and the 1.5 look curve feel right? Tune Settings → Game (Pad sensitivity, Stick dead zone, Look curve); B should back out of every menu, the D-pad moves in them, Settings → Controls has a Pad column to rebind. (3) **Wallbangs:** shoot a wooden or thin concrete wall with the Ram while a bot stands behind it: it should take less damage, and you should see a hole on both sides; the Heron should go through more. Bots on Normal or Hard sometimes spray through a wall at a sound. (4) **Smarter bots:** see the DEVLOG entry "M15 accessibility & polish" for what to watch (trades, callouts, spreading out).
+- [ ] **M14 stats & training.** (1) Play a match (Team Deathmatch or Bomb) to its end, then open **Stats** in the main menu: do K/D, ADR (bomb matches only), HS % and accuracy per weapon agree with what you remember, does the History row match the scoreboard you saw? Try **Export CSV** and open the file in a spreadsheet. (2) Online with a friend: each of you has your own numbers and your accuracy is what the host counted. (3) **Practice**: shoot the gold coin by the start, turn back downrange during the countdown and play a run: are 30 s, a 1.5 s life, the 3.2° size and the scoring (100 + speed, −25 a miss) right for you, and does the pad's best change per gun? (4) Walk to the spray wall (westmost lane, 10 m), aim at its middle and spray the Ram: does the grey pattern look right against your holes, and does **control** climb when you pull down? Is the pattern big enough to read at your resolution (it is only about 60 px tall at 720p)? The reset plate in the wall's top right corner, or `spray_reset`.
+- [ ] **M13 sound** (D-190 to D-195; headphones help). (1) **Menu:** does the menu track fit Chiip and loop without a bump (35 s)? Settings → Audio has a **Music** slider. (2) **Guns:** practice (B buys everything): fire every gun; then have a bot shoot from near and far (`bot_add`, walk away): can you tell the guns apart, and does a far shot sound far (duller, echoing, from about 15 m on)? The reloads (magazine out, in, bolt or slide) per gun. (3) **Walls:** a bot's steps and shots through one wall, through several, and round a corner: dull but readable? (4) **Places:** shoot inside a room and in a yard: a short room sound indoors, a slap outdoors; is it too much or too little? (5) **The mix in a fight:** can you hear steps while you and others shoot? Your own gun too loud or too quiet? The bomb's beep always there? (6) **Stingers:** round start, won, lost, bomb defused, match won and lost: fitting, too long, too loud? Numbers to tune are in `systems/sound_mix.gd`.
 - [ ] **M11 weapons & models.** (1) Walk into a wall with every gun (and turn your FOV to 70 and 110): the gun stays whole in front of the wall, lit like the room, and looks the same size at every FOV. (2) Watch bots (or spectate a teammate) aim up and down, run and crouch: the left hand stays on the handguard or the pump. (3) Reload every gun: the magazine leaves with the left hand and goes back in, the Breaker's shell is in the hand before it goes in, and the clicks come when the hand does it; does a reload feel right in length? (4) Fire during a Breaker reload: it stops at once, in your view and on the body.
+- [ ] **M11 optimization.** With your 3440 × 1440 monitor plugged in (and the Mac on its charger), play a round on each quick map with V-Sync on: does anything stutter? A round start costs one 15–20 ms frame (known, D-169). For numbers, run the frame timing command in CLAUDE.md with `--resolution 3440x1440`, with the window in front.
 - [ ] **M11 UI fit and the studio logo.** (1) Open the game in the editor's game view at your 2920 × 1753 (and drag the window narrow, tall and fullscreen): the Play screen, class draft and HUD stay whole; the text is 2× there, crisp. (2) Start a match: the loading band goes first, and then the class draft opens (nothing covers its cards). (3) The boot screen shows your Divocakos logo and name once when the game starts (any key skips); the small mark and the name are in the main menu's corner and footer (D-153).
 - [ ] **M7 playtest (arsenal, perks & economy).** Start a match from the menu (Depot, Square or Spillway for the bomb, map weapons and kits). Then:
   1. **Buying:** the freeze time is 15 s. **B** opens the buy menu (from the class menu too): the category's number then the item's, or click; greyed items say why. Round 1 is a pistol round ($1,000). Is it quick to use under time pressure? Are the light economy's numbers right: $3,000 a win, $1,500 → $3,000 for losses, $200 a kill ($500 knife), prices $500 / $1,000 / $2,500 / $4,000 (D-090)? Do saves and force buys feel worth it?
@@ -30,7 +34,7 @@ Things only you can check, kept here until done instead of moving from milestone
   6. **Decisions to confirm:** the host runs the game and the friends predict their own player (D-100, D-106), snapshots 64 times a second with the others shown about 50 ms in the past (D-104), LAN only for now (D-114: Steam lobbies wait for your approval of the GodotSteam download).
 - [ ] **Ctrl + click on macOS:** hold Ctrl, click, and watch Shoot/Aim in the F3 overlay. If it shows *Aim*, macOS turns Ctrl + click into a right click while crouching, and we change the crouch key or work around it.
 - [ ] **Sensitivity:** compare how far you move the mouse for a 360° turn here and in CS, at your CS sensitivity.
-- [ ] **Confirm weapon names** (M7, D-090): Ram (AK-style rifle), Warden (carbine), Hornet (SMG), Breaker (pump shotgun), Heron (sniper rifle), Sparrow (service pistol), Verdict (hand cannon), Knife, Frag, Flashbang, Smoke. Keep them, or tell me the ones you'd rather have: only the data files change.
+- [x] **Confirm weapon names** (M7, D-090): final, "Keep them forever, they are good" (D-175): Ram (AK-style rifle), Warden (carbine), Hornet (SMG), Breaker (pump shotgun), Heron (sniper rifle), Sparrow (service pistol), Verdict (hand cannon), Knife, Frag, Flashbang, Smoke.
 - [ ] **M5 playtest** (rounds & game flow). Start the game: the main menu appears. Then:
   - **Play** a default match (3v3, first to 5). In freeze time you can look but not move or shoot, and the line in the middle says whether you attack or defend.
   - Watch the bots: blue teammates and red enemies attack in loose pairs along three lanes or hold angles near the north end. Rounds should end in fights, not drag on.
@@ -65,7 +69,7 @@ Things only you can check, kept here until done instead of moving from milestone
   6. **Spectating:** after dying, the teammate you watch shows their own first-person arms.
   7. **Smoothness:** no stutter with ten characters (a 5v5 from match setup, or `bot_add` in practice).
 
-- [ ] **M10 UI check: your mockups in the game** (branch `claude/m10-ui-f5de0b` until it's merged; D-130 to D-139). First compare the screens on the page [Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn) (each mockup next to the game at 1280 × 720; each pair lists what differs on purpose). Then play: the main menu's column, **Play** → the three cards (one click on the lime Team Deathmatch card starts it on Depot, Square next, with the loading band first), the Custom rows; Settings' tabs and segments; Esc's pause menu. In Team Deathmatch check the HUD (health with its chips, armor, the weapon icon and ammo, the score bars, the kill-feed plates, the hit marker), die once (grey screen, the big countdown, "Killed by" plate), hold Tab, open the console (Tab completes) and play to the match end. In Bomb: the class draft cards, B's buy menu (four columns), the alive chips, the carry plate, planting with its bar, the toasts, spectating after death. Host from the main menu for the lobby. Try it at 1920 × 1080 too (everything 1.5× and crisp). Does it read as minimal and modern, not childish? What should change?
+- [ ] **M10 UI check: your mockups in the game** (branch `claude/m10-ui-f5de0b` until it's merged; D-130 to D-139). First compare the screens on the page "Chiip UI Side by Side" (a private Claude page, not in the repo) (each mockup next to the game at 1280 × 720; each pair lists what differs on purpose). Then play: the main menu's column, **Play** → the three cards (one click on the lime Team Deathmatch card starts it on Depot, Square next, with the loading band first), the Custom rows; Settings' tabs and segments; Esc's pause menu. In Team Deathmatch check the HUD (health with its chips, armor, the weapon icon and ammo, the score bars, the kill-feed plates, the hit marker), die once (grey screen, the big countdown, "Killed by" plate), hold Tab, open the console (Tab completes) and play to the match end. In Bomb: the class draft cards, B's buy menu (four columns), the alive chips, the carry plate, planting with its bar, the toasts, spectating after death. Host from the main menu for the lobby. Try it at 1920 × 1080 too (everything 1.5× and crisp). Does it read as minimal and modern, not childish? What should change?
 
 ## How this plan works
 
@@ -90,8 +94,13 @@ Things only you can check, kept here until done instead of moving from milestone
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | 🟨 built, waiting for your playtest | Play with friends over the LAN (one hosts), bots fill empty slots |
 | M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
-| M11 | Polish | ⬜ | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
-| M12 | Share & playtest | ⬜ | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
+| M11 | Polish | 🟨 built, waiting for your checks | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
+| M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
+| M13 | Sound design | 🟨 built, waiting for your listen | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
+| M14 | Stats & training | ✅ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
+| M15 | Accessibility & polish | 🟨 in progress | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
+| M16 | Maintainability & debugging | ⬜ | Release-build tests, logs and bug reports, debug commands, a cleaner architecture, one short branch at a time |
+| M17 | Playing with friends | ⬜ | Free-for-all deathmatch, a LAN/Tailscale game browser and text chat, a killcam, map voting and new maps |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -348,7 +357,7 @@ The pixelation variant (task 1) and the palette effect (task 9) are decided duri
 
 | Question | Options | My recommendation (applied) |
 |---|---|---|
-| Weapon names | **(a)** Names of their own: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. **(b)** Plain descriptions ("Rifle", "Carbine"...). | **(a)**, provisional: short, easy to call out, nothing taken from CS or another well-known shooter. Files and code use the role ids (`rifle`, `carbine`...), so renaming touches only the data files. Your check: "Confirm weapon names" |
+| Weapon names | **(a)** Names of their own: **Ram** (AK-style rifle), **Warden** (carbine), **Hornet** (SMG), **Breaker** (pump shotgun), **Heron** (sniper rifle), **Sparrow** (service pistol), **Verdict** (hand cannon), **Knife**, **Frag**, **Flashbang**, **Smoke**. **(b)** Plain descriptions ("Rifle", "Carbine"...). | **(a)**, final since D-175: short, easy to call out, nothing taken from CS or another well-known shooter. Files and code use the role ids (`rifle`, `carbine`...), so renaming touches only the data files. Your check: "Confirm weapon names" |
 | Between rounds | **(a)** Your answer: a fresh loadout every round (the knife and the Sparrow), like CoD's Search & Destroy; money carries over, gear doesn't. **(b)** CS: survivors keep their gear. | **(a)** |
 | Money values | **(a)** A light economy with round numbers: $1,000 to start each half, $10,000 at most; win $3,000; loss $1,500, $2,000, $2,500, then $3,000 for losses in a row (a win starts over); $200 a kill, $500 with the knife, −$200 for a teamkill; plant: $200 for every attacker; defuse: $200 for the defuser. **(b)** CS2's exact values ($800 start, $3,250 win, $1,400–$3,400 losses, a reward per weapon...). | **(a)**: easy to read, and with a fresh loadout every round a winning team can buy a rifle each round while a losing team has to save one or two rounds or take guns off the floor |
 | Prices | **(a)** Round prices by tier: Verdict $500; Hornet and Breaker $1,000; Ram and Warden $2,500; Heron $4,000; Sparrow $200 (only if you lost yours); vest $500, vest and helmet $800; kit $300; Frag $300, Flashbang $200, Smoke $300. **(b)** CS's prices. | **(a)**: a full buy (rifle, vest and helmet, a grenade) is $3,600, a win pays $3,000 plus kills |
@@ -518,7 +527,7 @@ The kit is what you and the community build maps from: textures in TrenchBroom's
 13. [x] **Developer console** (D-137). *(Sonnet)* Built: the mockup's strip in Silkscreen, line colours by kind, the input row with a lime prompt and caret, Tab completes command names.
 14. [x] **HUD**: the Team Deathmatch and Bomb top bars, banners, the death screen with the big countdown, spectating, health and ammo with icons and chips, kill-feed plates, toasts, hit marker (D-136). *(Opus direction, Sonnet builds; the parts in `hud.gd` and the kill feed wait for M7's merge)* Built in two parts: corners, top bars, banners, death screen, spectating; then the kill-feed plates, the carry plate and prompts, toasts and the hit marker.
 15. [x] **Loading screen** between maps (D-138). *(Sonnet)* Built: the mockup's band with the map's name, shown when a match starts from the menu and when the rotation moves on; the world stands still behind it for 1.5 s.
-16. [x] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)* Built: a page with each of your mockups (rendered live from your markup) next to the game's screen at 1280 × 720 ([Chiip UI Side by Side](https://claude.ai/artifact/Bedjcp1TvtRFUiAqM7TWzn), private until you share it); all 31 suites pass (1056 checks); the open check below is updated.
+16. [x] **Side by side with the mockups** for the main screens, all suites, the open check updated. *(Opus judges, Haiku runs the suites)* Built: a page with each of your mockups (rendered live from your markup) next to the game's screen at 1280 × 720 ("Chiip UI Side by Side" (a private Claude page, not in the repo), private until you share it); all 31 suites pass (1056 checks); the open check below is updated.
 17. [x] **Multiplayer lobby** (M9's, merged from main) in the mockup's look (D-137). *(Sonnet)* Built: the Lobby page (name, the host's addresses, two team columns with empty "Bot" slots, Switch team, the mode · map · limit footer, Edit setup and Start) and the Join page; match setup opened from the lobby hides Practice.
 18. [x] **Buy menu** (M7's) in the mockup's look, and the HUD hidden behind the class and buy menus (D-137). *(Sonnet)*
 
@@ -532,7 +541,7 @@ The class draft (two random classes offered each match) and the random map weapo
 
 **Done when:** the three quick maps look furnished, a new map can be built from the kit by following the guide, and the menus look clean and modern.
 
-## M11 — Polish ⬜
+## M11 — Polish 🟨
 
 **Goal:** fix what playing showed, and make it run smoothly (D-150). Each part is planned in detail by its session.
 
@@ -542,26 +551,95 @@ The class draft (two random classes offered each match) and the random map weapo
   2. [x] **Every class holds every weapon right** (D-156, D-157): a left-hand IK on every body and aim poses every 20° (the left hand was up to 34.6 cm off the gun in blended poses, now at most 0.9 cm); in first person each class's left shoulder reaches every long gun (it was 17 cm short on the Breaker). The guns' points are nodes in their models. Contact sheets per weapon (`tools/hold_sheet.gd`)
   3. [x] **Reloads match** (D-158): one timeline for every reload clip; the magazine goes with the left hand and back into its seat, the shotgun's shell sits in the palm and goes into the port; the sounds come on their cues; the body's reload lasts exactly the reload (a first-shell clip for the shotgun); a shotgun reload cut short by a shot stops showing
   4. [x] **Checks** (`holds` suite, 11 checks): the viewmodel against a wall; hand-to-grip distances for every class × two-handed gun in 14 blended poses (third person) and the arms' key frames (first person); every class × gun reload's length, magazine, shell and sound cues in both views; the shotgun interrupt. Full run: all 33 suites pass (1083 checks)
-- [ ] **Optimization** (D-165 to D-169): measure every map at 5v5 and as a LAN host (average frame rate and the worst 1 % of frames), find the hot spots (bot AI, vision rays, animation, shadows, physics), fix them, and add limits to the performance test
+- [x] **Optimization** (D-165 to D-169; built): every map measured at 5v5 in both modes, windowed at 1080p and at the 3440 × 1440 world size, headless, and as a LAN host with a client
+  1. [x] **Measuring** (D-165): `tools/frame_timing.gd` splits each frame into physics, scripts, drawing and the rest; lists the spikes with what was added to the scene; counts pipelines compiled while drawing (none); runs headless and as a LAN host. The old version had measured only freeze time
+  2. [x] **Round starts without a 100–150 ms tick** (D-166): the shop and the network keep the arsenal loaded instead of reloading every weapon file dozens of times
+  3. [x] **A cheaper LAN host** (D-167): lag compensation records the hit zones in half the time
+  4. [x] **Limits in perf_test** (D-168): average tick under 2 ms, 99th percentile under 3.9 ms, no tick over 50 ms; no pipeline compiled while drawing
+  5. [x] **Measured and left as is** (D-169): animation trees, shadows, vision, the client's command rate, draw calls. The round start's remaining 14–20 ms (weapons being built) is reported to the weapons session
 
-## M12 — Share & playtest ⬜
+## M12 — Share & playtest 🟨
 
 **Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
 
-- [ ] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files (the Divocakos logo and name stay all rights reserved, outside CC BY-NC-SA: docs/CREDITS.md), licence headers where needed, and the third-party notices (Godot, Silkscreen, func_godot, ambientCG) inside the builds
-- [ ] **Clean for public:** no personal paths (`/Users/...`) or anything private in the repo; a public README for players and contributors
-- [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows
-- [ ] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide
+- [x] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files (the Divocakos logo and name stay all rights reserved, outside CC BY-NC-SA: docs/CREDITS.md) and the third-party notices (Godot, Silkscreen, FuncGodot) inside the builds and in **Settings → Licences** (D-170); no per-file headers, the folders decide
+- [x] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors (D-171). The history keeps the old paths and your name as the commit author: you decided not to rewrite it (D-176)
+- [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows. Presets, packaging script and instructions are done and a test export was checked (D-172: all three export, licences inside, the Mac app runs without errors, zips 32 / 41 / 63 MiB); the release builds are made after your OK
+- [x] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide (D-173). A join over a real Tailscale address is for your playtest
+- [x] **Security review** (D-180): the history scanned, the host hardened and tested against garbage and floods (`netsec`), the site's policy, the workflow's pinned actions, `tools/harden_repo.sh` for the public repository's settings (run after the repository exists), `SECURITY.md`, SHA-256 checksums with every release
+- [x] **A website on GitHub Pages** (D-179): `site/` (what Chiip is with screenshots, Download and Updates that follow the latest GitHub Release by themselves, Play with friends, Community maps, About), `.github/workflows/pages.yml`, `CHANGELOG.md` as the release notes' source, `docs/RELEASING.md` for every later release. Switched on with the first push, after your OK
+- [x] **Pre-release QA pass** (D-178): `docs/RELEASE_CHECKLIST.md`, the `qa` suite (every mode on every map), `tools/lan_check.sh` (three real processes over the LAN), two flaky tests fixed, a join timeout, `docs/KNOWN_ISSUES.md` and the v0.1.0 release notes (now the first section of `CHANGELOG.md`)
+- [x] **Contributing and credits:** `CONTRIBUTING.md` (how to submit a map as a pull request, how code and art contributions work, under which licence; maps are curated in the repo and ship with the next release) and the credit line "Created by JK · Divocakos" (D-176)
 - [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
+- [x] **v0.1.1 hotfix** (D-159): bullets went through everyone in the v0.1.0 build (the export dropped the hit zones). Fixed, and every build is now checked by shooting before it's packed (`tools/check_export.sh`). Released only after your OK
+
+## M13 — Sound design 🟨 built, waiting for your listen
+
+**Goal:** Chiip sounds like a shooter, and its sound tells you things: where a shot came from, how far, and whether a wall is in between (D-177, after v0.1). Readability beats atmosphere (D-038). Every sound stays generated by our own tools (D-020): no downloads, nothing new to license. One commit per task.
+
+1. [x] **The sound routing and the mix table** (D-190): every game sound is set up from one table (`SoundMix`: loudness, range, how much walls muffle it) and plays through one function (`Acoustics.play()`) that knows where the listener is. New buses (Muffled, Muffled heavy, Music), a limiter on Master so the mix never clips, and stronger stereo panning so the side a sound came from is clear
+2. [x] **Distinct gun signatures** (D-191): every weapon family gets its own shot, a far variant and its own reload sounds (rifle, carbine, SMG, shotgun, sniper, pistol, hand cannon), plus far variants of the explosions; close and far are crossfaded by distance, so you hear how far away a fight is. Knife and grenades keep their own sounds, levelled with the rest
+3. [x] **Muffling through walls** (D-192): a sound whose straight path to you is blocked is low-passed and quieter, more for more and thicker walls, less when it can get around a corner (ray tests against the map)
+4. [x] **Reverb indoors and outdoors** (D-193): the listener's zone (an open yard, a yard between walls, a small room, a hall) is worked out at run time from rays around the camera, no map edits; the Effects bus's reverb follows it
+5. [x] **A mix pass** (D-194): every sound file at its category's loudness (all footsteps equally loud, whatever the floor), the table's levels set from measured numbers (your shots against distant ones, footsteps readable in a fight, the bomb always audible); `tools/sound_report.gd` measures, `sound_test` keeps it so
+6. [x] **Menu music and round stingers** (D-195): a short looping menu track and stingers for round start, round won and lost, bomb defused and match won or lost, made for Chiip (licence D-170), on a new Music volume in Settings
+7. [x] **Tests and docs:** `sound_test` checks loudness ranges per category, no clipping, the far variants, the muffling and the zones; GAME_DESIGN and CREDITS updated; a full test run
+
+## M14 — Stats & training ✅
+
+**Goal:** see how you are doing and practise on purpose (D-177, after v0.1).
+
+- [x] **Match history:** every finished match is saved on your computer (map, mode, score, date, your numbers), with a Stats screen in the main menu; nothing goes online
+- [x] **Stats:** K/D, ADR, headshot % and accuracy per weapon (shots, hits and hits by body zone), for each match and over all of them; the scoreboard shows ADR
+- [x] **Aim trainer** in the Shooting Range: flick targets, with a score and a personal best (a tracking target is a possible later addition: the range's moving dummy is the only tracking practice for now, D-205)
+- [x] **Spray practice:** the spray wall shows each weapon's pattern, and your own spray is drawn against it
+- [x] **Tests and docs:** the stats maths and the history file are tested (a damaged file falls back safely)
+
+Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
+
+1. [x] **Stats model and the history file** (D-200, D-201). `systems/stats_book.gd` (a [StatsBook] with a shared instance like Settings; match records, lifetime totals, personal bests), the maths in `systems/stats_math.gd` (K/D, ADR, HS %, accuracy per weapon, hits by zone, wins per mode and map), saved as JSON in `user://stats.json`; a damaged file is kept aside and replaced by an empty book. New suite `stats`
+2. [x] **Recording from matches** (D-202, D-203). `systems/stats_recorder.gd` follows your own shots and hits and RoundManager's numbers; saves one record when a match ends; online it reads what the host announces (its `DAMAGED` event now names the weapon). `RoundManager.get_rounds_played()` and an ADR column on the scoreboards of round matches
+3. [x] **The Stats screen** (D-204). `ui/stats_menu.tscn`, opened by a Stats button in the main menu, in the theme and the mockups' style: Overview, Weapons, History, Training
+4. [x] **Aim trainer** (D-205 to D-207). Flick targets pop up at random spots within reach for a timed run, a score and personal bests (kept in the stats file); a `range_trainer` entity on the Shooting Range; the scoring is a pure class with its own checks
+5. [x] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
+6. [x] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once
+
+## M15 — Accessibility & polish 🟨
+
+**Goal:** more people can play comfortably, and the game's biggest rough edges go (D-177, after v0.1). Decisions D-210 to D-219. No Czech translation: you dropped it. Branch `claude/m15-polish-f146ce`, one commit per numbered task, each prefixed "M15: ".
+
+1. [x] **A colourblind-safe team-colour option** (Settings → Video, `team_colors`): blue and orange instead of blue and red, with a lightness gap as well as a hue gap, so the two teams stay apart for protan, deutan and tritan eyes and in greyscale. It reaches the crew models and arms, the HUD, kill feed, scoreboard, compass, round HUD and the menus' team colours at once, without a restart. A test simulates the three deficiencies and checks the colour distance and the lightness gap
+2. [x] **Gamepad support:** left stick move, right stick look (dead zone, sensitivity, response curve, invert, in Settings → Controls), triggers fire and aim, every action on a button, the menus by D-pad and sticks with focus, rebinding a pad button beside the keys, and prompts that follow the device used last
+3. [x] **Wallbangs:** a bullet goes through thin cover: each surface kind (D-084) has a thickness limit and a damage loss, each weapon a penetration power in its data, the host decides online and both sides see the impact on the way in and out, bots too (a bot shoots at a heard enemy behind thin cover only when it knows the wall lets bullets through)
+4. [x] **Smarter team bots:** trades (a bot follows up where a teammate just fought), simple callouts ("enemy spotted near A" on the kill feed's toast line and the compass), and teammates that don't all take the same lane. Designed by one Opus subagent, implemented small on the existing `BotTactics`
+5. [ ] **Docs, merge and the full run:** DEVLOG "M15 accessibility & polish", GAME_DESIGN, ARCHITECTURE, LEARNING, README controls, CHANGELOG; main merged into the branch; one full run of every suite
+
+## M16 — Maintainability & debugging ⬜
+
+**Goal:** bugs are easy to find, reproduce and fix, including ones that show up only in exported builds (D-220). Starts after M15.
+
+- [ ] **Release-build tests:** before every release, export the builds and run smoke checks on the exported release build (shooting hits, a full round, a LAN join), as part of `docs/RELEASING.md` and the release checklist
+- [ ] **Logs and bug reports:** the game writes a log file in its user folder; the version and build show in the menu; a "Report a bug" action zips the log, the version and the settings for a friend to send; a GitHub Issue template (steps, version, platform)
+- [ ] **Debug commands** in the console: for example `debug_hitboxes` (draw the hit zones) and `net_stats` (ping, packet loss, snapshot size), so problems can be seen rather than guessed
+- [ ] **Architecture review:** after 15 milestones, map the systems, remove dead code, make the patterns consistent, give each folder a clear owner, and keep ARCHITECTURE.md as the single source of truth
+- [ ] **One short branch at a time:** no more three or four parallel branches. One focused branch, merged soon after; fewer merges and conflicts, and a clear cause when something breaks
+- [ ] **No flaky tests:** a check that fails at random is fixed or quarantined at once, so a red result always means a real bug
+
+## M17 — Playing with friends ⬜
+
+**Goal:** make sessions with friends easier and more fun (D-221). Starts after M16 and v0.2.0, one short branch at a time.
+
+- [ ] **Free-for-all deathmatch**, if it stays simple: everyone for themselves, built on the team respawn mode, first to the kill limit wins; enemy colours for everyone else
+- [ ] **Game browser:** games on your LAN or tailnet show up in a list (no typing IPs), with join in one click
+- [ ] **Text chat** in the lobby and in matches: host-checked (length and rate limits, plain text only, no markup)
+- [ ] **Killcam:** after dying, the last few seconds through your killer's eyes (CoD-style); skippable, and off in Bomb mode if it reveals too much
+- [ ] **Map voting** at the end of a match, and **1–2 new maps** (or the first community maps through pull requests)
 
 ## Backlog (ideas, not scheduled)
 
 - Ragdoll deaths (`PhysicalBone3D`) instead of, or blended with, the death animations (M6 uses animations)
 - More maps and map voting
-- Wallbangs and tagging
-- Smarter team AI: callouts, trades, coordinated site takes
-- Training modes: aim trainer, spray practice, movement maps (KZ- or surf-style)
-- Match statistics (K/D, ADR, headshot %) and a stats screen
+- Movement maps (KZ- or surf-style) for training (the aim trainer and spray practice are in M14)
 - Demo recording and replays
 - A dedicated server: a host without a player of its own (`--server`, headless), for a match that runs on a spare computer (D-100)
 - Finding LAN games by themselves (a broadcast) instead of typing the host's IP (D-108)

@@ -134,18 +134,37 @@ func _test() -> void:
 					and bob_client.get_character(ana_id) != null and String(bob_client.get_character(ana_id).name) == "Ana (bot)",
 			"%s on team %d" % [bob_character.name if bob_character != null else "-", bob_character.team if bob_character != null else -1])
 	var yaw := bob_player.get_aim_angles().x
-	bob_client.command_source = func(_delta: float) -> CharacterInput:
-		var command := CharacterInput.new()
-		command.yaw = yaw
-		command.move = Vector2(0.0, -1.0)
-		return command
-	var bob_start := bob_character.global_position
-	var alive := bob_character.is_alive()
-	await _harness.wait_ticks(128)
-	bob_client.command_source = Callable()
-	_check("His commands drive the character he took over (if it is alive)",
-			not alive or not bob_character.is_alive() or bob_character.global_position.distance_to(bob_start) > 1.5,
-			"moved %.2f m (alive %s)" % [bob_character.global_position.distance_to(bob_start), alive])
+	# His commands only move a character in a live round, so measure over a window in which the round
+	# stays live and he stays alive (bots fight around him, and a round can end in the middle of one;
+	# a new round starts with a freeze and puts everyone back on a spawn). Try a few windows. The
+	# proof is his top speed, not the distance: depending on which bot he took over, a wall or a crate
+	# can stand a metre in front of him (he then stops after 1 m but was running at once).
+	var measured := false
+	var moved := 0.0
+	var peak_speed := 0.0
+	for attempt in 6:
+		await _harness.wait_until(func() -> bool: return rules.phase == RoundManager.Phase.LIVE and bob_character.is_alive(), 2560)
+		var bob_start := bob_character.global_position
+		bob_client.command_source = func(_delta: float) -> CharacterInput:
+			var command := CharacterInput.new()
+			command.yaw = yaw
+			command.move = Vector2(0.0, -1.0)
+			return command
+		var clean := true
+		peak_speed = 0.0
+		for tick in 128:
+			await get_tree().physics_frame
+			peak_speed = maxf(peak_speed, Vector2(bob_character.velocity.x, bob_character.velocity.z).length())
+			if rules.phase != RoundManager.Phase.LIVE or not bob_character.is_alive():
+				clean = false
+		bob_client.command_source = Callable()
+		moved = bob_character.global_position.distance_to(bob_start)
+		if clean:
+			measured = true
+			break
+	_check("His commands drive the character he took over (a second of walking forward in a live round gets him running above 2.5 m/s)",
+			measured and peak_speed > 2.5 or not measured and not bob_character.is_alive(),
+			"top speed %.2f m/s, moved %.2f m, a clean window %s" % [peak_speed, moved, measured])
 
 	# The host ends the game: Bob goes back to the menu and is told why.
 	_host_session.close()

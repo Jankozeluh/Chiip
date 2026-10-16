@@ -136,9 +136,10 @@ func _make_label(label_name: String, text: String, color: Color) -> Label:
 	return label
 
 
-## The palette's UI colour of [param team]: friendly for the viewer's team, enemy for the other.
+## The UI colour of [param team]: friendly for the viewer's team, enemy for the other (the
+## colour-blind scheme's, D-210, when it is on).
 func _team_color(team: int) -> Color:
-	return get_theme_color(&"friendly_text" if team == Teams.viewer_team else &"enemy_text", PALETTE_TYPE)
+	return Teams.ui_color_for(team)
 
 
 func _remove_line(line: Node) -> void:

@@ -23,6 +23,7 @@ damage = 40.0
 range_modifier = 1.0
 max_range = 1.5
 armor_penetration = 0.85
+penetration = 0.0
 magazine_size = 0
 reserve_ammo = 0
 fire_rate_rpm = 150.0

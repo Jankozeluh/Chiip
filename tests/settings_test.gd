@@ -34,8 +34,9 @@ const SCENE_CAMERA_FOV := 73.74
 const DEFAULTS := {
 	&"sensitivity": 1.0, &"invert_y": false, &"fov": 90.0,
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
-	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0,
-	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
+	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0, &"team_colors": "standard",
+	&"pad_sensitivity": 1.0, &"pad_deadzone": 0.15, &"pad_curve": 1.5, &"pad_invert_y": false,
+	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0, &"music_volume": 1.0,
 	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
 	# The last match setup (D-064): D-041's match.
@@ -109,7 +110,7 @@ func _test_defaults() -> void:
 	var problems: Array[String] = []
 	for action: StringName in Settings.BINDABLE_ACTIONS:
 		var texts := _binding_texts(_settings, action)
-		var live := InputMap.action_get_events(action)
+		var live := _bound_events(action)
 		var live_texts: Array[String] = []
 		for event in live:
 			live_texts.append(_event_text(event))
@@ -127,7 +128,8 @@ func _test_defaults() -> void:
 			"90 → %.4f°, back → %.4f°, 110 → %.2f°, 70 → %.2f°" % [fov, Settings.horizontal_fov(fov), Settings.vertical_fov(110.0), Settings.vertical_fov(70.0)])
 
 
-## The bus layout has the three buses, sends the other two to Master and ships with nothing muted.
+## The bus layout has its seven buses (M13, D-190; `sound_test` checks their effects and the
+## muffled buses' sends), sends Effects and Interface to Master and ships with nothing muted.
 func _test_audio_layout() -> void:
 	var names: Array[String] = []
 	var problems: Array[String] = []
@@ -137,8 +139,8 @@ func _test_audio_layout() -> void:
 			problems.append("%s: mute %s, %.1f dB" % [AudioServer.get_bus_name(bus), AudioServer.is_bus_mute(bus), AudioServer.get_bus_volume_db(bus)])
 	var sends := (AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_EFFECTS)) == Settings.BUS_MASTER
 			and AudioServer.get_bus_send(AudioServer.get_bus_index(Settings.BUS_INTERFACE)) == Settings.BUS_MASTER)
-	_check("The audio buses are Master, Effects and Interface, both sending to Master, none muted, all at 0 dB",
-			names == ["Master", "Effects", "Interface"] and sends and problems.is_empty(),
+	_check("The audio buses are Master, Effects, MuffledLight, Muffled, MuffledHeavy, Interface and Music, Effects and Interface sending to Master, none muted, all at 0 dB",
+			names == ["Master", "Effects", "MuffledLight", "Muffled", "MuffledHeavy", "Interface", "Music"] and sends and problems.is_empty(),
 			"buses %s, sends to Master %s%s" % [names, sends, "" if problems.is_empty() else ", problems: " + ", ".join(problems)])
 
 
@@ -246,15 +248,16 @@ func _test_player() -> void:
 	_check("Resetting gives the camera its 73.74° and the mouse its sensitivity back",
 			absf(camera.fov - SCENE_CAMERA_FOV) < 0.01 and controller.sensitivity == 1.0 and not controller.invert_y,
 			"camera %.3f°, sensitivity %s" % [camera.fov, controller.sensitivity])
-	# The players' sounds: every audio player of the character and its rifle plays on Effects.
+	# The players' sounds: every audio player of the character and its rifle starts on Effects (walls
+	# move a sound to a muffled bus as it plays, M13 D-192; those send into Effects).
 	var players: Array[Node] = player.find_children("*", "AudioStreamPlayer", true, false)
 	players.append_array(player.find_children("*", "AudioStreamPlayer3D", true, false))
 	var off_bus: Array[String] = []
 	for audio in players:
 		if audio.get("bus") != Settings.BUS_EFFECTS:
 			off_bus.append("%s on %s" % [audio.name, audio.get("bus")])
-	_check("Every sound player of a character and its rifle (6: footsteps, shots, handling, 2D and 3D) plays on the Effects bus",
-			players.size() == 6 and off_bus.is_empty(), "%d players%s" % [players.size(), "" if off_bus.is_empty() else ", not on Effects: " + ", ".join(off_bus)])
+	_check("Every sound player of a character and its rifle (7: footsteps, shots, far shots, handling, 2D and 3D) starts on the Effects bus",
+			players.size() == 7 and off_bus.is_empty(), "%d players%s" % [players.size(), "" if off_bus.is_empty() else ", not on Effects: " + ", ".join(off_bus)])
 	player.free()
 
 
@@ -302,14 +305,16 @@ func _test_engine_settings() -> void:
 	var master := AudioServer.get_bus_index(Settings.BUS_MASTER)
 	var effects := AudioServer.get_bus_index(Settings.BUS_EFFECTS)
 	var interface := AudioServer.get_bus_index(Settings.BUS_INTERFACE)
+	var music := AudioServer.get_bus_index(Settings.BUS_MUSIC)
 	_settings.master_volume = 0.5
 	_settings.effects_volume = 0.25
 	_settings.interface_volume = 0.1
-	_check("Volumes go to their buses as dB: 0.5 on Master, 0.25 on Effects, 0.1 on Interface, none muted",
+	_settings.music_volume = 0.3
+	_check("Volumes go to their buses as dB: 0.5 on Master, 0.25 on Effects, 0.1 on Interface, 0.3 on Music, none muted",
 			is_equal_approx(AudioServer.get_bus_volume_db(master), linear_to_db(0.5)) and is_equal_approx(AudioServer.get_bus_volume_db(effects), linear_to_db(0.25))
-					and is_equal_approx(AudioServer.get_bus_volume_db(interface), linear_to_db(0.1))
-					and not AudioServer.is_bus_mute(master) and not AudioServer.is_bus_mute(effects) and not AudioServer.is_bus_mute(interface),
-			"%.2f / %.2f / %.2f dB" % [AudioServer.get_bus_volume_db(master), AudioServer.get_bus_volume_db(effects), AudioServer.get_bus_volume_db(interface)])
+					and is_equal_approx(AudioServer.get_bus_volume_db(interface), linear_to_db(0.1)) and is_equal_approx(AudioServer.get_bus_volume_db(music), linear_to_db(0.3))
+					and not AudioServer.is_bus_mute(master) and not AudioServer.is_bus_mute(effects) and not AudioServer.is_bus_mute(interface) and not AudioServer.is_bus_mute(music),
+			"%.2f / %.2f / %.2f / %.2f dB" % [AudioServer.get_bus_volume_db(master), AudioServer.get_bus_volume_db(effects), AudioServer.get_bus_volume_db(interface), AudioServer.get_bus_volume_db(music)])
 	_settings.master_volume = 0.0
 	var muted := AudioServer.is_bus_mute(master)
 	_settings.master_volume = 1.0
@@ -332,7 +337,7 @@ func _test_engine_settings() -> void:
 func _test_bindings() -> void:
 	_forget_changes()
 	var rebound := _settings.set_binding(&"reload", _key(KEY_T))
-	var events := InputMap.action_get_events(&"reload")
+	var events := _bound_events(&"reload")
 	var event := events[0] as InputEventKey if not events.is_empty() else null
 	_check("set_binding() puts the new key into the InputMap (physical key T, all devices) and emits `changed`(bindings)",
 			rebound and events.size() == 1 and event != null and event.physical_keycode == KEY_T and event.device == -1 and _changes == [&"bindings"],
@@ -353,14 +358,14 @@ func _test_bindings() -> void:
 		await _wait_ticks(2)
 	_check("A real T press triggers reload now, and the old R doesn't", states == [true, false], "T held: %s, R held: %s" % [states[0], states[1]])
 	_settings.set_binding(&"jump", _mouse(MOUSE_BUTTON_XBUTTON1), 1)
-	var jump_events := InputMap.action_get_events(&"jump")
+	var jump_events := _bound_events(&"jump")
 	_check("A second slot binds a second key: jump now answers to Space and mouse button 4, not the wheel",
 			jump_events.size() == 2 and _event_text(jump_events[0]) == _k(KEY_SPACE) and _event_text(jump_events[1]) == _m(MOUSE_BUTTON_XBUTTON1)
 					and _binding_texts(_settings, &"jump") == [_k(KEY_SPACE), _m(MOUSE_BUTTON_XBUTTON1)],
 			"input map %s, settings %s" % [_event_texts(jump_events), _binding_texts(_settings, &"jump")])
 	_settings.clear_binding(&"crouch")
-	_check("clear_binding() leaves an action without keys", InputMap.action_get_events(&"crouch").is_empty() and _settings.get_binding(&"crouch") == null,
-			"%d event(s)" % InputMap.action_get_events(&"crouch").size())
+	_check("clear_binding() leaves an action without keys", _bound_events(&"crouch").is_empty() and _settings.get_binding(&"crouch") == null,
+			"%d event(s)" % _bound_events(&"crouch").size())
 	var clash := _settings.find_action_using(_key(KEY_W))
 	_check("find_action_using() names the action a key is already bound to (W: move_forward), not counting the one asked about",
 			clash == &"move_forward" and _settings.find_action_using(_key(KEY_W), &"move_forward") == &"" and _settings.find_action_using(_key(KEY_F12)) == &"",
@@ -376,14 +381,14 @@ func _test_bindings() -> void:
 					Settings.binding_text(_mouse(MOUSE_BUTTON_LEFT)), Settings.binding_text(_mouse(MOUSE_BUTTON_WHEEL_DOWN))])
 	_settings.set_binding(&"reload", _key(KEY_T))
 	_settings.reset_binding(&"reload")
-	var reload_events := InputMap.action_get_events(&"reload")
+	var reload_events := _bound_events(&"reload")
 	_check("reset_binding() restores one action (reload is R again, jump stays rebound)",
 			reload_events.size() == 1 and _event_text(reload_events[0]) == _k(KEY_R) and _binding_texts(_settings, &"jump")[1] == _m(MOUSE_BUTTON_XBUTTON1),
 			"reload %s" % [_event_texts(reload_events)])
 	_settings.reset_bindings()
 	var back := true
 	for action: StringName in Settings.BINDABLE_ACTIONS:
-		back = back and _event_texts(InputMap.action_get_events(action)) == _non_empty(_default_bindings()[action])
+		back = back and _event_texts(_bound_events(action)) == _non_empty(_default_bindings()[action])
 	_check("reset_bindings() puts every action back to the project's keys", back, "all %d actions checked" % Settings.BINDABLE_ACTIONS.size())
 
 
@@ -414,9 +419,15 @@ func _test_saving() -> void:
 	writer.palette_effect = false
 	writer.pixelate_hud = true
 	writer.ui_scale = 75
+	writer.team_colors = "colorblind"
+	writer.pad_sensitivity = 1.8
+	writer.pad_deadzone = 0.25
+	writer.pad_curve = 2.0
+	writer.pad_invert_y = true
 	writer.master_volume = 0.4
 	writer.effects_volume = 0.7
 	writer.interface_volume = 0.1
+	writer.music_volume = 0.3
 	writer.crosshair_color = Color(1.0, 0.5, 0.25, 0.8)
 	writer.crosshair_length = 12.0
 	writer.crosshair_gap = 2.0
@@ -443,8 +454,8 @@ func _test_saving() -> void:
 	writer.set_binding(&"shoot", _key(KEY_F), 1)
 	saved = _read_cfg(TEMP_PATH)
 	var sections := saved.get_sections() if saved != null else PackedStringArray()
-	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online and controls (the crosshair's keys without their prefix)",
-			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls"]) and saved.has_section_key("crosshair", "gap")
+	_check("Every change is saved at once, in the sections game, video, audio, crosshair, match, online, controls and pad (the crosshair's keys without their prefix)",
+			sections == PackedStringArray(["game", "video", "audio", "crosshair", "match", "online", "controls", "pad"]) and saved.has_section_key("crosshair", "gap")
 					and is_equal_approx(saved.get_value("crosshair", "gap", -1.0), 2.0) and saved.get_value("video", "pixel_height", 0) == 360 and saved.get_value("video", "ui_scale", -1) == 75
 					and saved.get_value("controls", "reload") == ["key:%d" % KEY_T, ""],
 			"sections %s" % [sections])
@@ -480,7 +491,7 @@ func _test_saving() -> void:
 					_binding_texts(reader, &"jump"), _binding_texts(reader, &"shoot")])
 	_check("A separate instance never touches the engine: the Master bus, the frame limit and reload's key are as before",
 			is_zero_approx(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(Settings.BUS_MASTER))) and Engine.max_fps == 0
-					and _event_texts(InputMap.action_get_events(&"reload")) == [_k(KEY_R)],
+					and _event_texts(_bound_events(&"reload")) == [_k(KEY_R)],
 			"max fps %d" % Engine.max_fps)
 	reader.sensitivity = 3.0
 	var reloaded := Settings.new()
@@ -580,7 +591,7 @@ func _test_reset() -> void:
 	var master := AudioServer.get_bus_index(Settings.BUS_MASTER)
 	_check("reset_to_defaults() restores every value, the frame limit, the bus volume and the keys",
 			back and Engine.max_fps == 0 and is_zero_approx(AudioServer.get_bus_volume_db(master))
-					and _event_texts(InputMap.action_get_events(&"reload")) == [_k(KEY_R)],
+					and _event_texts(_bound_events(&"reload")) == [_k(KEY_R)],
 			"all defaults %s, max fps %d, master %.2f dB" % [back, Engine.max_fps, AudioServer.get_bus_volume_db(master)])
 	_check("... and announces exactly the five things that were different, once each",
 			_sorted(_changes) == _sorted([&"bindings", &"crosshair_dot", &"fps_cap", &"master_volume", &"sensitivity"]), "signals %s" % [_sorted(_changes)])
@@ -688,7 +699,7 @@ func _test_nothing_left_connected(expected: int) -> void:
 func _test_real_file_untouched() -> void:
 	var now := FileAccess.get_md5(Settings.SETTINGS_PATH) if FileAccess.file_exists(Settings.SETTINGS_PATH) else ""
 	_check("The real user://settings.cfg was not read, created or changed by any of this",
-			now == _real_file_md5 and not _settings.save_path, "before '%s', after '%s', shared instance saves to '%s'" % [_real_file_md5, now, _settings.save_path])
+			Settings.real_file_accesses == 0 and not _settings.save_path, "accesses %d, shared instance saves to '%s' (checksum before '%s', after '%s')" % [Settings.real_file_accesses, _settings.save_path, _real_file_md5, now])
 
 
 # --- Helpers ---
@@ -773,7 +784,9 @@ func _event_text(event: InputEvent) -> String:
 func _event_texts(events: Array) -> Array[String]:
 	var texts: Array[String] = []
 	for event: InputEvent in events:
-		texts.append(_event_text(event))
+		# The gamepad's buttons (D-211) have their own bindings and tests.
+		if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+			texts.append(_event_text(event))
 	return texts
 
 
@@ -841,3 +854,12 @@ func _check(check_name: String, passed: bool, detail: String) -> void:
 	print("%s  %s: %s" % ["PASS" if passed else "FAIL", check_name, detail])
 	if not passed:
 		_failures += 1
+
+
+## The key and mouse events of an action: its gamepad events (D-211) have their own checks (access_test).
+func _bound_events(action: StringName) -> Array[InputEvent]:
+	var events: Array[InputEvent] = []
+	for event in InputMap.action_get_events(action):
+		if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+			events.append(event)
+	return events

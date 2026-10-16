@@ -192,8 +192,9 @@ func _test_match() -> void:
 	_test_round_results()
 	_test_stats()
 	await _test_screens_and_freeze()
-	_check("The real settings file was not touched", _settings_md5() == _real_file_md5,
-			"checksum before %s, after %s" % [_real_file_md5, _settings_md5()])
+	_check("The real settings file was not touched: nothing in this run read or wrote it (a game running elsewhere may change the file, so its checksum proves nothing)",
+			Settings.real_file_accesses == 0 and Settings.get_instance().save_path.is_empty(),
+			"accesses %d, shared instance saves to '%s' (checksum before %s, after %s)" % [Settings.real_file_accesses, Settings.get_instance().save_path, _real_file_md5, _settings_md5()])
 
 
 func _test_match_end_signal() -> void:

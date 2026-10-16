@@ -272,11 +272,14 @@ def hit_zones(model):
 
 
 def write_hit_zones(boxes, path):
-    """a HitZones resource (characters/crew/hit_zones.gd) in Godot's text format."""
+    """a HitZones resource (characters/crew/hit_zones.gd) in Godot's text format. It names
+    itself (resource_name), which also changed the files' content in v0.1.1, so an export
+    cache made from the old files converts them again (D-159)."""
+    name = os.path.basename(path).replace('_hit_zones.tres', '')
     vec = lambda vs: ', '.join(f'{v:.4f}' for vec3 in vs for v in vec3)
     lines = ['[gd_resource type="Resource" script_class="HitZones" format=3]', '',
              '[ext_resource type="Script" path="res://characters/crew/hit_zones.gd" id="hit_zones_script"]', '',
-             '[resource]', 'script = ExtResource("hit_zones_script")',
+             '[resource]', 'script = ExtResource("hit_zones_script")', f'resource_name = "{name} hit zones"',
              'bones = PackedStringArray(' + ', '.join(f'"{b[0]}"' for b in boxes) + ')',
              'zones = PackedInt32Array(' + ', '.join(str(ZONE_IDS[b[1]]) for b in boxes) + ')',
              'centers = PackedVector3Array(' + vec([b[2] for b in boxes]) + ')',

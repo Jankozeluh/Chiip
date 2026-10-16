@@ -38,6 +38,8 @@ var notice_time_scale: float = 1.0
 
 var _character: Character
 var _time_since_lead: float = INF
+## How long the current lead lasts when it is shorter than the memory (a teammate's call), in seconds.
+var _lead_limit: float = INF
 var _time_until_check: float = 0.0
 ## How aware the bot is of each enemy it can see: 0 = not at all, 1 = noticed.
 var _awareness: Dictionary = {}
@@ -63,7 +65,14 @@ func _physics_process(delta: float) -> void:
 
 ## True while the bot knows (from sight, sound or recent memory) where an enemy might be.
 func has_lead() -> bool:
-	return _time_since_lead <= memory_seconds
+	return _time_since_lead <= minf(memory_seconds, _lead_limit)
+
+
+## A teammate's call ([BotSquad], D-216): an enemy at [param position], a lead for only [param seconds] (a trade
+## or a callout is worth a quick look, not a long hunt), unless the bot sees or hears something itself.
+func hear_call(position: Vector3, seconds: float) -> void:
+	_remember(position)
+	_lead_limit = seconds
 
 
 ## Seconds since the bot last saw or heard an enemy (INF if it knows of none).
@@ -168,3 +177,4 @@ func _on_damaged(_amount: float, _zone: Hitbox.Zone, attacker: Character) -> voi
 func _remember(position: Vector3) -> void:
 	last_known_position = position
 	_time_since_lead = 0.0
+	_lead_limit = INF

@@ -27,6 +27,9 @@ signal view_target_changed(target: Character)
 const DEGREES_PER_MOUSE_COUNT := 0.022
 ## How far up or down you can look, in degrees (CS: 89).
 const MAX_PITCH_DEGREES := 89.0
+## How fast the right stick turns the view when pushed all the way, in degrees per second, at a
+## gamepad sensitivity of 1 (D-212). A pad has no counts to measure, so look speed is a rate.
+const PAD_DEGREES_PER_SECOND := 220.0
 
 ## The first-person camera.
 @export var camera: Camera3D
@@ -48,6 +51,12 @@ var sensitivity: float = 1.0
 var invert_y: bool = false
 ## The field of view setting (CS's degrees across 4:3), copied from [Settings]. A scope narrows it.
 var fov_setting: float = 90.0
+## The gamepad's look speed multiplier, dead zone, response curve and Y inversion (D-212), copied
+## from [Settings] like [member sensitivity].
+var pad_sensitivity: float = 1.0
+var pad_deadzone: float = 0.15
+var pad_curve: float = 1.5
+var pad_invert_y: bool = false
 
 ## Horizontal look angle (left/right) in radians.
 var _yaw: float = 0.0
@@ -144,6 +153,11 @@ func get_input(_delta: float) -> CharacterInput:
 		input.pitch = _pitch
 		return input
 	input.move = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input.move == Vector2.ZERO:
+		# The left stick, with the dead zone and no curve: the walk is flat out (a character's ground
+		# movement uses the direction only), so a curve would only matter for the direction.
+		input.move = pad_response(Input.get_vector("pad_move_left", "pad_move_right", "pad_move_forward", "pad_move_back", 0.0),
+				pad_deadzone, 1.0)
 	input.yaw = _yaw
 	input.pitch = _pitch
 	input.jump = _jump_queued
@@ -234,13 +248,15 @@ func _physics_process(delta: float) -> void:
 		spectate_next()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var blocked := MenuState.blocks_gameplay()
 	if _was_blocked and not blocked:
 		# A menu or the console just closed and the mouse is captured again: the
 		# button that closed it must not fire a shot (and a stale block from before goes).
 		_shooting_blocked = Input.is_action_pressed("shoot")
 	_was_blocked = blocked
+	if not blocked:
+		_look_with_stick(delta)
 	var source := get_view_target()
 	var head := source.head.get_global_transform_interpolated()
 	# Position: where the head is drawn this frame (smoothed between physics ticks), and online
@@ -275,11 +291,15 @@ func _apply_settings() -> void:
 	sensitivity = settings.sensitivity
 	invert_y = settings.invert_y
 	fov_setting = settings.fov
+	pad_sensitivity = settings.pad_sensitivity
+	pad_deadzone = settings.pad_deadzone
+	pad_curve = settings.pad_curve
+	pad_invert_y = settings.pad_invert_y
 	camera.fov = Settings.vertical_fov(fov_setting)
 
 
 func _on_setting_changed(key: StringName) -> void:
-	if key == &"sensitivity" or key == &"invert_y" or key == &"fov":
+	if key == &"sensitivity" or key == &"invert_y" or key == &"fov" or String(key).begins_with("pad_"):
 		_apply_settings()
 
 
@@ -294,18 +314,48 @@ func _clear_queued() -> void:
 
 ## Turns the view by a mouse movement measured in mouse counts.
 func _look(mouse_motion: Vector2) -> void:
-	var radians_per_count := deg_to_rad(sensitivity * DEGREES_PER_MOUSE_COUNT)
-	# Scoped, the mouse turns the view less, by how much the scope narrows it (CS's
-	# zoom_sensitivity_ratio 1.0: the same mouse movement crosses the same part of the screen).
-	var zoom := get_zoom_fraction(character)
-	if zoom < 1.0:
-		var normal := deg_to_rad(Settings.vertical_fov(fov_setting))
-		var zoomed := deg_to_rad(Settings.vertical_fov(fov_setting * zoom))
-		radians_per_count *= tan(zoomed / 2.0) / tan(normal / 2.0)
+	var radians_per_count := deg_to_rad(sensitivity * DEGREES_PER_MOUSE_COUNT) * _scope_ratio()
 	var vertical_sign := -1.0 if invert_y else 1.0
 	_yaw -= mouse_motion.x * radians_per_count
 	_pitch -= mouse_motion.y * radians_per_count * vertical_sign
 	_pitch = clampf(_pitch, deg_to_rad(-MAX_PITCH_DEGREES), deg_to_rad(MAX_PITCH_DEGREES))
+
+
+## Turns the view with the right stick for [param delta] seconds (D-212): the stick's push goes through
+## [method pad_response] (dead zone, then the response curve), and a full push turns
+## [constant PAD_DEGREES_PER_SECOND] × [member pad_sensitivity] degrees a second, less through a scope.
+func _look_with_stick(delta: float) -> void:
+	var stick := pad_response(Input.get_vector("pad_look_left", "pad_look_right", "pad_look_up", "pad_look_down", 0.0),
+			pad_deadzone, pad_curve)
+	if stick == Vector2.ZERO:
+		return
+	var radians := deg_to_rad(PAD_DEGREES_PER_SECOND * pad_sensitivity) * _scope_ratio() * delta
+	var vertical_sign := -1.0 if pad_invert_y else 1.0
+	_yaw -= stick.x * radians
+	_pitch -= stick.y * radians * vertical_sign
+	_pitch = clampf(_pitch, deg_to_rad(-MAX_PITCH_DEGREES), deg_to_rad(MAX_PITCH_DEGREES))
+
+
+## A gamepad stick as the game reads it: the circular dead zone [param deadzone] cut out (a push shorter
+## than it is nothing), the rest stretched to 0..1, and its length raised to [param curve] (1 = as is),
+## which makes small pushes finer and keeps a full push full. The direction is kept.
+static func pad_response(stick: Vector2, deadzone: float, curve: float) -> Vector2:
+	var length := stick.length()
+	if length <= deadzone or length <= 0.0:
+		return Vector2.ZERO
+	var reach := clampf((length - deadzone) / maxf(1.0 - deadzone, 0.001), 0.0, 1.0)
+	return stick / length * pow(reach, curve)
+
+
+## How much a scope turns the look down: the same movement crosses the same part of the screen
+## (CS's zoom_sensitivity_ratio 1.0). 1.0 unscoped.
+func _scope_ratio() -> float:
+	var zoom := get_zoom_fraction(character)
+	if zoom >= 1.0:
+		return 1.0
+	var normal := deg_to_rad(Settings.vertical_fov(fov_setting))
+	var zoomed := deg_to_rad(Settings.vertical_fov(fov_setting * zoom))
+	return tan(zoomed / 2.0) / tan(normal / 2.0)
 
 
 func _on_character_died(_killer: Character) -> void:

@@ -30,6 +30,9 @@ extends Resource
 @export_range(0.0, 1.0) var recoil_control: float = 0.55
 ## Stops by tapping the opposite key (counter-strafing) instead of just letting go.
 @export var counter_strafes: bool = true
+## The chance that a bot which heard (or just lost sight of) an enemy behind thin cover sprays at the
+## spot through the wall, when its bullets would still keep damage (M15, D-215). One roll per lead.
+@export_range(0.0, 1.0) var wallbang_chance: float = 0.0
 ## Beyond this distance (metres) the bot shoots short bursts instead of spraying.
 @export var burst_distance: float = 15.0
 ## Shots per burst at long range.
@@ -38,3 +41,8 @@ extends Resource
 @export var spray_length: int = 10
 ## Pause between bursts or sprays, in seconds, so recoil can wear off.
 @export var burst_pause: float = 0.35
+
+@export_group("Team play")
+## The chance that a free bot answers a teammate's call (a trade or a callout, [BotSquad]) by going there
+## (M15, D-216). One roll per call; easy bots answer less often, hard ones always.
+@export_range(0.0, 1.0) var team_play: float = 0.75

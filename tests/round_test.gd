@@ -1227,7 +1227,12 @@ func _test_scoreboard() -> void:
 
 
 func _test_scoreboard_action() -> void:
-	var events := InputMap.action_get_events("scoreboard") if InputMap.has_action("scoreboard") else []
+	var events: Array[InputEvent] = []
+	if InputMap.has_action("scoreboard"):
+		for event in InputMap.action_get_events("scoreboard"):
+			# Its gamepad button (D-211) has its own checks (access_test).
+			if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+				events.append(event)
 	var key := events[0] as InputEventKey if events.size() == 1 else null
 	_check("The 'scoreboard' action exists and is bound to Tab, by physical key and for all devices",
 			key != null and key.physical_keycode == KEY_TAB and key.keycode == KEY_NONE and key.device == -1,
@@ -1259,8 +1264,8 @@ func _test_scoreboard_table() -> void:
 	var team_boxes := table.get_children().map(func(box: Node) -> String: return String(box.name))
 	var titles := _row_cells(table.get_node("Titles"))
 	var friendly_row_labels := _row_cells(table.get_row(table.get_displayed(0)[0]))
-	_check("The table has the column titles (Player, K, D, A, DMG), then both teams, yours first under a blue line, then the enemy under a red one, 3 rows each",
-			team_boxes == ["Titles", "Team0", "Team1"] and titles == ["Player", "K", "D", "A", "DMG"] and friendly_row_labels.size() == 5
+	_check("The table has the column titles (Player, K, D, A, DMG, ADR), then both teams, yours first under a blue line, then the enemy under a red one, 3 rows each",
+			team_boxes == ["Titles", "Team0", "Team1"] and titles == ["Player", "K", "D", "A", "DMG", "ADR"] and friendly_row_labels.size() == 6
 					and _header_color(table, 0) == _ui_team_color(true)
 					and _header_color(table, 1) == _ui_team_color(false)
 					and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
@@ -1309,9 +1314,12 @@ func _test_scoreboard_table() -> void:
 	for member: Character in expected:
 		var stats := _rounds.get_stats(member)
 		var from_stats := [member.name + " (you)" if member == _player else String(member.name),
-				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage))]
+				str(stats.kills), str(stats.deaths), str(stats.assists), str(roundi(stats.damage)),
+				str(roundi(stats.damage / maxi(_rounds.get_rounds_played(), 1)))]
 		var shown := _row_cells(table.get_row(member))
 		var wanted: Array = (expected[member] as Array).map(func(cell: Variant) -> String: return String(cell))
+		# The ADR column (M14, D-201): the damage over the rounds played (at least 1).
+		wanted.append(from_stats[5])
 		if shown != wanted or shown != from_stats:
 			wrong += "%s shows %s (expected %s, get_stats() says %s); " % [member.name, shown, wanted, from_stats]
 	_check("Every row shows name, kills, deaths, assists and rounded damage, as get_stats() has them (you are marked '(you)', 20.6 damage reads 21)",
@@ -1345,7 +1353,7 @@ func _test_scoreboard_table() -> void:
 	dimmed = _rounds.get_participants().filter(func(member: Character) -> bool: return table.is_muted(member))
 	var yours := _row_cells(table.get_row(_player))
 	_check("In the next round everyone is alive again and nothing is muted, while the numbers carry over (you: 1 kill, 100 damage; Bot2 still first)",
-			_rounds.round_number == 2 and dimmed.is_empty() and yours == [_player.name + " (you)", "1", "0", "0", "100"]
+			_rounds.round_number == 2 and dimmed.is_empty() and yours == [_player.name + " (you)", "1", "0", "0", "100", "100"]
 					and _names(table.get_displayed(0)) == _names([bot2, _player, bot1]),
 			"round %d, muted %s, your row %s, your team %s" % [_rounds.round_number, _names(dimmed), yours, _names(table.get_displayed(0))])
 	remove_child(table)
@@ -1501,7 +1509,7 @@ func _test_scoreboard_in_match_end_screen() -> void:
 	var yours := _row_cells(table.get_row(_player))
 	_check("The match-end screen shows 'Victory' and the same table: your team first, 3 rows each, your row marked with 3 kills and 300 damage, and nobody muted although the 3 enemies are dead",
 			screen.visible and title.text == "Victory" and team_boxes == ["Titles", "Team0", "Team1"] and table.get_displayed(0).size() == 3
-					and table.get_displayed(1).size() == 3 and yours == [_player.name + " (you)", "3", "0", "0", "300"]
+					and table.get_displayed(1).size() == 3 and yours == [_player.name + " (you)", "3", "0", "0", "300", "300"]
 					and _is_highlighted(table.get_row(_player)) and dead.size() == 3 and dimmed.is_empty(),
 			"visible %s, title '%s', boxes %s, your row %s, %d dead, muted %s" % [screen.visible, title.text, team_boxes, yours, dead.size(), _names(dimmed)])
 	screen.set_ui_scale(2.0)

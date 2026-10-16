@@ -35,7 +35,14 @@ func _init() -> void:
 	if out_index >= 0 and out_index + 1 < args.size():
 		_out_folder = args[out_index + 1]
 	DirAccess.make_dir_recursive_absolute(_out_folder)
+	# The studio's boot screen (M11) would cover every menu shot: it is checked by layout_test.
+	BootScreen.enabled = false
 	process_frame.connect(_keep_input_away)
+	if args.has("--stats-only"):
+		await _stats_shots()
+		print("Saved %d screenshots to %s" % [_count, _out_folder])
+		quit()
+		return
 	await _menu_shots()
 	await _match_shots()
 	await _respawn_shots()
@@ -82,6 +89,51 @@ func _menu_shots() -> void:
 	await _frames(4)
 	await _shot("settings_audio")
 	settings_menu.close()
+	root.remove_child(menu)
+	menu.free()
+	await _frames(2)
+	await _stats_shots()
+
+
+## The Stats screen (M14) with a book of made-up matches, one shot per tab (also alone, with --stats-only).
+func _stats_shots() -> void:
+	var menu: Node = load(GameLaunch.MENU_SCENE).instantiate()
+	menu.set("load_settings", false)
+	root.add_child(menu)
+	await _frames(10)
+	var stats: StatsMenu = menu.call("get_stats_menu")
+	var book := StatsBook.new()
+	var guns := ["rifle", "carbine", "smg", "shotgun", "sniper", "pistol"]
+	for index in 14:
+		var record := StatsMatch.new()
+		record.date = 1_792_000_000 + index * 86_400 + index * 977
+		record.mode = StatsMatch.MODE_ROUNDS if index % 3 != 0 else StatsMatch.MODE_RESPAWN
+		record.map = ["depot", "square", "spillway"][index % 3]
+		record.result = StatsMatch.LOSS if index % 4 == 1 else StatsMatch.WIN
+		record.score_us = 5 if record.result == StatsMatch.WIN else 3
+		record.score_them = 3 if record.result == StatsMatch.WIN else 5
+		record.kills = 9 + (index * 7) % 13
+		record.deaths = 6 + (index * 5) % 9
+		record.damage = 1400.0 + (index * 113) % 700
+		record.rounds = 8 if record.mode == StatsMatch.MODE_ROUNDS else 0
+		record.duration = 840.0 + index * 31
+		record.headshot_kills = record.kills / 3
+		for gun_index in guns.size():
+			var weapon := StatsWeapon.new()
+			weapon.add_shots(220 - gun_index * 30 + index)
+			for hit in 60 - gun_index * 7:
+				weapon.add_hit(Hitbox.Zone.HEAD if hit % 5 == 0 else Hitbox.Zone.values()[1 + hit % 4])
+			record.weapons[guns[gun_index]] = weapon
+		book.add_match(record)
+	book.submit_best("aim_flick_rifle", 4200.0, {"hits": 31, "accuracy": 62.5})
+	book.submit_best("aim_flick_smg", 3900.0, {"hits": 28, "accuracy": 55.0})
+	stats.book = book
+	stats.open()
+	for tab in StatsMenu.TAB_NAMES.size():
+		stats.get_tabs().current_tab = tab
+		await _frames(4)
+		await _shot("stats_%s" % StatsMenu.TAB_NAMES[tab].to_lower())
+	stats.close()
 	root.remove_child(menu)
 	menu.free()
 	await _frames(2)

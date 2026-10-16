@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Community maps for Chiip</title>
+	<meta name="description" content="Chiip's community maps are curated in the repository: build a map with the map kit, send a pull request, and it ships with the next release.">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+	<meta name="referrer" content="strict-origin-when-cross-origin">
+	<meta name="theme-color" content="#0b1017">
+	<meta property="og:title" content="Community maps for Chiip">
+	<meta property="og:description" content="Chiip's community maps are curated in the repository: build a map with the map kit, send a pull request, and it ships with the next release.">
+	<meta property="og:image" content="https://jankozeluh.github.io/Chiip/img/menu.png">
+	<link rel="icon" href="img/divocakos.png">
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+	<header class="site-header">
+		<div class="wrap">
+			<a class="brand" href="index.html"><img src="img/divocakos.png" alt="" width="40" height="40">Chiip</a>
+			<nav class="nav" aria-label="Main">
+			<a href="download.html">Download</a>
+			<a href="play.html">Play with friends</a>
+			<a href="updates.html">Updates</a>
+			<a href="maps.html" aria-current="page">Maps</a>
+			<a href="about.html">About</a>
+			</nav>
+		</div>
+	</header>
+	<main>
+		<div class="wrap">
+			<h1 class="page-title">Community maps</h1>
+			<p class="lead">Chiip ships with three small maps and a shooting range. More can come from you: maps are <strong>curated in the repository</strong>. You send a map as a pull request, it is looked at and played, and it ships with the next release.</p>
+
+			<h2>How a map gets in</h2>
+			<ol class="steps">
+				<li><strong>Build it from the map kit</strong> in <a href="https://trenchbroom.github.io">TrenchBroom</a>: textures, props and lamps drawn for Chiip, and markers for spawns, routes and bomb sites. The <a href="https://github.com/Jankozeluh/Chiip/blob/main/docs/MAPPING.md">mapping guide</a> goes through it step by step.</li>
+				<li><strong>Follow the rules:</strong> the look rules (a few materials, no saturated red or blue on big surfaces) and the building rules (first contact in 5 to 10 seconds, no long sightlines, no view from spawn to spawn) are in <a href="https://github.com/Jankozeluh/Chiip/blob/main/docs/MAPS.md">the maps notes</a>.</li>
+				<li><strong>Pass the checks:</strong> the maps test plays bot rounds and a respawn match on your map, and the map report measures it.</li>
+				<li><strong>Open a pull request</strong> with the map, screenshots and the test output. Your name goes in the credits.</li>
+			</ol>
+
+			<p><a class="button primary" href="https://github.com/Jankozeluh/Chiip/blob/main/CONTRIBUTING.md">Read CONTRIBUTING.md</a></p>
+
+			<div class="note">Maps you send are licensed <strong>CC BY-NC-SA 4.0</strong> like the game's other art, and you keep your copyright and your credit. Code contributions are GPL-3.0. Don't copy another game's map: no Counter-Strike names or layouts, no desert palettes.</div>
+		</div>
+
+	</main>
+	<footer class="site-footer">
+		<div class="wrap">
+			<div class="credit"><img src="img/divocakos.png" alt="The Divocakos logo, a laughing watermelon" width="56" height="56"><span>Created by JK · Divocakos</span></div>
+			<nav aria-label="Footer">
+				<a href="https://github.com/Jankozeluh/Chiip">Source code</a>
+				<a href="https://github.com/Jankozeluh/Chiip/issues">Report a bug</a>
+				<a href="https://github.com/Jankozeluh/Chiip/releases/latest">Latest release</a>
+				<a href="about.html">Licences</a>
+			</nav>
+			<small>&copy; Divocakos. Code GPL-3.0; art, models, maps and sounds CC BY-NC-SA 4.0; the Divocakos name and logo are all rights reserved.</small>
+		</div>
+	</footer>
+	<script src="js/site.js" defer></script>
+</body>
+</html>

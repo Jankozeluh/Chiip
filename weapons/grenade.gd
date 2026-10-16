@@ -98,9 +98,6 @@ func _ready() -> void:
 		_model = data.model.instantiate() as Node3D
 		add_child(_model)
 	_audio = AudioStreamPlayer3D.new()
-	_audio.bus = &"Effects"
-	_audio.unit_size = 6.0
-	_audio.max_distance = 40.0
 	add_child(_audio)
 
 
@@ -149,7 +146,7 @@ func _fly(delta: float) -> void:
 	var along := velocity - across
 	velocity = along * BOUNCE_ALONG - across * BOUNCE_NORMAL
 	if absf(into) > 2.0:
-		_play(BOUNCE_SOUND, -6.0)
+		_play(BOUNCE_SOUND, SoundMix.BOUNCE)
 	if normal.y > 0.7 and velocity.length() < REST_SPEED:
 		velocity = Vector3.ZERO
 		resting = true
@@ -254,9 +251,7 @@ func _finish(at: Vector3) -> void:
 	queue_free()
 
 
-func _play(stream: AudioStream, volume: float) -> void:
-	if Weapon.silent or stream == null:
+func _play(stream: AudioStream, category: StringName) -> void:
+	if Weapon.silent:
 		return
-	_audio.stream = stream
-	_audio.volume_db = volume
-	_audio.play()
+	Acoustics.play(_audio, stream, category)

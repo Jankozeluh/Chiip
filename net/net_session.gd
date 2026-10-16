@@ -63,10 +63,36 @@ signal match_message(data: Dictionary)
 
 ## The port a host listens on unless told otherwise (Quake's).
 const DEFAULT_PORT := 26000
+## Seconds a join waits for the host's answer (the roster) before it gives up (M12, D-178).
+const JOIN_TIMEOUT := 10.0
+## What the Join page says when nobody answers: the usual reasons, in the order a friend should check them.
+const NO_HOST_TEXT := "Couldn't reach the host. Check the address and port, that the host's game is running, and that you are both connected to Tailscale."
 ## Players besides the host: 5v5 at most.
 const MAX_CLIENTS := 9
 ## Names are cut to this many characters.
 const MAX_NAME_LENGTH := 16
+## What the host accepts from a client (M12, D-180). A friend's computer is not trusted: what it sends
+## is checked, cut or dropped, and a flood is not served. A packet bigger than this is dropped: the
+## biggest real ones are a few commands (21 bytes each) and small requests.
+const MAX_PACKET_BYTES_FROM_CLIENT := 8192
+## ... and what a client accepts from the host (a welcome with every character is the biggest).
+const MAX_PACKET_BYTES_FROM_HOST := 65536
+## Packets a client may send in a second of physics ticks (a game sends one commands packet per tick:
+## 128 a second). More is dropped; three seconds in a row are a flood and the client is removed.
+const MAX_PACKETS_PER_SECOND := 400
+const FLOOD_SECONDS_TO_KICK := 3
+## Session messages and team requests a client may send in a second; session hellos in all.
+const MAX_MESSAGES_PER_SECOND := 8
+const MAX_TEAM_REQUESTS_PER_SECOND := 4
+const MAX_REQUESTS_PER_SECOND := 20
+const MAX_HELLOS := 3
+## A computer that connects must introduce itself within this many seconds, or it is removed
+## (it would hold one of the nine places for nothing).
+const HELLO_TIMEOUT := 5.0
+## A session message holds at most this many entries, with keys and texts no longer than these.
+const MAX_MESSAGE_ENTRIES := 8
+const MAX_MESSAGE_KEY_LENGTH := 32
+const MAX_MESSAGE_TEXT_LENGTH := 128
 ## Reliable game-stream packets and session messages travel on this channel of the connection,
 ## unreliable ones on the next, so a lost snapshot never holds up a kill event behind it.
 const RELIABLE_CHANNEL := 0
@@ -106,6 +132,9 @@ var _inbox: Array = []
 var _arrivals: int = 0
 ## The physics ticks this session has run, for fake lag.
 var _tick: int = 0
+## Per client: what it sent in the current second of ticks, for the limits above
+## ([code]start[/code] tick, a count per kind, [code]over[/code] when the packet limit was passed, [code]strikes[/code]).
+var _limits: Dictionary = {}
 ## The latest due tick given to a reliable packet, so reliable packets stay in order.
 var _last_reliable_due: int = 0
 ## True once [signal closed] has been emitted.
@@ -193,6 +222,8 @@ func join_game(address: String, player_name: String, port: int = DEFAULT_PORT) -
 	multiplayer.multiplayer_peer = _peer
 	local_name = _clean_name(player_name)
 	_waiting_for_roster = true
+	# ENet itself gives up on a host that isn't there only after about 30 s, which looks like a hang.
+	get_tree().create_timer(JOIN_TIMEOUT).timeout.connect(_on_join_timeout)
 	return OK
 
 
@@ -352,9 +383,69 @@ func _on_peer_connected(peer_id: int) -> void:
 	if not is_host():
 		return
 	_configure_peer(peer_id)
+	# Whoever connects must say hello soon, or it only holds a place.
+	get_tree().create_timer(HELLO_TIMEOUT).timeout.connect(_on_hello_timeout.bind(peer_id))
+
+
+func _on_hello_timeout(peer_id: int) -> void:
+	if _closed or _closing or not is_host() or _players.has(peer_id) or not multiplayer.get_peers().has(peer_id):
+		return
+	kick(peer_id, "No hello: the connection was closed.")
+
+
+## True when [param peer_id] may send one more of [param what] ("packets", "messages", "teams",
+## "requests") in the current second of physics ticks, and counts it ("hellos" are not reset:
+## they count over the whole connection). Over the packet limit for
+## [constant FLOOD_SECONDS_TO_KICK] seconds in a row, the client is removed. Public so the host's
+## request handling and the tests use the same counters.
+func allow(peer_id: int, what: String, limit: int) -> bool:
+	var entry: Dictionary = _limits.get(peer_id, {})
+	var second := maxi(Engine.physics_ticks_per_second, 1)
+	if entry.is_empty():
+		entry = {"start": _tick, "strikes": 0, "over": false}
+	elif _tick - int(entry["start"]) >= second:
+		# A new second: a second that went over the packet limit is a strike, a quiet one clears them.
+		entry["strikes"] = int(entry["strikes"]) + 1 if entry["over"] else 0
+		for key in ["packets", "messages", "teams", "requests"]:
+			entry[key] = 0
+		entry["over"] = false
+		entry["start"] = _tick
+		if int(entry["strikes"]) >= FLOOD_SECONDS_TO_KICK:
+			_limits[peer_id] = entry
+			kick(peer_id, "Too many packets.")
+			return false
+	var count := int(entry.get(what, 0)) + 1
+	entry[what] = count
+	_limits[peer_id] = entry
+	if count > limit:
+		if what == "packets":
+			entry["over"] = true
+		return false
+	return true
+
+
+## True for a session message a client may send: a few entries with short text keys and plain values
+## (yes / no, numbers, short texts), nothing nested.
+static func is_valid_message(data: Dictionary) -> bool:
+	if data.size() > MAX_MESSAGE_ENTRIES:
+		return false
+	for key: Variant in data:
+		if not (key is String) or String(key).length() > MAX_MESSAGE_KEY_LENGTH:
+			return false
+		var value: Variant = data[key]
+		match typeof(value):
+			TYPE_BOOL, TYPE_INT, TYPE_FLOAT:
+				pass
+			TYPE_STRING, TYPE_STRING_NAME:
+				if String(value).length() > MAX_MESSAGE_TEXT_LENGTH:
+					return false
+			_:
+				return false
+	return true
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
+	_limits.erase(peer_id)
 	if not is_host() or not _players.has(peer_id) or _closed or _closing:
 		return
 	_players.erase(peer_id)
@@ -369,9 +460,18 @@ func _on_connected_to_server() -> void:
 	_rpc_hello.rpc_id(1, local_name, NetProtocol.VERSION)
 
 
+## [constant JOIN_TIMEOUT] seconds after [method join_game]: nobody answered yet, so give up.
+func _on_join_timeout() -> void:
+	if _closed or not _waiting_for_roster:
+		return
+	_waiting_for_roster = false
+	join_failed.emit(NO_HOST_TEXT)
+	_shut_down("Couldn't reach the host.")
+
+
 func _on_connection_failed() -> void:
 	_waiting_for_roster = false
-	join_failed.emit("Couldn't reach the host.")
+	join_failed.emit(NO_HOST_TEXT)
 	_shut_down("Couldn't reach the host.")
 
 
@@ -384,6 +484,15 @@ func _on_server_disconnected() -> void:
 
 func _on_peer_packet(peer_id: int, packet: PackedByteArray) -> void:
 	if _closed or packet.is_empty():
+		return
+	if is_host():
+		# A friend's computer is not trusted (D-180): only introduced players are heard, packets are
+		# small, and nobody may flood the host.
+		if not _players.has(peer_id) or packet.size() > MAX_PACKET_BYTES_FROM_CLIENT:
+			return
+		if not allow(peer_id, "packets", MAX_PACKETS_PER_SECOND):
+			return
+	elif packet.size() > MAX_PACKET_BYTES_FROM_HOST:
 		return
 	packets_received += 1
 	bytes_received += packet.size()
@@ -411,6 +520,8 @@ func _rpc_hello(player_name: String, version: int) -> void:
 	if not is_host():
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
+	if not allow(peer_id, "hellos", MAX_HELLOS):
+		return
 	if version != NetProtocol.VERSION:
 		_rpc_refused.rpc_id(peer_id, "The host runs a different version of Chiip.")
 		return
@@ -453,8 +564,11 @@ func _rpc_roster(entries: Array) -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_request_team(team: int) -> void:
-	if is_host():
-		_set_team(multiplayer.get_remote_sender_id(), team, true)
+	if not is_host():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if _players.has(peer_id) and allow(peer_id, "teams", MAX_TEAM_REQUESTS_PER_SECOND):
+		_set_team(peer_id, team, true)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -466,8 +580,12 @@ func _rpc_match_message(data: Dictionary) -> void:
 func _rpc_message_to_host(data: Dictionary) -> void:
 	if not is_host():
 		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _players.has(peer_id) or not allow(peer_id, "messages", MAX_MESSAGES_PER_SECOND) or not is_valid_message(data):
+		return
 	var message := data.duplicate()
-	message["from"] = multiplayer.get_remote_sender_id()
+	# The sender is whoever the connection says, whatever the message claims.
+	message["from"] = peer_id
 	match_message.emit(message)
 
 
@@ -527,13 +645,27 @@ func _smaller_team() -> int:
 ## A name for people and for a node: trimmed, at most [constant MAX_NAME_LENGTH] characters,
 ## without the characters node names can't have, and never empty or a bot's name ("Bot3").
 static func _clean_name(text: String) -> String:
-	var clean := text.strip_edges().validate_node_name().replace("%", "").left(MAX_NAME_LENGTH).strip_edges()
+	var clean := _printable(text).strip_edges().validate_node_name().replace("%", "").left(MAX_NAME_LENGTH).strip_edges()
 	if clean.is_empty():
 		clean = "Player"
 	var bot_name := RegEx.create_from_string("^Bot[0-9]+$")
 	if bot_name.search(clean) != null:
 		clean = "Player " + clean
 	return clean.left(MAX_NAME_LENGTH)
+
+
+## [param text] without control characters and the invisible ones that change how text reads
+## (zero-width characters, the marks that reverse its direction): a name can't hide or spoof anything.
+static func _printable(text: String) -> String:
+	var result := ""
+	for character in text:
+		var code := character.unicode_at(0)
+		if code < 32 or code == 127 or (code >= 0x80 and code < 0xA0) or (code >= 0x200B and code <= 0x200F) \
+				or (code >= 0x202A and code <= 0x202E) or (code >= 0x2060 and code <= 0x2069) or code == 0xFEFF:
+			result += " "
+		else:
+			result += character
+	return result
 
 
 ## [param wanted], or with a number after it when someone has that name already ("Jan 2").

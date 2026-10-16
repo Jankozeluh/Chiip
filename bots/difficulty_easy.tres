@@ -18,3 +18,4 @@ burst_distance = 15.0
 burst_length = 1
 spray_length = 4
 burst_pause = 0.6
+team_play = 0.4

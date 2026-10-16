@@ -9,3 +9,16 @@
 
 # Python caches of the tools (tools/modelgen, tools/concept)
 __pycache__/
+
+# Secrets and signing material: never commit these (Godot keeps export passwords in
+# export_credentials.cfg, next to export_presets.cfg)
+export_credentials.cfg
+*.p12
+*.pfx
+*.keystore
+*.jks
+.env
+
+# Claude Code: per-machine settings and its working copies of the repository
+.claude/worktrees/
+.claude/settings.local.json

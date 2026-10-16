@@ -157,6 +157,7 @@ func _on_match_ended(winner: int) -> void:
 	var you := Teams.viewer_team
 	var them := Teams.other(you)
 	var won := winner == you
+	Music.play_stinger(Music.stinger_for_match(won))
 	_title.text = "Victory" if won else "Defeat"
 	_title.theme_type_variation = &"VictoryLabel" if won else &"DefeatLabel"
 	_your_score.text = str(_manager.score[you])

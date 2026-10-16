@@ -578,9 +578,10 @@ func _palette(color_name: StringName) -> Color:
 	return _bottom_left.get_theme_color(color_name, PALETTE_TYPE)
 
 
-## The palette's UI colour of [param team]: friendly for the viewer's team, enemy for the other.
+## The UI colour of [param team]: friendly for the viewer's team, enemy for the other (the
+## colour-blind scheme's, D-210, when it is on).
 func _team_color(team: int) -> Color:
-	return _palette(&"friendly_text" if team == Teams.viewer_team else &"enemy_text")
+	return Teams.ui_color_for(team)
 
 
 ## Your ears ring after a flashbang, as long as it blinds you.

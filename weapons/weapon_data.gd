@@ -66,6 +66,10 @@ const PATHS: Array[String] = [
 @export var range_modifier: float = 0.98
 ## How far bullets reach, in metres. CS: 8192 units ≈ 208 m.
 @export var max_range: float = 208.0
+## How well a bullet goes through walls (D-214): the thickness of each material that stops it is
+## [method Surfaces.reach] times this, and a bullet that goes through keeps the share of its damage
+## the wall didn't take. 1.0 is the rifle; 0 means the weapon's bullets stop at the first wall.
+@export var penetration: float = 1.0
 ## The share of the damage that reaches health when the hit lands on armor (CS's armor ratio
 ## halved: the AK's 1.55 is 0.775). See [Armor].
 @export_range(0.0, 1.0) var armor_penetration: float = 0.5
@@ -180,10 +184,20 @@ const PATHS: Array[String] = [
 @export_group("Sounds")
 ## Played for every shot.
 @export var shot_sound: AudioStream
+## The same shot heard from far away (M13, D-191): duller, with a longer echo. Others' shots
+## crossfade from [member shot_sound] to this one with distance; none = only the close one.
+@export var shot_far_sound: AudioStream
+## How much louder this weapon's shots are than the mix's shot level, in dB (D-194): the sniper
+## rifle carries more than a pistol.
+@export var shot_volume_db: float = 0.0
 ## Played when you pull the trigger on an empty magazine.
 @export var dry_fire_sound: AudioStream
-## Played at each step of a reload (magazine out, magazine in, bolt).
+## Played at each step of a reload (magazine out, magazine in, bolt) when [member reload_sounds]
+## has no sound for that step; for a shotgun, at every shell.
 @export var reload_sound: AudioStream
+## One sound per reload step (M13, D-191): magazine out, magazine in, then the bolt or slide
+## (the cues of [constant GunModel.MAGAZINE_SOUNDS]).
+@export var reload_sounds: Array[AudioStream] = []
 ## Played when a melee attack lands on someone (the knife).
 @export var hit_sound: AudioStream
 ## Played a moment after each shot (the shotgun's pump, the sniper rifle's bolt), at
