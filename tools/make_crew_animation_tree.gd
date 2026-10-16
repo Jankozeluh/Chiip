@@ -151,7 +151,10 @@ func _init() -> void:
 	tree.add_node("ReloadKind", _kinds(tree, RELOADS, Vector2(x - 400, 900)), Vector2(x - 200, 400))
 	tree.add_node("ReloadSpeed", AnimationNodeTimeScale.new(), Vector2(x - 60, 400))
 	tree.connect_node("ReloadSpeed", 0, "ReloadKind")
-	var reload := _one_shot(0.12, 0.15, false)
+	# A short fade-out (M11, D-158): fades count real seconds, and a shotgun shell lasts only
+	# 0.43 s, so a longer one pulled the hand off the loading port before the shell was in. The
+	# magazine reloads end on the hold pose anyway.
+	var reload := _one_shot(0.1, 0.05, false)
 	_filter(reload, ARM_BONES)
 	tree.add_node("Reload", reload, Vector2(x, 100))
 	tree.connect_node("Reload", 0, "Attack")

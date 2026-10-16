@@ -40,9 +40,6 @@ const GUN_FLASH_TIME := 0.04
 const RUN_SPEED := 215.0 * 0.0254
 const WALK_SPEED := RUN_SPEED * 0.52
 const CROUCH_SPEED := RUN_SPEED * 0.34
-## Length of every reload clip in seconds (the rifle's reload time when it was made); it is
-## stretched to the held weapon's own reload time (a shotgun shell's too).
-const RELOAD_CLIP_TIME := 2.5
 ## The animation sets of the graph (tools/make_crew_animation_tree.gd, D-096): each has its own
 ## aim blend, Aim_<set>.
 const ANIM_SETS: Array[StringName] = [&"rifle", &"carbine", &"smg", &"shotgun", &"sniper", &"pistol", &"hand_cannon",
@@ -513,12 +510,17 @@ func _on_weapon_changed(weapon: Weapon) -> void:
 	if _weapon != null and is_instance_valid(_weapon) and _weapon.shell_loading.is_connected(_on_shell_loading):
 		_weapon.shell_loading.disconnect(_on_shell_loading)
 		_weapon.drawn.disconnect(_on_weapon_drawn)
+		_weapon.reload_finished.disconnect(_on_reload_finished)
 	_weapon = weapon
 	if weapon != null:
 		weapon.fired.connect(_on_fired)
 		weapon.reload_started.connect(_on_reload_started)
 		weapon.shell_loading.connect(_on_shell_loading)
 		weapon.drawn.connect(_on_weapon_drawn)
+		weapon.reload_finished.connect(_on_reload_finished)
+	# A reload of the weapon put away stops showing (a switch drops it, as in CS).
+	if _tree != null:
+		_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
 	var data := weapon.data if weapon != null else _NO_GUN
 	if data != _gun_data:
 		_show_gun(data)
@@ -562,8 +564,8 @@ func _on_reload_started() -> void:
 	var duration := weapon.get_reload_time()
 	var clip := "reload" if set_name == &"rifle" else "reload_%s" % set_name
 	if weapon.data.reload_per_shell:
-		# The first shell includes bringing the gun up; every later one plays the shell again.
-		clip = "reload_shell"
+		# The first shell includes bringing the gun up (reload_shotgun); every later one plays
+		# reload_shell again (_on_shell_loading).
 		duration += weapon.data.reload_start_time * weapon._class_factor(&"reload_time_factor")
 	if not RELOAD_CLIPS.has(clip):
 		return
@@ -587,11 +589,20 @@ func _on_shell_loading() -> void:
 		_play_reload("reload_shell", _character.weapon.get_reload_time())
 
 
-## Plays the reload clip [param clip] on the arms, stretched to [param duration] seconds.
+## Plays the reload clip [param clip] on the arms, stretched to [param duration] seconds, so it
+## lasts exactly the reload (M11, D-158).
 func _play_reload(clip: String, duration: float) -> void:
+	var length := _player.get_animation(clip).length if _player != null and _player.has_animation(clip) else duration
 	_tree.set("parameters/ReloadKind/transition_request", clip)
-	_tree.set("parameters/ReloadSpeed/scale", RELOAD_CLIP_TIME / maxf(duration, 0.1))
+	_tree.set("parameters/ReloadSpeed/scale", length / maxf(duration, 0.05))
 	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## The held weapon's reload ended: done, or cut short (a shot stops a shotgun's reload, D-095).
+## A reload still showing fades out.
+func _on_reload_finished() -> void:
+	if _tree != null and bool(_tree.get("parameters/Reload/active")):
+		_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 
 
 func _on_damaged(_amount: float, zone: Hitbox.Zone, _attacker: Character) -> void:

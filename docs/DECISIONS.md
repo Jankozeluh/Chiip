@@ -1687,6 +1687,18 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Alternatives:** Pull each gun back toward the camera until the hand reaches (the Breaker would sit 14 cm closer, a very different viewmodel); longer arms in first person (the body's and the arms' proportions are the same on purpose, D-079).
 
+## D-158 — Reloads on one timeline: magazine and shell in the hand, sounds on cue (2026-10-16)
+
+**Decision:**
+- **One timeline:** every reload clip, first and third person, is keyed to the same moments, as fractions of the reload: a magazine is taken at 0.24, swapped for a fresh one at the vest at 0.38, in at 0.66, the handle at 0.80; a shotgun shell is taken from the vest at 0.28 and in at 0.80 (`holds.RELOAD_EVENTS`, `GunModel.MAGAZINE_EVENTS` / `SHELL_EVENTS`).
+- **The magazine moves:** it is a node of its own in the gun model; from 0.24 to 0.66 it goes with the left hand, then back into its seat (`GunModel.update()`, in both views). The shotgun has a `Shell` that sits in the left palm from 0.28 to 0.80, when the hand puts it into the loading port. The pistols' magazines have a body inside the grip, so a whole magazine comes out.
+- **Sounds on cue:** magazine out 0.28, in 0.66, the handle 0.80 (they were at 0.10, 0.60 and 0.85, before the hand even reached the magazine); a shell's sound as it goes in (0.80), not when it counts at the end. `Weapon.reload_cue(step)` fires with each.
+- **Exactly the reload's length:** the body's clip is stretched by its own length (all were assumed 2.5 s). The shotgun's first shell has its own body clip, `reload_shotgun`: the gun brought up, then the shell, like the first-person one. The reload one-shot fades out in 0.05 s instead of 0.15 s (a fade counts real seconds, and a shell lasts only 0.43 s, so the fade pulled the hand off the port). A reload cut short (a shot during a shotgun reload, a weapon switch) fades out on the body; the arms play the shot.
+
+**Why:** In your words, "reloading guns goes correctly". The magazine never left the gun (the hand went to it and back while it stayed in), the sounds came early, and the body's shotgun reload counted the first shell's lead-in as part of the shell.
+
+**Alternatives:** Drop the old magazine as a physics prop (CS doesn't; more objects each reload); animate the magazine in the generator as a bone (it would need a bone on every gun's skeleton, which guns don't have); write the moments into each clip as animation markers (glTF has no markers, and every clip shares the same moments anyway).
+
 ## Open questions
 
 | Question | Decide in |

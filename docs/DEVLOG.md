@@ -9,7 +9,9 @@
 - New tool `tools/hold_sheet.gd`: a contact sheet per weapon with the four classes in several poses.
 - **Holds (D-156, D-157):** the guns' points are nodes in their models now (`point_foregrip`...; the magazine and the shotgun's shell are nodes of their own too). Third person: a left-hand IK (`characters/crew/hand_ik.gd`) on every body, and aim poses every 20°: the left hand was up to 34.6 cm off the gun when the game blended poses, now at most 0.9 cm. First person: the left arm didn't reach the long guns (17 cm short on the Breaker's pump); each class's left shoulder now sits where it reaches every foregrip. New `weapons/gun_model.gd` (`GunModel`). The `holds` suite measures both.
 
-**Next:** reloads, checks.
+- **Reloads (D-158):** every reload clip is keyed to one timeline; the magazine leaves the gun in the left hand and comes back into its seat (within 0.7 cm), the shotgun's shell sits in the palm and goes into the port, the sounds come on their cues (they were early), the body's reload lasts exactly the reload (its own clip length; a first-shell clip for the shotgun; a 0.05 s fade-out), and a reload cut short stops showing.
+
+**Next:** checks and the full run.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

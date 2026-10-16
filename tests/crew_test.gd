@@ -685,7 +685,7 @@ func _test_holds() -> void:
 	shotgun.magazine = 4
 	shotgun.reload()
 	await _wait_ticks(2)
-	var first := String(arms_player.call().current_animation) == "fp_shotgun_reload" and String(tree.get("parameters/ReloadKind/current_state")) == "reload_shell"
+	var first := String(arms_player.call().current_animation) == "fp_shotgun_reload" and String(tree.get("parameters/ReloadKind/current_state")) == "reload_shotgun"
 	await _wait_seconds_ticks(1.0)
 	var next := String(arms_player.call().current_animation) == "fp_shotgun_reload_shell"
 	_check("The Breaker's reload: bring it up and the first shell, then a shell at a time, on the body and the arms",

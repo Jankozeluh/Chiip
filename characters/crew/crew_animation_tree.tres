@@ -766,8 +766,8 @@ animation = &"land"
 [sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_01na7"]
 filter_enabled = true
 filters = ["Skeleton3D:forearm_l", "Skeleton3D:forearm_r", "Skeleton3D:hand_l", "Skeleton3D:hand_r", "Skeleton3D:upper_arm_l", "Skeleton3D:upper_arm_r"]
-fadein_time = 0.12
-fadeout_time = 0.15
+fadein_time = 0.1
+fadeout_time = 0.05
 
 [sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_wox2k"]
 input_0/name = "reload"

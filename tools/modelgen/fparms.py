@@ -275,12 +275,14 @@ def _long_gun_extras(rig, set_name):
             if left is None:
                 return rig.hold(rot, pos)
             if isinstance(left, str):
-                wrist = pos + rot @ (rig.gun[left] + np.array([-0.04, -0.06, 0.05]))
+                # the shell in the palm goes into the loading port (GunModel shows it there)
+                wrist = pos + rot @ (rig.gun[left] + rig.hand_l_wrist)
             else:
                 wrist = np.asarray(left, float)
             return rig.hold(rot, pos, left=(wrist, rot @ rig.hand_l_rot, (-0.9, -0.7, 0.1)))
-        shell = [(0.0, tipped(1.0)), (0.18, tipped(1.0, (-0.06, -0.55, -0.20))), (0.36, tipped(1.0, 'magazine')),
-                 (0.50, tipped(1.0))]
+        # keyed to holds.RELOAD_EVENTS['shell']: the shell taken at 0.28, in at 0.80
+        shell = [(0.0, tipped(1.0)), (0.14, tipped(1.0, (-0.06, -0.55, -0.20))), (0.32, tipped(1.0, 'magazine')),
+                 (0.40, tipped(1.0, 'magazine')), (0.50, tipped(1.0))]
         out.append(_keyed_clip('fp_shotgun_reload', [(0.0, rig.held()), (0.40, tipped(1.0))] +
                                [(0.40 + t, p) for t, p in shell[1:]], 0.90))
         out.append(_keyed_clip('fp_shotgun_reload_shell', shell, 0.50))
@@ -314,9 +316,10 @@ def _pistol_clips(rig, set_name):
         else:
             wrist = np.asarray(left, float)
         return rig.hold(rot, pos, left=(wrist, rot @ rig.hand_l_rot, (-0.9, -0.7, 0.1)))
-    keys = [(0.0, rig.held()), (0.25, tipped(1.0)), (0.50, tipped(1.0, 'magazine')),
-            (0.80, tipped(1.0, (-0.08, -0.60, -0.20))), (1.10, tipped(1.0, (-0.05, -0.45, -0.30))),
-            (1.40, tipped(1.0, 'magazine')), (1.70, tipped(0.6, 'handle')), (1.85, tipped(0.6, 'handle')),
+    # keyed to holds.RELOAD_EVENTS['magazine'] (fractions of 2.2 s): grab, swap, insert, slide
+    keys = [(0.0, rig.held()), (0.25, tipped(1.0)), (0.53, tipped(1.0, 'magazine')),
+            (0.84, tipped(1.0, (-0.08, -0.60, -0.20))), (1.12, tipped(1.0, (-0.05, -0.45, -0.30))),
+            (1.45, tipped(1.0, 'magazine')), (1.72, tipped(0.6, 'handle')), (1.87, tipped(0.6, 'handle')),
             (2.20, rig.held())]
     out.append(_keyed_clip(f'fp_{set_name}_reload', keys, 2.2))
     return out

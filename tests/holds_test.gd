@@ -11,10 +11,20 @@ extends Node
 ## Holds (D-156): in third person every class keeps its left hand on every gun's foregrip in the
 ## poses the game blends (aim pitches, crouching, running, strafing, the kick, a flinch), within
 ## [constant GRIP_TOLERANCE]; the numbers without the hand IK are printed for comparison. In first
-## person the arms' idle, kick and draw clips hold the foregrip too. Quits with the number of
-## failed checks as the exit code.
+## person the arms' idle, kick and draw clips hold the foregrip too.
+##
+## Reloads (D-158), every class with every gun, in first and in third person: the reload clip lasts
+## exactly the reload; the magazine leaves the gun with the left hand and comes back into its seat
+## (the clips and GunModel's moments agree); the shotgun's shell is in the hand and reaches the
+## loading port; the sounds come on their cues; a shot cuts a shotgun reload short, and the
+## animations stop with it. Quits with the number of failed checks as the exit code.
 
 const MAIN_SCENE := preload("res://main.tscn")
+const CHARACTER_SCENE := preload("res://characters/character.tscn")
+## How near its seat the magazine must come back, and the shell to the loading port (metres).
+const SEAT_TOLERANCE := 0.03
+## How far out of the gun the magazine must go during a reload (metres).
+const MAGAZINE_OUT := 0.10
 const CLASS_DIR := "res://characters/crew/classes/"
 const CLASSES: Array[String] = ["rifleman", "bulwark", "marksman", "scout"]
 const WEAPONS: Array[String] = ["rifle", "carbine", "smg", "shotgun", "sniper", "pistol", "hand_cannon", "knife",
@@ -45,6 +55,7 @@ func _ready() -> void:
 	_free_main()
 	await _test_third_person_holds()
 	_test_first_person_holds()
+	await _test_reloads()
 	_free_main()
 	GameLaunch.clear()
 	MenuState.reset()
@@ -287,6 +298,168 @@ func _test_first_person_holds() -> void:
 	_check("First person: every class's arms hold every gun's foregrip in the idle, the kick and the end of the draw",
 			measured > 0 and worst <= GRIP_TOLERANCE and worst_angle <= GRIP_ANGLE_TOLERANCE,
 			"%d frames, worst %.1f cm (%s), %.1f° off" % [measured, worst * 100.0, worst_where, worst_angle])
+
+
+# --- Reloads (D-158) ---
+
+
+## Every class reloads every gun in first and third person: lengths, the magazine, the shell, the
+## sound cues; then a shotgun reload cut short by a shot.
+func _test_reloads() -> void:
+	var length_errors: Array[String] = []
+	var magazine_errors: Array[String] = []
+	var cue_errors: Array[String] = []
+	var reloads := 0
+	var worst_seat := 0.0
+	var least_out := INF
+	for class_id in CLASSES:
+		var character := CHARACTER_SCENE.instantiate() as Character
+		character.class_data = load(CLASS_DIR + class_id + ".tres") as ClassData
+		add_child(character)
+		await _ticks(2)
+		for weapon_id in TWO_HANDED:
+			var data := load("res://weapons/%s.tres" % weapon_id) as WeaponData
+			character.inventory.set_loadout([data] as Array[WeaponData])
+			for first_person: bool in [true, false]:
+				character.set_first_person(first_person)
+				await _ticks(int(data.draw_time * 128.0) + 8)
+				var weapon := character.weapon
+				# One round short (a shotgun: one shell), plenty in reserve.
+				weapon.magazine = data.magazine_size - 1
+				weapon.reserve = data.magazine_size
+				var cues: Array = []
+				var on_cue := func(step: int) -> void: cues.append([step, weapon.get_reload_progress()])
+				weapon.reload_cue.connect(on_cue)
+				weapon.reload()
+				await get_tree().process_frame
+				reloads += 1
+				var where := "%s/%s/%s" % [class_id, weapon_id, "fp" if first_person else "tp"]
+				var expected := weapon.get_reload_time()
+				if data.reload_per_shell:
+					expected += data.reload_start_time * weapon._class_factor(&"reload_time_factor")
+				var shown := _shown_reload_length(character, weapon, first_person)
+				if absf(shown - expected) > 0.02:
+					length_errors.append("%s %.2f s instead of %.2f" % [where, shown, expected])
+				var result := await _follow_reload(character, weapon, first_person)
+				weapon.reload_cue.disconnect(on_cue)
+				worst_seat = maxf(worst_seat, result.back_at)
+				if not data.reload_per_shell:
+					least_out = minf(least_out, result.out)
+				if result.back_at > SEAT_TOLERANCE or result.out < MAGAZINE_OUT or result.after > 0.001:
+					magazine_errors.append("%s: back %.1f cm, out %.1f cm, after %.1f cm" % [where,
+							result.back_at * 100.0, result.out * 100.0, result.after * 100.0])
+				var wanted := GunModel.SHELL_SOUNDS if data.reload_per_shell else GunModel.MAGAZINE_SOUNDS
+				var cues_ok := cues.size() == wanted.size()
+				for i in mini(cues.size(), wanted.size()):
+					cues_ok = cues_ok and cues[i][0] == i and absf(float(cues[i][1]) - wanted[i]) < 0.03
+				if not cues_ok:
+					cue_errors.append("%s %s" % [where, str(cues)])
+		character.free()
+	_check("Reloads last exactly the reload time in first and third person (the clip is stretched to it), every class × gun",
+			reloads == CLASSES.size() * TWO_HANDED.size() * 2 and length_errors.is_empty(),
+			"%d reloads%s" % [reloads, "; " + ", ".join(length_errors.slice(0, 4)) if not length_errors.is_empty() else ""])
+	_check("The magazine (the shotgun's shell) goes with the left hand and back into its seat (the loading port), in first and third person",
+			magazine_errors.is_empty(), "worst %.1f cm from the seat, out at least %.1f cm%s" % [worst_seat * 100.0,
+					least_out * 100.0, "; " + ", ".join(magazine_errors.slice(0, 4)) if not magazine_errors.is_empty() else ""])
+	_check("The reload sounds come on their cues (magazine out, in, handle; a shell going in)",
+			cue_errors.is_empty(), ", ".join(cue_errors.slice(0, 4)))
+	await _test_shotgun_interrupt()
+
+
+## How long the reload being shown lasts: the arms' clip in first person, the body's in third.
+func _shown_reload_length(character: Character, weapon: Weapon, first_person: bool) -> float:
+	if first_person:
+		var player := weapon.get_node("Viewmodel/Arms").find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+		return player.current_animation_length / maxf(player.get_playing_speed(), 0.001)
+	var tree := character.body.get_animation_tree()
+	var clip := String(tree.get("parameters/ReloadKind/current_state"))
+	var player := character.body.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	if not player.has_animation(clip):
+		return -1.0
+	return player.get_animation(clip).length / maxf(float(tree.get("parameters/ReloadSpeed/scale")), 0.001)
+
+
+## Steps through a reload in progress: how far the magazine (or the shell) is from its seat (the
+## loading port) just before it goes in, the farthest it gets out, and where it is afterwards.
+func _follow_reload(character: Character, weapon: Weapon, first_person: bool) -> Dictionary:
+	var parts := _parts_of(character, weapon, first_person)
+	var model := _model_of(character, weapon, first_person)
+	var shell := weapon.data.reload_per_shell
+	var part := parts.get_shell() if shell else parts.get_magazine()
+	var result := {"back_at": INF, "out": 0.0, "after": 0.0}
+	var insert: float = GunModel.events_for(weapon.data)[&"insert"]
+	while weapon.is_reloading():
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		var progress := weapon.get_reload_progress()
+		var seat_position := model.get_parent_node_3d().global_transform * GunModel.point_transform(model, "magazine").origin
+		var distance := part.global_position.distance_to(seat_position)
+		if (part.visible or not shell) and progress < insert and progress > insert - 0.06:
+			result.back_at = distance
+		if part.visible:
+			result.out = maxf(result.out, distance)
+	await get_tree().process_frame
+	if not shell:
+		result.after = part.global_position.distance_to(model.get_parent_node_3d().global_transform
+				* GunModel.point_transform(model, "magazine").origin)
+	elif part.visible:
+		result.after = 1.0
+	if shell:
+		result.out = MAGAZINE_OUT
+	return result
+
+
+func _parts_of(character: Character, weapon: Weapon, first_person: bool) -> GunModel:
+	return weapon._gun_parts if first_person else character.body.get_gun_parts()
+
+
+func _model_of(character: Character, weapon: Weapon, first_person: bool) -> Node3D:
+	if not first_person:
+		return character.body.get_gun_model()
+	var mount := weapon.get_node("Viewmodel/Arms").find_child("Gun", true, false) as Node3D
+	for child in mount.get_children():
+		if child.name != "MuzzleFlash":
+			return child as Node3D
+	return null
+
+
+## A shot stops a shotgun's reload once a shell is in: the weapon stops reloading, and neither the
+## arms nor the body keep showing it; the shell in the hand goes away.
+func _test_shotgun_interrupt() -> void:
+	var character := CHARACTER_SCENE.instantiate() as Character
+	character.class_data = load(CLASS_DIR + "rifleman.tres") as ClassData
+	add_child(character)
+	await _ticks(2)
+	var data := load("res://weapons/shotgun.tres") as WeaponData
+	character.inventory.set_loadout([data] as Array[WeaponData])
+	character.set_first_person(true)
+	await _ticks(int(data.draw_time * 128.0) + 8)
+	var weapon := character.weapon
+	weapon.magazine = data.magazine_size - 4
+	weapon.reserve = 10
+	weapon.reload()
+	# The first shell (brought up, then in) and half of the second.
+	var wait := data.reload_start_time + data.reload_time * 1.5
+	await _ticks(int(wait * 128.0))
+	var loading := weapon.is_reloading()
+	character._input.shoot = true
+	await _ticks(3)
+	character._input.shoot = false
+	await _ticks(40)
+	var arms := weapon.get_node("Viewmodel/Arms").find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var tree := character.body.get_animation_tree()
+	var fp_clip := String(arms.current_animation)
+	_check("A shot cuts a shotgun reload short: the weapon stops loading, the arms and the body stop showing the reload, the shell leaves the hand",
+			loading and not weapon.is_reloading() and not fp_clip.contains("reload")
+					and not bool(tree.get("parameters/Reload/active")) and not weapon._gun_parts.get_shell().visible,
+			"was loading %s, still %s, arms play %s, body reload active %s" % [loading, weapon.is_reloading(), fp_clip,
+					tree.get("parameters/Reload/active")])
+	character.free()
+
+
+func _ticks(count: int) -> void:
+	for i in count:
+		await get_tree().physics_frame
 
 
 func _free_main() -> void:

@@ -676,9 +676,10 @@ def pistol_reload_clip(rig):
     return keyframes(rig, keys, 2.5)
 
 
-def shell_clip(rig):
+def shell_clip(rig, first=False):
     """one shotgun shell going in, 2.5 s (stretched to the shell time): the gun tips toward the
-    body, the left hand takes a shell from the vest and pushes it into the loading port."""
+    body, the left hand takes a shell from the vest and pushes it into the loading port. `first`:
+    the reload's first shell, 4.5 s, the gun brought up from the aim first (M11, D-158)."""
     def at(tilt, left):
         p = stand_pose(rig)
         rot, pos = rig.hold(0.0, 0.0, p)
@@ -689,18 +690,25 @@ def shell_clip(rig):
             return p
         where, pole = left
         if isinstance(where, str):
-            wrist = pos + tilted @ (rig.gun[where] + np.array([-0.04, -0.06, 0.05]))
+            # the shell in the palm goes into the loading port (GunModel shows it there)
+            wrist = pos + tilted @ (rig.gun[where] + rig.hand_l_wrist)
         else:
             w = rig.world(p)
             wrist = w['chest'][1] + w['chest'][0] @ np.asarray(where, float)
         rig.grip(p, tilted, pos, left=(wrist, tilted @ rig.hand_l_rot, pole))
         return p
     pole = (-0.8, -0.6, 0.1)
+    # keyed to holds.RELOAD_EVENTS['shell']: the shell taken at 0.28, in at 0.80
     keys = [(0.0, at(1.0, None)),
             (0.7, at(1.0, ((-0.05, -0.28, -0.10), pole))),
             (1.6, at(1.0, ('magazine', pole))),
             (2.0, at(1.0, ('magazine', pole))),
             (2.5, at(1.0, None))]
+    if first:
+        # the first shell after bringing the gun up from the aim (reload_start_time, 0.4 s of
+        # the 0.5 s shell: 2.0 s at this clip's scale)
+        keys = [(0.0, stand_pose(rig))] + [(t + 2.0, p) for t, p in keys]
+        return keyframes(rig, keys, 4.5)
     return keyframes(rig, keys, 2.5)
 
 
@@ -757,7 +765,9 @@ def set_clips(body, bone_points, sets, points_of, style_of, base_points):
             if name == 'shotgun':
                 times, poses = shell_clip(rig)
                 clips.append(('reload_shell', False, keyed(rig, times, poses)))
-            times, poses = reload_clip(rig)
+                times, poses = shell_clip(rig, first=True)
+            else:
+                times, poses = reload_clip(rig)
             clips.append((f'reload_{name}', False, keyed(rig, times, poses)))
         elif style == 'pistol':
             times, poses = pistol_reload_clip(rig)
