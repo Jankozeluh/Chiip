@@ -71,7 +71,8 @@ To play a different map (also straight into the game, as a match where the map a
 | Walk (silent) | Shift |
 | Pause menu (pauses the game and frees the mouse; Esc again resumes) | Esc |
 | Capture the mouse again (after alt-tab, with no menu open) | Click in the window |
-| Shoot | Left mouse button |
+| Shoot (the knife: slash; a grenade: throw) | Left mouse button |
+| Scope in two steps (Heron), stab (knife), lob (grenade) | Right mouse button |
 | Next teammate (while dead in a match) | Left mouse button |
 | Reload | R |
 | Weapons: primary, pistol, knife, grenades (4 again: the next grenade) | 1, 2, 3, 4 |

@@ -237,6 +237,7 @@ func _physics_process(delta: float) -> void:
 		# The weapon processes after the character (children run after their
 		# parent), so it sees this tick's trigger state.
 		weapon.trigger_held = _input.shoot
+		weapon.aim_held = _input.aim
 		if _input.reload:
 			weapon.reload()
 	if noclip:
@@ -412,6 +413,8 @@ func aim_at(target: Vector3) -> void:
 ## or [member max_speed] with nothing in hand.
 func get_max_speed() -> float:
 	if weapon != null and weapon.data != null:
+		if weapon.is_scoped():
+			return weapon.data.scoped_max_speed_units * UNITS_TO_METRES
 		return weapon.data.max_speed_units * UNITS_TO_METRES
 	return max_speed
 

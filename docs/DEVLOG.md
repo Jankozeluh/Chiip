@@ -11,7 +11,9 @@
 
 - **Task 3, weapon models and icons** (D-092): a Sonnet subagent built every weapon as a part list in the generator (the AK became `rifle`, unchanged), with buy-menu and kill-feed icons rendered headless in Python; I checked the contact sheets (every gun reads by its silhouette). The data files point at the models and icons, guns on the floor and in bodies' hands show their own models, and the kill feed shows the killing weapon's icon.
 
-**Next:** task 6 (how each gun works), with generated shot sounds for every gun (a Sonnet subagent is making them).
+- **Task 6, how each gun works** (D-095): pistols fire once per click; the Breaker fires 9 pellets and loads shell by shell (fire interrupts); the Heron's scope steps on the right mouse button with CS's scope-in delay and stand-still accuracy, drops out after each shot and comes back, narrows the camera and slows the mouse, with a drawn scope view and no crosshair; the knife slashes and stabs with CS:GO's numbers and backstabs. The Rifleman reloads 15% faster and the Marksman scopes in 20% faster and recovers 30% faster. Every gun has its own generated sound (22 new sounds by a Sonnet subagent, measured but not heard: your ears decide; the rifle, hand cannon and shotgun are the closest trio). New `tests/guns_test.tscn` (16 checks); the weapon test's player is now a Scout so the rifle's M2 numbers stay perk-free. All 20 suites pass.
+
+**Next:** task 7 (holds and animations for pistols, the knife and grenades, and a reload per weapon).
 
 ## 2026-10-15 — M7 arsenal, perks & economy
 

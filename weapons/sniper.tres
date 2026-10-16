@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="weapon_data_script"]
-[ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_shot.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/sniper_shot.wav" id="shot_sound"]
 [ext_resource type="AudioStreamWAV" path="res://assets/sounds/dry_fire.wav" id="dry_fire_sound"]
 [ext_resource type="AudioStreamWAV" path="res://assets/sounds/rifle_reload.wav" id="reload_sound"]
 
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/weapons/sniper.png" id="icon"]
 [ext_resource type="Texture2D" path="res://assets/ui/weapons/sniper_kill.png" id="kill_icon"]
 
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/sniper_bolt.wav" id="cycle_sound"]
 [resource]
 script = ExtResource("weapon_data_script")
 id = &"sniper"
@@ -50,3 +51,5 @@ model = ExtResource("model")
 muzzle_point = Vector3(0, 0.026, -0.775)
 icon = ExtResource("icon")
 kill_icon = ExtResource("kill_icon")
+cycle_sound = ExtResource("cycle_sound")
+cycle_sound_delay = 0.45

@@ -11,6 +11,14 @@ extends Node3D
 ## keeps the ones it isn't holding hidden and idle ([method holster]), and [method draw]s the one it
 ## switches to: it can't fire until its draw time has passed.
 ##
+## How each kind works (M7 task 6, D-095): automatic and semi-automatic guns fire hitscan bullets;
+## the shotgun fires [member WeaponData.pellets] at once and loads shell by shell (firing stops the
+## reload once a shell is in); the sniper rifle's scope steps through its zoom levels with the aim
+## button, is accurate only after scoping in and standing still a moment, and drops out after each
+## shot until the next one is ready; the knife slashes (fire) and stabs (aim), harder from behind.
+## The holder's class can shorten the reload (Rifleman), the scope-in and the scoped recovery
+## (Marksman).
+##
 ## First person (M6, D-079): the [code]Viewmodel[/code] holds the holder's class arms
 ## ([method set_arms], a generated [code]<class>_arms.glb[/code]) with [member gun_model] on their
 ## weapon bone. Their clips play the draw, the shot kick and the reload; sway (the gun lags
@@ -26,6 +34,8 @@ signal reload_started
 signal reload_finished
 ## Emitted when a bullet hits something. See [member last_hit] for the keys.
 signal hit_landed(hit: Dictionary)
+## Emitted when the scope steps to another zoom level (0 = unscoped).
+signal zoom_changed(level: int)
 
 ## The generic weapon scene [method create] instantiates (loaded when needed: it uses this script).
 const SCENE_PATH := "res://weapons/weapon.tscn"
@@ -73,6 +83,10 @@ static var silent: bool = false
 
 ## Set by the holder: true while the fire button is held.
 var trigger_held: bool = false
+## Set by the holder: true while the aim button is held (the scope's steps, the knife's stab).
+var aim_held: bool = false
+## The scope's zoom step: 0 unscoped, then 1 to the number of [member WeaponData.zoom_levels].
+var zoom_level: int = 0
 ## Rounds in the magazine. Read-only for other scripts.
 var magazine: int = 0
 ## Spare rounds. Read-only for other scripts.
@@ -117,6 +131,18 @@ var _bob_phase: float = 0.0
 var _draw_left: float = 0.0
 ## Arms handed over before the weapon was ready: [scene, material], put in by _ready.
 var _pending_arms: Array = []
+## The aim button was held last tick (a scope step or a stab needs a fresh press).
+var _aim_was_held: bool = false
+## 0 to 1: how far the scope has settled since zooming in (accuracy blends in over the scope-in time).
+var _scope_progress: float = 0.0
+## The zoom step to go back to once the next shot is ready (after dropping out to fire).
+var _rezoom_level: int = 0
+## The extra cone from moving, remembered while it wears off (scoped weapons recover over time).
+var _move_memory: float = 0.0
+## Whoever looks through the holder's eyes wants the viewmodel shown (it hides while scoped).
+var _viewmodel_wanted: bool = true
+## Seconds until the pump or bolt sound after a shot plays (negative: none waiting).
+var _cycle_sound_left: float = -1.0
 
 @onready var _shot_audio: AudioStreamPlayer = $ShotAudio
 @onready var _handling_audio: AudioStreamPlayer = $HandlingAudio
@@ -149,16 +175,20 @@ static func create(weapon_data: WeaponData) -> Weapon:
 ## the first-person arms play the draw.
 func draw(seconds: float) -> void:
 	_draw_left = maxf(seconds, 0.0)
-	_trigger_released = false
-	_play_arms("fp_draw")
+	_aim_was_held = aim_held
+	_play_arms("draw")
 
 
 ## Puts the weapon away (on a switch): the trigger is let go and a reload in progress is lost,
 ## as in CS. Its ammo and recoil stay as they were.
 func holster() -> void:
+	_cycle_sound_left = -1.0
 	trigger_held = false
+	aim_held = false
 	_reload_time_left = 0.0
 	_draw_left = 0.0
+	_rezoom_level = 0
+	_set_zoom(0)
 
 
 ## True while the weapon is being drawn and can't fire yet.
@@ -170,6 +200,9 @@ func is_drawing() -> bool:
 ## the holder's eyes sees it; from outside, the holder's body shows its own gun
 ## ([method Character.set_first_person]).
 func set_viewmodel_visible(on: bool) -> void:
+	_viewmodel_wanted = on
+	# Looking through a scope hides the gun, as in CS.
+	on = on and zoom_level == 0
 	$Viewmodel.visible = on
 	# Nobody sees hidden arms, so their clips needn't run (a bot's, until someone spectates it).
 	if _arms_player != null:
@@ -216,7 +249,7 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 	_arms_player = players[0] as AnimationPlayer if not players.is_empty() else null
 	if _arms_player != null:
 		_arms_player.active = _viewmodel.visible
-	_play_arms("fp_draw")
+	_play_arms("draw")
 
 
 ## Paints the arms' sleeves in [param color] (the holder's team as the viewer sees it).
@@ -235,17 +268,39 @@ func equip(wielder: Character) -> void:
 ## The current radius of the cone shots land in, in degrees. Stance,
 ## movement speed and being in the air all add to it.
 func get_inaccuracy() -> float:
-	if _wielder == null:
+	if _wielder == null or data.is_melee() or data.is_grenade():
 		return 0.0
 	var inaccuracy := data.crouching_inaccuracy if _wielder.is_crouching else data.standing_inaccuracy
-	var top_speed := _wielder.get_max_speed()
-	var speed := Vector2(_wielder.velocity.x, _wielder.velocity.z).length()
-	var move_fraction := clampf(inverse_lerp(top_speed * ACCURATE_SPEED_FRACTION, top_speed, speed), 0.0, 1.0)
-	inaccuracy += data.moving_inaccuracy * move_fraction
+	var moving := _get_moving_inaccuracy()
+	if is_scoped():
+		# Scoping in blends the cone down to the scoped one; moving costs accuracy that only
+		# wears off over the recovery time (faster for the Marksman).
+		var scoped := data.scoped_inaccuracy * (2.0 / 3.0 if _wielder.is_crouching else 1.0)
+		inaccuracy = lerpf(inaccuracy, scoped, _scope_progress)
+		moving = maxf(moving, _move_memory)
+	inaccuracy += moving
 	if not _wielder.is_on_floor():
 		inaccuracy += data.air_inaccuracy
 	inaccuracy += minf(_spray_position * data.spray_inaccuracy_per_shot, data.max_spray_inaccuracy)
 	return inaccuracy
+
+
+## True while looking through the scope.
+func is_scoped() -> bool:
+	return zoom_level > 0
+
+
+## The field of view through the scope, as a fraction of the normal one (1.0 unscoped).
+func get_zoom_fraction() -> float:
+	if zoom_level <= 0 or zoom_level > data.zoom_levels.size():
+		return 1.0
+	return data.zoom_levels[zoom_level - 1]
+
+
+## Seconds a reload takes for this holder (for a shotgun: one shell): the weapon's, 15% shorter
+## for the Rifleman's Quick Hands.
+func get_reload_time() -> float:
+	return data.reload_time * _class_factor(&"reload_time_factor")
 
 
 ## The number the next shot would have within the current spray (1 = first shot).
@@ -272,16 +327,23 @@ func refill() -> void:
 	_sway = Vector2.ZERO
 	ammo_changed.emit(magazine, reserve)
 	reload_finished.emit()
-	_play_arms("fp_draw")
+	_play_arms("draw")
 
 
-## Starts a reload if the magazine isn't full and there are spare rounds.
+## Starts a reload if the magazine isn't full and there are spare rounds. A shotgun loads one
+## shell at a time after bringing the gun up. Reloading drops out of the scope.
 func reload() -> void:
 	if is_reloading() or is_drawing() or magazine >= data.magazine_size or reserve <= 0:
 		return
-	_reload_time_left = data.reload_time
+	_rezoom_level = 0
+	_set_zoom(0)
+	if data.reload_per_shell:
+		_reload_time_left = data.reload_start_time * _class_factor(&"reload_time_factor") + get_reload_time()
+		_play_arms("reload", 1.0 / _class_factor(&"reload_time_factor"))
+	else:
+		_reload_time_left = get_reload_time()
+		_play_arms("reload", ARMS_RELOAD_CLIP_TIME / maxf(get_reload_time(), 0.1))
 	reload_started.emit()
-	_play_arms("fp_reload", ARMS_RELOAD_CLIP_TIME / maxf(data.reload_time, 0.1))
 
 
 func _physics_process(delta: float) -> void:
@@ -289,6 +351,13 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown -= delta
 	_time_since_shot += delta
+	if _cycle_sound_left >= 0.0:
+		_cycle_sound_left -= delta
+		if _cycle_sound_left < 0.0:
+			_play(data.cycle_sound, true)
+	var aim_pressed := aim_held and not _aim_was_held
+	_aim_was_held = aim_held
+	_update_scope(delta, aim_pressed)
 	if _draw_left > 0.0:
 		_draw_left = maxf(_draw_left - delta, 0.0)
 		if not trigger_held:
@@ -296,6 +365,14 @@ func _physics_process(delta: float) -> void:
 		_recover_recoil(delta)
 		_cooldown = maxf(_cooldown, 0.0)
 		return
+	if data.is_melee():
+		_update_melee(aim_pressed)
+		_cooldown = maxf(_cooldown, 0.0)
+		return
+	if is_reloading() and data.reload_per_shell and trigger_held and magazine > 0 and _trigger_released:
+		# Firing stops a shotgun's reload once a shell is in (CS).
+		_reload_time_left = 0.0
+		reload_finished.emit()
 	if is_reloading():
 		_update_reload(delta)
 	elif trigger_held:
@@ -349,17 +426,24 @@ func _play_shot_effects() -> void:
 	_muzzle_flash.visible = true
 	_muzzle_flash.rotation.z = randf() * TAU
 	_flash_time_left = MUZZLE_FLASH_TIME
-	_play_arms("fp_fire")
+	_play_arms("fire")
 
 
-## Plays a clip of the first-person arms (from the start, at [param speed]) and goes back to
-## idling after it.
-func _play_arms(clip: StringName, speed: float = 1.0) -> void:
-	if _arms_player == null or not _arms_player.has_animation(clip):
+## Plays the first-person arms' clip for [param action] ("draw", "fire", "reload", "slash"...)
+## from the start at [param speed], then goes back to idling. Each weapon has its own clips,
+## [code]fp_<id>_<action>[/code]; without one the rifle's [code]fp_<action>[/code] plays (D-096).
+func _play_arms(action: String, speed: float = 1.0) -> void:
+	if _arms_player == null:
+		return
+	var clip := StringName("fp_%s_%s" % [data.id, action]) if data != null else &""
+	if not _arms_player.has_animation(clip):
+		clip = StringName("fp_" + action)
+	if not _arms_player.has_animation(clip):
 		return
 	_arms_player.play(clip, 0.03, speed)
 	_arms_player.seek(0.0, true)
-	_arms_player.queue(&"fp_idle")
+	var idle := StringName("fp_%s_idle" % data.id) if data != null else &""
+	_arms_player.queue(idle if _arms_player.has_animation(idle) else &"fp_idle")
 
 
 ## Lets the spray pattern wear off once you stop firing. While firing
@@ -392,9 +476,19 @@ func _fire() -> void:
 	magazine -= 1
 	var spray_shot := get_spray_shot()
 	_play(data.shot_sound, false)
+	if data.cycle_sound != null and magazine > 0:
+		_cycle_sound_left = data.cycle_sound_delay
 	_play_shot_effects()
 	Noises.make_noise(_wielder.get_eye_position(), Noises.GUNSHOT_RANGE, _wielder)
-	_shoot_bullet(_get_shot_direction())
+	for pellet in maxi(data.pellets, 1):
+		var direction := _get_shot_direction()
+		if data.pellets > 1:
+			direction = _spread(direction, data.pellet_spread)
+		_shoot_bullet(direction)
+	if is_scoped() and data.unscope_after_shot:
+		# Out of the scope after the shot, back in once the next one is ready (CS's AWP).
+		_rezoom_level = zoom_level
+		_set_zoom(0)
 	_spray_position += 1.0
 	_time_since_shot = 0.0
 	fired.emit(spray_shot)
@@ -418,6 +512,19 @@ func _get_shot_direction() -> Vector3:
 	yaw += cos(spread_direction) * spread
 	pitch += sin(spread_direction) * spread
 	return _direction_from_angles(yaw, pitch)
+
+
+## [param direction] pushed a random amount within a cone of [param degrees] (uniform over the
+## cone's disk, so a shotgun's pellets fill it evenly).
+func _spread(direction: Vector3, degrees: float) -> Vector3:
+	var side := direction.cross(Vector3.UP)
+	if side.length_squared() < 0.0001:
+		side = direction.cross(Vector3.RIGHT)
+	side = side.normalized()
+	var up := side.cross(direction).normalized()
+	var angle := rng.randf() * TAU
+	var radius := tan(deg_to_rad(degrees)) * sqrt(rng.randf())
+	return (direction + (side * cos(angle) + up * sin(angle)) * radius).normalized()
 
 
 ## Hitscan: finds the first thing on the bullet's path, instantly (no travel time).
@@ -515,10 +622,13 @@ static func _direction_from_angles(yaw: float, pitch: float) -> Vector3:
 
 
 func _update_reload(delta: float) -> void:
+	if data.reload_per_shell:
+		_update_shell_reload(delta)
+		return
 	var time_left_before := _reload_time_left
 	_reload_time_left -= delta
 	for step in RELOAD_SOUND_STEPS:
-		var step_time_left := data.reload_time * (1.0 - step)
+		var step_time_left := get_reload_time() * (1.0 - step)
 		if time_left_before > step_time_left and _reload_time_left <= step_time_left:
 			_play(data.reload_sound, true)
 	if _reload_time_left <= 0.0:
@@ -528,6 +638,165 @@ func _update_reload(delta: float) -> void:
 		reserve -= loaded
 		ammo_changed.emit(magazine, reserve)
 		reload_finished.emit()
+
+
+## A shotgun's reload: a shell goes in every reload time until the magazine is full or the
+## reserve is empty.
+func _update_shell_reload(delta: float) -> void:
+	_reload_time_left -= delta
+	if _reload_time_left > 0.0:
+		return
+	magazine += 1
+	reserve -= 1
+	_play(data.reload_sound, true)
+	ammo_changed.emit(magazine, reserve)
+	if magazine < data.magazine_size and reserve > 0:
+		_reload_time_left = get_reload_time()
+		_play_arms("reload_shell", 1.0 / _class_factor(&"reload_time_factor"))
+	else:
+		_reload_time_left = 0.0
+		reload_finished.emit()
+
+
+# --- The scope (D-095) ---
+
+
+## Steps the scope with a fresh press of aim, settles it, brings it back after a shot, and keeps
+## the memory of moving that a scoped shot pays for.
+func _update_scope(delta: float, aim_pressed: bool) -> void:
+	if not data.has_scope():
+		return
+	var recovery := data.scoped_recovery_time / maxf(_class_factor(&"scoped_recovery_factor"), 0.01)
+	_move_memory = maxf(_get_moving_inaccuracy(), _move_memory - data.moving_inaccuracy * delta / maxf(recovery, 0.01))
+	if aim_pressed and _draw_left <= 0.0 and not is_reloading():
+		_rezoom_level = 0
+		_set_zoom((zoom_level + 1) % (data.zoom_levels.size() + 1))
+	elif _rezoom_level > 0 and _cooldown <= 0.0 and not is_reloading() and magazine > 0:
+		_set_zoom(_rezoom_level)
+		_rezoom_level = 0
+	if zoom_level > 0:
+		var scope_in := data.scope_in_time * _class_factor(&"scope_in_time_factor")
+		_scope_progress = minf(_scope_progress + delta / maxf(scope_in, 0.001), 1.0)
+
+
+## Goes to zoom step [param level] (0 = out of the scope). Zooming in from out starts settling
+## the scope again.
+func _set_zoom(level: int) -> void:
+	if level == zoom_level:
+		return
+	if zoom_level == 0 or level == 0:
+		_scope_progress = 0.0
+	zoom_level = level
+	set_viewmodel_visible(_viewmodel_wanted)
+	zoom_changed.emit(level)
+
+
+## The extra cone from moving right now: nothing below 34% of top speed, the full
+## [member WeaponData.moving_inaccuracy] at top speed.
+func _get_moving_inaccuracy() -> float:
+	if _wielder == null:
+		return 0.0
+	var top_speed := _wielder.get_max_speed()
+	var speed := Vector2(_wielder.velocity.x, _wielder.velocity.z).length()
+	var move_fraction := clampf(inverse_lerp(top_speed * ACCURATE_SPEED_FRACTION, top_speed, speed), 0.0, 1.0)
+	return data.moving_inaccuracy * move_fraction
+
+
+## A factor of the holder's class (1.0 without one): see [ClassData]'s perk values.
+func _class_factor(factor: StringName) -> float:
+	if _wielder == null or _wielder.class_data == null:
+		return 1.0
+	return float(_wielder.class_data.get(factor))
+
+
+# --- The knife (D-095) ---
+
+
+## Slashes while fire is held, stabs while aim is held, when the last attack has recovered.
+func _update_melee(_aim_pressed: bool) -> void:
+	if _cooldown > 0.0:
+		return
+	if trigger_held:
+		_melee(false)
+	elif aim_held:
+		_melee(true)
+
+
+## One knife attack: a short trace from the eyes (a small fan of rays, so it forgives a little),
+## flat damage on whatever zone it finds (the knife ignores hit-zone multipliers, as in CS),
+## more from behind.
+func _melee(stab: bool) -> void:
+	var reach := data.stab_range if stab else data.melee_range
+	_cooldown = data.stab_interval if stab else data.get_shot_interval()
+	_time_since_shot = 0.0
+	_play(data.shot_sound, false)
+	_play_arms("stab" if stab else "slash")
+	fired.emit(1)
+	var result := _melee_trace(reach)
+	if result.is_empty():
+		return
+	var hit_position: Vector3 = result.position
+	var zone := ""
+	var damage := 0.0
+	if result.collider is Hitbox:
+		var hitbox := result.collider as Hitbox
+		var victim := _owner_of(hitbox)
+		var behind := victim != null and _is_behind(victim)
+		if stab:
+			damage = data.stab_backstab_damage if behind else data.stab_damage
+		else:
+			damage = data.backstab_damage if behind else data.damage
+		hitbox.receive_hit(damage / Hitbox.MULTIPLIERS[hitbox.zone], hit_position, _wielder, data)
+		zone = hitbox.get_zone_name()
+		_play(data.hit_sound, true)
+	else:
+		_spawn_impact(hit_position, result.normal, result.collider)
+		_play_impact_sound(result)
+	last_hit = {"position": hit_position, "distance": _wielder.get_eye_position().distance_to(hit_position),
+			"zone": zone, "damage": damage}
+	hit_landed.emit(last_hit)
+
+
+## The first thing a knife reaches within [param reach] metres: straight ahead first, then a few
+## rays 3 degrees around it. A hit zone wins over a wall further out on another ray.
+func _melee_trace(reach: float) -> Dictionary:
+	var aim := _wielder.get_aim_angles()
+	var from := _wielder.get_eye_position()
+	var exclude := _get_passable_hitbox_rids()
+	var space := get_world_3d().direct_space_state
+	var first_wall: Dictionary = {}
+	for offset: Vector2 in [Vector2.ZERO, Vector2(3, 0), Vector2(-3, 0), Vector2(0, 3), Vector2(0, -3)]:
+		var direction := _direction_from_angles(aim.x + deg_to_rad(offset.x), aim.y + deg_to_rad(offset.y))
+		var query := PhysicsRayQueryParameters3D.create(from, from + direction * reach, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
+		query.collide_with_areas = true
+		query.exclude = exclude
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			continue
+		if hit.collider is Hitbox:
+			return hit
+		if first_wall.is_empty():
+			first_wall = hit
+	return first_wall
+
+
+## The character a hit zone belongs to, or null (a target dummy).
+func _owner_of(hitbox: Hitbox) -> Character:
+	var node: Node = hitbox
+	while node != null and not node is Character:
+		node = node.get_parent()
+	return node as Character
+
+
+## True when the holder is behind [param victim]: the victim faces away from them (CS's backstab).
+func _is_behind(victim: Character) -> bool:
+	var to_victim := victim.global_position - _wielder.global_position
+	to_victim.y = 0.0
+	if to_victim.length_squared() < 0.0001:
+		return false
+	var facing := -victim.global_basis.z
+	facing.y = 0.0
+	return facing.normalized().dot(to_victim.normalized()) > 0.5
 
 
 ## Plays a weapon sound. The player hears their own gun without position;

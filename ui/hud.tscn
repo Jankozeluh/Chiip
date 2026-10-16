@@ -5,9 +5,20 @@
 [ext_resource type="PackedScene" path="res://ui/round_hud.tscn" id="round_hud_scene"]
 [ext_resource type="PackedScene" path="res://ui/bomb_hud.tscn" id="bomb_hud_scene"]
 [ext_resource type="Script" path="res://ui/armor_icon.gd" id="armor_icon_script"]
+[ext_resource type="Script" path="res://ui/scope_overlay.gd" id="scope_overlay_script"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
+
+[node name="ScopeOverlay" type="Control" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("scope_overlay_script")
 
 [node name="Crosshair" type="Control" parent="."]
 anchors_preset = 15

@@ -460,7 +460,7 @@ func _on_fired(_spray_shot: int) -> void:
 func _on_reload_started() -> void:
 	if _tree == null or _character == null or _character.weapon == null:
 		return
-	_tree.set("parameters/ReloadSpeed/scale", RELOAD_CLIP_TIME / maxf(_character.weapon.data.reload_time, 0.1))
+	_tree.set("parameters/ReloadSpeed/scale", RELOAD_CLIP_TIME / maxf(_character.weapon.get_reload_time(), 0.1))
 	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 

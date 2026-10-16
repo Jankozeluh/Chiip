@@ -28,6 +28,8 @@ var respawn_hint: bool = true
 var _watched_weapon: Weapon
 ## Seconds the weapon list keeps showing.
 var _slots_show_left: float = 0.0
+## The player is dead: no crosshair until the respawn.
+var _player_dead: bool = false
 
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _ammo_label: Label = $AmmoLabel
@@ -35,6 +37,7 @@ var _slots_show_left: float = 0.0
 @onready var _health_label: Label = $HealthLabel
 @onready var _armor_icon: ArmorIcon = $ArmorIcon
 @onready var _slots_label: Label = $SlotsLabel
+@onready var _scope_overlay: ScopeOverlay = $ScopeOverlay
 @onready var _armor_label: Label = $ArmorLabel
 @onready var _death_label: Label = $DeathLabel
 @onready var _spectate_label: Label = $SpectateLabel
@@ -98,6 +101,7 @@ func set_ui_scale(factor: float) -> void:
 	UiScale.apply(_death_label, factor)
 	UiScale.apply(_spectate_label, factor)
 	_crosshair.set_ui_scale(factor)
+	_scope_overlay.set_ui_scale(factor)
 	_round_hud.set_ui_scale(factor)
 	_bomb_hud.set_ui_scale(factor)
 
@@ -106,6 +110,10 @@ func _process(delta: float) -> void:
 	if _slots_show_left > 0.0:
 		_slots_show_left -= delta
 		_slots_label.modulate.a = clampf(_slots_show_left / SLOTS_FADE_TIME, 0.0, 1.0)
+	# A scope shows its own view; a sniper rifle has no crosshair unscoped either, as in CS.
+	var weapon := shown.weapon if shown != null and is_instance_valid(shown) else null
+	_scope_overlay.visible = weapon != null and weapon.is_scoped()
+	_crosshair.visible = not _player_dead and not (weapon != null and weapon.data.has_scope())
 	if player != null and player.weapon != null and _crosshair.dynamic:
 		_crosshair.spread_degrees = player.weapon.get_inaccuracy()
 		_crosshair.queue_redraw()
@@ -215,10 +223,12 @@ func _update_armor() -> void:
 func _on_player_died(killer: Character) -> void:
 	_death_label.text = ("Killed by %s" % killer.name if killer != null else "You died") + ("\nRespawning..." if respawn_hint else "")
 	_death_label.visible = true
+	_player_dead = true
 	_crosshair.visible = false
 
 
 func _on_player_respawned() -> void:
 	_death_label.visible = false
+	_player_dead = false
 	_crosshair.visible = true
 	_update_health()

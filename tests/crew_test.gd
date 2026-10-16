@@ -603,8 +603,9 @@ func _test_first_person_arms() -> void:
 	await _wait_ticks(2)
 	var reloading := String(arms_player.current_animation)
 	var reload_speed := arms_player.get_playing_speed()
-	_check("A shot plays the arms' kick and a reload plays their reload, stretched to the weapon's reload time",
-			after_shot == "fp_fire" and reloading == "fp_reload" and is_equal_approx(reload_speed, 2.5 / weapon.data.reload_time),
+	_check("A shot plays the arms' kick and a reload plays their reload, stretched to the holder's reload time (the Rifleman's is 15% shorter, M7)",
+			after_shot.begins_with("fp_") and after_shot.ends_with("fire") and reloading.begins_with("fp_") and reloading.ends_with("reload")
+					and is_equal_approx(reload_speed, 2.5 / weapon.get_reload_time()),
 			"after a shot: %s, after reload(): %s at speed %.2f" % [after_shot, reloading, reload_speed])
 	Teams.set_viewer_team(0)
 	player.queue_free()

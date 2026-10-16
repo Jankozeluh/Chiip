@@ -174,6 +174,12 @@ const PATHS: Array[String] = [
 @export var dry_fire_sound: AudioStream
 ## Played at each step of a reload (magazine out, magazine in, bolt).
 @export var reload_sound: AudioStream
+## Played when a melee attack lands on someone (the knife).
+@export var hit_sound: AudioStream
+## Played a moment after each shot (the shotgun's pump, the sniper rifle's bolt), at
+## [member cycle_sound_delay] seconds.
+@export var cycle_sound: AudioStream
+@export var cycle_sound_delay: float = 0.3
 
 
 ## Seconds between two shots.

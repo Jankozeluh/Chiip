@@ -139,6 +139,14 @@ Damage is per bullet at point-blank, then ×the falloff for every 500 units (12.
 | Spray | 30-shot pattern: climbs ~6° over 10 shots, sways left to −2.3°, then right to +1.95° | Similar shape |
 | Aim punch | The view kicks 50% of the pattern; recoil wears off at 12 shots per second | ~50% |
 
+**How each kind works** (D-095):
+
+- **Pistols** (Sparrow, Verdict) fire once per click; holding the trigger fires one shot.
+- **The Breaker** fires 9 pellets in a 3.2° cone (on top of its own small inaccuracy): one blast kills up close, while at 25 m most pellets miss and falloff does the rest. It loads **one shell at a time** (0.4 s to bring it up, 0.5 s a shell); pressing fire with at least one shell in stops the reload and fires.
+- **The Heron's scope:** the right mouse button steps through two zoom levels (40/90 and 15/90 of your field of view, CS's AWP) and back out. Unscoped it is useless (a 4° cone) and shows no crosshair, as in CS. Scoping in takes 0.3 s to become fully accurate (0.02°); moving costs accuracy that takes 0.35 s to come back after you stop; scoped you move at 100 u/s. After each shot you drop out of the scope and go back in once the bolt is worked (1.46 s). The mouse turns the view less while scoped, in step with the zoom, so the same hand movement crosses the same part of the screen. A black scope view with a round window and thin cross lines covers the screen.
+- **The knife:** left click slashes (40, every 0.4 s, reach 1.5 m), right click stabs (65, every second, reach 1.1 m); from behind (the victim facing away) 90 and 180. The damage is the same on every zone (no headshot bonus, as in CS), and armor stops 15% of it. A swing makes no noise for the bots.
+- **Reloads are per holder:** the Rifleman's *Quick Hands* reloads 15% faster (the Ram in 2.1 s).
+
 The other automatic guns have their own patterns: the Warden climbs about 78% as high and sways right first, the Hornet climbs only 3.6° and then wobbles quickly from side to side; quick pistol shots climb (the Verdict 2.8° a shot), and the Breaker and Heron kick once per shot.
 
 Every weapon is generated from one part list (D-054) and comes as a world model (drops and pickups), a third-person model in the character's hand, a first-person model with arms, and buy-menu and kill-feed icons.
@@ -305,7 +313,7 @@ The target is the era of Quake (1996) and Counter-Strike 1.x (1999–2003).
 |---|---|
 | Move | W A S D |
 | Look | Mouse |
-| Shoot / scope | Left mouse / right mouse |
+| Shoot / scope (Heron: two zoom steps), knife: slash / stab | Left mouse / right mouse |
 | Next teammate (while dead in a match) | Left mouse |
 | Jump | Space or mouse wheel down |
 | Crouch | Ctrl |

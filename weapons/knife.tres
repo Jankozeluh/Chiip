@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/weapons/knife.png" id="icon"]
 [ext_resource type="Texture2D" path="res://assets/ui/weapons/knife_kill.png" id="kill_icon"]
 
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/knife_swing.wav" id="shot_sound"]
+[ext_resource type="AudioStreamWAV" path="res://assets/sounds/knife_hit.wav" id="hit_sound"]
 [resource]
 script = ExtResource("weapon_data_script")
 id = &"knife"
@@ -44,3 +46,5 @@ stab_backstab_damage = 180.0
 model = ExtResource("model")
 icon = ExtResource("icon")
 kill_icon = ExtResource("kill_icon")
+shot_sound = ExtResource("shot_sound")
+hit_sound = ExtResource("hit_sound")
