@@ -96,6 +96,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M13 | Sound design | ⬜ | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
 | M14 | Stats & training | ⬜ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
 | M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
+| M16 | Maintainability & debugging | ⬜ | Release-build tests, logs and bug reports, debug commands, a cleaner architecture, one short branch at a time |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -597,6 +598,17 @@ The class draft (two random classes offered each match) and the random map weapo
 - [ ] **Gamepad support:** move, aim (dead zone, sensitivity and response curve), fire, every action, menu navigation, rebinding and prompts that follow the device last used
 - [ ] **Wallbangs:** bullets go through thin materials with a damage loss by material (the surface types the footstep sounds already know), for the player and the bots
 - [ ] **Smarter team bots:** callouts, trades, coordinated site takes and grenades thrown together (the Backlog's "smarter team AI")
+
+## M16 — Maintainability & debugging ⬜
+
+**Goal:** bugs are easy to find, reproduce and fix, including ones that show up only in exported builds (D-220). Starts after M15.
+
+- [ ] **Release-build tests:** before every release, export the builds and run smoke checks on the exported release build (shooting hits, a full round, a LAN join), as part of `docs/RELEASING.md` and the release checklist
+- [ ] **Logs and bug reports:** the game writes a log file in its user folder; the version and build show in the menu; a "Report a bug" action zips the log, the version and the settings for a friend to send; a GitHub Issue template (steps, version, platform)
+- [ ] **Debug commands** in the console: for example `debug_hitboxes` (draw the hit zones) and `net_stats` (ping, packet loss, snapshot size), so problems can be seen rather than guessed
+- [ ] **Architecture review:** after 15 milestones, map the systems, remove dead code, make the patterns consistent, give each folder a clear owner, and keep ARCHITECTURE.md as the single source of truth
+- [ ] **One short branch at a time:** no more three or four parallel branches. One focused branch, merged soon after; fewer merges and conflicts, and a clear cause when something breaks
+- [ ] **No flaky tests:** a check that fails at random is fixed or quarantined at once, so a red result always means a real bug
 
 ## Backlog (ideas, not scheduled)
 

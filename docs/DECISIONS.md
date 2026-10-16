@@ -2022,6 +2022,23 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Turn off the export's conversion of text resources to binary (it would hide this case but not the next one, and makes the build bigger); build the hit zones from the model at runtime instead of a file (a bigger change for a hotfix); a check that compares every converted resource with its source (worth it later; the shot covers what players feel).
 
+## D-220 — M16: maintainability and debugging; one branch at a time after M15 (2026-10-16)
+
+**Decision:** After M15 comes M16:
+- tests on exported release builds
+- logs, a version display and bug-report bundles, plus a GitHub Issue template
+- debug commands in the console
+- an architecture review
+- a rule against flaky tests
+The new way of working starts once the work in progress (the v0.1.1 hotfix and M13–M15) has finished and been checked:
+- **Code** (game, network, UI, bots): one short branch at a time, merged soon after.
+- **Content** (maps, textures, props, sounds, docs): may run in one extra parallel branch, because it barely touches code.
+- **Inside a session**, cheap subagents (Sonnet, Haiku) still take on the small tasks.
+
+**Why:** v0.1.0 shipped with a bug that existed only in the exported build: shots didn't hit characters. The 1181 checks all run in the editor, so none could catch it. You asked whether the project will stay easy to debug as it grows ("po tomto pridavani po m15 by ses mel zamyslet nad tim, jestli se to takto bude dobre debugovat").
+
+**Alternatives:** Keep working in parallel branches (2–3× faster, but more tokens, the usage limit runs out sooner, and each merge mixes many changes, so it's harder to tell which one broke something).
+
 ## Open questions
 
 | Question | Decide in |
