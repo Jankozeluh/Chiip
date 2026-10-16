@@ -13,7 +13,11 @@ Its own branch (`claude/m9-multiplayer-235f36`), in parallel with M7 (`m7-arsena
 
 - **Connection and session** (task 2): `NetSession` hosts on port 26000 or joins by IP over ENet, keeps the roster (unique, cleaned names; newcomers on the smaller team; team requests with a limit), carries match messages over RPCs and the game stream as raw packets, and can fake lag (in ticks), jitter and loss (unreliable packets only, reliable ones stay in order). `NetHarness` runs a host and clients in one process, each side with its own `SceneMultiplayer`. New `tests/net_test.tscn`, 14 checks; the first run found that Godot's `sort_custom` isn't stable, so packets due in the same tick now keep their order by arrival number.
 
-**Next:** task 3, one match on every screen.
+- **One match on every screen** (task 3): the host's match waits until the client has loaded, the friend's character joins before the bots, every character gets a network id, and the client builds the same characters as puppets, named after their players. Its round manager and bomb are replicas fed by the host's events and snapshots, so the round HUD, kill feed, scoreboard and bomb HUD needed no changes. New `tests/netplay_test.tscn`: a host and a client play a whole bomb match on Depot in one process (15 checks: same characters, rounds, kill feed, scoreboard, winner, bomb carrier, who is alive). Two games in one tree needed the bomb, weapons, bots and spectating to look only at characters of their own world (`Character.all_in_world()`). The character's own stepping and the lag-compensation class were written with it; they switch on in tasks 4 and 7.
+
+- **Server authority** (task 4, in the same commit as task 3): the client numbers and sends its commands, repeating the unconfirmed ones; the host runs each exactly once with `Character.step()`, within a budget of one command per tick (up to 8 saved); the snapshot's ack confirms them. A numbered command's shot rolls its spread from `hash([net_id, tick])`. The first test run found ENet's throttle dropping the odd unreliable packet on localhost with no fake loss at all; it is switched off now (D-103). 5 new checks in `netplay_test` (21): moving, exactly once also at 25% loss, the flood budget, the seeded spread. All 19 suites pass.
+
+**Next:** task 5, snapshots: interpolation, shots and reloads on puppets.
 
 ## 2026-10-15 — Merges into main: M8 and M6
 

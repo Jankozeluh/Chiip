@@ -276,8 +276,7 @@ func _on_character_died(_killer: Character) -> void:
 ## one alive.
 func _find_next_teammate() -> Character:
 	var teammates: Array[Character] = []
-	for node in get_tree().get_nodes_in_group("characters"):
-		var other := node as Character
+	for other in Character.all_in_world(character):
 		if other != character and other.team == character.team:
 			teammates.append(other)
 	var start := teammates.find(_view_target)

@@ -226,3 +226,11 @@ func _can_see_spot(enemy: Character, spot: Vector3, character: Character) -> boo
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## Online, on a client (M9, D-105): the host's match went into overtime. Emits [signal overtime_started].
+func replica_overtime() -> void:
+	overtime = true
+	time_left = 0.0
+	overtime_started.emit()
+

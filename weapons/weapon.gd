@@ -10,6 +10,10 @@ extends Node3D
 ## ([method set_arms], a generated [code]<class>_arms.glb[/code]) with [member gun_model] on their
 ## weapon bone. Their clips play the draw, the shot kick and the reload; sway (the gun lags
 ## when you turn) and bob (it rocks when you run) are added in code.
+##
+## Online (M9) the holder's network code can step the weapon itself ([member manual],
+## [method step]); a puppet's weapon only shows what the host reports ([member remote]:
+## [method play_remote_shot], [method start_remote_reload], [method set_remote_ammo]).
 
 ## Emitted for every shot. [param spray_shot] is the shot's number within the current spray (1 = first).
 signal fired(spray_shot: int)
@@ -73,6 +77,12 @@ var last_hit: Dictionary = {}
 ## How far recoil currently kicks the view, in degrees (x = right, y = up).
 ## The player adds it to the camera; it doesn't change where you aim.
 var view_punch: Vector2 = Vector2.ZERO
+## Online (M9, D-103): stepped by the holder's [method Character.step] instead of the engine's
+## physics tick.
+var manual: bool = false
+## Online, on a client (M9, D-104): a puppet's weapon. It fires, reloads and counts ammo only
+## as the host reports; on its own it just lets the recoil wear off and plays a reload's sounds.
+var remote: bool = false
 
 var _wielder: Character
 ## Seconds until the next shot is allowed.
@@ -186,7 +196,7 @@ func get_inaccuracy() -> float:
 	var speed := Vector2(_wielder.velocity.x, _wielder.velocity.z).length()
 	var move_fraction := clampf(inverse_lerp(top_speed * ACCURATE_SPEED_FRACTION, top_speed, speed), 0.0, 1.0)
 	inaccuracy += data.moving_inaccuracy * move_fraction
-	if not _wielder.is_on_floor():
+	if not _wielder.is_grounded():
 		inaccuracy += data.air_inaccuracy
 	inaccuracy += minf(_spray_position * data.spray_inaccuracy_per_shot, data.max_spray_inaccuracy)
 	return inaccuracy
@@ -226,6 +236,15 @@ func reload() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if remote:
+		_remote_tick(delta)
+	elif not manual:
+		step(delta)
+
+
+## One tick of firing, reloading and recoil: the engine runs it every physics tick, or the
+## holder's [method Character.step] runs it once per command online ([member manual]).
+func step(delta: float) -> void:
 	if _wielder == null:
 		return
 	_cooldown -= delta
@@ -268,7 +287,7 @@ func _update_viewmodel(delta: float) -> void:
 	var target := (Vector2(turn.x, -turn.y) * SWAY_PER_TURN_SPEED).limit_length(SWAY_LIMIT)
 	_sway = _sway.lerp(target, 1.0 - exp(-SWAY_RETURN * delta))
 	var bob := Vector2.ZERO
-	if _wielder != null and _wielder.is_on_floor():
+	if _wielder != null and _wielder.is_grounded():
 		var speed := Vector2(_wielder.velocity.x, _wielder.velocity.z).length()
 		_bob_phase = fmod(_bob_phase + speed * delta * TAU / BOB_CYCLE_DISTANCE, TAU)
 		var strength := clampf(speed / maxf(_wielder.get_max_speed(), 0.1), 0.0, 1.0)
@@ -342,6 +361,11 @@ func _get_shot_direction() -> Vector3:
 	var recoil := data.get_spray_offset(_spray_position)
 	var yaw := aim.x - deg_to_rad(recoil.x)
 	var pitch := aim.y + deg_to_rad(recoil.y)
+	# Online, a player's numbered command rolls its spread from its number, so the shooter's
+	# computer and the host roll the same (D-103). Bots and single-player use the generator as is.
+	var command_tick := _wielder.get_last_input().tick
+	if _wielder.net_id != 0 and command_tick > 0:
+		rng.seed = hash([_wielder.net_id, command_tick])
 	# Random spread: pick a random direction around that point and a random
 	# distance up to the inaccuracy. As in CS, the distance is uniform, so
 	# most shots land near the middle of the cone.
@@ -355,12 +379,17 @@ func _get_shot_direction() -> Vector3:
 ## Hitscan: finds the first thing on the bullet's path, instantly (no travel time).
 func _shoot_bullet(direction: Vector3) -> void:
 	var from := _wielder.get_eye_position()
-	var query := PhysicsRayQueryParameters3D.create(
-			from, from + direction * data.max_range, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
-	query.collide_with_areas = true
-	# The ray starts inside your own head hitbox; never hit yourself.
-	query.exclude = _get_passable_hitbox_rids()
-	var result := get_world_3d().direct_space_state.intersect_ray(query)
+	var result: Dictionary
+	if _wielder.lag_compensation != null:
+		# Online, a friend's shot on the host: against the hit zones where the friend saw them (D-107).
+		result = _wielder.lag_compensation.trace(_wielder, from, from + direction * data.max_range, _get_passable_hitbox_rids())
+	else:
+		var query := PhysicsRayQueryParameters3D.create(
+				from, from + direction * data.max_range, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
+		query.collide_with_areas = true
+		# The ray starts inside your own head hitbox; never hit yourself.
+		query.exclude = _get_passable_hitbox_rids()
+		result = get_world_3d().direct_space_state.intersect_ray(query)
 	if result.is_empty():
 		return
 	var hit_position: Vector3 = result.position
@@ -377,7 +406,8 @@ func _shoot_bullet(direction: Vector3) -> void:
 		"zone": zone,
 		"damage": damage,
 	}
-	_spawn_impact(hit_position, result.normal, result.collider)
+	# A rewound hit (lag compensation) leaves its hole where that spot of the body is now.
+	_spawn_impact(result.get("impact_position", hit_position), result.get("impact_normal", result.normal), result.collider)
 	_play_impact_sound(result)
 	hit_landed.emit(last_hit)
 
@@ -389,8 +419,7 @@ func _get_passable_hitbox_rids() -> Array[RID]:
 	var rids := _wielder.get_hitbox_rids()
 	if Teams.friendly_fire:
 		return rids
-	for node in get_tree().get_nodes_in_group("characters"):
-		var other := node as Character
+	for other in Character.all_in_world(self):
 		if other != _wielder and other.team == _wielder.team and other.is_alive():
 			rids.append_array(other.get_hitbox_rids())
 	return rids
@@ -444,6 +473,90 @@ func _play_impact_sound(hit: Dictionary) -> void:
 ## Turns a yaw/pitch pair (radians) into a direction. Yaw 0, pitch 0 looks along −Z.
 static func _direction_from_angles(yaw: float, pitch: float) -> Vector3:
 	return -Basis.from_euler(Vector3(pitch, yaw, 0.0)).z
+
+
+# --- Online: a puppet's weapon (M9, D-104) ---
+
+
+## A puppet's shot, as the host reported it: the sound, the muzzle flash and kick, the recoil
+## (for whoever spectates it) and [signal fired] (the body's flash and fire animation). With
+## [param hit] true the bullet landed at [param hit_position]: the ray from the holder's eyes is
+## traced again here to find what it hit, for the hole and the impact sound. No damage: the
+## host decides that.
+func play_remote_shot(hit: bool, hit_position: Vector3) -> void:
+	if _wielder == null:
+		return
+	var spray_shot := get_spray_shot()
+	_play(data.shot_sound, false)
+	_play_shot_effects()
+	_spray_position += 1.0
+	_time_since_shot = 0.0
+	fired.emit(spray_shot)
+	if not hit:
+		return
+	var from := _wielder.get_eye_position()
+	var direction := (hit_position - from).normalized()
+	var query := PhysicsRayQueryParameters3D.create(from, hit_position + direction * 0.25, PhysicsLayers.WORLD | PhysicsLayers.HITBOXES)
+	query.collide_with_areas = true
+	query.exclude = _wielder.get_hitbox_rids()
+	var result := get_world_3d().direct_space_state.intersect_ray(query)
+	if result.is_empty() or (result.position as Vector3).distance_to(hit_position) > 1.0:
+		# The body it hit has moved on here (it is shown a little in the past): a hole in the air
+		# helps nobody, so only the sound plays, from where the bullet landed.
+		result = {"position": hit_position, "normal": -direction, "collider": null}
+	if result.collider != null:
+		_spawn_impact(result.position, result.normal, result.collider)
+		_play_impact_sound(result)
+
+
+## A puppet starts reloading (the host said so): the arms' clip, [signal reload_started] and,
+## over the weapon's reload time, the reload sounds. The magazine fills when the host says.
+func start_remote_reload() -> void:
+	_reload_time_left = data.reload_time
+	reload_started.emit()
+	_play_arms("fp_reload", ARMS_RELOAD_CLIP_TIME / maxf(data.reload_time, 0.1))
+
+
+## A puppet's ammo, as the host reported it. Emits [signal ammo_changed] when it changed.
+func set_remote_ammo(new_magazine: int, new_reserve: int) -> void:
+	if new_magazine == magazine and new_reserve == reserve:
+		return
+	magazine = new_magazine
+	reserve = new_reserve
+	ammo_changed.emit(magazine, reserve)
+
+
+## Online, your own weapon on a client (M9, D-106): the host counted [param magazine_difference]
+## and [param reserve_difference] rounds more than this computer predicted for the same command
+## (a refill, a shot the host didn't see): adds them.
+func correct_ammo(magazine_difference: int, reserve_difference: int) -> void:
+	if magazine_difference == 0 and reserve_difference == 0:
+		return
+	magazine = clampi(magazine + magazine_difference, 0, data.magazine_size)
+	reserve = maxi(reserve + reserve_difference, 0)
+	ammo_changed.emit(magazine, reserve)
+
+
+## The seconds of the current reload still to go (0 when not reloading).
+func get_reload_time_left() -> float:
+	return _reload_time_left
+
+
+## A puppet weapon's tick: recoil wears off, and a reload plays its sounds and ends on time.
+func _remote_tick(delta: float) -> void:
+	_time_since_shot += delta
+	_recover_recoil(delta)
+	if _reload_time_left <= 0.0:
+		return
+	var time_left_before := _reload_time_left
+	_reload_time_left -= delta
+	for step_fraction in RELOAD_SOUND_STEPS:
+		var step_time_left := data.reload_time * (1.0 - step_fraction)
+		if time_left_before > step_time_left and _reload_time_left <= step_time_left:
+			_play(data.reload_sound, true)
+	if _reload_time_left <= 0.0:
+		_reload_time_left = 0.0
+		reload_finished.emit()
 
 
 func _update_reload(delta: float) -> void:

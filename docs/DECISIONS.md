@@ -998,6 +998,8 @@ Every character in an online match has a **network id** (`Character.net_id`, fro
 
 **Alternatives:** one command per host tick with a jitter buffer (Overwatch's way; needs careful buffer tuning and adds delay); sending each command once (a lost packet loses a jump or a shot).
 
+**Added while building (task 4):** ENet has a *throttle* that drops a share of unreliable packets by itself when the round-trip time wobbles. On localhost it dropped the odd command packet with no fake loss at all. Chiip's stream repeats what matters (commands until confirmed, effects in three snapshots, a newer snapshot replaces a lost one), so the throttle is switched off for every connection (`throttle_configure(5000, 2, 0)`); our streams are small (tens of KB/s), so there is no congestion for it to prevent.
+
 ## D-104 — Snapshots at 64 Hz; others shown about 50 ms in the past; reliable events for what must not get lost (2026-10-16) — *provisional*
 
 **Decision:**

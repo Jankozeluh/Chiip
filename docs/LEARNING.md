@@ -629,3 +629,12 @@
 **Raw packets next to RPCs** (`SceneMultiplayer.send_bytes()`, `peer_packet`)
 - `SceneMultiplayer` can also send plain byte arrays, with no node and no path: `send_bytes(bytes, peer_id, transfer_mode, channel)`, received through the `peer_packet(id, bytes)` signal. Chiip uses them for the game stream, where it wants its own compact format and tick numbers (D-101), and RPCs for the lobby.
 
+**Running code in a set order within a tick** (`process_physics_priority`)
+- Every node's `_physics_process` runs once per tick, normally in tree order (parents before children, earlier siblings first). `process_physics_priority` changes that: lower numbers run first, across the whole tree (Unity's *Script Execution Order*, but per node and changeable at runtime). Online, the session hands out the packets at -1000, the network code runs the friends' commands at -100, everything else runs at 0, and the host sends its snapshots from a node at 1000, after everyone has moved.
+
+**A world of its own** (`SubViewport.own_world_3d`, `Viewport.find_world_3d()`)
+- A `SubViewport` normally shares the 3D world (rendering *and* physics) of the window it is in, so two maps in two SubViewports would collide with each other's walls. `own_world_3d = true` gives it a separate `World3D` with its own physics space, which is how the network tests keep the host's and the client's maps apart in one process. `node.get_viewport().find_world_3d()` tells which world a node lives in. Groups, however, are per tree, not per world: that is why `Character.all_in_world()` filters the `characters` group.
+
+**ENet's throttle**
+- ENet slows down unreliable traffic on its own when it thinks the connection is congested: it drops a share of unreliable packets when the round-trip time rises. That suits bulk data, not a game stream that already repeats what matters, so Chiip switches it off per connection with `ENetPacketPeer.throttle_configure(interval, acceleration, 0)`.
+

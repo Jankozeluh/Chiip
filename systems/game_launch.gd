@@ -41,6 +41,8 @@ static var match_settings: MatchSettings = null
 ## The maps to play one after the other, starting with [member map_path]; empty
 ## for a single map.
 static var rotation: Array[String] = []
+## Online (M9): the session the match is played in (the lobby's), or null offline.
+static var net_session: NetSession = null
 
 ## True between [method start_match] / [method start_practice] and [method clear].
 static var _pending: bool = false
@@ -81,6 +83,7 @@ static func clear() -> void:
 	practice = false
 	match_settings = null
 	rotation = []
+	net_session = null
 	_pending = false
 
 

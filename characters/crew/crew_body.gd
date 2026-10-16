@@ -130,7 +130,7 @@ func _physics_process(delta: float) -> void:
 	if _character == null or _tree == null or _dead:
 		return
 	var local := _character.global_basis.inverse() * _character.velocity
-	update_animation_state(Vector2(local.x, -local.z), _character.is_crouching, _character.is_on_floor(),
+	update_animation_state(Vector2(local.x, -local.z), _character.is_crouching, _character.is_grounded(),
 			rad_to_deg(_character.get_aim_angles().y), delta)
 
 

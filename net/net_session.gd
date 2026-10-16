@@ -306,10 +306,7 @@ func _physics_process(_delta: float) -> void:
 func _on_peer_connected(peer_id: int) -> void:
 	if not is_host():
 		return
-	# Notice a dropped friend within seconds instead of ENet's default half a minute.
-	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	if peer != null and peer.get_peer(peer_id) != null:
-		peer.get_peer(peer_id).set_timeout(32, TIMEOUT_MIN_MS, TIMEOUT_MAX_MS)
+	_configure_peer(peer_id)
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
@@ -323,9 +320,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	local_peer_id = multiplayer.get_unique_id()
-	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	if peer != null and peer.get_peer(1) != null:
-		peer.get_peer(1).set_timeout(32, TIMEOUT_MIN_MS, TIMEOUT_MAX_MS)
+	_configure_peer(1)
 	_rpc_hello.rpc_id(1, local_name, NetProtocol.VERSION)
 
 
@@ -425,6 +420,19 @@ func _rpc_message_to_host(data: Dictionary) -> void:
 
 
 # --- Helpers ---
+
+
+## Sets up the ENet connection to [param peer_id]: a dropped connection is noticed within
+## seconds instead of ENet's default half a minute, and ENet never drops unreliable packets on
+## its own. Its *throttle* would drop some whenever the round trip time wobbles; the game stream
+## repeats what matters itself (D-103), so a dropped command packet only costs, never helps.
+func _configure_peer(peer_id: int) -> void:
+	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if peer == null or peer.get_peer(peer_id) == null:
+		return
+	var packet_peer := peer.get_peer(peer_id)
+	packet_peer.set_timeout(32, TIMEOUT_MIN_MS, TIMEOUT_MAX_MS)
+	packet_peer.throttle_configure(5000, 2, 0)
 
 
 func _add_player(peer_id: int, player_name: String, team: int) -> void:

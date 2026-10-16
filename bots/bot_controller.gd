@@ -531,8 +531,7 @@ func _teammate_in_line_of_fire() -> bool:
 	var from := character.get_eye_position()
 	var direction := -Basis.from_euler(Vector3(_pitch, _yaw, 0.0)).z
 	var reach := from.distance_to(_target.get_eye_position())
-	for node in get_tree().get_nodes_in_group("characters"):
-		var mate := node as Character
+	for mate in Character.all_in_world(character):
 		if mate == character or mate.team != character.team or not mate.is_alive():
 			continue
 		var points := mate.get_visibility_points()
@@ -633,7 +632,7 @@ func _go_near(point: Vector3, slack: float) -> void:
 
 
 func _reset_objective() -> void:
-	_bomb = get_tree().get_first_node_in_group(Bomb.GROUP) as Bomb
+	_bomb = Bomb.find_in_world(character)
 	_target_site = null
 	_plant_spot = Vector3.INF
 	_guard_spot = Vector3.INF
@@ -763,8 +762,7 @@ func _is_fetching() -> bool:
 	if not is_instance_valid(_bomb) or _bomb.state != Bomb.State.DROPPED or role != Role.ATTACK:
 		return false
 	var mine := _flat_distance(character.global_position, _bomb.global_position)
-	for node in get_tree().get_nodes_in_group("characters"):
-		var other := node as Character
+	for other in Character.all_in_world(character):
 		if other == character or other.team != character.team or not other.is_alive():
 			continue
 		if other.get_node_or_null("BotController") is BotController and _flat_distance(other.global_position, _bomb.global_position) < mine:

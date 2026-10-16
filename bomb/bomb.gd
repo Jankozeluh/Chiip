@@ -20,6 +20,11 @@ extends Node3D
 ## to an attacker at every round start, and ends the round on [signal planted],
 ## [signal defused] and [signal exploded]. The HUD only reads it. The model, the
 ## blinking light, the marker and the sounds are presentation.
+##
+## Online, on a client (M9, D-105) it is a [member replica]: the network code sets its state
+## from the host's snapshots ([method apply_replica_state]), which emits the same signals when
+## the state changes, so the bomb HUD works unchanged. It beeps, follows its carrier and plays
+## the plant and defuse sounds by itself, but plants, defuses and explodes only when the host says.
 
 ## Where the bomb is in its life. A round starts with [constant CARRIED].
 enum State { CARRIED, DROPPED, PLANTED, DEFUSED, EXPLODED }
@@ -105,6 +110,9 @@ var active: bool = false
 ## Answers whether a defender has a defuse kit. Nobody has one until the
 ## economy (M7) sets this to its own check.
 var kit_check: Callable = func(_defuser: Character) -> bool: return false
+## Online, on a client (M9, D-105): shows the host's bomb and decides nothing. Set by the
+## round manager before the bomb enters the tree.
+var replica: bool = false
 
 ## Seconds until the next beep, and until the next plant or defuse sound.
 var _beep_wait: float = 0.0
@@ -174,6 +182,15 @@ func get_defuse_time(defuser: Character) -> float:
 	return settings.kit_defuse_time if kit_check.call(defuser) else settings.defuse_time
 
 
+## The bomb in the same 3D world as [param node], or null (see [method Character.all_in_world]).
+static func find_in_world(node: Node) -> Bomb:
+	var world := node.get_viewport().find_world_3d()
+	for other in node.get_tree().get_nodes_in_group(GROUP):
+		if other is Bomb and other.get_viewport().find_world_3d() == world:
+			return other
+	return null
+
+
 ## True while the bomb is planted and ticking.
 func is_planted() -> bool:
 	return state == State.PLANTED
@@ -220,6 +237,9 @@ func plant(in_site: Area3D, planter: Character) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if replica:
+		_replica_tick(delta)
+		return
 	match state:
 		State.CARRIED:
 			_update_carried(delta)
@@ -264,8 +284,7 @@ func _update_dropped() -> void:
 		return
 	var nearest: Character = null
 	var nearest_distance := PICKUP_DISTANCE
-	for node in get_tree().get_nodes_in_group("characters"):
-		var character := node as Character
+	for character in Character.all_in_world(self):
 		if character.team != attacking_team or not character.is_alive():
 			continue
 		var offset := character.global_position - global_position
@@ -296,8 +315,7 @@ func _update_defuse(delta: float) -> void:
 	if actor != null and not _can_defuse(actor):
 		_stop_action()
 	if actor == null and active:
-		for node in get_tree().get_nodes_in_group("characters"):
-			var character := node as Character
+		for character in Character.all_in_world(self):
 			if _can_defuse(character):
 				_start_action(character)
 				break
@@ -329,8 +347,7 @@ func _explode() -> void:
 	_stop_action()
 	_set_lit(false)
 	exploded.emit()
-	for node in get_tree().get_nodes_in_group("characters"):
-		var character := node as Character
+	for character in Character.all_in_world(self):
 		if character.is_alive():
 			var damage := get_blast_damage(character.get_visibility_points()[1].distance_to(global_position))
 			if damage >= 1.0:
@@ -456,3 +473,90 @@ func _play_explosion() -> void:
 	if explosion_sound != null:
 		_explosion_audio.stream = explosion_sound
 		_explosion_audio.play()
+
+
+# --- Online: the replica on a client (M9, D-105) ---
+
+
+## The host's bomb, from a snapshot: its [param new_state], [param new_carrier] (null unless
+## carried), where it lies ([param at], [param yaw]; ignored while carried), the fuse, who plants
+## or defuses it and how far, whether the round is live, the attacking team and the
+## [param site_index] in [method get_sites] (-1 none). A change of state emits the signal the host's
+## bomb emitted for it: [signal picked_up], [signal dropped], [signal planted], [signal defused] or
+## [signal exploded] (with the blast's flash and sound, but no damage).
+func apply_replica_state(new_state: State, new_carrier: Character, at: Vector3, yaw: float, fuse: float,
+		new_actor: Character, new_progress: float, is_active: bool, attackers: int, site_index: int) -> void:
+	var old_state := state
+	var old_carrier := carrier
+	var sites := get_sites()
+	active = is_active
+	attacking_team = attackers
+	fuse_left = fuse
+	if actor != new_actor:
+		if is_instance_valid(actor):
+			actor.busy = false
+		actor = new_actor
+		_action_sound_wait = 0.0
+	progress = new_progress if actor != null else 0.0
+	site = sites[site_index] if site_index >= 0 and site_index < sites.size() else null
+	state = new_state
+	carrier = new_carrier if new_state == State.CARRIED else null
+	if state == State.CARRIED and carrier != null:
+		if old_state != State.CARRIED or old_carrier != carrier:
+			if old_state == State.EXPLODED or old_state == State.DEFUSED or old_state == State.PLANTED:
+				# A new round: the bomb is back in one piece.
+				_explosion.visible = false
+				_set_lit(false)
+			_model.visible = true
+			_give_replica_to(carrier)
+		return
+	if state != State.CARRIED:
+		_place(at, yaw)
+		_model.visible = state != State.EXPLODED
+	if old_state == state:
+		return
+	match state:
+		State.DROPPED:
+			if old_state == State.CARRIED:
+				dropped.emit(global_position)
+		State.PLANTED:
+			_beep_wait = 0.0
+			planted.emit(site, old_carrier)
+		State.DEFUSED:
+			_set_lit(false)
+			defused.emit(null)
+		State.EXPLODED:
+			_set_lit(false)
+			exploded.emit()
+			_play_explosion()
+
+
+func _give_replica_to(new_carrier: Character) -> void:
+	_follow_carrier()
+	reset_physics_interpolation()
+	_model.rotation = Vector3(PI / 2.0, 0.0, 0.0)
+	_model.visible = not new_carrier.is_local_player()
+	picked_up.emit(new_carrier)
+
+
+## The replica's own tick: it rides on its carrier's back, beeps while planted (the host's fuse
+## arrives with every snapshot) and makes the plant or defuse sounds. Nothing here changes the state.
+func _replica_tick(delta: float) -> void:
+	if state == State.CARRIED and is_instance_valid(carrier):
+		_follow_carrier()
+	if state == State.PLANTED:
+		fuse_left = maxf(fuse_left - delta, 0.0)
+		_beep_wait -= delta
+		if _beep_wait <= 0.0:
+			_beep()
+			_beep_wait = lerpf(BEEP_INTERVAL_END, BEEP_INTERVAL_START, clampf(fuse_left / settings.bomb_fuse_time, 0.0, 1.0))
+	if actor != null and is_instance_valid(actor) and (state == State.CARRIED or state == State.PLANTED):
+		_action_sound_wait -= delta
+		if _action_sound_wait <= 0.0:
+			_action_sound_wait = ACTION_SOUND_INTERVAL
+			var sound := plant_sound if state == State.CARRIED else defuse_sound
+			if sound != null:
+				_action_audio.global_position = actor.get_visibility_points()[1]
+				_action_audio.stream = sound
+				_action_audio.play()
+

@@ -8,6 +8,9 @@ extends Node
 ## [NetSession] on a side. Add the harness as a child of the test and free it at the end; it
 ## takes the multiplayer branches back when it leaves the tree.
 
+## The game scene every side plays in.
+const MAIN_SCENE := preload("res://main.tscn")
+
 ## The port the host listens on: random in a range no real game uses, so a running game or
 ## another test run on the same computer doesn't get in the way.
 var port: int = 0
@@ -74,3 +77,40 @@ func wait_until(condition: Callable, max_ticks: int = 1280) -> bool:
 			return true
 		await get_tree().physics_frame
 	return condition.call()
+
+
+## Starts the game scene on [param side] for [param session]: a match on [param map] by
+## [param rules] (a copy is used), in a physics world of its own, without the player's settings
+## file. Returns the game's root ([code]main.gd[/code]).
+func start_game(side: Node, session: NetSession, map: PackedScene, rules: MatchSettings) -> Node:
+	var main := MAIN_SCENE.instantiate()
+	main.load_settings = false
+	main.map_scene = map
+	main.match_settings = rules.duplicate()
+	main.net_session = session
+	# Each side's map gets a world of its own, as if it ran on its own computer.
+	(main.get_node("World/SubViewport") as SubViewport).own_world_3d = true
+	side.add_child(main)
+	return main
+
+
+## Makes [param character] silent (headless runs have no audio device; tests use silent weapons).
+static func silence(character: Character) -> void:
+	character.footstep_sound = null
+	if character.weapon != null and character.weapon.data != null and character.weapon.data.shot_sound != null:
+		var data := character.weapon.data.duplicate() as WeaponData
+		data.shot_sound = null
+		data.dry_fire_sound = null
+		data.reload_sound = null
+		character.weapon.data = data
+
+
+## Makes [param bomb] silent.
+static func silence_bomb(bomb: Bomb) -> void:
+	if bomb == null:
+		return
+	bomb.beep_sound = null
+	bomb.plant_sound = null
+	bomb.defuse_sound = null
+	bomb.explosion_sound = null
+

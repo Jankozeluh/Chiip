@@ -16,6 +16,11 @@ extends CharacterBody3D
 ##
 ## Distances are in metres and speeds in metres per second. CS values are
 ## converted with [constant UNITS_TO_METRES]. See docs/GAME_DESIGN.md, section 4.1.
+##
+## Online (M9) a character can also be stepped by the network code instead of the engine
+## ([member manual], [method step]), be a *puppet* that only shows where the host says it is
+## ([member remote], [method set_remote_pose]), and leave health and death to the host
+## ([member replica], [method apply_remote_damage]). Offline none of that is used.
 
 ## Emitted when the character takes damage. [param amount] is the health
 ## actually lost: a 142-damage headshot on 30 HP reports 30.
@@ -127,6 +132,24 @@ var busy: bool = false
 ## True while crouched (the smaller collision capsule is active). Read-only for other scripts.
 var is_crouching: bool = false
 
+## Online (M9, D-102): the id the host gave this character, the same on every computer; 0 offline.
+var net_id: int = 0
+## Online (M9, D-103, D-106): the network code steps this character itself, with
+## [method step], once per command: a friend's character on the host, and your own on your
+## computer (prediction). The engine's physics tick leaves it alone then.
+var manual: bool = false
+## Online, on a client (M9, D-104): another player or a bot, simulated by the host. It doesn't
+## simulate anything here: the network code moves it with [method set_remote_pose] between
+## snapshots, and it only plays its footsteps.
+var remote: bool = false
+## Online, on a client (M9, D-105): the host decides this character's health and death.
+## [method take_damage] does nothing here; the host's decisions arrive through
+## [method apply_remote_damage].
+var replica: bool = false
+## Online, on the host (M9, D-107): checks this character's shots against the hit zones where
+## the shooter saw them. Set for the friends' characters; null for the host's own and for bots.
+var lag_compensation: LagCompensation
+
 ## The command being simulated this tick, from the controller.
 var _input := CharacterInput.new()
 ## Whatever drives this character: the first CharacterController among its children.
@@ -146,6 +169,10 @@ var _hull_height_difference: float = 0.0
 ## characters moving in the same tick as a round start would still bump into
 ## each other's old positions and get pushed off their spawn.
 var _respawned_this_tick: bool = false
+## A puppet's ground contact as the host last reported it ([member remote]).
+var _remote_on_floor: bool = true
+## Set by [method set_floor_contact] for the next tick only: -1 none, 0 in the air, 1 on the ground.
+var _floor_override: int = -1
 
 ## The eyes: shots start here, and a first-person camera follows it.
 @onready var head: Node3D = $Head
@@ -189,16 +216,43 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if remote:
+		# A puppet (online, on a client): the network code moved it; it only takes its steps.
+		_update_footsteps(_remote_on_floor, delta)
+		return
+	if manual:
+		return
 	if _respawned_this_tick:
 		_respawned_this_tick = false
 		return
+	var command: CharacterInput = null
 	if _controller != null and is_alive():
-		_input = _controller.get_input(delta)
+		command = _controller.get_input(delta)
+	_simulate(command, delta, true)
+
+
+## Online (M9): simulates one tick of [param command] right now, then the weapon's tick, as the
+## engine's physics tick would ([member manual] characters: one call per command, D-103). A dead
+## character ignores the command. With [param effects] off (replaying commands for prediction,
+## D-106) only the movement runs: no weapon, no footsteps, no noise for bots.
+func step(command: CharacterInput, delta: float, effects: bool = true) -> void:
+	_respawned_this_tick = false
+	_simulate(command if is_alive() else null, delta, effects)
+	if effects and weapon != null:
+		weapon.step(delta)
+
+
+## One tick of the CS rules for [param command]: null keeps the last command (no controller)
+## or, for the dead, stands still. See [method _physics_process] and [method step].
+func _simulate(command: CharacterInput, delta: float, effects: bool) -> void:
+	if command != null:
+		_input = command
 	elif not is_alive():
 		# Dead characters don't act: keep facing the same way, press nothing.
 		var still := CharacterInput.new()
 		still.yaw = _input.yaw
 		still.pitch = _input.pitch
+		still.tick = _input.tick
 		_input = still
 	if frozen or busy:
 		_input.move = Vector2.ZERO
@@ -208,7 +262,7 @@ func _physics_process(delta: float) -> void:
 	# tilts up and down, which points a third-person gun (bots) at the target.
 	rotation.y = _input.yaw
 	head.rotation.x = _input.pitch
-	if weapon != null:
+	if weapon != null and effects:
 		# The weapon processes after the character (children run after their
 		# parent), so it sees this tick's trigger state.
 		weapon.trigger_held = _input.shoot
@@ -219,6 +273,9 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var on_ground := is_on_floor()
+	if _floor_override >= 0:
+		on_ground = _floor_override == 1
+		_floor_override = -1
 	# As in CS, you jump only on the tick you press jump while on the ground.
 	# Holding jump doesn't jump again when you land.
 	if on_ground and _input.jump:
@@ -242,7 +299,8 @@ func _physics_process(delta: float) -> void:
 		velocity += half_gravity
 		move_and_slide()
 		velocity += half_gravity
-	_update_footsteps(on_ground, delta)
+	if effects:
+		_update_footsteps(on_ground, delta)
 
 
 ## True while health is above 0.
@@ -255,7 +313,7 @@ func is_alive() -> bool:
 ## unless friendly fire is on). The rule lives here, in the code that owns the
 ## health, so a network client can't skip it.
 func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
-	if not is_alive() or god_mode:
+	if not is_alive() or god_mode or replica:
 		return
 	var factor := Teams.damage_factor(self, attacker)
 	if factor <= 0.0:
@@ -265,6 +323,105 @@ func take_damage(amount: float, zone: Hitbox.Zone, attacker: Character) -> void:
 	damaged.emit(lost, zone, attacker)
 	if health <= 0.0:
 		_die(attacker)
+
+
+## Online, on a client (M9, D-105): the host's word that this character lost [param amount]
+## health to [param attacker] in [param zone] and has [param health_left] left. Emits
+## [signal damaged] like [method take_damage] does, and dies at 0. Only for [member replica]
+## characters.
+func apply_remote_damage(amount: float, zone: Hitbox.Zone, attacker: Character, health_left: float) -> void:
+	if not is_alive():
+		return
+	health = maxf(health_left, 0.0)
+	damaged.emit(amount, zone, attacker)
+	if health <= 0.0:
+		_die(attacker)
+
+
+## Online, on a client (M9, D-104): puts a puppet ([member remote]) where the host says it is,
+## for this tick: its feet at [param at], moving at [param moving] (for its animation and
+## footsteps), looking along [param yaw] and [param pitch], with its eyes [param eye_height]
+## above its feet, crouched or not, on the ground or not.
+func set_remote_pose(at: Vector3, moving: Vector3, yaw: float, pitch: float, eye_height: float, crouched: bool, on_ground: bool) -> void:
+	global_position = at
+	velocity = moving
+	rotation.y = yaw
+	_input.yaw = yaw
+	_input.pitch = pitch
+	head.rotation.x = pitch
+	if crouched != is_crouching:
+		is_crouching = crouched
+		_set_crouch_hull(crouched)
+	_eye_height = eye_height
+	head.position.y = eye_height
+	_remote_on_floor = on_ground
+
+
+## Online (M9, D-106): sets what prediction compares and restores: where the character is,
+## how fast it moves, its stance and eye height, and whether its next tick starts on the
+## ground (the physics engine only knows after a move, so the next tick is told).
+func set_predicted_state(at: Vector3, moving: Vector3, crouched: bool, eye_height: float, on_ground: bool) -> void:
+	global_position = at
+	velocity = moving
+	if crouched != is_crouching:
+		is_crouching = crouched
+		_set_crouch_hull(crouched)
+	_eye_height = eye_height
+	head.position.y = eye_height
+	set_floor_contact(on_ground)
+
+
+## Online (M9): the next simulated tick starts on the ground ([param on_ground] true) or in the
+## air, whatever the last move said. Prediction uses it after putting the character where the
+## host said it was.
+func set_floor_contact(on_ground: bool) -> void:
+	_floor_override = 1 if on_ground else 0
+
+
+## True when the feet are on the ground: the physics engine's answer, or for a puppet
+## ([member remote]) the host's. Animation and the viewmodel's bob use it.
+func is_grounded() -> bool:
+	return _remote_on_floor if remote else is_on_floor()
+
+
+## The eyes' height above the feet right now (it moves while crouching).
+func get_eye_height() -> float:
+	return _eye_height
+
+
+## The last command this character simulated (online: its number and view tick too).
+func get_last_input() -> CharacterInput:
+	return _input
+
+
+## The controller driving this character, or null.
+func get_controller() -> CharacterController:
+	return _controller
+
+
+## Online (M9, D-110): hands this character to [param controller] (already a child of it), for
+## example a bot taking over a friend who left. The old controller stays where it is; the
+## caller frees it.
+func set_controller(controller: CharacterController) -> void:
+	_controller = controller
+	if _controller != null:
+		_controller.set_look_angles(_input.yaw, _input.pitch)
+
+
+## Every character in the same 3D world as [param node] (the map [param node] is on). The group
+## [code]characters[/code] holds the characters of every game in the tree, and the network tests
+## run a host's and a client's game side by side, each in its own world (D-111).
+static func all_in_world(node: Node) -> Array[Character]:
+	var characters: Array[Character] = []
+	var viewport := node.get_viewport()
+	if viewport == null:
+		return characters
+	var world := viewport.find_world_3d()
+	for other in node.get_tree().get_nodes_in_group("characters"):
+		var character := other as Character
+		if character != null and character.get_viewport() != null and character.get_viewport().find_world_3d() == world:
+			characters.append(character)
+	return characters
 
 
 ## True while this tick's command holds Use (plant or defuse the bomb) and the
