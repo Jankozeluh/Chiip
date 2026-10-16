@@ -176,11 +176,11 @@ func _draw() -> void:
 	var pointer := Rect2(roundf(size.x / 2.0 - thickness / 2.0), 0.0, thickness, _scaled(&"compass_tick_small"))
 	draw_rect(Rect2(pointer.position + shadow, pointer.size), shadow_colour)
 	draw_rect(pointer, get_theme_color(&"text_bright", PALETTE_TYPE))
-	# The enemies' squares, red, fading out.
+	# The enemies' squares, in the enemy colour (red, or orange in the colour-blind scheme), fading out.
 	var rects := get_marker_rects()
 	var index := 0
 	for id: int in _markers:
-		var colour := get_theme_color(&"enemy_text", PALETTE_TYPE)
+		var colour := Teams.scheme_color(&"enemy_text")
 		colour.a = _alpha(_markers[id]["left"])
 		var square := rects[index]
 		draw_rect(Rect2(square.position + shadow, square.size), Color(shadow_colour, shadow_colour.a * colour.a))

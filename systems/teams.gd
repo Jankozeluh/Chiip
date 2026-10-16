@@ -10,7 +10,9 @@ extends RefCounted
 ##
 ## Colors are relative to whoever is looking: you always see your own team in
 ## blue and the enemies in red, so enemies stand out for every player, also in
-## multiplayer. See [member viewer_team].
+## multiplayer. See [member viewer_team]. The colour-blind scheme (M15, D-210)
+## swaps red for orange and darkens the blue, so the two teams differ in lightness
+## as well as in hue; see [enum ColorScheme] and [method set_color_scheme].
 ##
 ## This is a plain class with static members rather than an autoload, because
 ## autoloads aren't loaded when Godot runs a [code]--script[/code] (our tools
@@ -24,10 +26,37 @@ enum Side { ATTACKING, DEFENDING }
 ## How many teams there are. Teams are the numbers 0 and 1.
 const COUNT := 2
 
-## What your own team looks like to you (the player's blue).
+## What your own team looks like to you (the player's blue), in the standard scheme.
+## Read [method friendly_color] for what is on screen now.
 const FRIENDLY_COLOR := Color(0.25, 0.4, 0.7)
-## What the enemy team looks like to you (the bots' red).
+## What the enemy team looks like to you (the bots' red), in the standard scheme.
+## Read [method enemy_color] for what is on screen now.
 const ENEMY_COLOR := Color(0.72, 0.22, 0.18)
+
+## The colour schemes (Settings → Video → Team colours, D-210). STANDARD is blue against red;
+## COLORBLIND is blue against orange, picked so the pair stays apart for protan, deutan and
+## tritan eyes and in greyscale (the blue is dark, the orange light).
+enum ColorScheme { STANDARD, COLORBLIND }
+
+## The setting's names for the schemes, in [enum ColorScheme] order (what the file stores).
+const SCHEME_NAMES: Array[String] = ["standard", "colorblind"]
+
+## Every colour of a team that depends on the scheme, per scheme and per role: "friendly" and
+## "enemy" are the 3D world's (clothes, arms), "*_text" are the UI's text and icon tints on a dark
+## panel, "*_fill" its dark fills. The STANDARD UI colours are tools/ui_palette.gd's FRIENDLY, ENEMY
+## and their fills (tools aren't exported, so they are repeated here; the ui suite checks they agree).
+const SCHEMES: Array[Dictionary] = [
+	{
+		&"friendly": FRIENDLY_COLOR, &"enemy": ENEMY_COLOR,
+		&"friendly_text": Color("5a94ff"), &"enemy_text": Color("ff4d3d"),
+		&"friendly_fill": Color("1f4a9e"), &"enemy_fill": Color("8f2216"),
+	},
+	{
+		&"friendly": Color(0.10, 0.36, 0.76), &"enemy": Color(0.97, 0.55, 0.10),
+		&"friendly_text": Color("66b3ff"), &"enemy_text": Color("ff7a1a"),
+		&"friendly_fill": Color("0a3d6b"), &"enemy_fill": Color("b86a00"),
+	},
+]
 
 ## Group of the spawn markers at the attackers' end of a map.
 const ATTACK_SPAWN_GROUP := "attack_spawns"
@@ -48,6 +77,10 @@ static var friendly_fire: bool = false
 ## other one red. Change it with [method set_viewer_team].
 static var viewer_team: int = 0
 
+## The scheme on screen, a [enum ColorScheme] value. Change it with [method set_color_scheme]
+## (the shared [Settings] does when the player picks one).
+static var color_scheme: int = ColorScheme.STANDARD
+
 
 ## The name of the group holding the spawn markers of [param side] (a [enum Side] value).
 ## The parameter is an int because GDScript can mistake [code]Teams.Side[/code]
@@ -67,15 +100,49 @@ static func set_viewer_team(team: int) -> void:
 		(node as Character).update_team_color()
 
 
+## Switches the colour scheme and recolours every character already in the world.
+## [method UiTheme.set_team_scheme] does the same for the UI's theme; the shared [Settings] calls both.
+static func set_color_scheme(scheme: int) -> void:
+	color_scheme = clampi(scheme, 0, SCHEMES.size() - 1)
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	for node in tree.get_nodes_in_group("characters"):
+		(node as Character).update_team_color()
+
+
+## The colour [param role] ("friendly", "enemy", "friendly_text"...) has in
+## [param scheme], or the current scheme when none is given.
+static func scheme_color(role: StringName, scheme: int = -1) -> Color:
+	return SCHEMES[color_scheme if scheme < 0 else scheme][role]
+
+
+## The 3D colour of your own team now.
+static func friendly_color() -> Color:
+	return SCHEMES[color_scheme][&"friendly"]
+
+
+## The 3D colour of the enemy team now.
+static func enemy_color() -> Color:
+	return SCHEMES[color_scheme][&"enemy"]
+
+
+## The UI colour of [param team] now: [param role] is "text" (names, icons, score numbers on a
+## dark panel) or "fill" (a bar or pip's body). Friendly for the viewer's team, enemy for the other.
+static func ui_color_for(team: int, role: StringName = &"text") -> Color:
+	var side := &"friendly_" if team == viewer_team else &"enemy_"
+	return SCHEMES[color_scheme][StringName(String(side) + String(role))]
+
+
 ## The opposing team of [param team].
 static func other(team: int) -> int:
 	return 1 - team
 
 
 ## The clothes color of [param team] as seen by the viewer: blue for the
-## viewer's own team, red for the other one.
+## viewer's own team, red (orange in the colour-blind scheme) for the other one.
 static func color_for(team: int) -> Color:
-	return FRIENDLY_COLOR if team == viewer_team else ENEMY_COLOR
+	return friendly_color() if team == viewer_team else enemy_color()
 
 
 ## [method color_for] lightened by [constant TEXT_LIGHTEN]: the color for names

@@ -215,9 +215,9 @@ func _add_team(team: int, members: Array[Character]) -> void:
 		if _shows_money():
 			cells.append(_money_text(member))
 		# A living player's icon is in their team's colour, a dead player's in LINE.
-		var tint_name := &"line" if muted else (&"friendly_text" if yours else &"enemy_text")
+		var tint := get_theme_color(&"line", "Palette") if muted else Teams.ui_color_for(member.team)
 		var row := _make_row(cells, &"YouRowPanel" if is_you else &"RowPanel", &"MuteLabel" if muted else &"",
-				COMPACT_ROW_HEIGHT if compact else ROW_HEIGHT, _class_icon(member), get_theme_color(tint_name, "Palette"))
+				COMPACT_ROW_HEIGHT if compact else ROW_HEIGHT, _class_icon(member), tint)
 		row.name = String(member.name)
 		box.add_child(row)
 		_rows[member] = row

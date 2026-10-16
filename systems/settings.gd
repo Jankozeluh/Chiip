@@ -115,6 +115,8 @@ const SCHEMA := {
 	&"palette_effect": {"section": "video", "default": true},
 	&"pixelate_hud": {"section": "video", "default": false},
 	&"ui_scale": {"section": "video", "default": 0, "choices": UI_SCALES},
+	# M15 (D-210): the colour-blind-safe team colours.
+	&"team_colors": {"section": "video", "default": "standard", "choices": Teams.SCHEME_NAMES},
 	&"master_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"effects_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
 	&"interface_volume": {"section": "audio", "default": 1.0, "min": 0.0, "max": 1.0},
@@ -235,6 +237,13 @@ var pixelate_hud: bool:
 var ui_scale: int:
 	get: return _values[&"ui_scale"]
 	set(value): set_value(&"ui_scale", value)
+
+## The team colours (D-210): one of [constant Teams.SCHEME_NAMES], "standard" (blue against red) or
+## "colorblind" (blue against orange, apart in hue and in lightness). Reaches the models, HUD, kill
+## feed, scoreboard and compass at once ([method Teams.set_color_scheme], [method UiTheme.apply_team_scheme]).
+var team_colors: String:
+	get: return _values[&"team_colors"]
+	set(value): set_value(&"team_colors", value)
 
 ## Volume of everything, 0 to 1 (linear; the bus gets [method @GlobalScope.linear_to_db] of it).
 var master_volume: float:
@@ -603,7 +612,7 @@ func save_to_disk(path: String = "") -> Error:
 ## key bindings), whatever their value. Does nothing on an instance that doesn't
 ## [member applies_to_engine].
 func apply_all() -> void:
-	for key in [&"fullscreen", &"vsync", &"fps_cap", &"master_volume", &"effects_volume", &"interface_volume", &"bindings"]:
+	for key in [&"fullscreen", &"vsync", &"fps_cap", &"master_volume", &"effects_volume", &"interface_volume", &"team_colors", &"bindings"]:
 		_apply(key)
 
 
@@ -630,6 +639,9 @@ func _apply(key: StringName) -> void:
 			_apply_volume(BUS_EFFECTS, effects_volume)
 		&"interface_volume":
 			_apply_volume(BUS_INTERFACE, interface_volume)
+		&"team_colors":
+			Teams.set_color_scheme(maxi(0, Teams.SCHEME_NAMES.find(team_colors)))
+			UiTheme.apply_team_scheme()
 		&"bindings":
 			_apply_bindings()
 

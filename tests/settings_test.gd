@@ -34,7 +34,7 @@ const SCENE_CAMERA_FOV := 73.74
 const DEFAULTS := {
 	&"sensitivity": 1.0, &"invert_y": false, &"fov": 90.0,
 	&"fullscreen": false, &"vsync": true, &"fps_cap": 0, &"pixel_height": 480,
-	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0,
+	&"palette_effect": true, &"pixelate_hud": false, &"ui_scale": 0, &"team_colors": "standard",
 	&"master_volume": 1.0, &"effects_volume": 1.0, &"interface_volume": 1.0,
 	&"crosshair_color": Color("36d07a"), &"crosshair_length": 7.0, &"crosshair_gap": 4.0,
 	&"crosshair_thickness": 2.0, &"crosshair_outline": true, &"crosshair_dot": false, &"crosshair_dynamic": false,
@@ -414,6 +414,7 @@ func _test_saving() -> void:
 	writer.palette_effect = false
 	writer.pixelate_hud = true
 	writer.ui_scale = 75
+	writer.team_colors = "colorblind"
 	writer.master_volume = 0.4
 	writer.effects_volume = 0.7
 	writer.interface_volume = 0.1

@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M15 accessibility & polish
+
+Branch `claude/m15-polish-f146ce` (Sonnet), in parallel with M13 sound and M14 stats. Decisions D-210 to D-219. One commit per task.
+
+**Done**
+- **Colour-blind-safe team colours** (D-210): Settings → Video → Team colours. `Teams.SCHEMES` holds six colours per scheme; the shared `Settings` applies one to the characters (`Teams.set_color_scheme`) and recolours the UI theme in place (`UiTheme.apply_team_scheme`); the kill feed, round HUD, HUD, compass and scoreboard ask `Teams`. The new `access` suite simulates protanopia, deuteranopia and tritanopia and checks the colour distance and the lightness gap (the standard blue and red are equally light, which is why the option exists).
+
+**Next:** gamepad support, then wallbangs, then smarter team bots.
+
 ## 2026-10-16 — M12 share
 
 Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessions. Decisions D-170 to D-179.

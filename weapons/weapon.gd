@@ -144,7 +144,7 @@ var _arms_meshes: Array[MeshInstance3D] = []
 ## The gun model on the arms, for its magazine and shell during reloads (M11, D-158).
 var _gun_parts: GunModel
 ## The team colour of the arms' sleeves.
-var _arms_color: Color = Teams.FRIENDLY_COLOR
+var _arms_color: Color = Teams.friendly_color()
 ## Sway offset (x right, y up) and the view angles of the last frame it was measured at.
 var _sway: Vector2 = Vector2.ZERO
 var _last_view_angles: Vector2 = Vector2.ZERO

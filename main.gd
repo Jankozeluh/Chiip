@@ -448,5 +448,5 @@ func apply_pixel_settings() -> void:
 
 
 func _on_setting_changed(key: StringName) -> void:
-	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect" or key == &"ui_scale":
+	if key == &"pixel_height" or key == &"pixelate_hud" or key == &"palette_effect" or key == &"ui_scale" or key == &"team_colors":
 		apply_pixel_settings()

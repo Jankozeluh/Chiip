@@ -43,13 +43,23 @@ const SCALED_OVERRIDES: Array[String] = [
 	"margin_bottom", "outline_size",
 ]
 
+## Meta key under which a theme remembers which [enum Teams.ColorScheme] its team colours show (D-210).
+const SCHEME_META := "team_scheme"
+## How far a theme colour may be from a scheme's colour and still count as that colour (a .tres keeps floats short).
+const COLOR_TOLERANCE := 0.004
+
 ## Scaled copies already made: factor in thousandths → Theme (oldest first).
 static var _cache: Dictionary = {}
+## Every scaled copy handed out and still alive: [method apply_team_scheme] recolours them in place,
+## also the ones the cache has let go of, which menus may still hold.
+static var _copies: Array[WeakRef] = []
 
 
-## The unscaled theme (the project theme).
+## The unscaled theme (the project theme), showing the team colours of the current scheme.
 static func get_base() -> Theme:
-	return load(THEME_PATH) as Theme
+	var theme := load(THEME_PATH) as Theme
+	_sync_scheme(theme)
+	return theme
 
 
 ## The theme scaled by [param factor]: font sizes, spacing, margins, borders
@@ -60,12 +70,68 @@ static func scaled(factor: float) -> Theme:
 		return get_base()
 	var key := roundi(factor * 1000.0)
 	if _cache.has(key):
-		return _cache[key]
+		var cached: Theme = _cache[key]
+		_sync_scheme(cached)
+		return cached
 	var theme := scale_theme(get_base(), factor)
 	if _cache.size() >= MAX_CACHED:
 		_cache.erase(_cache.keys()[0])
 	_cache[key] = theme
+	_copies.append(weakref(theme))
 	return theme
+
+
+## Recolours the base theme and every scaled copy in use to the team colours of [member Teams.color_scheme]
+## (D-210): every theme colour and every flat stylebox colour that is one of the previous scheme's team
+## colours becomes the new scheme's, in place, so menus and HUD parts that hold a theme change at once.
+## A HUD part that keeps its own scaled copy of a stylebox ([UiScale]) needs its scale applied again.
+static func apply_team_scheme() -> void:
+	get_base()
+	var alive: Array[WeakRef] = []
+	for reference in _copies:
+		var theme := reference.get_ref() as Theme
+		if theme != null:
+			_sync_scheme(theme)
+			alive.append(reference)
+	_copies = alive
+
+
+## Recolours [param theme] to the current scheme if it shows another one.
+static func _sync_scheme(theme: Theme) -> void:
+	var shown: int = theme.get_meta(SCHEME_META, Teams.ColorScheme.STANDARD)
+	if shown == Teams.color_scheme:
+		return
+	var pairs: Array = []
+	for role: StringName in Teams.SCHEMES[shown]:
+		pairs.append([Teams.SCHEMES[shown][role], Teams.SCHEMES[Teams.color_scheme][role]])
+	var seen := {}
+	for type in theme.get_type_list():
+		for item in theme.get_color_list(type):
+			var color := theme.get_color(item, type)
+			var swapped := _swap_team_color(color, pairs)
+			if swapped != color:
+				theme.set_color(item, type, swapped)
+		for item in theme.get_stylebox_list(type):
+			var box := theme.get_stylebox(item, type) as StyleBoxFlat
+			if box == null or seen.has(box):
+				continue
+			seen[box] = true
+			box.bg_color = _swap_team_color(box.bg_color, pairs)
+			box.border_color = _swap_team_color(box.border_color, pairs)
+			box.shadow_color = _swap_team_color(box.shadow_color, pairs)
+	theme.set_meta(SCHEME_META, Teams.color_scheme)
+
+
+## [param color] with the team colour it is (within [constant COLOR_TOLERANCE], alpha ignored) replaced
+## by its partner in [param pairs] ([code][from, to][/code]), alpha kept; [param color] itself if it is none.
+static func _swap_team_color(color: Color, pairs: Array) -> Color:
+	for pair: Array in pairs:
+		var from: Color = pair[0]
+		if absf(color.r - from.r) < COLOR_TOLERANCE and absf(color.g - from.g) < COLOR_TOLERANCE \
+				and absf(color.b - from.b) < COLOR_TOLERANCE:
+			var to: Color = pair[1]
+			return Color(to.r, to.g, to.b, color.a)
+	return color
 
 
 ## Makes a scaled copy of [param base]. Type variations, colors and fonts are
@@ -74,6 +140,7 @@ static func scaled(factor: float) -> Theme:
 ## icons (nearest-neighbor, so pixel art stays crisp) are multiplied.
 static func scale_theme(base: Theme, factor: float) -> Theme:
 	var theme := Theme.new()
+	theme.set_meta(SCHEME_META, base.get_meta(SCHEME_META, Teams.ColorScheme.STANDARD))
 	theme.default_font = base.default_font
 	theme.default_font_size = base.default_font_size if base.default_font_size <= 0 \
 			else scale_pixels(base.default_font_size, factor)

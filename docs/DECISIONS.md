@@ -2010,6 +2010,20 @@ The Backlog's matching ideas (wallbangs, smarter team AI, aim trainer and spray 
 
 **Alternatives:** Rewriting the history to remove the old path and the name (you decided against it); trusting the friends because they are invited (one broken client could still hang the host); encrypting the game's own traffic (Tailscale already does, and DTLS would add certificates to a hobby game); pinning actions to tags only (a moved tag would run new code unseen); signing the builds (costs money every year; checksums are the cheap part of it).
 
+## D-210 — Colour-blind-safe team colours: a second scheme, applied everywhere at once (2026-10-16)
+
+**Decision:** Settings → Video → **Team colours** has two choices, Standard (blue against red, as before) and Colour-blind safe (a dark blue against a light orange). The pair was picked, and is tested, for the three common deficiencies and for greyscale:
+- **Why not just "another hue pair":** the standard blue and red are far apart in hue (CIELAB distance 69 to 101 under every simulated deficiency) but **equally light** (the models differ by 0.9 L*), so in greyscale, or for anyone who leans on lightness, the two teams merge. The colour-blind scheme keeps a big hue gap (blue/orange is the pair that stays apart for red-green and blue-yellow deficiencies) **and** a lightness gap: the models differ by 19 to 32 L*, the UI fills by 21 to 31. The UI's text pair is close in lightness (both are bright on a dark panel) and leans on the hue gap (ΔE 105 to 123).
+- **The pair:** models blue `(0.10, 0.36, 0.76)` and orange `(0.97, 0.55, 0.10)`; UI text `#66b3ff` / `#ff7a1a`; fills `#0a3d6b` / `#b86a00`. The orange is not the UI's amber alert colour (`#ffb02e`: the bomb, low health, ammo), so those stay readable as a different thing.
+- **`access_test` simulates** protanopia, deuteranopia and tritanopia (Machado et al. 2009, full severity, linear RGB) and checks every role pair: ΔE ≥ 70 under each, and ≥ 15 L* for the models and fills. The standard pair is checked to fail the lightness test, so the test records why the option exists.
+- **One table, `Teams.SCHEMES`:** six colours per scheme (models, UI text, UI fills, for friendly and enemy). `Teams.color_for()` and `Teams.ui_color_for()` read the current scheme; the shared `Settings` applies it (`Teams.set_color_scheme()` recolours every character in the world, `UiTheme.apply_team_scheme()` the UI). `Teams.FRIENDLY_COLOR` / `ENEMY_COLOR` stay the standard pair.
+- **The theme is recoloured in place, not rebuilt:** `ui/chiip_theme.tres` is generated with the standard colours baked into label colours and styleboxes (the score boxes, pips, scoreboard lines, the death frame in the kill feed...). `UiTheme` swaps every colour that *is* one of the standard scheme's six for its partner, in the base theme and in every scaled copy still alive (a weak list; menus hold theme copies), and remembers which scheme a theme shows in a meta entry. The HUD, which keeps its own scaled copy of some styleboxes (`UiScale`), is scaled again by `main.gd` when the setting changes. Code that picked team colours from the theme (kill feed, round HUD, HUD, compass, scoreboard icons) now asks `Teams`.
+- **Not done:** a shape cue (a marker over enemies). The lightness gap already carries the difference for the common cases, and a marker would need design of its own; it is in the Backlog.
+
+**Why:** the user's roadmap item (D-177) asked for a pair that stays apart for the common colour blindnesses. Making it a measured property, with a test, beats choosing colours by eye.
+
+**Alternatives:** One extra preset per deficiency (more choices, no better for the player); swapping only the HUD (the models are where it matters in a fight); rebuilding the theme from `make_ui_theme.gd` at runtime (the tool is not in exported builds); a shape cue instead of a lightness gap (more work, and a colour that is hard to tell still tires the eyes).
+
 ## Open questions
 
 | Question | Decide in |

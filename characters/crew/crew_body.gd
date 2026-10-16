@@ -80,7 +80,7 @@ static var _materials: Dictionary = {}
 static var _NO_GUN := WeaponData.new()
 
 ## The colour to paint the team parts in, kept until the model is built.
-var _team_color: Color = Teams.FRIENDLY_COLOR
+var _team_color: Color = Teams.friendly_color()
 ## Every mesh of the instantiated model; they all get the colour.
 var _meshes: Array[MeshInstance3D] = []
 ## The model's skeleton, or null before the model is built.

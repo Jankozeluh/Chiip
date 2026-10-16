@@ -95,7 +95,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | M13 | Sound design | ⬜ | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
 | M14 | Stats & training | ⬜ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
-| M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
+| M15 | Accessibility & polish | 🟨 in progress | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -588,14 +588,15 @@ The class draft (two random classes offered each match) and the random map weapo
 - [ ] **Spray practice:** the spray wall shows each weapon's pattern, and your own spray is drawn against it
 - [ ] **Tests and docs:** the stats maths and the history file are tested (a damaged file falls back safely)
 
-## M15 — Accessibility & polish ⬜
+## M15 — Accessibility & polish 🟨
 
-**Goal:** more people can play comfortably, and the game's biggest rough edges go (D-177, after v0.1).
+**Goal:** more people can play comfortably, and the game's biggest rough edges go (D-177, after v0.1). Decisions D-210 to D-219. No Czech translation: you dropped it. Branch `claude/m15-polish-f146ce`, one commit per numbered task, each prefixed "M15: ".
 
-- [ ] **A colourblind-safe team-colour option:** a setting that swaps blue and red for a pair that stays apart for the common colour blindnesses, in the HUD, scoreboard, kill feed, outlines and the players' own colours
-- [ ] **Gamepad support:** move, aim (dead zone, sensitivity and response curve), fire, every action, menu navigation, rebinding and prompts that follow the device last used
-- [ ] **Wallbangs:** bullets go through thin materials with a damage loss by material (the surface types the footstep sounds already know), for the player and the bots
-- [ ] **Smarter team bots:** callouts, trades, coordinated site takes and grenades thrown together (the Backlog's "smarter team AI")
+1. [x] **A colourblind-safe team-colour option** (Settings → Video, `team_colors`): blue and orange instead of blue and red, with a lightness gap as well as a hue gap, so the two teams stay apart for protan, deutan and tritan eyes and in greyscale. It reaches the crew models and arms, the HUD, kill feed, scoreboard, compass, round HUD and the menus' team colours at once, without a restart. A test simulates the three deficiencies and checks the colour distance and the lightness gap
+2. [ ] **Gamepad support:** left stick move, right stick look (dead zone, sensitivity, response curve, invert, in Settings → Controls), triggers fire and aim, every action on a button, the menus by D-pad and sticks with focus, rebinding a pad button beside the keys, and prompts that follow the device used last
+3. [ ] **Wallbangs:** a bullet goes through thin cover: each surface kind (D-084) has a thickness limit and a damage loss, each weapon a penetration power in its data, the host decides online and both sides see the impact on the way in and out, bots too (a bot shoots at a heard enemy behind thin cover only when it knows the wall lets bullets through)
+4. [ ] **Smarter team bots:** trades (a bot follows up where a teammate just fought), simple callouts ("enemy spotted near A" on the kill feed's toast line and the compass), and teammates that don't all take the same lane. Designed by one Opus subagent, implemented small on the existing `BotTactics`
+5. [ ] **Docs, merge and the full run:** DEVLOG "M15 accessibility & polish", GAME_DESIGN, ARCHITECTURE, LEARNING, README controls, CHANGELOG; main merged into the branch; one full run of every suite
 
 ## Backlog (ideas, not scheduled)
 

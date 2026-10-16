@@ -360,6 +360,11 @@ func _build_video_tab() -> void:
 	_add_choice_row(_video_rows, &"ui_scale", "UI scale", Settings.UI_SCALES,
 			func(value: int) -> String: return "Auto" if value == 0 else "%d %%" % value,
 			"Auto: the biggest even step that fits the window. 100 % fills it exactly, 75 % and 50 % are smaller.")
+	# M15 (D-210): the two teams in blue and orange, apart for every kind of colour blindness.
+	var team_row := _add_row(_video_rows, &"team_colors", "Team colours",
+			"Standard is blue against red. Colour-blind safe is a dark blue against a light orange: it stays apart for red-green and blue-yellow colour blindness, and in greyscale.")
+	_choices[&"team_colors"] = _add_segments(team_row, &"team_colors", ["Standard", "Colour-blind safe"], Teams.SCHEME_NAMES)
+	_track(&"team_colors")
 
 
 func _build_audio_tab() -> void:

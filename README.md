@@ -96,7 +96,7 @@ Your settings are saved the moment you change them and apply at once. They live 
 Open the **settings menu** with **Settings** in the main menu, or by typing `settings` in the developer console (the key left of 1) during a game, or from the pause menu (Esc). It has five tabs, and every change applies and is saved at once, with no Apply button:
 
 - **Game:** mouse sensitivity (CS's scale: a slider and a number field you can type an exact value into), invert Y, field of view (90 across a 4:3 screen, like CS).
-- **Video:** fullscreen, V-Sync, frame rate limit, pixel resolution (270 to 720 lines), palette effect, pixelated HUD.
+- **Video:** fullscreen, V-Sync, frame rate limit, pixel resolution (270 to 720 lines), palette effect, pixelated HUD, team colours (standard blue/red, or a colour-blind-safe blue/orange).
 - **Audio:** master, effects and interface volume.
 - **Crosshair:** color (swatches or a `#RRGGBB` code), opacity, size, gap, thickness, outline, center dot and dynamic, with a live preview on a dark and a light background.
 - **Controls:** click a slot, then press the new key or mouse button (Esc cancels, Backspace clears the slot). Every action has a primary and a secondary slot. A key belongs to one action: if it was in use, the other action loses it and the menu tells you which.
