@@ -35,14 +35,17 @@ Every download has the licences next to the game (`LICENSE`, `LICENSE-ASSETS`, `
 
 ## Playing
 
-The main menu offers **Play**, **Practice**, **Settings**, **Quit**, and **Host** and **Join** for online games.
+The main menu offers **Play**, **Practice**, **Stats**, **Settings**, **Quit**, and **Host** and **Join** for online games.
 
 - **Play** opens the Play screen: **Team Deathmatch** (one click on its card starts the match), **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway, or the rotation of all three), team sizes (1 to 5 each, you included), the bots' difficulty (Easy, Normal, Hard), the match length and friendly fire. The game remembers your last choices.
 - **Team Deathmatch** is respawning: first team to the kill limit (or the most kills when the time is up) wins.
 - **Bomb** is CS-style rounds: one attacker carries the bomb; hold **E** inside site A or B to plant it, and defenders hold E next to it to defuse. A match is first to 5 rounds (sides swap at half time), with freeze time to buy (**B**), and money that carries over.
 - At the start of a match a **class menu** offers two classes drawn for that match (Rifleman, Bulwark, Marksman, Scout), each with its own perk and loadout. **M** opens it again during freeze time.
 - If you die in a round-based match you watch a teammate through their eyes (left click for the next one).
-- **Practice** is the Shooting Range: targets at 5, 10, 20 and 40 m, a stand for every gun and grenade, and no bots until you add some with the console (`bot_add [easy|normal|hard] [ally|enemy]`).
+- **Practice** is the Shooting Range: targets at 5, 10, 20 and 40 m, a stand for every gun and grenade, and no bots until you add some with the console (`bot_add [easy|normal|hard] [ally|enemy]`). It has two training tools:
+  - **The aim trainer:** shoot the gold coin by the start (or type `aim`) for a 30-second run of flick targets: one lime ball at a time pops up around you; the faster you hit it the more points, and a shot that misses costs points. Your best score is kept for each gun.
+  - **The spray wall** (the westmost lane): the pattern of the gun in your hand hangs on the wall as grey dots; your own bullet holes are lime. Pull against the recoil, and the sign shows your **control** (0 for holding still, near 100 for a perfect pull). Shoot the orange plate (or type `spray_reset`) to clear it.
+- **Stats** shows your numbers: K/D, ADR, headshot %, accuracy per weapon, wins per mode and map, your last 100 matches and your training bests. Every finished match is saved on your computer in a text file (`stats.json` in the game's user folder; nothing is sent anywhere), and **Export CSV** writes the history for a spreadsheet.
 - **Esc** opens the pause menu (Resume, Settings, Leave match). Online, the game doesn't pause.
 
 ## Controls
@@ -71,7 +74,7 @@ The main menu offers **Play**, **Practice**, **Settings**, **Quit**, and **Host*
 | Developer console | Key left of 1 (`` ` ``; on Czech keyboards the key under Esc) |
 | Settings menu | **Settings** in the main menu or the pause menu, or type `settings` in the console during a game; Esc or Back closes it (back to the pause menu if you came from there) |
 
-**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
+**Console commands:** `help`, `bot_add [easy|normal|hard] [ally|enemy]` (`ally` adds a teammate on your team), `bot_kick [all]`, `bot_difficulty <level>`, `god`, `noclip`, `mp_friendlyfire [0|1]` (teammates hurt each other; off by default, then bullets pass through teammates), `map <name>` (e.g. `map comparison/trenchbroom_room`), `class [name]` (no name: list the classes; with one: take it, in a match during freeze time only), `aim [stop]` (the Shooting Range's aim trainer), `spray_reset` (clears the spray wall), `armor [0-100] [helmet]` (set your armor), `money [amount]` (show or set your money in a match), `clear`, `settings` (opens the settings menu), `disconnect` (leaves the game for the main menu, like CS), and the settings commands (see *Settings* below). Up/down arrows recall earlier commands; the mouse wheel or Page Up / Page Down scroll back through the output.
 
 
 ## Weapons, money and buying

@@ -2,12 +2,13 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK).
+> **Current milestone:** M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK). **M14 Stats & training is built** (D-200 to D-209) and waits for your checks: the Stats screen in the main menu, the aim trainer and spray practice in the Shooting Range.
 
 ## Your open checks
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
+- [ ] **M14 stats & training.** (1) Play a match (Team Deathmatch or Bomb) to its end, then open **Stats** in the main menu: do K/D, ADR (bomb matches only), HS % and accuracy per weapon agree with what you remember, does the History row match the scoreboard you saw? Try **Export CSV** and open the file in a spreadsheet. (2) Online with a friend: each of you has your own numbers and your accuracy is what the host counted. (3) **Practice**: shoot the gold coin by the start, turn back downrange during the countdown and play a run: are 30 s, a 1.5 s life, the 3.2° size and the scoring (100 + speed, −25 a miss) right for you, and does the pad's best change per gun? (4) Walk to the spray wall (westmost lane, 10 m), aim at its middle and spray the Ram: does the grey pattern look right against your holes, and does **control** climb when you pull down? Is the pattern big enough to read at your resolution (it is only about 60 px tall at 720p)? The reset plate in the wall's top right corner, or `spray_reset`.
 - [ ] **M11 weapons & models.** (1) Walk into a wall with every gun (and turn your FOV to 70 and 110): the gun stays whole in front of the wall, lit like the room, and looks the same size at every FOV. (2) Watch bots (or spectate a teammate) aim up and down, run and crouch: the left hand stays on the handguard or the pump. (3) Reload every gun: the magazine leaves with the left hand and goes back in, the Breaker's shell is in the hand before it goes in, and the clicks come when the hand does it; does a reload feel right in length? (4) Fire during a Breaker reload: it stops at once, in your view and on the body.
 - [ ] **M11 optimization.** With your 3440 × 1440 monitor plugged in (and the Mac on its charger), play a round on each quick map with V-Sync on: does anything stutter? A round start costs one 15–20 ms frame (known, D-169). For numbers, run the frame timing command in CLAUDE.md with `--resolution 3440x1440`, with the window in front.
 - [ ] **M11 UI fit and the studio logo.** (1) Open the game in the editor's game view at your 2920 × 1753 (and drag the window narrow, tall and fullscreen): the Play screen, class draft and HUD stay whole; the text is 2× there, crisp. (2) Start a match: the loading band goes first, and then the class draft opens (nothing covers its cards). (3) The boot screen shows your Divocakos logo and name once when the game starts (any key skips); the small mark and the name are in the main menu's corner and footer (D-153).
@@ -94,7 +95,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M11 | Polish | 🟨 built, waiting for your checks | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
 | M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | M13 | Sound design | ⬜ | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
-| M14 | Stats & training | 🟨 | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
+| M14 | Stats & training | ✅ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
 | M15 | Accessibility & polish | ⬜ | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | — | Backlog | — | Ideas for later |
 
@@ -578,15 +579,15 @@ The class draft (two random classes offered each match) and the random map weapo
 - [ ] **Menu music and round stingers:** a short looping menu track and stingers for round start, round won and lost, bomb planted, bomb defused and match end, made for Chiip (their licence follows D-170)
 - [ ] **Tests and docs:** `sound_test` checks the new sounds, the muffling and the zones; GAME_DESIGN and CREDITS updated
 
-## M14 — Stats & training 🟨
+## M14 — Stats & training ✅
 
 **Goal:** see how you are doing and practise on purpose (D-177, after v0.1).
 
-- [ ] **Match history:** every finished match is saved on your computer (map, mode, score, date, your numbers), with a Stats screen in the main menu; nothing goes online
-- [ ] **Stats:** K/D, ADR, headshot % and accuracy per weapon (shots, hits and hits by body zone), for each match and over all of them; the scoreboard shows ADR
-- [ ] **Aim trainer** in the Shooting Range: flick targets and a tracking target, with a score and a personal best
-- [ ] **Spray practice:** the spray wall shows each weapon's pattern, and your own spray is drawn against it
-- [ ] **Tests and docs:** the stats maths and the history file are tested (a damaged file falls back safely)
+- [x] **Match history:** every finished match is saved on your computer (map, mode, score, date, your numbers), with a Stats screen in the main menu; nothing goes online
+- [x] **Stats:** K/D, ADR, headshot % and accuracy per weapon (shots, hits and hits by body zone), for each match and over all of them; the scoreboard shows ADR
+- [x] **Aim trainer** in the Shooting Range: flick targets, with a score and a personal best (a tracking target is a possible later addition: the range's moving dummy is the only tracking practice for now, D-205)
+- [x] **Spray practice:** the spray wall shows each weapon's pattern, and your own spray is drawn against it
+- [x] **Tests and docs:** the stats maths and the history file are tested (a damaged file falls back safely)
 
 Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 
@@ -595,7 +596,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 3. [x] **The Stats screen** (D-204). `ui/stats_menu.tscn`, opened by a Stats button in the main menu, in the theme and the mockups' style: Overview, Weapons, History, Training
 4. [x] **Aim trainer** (D-205 to D-207). Flick targets pop up at random spots within reach for a timed run, a score and personal bests (kept in the stats file); a `range_trainer` entity on the Shooting Range; the scoring is a pure class with its own checks
 5. [x] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
-6. [ ] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once
+6. [x] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once
 
 ## M15 — Accessibility & polish ⬜
 

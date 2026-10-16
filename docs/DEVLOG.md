@@ -2,6 +2,25 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M14 stats & training
+
+Branch `claude/m14-stats-f32137` (Sonnet), in parallel with the M13 and M15 sessions, while the user plays v0.1.0. Decisions D-200 to D-209. Six tasks, one commit each.
+
+**Done**
+- **The stats file and its maths** (D-200, D-201): `StatsBook` saves `user://stats.json` (the last 300 matches, lifetime totals that keep counting after old matches drop out, and the training bests); `StatsMatch`, `StatsWeapon`, `StatsTotals` and `StatsMath` hold the data and the definitions (K/D with deaths counted as at least 1, ADR for round matches only, HS % as headshot kills over kills, accuracy by bullets with a shotgun's pellets counted one by one). A file that can't be read is kept as `stats.json.bad` and an empty book starts; one bad match is skipped; every number is cleaned on reading. It saves only after something loaded it, like the settings (found the hard way: `ui_test`'s real-flow check wrote to the real file until the load moved inside the settings' own guard).
+- **Recording** (D-202, D-203): `StatsRecorder` follows your own bullets and hits (`Weapon.fired`, `Character.damaged` of everyone else, by zone and by gun), your headshot kills and the time, and reads kills, deaths, assists and damage from the rules' own scoreboard numbers when `match_ended` comes. Online it is the same code fed by the host's announcements: the `DAMAGED` event now carries the weapon's index (read only when present, like `KILLED`'s). Practice and a match you leave record nothing. `RoundManager` got `participant_joined` and `get_rounds_played()`; bomb matches' scoreboards got an **ADR** column (the `ui`, `round` and `economy` suites were updated for it).
+- **The Stats screen** (D-204): a **Stats** item in the main menu (between Practice and Settings) opening `StatsMenu`: Overview (ten tiles, wins per mode and map as bars), Weapons, History (the last 100 matches) and Training; **Export CSV** and a **Reset stats** that asks twice. Theme type variations only (`ui_test` and `layout_test` check it at 32 window sizes). `tools/ui_screenshots.gd --stats-only` pictures the four tabs.
+- **The aim trainer** (D-205 to D-207): a `range_trainer` entity (a gold coin by the start) that you shoot to start a 30 s run; one lime ball at a time in plain view (7 to 20 m, 45° each side, at least 12° from the last, 3.2° across at any distance), 100 + up to 100 points for speed, 25 off for a miss (`AimScore`); a best per gun in the stats file; the readout is a fixed-size `Label3D` on your camera (the countdown, time and score, the result); `aim [stop]` in the console. A ball something walks in front of (the moving dummy) moves to a spot in view. Found by the first test: scaling the ball's root also shrank its hit zone for the first 80 ms.
+- **Spray practice** (D-208, D-209): a `range_spray_wall` entity on the existing wall: the held gun's pattern as numbered grey dots (from your first hole once you shoot), your holes in lime (earlier sprays dim), and a **control** percentage (`100 × (1 − your drift ÷ the pattern's drift)`; the test's perfect pull scores 99.7, holding still 0.1); a finished spray of 10 shots or more is a best per gun when control is at least 1 %; an orange plate (or `spray_reset`) clears the wall. `SprayChart` is the maths.
+- **Tests:** four new suites (`stats` 51 checks, `statsrec` 21, `aim` 28, `spray` 22) and additions to `ui` and `layout`; 40 suites now. Every touched suite and the whole run pass.
+
+**Decisions:** D-200 stats storage, D-201 definitions, D-202 what is recorded, D-203 online, D-204 the Stats screen, D-205 the aim trainer, D-206 its score, D-207 its entity and bests, D-208 spray practice, D-209 its entity.
+
+**Next**
+- Your checks (in "Your open checks"): play a match and read the Stats screen; play one online with a friend (each of you has your own numbers); try the aim trainer and the spray wall with a few guns.
+- Possible later: a tracking run for the aim trainer (a moving ball with its own score), a magnified chart next to the spray wall (a spray's pattern is only about 60 px tall on a 720p screen), charts of K/D over time on the Stats screen, the stats and training in the next release's notes (`CHANGELOG.md` is the release routine's, left alone).
+- Left alone as asked: audio (M13), bots, colour options and gamepad (M15).
+
 ## 2026-10-16 — M12 share
 
 Branch `claude/m12-share-241864` (Sonnet), in parallel with the three M11 sessions. Decisions D-170 to D-179.
