@@ -778,6 +778,12 @@
 **Time in a test that runs at a fixed frame rate** (`Time.get_ticks_msec()` against `SceneTreeTimer`)
 - `--fixed-fps 128` makes every frame exactly 1/128 s of *game* time however fast it really runs, so `create_timer(1.5)` fires after 192 frames in a fraction of a second of wall-clock time. `Time.get_ticks_msec()` is the wall clock: a "Copied" label that reset itself by comparing ticks never reset in the test. The Copy button counts presses instead. (This is also why CLAUDE.md says to count time in deltas.)
 
+### v0.1.1 hotfix
+
+**What an export does to your resources** (D-159)
+- An exported game doesn't read your `.tres` files: the export converts text resources to binary (`.res`, reached through `.remap` files) and caches each conversion by the file's content in `.godot/exported/`. Godot 4.7 dropped the values of an exported packed array whose default was an Array literal (`= []`) on the way, while the editor build, which reads the text, worked. Give packed arrays typed defaults (`PackedStringArray()`). Unity's counterpart is a build-only bug from serialization (a field Unity can't serialize, or code stripping): in both engines, test the built game, not only the editor.
+- An exported game ignores `--script`, so a check that has to run inside a build is part of the game (Chiip's `-- --check-hits`), like a Unity development build's test hooks.
+
 ## M13: sound design
 
 **Audio buses and their effects** (`AudioBusLayout`, `AudioEffect*`, `AudioServer`)
@@ -800,10 +806,3 @@
 - A WAV loops when its import settings say so (`edit/loop_mode=2`, forward, in its `.import` file; the Import dock in the editor), like Unity's AudioClip "Loop" on the AudioSource instead. Re-importing keeps it, so the setting lives next to the generated file.
 - A fade is a tween on the player's `volume_db` (`player.create_tween().tween_property(player, "volume_db", -60.0, 1.2)`), like a coroutine lerping `AudioSource.volume`. A tween made from a node stops while that node is paused, so the music's players are `PROCESS_MODE_ALWAYS`.
 - A static class can't add a node to the root from inside another node's `_ready()` (the root is busy adding children): `add_child.call_deferred()` and act on the node's `ready` signal.
-
-### v0.1.1 hotfix
-
-**What an export does to your resources** (D-159)
-- An exported game doesn't read your `.tres` files: the export converts text resources to binary (`.res`, reached through `.remap` files) and caches each conversion by the file's content in `.godot/exported/`. Godot 4.7 dropped the values of an exported packed array whose default was an Array literal (`= []`) on the way, while the editor build, which reads the text, worked. Give packed arrays typed defaults (`PackedStringArray()`). Unity's counterpart is a build-only bug from serialization (a field Unity can't serialize, or code stripping): in both engines, test the built game, not only the editor.
-- An exported game ignores `--script`, so a check that has to run inside a build is part of the game (Chiip's `-- --check-hits`), like a Unity development build's test hooks.
-
