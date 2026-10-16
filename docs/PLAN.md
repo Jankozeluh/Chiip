@@ -624,7 +624,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 - [ ] **Debug commands** in the console: for example `debug_hitboxes` (draw the hit zones) and `net_stats` (ping, packet loss, snapshot size), so problems can be seen rather than guessed
 - [ ] **Architecture review:** after 15 milestones, map the systems, remove dead code, make the patterns consistent, give each folder a clear owner, and keep ARCHITECTURE.md as the single source of truth
 - [ ] **One short branch at a time:** no more three or four parallel branches. One focused branch, merged soon after; fewer merges and conflicts, and a clear cause when something breaks
-- [ ] **No flaky tests:** a check that fails at random is fixed or quarantined at once, so a red result always means a real bug
+- [x] **No flaky tests** (D-222): a check that fails at random is fixed or quarantined at once, so a red result always means a real bug. Each suite runs with its own empty `user://`; `perf` checks the median of five stretches; `netplay` and `netjoin` no longer depend on where a character happens to stand
 
 ## M17 — Playing with friends ⬜
 

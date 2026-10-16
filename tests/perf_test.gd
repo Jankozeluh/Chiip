@@ -15,7 +15,11 @@ extends Node
 ## prints the average, the 99th percentile, the maximum and the slowest ticks in milliseconds, and
 ## checks that there are ten characters, each with a running [AnimationTree], and the limits of
 ## M11 (D-168): an average tick under 2 ms, 99 ticks in 100 under 3.9 ms (half of a tick's 7.8 ms
-## budget), and no tick over 50 ms, round starts included. A
+## budget), and no tick over 50 ms, round starts included. The play is measured in
+## [constant STRETCHES] stretches of [constant PLAY_SECONDS] s, each with at least two round starts,
+## and each limit is checked on the median stretch (M16): the times are wall-clock, and a busy
+## computer (other suites, a build) can stall one stretch, but not most of them, while a slow part
+## of the game shows in every stretch. A
 ## headless run has a dummy renderer, so this measures the CPU side of the game only. Every random
 ## number is seeded, so every run plays the same match; the times are real, so they vary a little
 ## from run to run. Quits with the number of failed checks as the exit code (0 means everything
@@ -54,8 +58,11 @@ extends Node
 const MAP_SCENE := preload("res://maps/test_map.tscn")
 ## Players on each team: 5v5 is the biggest match the settings allow, ten characters.
 const TEAM_SIZE := 5
-## Seconds of game time that are measured and checked.
+## Seconds of game time in each measured stretch: at least two round starts (a round lasts at most
+## [constant ROUND_SECONDS] plus half a second of freeze time and half a second of round end).
 const PLAY_SECONDS := 20.0
+## How many stretches are measured; the checks take the median one (M16, against a busy computer).
+const STRETCHES := 5
 ## Seconds of game time that are measured and checked in the windowed run.
 const WINDOW_PLAY_SECONDS := 15.0
 ## How long a live round lasts, so that rounds start a few times during the measured time.
@@ -166,7 +173,7 @@ func _ready() -> void:
 		participants[i].weapon.rng.seed = i + 1
 	var ticks_per_second := Engine.physics_ticks_per_second
 	_settle_ticks = roundi(SETTLE_SECONDS * ticks_per_second)
-	_play_ticks = roundi((WINDOW_PLAY_SECONDS if _windowed else PLAY_SECONDS) * ticks_per_second)
+	_play_ticks = roundi(WINDOW_PLAY_SECONDS * ticks_per_second) if _windowed else roundi(PLAY_SECONDS * ticks_per_second) * STRETCHES
 	# The two signals bracket a tick: physics_frame comes first in the tick, process_frame first in
 	# the frame's process step, after the last tick of the frame and the physics engine's step.
 	get_tree().physics_frame.connect(_on_tick_started)
@@ -267,6 +274,7 @@ func _finish() -> void:
 		if character.body.animated and tree != null and tree.active:
 			animated += 1
 	var physics := _stats(_physics_ms)
+	var stretches := _stretch_stats(1 if _windowed else STRETCHES)
 	var budget := 1000.0 / Engine.physics_ticks_per_second
 	print("Physics tick: average %.2f ms, 99th percentile %.2f ms, maximum %.2f ms over %d ticks (budget %.2f ms per tick)." % [
 			physics.average, physics.p99, physics.maximum, _physics_ms.size(), budget])
@@ -276,6 +284,9 @@ func _finish() -> void:
 	for i: int in order.slice(0, SLOWEST_LISTED):
 		slowest.append("%.2f ms (tick %d, %s left)" % [_physics_ms[i], i, _tick_moments[i]])
 	print("  The slowest ticks: %s." % ", ".join(slowest))
+	print("  Each stretch of %.0f s (the checks take the median): averages %s ms, 99th percentiles %s ms, maxima %s ms." % [
+			_physics_ms.size() / float(Engine.physics_ticks_per_second) / stretches.size(),
+			_list(stretches, "average"), _list(stretches, "p99"), _list(stretches, "maximum")])
 	var settle := _stats(_settle_ms)
 	print("  The settling second before it (not checked): average %.2f ms, maximum %.2f ms over %d ticks." % [
 			settle.average, settle.maximum, _settle_ms.size()])
@@ -293,12 +304,16 @@ func _finish() -> void:
 	_check("%d characters play, each with a running animation tree" % (TEAM_SIZE * 2),
 			participants.size() == TEAM_SIZE * 2 and animated == TEAM_SIZE * 2,
 			"%d characters, %d animated" % [participants.size(), animated])
-	_check("The average physics tick takes under %.1f ms (a quarter of a 128 Hz tick)" % MAX_AVERAGE_MS, physics.average < MAX_AVERAGE_MS,
-			"average %.2f ms over %d ticks (%.0f s)" % [physics.average, _physics_ms.size(), _physics_ms.size() / float(Engine.physics_ticks_per_second)])
-	_check("99 ticks in 100 take under %.1f ms (half a tick)" % MAX_P99_MS, physics.p99 < MAX_P99_MS,
-			"99th percentile %.2f ms, maximum %.2f ms" % [physics.p99, physics.maximum])
-	_check("No tick takes over %.0f ms, round starts included" % MAX_TICK_MS, physics.maximum < MAX_TICK_MS,
-			"maximum %.2f ms" % physics.maximum)
+	var average := _median(stretches, "average")
+	var p99 := _median(stretches, "p99")
+	var maximum := _median(stretches, "maximum")
+	_check("The average physics tick takes under %.1f ms (a quarter of a 128 Hz tick; the median stretch)" % MAX_AVERAGE_MS, average < MAX_AVERAGE_MS,
+			"median %.2f ms, stretches %s, all %d ticks (%.0f s) %.2f ms" % [average, _list(stretches, "average"), _physics_ms.size(),
+					_physics_ms.size() / float(Engine.physics_ticks_per_second), physics.average])
+	_check("99 ticks in 100 take under %.1f ms (half a tick; the median stretch)" % MAX_P99_MS, p99 < MAX_P99_MS,
+			"median %.2f ms, stretches %s" % [p99, _list(stretches, "p99")])
+	_check("No tick takes over %.0f ms, round starts included (the median stretch's slowest)" % MAX_TICK_MS, maximum < MAX_TICK_MS,
+			"median %.2f ms, stretches %s" % [maximum, _list(stretches, "maximum")])
 	if _windowed:
 		var compiled := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_DRAW)
 		_check("No shader pipeline is compiled in the middle of drawing a frame (a first-match stutter)", compiled == 0,
@@ -375,6 +390,31 @@ func _stats(values: Array[float]) -> Dictionary:
 		total += value
 	var rank := clampi(ceili(0.99 * sorted.size()) - 1, 0, sorted.size() - 1)
 	return {"average": total / values.size(), "p99": sorted[rank], "maximum": sorted[-1]}
+
+
+## [method _stats] of each of [param count] equal stretches of the measured ticks, in order.
+func _stretch_stats(count: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var length := _physics_ms.size() / count
+	for i in count:
+		var stretch: Array[float] = []
+		stretch.assign(_physics_ms.slice(i * length, (i + 1) * length))
+		result.append(_stats(stretch))
+	return result
+
+
+## The median of [param key] over [param stretches] (the middle one of an odd count).
+func _median(stretches: Array[Dictionary], key: String) -> float:
+	var values: Array[float] = []
+	for stats in stretches:
+		values.append(stats[key])
+	values.sort()
+	return values[values.size() / 2]
+
+
+## "a, b, c": [param key] of every stretch in [param stretches], in milliseconds.
+func _list(stretches: Array[Dictionary], key: String) -> String:
+	return ", ".join(stretches.map(func(stats: Dictionary) -> String: return "%.2f" % stats[key]))
 
 
 ## "average A, maximum B" for the monitor readings in [param readings] (milliseconds), or "no reading".

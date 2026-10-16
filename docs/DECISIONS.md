@@ -2258,6 +2258,18 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) comes first. You'd rather ship v0.2.0 with these features ("chtel bych v0.2.0 vydat az tam toto co jsi popsal bude") and check the optimization just before.
 
+## D-222 — M16: no flaky tests; each suite gets its own user folder (2026-10-16)
+
+**Decision:** A check that fails at random is fixed at its cause (or quarantined at once, with a note in the plan), so a red result always means a real bug. The fixes in M16:
+- **Every suite runs with its own empty `user://`.** `tools/run_tests.sh` gives each Godot run a home folder of its own (`HOME=<a temporary folder>/<suite>`; Godot puts `user://` under `$HOME` on macOS and Linux) and deletes it at the end. A test can't see the player's settings, stats or logs, nor another worktree's run, and a suite starts from the same empty folder every time.
+- **`perf` checks the median of five stretches.** The play is measured in five stretches of 20 s (each with at least two round starts), and each limit (average, 99th percentile, slowest tick) is checked on the median stretch. The limits of D-168 stay.
+- **`netplay`'s lag-compensation lane is fixed.** The shooter stands on the first of the map's spawn markers (in scene order) that has a clear 12 m lane; before, the lane was searched from wherever the friend happened to stand and was sometimes not found.
+- **`netjoin`** waits up to 20 s for a bot that took over a player to move or turn (a defender on its hold stands still until the enemy shows up), and the joining player walks the most open of 16 headings.
+
+**Why:** The times are wall-clock, so a computer busy with other work (another suite, a build, a second session) can stall one stretch for 100 ms; it can't stall most of five. A slow part of the game (the round start of D-166) shows in every stretch, so the median still catches it. Measuring CPU time instead isn't possible from GDScript (no per-thread CPU clock). A shared `user://` let a game or test elsewhere on the computer write the files a suite was reading; `Settings.real_file_accesses` (D-178) already proved the suite itself never touched the real file. Tests that depend on where a character happens to stand are flaky by design; a fixed place makes the check repeatable.
+
+**Alternatives:** A custom user folder in `project.godot` for tests (it would apply to the player's game too). Higher limits (would miss real regressions). Re-running a failed suite in the runner (hides a real one-in-ten bug). Quarantining the four checks (they test real things: lag compensation, the round start's cost, taking over a bot).
+
 ## D-230 — The v0.2 screens: the designer's pages are the source, built one commit each (2026-10-16)
 
 **Decision:**

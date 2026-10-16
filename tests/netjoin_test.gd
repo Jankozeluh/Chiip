@@ -106,13 +106,21 @@ func _test() -> void:
 	ana.close()
 	await _harness.wait_until(func() -> bool: return ana_character.get_controller() is BotController, 2560)
 	var start := ana_character.global_position
-	await _harness.wait_ticks(256)
+	var start_aim := ana_character.get_aim_angles()
+	# The bot plays on: it moves or turns. One that took over a defender on its hold may stand
+	# still until the enemy shows up, so give it up to 20 s (M16; it waited a fixed 2 s).
+	var plays_on := func() -> bool:
+		return (not ana_character.is_alive() or ana_character.global_position.distance_to(start) > 0.5
+				or ana_character.get_aim_angles().distance_to(start_aim) > 0.05)
+	await _harness.wait_until(plays_on, 2560)
 	_check("A player who leaves mid-round is taken over by a bot: \"Ana (bot)\", same team, same stats, and it plays on",
 			ana_character.get_controller() is BotController and String(ana_character.name) == "Ana (bot)" and not ana_character.manual
 					and ana_character.team == 1 and rules.get_stats(ana_character) == ana_stats and ana_character.net_id == ana_id
-					and (not ana_character.is_alive() or ana_character.global_position.distance_to(start) > 0.5)
+					and (not ana_character.is_alive() or ana_character.global_position.distance_to(start) > 0.5
+							or ana_character.get_aim_angles().distance_to(start_aim) > 0.05)
 					and host.get_character_of(ana_peer) == null,
-			"%s, controller %s, moved %.1f m" % [ana_character.name, ana_character.get_controller(), ana_character.global_position.distance_to(start)])
+			"%s, controller %s, moved %.1f m, turned %.2f rad" % [ana_character.name, ana_character.get_controller(),
+					ana_character.global_position.distance_to(start), ana_character.get_aim_angles().distance_to(start_aim)])
 
 	# Bob joins the running match: he is sent it, loads it and takes over a bot.
 	var bob := _harness.start_client("Bob", "Bob")
@@ -133,18 +141,19 @@ func _test() -> void:
 					and bob_player.net_id == bob_character.net_id and bob_player.team == bob_character.team
 					and bob_client.get_character(ana_id) != null and String(bob_client.get_character(ana_id).name) == "Ana (bot)",
 			"%s on team %d" % [bob_character.name if bob_character != null else "-", bob_character.team if bob_character != null else -1])
-	var yaw := bob_player.get_aim_angles().x
 	# His commands only move a character in a live round, so measure over a window in which the round
 	# stays live and he stays alive (bots fight around him, and a round can end in the middle of one;
 	# a new round starts with a freeze and puts everyone back on a spawn). Try a few windows. The
 	# proof is his top speed, not the distance: depending on which bot he took over, a wall or a crate
-	# can stand a metre in front of him (he then stops after 1 m but was running at once).
+	# can stand a metre in front of him (he then stops after 1 m but was running at once), so he walks
+	# where the way is longest (M16).
 	var measured := false
 	var moved := 0.0
 	var peak_speed := 0.0
 	for attempt in 6:
 		await _harness.wait_until(func() -> bool: return rules.phase == RoundManager.Phase.LIVE and bob_character.is_alive(), 2560)
 		var bob_start := bob_character.global_position
+		var yaw := _open_yaw(bob_character)
 		bob_client.command_source = func(_delta: float) -> CharacterInput:
 			var command := CharacterInput.new()
 			command.yaw = yaw
@@ -173,6 +182,23 @@ func _test() -> void:
 			back and GameLaunch.notice == "The host ended the game.", "notice \"%s\"" % GameLaunch.notice)
 	if is_instance_valid(bob):
 		bob.close()
+
+
+## The heading (yaw) from [param character] with the longest free way at waist height, of 16.
+func _open_yaw(character: Character) -> float:
+	var space := character.get_world_3d().direct_space_state
+	var origin := character.global_position + Vector3.UP
+	var best_yaw := 0.0
+	var best_distance := -1.0
+	for i in 16:
+		var yaw := TAU * i / 16.0
+		var end := origin + Vector3.FORWARD.rotated(Vector3.UP, yaw) * 10.0
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(origin, end, PhysicsLayers.WORLD))
+		var distance := 10.0 if hit.is_empty() else origin.distance_to(hit["position"])
+		if distance > best_distance:
+			best_distance = distance
+			best_yaw = yaw
+	return best_yaw
 
 
 func _check(description: String, passed: bool, detail: String) -> void:

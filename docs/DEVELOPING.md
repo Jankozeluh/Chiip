@@ -213,7 +213,7 @@ To run a single suite on its own (about a second each, the match test about twen
 "$GODOT" --headless --path "$PROJECT" --fixed-fps 128 --quit-after 200000 res://tests/match_test.tscn
 ```
 
-Two more checks come with M12: `bash tools/run_tests.sh qa` plays every mode on every map through the real game scene, and `bash tools/lan_check.sh` (about a minute) runs a host and two friends as three real game processes over this computer's LAN address. The full test plan for a release is [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). A test never touches your real `settings.cfg` (`Settings.real_file_accesses` stays 0), and another game running at the same time can't make one fail by writing that file.
+Two more checks come with M12: `bash tools/run_tests.sh qa` plays every mode on every map through the real game scene, and `bash tools/lan_check.sh` (about a minute) runs a host and two friends as three real game processes over this computer's LAN address. The full test plan for a release is [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). A test never touches your real `settings.cfg` (`Settings.real_file_accesses` stays 0), and another game running at the same time can't make one fail by writing that file: every suite runs with an empty user folder of its own (D-222).
 
 The match test plays a whole 3v3 match, bots and all, through the real game scene and prints one line per round before its checks; it plays the same match every time. The tests never touch your real `settings.cfg`. The settings test prints one Godot "ConfigFile parse error" on purpose: it loads a broken file to check that the game falls back to the defaults.
 

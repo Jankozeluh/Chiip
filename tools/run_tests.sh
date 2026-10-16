@@ -19,7 +19,8 @@
 #
 # Exit code: the number of failed suites (0 = everything passed; 64 = unknown
 # suite name, 127 = no Godot binary). Each suite's full output is kept in
-# ${TMPDIR:-/tmp}/chiip-tests/<name>.log until the next run. Needs only bash 3.2
+# ${TMPDIR:-/tmp}/chiip-tests/<name>.log until the next run. Each suite gets an empty user://
+# folder of its own, deleted at the end (HOME points at a temporary folder). Needs only bash 3.2
 # and the Godot binary; it never runs --import and never touches git.
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -51,6 +52,12 @@ fi
 mkdir -p "$LOG_DIR"
 cd "$PROJECT" || exit 64
 
+# Every suite runs with a home folder of its own (macOS and Linux put user:// under $HOME), so its
+# user:// (settings, stats, logs) starts empty and is never the player's or another worktree's
+# (M16: a game or a test elsewhere on the computer could change a shared file mid-run).
+RUN_HOME="$(mktemp -d "${TMPDIR:-/tmp}/chiip-home.XXXXXX")" || exit 64
+trap 'rm -rf "$RUN_HOME"' EXIT
+
 rows=""
 problems=""
 failed_suites=0
@@ -70,7 +77,8 @@ for entry in $SUITES; do
 	log="$LOG_DIR/$name.log"
 	printf 'Running %s ... ' "$name" >&2
 	start=$SECONDS
-	"$GODOT" --headless --path "$PROJECT" --fixed-fps 128 --quit-after "$frames" "res://tests/${name}_test.tscn" >"$log" 2>&1
+	mkdir -p "$RUN_HOME/$name"
+	HOME="$RUN_HOME/$name" "$GODOT" --headless --path "$PROJECT" --fixed-fps 128 --quit-after "$frames" "res://tests/${name}_test.tscn" >"$log" 2>&1
 	code=$?
 	seconds=$((SECONDS - start))
 	pass=$(grep -c '^PASS' "$log")

@@ -2,6 +2,15 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-16 — M16 maintainability & debugging
+
+Branch `m16`, one code branch at a time (D-220). Decisions from D-222. One commit per task.
+
+**Done**
+- No flaky tests (D-222): each suite runs with its own empty `user://` (a home folder of its own in `tools/run_tests.sh`); `perf` checks the median of five 20 s stretches; `netplay`'s lag-compensation lane starts on a spawn marker; `netjoin` gives a bot that took over a player 20 s to move or turn, and the joining player walks the most open way. The full suite passed three times in a row.
+
+**Next:** release-build tests, logs and bug reports, debug commands, the architecture review.
+
 ## 2026-10-16 — v0.2 screens
 
 **Done**

@@ -343,35 +343,16 @@ func _test_lag_compensation() -> void:
 	var own: Character = _client_main.get_player()
 	var host_player: Character = _host_main.get_player()
 	var puppet := _client.get_character(host_player.net_id)
-	# A spot 12 m away with a clear view and floor under it.
-	var space := friend.get_world_3d().direct_space_state
-	var eye := Vector3.UP * 1.6
-	var spot := Vector3.INF
-	for i in 16:
-		var direction := Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 16.0)
-		var candidate := friend.global_position + direction * 12.0
-		var floor_ray := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP, candidate + Vector3.DOWN * 0.5, PhysicsLayers.WORLD)
-		if space.intersect_ray(floor_ray).is_empty():
-			continue
-		# The whole strip the target strafes along must be in plain view, at every height a shot may take.
-		var side := direction.cross(Vector3.UP)
-		var clear := true
-		for offset in [-2.5, -1.25, 0.0, 1.25, 2.5]:
-			for height in [0.5, 0.9, 1.3, 1.7]:
-				var point: Vector3 = candidate + side * offset + Vector3.UP * height
-				var sight := PhysicsRayQueryParameters3D.create(friend.global_position + eye, point, PhysicsLayers.WORLD)
-				if not space.intersect_ray(sight).is_empty():
-					clear = false
-			var along := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP * 0.5, candidate + side * offset + Vector3.UP * 0.5, PhysicsLayers.WORLD)
-			if not space.intersect_ray(along).is_empty():
-				clear = false
-		if clear:
-			spot = candidate
-			break
-	if spot == Vector3.INF:
-		_check("Lag compensation: a clear spot 12 m away for the target", false, "none found")
+	# A lane on the map, the same every run: the shooter on a spawn marker, the target 12 m away
+	# (searched from wherever the friend happened to stand, it sometimes found none; M16).
+	var lane := _clear_lane(friend.get_world_3d().direct_space_state, _host_main.get_map())
+	if lane.is_empty():
+		_check("Lag compensation: a clear spot 12 m away for the target", false, "none found from any spawn marker")
 		return
-	var to_friend := friend.global_position - spot
+	var spot: Vector3 = lane[1]
+	var to_spot: Vector3 = spot - lane[0]
+	friend.respawn(lane[0], atan2(-to_spot.x, -to_spot.z))
+	var to_friend: Vector3 = lane[0] - spot
 	host_player.respawn(spot, atan2(-to_friend.x, -to_friend.z))
 	host_player.god_mode = true
 	# The same every run: both Riflemen (the draft would pick classes of other sizes), the shooter
@@ -624,6 +605,36 @@ func _test_rounds() -> void:
 					and not client_end.get_play_again_button().visible and not client_end.get_next_map_button().visible
 					and client_end.get_main_menu_button().text == "Leave",
 			"host %s/%s, client %s/%s" % [host_end.visible, host_end.get_main_menu_button().text, client_end.visible, client_end.get_main_menu_button().text])
+
+
+## A shooting lane on [param map]: [code][shooter, target][/code], the shooter on one of the
+## map's spawn markers (in scene order) and the target 12 m away, with floor under it and the
+## whole strip it strafes along in plain view at every height a shot may take; [code][][/code]
+## when there is none. The map never changes, so neither does the lane.
+func _clear_lane(space: PhysicsDirectSpaceState3D, map: Node) -> Array:
+	var eye := Vector3.UP * 1.6
+	for marker in map.get_node("Spawns").get_children():
+		var origin: Vector3 = (marker as Node3D).global_position
+		for i in 16:
+			var direction := Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 16.0)
+			var candidate := origin + direction * 12.0
+			var floor_ray := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP, candidate + Vector3.DOWN * 0.5, PhysicsLayers.WORLD)
+			if space.intersect_ray(floor_ray).is_empty():
+				continue
+			var side := direction.cross(Vector3.UP)
+			var clear := true
+			for offset in [-2.5, -1.25, 0.0, 1.25, 2.5]:
+				for height in [0.5, 0.9, 1.3, 1.7]:
+					var point: Vector3 = candidate + side * offset + Vector3.UP * height
+					var sight := PhysicsRayQueryParameters3D.create(origin + eye, point, PhysicsLayers.WORLD)
+					if not space.intersect_ray(sight).is_empty():
+						clear = false
+				var along := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP * 0.5, candidate + side * offset + Vector3.UP * 0.5, PhysicsLayers.WORLD)
+				if not space.intersect_ray(along).is_empty():
+					clear = false
+			if clear:
+				return [origin, candidate]
+	return []
 
 
 ## The map's own nodes (from its scene and the props' scenes, not the ones the game adds while
