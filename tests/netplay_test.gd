@@ -504,12 +504,17 @@ func _test_spectating() -> void:
 	var mates := _client_rules.get_members(own.team).filter(func(c: Character) -> bool: return c != own and c.is_alive())
 	friend.take_damage(500.0, Hitbox.Zone.CHEST, null)
 	var died := await _harness.wait_until(func() -> bool: return not own.is_alive(), 60)
-	await _harness.wait_ticks(roundi(controller.spectate_delay * Engine.physics_ticks_per_second) + 20)
+	# The view moves on after spectate_delay; wait for it with a second to spare (a fixed wait of the
+	# delay and 20 ticks failed once in a full run, M16).
+	await _harness.wait_until(func() -> bool: return controller.get_view_target() != own,
+			roundi((controller.spectate_delay + 1.0) * Engine.physics_ticks_per_second))
+	await _harness.wait_ticks(2)
 	var watched := controller.get_view_target()
 	var hud := _client_main.get_node("HUD")
 	_check("Killed on the host, the client's player dies on the client and then watches a teammate's puppet",
 			died and not mates.is_empty() and watched != own and watched.remote and watched.team == own.team and hud.shown == watched,
-			"died %s, watching %s" % [died, watched.name])
+			"died %s, watching %s; teammates then %s, now alive %s" % [died, watched.name, mates.map(func(c: Character) -> String: return String(c.name)),
+					mates.filter(func(c: Character) -> bool: return is_instance_valid(c) and c.is_alive()).map(func(c: Character) -> String: return String(c.name))])
 	_hold_bots(false)
 
 

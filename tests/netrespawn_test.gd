@@ -125,15 +125,30 @@ func _test() -> void:
 		else:
 			command.yaw = own.get_aim_angles().x
 		return command
-	var over := func() -> bool: return host_rules.phase == RoundManager.Phase.MATCH_END and client_rules.phase == RoundManager.Phase.MATCH_END
+	# How far the host's bots get from where the match play starts (a diagnosis for a match without kills).
+	var starts := {}
+	for character in host_rules.get_participants():
+		if character.get_node_or_null("BotController") != null:
+			starts[character] = character.global_position
+	var farthest := [0.0]
+	var over := func() -> bool:
+		for character: Character in starts:
+			farthest[0] = maxf(farthest[0], character.global_position.distance_to(starts[character]))
+		return host_rules.phase == RoundManager.Phase.MATCH_END and client_rules.phase == RoundManager.Phase.MATCH_END
 	var ended := await _harness.wait_until(over, 120000)
 	await _harness.wait_ticks(30)
 	client.command_source = Callable()
 	_check("The match ends on both sides with the same winner and score (first to 15)",
 			ended and client_rules.winner == host_rules.winner and client_rules.score == host_rules.score and host_rules.score.max() >= 15,
-			"ended %s, host %d %s, client %d %s" % [ended, host_rules.winner, host_rules.score, client_rules.winner, client_rules.score])
+			"ended %s, host %d %s, client %d %s; host phase %s with %.1f s left, client phase %s, tree paused %s, %d of %d frozen on the host" % [
+					ended, host_rules.winner, host_rules.score, client_rules.winner, client_rules.score,
+					RoundManager.Phase.keys()[host_rules.phase], host_rules.time_left, RoundManager.Phase.keys()[client_rules.phase],
+					get_tree().paused, host_rules.get_participants().filter(func(c: Character) -> bool: return c.frozen).size(),
+					host_rules.get_participants().size()])
+	var nav_map := host_rules.get_viewport().find_world_3d().navigation_map
 	_check("Every kill reaches the client in order, with the score after it", _client_kills == _host_kills and _host_kills.size() >= 15,
-			"host %d kills, client %d" % [_host_kills.size(), _client_kills.size()])
+			"host %d kills, client %d; the host's bots got at most %.1f m from where they stood, its navigation map has %d region(s)" % [
+					_host_kills.size(), _client_kills.size(), farthest[0], NavigationServer3D.map_get_regions(nav_map).size()])
 	_check("The dead come back on the client as on the host (every respawn)", _client_respawns == _host_respawns and _host_respawns >= 15,
 			"host %d, client %d" % [_host_respawns, _client_respawns])
 	var worst := 0.0
