@@ -126,8 +126,8 @@ func _test_numbers() -> void:
 	_check("Every gun has a magazine, a fire rate, reload and draw times, a penetration in (0, 1] and a price",
 			guns_ok, detail if detail != "" else "all 7 guns")
 	var knife := _weapon(&"knife")
-	_check("The knife is never sold (price 0) and pays 1500 for a kill",
-			knife != null and knife.price == 0 and knife.kill_reward == 1500,
+	_check("The knife is never sold (price 0) and pays $500 for a kill (D-090)",
+			knife != null and knife.price == 0 and knife.kill_reward == 500,
 			"price %d, reward %d" % [knife.price, knife.kill_reward] if knife != null else "no knife")
 	var shotgun := _weapon(&"shotgun")
 	_check("The shotgun fires 9 pellets and loads shell by shell",

@@ -19,7 +19,7 @@ Every feature should support at least one pillar. If it doesn't, it goes to the 
 
 ## 3. Core loop
 
-Buy during freeze time → play the round (move, hold angles, fight, plant or defuse) → round ends → earn money → next round.
+Buy or save during freeze time → play the round (move, hold angles, fight, take guns off the floor, plant or defuse) → round ends → earn money → next round, with a fresh loadout.
 
 A match is won by the first team to win a set number of rounds.
 
@@ -107,15 +107,15 @@ Weapons get their own names in Chiip (provisional, D-090: your check). CS names 
 
 | Slot | Weapon (role) | CS reference | Price | Kill reward | Damage | Armor pen. | Fire rate | Magazine | Reload | Speed (u/s) | Draw |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Pistol | **Sparrow** (service pistol, semi-auto) | Glock / USP | $200 (you start with it) | $300 | 32, ×0.90 | 50% | 400 /min | 15 + 45 | 2.2 s | 240 | 0.6 s |
-| Pistol | **Verdict** (hand cannon, semi-auto) | Desert Eagle | $700 | $300 | 63, ×0.81 | 93.2% | 267 /min | 7 + 35 | 2.2 s | 230 | 0.75 s |
-| Primary | **Hornet** (SMG) | MP9 / MAC-10 | $1,250 | $600 | 26, ×0.87 | 60% | 857 /min | 30 + 120 | 2.1 s | 240 | 0.75 s |
-| Primary | **Breaker** (pump shotgun, 9 pellets in a 3.2° cone) | Nova | $1,050 | $900 | 9 × 26, ×0.70, 30 m reach | 50% | 68 /min | 8 + 32 | 0.4 s + 0.5 s per shell | 220 | 0.85 s |
-| Primary | **Ram** (AK-style rifle) | AK-47 | $2,700 | $300 | 36, ×0.98 | 77.5% | 600 /min | 30 + 90 | 2.5 s | 215 | 0.95 s |
-| Primary | **Warden** (carbine) | M4A4 | $3,100 | $300 | 33, ×0.97 | 70% | 666 /min | 30 + 90 | 3.1 s | 225 | 0.95 s |
-| Primary | **Heron** (sniper rifle, scoped) | AWP | $4,750 | $100 | 115, ×0.99 | 97.5% | 41 /min | 5 + 30 | 3.7 s | 200 (100 scoped) | 1.15 s |
-| Knife | **Knife** (slash 40, stab 65; from behind 90 / 180) | Knife | free | $1,500 | — | 85% | slash 0.4 s, stab 1 s | — | — | 250 | 0.5 s |
-| Grenade | **Frag** (high explosive) | HE grenade | $300 | $300 | 98 at the centre | 57.5% | — | 1 | — | 245 | 0.5 s |
+| Pistol | **Sparrow** (service pistol, semi-auto) | Glock / USP | in every loadout ($200 if you lost it) | $200 | 32, ×0.90 | 50% | 400 /min | 15 + 45 | 2.2 s | 240 | 0.6 s |
+| Pistol | **Verdict** (hand cannon, semi-auto) | Desert Eagle | $500 | $200 | 63, ×0.81 | 93.2% | 267 /min | 7 + 35 | 2.2 s | 230 | 0.75 s |
+| Primary | **Hornet** (SMG) | MP9 / MAC-10 | $1,000 | $200 | 26, ×0.87 | 60% | 857 /min | 30 + 120 | 2.1 s | 240 | 0.75 s |
+| Primary | **Breaker** (pump shotgun, 9 pellets in a 3.2° cone) | Nova | $1,000 | $200 | 9 × 26, ×0.70, 30 m reach | 50% | 68 /min | 8 + 32 | 0.4 s + 0.5 s per shell | 220 | 0.85 s |
+| Primary | **Ram** (AK-style rifle) | AK-47 | $2,500 | $200 | 36, ×0.98 | 77.5% | 600 /min | 30 + 90 | 2.5 s | 215 | 0.95 s |
+| Primary | **Warden** (carbine) | M4A4 | $2,500 | $200 | 33, ×0.97 | 70% | 666 /min | 30 + 90 | 3.1 s | 225 | 0.95 s |
+| Primary | **Heron** (sniper rifle, scoped) | AWP | $4,000 | $200 | 115, ×0.99 | 97.5% | 41 /min | 5 + 30 | 3.7 s | 200 (100 scoped) | 1.15 s |
+| Knife | **Knife** (slash 40, stab 65; from behind 90 / 180) | Knife | in every loadout | $500 | — | 85% | slash 0.4 s, stab 1 s | — | — | 250 | 0.5 s |
+| Grenade | **Frag** (high explosive) | HE grenade | $300 | $200 | 98 at the centre | 57.5% | — | 1 | — | 245 | 0.5 s |
 | Grenade | **Flashbang** | Flashbang | $200 | — | blinds | — | — | 2 | — | 245 | 0.5 s |
 | Grenade | **Smoke** | Smoke grenade | $300 | — | an 18 s cloud | — | — | 1 | — | 245 | 0.5 s |
 
@@ -123,7 +123,7 @@ Damage is per bullet at point-blank, then ×the falloff for every 500 units (12.
 
 - **A headshot through a helmet kills** with the Ram (111), the Verdict, the Heron and a full Breaker blast; not with the Warden (92), the Hornet or the Sparrow. That's CS's AK-vs-M4 trade: the Warden is more accurate, moves faster and holds 30 rounds, but needs a second bullet on a helmet.
 - **Body shots to kill:** Ram 3 (4 through armor), Warden 4 (5), Hornet 5 (8), Sparrow 4 (7), Verdict 2 (3), Breaker one blast (two through armor), Heron one, armor or not.
-- **Rewards make cheap guns pay:** a Hornet kill earns $600 and a Breaker kill $900, so they're the anti-eco buys; the Heron pays only $100.
+- **Prices are round and go by tier** (the light economy, D-090): $500 for the better pistol, $1,000 for the close-range guns, $2,500 for a rifle, $4,000 for the sniper rifle. Every kill pays $200, a knife kill $500.
 
 **Rifle** (the Ram, AK-like), its M2 values in detail *(tune)*:
 
@@ -210,11 +210,27 @@ Every weapon is generated from one part list (D-054) and comes as a world model 
   - **Team respawn** (M8, D-082): like CoD's Team Deathmatch. Both teams start at their ends after 5 s of freeze time. You respawn **3 s** after dying, with full health and ammo, at the map's safest respawn point: as far from the living enemies as possible (40 m and more count the same, so far spots take turns), out of their line of sight, preferably near a teammate. Each enemy killed is a point for the killer's team (teamkills and suicides score nothing). The first team to **50 kills** wins (*tune*; D-083: bots-only 3v3 matches score about 20 kills a minute, so this takes about 4 minutes), or the team with more kills after **10 minutes**; a tie goes to **overtime**, where the next kill wins. The top bar shows the kills, "First to 50" under the timer ("OT" and "Next kill wins" in overtime); no bomb and no spectating. Choose it in match setup's Mode row (or `-- --respawn` from the terminal).
 - **Maps** (D-049): three small, fast maps in rotation (M8), built for action like CoD's maps rather than CS's long ones. With **Rotation** chosen in match setup (D-087) the end screen offers **Next map: Square** (Depot → Square → Spillway → Depot…): a fresh match by the same rules; **Play again** replays the same map. About 40–60 m across, with three lanes and connections between them, first contact within 5–10 s of spawning, and short sightlines. Every map has two bomb sites and spawn zones, so it works in both modes.
 
-### 4.6 Economy
+### 4.6 Economy and pickups
 
-- Money is earned for round wins, round losses (with a loss bonus that grows), kills and objective actions.
-- A buy menu is available during freeze time, inside the buy zone.
-- Values are modeled on CS *(tune)*.
+A mix of CS and Call of Duty (D-090, your answers of 2026-10-16): a **light economy** where money still matters, a **fresh loadout every round**, and weapons you **pick up**. *(tune)*
+
+- **A fresh loadout every round** (bomb rounds), like CoD's Search & Destroy: at each round start everyone, alive or dead last round, has the **knife and the Sparrow** and nothing else. Whatever you bought or picked up (guns, armor, grenades, a kit) lasts that round only. Money carries over.
+- **Money** (round numbers, easy to read): **$1,000** at the start of each half, **$10,000** at most.
+
+  | For | Money |
+  |---|---|
+  | Winning a round | $3,000 |
+  | Losing a round | $1,500; $2,000 for the second loss in a row, $2,500 for the third, $3,000 from the fourth (a win starts the count again) |
+  | A kill | $200 ($500 with the knife) |
+  | A teamkill | −$200 |
+  | Planting the bomb | $200 for every attacker, win or lose |
+  | Defusing the bomb | $200 for the defuser |
+
+- **Buying:** during the 15 s freeze time, when everyone stands at their spawn (so there is no buy zone): **B** opens the buy menu. Prices: Verdict $500; Hornet and Breaker $1,000; Ram and Warden $2,500; Heron $4,000; Sparrow $200 (only if you lost yours); vest $500, vest and helmet $800; defuse kit $300 (defenders); Frag $300, Flashbang $200, Smoke $300. A full buy (rifle, vest and helmet, a grenade) is $3,600, so a winning team can buy every round, and a losing team saves for a round or two, buys cheap, or takes guns off the floor.
+- **Pickups:** a gun the dead drop (their best one: the primary, else the pistol) lies on the floor for the rest of the round with its ammo. Walk over it to take it into a free slot; **E** while looking at it swaps it for the gun in that slot. **G** drops the gun you hold.
+- **Power weapons:** each quick map has two marked spots in contested places, a **Heron** and a **Breaker** on a glowing floor ring. They are back at every round start (in team respawn, 30 s after being taken).
+- **Team respawn has no money:** you spawn with your class's loadout (its signature gun, the Sparrow, the knife and one grenade); pickups and power weapons work as in rounds; the class menu works any time and your next respawn brings the new class's loadout.
+- **Practice:** your class's loadout, and the buy menu gives anything for free, any time.
 
 ### 4.7 Bomb mode
 

@@ -56,7 +56,7 @@ const PATHS: Array[String] = [
 @export_group("Economy")
 ## What it costs in the buy menu, in dollars. 0 = never sold (the knife).
 @export var price: int = 0
-## Money for a kill with it (CS: knife 1500, shotgun 900, SMG 600, sniper 100, the rest 300).
+## Money for a kill with it: $200, $500 with the knife (the light economy, D-090).
 @export var kill_reward: int = 300
 
 @export_group("Damage")
