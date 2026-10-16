@@ -882,8 +882,8 @@ func _test_scoreboard_table() -> void:
 	var their_header := _row_cells(table.get_node("Team1/Header"))
 	_check("The table lists both teams, yours first under a blue 'Your team' header, then the enemy under a red one, 3 rows each",
 			team_boxes == ["Team0", "Team1"] and your_header == ["Your team", "Kills", "Deaths", "Assists", "Damage"]
-					and their_header[0] == "Enemy team" and _header_color(table, 0) == Teams.FRIENDLY_COLOR
-					and _header_color(table, 1) == Teams.ENEMY_COLOR
+					and their_header[0] == "Enemy team" and _header_color(table, 0) == _ui_team_color(true)
+					and _header_color(table, 1) == _ui_team_color(false)
 					and table.get_displayed(0).size() == 3 and table.get_displayed(1).size() == 3
 					and table.get_displayed(0).all(func(member: Character) -> bool: return member.team == 0),
 			"boxes %s, headers %s / %s, rows %d and %d" % [team_boxes, your_header, their_header,
@@ -896,7 +896,7 @@ func _test_scoreboard_table() -> void:
 	Teams.set_viewer_team(0)
 	table.refresh()
 	_check("Seen from team 1, team 1 comes first under the blue header and team 0 follows in red",
-			team_boxes == ["Team1", "Team0"] and flipped_title == "Your team" and flipped_color == Teams.FRIENDLY_COLOR,
+			team_boxes == ["Team1", "Team0"] and flipped_title == "Your team" and flipped_color == _ui_team_color(true),
 			"boxes %s, team 1's title '%s' and color %s" % [team_boxes, flipped_title, flipped_color])
 
 	# Stats: Bot1 hurts both Bot3 and Bot4 by 80, Bot2 finishes them (kills 2,
@@ -995,8 +995,8 @@ func _test_scoreboard_overlay() -> void:
 	Input.action_press("scoreboard")
 	await _wait_ticks(2)
 	var header := _board_header(board)
-	var blue := Teams.text_color_for(0)
-	var red := Teams.text_color_for(1)
+	var blue := _ui_team_color(true)
+	var red := _ui_team_color(false)
 	_check("The header shows the round and the score, yours in blue and theirs in red, above the table of both teams",
 			header["round"] == "Round 1" and header["yours"] == "0" and header["theirs"] == "0"
 					and header["yours_color"] == blue and header["theirs_color"] == red
@@ -1244,8 +1244,14 @@ func _row_cells(row: Node) -> Array:
 	return row.find_children("*", "Label", true, false).map(func(label: Node) -> String: return (label as Label).text)
 
 
+## The colour of the line under a team's column titles (D-134: a 2 px line in the UI's team colour).
 func _header_color(table: ScoreboardTable, team: int) -> Color:
-	return ((table.get_node("Team%d/Header" % team) as Control).get_theme_stylebox("panel") as StyleBoxFlat).bg_color
+	return ((table.get_node("Team%d/Header" % team) as Control).get_theme_stylebox("panel") as StyleBoxFlat).border_color
+
+
+## The UI's team colour (D-134) from the theme: yours ([param friendly]) or the enemy's.
+func _ui_team_color(friendly: bool) -> Color:
+	return ThemeDB.get_project_theme().get_color("friendly_text" if friendly else "enemy_text", "Palette")
 
 
 ## True if the row has the highlight background of your own row (the theme's "YouRowPanel").

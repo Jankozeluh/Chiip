@@ -626,3 +626,9 @@
 
 **Changing a saved default without surprising old players** (`Settings.MATCH_SETUP_VERSION`)
 - Settings are saved with every value, so a new default never reaches a player who already has a file. A version number written into the file (`setup_version` in `[match]`) lets loading tell an old file from a new one and move only the values that changed meaning, once; the next save writes the new version. The same idea as a save-game version in Unity's `PlayerPrefs` or a JSON save.
+
+**A hard drop shadow on a StyleBoxFlat** (`tools/make_ui_theme.gd`, `_shadowed()`)
+- `StyleBoxFlat` has `shadow_size` and `shadow_offset`, but its shadow is always blurred, which breaks the pixel look. A hard shadow is a trick instead: grow the box 2 px to the right and down with `expand_margin_right` / `expand_margin_bottom` (it is drawn bigger than the control) and draw just those two edges as a 2 px border in the shadow colour. The fill then covers exactly the control and the border looks like a shadow. In Unity's uGUI you'd use the `Shadow` component with zero blur.
+
+**One icon, coloured per state** (the menu items' chip)
+- A `Button`'s icon is drawn through the theme colours `icon_normal_color`, `icon_hover_color`, `icon_focus_color`, `icon_pressed_color`... (white icons take them exactly). Making `icon_normal_color` transparent and the others ink gives the mockup's focus chip that appears only on the focused or hovered item, with no code.

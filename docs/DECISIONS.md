@@ -1045,7 +1045,9 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 
 **Why:** Your mockups ("I'll try to design the UI … in claude design"). The lime accent, the ink surfaces and the chip are your design; the theme from tasks 3–6 takes them in one place.
 
-**Alternatives:** Re-colouring the 3D teams to the mockup's colours too (a gameplay readability change for the bots and players, not a UI one; can follow if you want it).
+**Built** (task 8): `tools/ui_palette.gd` holds the Foundations' colours (VOID, INK, PANEL, RAISED, LINE, MUTE, DIM, TEXT, ACCENT, the UI team colours and fills, ALERT) and sizes (16 / 32 / 48 / 96 px, 32 px page margins, 40 px buttons and 48 px menu items centred on Silkscreen's capitals: its 16 px line box is 21 px with the capitals low, so a 40 px row is 8 + 21 + 11). New roles: `MenuItem`-style `BigButton` (the chip is the button's icon, see-through until hover or focus, through Godot's per-state icon colours), `SmallItemButton`, `PrimaryButton` and `BigPrimaryButton` (the hard shadow is the box grown 2 px right and down with those two edges drawn in VOID), `SegmentButton` in a `SegmentFrame`, `ModeButton` cards, `MuteLabel`, `LargeLabel`, `FriendlyLabel` / `EnemyLabel`, `KeyCapLabel`, `DimKeyCapLabel`, `TagLabel`, `InkPanel`, `SidePanel`, `RaisedPanel`, `PlatePanel`, `CardRow`; titles use Silkscreen Bold. Tabs are spaced by their padding (16 + 16 = the mockup's 32), so the accent underline is 32 px wider than the word. The HUD keeps its look until task 14.
+
+**Alternatives:** Re-colouring the 3D teams to the mockup's colours too (a gameplay readability change for the bots and players, not a UI one; can follow if you want it); a hard shadow with StyleBoxFlat's own shadow (it is always blurred).
 
 ## D-135 — Main menu and Play screen as in the mockup (2026-10-16) — *provisional; replaces the one-page mode choice of D-132*
 
@@ -1078,6 +1080,8 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 **Decision:** The mockup draws its 21 icons as rectangles on a 32 × 16 (weapons) or 16 × 16 grid in one colour. `tools/generate_ui_icons.gd` draws the same rectangles into white PNGs in `assets/ui/icons/`, one pixel per grid cell, named after the icon slots (D-131; the mockup's `handcannon`, `he`, `flash`, `kit` are the slots `hand_cannon`, `frag`, `flashbang`, `defuse_kit`). Screens tint them (white → any colour) and scale them by whole steps with nearest filtering, as the mockup shows them at 1×, 2× and 10×.
 
 **Why:** One source for the drawings (the mockup), crisp at every scale, and one PNG per slot so the theme picks them up as designed in D-131.
+
+**Built** (task 8): all 21 slots are filled (the headshot mark's eye is cut out even-odd, as in the mockup). At 1080p the UI is 1.5×, so a one-pixel cell becomes 1–2 screen pixels; whole-number scaling where a screen shows an icon large (the class cards) keeps those crisp.
 
 ## Open questions
 

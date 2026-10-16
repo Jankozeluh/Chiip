@@ -23,7 +23,9 @@ Branch `claude/m10-ui-f5de0b`, in parallel with the map kit, M7 and M9.
 
 - **Your mockups are readable now** (after `/design-login`): Foundations, Menus, Match + HUD and the icon set. They are the source of truth; the plan has a task per screen (8–16) and decisions D-134 to D-139.
 
-**Next:** the Foundations into the theme and the icon PNGs, then the main menu and Play screen.
+- **Your Foundations are the theme** (task 8, D-134): ink surfaces, the lime accent for focus only, the UI's own team blue and red, Silkscreen Bold titles, outlined buttons with a lime focus, menu items that fill with lime and show the chip, flat sliders with a square knob, underlined tabs. Every menu changed at once; the screens' layouts follow task by task. **The icon set** (D-139): your 21 icons are drawn from the mockup's rectangles into `assets/ui/icons/`, white, ready to tint.
+
+**Next:** the main menu and the Play screen.
 
 ## 2026-10-16 — Roadmap: M10 look & feel
 

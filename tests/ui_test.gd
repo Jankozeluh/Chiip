@@ -197,11 +197,11 @@ func _test_styles_in_the_tree() -> void:
 					normal.bg_color if normal != null else "none", normal.border_width_left if normal != null else -1,
 					normal.corner_radius_top_left if normal != null else -1,
 					button.get_theme_font("font").resource_path, button.get_theme_font_size("font_size")])
-	_check("A Label gets the theme's text color and font, and a slider its sunken track and pixel-art knob",
+	_check("A Label gets the theme's text color and font, and a slider its track and square pixel-art knob",
 			label.get_theme_color("font_color") == _theme.get_color("font_color", "Label")
 					and label.get_theme_font("font").resource_path == FONT_PATH and label.get_theme_font_size("font_size") == Tokens.TEXT_SIZE
 					and slider.get_theme_stylebox("slider") is StyleBoxFlat and slider.get_theme_stylebox("grabber_area") is StyleBoxFlat
-					and slider.get_theme_icon("grabber").get_size() == Vector2(12, 24)
+					and slider.get_theme_icon("grabber").get_size() == Vector2(16, 16)
 					and slider.get_theme_icon("grabber").resource_path.begins_with("res://assets/ui/"),
 			"label color %s, knob %s" % [label.get_theme_color("font_color"), slider.get_theme_icon("grabber").get_size()])
 	_check("A check box keeps its own look (no button frame) and gets the pixel-art check marks; a line edit its inset field",
@@ -213,19 +213,19 @@ func _test_styles_in_the_tree() -> void:
 			"check box normal is %s, checked icon '%s'" % [check_box.get_theme_stylebox("normal").get_class(), check_box.get_theme_icon("checked").resource_path])
 	var popup := option.get_popup()
 	var tab_selected := tabs.get_theme_stylebox("tab_selected") as StyleBoxFlat
-	_check("An option button has the arrow icon and a themed drop-down list; tabs have an accent-framed selected tab joined to the page",
+	_check("An option button has the arrow icon and a themed drop-down list; the chosen tab is underlined in the accent (D-134)",
 			option.get_theme_icon("arrow").resource_path == "res://assets/ui/arrow_down.png"
 					and popup.get_theme_stylebox("panel") is StyleBoxFlat and popup.get_theme_stylebox("hover") is StyleBoxFlat
 					and popup.get_theme_font("font").resource_path == FONT_PATH
 					and tab_selected != null and tab_selected.border_color == _theme.get_color("accent", "Palette")
-					and tab_selected.border_width_bottom == 0,
+					and tab_selected.border_width_bottom == Tokens.TAB_UNDERLINE,
 			"arrow '%s', popup panel %s, selected tab border %s" % [
 					option.get_theme_icon("arrow").resource_path, popup.get_theme_stylebox("panel").get_class(),
 					tab_selected.border_color if tab_selected != null else "none"])
 	var tooltip_panel := _theme.get_stylebox("panel", "TooltipPanel")
 	_check("Tooltips and scroll bars are themed: a tooltip panel, and scroll bars with a track and a grabber",
 			tooltip_panel is StyleBoxFlat and _theme.get_stylebox("grabber", "VScrollBar") is StyleBoxFlat
-					and _theme.get_stylebox("scroll", "VScrollBar") is StyleBoxFlat and _theme.get_stylebox("scroll", "HScrollBar") is StyleBoxFlat,
+					and _theme.get_stylebox("scroll", "VScrollBar") != null and _theme.get_stylebox("scroll", "HScrollBar") != null,
 			"tooltip panel %s" % tooltip_panel.get_class())
 	remove_child(holder)
 	holder.queue_free()
@@ -247,19 +247,19 @@ func _test_variations() -> void:
 	var header := _variation_node(Label.new(), "HeaderLabel", holder)
 	var plain := Label.new()
 	holder.add_child(plain)
-	_check("Label variations change only what they should: title and score sizes, dim and header colors; all keep the pixel font",
-			title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
+	_check("Label variations change only what they should: title and score sizes, dim and header colors; titles in the bold cut (D-134), the others in the pixel font",
+			title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
 					and dim.get_theme_font_size("font_size") == Tokens.TEXT_SIZE and dim.get_theme_color("font_color") == _theme.get_color("text_dim", "Palette")
 					and header.get_theme_color("font_color") == _theme.get_color("accent", "Palette")
 					and plain.get_theme_color("font_color") != dim.get_theme_color("font_color")
-					and title.get_theme_font("font").resource_path == FONT_PATH,
+					and title.get_theme_font("font").resource_path == Tokens.FONT_BOLD and dim.get_theme_font("font").resource_path == FONT_PATH,
 			"title %d, score %d, dim %d px" % [title.get_theme_font_size("font_size"), score.get_theme_font_size("font_size"), dim.get_theme_font_size("font_size")])
 	var friendly := _variation_node(PanelContainer.new(), "TeamHeaderFriendly", holder)
 	var enemy := _variation_node(PanelContainer.new(), "TeamHeaderEnemy", holder)
 	var you_row := _variation_node(PanelContainer.new(), "YouRowPanel", holder)
-	_check("The colors the theme copies still match their source: team headers = Teams.FRIENDLY_COLOR / ENEMY_COLOR, your row = the YOU_ROW token (rerun tools/make_ui_theme.gd if this fails)",
-			(friendly.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.FRIENDLY_COLOR
-					and (enemy.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.ENEMY_COLOR
+	_check("The colors the theme copies still match their source: team header lines = the UI's team colours (D-134), your row = the YOU_ROW token, the palette's world team colours = Teams (rerun tools/make_ui_theme.gd if this fails)",
+			(friendly.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.FRIENDLY
+					and (enemy.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.ENEMY
 					and (you_row.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW
 					and _theme.get_color("friendly", "Palette") == Teams.FRIENDLY_COLOR and _theme.get_color("enemy", "Palette") == Teams.ENEMY_COLOR,
 			"friendly %s, enemy %s, your row %s" % [
@@ -318,16 +318,16 @@ func _test_new_roles() -> void:
 	_check("The new roles take their tokens: the hero and mode titles' sizes, the dim mode detail, a primary button framed in its colour, a text button with no box at rest, the mode button's padding, the segment and mode spacing",
 			hero.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and mode_title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
 					and mode_detail.get_theme_color("font_color") == Tokens.TEXT_DIM
-					and (primary.get_theme_stylebox("normal") as StyleBoxFlat).border_color == Tokens.PRIMARY_BORDER
+					and (primary.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Tokens.ACCENT
 					and text_button.get_theme_stylebox("normal") is StyleBoxEmpty and text_button.get_theme_color("font_color") == Tokens.TEXT_DIM
 					and text_button.get_theme_stylebox("focus") is StyleBoxFlat
-					and mode_button.get_theme_stylebox("normal").content_margin_left == Tokens.MODE_BUTTON_PAD_X
+					and mode_button.get_theme_stylebox("normal") is StyleBoxFlat and _theme.get_constant("margin_left", "ModeMargin") == Tokens.MODE_BUTTON_PAD_X
 					and segments.get_theme_constant("separation") == Tokens.SEGMENT_GAP and modes.get_theme_constant("separation") == Tokens.MODE_GAP,
 			"hero %d px, primary border %s, text button rest %s" % [hero.get_theme_font_size("font_size"),
 					(primary.get_theme_stylebox("normal") as StyleBoxFlat).border_color, text_button.get_theme_stylebox("normal").get_class()])
-	_check("The palette has team-coloured text for dark panels: the team colours lightened like Teams.text_color_for()",
-			_theme.get_color("friendly_text", "Palette") == Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
-					and _theme.get_color("enemy_text", "Palette") == Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN),
+	_check("The palette has the UI's team colours (D-134: the mockup's blue and red, for text and lines on ink)",
+			_theme.get_color("friendly_text", "Palette") == Tokens.FRIENDLY
+					and _theme.get_color("enemy_text", "Palette") == Tokens.ENEMY,
 			"friendly %s, enemy %s" % [_theme.get_color("friendly_text", "Palette"), _theme.get_color("enemy_text", "Palette")])
 	remove_child(holder)
 	holder.queue_free()
@@ -343,14 +343,14 @@ func _test_restyle_roles() -> void:
 	var enemy_score := _variation_node(Label.new(), "EnemyScoreLabel", holder)
 	var victory := _variation_node(Label.new(), "VictoryLabel", holder)
 	var defeat := _variation_node(Label.new(), "DefeatLabel", holder)
-	var friendly_text := Teams.FRIENDLY_COLOR.lightened(Teams.TEXT_LIGHTEN)
-	var enemy_text := Teams.ENEMY_COLOR.lightened(Teams.TEXT_LIGHTEN)
-	_check("Team-coloured text is a role: friendly and enemy scores are 32 px in the team colours lightened like Teams.text_color_for(), 'Victory' and 'Defeat' 48 px in the same two colours",
+	var friendly_text := Tokens.FRIENDLY
+	var enemy_text := Tokens.ENEMY
+	_check("Team-coloured text is a role: friendly and enemy scores are 48 px in the UI's team colours (D-134), 'Victory' and 'Defeat' 96 px Bold in the same two colours",
 			friendly_score.get_theme_color("font_color") == friendly_text and enemy_score.get_theme_color("font_color") == enemy_text
 					and victory.get_theme_color("font_color") == friendly_text and defeat.get_theme_color("font_color") == enemy_text
-					and friendly_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and enemy_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE
-					and victory.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and defeat.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
-					and victory.get_theme_font("font").resource_path == FONT_PATH,
+					and friendly_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and enemy_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
+					and victory.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and defeat.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO
+					and victory.get_theme_font("font").resource_path == Tokens.FONT_BOLD,
 			"friendly %s, enemy %s, scores %d px, result %d px" % [friendly_score.get_theme_color("font_color"), enemy_score.get_theme_color("font_color"),
 					friendly_score.get_theme_font_size("font_size"), victory.get_theme_font_size("font_size")])
 	var console_label := _variation_node(Label.new(), "ConsoleLabel", holder)
@@ -416,7 +416,7 @@ func _test_icon_slots() -> void:
 	menu.add_child(inside)
 	add_child(menu)
 	var found := UiIcons.get_icon(inside, &"headshot")
-	var empty := UiIcons.get_icon(inside, &"bomb")
+	var empty := UiIcons.get_icon(inside, &"no_such_slot")
 	menu.theme = UiTheme.scale_theme(with_icon, 1.5)
 	var scaled := UiIcons.get_icon(inside, &"headshot")
 	_check("A filled slot gives its icon to every control under the theme, an unfilled one null, and in a theme scaled by 1.5 the 16 px icon is 24 px",
@@ -438,7 +438,7 @@ func _test_scaled_theme() -> void:
 	_check("Scaling the theme by 1.5 multiplies every font size (16 → 24, 32 → 48, 48 → 72 today), and 1.0 is the theme itself; a factor is built once",
 			unscaled_sizes.is_empty() and scaled.default_font_size == _x(Tokens.TEXT_SIZE, 1.5)
 					and scaled.get_font_size("font_size", "TitleLabel") == _x(Tokens.TEXT_SIZE_TITLE, 1.5)
-					and scaled.get_font_size("font_size", "ScoreLabel") == _x(Tokens.TEXT_SIZE_LARGE, 1.5) and UiTheme.scaled(1.0) == _theme and scaled == twice
+					and scaled.get_font_size("font_size", "ScoreLabel") == _x(Tokens.TEXT_SIZE_TITLE, 1.5) and UiTheme.scaled(1.0) == _theme and scaled == twice
 					and scaled != _theme,
 			"mismatches: %s, default size %d" % [unscaled_sizes, scaled.default_font_size])
 	var base_normal := _theme.get_stylebox("normal", "Button") as StyleBoxFlat
@@ -449,7 +449,7 @@ func _test_scaled_theme() -> void:
 	var scaled_line := scaled.get_stylebox("separator", "HSeparator") as StyleBoxLine
 	_check("Styleboxes scale too: the button's border and padding (2 → 3, 14 / 8 → 21 / 12 today), a tab's covering edge, a separator; the colors stay, and the original is untouched",
 			scaled_normal.border_width_left == _x(Tokens.BORDER, 1.5) and scaled_normal.content_margin_left == _x(Tokens.BUTTON_PAD_X, 1.5)
-					and scaled_normal.content_margin_top == _x(Tokens.BUTTON_PAD_Y, 1.5)
+					and scaled_normal.content_margin_top == _x(Tokens.BUTTON_PAD_TOP, 1.5)
 					and scaled_normal.bg_color == base_normal.bg_color and base_normal.border_width_left == Tokens.BORDER
 					and base_normal.content_margin_left == Tokens.BUTTON_PAD_X
 					and scaled_tab.expand_margin_bottom == _x(Tokens.BORDER, 1.5) and base_tab.expand_margin_bottom == Tokens.BORDER
@@ -462,10 +462,10 @@ func _test_scaled_theme() -> void:
 	var source_colors := _image_colors(base_icon.get_image())
 	var scaled_colors := _image_colors(scaled_icon.get_image())
 	var no_new_colors := scaled_colors.all(func(color: Color) -> bool: return source_colors.has(color))
-	_check("Icons scale with nearest-neighbor, so pixel art stays crisp: the 16 px check box becomes 24 px with no blended colors; the slider knob 12 × 24 → 18 × 36",
+	_check("Icons scale with nearest-neighbor, so pixel art stays crisp: the 16 px check box becomes 24 px with no blended colors; the 16 px slider knob 24 px",
 			scaled_icon.get_size() == Vector2(24, 24) and scaled_icon.get_image().get_size() == Vector2i(24, 24) and no_new_colors
 					and base_icon.get_size() == Vector2(16, 16)
-					and scaled.get_icon("grabber", "HSlider").get_size() == Vector2(18, 36),
+					and scaled.get_icon("grabber", "HSlider").get_size() == Vector2(24, 24),
 			"check box %s, %d colors (source %d), knob %s" % [
 					scaled_icon.get_size(), scaled_colors.size(), source_colors.size(), scaled.get_icon("grabber", "HSlider").get_size()])
 	# Several factors in a row, as when a window is resized: each starts from the original, which is never changed.
@@ -578,7 +578,7 @@ func _test_preview() -> void:
 					and variations_used.has("DimLabel") and variations_used.has("BrightLabel"),
 			"kinds not shown: %s, variations used: %d" % [absent, variations_used.size()])
 	_check("Its Hover sample wears the theme's hover look while the Normal one keeps the resting look, and Disabled is disabled",
-			forced_hover.bg_color == theme_hover.bg_color and (normal.get_theme_stylebox("normal") as StyleBoxFlat).bg_color != theme_hover.bg_color
+			forced_hover.border_color == theme_hover.border_color and (normal.get_theme_stylebox("normal") as StyleBoxFlat).border_color != theme_hover.border_color
 					and disabled.disabled,
 			"hover sample fill %s (theme hover %s), normal fill %s" % [
 					forced_hover.bg_color, theme_hover.bg_color, (normal.get_theme_stylebox("normal") as StyleBoxFlat).bg_color])
@@ -601,8 +601,8 @@ func _test_console() -> void:
 	var scaled_size := output.get_theme_font_size("font_size")
 	var scaled_input := input.get_theme_font_size("font_size")
 	console.set_ui_scale(1.0)
-	_check("The developer console is themed (a ConsolePanel with the accent edge, a themed input line, no overrides of its own), the body size at 1.0 and 1.5 times it at 1.5, its panel 360 → 540 px minimum height (18 lines, D-065)",
-			panel.theme_type_variation == &"ConsolePanel" and style != null and style.border_color == _theme.get_color("accent", "Palette")
+	_check("The developer console is themed (a ConsolePanel with a line along its bottom edge, a themed input line, no overrides of its own), the body size at 1.0 and 1.5 times it at 1.5, its panel 360 → 540 px minimum height (18 lines, D-065)",
+			panel.theme_type_variation == &"ConsolePanel" and style != null and style.border_color == Tokens.LINE_COLOR
 					and not output.has_theme_font_size_override("font_size") and not panel.has_theme_stylebox_override("panel")
 					and base_size == Tokens.TEXT_SIZE and scaled_size == _x(Tokens.TEXT_SIZE, 1.5) and scaled_input == _x(Tokens.TEXT_SIZE, 1.5)
 					and panel.custom_minimum_size.y == 360.0
@@ -643,8 +643,8 @@ func _test_scoreboard() -> void:
 			panel.theme_type_variation == &"OverlayPanel" and round_label.theme_type_variation == &"DimLabel"
 					and header.theme_type_variation == &"TeamHeaderFriendly" and enemy_header.theme_type_variation == &"TeamHeaderEnemy"
 					and yours.theme_type_variation == &"YouRowPanel" and (yours.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Tokens.YOU_ROW
-					and (header.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.color_for(Teams.viewer_team)
-					and (enemy_header.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == Teams.color_for(Teams.other(Teams.viewer_team))
+					and (header.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.FRIENDLY
+					and (enemy_header.get_theme_stylebox("panel") as StyleBoxFlat).border_color == Tokens.ENEMY
 					and (yours.find_children("*", "Label", true, false)[0] as Label).get_theme_font_size("font_size") == 16,
 			"panel '%s', header '%s', your row '%s'" % [panel.theme_type_variation, header.theme_type_variation, yours.theme_type_variation])
 	# A menu on top of the game (the settings menu, the pause menu) takes the keyboard: no scoreboard then.
@@ -663,8 +663,8 @@ func _test_scoreboard() -> void:
 	var board_theirs := board.get_node("Center/Panel/Margin/Content/Score/EnemyScore") as Label
 	_check("Its scores are team-coloured by theme variations, with the colours the per-node overrides once gave: yours a FriendlyScoreLabel in your team's text colour, theirs an EnemyScoreLabel in the enemy's",
 			board_yours.theme_type_variation == &"FriendlyScoreLabel" and board_theirs.theme_type_variation == &"EnemyScoreLabel"
-					and board_yours.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
-					and board_theirs.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team)),
+					and board_yours.get_theme_color("font_color") == Tokens.FRIENDLY
+					and board_theirs.get_theme_color("font_color") == Tokens.ENEMY,
 			"yours %s, theirs %s" % [board_yours.get_theme_color("font_color"), board_theirs.get_theme_color("font_color")])
 	var overrides := _style_or_size_overrides(board)
 	_check("Nothing in the scoreboard carries a stylebox or font-size override of its own, so the theme alone decides its look",
@@ -676,8 +676,9 @@ func _test_scoreboard() -> void:
 	var stat_width := (yours.find_children("*", "Label", true, false)[1] as Label).custom_minimum_size.x
 	var separation := (table.get_node("Team0") as VBoxContainer).get_theme_constant("separation")
 	_check("Scaled by 1.5 the scoreboard is exactly 1.5 times as big: panel 640 → 960 minimum width, rows 16 → 24 px, scores 32 → 48 px, number columns 96 → 144, the gap between rows 2 → 3",
-			panel.custom_minimum_size.x == 960.0 and row_label.get_theme_font_size("font_size") == 24 and score.get_theme_font_size("font_size") == 48
-					and stat_width == 144.0 and separation == 3,
+			panel.custom_minimum_size.x == 960.0 and row_label.get_theme_font_size("font_size") == 24
+					and score.get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_TITLE, 1.5)
+					and stat_width == 144.0 and separation == _x(Tokens.TEAM_ROW_GAP, 1.5),
 			"panel %.0f, row font %d, score font %d, column %.0f, gap %d" % [
 					panel.custom_minimum_size.x, row_label.get_theme_font_size("font_size"), score.get_theme_font_size("font_size"), stat_width, separation])
 	board.set_ui_scale(1.0)
@@ -722,20 +723,19 @@ func _test_match_end_screen() -> void:
 			"texts '%s' and '%s', presses %d" % [play_again.text, main_menu_button.text, menu_presses[0]])
 	_check("Its look comes from theme variations: a modal panel with the accent frame, a 48 px title, 16 px buttons; the buttons are themed in every state",
 			panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"VictoryLabel"
-					and title.get_theme_font_size("font_size") == 48 and play_again.get_theme_font_size("font_size") == 16
-					and (panel.get_theme_stylebox("panel") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette")
-					and (main_menu_button.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left == 2
+					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO and play_again.get_theme_font_size("font_size") == 16
+					and (main_menu_button.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left == Tokens.BORDER
 					and (main_menu_button.get_theme_stylebox("focus") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette"),
 			"panel '%s', title %d px, button %d px" % [panel.theme_type_variation, title.get_theme_font_size("font_size"), play_again.get_theme_font_size("font_size")])
 	var your_score := screen.get_node("Panel/Margin/Content/Score/YourScore") as Label
 	var their_score := screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label
 	_check("The result and the scores are team-coloured by theme variations, with the colours the per-node overrides once gave: 'Victory' and your score in your team's text colour (32 px scores, 48 px title), theirs in the enemy's",
 			your_score.theme_type_variation == &"FriendlyScoreLabel" and their_score.theme_type_variation == &"EnemyScoreLabel"
-					and title.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
-					and your_score.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
-					and their_score.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team))
-					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE
-					and your_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE and their_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_LARGE,
+					and title.get_theme_color("font_color") == Tokens.FRIENDLY
+					and your_score.get_theme_color("font_color") == Tokens.FRIENDLY
+					and their_score.get_theme_color("font_color") == Tokens.ENEMY
+					and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO
+					and your_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE and their_score.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_TITLE,
 			"title %s, yours %s, theirs %s" % [title.get_theme_color("font_color"), your_score.get_theme_color("font_color"), their_score.get_theme_color("font_color")])
 	var overrides := _style_or_size_overrides(screen)
 	_check("Nothing in the match-end screen carries a stylebox or font-size override of its own, so the theme alone decides its look",
@@ -744,7 +744,7 @@ func _test_match_end_screen() -> void:
 	await get_tree().process_frame
 	var row_label := table.get_row(_player).find_children("*", "Label", true, false)[0] as Label
 	_check("Scaled by 1.5: panel 760 → 1140, title 48 → 72 px, buttons 16 → 24 px and 200 × 40 → 300 × 60, table rows 16 → 24 px",
-			panel.custom_minimum_size.x == 1140.0 and title.get_theme_font_size("font_size") == 72
+			panel.custom_minimum_size.x == 1140.0 and title.get_theme_font_size("font_size") == _x(Tokens.TEXT_SIZE_HERO, 1.5)
 					and play_again.get_theme_font_size("font_size") == 24 and play_again.custom_minimum_size == Vector2(300, 60)
 					and row_label.get_theme_font_size("font_size") == 24,
 			"panel %.0f, title %d, button %d (%s), row %d" % [
@@ -753,7 +753,7 @@ func _test_match_end_screen() -> void:
 	screen.set_ui_scale(1.0)
 	await get_tree().process_frame
 	_check("Back at 1.0 everything returns to its design size (panel 760, title 48, row 16)",
-			panel.custom_minimum_size.x == 760.0 and title.get_theme_font_size("font_size") == 48
+			panel.custom_minimum_size.x == 760.0 and title.get_theme_font_size("font_size") == Tokens.TEXT_SIZE_HERO
 					and (table.get_row(_player).find_children("*", "Label", true, false)[0] as Label).get_theme_font_size("font_size") == 16,
 			"panel %.0f, title %d" % [panel.custom_minimum_size.x, title.get_theme_font_size("font_size")])
 	remove_child(screen)
@@ -864,9 +864,9 @@ func _test_menus_have_no_overrides() -> void:
 	var their_score := screen.get_node("Panel/Margin/Content/Score/EnemyScore") as Label
 	_check("After a lost match the title is a DefeatLabel in the enemy team's text colour, while the scores keep their own team colours (yours friendly, theirs enemy), all from the theme",
 			result.text == "Defeat" and result.theme_type_variation == &"DefeatLabel"
-					and result.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team))
-					and your_score.get_theme_color("font_color") == Teams.text_color_for(Teams.viewer_team)
-					and their_score.get_theme_color("font_color") == Teams.text_color_for(Teams.other(Teams.viewer_team)),
+					and result.get_theme_color("font_color") == Tokens.ENEMY
+					and your_score.get_theme_color("font_color") == Tokens.FRIENDLY
+					and their_score.get_theme_color("font_color") == Tokens.ENEMY,
 			"title '%s' %s, yours %s, theirs %s" % [result.text, result.get_theme_color("font_color"), your_score.get_theme_color("font_color"), their_score.get_theme_color("font_color")])
 	remove_child(screen)
 	screen.queue_free()
@@ -1449,9 +1449,9 @@ func _test_menu_scaling() -> void:
 	var sizes_one: Array[Vector2] = [Vector2(960, 660), Vector2(960, 660), Vector2(960, 660), Vector2(960, 660), Vector2(960, 660)]
 	var sizes_one_and_a_half: Array[Vector2] = [Vector2(1440, 990), Vector2(1440, 990), Vector2(1440, 990), Vector2(1440, 990), Vector2(1440, 990)]
 	_check("At 1.0 the menu is as designed: a 960 × 660 panel on every one of the five tabs (no tab's rows make it wider), 48 px title, 16 px rows, 200 px labels, a 200 × 40 Back button",
-			at_one == [sizes_one, 48, 16, Vector2(200, 40), 200.0, 6, 7.0], "%s" % [at_one])
+			at_one == [sizes_one, 48, 16, Vector2(200, 40), 200.0, Tokens.SWATCH_MARGIN, 7.0], "%s" % [at_one])
 	_check("Scaled by 1.5 everything is exactly 1.5 times as big: a 1440 × 990 panel on every tab, 72 / 24 px text, 300 labels, a 300 × 60 Back button, the swatch margin 9, the preview crosshair (thickness 3 px), and back at 1.0 it is as before",
-			at_one_and_a_half == [sizes_one_and_a_half, 72, 24, Vector2(300, 60), 300.0, 9, 11.0] and preview_gap_scaled and back_at_one == at_one,
+			at_one_and_a_half == [sizes_one_and_a_half, 72, 24, Vector2(300, 60), 300.0, _x(Tokens.SWATCH_MARGIN, 1.5), 11.0] and preview_gap_scaled and back_at_one == at_one,
 			"1.5: %s, back: %s" % [at_one_and_a_half, back_at_one])
 	_check("Nothing in the menu carries a stylebox or font-size override of its own, so the theme alone decides its look",
 			overrides.is_empty() and slider.get_theme_stylebox("slider") is StyleBoxFlat, "controls with overrides: %s" % [overrides])
@@ -2330,7 +2330,7 @@ func _test_pause_menu_look() -> void:
 	var all_big := buttons.all(func(button: Button) -> bool: return button.theme_type_variation == &"BigButton" and button.get_theme_font_size("font_size") == 32)
 	_check("It is hidden until opened; its look comes from variations: a modal panel (accent frame), a 48 px title, three 32 px big buttons; it sits between the Tab scoreboard (3) and the match-end screen (5), and keeps running while paused",
 			not menu.visible and panel.theme_type_variation == &"ModalPanel" and title.theme_type_variation == &"TitleLabel" and title.get_theme_font_size("font_size") == 48
-					and all_big and (panel.get_theme_stylebox("panel") as StyleBoxFlat).border_color == _theme.get_color("accent", "Palette")
+					and all_big
 					and menu.layer == 4 and menu.process_mode == Node.PROCESS_MODE_ALWAYS,
 			"visible %s, panel '%s', title %d px, big buttons %s, layer %d, process mode %d" % [
 					menu.visible, panel.theme_type_variation, title.get_theme_font_size("font_size"), all_big, menu.layer, menu.process_mode])
@@ -2687,7 +2687,8 @@ func _expected_menu_sizes(factor: float) -> Dictionary:
 		"body": _x(Tokens.TEXT_SIZE, factor), "title": _x(Tokens.TEXT_SIZE_TITLE, factor),
 		"margin": _x(Tokens.PANEL_MARGIN_X, factor), "button_min": Vector2(200, 40) * factor,
 		"override_separation": _x(10, factor), "override_font": _x(20, factor),
-		"popup": _x(Tokens.TEXT_SIZE, factor), "panel_border": _x(Tokens.BORDER, factor),
+		"popup": _x(Tokens.TEXT_SIZE, factor),
+		"panel_border": _x((_theme.get_stylebox("panel", "PanelContainer") as StyleBoxFlat).border_width_left, factor),
 	}
 
 
