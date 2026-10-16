@@ -35,6 +35,16 @@
 
 **Next:** M9 — Multiplayer.
 
+## 2026-10-16 — Roadmap: M10 look & feel
+
+**Done**
+- M8 is complete on main (map rotation and the mode choice); 17 suites, 568 checks pass.
+- M7 resumed after the night. It now has your weapon answers: a light economy plus pickups, and a fresh loadout every round. M9 (multiplayer) runs in parallel.
+- Your new feedback became M10 (D-120): a map kit (CC0 textures plus our own props, a mapping guide, the maps dressed) and a modern, minimal UI with Team Deathmatch as the primary mode. Random map weapons and a class draft were added to M7.
+- Your rule for development: stop only at the usage limit or when the whole plan is done.
+
+**Next:** M7, M9 and both M10 parts in parallel branches, merged into main as each finishes.
+
 ## 2026-10-15 — M7 arsenal, perks & economy
 
 Started M7 in its own worktree (branch `m7-arsenal`), cut from main with M8's last commit (mode choice and map rotation) on top.

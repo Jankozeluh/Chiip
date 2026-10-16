@@ -313,6 +313,7 @@ All design, planning and technical notes live in [`docs/`](docs/):
 | Document | What it contains |
 |---|---|
 | [PLAN.md](docs/PLAN.md) | Roadmap: milestones, tasks and current status |
+| [UI_MOCKUPS.md](docs/UI_MOCKUPS.md) | The UI screens to design (in Claude Design) and the rules every mockup follows |
 | [GAME_DESIGN.md](docs/GAME_DESIGN.md) | What the game is: pillars, mechanics, controls, look |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the project is built: folders, systems, code conventions |
 | [DECISIONS.md](docs/DECISIONS.md) | Log of important decisions, why they were made, and open questions |
