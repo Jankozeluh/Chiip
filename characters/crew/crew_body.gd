@@ -52,6 +52,8 @@ const ATTACK_CLIPS := {&"slash": "knife_slash", &"stab": "knife_stab", &"throw":
 ## The reload clips of the graph's ReloadKind.
 const RELOAD_CLIPS: Array[String] = ["reload", "reload_carbine", "reload_smg", "reload_shotgun", "reload_shell",
 		"reload_sniper", "reload_pistol", "reload_hand_cannon"]
+## Seconds for the left-hand IK to let go of the foregrip, or take it again (a reload).
+const HAND_IK_BLEND_TIME := 0.12
 ## Seconds to blend into or out of crouching (the character's crouch takes 0.15 s).
 const CROUCH_BLEND_TIME := 0.15
 ## Seconds to blend between the ground poses and the falling pose.
@@ -99,6 +101,13 @@ var _gun_mount: BoneAttachment3D
 var _gun_data: WeaponData
 ## The weapon whose shots and reloads the body plays (the character's held one).
 var _weapon: Weapon
+## The model in the hands, for its magazine and shell during reloads (M11, D-158).
+var _gun_parts: GunModel
+## Keeps the left hand on the foregrip (M11, D-156), when the gun in the hands has one.
+var _hand_ik: HandIK
+var _gun_has_foregrip: bool = false
+## The model's AnimationPlayer (the tree plays its clips), for the clips' lengths.
+var _player: AnimationPlayer
 var _flash_time_left: float = 0.0
 ## Smoothed 0..1 amounts for the crouch and the falling pose.
 var _crouch: float = 0.0
@@ -137,6 +146,11 @@ func _build() -> void:
 	# Update the bones on physics ticks, like the AnimationTree, so the hit zones keep step.
 	_skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
 	_build_hit_zones()
+	_hand_ik = HandIK.new()
+	_hand_ik.name = "HandIK"
+	_hand_ik.influence = 0.0
+	_skeleton.add_child(_hand_ik)
+	_hand_ik.set_up()
 	_build_gun()
 	if animated:
 		_build_animation_tree(instance)
@@ -154,6 +168,10 @@ func _process(delta: float) -> void:
 	if _flash_time_left > 0.0:
 		_flash_time_left -= delta
 		_gun_flash.visible = _flash_time_left > 0.0
+	if _gun_parts != null and _skeleton != null and _weapon != null and is_instance_valid(_weapon):
+		var hand := _skeleton.find_bone("hand_l")
+		_gun_parts.update(_weapon.data, _weapon.get_reload_progress(),
+				_skeleton.global_transform * _skeleton.get_bone_global_pose(hand))
 
 
 ## Ties the body to [param character]: the animations follow its state from now on, and its
@@ -188,6 +206,9 @@ func set_class(data: ClassData) -> void:
 	_hitbox_shapes.clear()
 	_skeleton = null
 	_tree = null
+	_player = null
+	_hand_ik = null
+	_gun_parts = null
 	_gun_flash = null
 	_gun_mount = null
 	_flash_time_left = 0.0
@@ -224,6 +245,27 @@ func update_animation_state(velocity: Vector2, crouching: bool, on_ground: bool,
 	_tree.set("parameters/LocoSpeed/scale", _locomotion_speed_scale(velocity.length(), crouching))
 	for set_name in ANIM_SETS:
 		_tree.set("parameters/Aim_%s/blend_position" % set_name, aim_degrees)
+	if _hand_ik != null:
+		_hand_ik.influence = move_toward(_hand_ik.influence, 1.0 if wants_hand_on_foregrip() else 0.0,
+				delta / HAND_IK_BLEND_TIME)
+
+
+## True while the left hand belongs on the gun's foregrip: a gun that has one (not the knife or a
+## grenade), alive, not reloading.
+func wants_hand_on_foregrip() -> bool:
+	if not _gun_has_foregrip or _dead:
+		return false
+	return _weapon == null or not is_instance_valid(_weapon) or not _weapon.is_reloading()
+
+
+## The left-hand IK (M11, D-156), for tests.
+func get_hand_ik() -> HandIK:
+	return _hand_ik
+
+
+## The model in the hands as a [GunModel] (its magazine and shell), for tests.
+func get_gun_parts() -> GunModel:
+	return _gun_parts
 
 
 ## Plays a death: [param style] is "forward", "backward" or "headshot". The body holds the last
@@ -231,6 +273,8 @@ func update_animation_state(velocity: Vector2, crouching: bool, on_ground: bool,
 func play_death(style: String) -> void:
 	_dead = true
 	_death_style = style
+	if _hand_ik != null:
+		_hand_ik.influence = 0.0
 	if _tree == null:
 		return
 	_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
@@ -402,12 +446,20 @@ func _show_gun(data: WeaponData) -> void:
 		_gun_mount.remove_child(old)
 		old.queue_free()
 	var scene: PackedScene = GUN_SCENE if data == null else data.model
+	_gun_parts = null
+	_gun_has_foregrip = false
 	if scene == null:
 		return
-	var model := scene.instantiate() as Node3D
+	var model := GunModel.instantiate(scene)
 	model.name = "GunModel"
 	model.transform = data.hold_offset if data != null else Transform3D.IDENTITY
 	_gun_mount.add_child(model)
+	_gun_parts = GunModel.new(model)
+	var hold := data.hold if data != null else WeaponData.Hold.RIFLE
+	_gun_has_foregrip = (hold == WeaponData.Hold.RIFLE or hold == WeaponData.Hold.PISTOL) \
+			and GunModel.has_point(model, "foregrip")
+	if _hand_ik != null:
+		_hand_ik.target = GunModel.left_hand_target(model)
 	_gun_flash.position = data.muzzle_point if data != null else GUN_MUZZLE
 
 
@@ -423,6 +475,7 @@ func _build_animation_tree(instance: Node3D) -> void:
 	if found.is_empty():
 		return
 	var player := found[0] as AnimationPlayer
+	_player = player
 	_tree = AnimationTree.new()
 	_tree.name = "AnimationTree"
 	_tree.tree_root = ANIMATION_TREE

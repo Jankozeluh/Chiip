@@ -25,6 +25,7 @@ import math
 import numpy as np
 
 import anims
+import holds
 from anims import frame_from, pitch_up, rx, rz, two_bone
 from rig import frame, hand_in_weapon, norm
 
@@ -44,6 +45,27 @@ GRIP_PITCH = 1.0
 # stance, so the left hand reaches the foregrip.
 SHOULDER_R = np.array([0.27, -0.36, 0.02])
 SHOULDER_L = np.array([0.02, -0.46, -0.10])
+# The left hand reaches this share of the arm's full length at most (M11, D-157).
+LEFT_REACH = 0.97
+
+
+def left_shoulder(body):
+    """a class's left shoulder (M11, D-157): SHOULDER_L, moved toward the long guns' foregrips
+    until the left hand reaches every one of them at rest (the Breaker's pump is far forward,
+    and the Scout's arms are short). It stays out of view below the camera."""
+    shoulder = SHOULDER_L - np.array([0.02 * (body.w - 1), 0, 0])
+    reach = (body.upper_arm + body.forearm) * LEFT_REACH
+    rot = anims.turn_right(-GRIP_YAW) @ pitch_up(GRIP_PITCH)
+    wrist_offset = hand_in_weapon('l')[1]
+    for _ in range(3):
+        for name in holds.SETS:
+            if holds.style(name) != 'rifle':
+                continue
+            wrist = GRIP + rot @ (holds.points(name)['foregrip'] + wrist_offset)
+            extra = np.linalg.norm(wrist - shoulder) - reach
+            if extra > 0:
+                shoulder = shoulder + norm(wrist - shoulder) * (extra + 0.002)
+    return shoulder
 
 
 class ArmsRig:
@@ -61,7 +83,7 @@ class ArmsRig:
         w = body.w
         self.off = {'view': np.zeros(3),
                     'upper_arm_r': SHOULDER_R + np.array([0.02 * (w - 1), 0, 0]),
-                    'upper_arm_l': SHOULDER_L - np.array([0.02 * (w - 1), 0, 0]),
+                    'upper_arm_l': left_shoulder(body),
                     'forearm_r': np.array([body.upper_arm, 0, 0]), 'hand_r': np.array([body.forearm, 0, 0]),
                     'forearm_l': np.array([-body.upper_arm, 0, 0]), 'hand_l': np.array([-body.forearm, 0, 0])}
         rot, wrist = hand_in_weapon('r')

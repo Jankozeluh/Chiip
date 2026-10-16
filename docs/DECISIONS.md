@@ -1671,6 +1671,22 @@ You chose CC0 textures plus our own props, Team Deathmatch as the primary mode, 
 - **Godot's own viewmodel options** (`BaseMaterial3D.use_fov_override` and `use_z_clip_scale`, new in 4.x): they exist only on the standard material, not on the crew's custom shader; with two different formulas the arms and the gun could disagree. Our own include does the same for both.
 - **Pulling the gun back** when near a wall (a ray from the eye): many games do it as well, but it changes how the gun looks while you hug walls, and still clips at corners.
 
+## D-156 — A left-hand IK on the body, and aim poses every 20° (2026-10-16)
+
+**Decision:** Every crew body has a `HandIK` (a `SkeletonModifier3D`, two-bone IK for the left arm) that puts the left wrist where it holds the gun's foregrip, every tick, after the animation graph. The target comes from the gun model itself: the generator writes every gun point as an empty node (`point_foregrip`, `point_magazine`...), and `GunModel.left_hand_target()` adds rig.py's left-hand-on-foregrip offset. The elbow stays on the side the animation put it. The body fades the IK out (0.12 s) while reloading, dead, or holding the knife or a grenade. The aim poses come every 20° instead of every 40° (129 clips per class), so the right arm and the gun drift less between two poses too.
+
+**Why:** Each clip holds the foregrip exactly (the generator solves the same IK), but the game blends them: two aim pitches, locomotion, crouching, the kick. A blend of two arm poses doesn't keep a hand on a point. Measured (`holds` suite, 4 classes × 7 guns × 14 blended poses): without the IK the left hand was up to **34.6 cm** off the gun (the Bulwark aiming up 50°), and the 20° poses alone still left 15 cm; with both, at most **0.9 cm**.
+
+**Alternatives:** More aim poses only (still centimetres off between them, and nothing for the kick or locomotion blends); Godot's `TwoBoneIK3D` node (sets only the wrist position, so the hand's rotation needs a second modifier and a target node per character; our script is 40 lines and reads the target straight from the weapon bone); attaching the left hand to the gun with a `BoneAttachment3D` (bones can't follow a node).
+
+## D-157 — First-person left shoulders reach every long gun (2026-10-16)
+
+**Decision:** The first-person arms' left shoulder (out of view below the camera) is placed per class: `fparms.left_shoulder()` moves it from where it was toward the long guns' foregrips until the left hand reaches every one of them at rest (97 % of the arm's length).
+
+**Why:** It didn't reach: the left hand stopped short of the foregrip and floated in the air, by up to **17 cm** on the Breaker's pump (the Scout's arms are the shortest) and 4 to 8 cm on the rifles. Now the first-person idle, kick and draw hold every foregrip within 0.1 cm (`holds` suite). The shoulder stays below the picture, so the view looks the same.
+
+**Alternatives:** Pull each gun back toward the camera until the hand reaches (the Breaker would sit 14 cm closer, a very different viewmodel); longer arms in first person (the body's and the arms' proportions are the same on purpose, D-079).
+
 ## Open questions
 
 | Question | Decide in |

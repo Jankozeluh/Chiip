@@ -276,7 +276,7 @@ func set_arms(arms_scene: PackedScene, material: ShaderMaterial) -> void:
 		mount.name = "Gun"
 		mount.bone_name = "weapon"
 		(skeletons[0] as Skeleton3D).add_child(mount)
-		var gun := model.instantiate() as Node3D
+		var gun := GunModel.instantiate(model)
 		gun.transform = data.hold_offset if data != null else Transform3D.IDENTITY
 		mount.add_child(gun)
 		_muzzle_flash.reparent(mount, false)
@@ -349,6 +349,18 @@ func get_spray_shot() -> int:
 ## True while a reload is in progress.
 func is_reloading() -> bool:
 	return _reload_time_left > 0.0
+
+
+## How far the current reload is, from 0 to 1: for a shotgun, how far the current shell is (below
+## 0 while the gun is still being brought up for the first one). -1 when not reloading. The
+## magazine's and the shell's moves and the reload sounds follow it ([GunModel], M11 D-158).
+func get_reload_progress() -> float:
+	if not is_reloading():
+		return -1.0
+	var length := get_reload_time()
+	if not data.reload_per_shell and remote:
+		length = _reload_length
+	return 1.0 - _reload_time_left / maxf(length, 0.001)
 
 
 ## Full magazine and reserve again, no reload or recoil in progress (on respawn). A grenade keeps

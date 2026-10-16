@@ -33,7 +33,7 @@ const BODY_SCENE := preload("res://characters/crew/crew_body.tscn")
 const BOT_SCENE := preload("res://bots/bot.tscn")
 const SHADER_PATH := "res://characters/crew/crew.gdshader"
 ## Clips in every class model (41 in M6, plus the arsenal's holds in M7, D-096) and in the arms.
-const BODY_CLIPS := 93
+const BODY_CLIPS := 129
 const ARMS_CLIPS := 38
 const MODEL_PATH := "res://assets/models/crew/rifleman.glb"
 const ALBEDO_PATH := "res://assets/models/crew/rifleman_albedo.png"
@@ -540,7 +540,7 @@ func _test_classes() -> void:
 		details += " head top %.3f m, zones %.0f L;" % [top, volume * 1000.0]
 		body.queue_free()
 		await _wait_ticks(2)
-	_check("Every class has its model, textures and hit zones, 17 bones, %d clips (41 since M6, 52 more for the arsenal's holds in M7) and 15 hit zones" % BODY_CLIPS, complete, details)
+	_check("Every class has its model, textures and hit zones, 17 bones, %d clips (41 since M6, 52 more for the arsenal's holds in M7, 36 more aim poses every 20° in M11) and 15 hit zones" % BODY_CLIPS, complete, details)
 	_check("Each class's head zone reaches its height (1.72 to 1.92 m, within 2 cm)", heights_ok, details)
 	_check("The hit zones grow with the body: the Scout is the smallest target, the Bulwark the biggest",
 			volumes.size() == 4 and volumes["scout"] == volumes.values().min() and volumes["bulwark"] == volumes.values().max(),

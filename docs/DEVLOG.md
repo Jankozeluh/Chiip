@@ -7,8 +7,9 @@
 **Done**
 - **Guns never poke through walls (D-155):** the viewmodel (arms, gun, muzzle flash) is drawn by viewmodel shaders with its own field of view and in the nearest sliver of the depth buffer, in the same low-res image as the world, so it keeps the pixel look, the palette effect and the map's lighting. New `weapons/viewmodel.gd` (`Viewmodel`), `shaders/viewmodel.gdshaderinc`, `characters/crew/crew_viewmodel.gdshader`, `weapons/viewmodel_gun.gdshader`, `weapons/viewmodel_flash.gdshader`; the crew's surface moved to `crew_surface.gdshaderinc`. New suite `holds` (viewmodel layer and the wall check).
 - New tool `tools/hold_sheet.gd`: a contact sheet per weapon with the four classes in several poses.
+- **Holds (D-156, D-157):** the guns' points are nodes in their models now (`point_foregrip`...; the magazine and the shotgun's shell are nodes of their own too). Third person: a left-hand IK (`characters/crew/hand_ik.gd`) on every body, and aim poses every 20°: the left hand was up to 34.6 cm off the gun when the game blended poses, now at most 0.9 cm. First person: the left arm didn't reach the long guns (17 cm short on the Breaker's pump); each class's left shoulder now sits where it reaches every foregrip. New `weapons/gun_model.gd` (`GunModel`). The `holds` suite measures both.
 
-**Next:** third-person holds, reloads, checks.
+**Next:** reloads, checks.
 
 ## 2026-10-16 — M11 polish and M12 sharing planned
 

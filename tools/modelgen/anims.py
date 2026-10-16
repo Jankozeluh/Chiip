@@ -14,7 +14,7 @@ turned from the T-pose.
 Clips (FPS keyframes, rotation tracks for every bone, translation for the hips):
   idle, walk_<dir>, run_<dir>, crouch_idle, crouch_walk_<dir>   (<dir>: f fr r br b bl l fl)
   jump, fall, fall_crouch, land
-  aim_d80, aim_d40, aim_0, aim_u40, aim_u80                     (upper body aim poses)
+  aim_d80, aim_d60, ... aim_0, ... aim_u80 (every 20 deg)        (upper body aim poses)
   fire, flinch                                                  (additive: differences from aim_0)
   reload                                                        (arms only matter)
   death_forward, death_backward, death_headshot
@@ -534,7 +534,8 @@ def all_clips(rig):
     land_low = _with_hips(rig, stand, -0.10)
     clips.append(('land', False, keyed(rig, *keyframes(rig, [(0.0, air_pose(rig, 0.3)), (0.08, land_low),
                                                              (0.30, stand_pose(rig))], 0.30))))
-    for name, aim in (('aim_d80', -80), ('aim_d40', -40), ('aim_0', 0), ('aim_u40', 40), ('aim_u80', 80)):
+    for suffix, aim in PITCHES:
+        name = f'aim_{suffix}'
         p = stand_pose(rig, aim=aim)
         clips.append((name, False, keyed(rig, np.array([0.0]), [p])))
     # fire: the gun kicks back and up and the chest rocks, as differences from aiming level
@@ -583,7 +584,9 @@ def _with_hips(rig, pose, dy):
 # The rifle set keeps the clips above. Every other animation set (holds.py) adds its own aim
 # poses, a reload, and (by style) a fire kick or attacks. The legs are always the stand pose's:
 # the AnimationTree only takes the upper body from these clips.
-PITCHES = (('d80', -80), ('d40', -40), ('0', 0), ('u40', 40), ('u80', 80))
+# Aim poses every 20 degrees (M11, D-156: every 40 the blend between two let the gun drift).
+PITCHES = (('d80', -80), ('d60', -60), ('d40', -40), ('d20', -20), ('0', 0), ('u20', 20), ('u40', 40), ('u60', 60),
+           ('u80', 80))
 
 
 def pistol_hold(rig, pose, aim=0.0, kick=0.0, lift=0.0, pull=0.0):
