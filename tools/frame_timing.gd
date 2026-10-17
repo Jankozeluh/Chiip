@@ -7,7 +7,8 @@ extends SceneTree
 ##     Godot --path . --resolution 1920x1080 --disable-vsync --quit-after 40000 --script res://tools/frame_timing.gd -- --map res://maps/depot.tscn --bots 5
 ##
 ## Options after [code]--[/code]: [code]--map <scene>[/code], [code]--seconds <n>[/code]
-## (how long to measure, 10 by default), [code]--respawn[/code] (team respawn mode),
+## (how long to measure, 10 by default), [code]--respawn[/code] (team respawn mode), [code]--ffa[/code]
+## (free-for-all, M17: [code]--bots 5[/code] is ten players, everyone against everyone),
 ## [code]--bots <n>[/code] (players per team, 1–5; 5 = 5v5, the most a match has) and
 ## [code]--lighting ssao|sdfgi[/code] (the lighting variants of tools/map_screenshots.gd), and
 ## [code]--spike <ms>[/code] (the spike threshold), and [code]--vsync[/code], which keeps V-Sync on as the game's settings do (then the frame rate is the
@@ -20,7 +21,8 @@ extends SceneTree
 ## a LAN host's with one friend in the match. The menu reads its own shortcuts, so they go on the
 ## command line too, and the map and mode get options of their own ([code]--map[/code] and
 ## [code]--respawn[/code] would make the menu start an offline match):
-## [code]-- --lan res://maps/depot.tscn [--lan-respawn] --host --start 2 --no-settings --port 28777[/code].
+## [code]-- --lan res://maps/depot.tscn [--lan-respawn | --lan-ffa] --host --start 2 --no-settings --port 28777[/code].
+## Online, the report adds the host's own network numbers (the console's [code]net_stats[/code]).
 ## The match setup (map, mode, team sizes) is set on the shared settings, which a run with
 ## [code]--no-settings[/code] never saves.
 ##
@@ -108,6 +110,8 @@ func _init() -> void:
 		settings.enemy_team_size = team_size
 		if args.has("--respawn"):
 			settings.game_mode = MatchSettings.GameMode.TEAM_RESPAWN
+		elif args.has("--ffa"):
+			settings.game_mode = MatchSettings.GameMode.FREE_FOR_ALL
 		main.set("match_settings", settings)
 		root.add_child(main)
 	for i in 10:
@@ -122,8 +126,11 @@ func _init() -> void:
 	# Wait for the round to go live and the bots to meet. Real time: the engine's frame rate reads
 	# about 1 while the map loads, which made the M8 version stop waiting at once and measure the
 	# freeze time.
-	var respawn := args.has("--respawn") or args.has("--lan-respawn")
-	_rules = map.get_node_or_null("RespawnMatch") if respawn else map.get_node_or_null("RoundManager")
+	# The rules: a RoundManager, or one of its kinds (RespawnMatch, FreeForAllMatch).
+	for child in map.get_children():
+		if child is RoundManager:
+			_rules = child
+			break
 	var wait_until := Time.get_ticks_msec() + 40_000
 	while _rules != null and _rules.get("phase") != RoundManager.Phase.LIVE and Time.get_ticks_msec() < wait_until:
 		await process_frame
@@ -153,9 +160,14 @@ func _init() -> void:
 	while Time.get_ticks_usec() - _started_us < seconds * 1_000_000.0:
 		await process_frame
 	_recording = false
+	print("PLAYERS: %d characters in the match" % Character.all_in_world(main.call("get_map")).size())
 	var session: Object = main.get("net_session")
 	if session != null:
 		print("ONLINE: %d players in the session" % session.call("get_players").size())
+		var net_game: Object = main.call("get_net_game") if main.has_method("get_net_game") else null
+		if net_game != null and net_game.has_method("get_net_stats_lines"):
+			for line: String in net_game.call("get_net_stats_lines"):
+				print("NET: " + line)
 	_report(args, viewport)
 	if _client_pid > 0:
 		OS.kill(_client_pid)
@@ -168,7 +180,7 @@ func _start_online(args: PackedStringArray, team_size: int) -> Node:
 	var settings := Settings.get_instance()
 	settings.match_team_size = team_size
 	settings.match_enemy_team_size = team_size
-	settings.set_value(&"match_mode", "respawn" if args.has("--lan-respawn") else "rounds")
+	settings.set_value(&"match_mode", "respawn" if args.has("--lan-respawn") else "ffa" if args.has("--lan-ffa") else "rounds")
 	settings.set_value(&"match_map", _option(args, "--lan", Settings.DEFAULT_MATCH_MAP))
 	settings.set_value(&"match_rotation", false)
 	change_scene_to_file(GameLaunch.MENU_SCENE)
@@ -268,7 +280,12 @@ func _report(args: PackedStringArray, viewport: SubViewport) -> void:
 	var average := _mean(_frame_ms)
 	var low := _slowest_percent(_frame_ms)
 	var mode := "lan " if args.has("--lan") else ""
-	mode += "respawn" if args.has("--respawn") or args.has("--lan-respawn") else "rounds"
+	if args.has("--respawn") or args.has("--lan-respawn"):
+		mode += "respawn"
+	elif args.has("--ffa") or args.has("--lan-ffa"):
+		mode += "ffa"
+	else:
+		mode += "rounds"
 	mode += " vsync" if args.has("--vsync") else ""
 	print("RESULT %s %s %s %dv%d world %dx%d: %.0f fps average (%.2f ms), slowest 1%%: %.2f ms (%.0f fps); per frame, average / 99th percentile: physics %.2f / %.2f ms, scripts %.2f / %.2f ms, draw %.2f / %.2f ms, rest %.2f / %.2f ms; %.0f draw calls, %d frames, %d over %.1f ms" % [
 			_option(args, "--lan", _option(args, "--map", "test map")).get_file(), mode, _option(args, "--lighting", "realtime"),
