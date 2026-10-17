@@ -2,6 +2,12 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-17 — The plan after v0.2.0
+
+**Done** (your request: the plan as things really stand after v0.2.0): PLAN.md's current milestone says none is open and that your playtest comes next; M12 is done (the three releases with their checksums, the public repo and website, `tools/harden_repo.sh` has run; protecting main stays the script's opt-in step); M15's last task is ticked (merged, in v0.2.0's CHANGELOG and its full runs); M10, M15 and M17 read "built, waiting for your checks"; "Your open checks" got an M17 entry, with M12's Tailscale join in it. The Backlog lost the two items M17 built (the LAN broadcast and map voting) and gained what was put off along the way: first-launch tips and crosshair share codes (D-221), a tracking target (D-205) and the unbuilt bits of the designer's v0.2 pages (D-234, D-236).
+
+**Next:** your playtest of v0.2.0; then the next milestone, from its findings and the Backlog, with your OK and in a fresh session.
+
 ## 2026-10-17 — v0.2.0 released
 
 **Checks:** the full suite three times in a row, 1609 checks each, no failure; `tools/check_release.sh` on fresh exports of all three builds, all PASS (shooting hits in each, a full round and a LAN join with the Mac app) and a new chat check (`tools/check_chat.gd`: a friend's line with BBCode and a direction mark reaches the host as plain text, run on the game data of each of the three builds).

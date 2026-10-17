@@ -2,13 +2,14 @@
 
 > Last updated: 2026-10-17
 >
-> **Current milestone:** **M17 Playing with friends is built** on branch `m17` (D-239 to D-244) and waits for your checks: free-for-all, the killcam, the LAN game browser with recent hosts, text chat, map voting, and the fix for bots that stopped fighting in Team Deathmatch; no new maps (your change, D-221). Next: v0.2.0's optimization check, then the release (D-221). **M16 Maintainability & debugging is built** (D-222 to D-226) on branch `m16` and waits for your checks (below): no flaky tests, release builds tested by machine, a log file and "Report a bug", debug commands, the systems map. Next: M17 Playing with friends, then v0.2.0 (D-221). Earlier: M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK). **M13 Sound design is built** on its branch (gun signatures with far variants, muffling through walls, reverb by place, a measured mix, menu music and stingers), waiting for your listen. **M14 Stats & training is built** (D-200 to D-209) and waits for your checks: the Stats screen in the main menu, the aim trainer and spray practice in the Shooting Range.
+> **Current milestone:** none. **v0.2.0 is released** (2026-10-17, on GitHub Releases with the Windows, Mac and Linux builds; D-248), and M0 to M17 are built and merged into main. **Next: your playtest of v0.2.0** ("Your open checks" below; one evening with a friend over LAN or Tailscale covers M7, M9 and M17 at once), then the next milestone, chosen from what the playtest finds and the Backlog, with your OK and in a fresh session. Built and waiting for your checks: M6 crew, M7 arsenal, M9 multiplayer, M10 map kit and UI, M11 polish, M13 sound, M15 accessibility, M16 debugging, M17 playing with friends. Waiting for others: the designer's assets file ("Chiip UI 4 - Assets v0.2") and, for Steam lobbies (Backlog), your approval of the GodotSteam download.
 
 ## Your open checks
 
 Things only you can check, kept here until done instead of moving from milestone to milestone:
 
 - [x] **Open finding (D-222): `netrespawn` sometimes plays a match without a single kill.** Fixed in M17 (D-239): three bot traps (a hunter never taking a gun it went for, a bot stuck on an idle teammate's head, hunters searching each other's old positions). 40 of 40 runs after the fix, the longest stretch without a kill 29 s; a new check fails at 60 s.
+- [ ] **M17 playing with friends** (D-239 to D-244; in v0.2.0). (1) **Free-for-all:** Play → the Free-for-all card (first to 20 kills): only you are blue, the HUD shows your kills against the best other's, the end screen your place. (2) **Killcam:** die in Team Deathmatch or free-for-all: a second later you see the last 4 s through your killer's eyes; Space skips, the Game tab in Settings turns it off. Fair, or too long? (3) **With a friend:** host on one Mac; on the other, Multiplayer → Join: the game shows up under "Games on your network" and joins with one click, and next time it is under "Recent". Over Tailscale (the README's guide): a join over a real Tailscale address (M12's last open point). (4) **Chat:** in the lobby's box and in a match (Enter to type). (5) **Map vote:** play a Rotation match to its end: both screens vote among three maps, and "Next map" plays the winner.
 - [ ] **M16 maintainability & debugging** (D-222 to D-226). (1) **Build line:** the main menu's footer and the pause menu (Esc) say "Build 0.1.1 (…)". (2) **Report a bug:** in a game, Esc → **Report a bug**: a Finder window opens on a `chiip-bug-….zip`; open it: `info.txt`, `settings.cfg` and `logs/` (your online address should read "(removed)"). Does the issue template on GitHub (New issue → Bug report) read well? (3) **Debug commands** (console, the key left of 1, in practice): `bot_add`, then `debug_hitboxes`: the bot's zones in colour through walls, and a list; `debug_perf`: the frame-time graph; online, `net_stats` on host and friend. (4) Before the next release: `bash tools/check_release.sh` (about 70 s) must end with 0 failed checks.
 
 - [ ] **v0.2 screens from the designer** (D-230 to D-238; pages 18 to 31 of "Chiip UI 3 - v0.2 Screens"). Look at each in the game: **Stats** (the one page, a click on a match for its detail, the filters, Training), the **aim trainer** (shoot its pad: the start panel, a 60 s run with Esc to stop, the result) and the **spray panel** at the wall, **Settings** (the new Interface and Controller tabs, UI scale in steps of ten, the team colour preview, button prompts), the **FPS counter** (F3 once) and the **developer overlay** (F3 twice), the **compass** under the score with its callout tags, the **boot screen** and the **Credits** (Settings footer, Licences). **Not built, waiting for the designer's assets file** ("Chiip UI 4 - Assets v0.2": the app icon, map thumbnails, class portraits, website, social preview). Not built from the pages: the aim sensitivity slider, the result panel's Again/Done buttons, the R/P/1-5 keys on the spray practice page (D-234, D-236).
@@ -97,14 +98,14 @@ Things only you can check, kept here until done instead of moving from milestone
 | M7 | Arsenal, perks & economy | 🟨 built, waiting for your playtest | Pick up and buy from the full arsenal with a light economy, fight over map weapons, and play each class a little differently |
 | M8 | Modes & 3 quick maps | ✅ | Bomb rounds and team respawn matches on three small, fast maps in rotation (built; your playtest is open) |
 | M9 | Multiplayer | 🟨 built, waiting for your playtest | Play with friends over the LAN (one hosts), bots fill empty slots |
-| M10 | Look & feel: map kit and a modern UI | 🟨 in progress | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
+| M10 | Look & feel: map kit and a modern UI | 🟨 built, waiting for your checks | Maps dressed with props and textures from a kit you and the community can build with; a cleaner, modern pixel UI; Team Deathmatch first |
 | M11 | Polish | 🟨 built, waiting for your checks | The UI fits any window and fullscreen; guns never poke through walls, sit right in every hand and reload correctly; smooth frame rates |
-| M12 | Share & playtest | 🟨 in progress | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
+| M12 | Share & playtest | ✅ | A public repo with licences, builds for Windows, Mac and Linux on GitHub Releases, online play with friends through Tailscale |
 | M13 | Sound design | 🟨 built, waiting for your listen | Distinct gun sounds, sound muffled through walls, indoor and outdoor reverb, a mixed result, menu music and round stingers |
 | M14 | Stats & training | ✅ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
-| M15 | Accessibility & polish | 🟨 in progress | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
+| M15 | Accessibility & polish | 🟨 built, waiting for your checks | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | M16 | Maintainability & debugging | 🟨 built, waiting for your checks | Release-build tests, logs and bug reports, debug commands, a cleaner architecture, one short branch at a time |
-| M17 | Playing with friends | 🟨 | Free-for-all deathmatch, a LAN/Tailscale game browser and text chat, a killcam, map voting (no new maps: your change, D-221) |
+| M17 | Playing with friends | 🟨 built, waiting for your checks | Free-for-all deathmatch, a LAN/Tailscale game browser and text chat, a killcam, map voting (no new maps: your change, D-221) |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -455,7 +456,7 @@ New `tests/netarsenal_test.tscn` (17 checks for tasks 12 to 14): inventory, pred
 | Players leaving | **(a)** A bot takes over their character; a newcomer takes over a bot. **(b)** The slot stays empty. | **(a)** (D-110): bots fill empty slots, at any time |
 | Steam | **(a)** GodotSteam, lobbies and invites, the same game stream over Steam's networking. **(b)** LAN only. | **(b) for now** (D-114, your answer; D-112's plan for **(a)** waits in the Backlog) |
 
-## M10 — Look & feel: map kit and a modern UI 🟨
+## M10 — Look & feel: map kit and a modern UI 🟨 *(built, waiting for your checks)*
 
 **Goal:** the maps stop looking blank, anyone can build maps from one kit, and the menus look clean and modern while staying pixelated (D-120). Runs as two parts in parallel, each planned in detail when it starts.
 
@@ -562,20 +563,20 @@ The class draft (two random classes offered each match) and the random map weapo
   4. [x] **Limits in perf_test** (D-168): average tick under 2 ms, 99th percentile under 3.9 ms, no tick over 50 ms; no pipeline compiled while drawing
   5. [x] **Measured and left as is** (D-169): animation trees, shadows, vision, the client's command rate, draw calls. The round start's remaining 14–20 ms (weapons being built) is reported to the weapons session
 
-## M12 — Share & playtest 🟨
+## M12 — Share & playtest ✅
 
 **Goal:** friends can download Chiip for free and play together over the internet, safely (D-150, D-170 to D-179).
 
 - [x] **Licences:** code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0. LICENSE files (the Divocakos logo and name stay all rights reserved, outside CC BY-NC-SA: docs/CREDITS.md) and the third-party notices (Godot, Silkscreen, FuncGodot) inside the builds and in **Settings → Licences** (D-170); no per-file headers, the folders decide
 - [x] **Clean for public:** no personal absolute paths (home folders) or anything private in the repo; a public README for players and contributors (D-171). The history keeps the old paths and your name as the commit author: you decided not to rewrite it (D-176)
-- [ ] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows. Presets, packaging script and instructions are done and a test export was checked (D-172: all three export, licences inside, the Mac app runs without errors, zips 32 / 41 / 63 MiB); the release builds are made after your OK
-- [x] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide (D-173). A join over a real Tailscale address is for your playtest
+- [x] **Builds for Windows, Mac and Linux** (export presets; exported only when you say), with instructions for the unsigned-app warnings on Mac and Windows. Presets, packaging script and instructions are done and a test export was checked (D-172: all three export, licences inside, the Mac app runs without errors, zips 32 / 41 / 63 MiB). Released: v0.1.0 and v0.1.1 (2026-10-16), v0.2.0 (2026-10-17), each with `SHA256SUMS.txt`
+- [x] **Online with friends through Tailscale only:** nothing is opened on your router. The lobby shows the host's Tailscale address to share, and the README has a step-by-step guide (D-173). A join over a real Tailscale address is for your playtest (in the M17 check above)
 - [x] **Security review** (D-180): the history scanned, the host hardened and tested against garbage and floods (`netsec`), the site's policy, the workflow's pinned actions, `tools/harden_repo.sh` for the public repository's settings (run after the repository exists), `SECURITY.md`, SHA-256 checksums with every release
 - [x] **A website on GitHub Pages** (D-179): `site/` (what Chiip is with screenshots, Download and Updates that follow the latest GitHub Release by themselves, Play with friends, Community maps, About), `.github/workflows/pages.yml`, `CHANGELOG.md` as the release notes' source, `docs/RELEASING.md` for every later release. Switched on with the first push, after your OK
 - [x] **Pre-release QA pass** (D-178): `docs/RELEASE_CHECKLIST.md`, the `qa` suite (every mode on every map), `tools/lan_check.sh` (three real processes over the LAN), two flaky tests fixed, a join timeout, `docs/KNOWN_ISSUES.md` and the v0.1.0 release notes (now the first section of `CHANGELOG.md`)
 - [x] **Contributing and credits:** `CONTRIBUTING.md` (how to submit a map as a pull request, how code and art contributions work, under which licence; maps are curated in the repo and ship with the next release) and the credit line "Created by JK · Divocakos" (D-176)
-- [ ] **Public GitHub repo and a GitHub Release** with the three builds. Created only after your final OK
-- [x] **v0.1.1 hotfix** (D-159): bullets went through everyone in the v0.1.0 build (the export dropped the hit zones). Fixed, and every build is now checked by shooting before it's packed (`tools/check_export.sh`). Released only after your OK
+- [x] **Public GitHub repo and a GitHub Release** with the three builds, after your OK: [github.com/Jankozeluh/Chiip](https://github.com/Jankozeluh/Chiip), the website at [jankozeluh.github.io/Chiip](https://jankozeluh.github.io/Chiip/). `tools/harden_repo.sh` has run: Dependabot alerts and fixes, secret scanning with push protection and private vulnerability reporting are on; protecting main (pull requests only) is the script's opt-in step (`PROTECT=1`) and stays off
+- [x] **v0.1.1 hotfix** (D-159): bullets went through everyone in the v0.1.0 build (the export dropped the hit zones). Fixed, and every build is now checked by shooting before it's packed (`tools/check_export.sh`). Released 2026-10-16
 
 ## M13 — Sound design 🟨 built, waiting for your listen
 
@@ -608,7 +609,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 5. [x] **Spray practice** (D-208, D-209). A `range_spray_wall` entity: the held weapon's pattern drawn on the wall as numbered dots, your own bullet holes against it, and a reset
 6. [x] **Docs, the full run, main merged in.** DEVLOG "M14 stats & training", ARCHITECTURE, GAME_DESIGN, LEARNING, README, MAPPING; the whole suite once
 
-## M15 — Accessibility & polish 🟨
+## M15 — Accessibility & polish 🟨 *(built, waiting for your checks)*
 
 **Goal:** more people can play comfortably, and the game's biggest rough edges go (D-177, after v0.1). Decisions D-210 to D-219. No Czech translation: you dropped it. Branch `claude/m15-polish-f146ce`, one commit per numbered task, each prefixed "M15: ".
 
@@ -616,7 +617,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 2. [x] **Gamepad support:** left stick move, right stick look (dead zone, sensitivity, response curve, invert, in Settings → Controls), triggers fire and aim, every action on a button, the menus by D-pad and sticks with focus, rebinding a pad button beside the keys, and prompts that follow the device used last
 3. [x] **Wallbangs:** a bullet goes through thin cover: each surface kind (D-084) has a thickness limit and a damage loss, each weapon a penetration power in its data, the host decides online and both sides see the impact on the way in and out, bots too (a bot shoots at a heard enemy behind thin cover only when it knows the wall lets bullets through)
 4. [x] **Smarter team bots:** trades (a bot follows up where a teammate just fought), simple callouts ("enemy spotted near A" on the kill feed's toast line and the compass), and teammates that don't all take the same lane. Designed by one Opus subagent, implemented small on the existing `BotTactics`
-5. [ ] **Docs, merge and the full run:** DEVLOG "M15 accessibility & polish", GAME_DESIGN, ARCHITECTURE, LEARNING, README controls, CHANGELOG; main merged into the branch; one full run of every suite
+5. [x] **Docs, merge and the full run:** DEVLOG "M15 accessibility & polish", GAME_DESIGN, ARCHITECTURE, LEARNING, README controls, CHANGELOG; main merged into the branch; one full run of every suite. The branch is merged into main, its features are in v0.2.0's CHANGELOG, and v0.2.0's three full runs (1609 checks each) cover it
 
 ## M16 — Maintainability & debugging 🟨 *(built, waiting for your checks)*
 
@@ -646,10 +647,12 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 ## Backlog (ideas, not scheduled)
 
 - Ragdoll deaths (`PhysicalBone3D`) instead of, or blended with, the death animations (M6 uses animations)
-- More maps and map voting
+- More maps: none for now (your change, D-221); the map vote is built (M17, D-244) and chooses among the existing maps
 - Movement maps (KZ- or surf-style) for training (the aim trainer and spray practice are in M14)
-- Demo recording and replays
+- Demo recording and replays (not in M17, D-221; the killcam's recorder, D-241, keeps only the last 7 s)
+- First-launch tips and crosshair share codes (not in M17, D-221)
+- A tracking target for the aim trainer (D-205; the range's moving dummy is the only tracking practice)
+- The parts of the designer's v0.2 pages that aren't built: the aim sensitivity slider, the aim result's Again/Done buttons, the spray page's R/P/1–5 keys (D-234, D-236)
 - A dedicated server: a host without a player of its own (`--server`, headless), for a match that runs on a spare computer (D-100)
-- Finding LAN games by themselves (a broadcast) instead of typing the host's IP (D-108)
 - A tactical pause for the host in online games (D-109)
 - Steam lobbies (GodotSteam), needs a download approval: M9's deferred tasks 15 and 16 (D-112, D-114). A `SteamTransport` next to `EnetTransport`, Host on Steam and Steam's invite overlay in the lobby menu
