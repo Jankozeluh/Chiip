@@ -24,6 +24,10 @@ const FLOOR_SEARCH := 6.0
 ## How high above the floor its middle rests (it lies on its side).
 const REST_HEIGHT := 0.04
 
+## [method all_in_world]'s lists, by the world's instance id (an id, so a finished game's world
+## isn't kept alive). Emptied whenever a gun enters or leaves the tree.
+static var _by_world: Dictionary = {}
+
 ## The gun.
 var data: WeaponData
 ## Its ammo, as it was when it was dropped.
@@ -68,8 +72,17 @@ static func spawn(parent: Node, weapon_data: WeaponData, mag: int, spare: int, a
 	return pickup
 
 
+func _enter_tree() -> void:
+	_by_world.clear()
+
+
+func _exit_tree() -> void:
+	_by_world.clear()
+
+
 func _ready() -> void:
 	add_to_group(GROUP)
+	_by_world.clear()
 	_ignore_dropper_left = DROPPER_DELAY if dropped_by != null else 0.0
 	_build_model()
 	_find_floor.call_deferred()
@@ -92,15 +105,20 @@ func _physics_process(delta: float) -> void:
 
 
 ## Every gun on the floor in the same 3D world as [param node] (see [method Character.all_in_world]:
-## the network tests run two games in one tree).
+## the network tests run two games in one tree). The list is kept per world and made again only
+## after a gun enters or leaves the tree (D-245): every character asks for it every tick, and
+## going through the group and each gun's world took a tenth of a free-for-all tick.
 static func all_in_world(node: Node) -> Array[WeaponPickup]:
-	var pickups: Array[WeaponPickup] = []
 	var world := node.get_viewport().find_world_3d()
-	for other in node.get_tree().get_nodes_in_group(GROUP):
-		var pickup := other as WeaponPickup
-		if pickup != null and pickup.is_inside_tree() and pickup.get_viewport().find_world_3d() == world:
-			pickups.append(pickup)
-	return pickups
+	var key := world.get_instance_id() if world != null else 0
+	if not _by_world.has(key):
+		var found: Array[WeaponPickup] = []
+		for other in node.get_tree().get_nodes_in_group(GROUP):
+			var pickup := other as WeaponPickup
+			if pickup != null and pickup.is_inside_tree() and pickup.get_viewport().find_world_3d() == world:
+				found.append(pickup)
+		_by_world[key] = found
+	return (_by_world[key] as Array[WeaponPickup]).duplicate()
 
 
 ## True if [param character] may take it now (not the one who just dropped it).

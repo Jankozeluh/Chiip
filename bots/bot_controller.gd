@@ -975,6 +975,10 @@ func _lead_hunt(input: CharacterInput, delta: float) -> void:
 		_hunt_plan.set_goal(self, goal)
 		_roam_look_left = 0.0
 	elif _roam_look_left > 0.0:
+		# A fight in the middle of the look starts a search, which marks the look-around yaw as unset
+		# (NAN): turning toward it made the bot's yaw NAN for good (D-246).
+		if is_nan(_look_around_yaw):
+			_look_around_yaw = _yaw
 		_roam_look_left -= delta
 		var side := -1.0 if _roam_look_left > ROAM_LOOK_TIME * 0.5 else 1.0
 		_turn_toward(_look_around_yaw + deg_to_rad(LOOK_AROUND_DEGREES) * side, 0.0, WALK_TURN_SPEED, delta)

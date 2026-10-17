@@ -53,6 +53,7 @@ func _ready() -> void:
 	await _test_hunting_groups()
 	await _test_sightings()
 	await _test_hunter_takes_gun()
+	await _test_roam_look_after_fight()
 	_free_match()
 	if _failures == 0:
 		print("\nAll checks passed.")
@@ -423,6 +424,25 @@ func _test_hunter_takes_gun() -> void:
 	_check("A hunting bot takes a better gun on the floor by its way (with Use, its own slot taken)", took,
 			"its primary is %s, the gun %.1f m away" % [inventory.get_in_slot(WeaponData.Slot.PRIMARY).data.id if inventory.get_in_slot(WeaponData.Slot.PRIMARY) != null else &"none",
 					_flat(bot.character.global_position, at)])
+
+
+## A fight in the middle of a roam point's look-around starts a search, and the search marks the
+## look-around yaw as unset (NAN). Back to roaming with the look unfinished, the bot turned toward
+## that NAN: its yaw stayed NAN for the rest of the match, its body vanished into NAN transforms and
+## the physics engine logged errors every tick (D-246, found by the v0.2.0 optimization check).
+func _test_roam_look_after_fight() -> void:
+	await _new_match(false)
+	await _go_live(false)
+	_remove_team(1)
+	var plan := _rounds.get_hunt_plan(0)
+	var bot := plan.get_leader((plan.groups[0] as Array)[0])
+	# As the search leaves it: the roam look still running, its yaw unset.
+	bot.set("_roam_look_left", BotController.ROAM_LOOK_TIME)
+	bot.set("_look_around_yaw", NAN)
+	await _wait_ticks(16)
+	var aim := bot.character.get_aim_angles()
+	_check("A bot whose look-around a fight cut short keeps a real yaw", aim.is_finite() and bot.character.global_transform.is_finite(),
+			"aim %s" % aim)
 
 
 # --- Helpers ---

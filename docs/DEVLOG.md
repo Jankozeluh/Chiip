@@ -4,14 +4,31 @@
 
 ## 2026-10-17 — v0.2.0 release content prepared
 
-Branch `v0.2-prep` (Sonnet, content only, D-245), from main 236d788. Nothing exported, pushed or released.
+Branch `v0.2-prep` (Sonnet, content only, D-247), from main 236d788. Nothing exported, pushed or released.
 
 **Done**
 - **Website:** the start page's features and five fresh pictures of the v0.2 UI (menu, Play screen, killcam, Stats, the game browser), the Play page's game browser, Recent, chat and vote; `site/img` has `menu`, `modes`, `killcam`, `stats` and `browser`.
 - **CHANGELOG.md** `## [0.2.0]` (the release notes), **KNOWN_ISSUES.md** for v0.2, the README's tagline and friends guide.
-- **Findings for the code branch** (D-245): `NetProtocol.VERSION` is still 2; the Credits screen's footer says all rights reserved; `tools/ui_screenshots.gd` hangs.
+- **Findings for the code branch** (D-247): `NetProtocol.VERSION` is still 2; the Credits screen's footer says all rights reserved; `tools/ui_screenshots.gd` hangs.
 
 **Next:** your decision about v0.2.0; then RELEASING.md (bump the version and the date, the full suite, `tools/check_release.sh`, zips, checksums, push, release).
+
+## 2026-10-17 — Optimization check before v0.2.0
+
+**Done**
+- Measured main (577e031) on every map at 5v5 in Bomb, Team Deathmatch and free-for-all, headless and windowed (1080p and 3440 × 1440's world size), and as a LAN host with a client. The M11 code was measured again under the same conditions: a window without focus made the same code look 40 % slower than on 2026-10-16 (D-247).
+- No slowdown since M11:
+  - CPU per tick 0.6 ms in Bomb, 0.85 ms in Team Deathmatch, 0.9 ms in free-for-all (new)
+  - 1.9–2.0 ms per windowed frame
+  - snapshots of about 450 bytes
+  - perf_test passes its limits (0.59 / 0.71 / 18 ms)
+- The new suspects are cheap: the killcam's recording 0.017 ms per tick, sound occlusion about 0.01 ms, the hand IK 0.019 ms.
+- **Fixed:** a bot whose roam look-around a fight cut short turned toward an unset (`NAN`) yaw. It was broken for the rest of the match, with errors and ~20 ms ticks, in about one Depot free-for-all run in five (D-246). A new check in respawn_test covers it.
+- **Faster:** the floor-gun list is kept per world until a gun comes or goes (D-245): 0.105 → 0.063 ms of a free-for-all tick. The LAN host's frame is 1.72–1.80 ms (was 1.90–1.93).
+- `tools/frame_timing.gd`: `--ffa`, `--lan-ffa`, and the host's net stats in the report.
+- All 49 suites pass, 1603 checks. maps failed once under the parallel runner (markers "25 m off" the navigation mesh, the known late navmesh pickup) and passed on rerun.
+
+**Next:** the round start's weapon building (14–20 ms) is still the slowest moment; it needs `Weapon.create()` to skip what bots don't use.
 
 ## 2026-10-17 — M15 fix: picking the colour-blind colours froze the game
 
@@ -20,6 +37,7 @@ Branch `fix-colorblind` (Sonnet), from main 577e031. From your playtest: "spadne
 - **Cause:** the window did not crash, it stopped answering for **7 to 9 seconds** (macOS shows that as a hang). M15's recolour changed the theme's colours and flat styleboxes one item at a time, and every change to a theme item makes every control using the theme restyle itself, so the cost was items × controls; the v0.2 UI has many more of both. Measured: 2.7 to 5.5 s headless, 7 to 9 s in a window. It did not show in M15's own tests (the UI was smaller) and not when the setting was only *loaded* at start, which is why only picking it hung.
 - **Fix:** the changes go into a patch theme (recoloured copies of the styleboxes) that is merged once (`Theme.merge_with`): 20 to 30 ms. `UiTheme.scheme_epoch` makes `UiScale` re-read the HUD controls' boxes after a recolour (D-210 follow-up, LEARNING).
 - **Test:** the new `scheme` suite picks the option with the settings menu's own buttons in the main menu, Team Deathmatch (and while the killcam plays), free-for-all and Bomb; a switch must take under a second (it takes 2.7 s and more on the old code, so the test fails there) and the characters, theme and HUD bars and pips must show the scheme and come back. Your saved setting is `colorblind`: it loads fine (the load was never slow).
+
 
 ## 2026-10-16 — M17 playing with friends
 
