@@ -2478,6 +2478,18 @@ Not now: first-launch tips, crosshair share codes, replays. **Changed 2026-10-17
 
 **Alternatives:** Every map of the game as a choice (the Shooting Range and the hidden test map would need excluding, and the list grows with every new map); a 15 s countdown; letting a client press Next map (the host decides, D-103).
 
+## D-245 — Floor guns are listed per world once, not every tick (2026-10-17)
+
+**Decision:**
+- `WeaponPickup.all_in_world()` keeps its list per world (keyed by the world's instance id, so a finished game's world isn't kept alive). It makes the list again only after a gun enters or leaves the tree, which empties the cache, so the list is the same one the scan gave.
+- `Inventory.update_pickups()` tests the distance first, the check most guns fail.
+
+**Why:**
+- Every character asks for the floor guns every tick. Going through the group and each gun's world, then calling two methods per gun before the distance test, took 0.105 ms of a 1 ms free-for-all tick on Depot, where the dead drop their guns all the time. Now 0.063 ms, and the list itself 0.005 ms instead of 0.053 ms (script profiler).
+- Same results in the same order: no change to who takes which gun when.
+
+**Alternatives:** a list made once per tick: a gun dropped in a tick would reach the others a tick later. An `Area3D` around each character: more physics bodies and a different trigger rule.
+
 ## D-246 — A bot's look-around never turns toward an unset yaw (2026-10-17)
 
 **Decision:** `BotController._lead_hunt()` treats an unset look-around yaw (`NAN`) as the bot's own yaw, as `_search()` already did. `respawn_test` has a check: a bot with its roam look cut short keeps a real yaw.

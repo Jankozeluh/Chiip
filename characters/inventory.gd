@@ -326,11 +326,13 @@ func handle_input(input: CharacterInput) -> void:
 ## Takes every gun on the floor the character's feet touch whose slot is free (walking over a
 ## gun picks it up, as in CS). It doesn't take it out: that's still your choice.
 func update_pickups() -> void:
+	var feet := _character.global_position
 	for pickup in WeaponPickup.all_in_world(_character):
-		if pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
-			continue
-		var offset := pickup.global_position - _character.global_position
+		# Out of reach first: the cheapest test, and the one most guns fail (D-245).
+		var offset := pickup.global_position - feet
 		if Vector2(offset.x, offset.z).length() > PICKUP_REACH or offset.y <= -0.5 or offset.y >= PICKUP_HEIGHT:
+			continue
+		if pickup.is_queued_for_deletion() or not pickup.can_be_taken_by(_character):
 			continue
 		if can_take(pickup.data):
 			take(pickup)
