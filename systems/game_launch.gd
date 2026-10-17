@@ -33,8 +33,8 @@ const MAPS_FOLDER := "res://maps/"
 const HIDDEN_MAPS: Array[String] = ["res://maps/test_map.tscn"]
 ## Where the bot difficulties are; [code]%s[/code] is easy, normal or hard.
 const DIFFICULTY_PATH := "res://bots/difficulty_%s.tres"
-## The maps of the rotation, in order (D-049, D-087): the three quick maps and Quarry (M17, D-245).
-const ROTATION_MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn", "res://maps/quarry.tscn"]
+## The maps of the rotation, in order (D-049, D-087): the three quick maps.
+const ROTATION_MAPS: Array[String] = ["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"]
 
 ## The map scene to play, e.g. [code]res://maps/depot.tscn[/code] (by default the practice map).
 static var map_path: String = Settings.DEFAULT_MAP

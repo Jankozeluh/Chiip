@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> M17 added a fourth map to the rotation, **Quarry** (D-245, section "Map 4"). The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed and without baked lighting. They play as bomb rounds (D-080). Decisions: D-060–D-063.
+> The three quick maps of M8 (D-049), built early so the game has a rotation: **Depot**, **Square** and **Spillway** (placeholder names you picked). They are **blockouts**: complete, playable layouts in plain textures, tested with bots, but not yet detailed and without baked lighting. They play as bomb rounds (D-080). Decisions: D-060–D-063.
 
 ## Playing them
 
@@ -112,19 +112,6 @@ A dry concrete water works. **Sunken mid, high sides.**
 - **West, site A:** a pump house you can go through (offset doors with a pump in between) or around (two corridors with overlapping blockers). A is in front of its north door.
 - **East, site B:** a tank yard split by a pipe wall with two gaps, each with a tank right behind it, so no view runs through. B is on a 1.5 m terrace with ramps up from the south and the west; a control house blocks the view from the yard up onto the terrace.
 - **Look (6 main materials, dressed with the map kit in M10):** concrete ground, channel walls and terrace, plaster walls and pump house, ribbed metal in grey, teal and green (tanks, the pipe wall, the bridge's walls, the blockers), dirt on the dry channel's bottom, gravel, and a few wooden crates; a grated deck on the footbridge and hazard stripes along the terrace's edge. Props and lamps (67 entities in `spillway.map`): a caged bulb in the culvert, pendants in the pump house, floodlights on the walls, lanterns on the pump and control houses, pipes along the pipe wall and the walls, drain pipes under the channel's rim, valves, windows and a door, signs to A and B on the channel fences' south ends and at each site, cabinets and cylinders in the yards' corners, debris and grass in the channel and along the walls. An overcast sky (`overcast.tres`: grey sky, neutral ambient light, more fog), a weak high sun.
-
-## Map 4: Quarry (M17)
-
-A gravel quarry yard between mossy rock walls, 48 × 60 m. **Generated, not drawn:** `tools/make_quarry.py` writes `quarry.map` from tables of blocks, props and markers (like the kit gallery), so a change to the layout is a change to the script (D-245).
-
-- **Mid, the haul road:** a wooden weigh-house in the middle and two staggered 3 m walls (z = −11 and +11) with their openings on opposite sides, so no line runs from spawn to spawn.
-- **West yard (A side):** a green shed with a path on each side, and two rock walls whose openings are on opposite sides: an S-bend, no straight view down the lane. A is in the north-west corner, crates and barrels around its open middle.
-- **East yard (B side):** two staggered sheds and two walls, the openings again on opposite sides. B is in the north-east corner.
-- **The two long concrete blocks** between the lanes have a 3 m passage each at the middle line.
-- **The ends:** each spawn room has a wall to each side and a "crusher" (a green block) in front, which splits the band between the yards, so no view runs across the whole width.
-- **Look (5 main materials):** gravel with dirt patches, mossy rock, worn concrete, green corrugated sheds, wood; kit crates, barrels and concrete barriers as details. Not dressed with lamps and signs yet.
-
-Measured (maps test and map report): first contact 6.3, 7.2, 7.5, 7.8 s (median 7.4 s); 4 bomb rounds all decided by fighting or the bomb; bots-only Team Deathmatch to 20 kills in 106 s; spawn to spawn 55 m walking (51 m straight); attackers to A / B 51 / 56 m, defenders 20 / 20 m; routes about 61 / 47 / 59 m; longest sightline 41 m, 1290 spot pairs over 30 m and 17 over 40 m (an open yard: more long views than the quick maps); no spawn-to-spawn views. The first layout passed the maps test too but had 4604 pairs over 40 m (lanes 58 m long end to end); the S-bends, the spawn rooms' walls and the crushers brought that down.
 
 ## Practice map: Shooting Range
 

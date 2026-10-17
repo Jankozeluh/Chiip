@@ -19,7 +19,6 @@ const MATCH_SETUP_SCENE := preload("res://ui/match_setup.tscn")
 const DEPOT := "res://maps/depot.tscn"
 const SQUARE := "res://maps/square.tscn"
 const SPILLWAY := "res://maps/spillway.tscn"
-const QUARRY := "res://maps/quarry.tscn"
 
 var _failures: int = 0
 var _main: Node
@@ -59,13 +58,13 @@ func _test_setup() -> void:
 	var kill_buttons := setup.get_segment_buttons(&"match_kill_limit")
 	var map_buttons := setup.get_segment_buttons(&"match_map")
 	var rules := setup.build_match_settings()
-	_check("The Play screen (D-135) offers Team Deathmatch, Free-for-all, Bomb and Practice cards and a map row (Depot, Square, Spillway, Quarry, Rotation); by default Team Deathmatch on the rotation from Depot, the length in kills",
-			cards.size() == 4 and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Quarry", "Rotation"]
+	_check("The Play screen (D-135) offers Team Deathmatch, Free-for-all, Bomb and Practice cards and a map row (Depot, Square, Spillway, Rotation); by default Team Deathmatch on the rotation from Depot, the length in kills",
+			cards.size() == 4 and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"]
 					and _texts(kill_buttons) == ["25", "50", "75", "100"]
-					and setup.get_picked_mode() == "respawn" and (map_buttons[4] as Button).button_pressed
+					and setup.get_picked_mode() == "respawn" and (map_buttons[3] as Button).button_pressed
 					and not setup.is_row_shown(&"match_rounds_to_win") and setup.is_row_shown(&"match_kill_limit")
-					and rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and setup.get_rotation_maps() == [DEPOT, SQUARE, SPILLWAY, QUARRY]
-					and setup.get_summary().begins_with("Team Deathmatch: ") and setup.get_summary().ends_with("Maps in rotation: Depot, Square, Spillway, Quarry."),
+					and rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN and setup.get_rotation_maps() == [DEPOT, SQUARE, SPILLWAY]
+					and setup.get_summary().begins_with("Team Deathmatch: ") and setup.get_summary().ends_with("Maps in rotation: Depot, Square, Spillway."),
 			"maps %s, kills %s, summary '%s'" % [_texts(map_buttons), _texts(kill_buttons), setup.get_summary()])
 
 	cards[2].pressed.emit()
@@ -87,17 +86,17 @@ func _test_setup() -> void:
 
 	(map_buttons[1] as Button).button_pressed = true
 	var one_map := setup.get_rotation_maps()
-	(map_buttons[4] as Button).button_pressed = true
+	(map_buttons[3] as Button).button_pressed = true
 	var from_square := setup.get_rotation_maps()
-	_check("A map plays alone; Rotation plays Depot, Square, Spillway, Quarry, starting on the chosen map (Square here); the summary lists them",
-			one_map.is_empty() and stored.match_rotation and from_square == [SQUARE, SPILLWAY, QUARRY, DEPOT]
-					and setup.get_summary().ends_with("Maps in rotation: Square, Spillway, Quarry, Depot."),
+	_check("A map plays alone; Rotation plays Depot, Square, Spillway, starting on the chosen map (Square here); the summary lists them",
+			one_map.is_empty() and stored.match_rotation and from_square == [SQUARE, SPILLWAY, DEPOT]
+					and setup.get_summary().ends_with("Maps in rotation: Square, Spillway, Depot."),
 			"from Square %s, summary '%s'" % [from_square, setup.get_summary()])
 
 	# What Start leaves for the game.
 	GameLaunch.start_match(setup.get_map_path(), setup.build_match_settings(), setup.get_rotation_maps())
-	_check("Start leaves the rotation for the game: its first map, all four maps, and the team respawn rules",
-			GameLaunch.is_pending() and GameLaunch.map_path == SQUARE and GameLaunch.rotation == [SQUARE, SPILLWAY, QUARRY, DEPOT]
+	_check("Start leaves the rotation for the game: its first map, all three maps, and the team respawn rules",
+			GameLaunch.is_pending() and GameLaunch.map_path == SQUARE and GameLaunch.rotation == [SQUARE, SPILLWAY, DEPOT]
 					and GameLaunch.match_settings.game_mode == MatchSettings.GameMode.TEAM_RESPAWN,
 			"map %s, rotation %s" % [GameLaunch.map_path, GameLaunch.rotation])
 	GameLaunch.clear()
@@ -143,11 +142,8 @@ func _test_rotation_in_game() -> void:
 	var on_spillway := _map_path()
 	_main.call("next_map")
 	await _wait_ticks(3)
-	var on_quarry := _map_path()
-	_main.call("next_map")
-	await _wait_ticks(3)
-	_check("After Spillway comes Quarry, then the rotation starts over with Depot", on_spillway == SPILLWAY and on_quarry == QUARRY and _map_path() == DEPOT
-			and next_button.text == "Next map · Square", "then %s, then %s, then %s" % [on_spillway, on_quarry, _map_path()])
+	_check("After Spillway the rotation starts over with Depot", on_spillway == SPILLWAY and _map_path() == DEPOT
+			and next_button.text == "Next map · Square", "then %s, then %s" % [on_spillway, _map_path()])
 
 
 ## M17 (D-244): at the end of a match with a rotation the end screen offers the next three maps to vote on;
@@ -160,19 +156,19 @@ func _test_vote() -> void:
 	var buttons := end_screen.get_vote_buttons()
 	var offered := _texts(buttons)
 	_check("After a rotation's match the end screen offers the next maps to vote on, the rotation's next first; Next map names it",
-			hidden_before and end_screen.get_vote_box().is_visible_in_tree() and offered == ["Square · 0", "Spillway · 0", "Quarry · 0"]
+			hidden_before and end_screen.get_vote_box().is_visible_in_tree() and offered == ["Square · 0", "Spillway · 0", "Depot · 0"]
 					and end_screen.get_next_map_button().text == "Next map · Square",
 			"hidden before %s, offered %s, button '%s'" % [hidden_before, offered, end_screen.get_next_map_button().text])
 	buttons[1].pressed.emit()
 	await _wait_ticks(2)
 	_check("A vote counts, stays pressed, and Next map follows the winner",
-			_texts(buttons) == ["Square · 0", "Spillway · 1", "Quarry · 0"] and buttons[1].button_pressed
+			_texts(buttons) == ["Square · 0", "Spillway · 1", "Depot · 0"] and buttons[1].button_pressed
 					and end_screen.get_next_map_button().text == "Next map · Spillway",
 			"%s, button '%s'" % [_texts(buttons), end_screen.get_next_map_button().text])
 	end_screen.get_next_map_button().pressed.emit()
 	await _wait_ticks(3)
-	_check("Next map plays the voted map, and the rotation carries on from it (Quarry next)",
-			_map_path() == SPILLWAY and _main.call("get_next_map") == QUARRY and not end_screen.get_vote_box().visible,
+	_check("Next map plays the voted map, and the rotation carries on from it (Depot next)",
+			_map_path() == SPILLWAY and _main.call("get_next_map") == DEPOT and not end_screen.get_vote_box().visible,
 			"map %s, next %s" % [_map_path(), _main.call("get_next_map")])
 
 
@@ -182,12 +178,12 @@ func _test_respawn_launch() -> void:
 	rules.kill_limit = 30
 	await _start_game(GameLaunch.rotation_maps(SPILLWAY), rules)
 	var respawn := _main.call("get_map").get_node_or_null("RespawnMatch") as RespawnMatch
-	_check("Team respawn from match setup: a respawn match by those rules, on the rotation's first map (Spillway here), then Quarry",
-			respawn != null and respawn.settings.kill_limit == 30 and _map_path() == SPILLWAY and _main.call("get_next_map") == QUARRY,
+	_check("Team respawn from match setup: a respawn match by those rules, on the rotation's first map (Spillway here), then Depot",
+			respawn != null and respawn.settings.kill_limit == 30 and _map_path() == SPILLWAY and _main.call("get_next_map") == DEPOT,
 			"rules %s, map %s, next %s" % [respawn, _map_path(), _main.call("get_next_map")])
 	_main.call("next_map")
 	await _wait_ticks(3)
-	_check("The next map keeps the mode: team respawn on Quarry", _main.call("get_map").get_node_or_null("RespawnMatch") != null and _map_path() == QUARRY,
+	_check("The next map keeps the mode: team respawn on Depot", _main.call("get_map").get_node_or_null("RespawnMatch") != null and _map_path() == DEPOT,
 			"map %s" % _map_path())
 
 

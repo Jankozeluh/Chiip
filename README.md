@@ -37,7 +37,7 @@ Every download has the licences next to the game (`LICENSE`, `LICENSE-ASSETS`, `
 
 The main menu offers **Play**, **Practice**, **Stats**, **Settings**, **Quit**, and **Host** and **Join** for online games.
 
-- **Play** opens the Play screen: **Team Deathmatch** (one click on its card starts the match), **Free-for-all**, **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway, Quarry, or the rotation of all four), team sizes (1 to 5 each, you included), the bots' difficulty (Easy, Normal, Hard), the match length and friendly fire. The game remembers your last choices.
+- **Play** opens the Play screen: **Team Deathmatch** (one click on its card starts the match), **Free-for-all**, **Bomb** and **Practice** as cards, and under them **Custom**, the picked mode's options: the map (Depot, Square, Spillway, or the rotation of all three), team sizes (1 to 5 each, you included), the bots' difficulty (Easy, Normal, Hard), the match length and friendly fire. The game remembers your last choices.
 - **Team Deathmatch** is respawning: first team to the kill limit (or the most kills when the time is up) wins.
 - After a death in Team Deathmatch or free-for-all the **killcam** replays the last seconds through your killer's eyes; **Space** skips it (Settings → Game → Killcam turns it off).
 - **Free-for-all** is the same with everyone for themselves: everyone else is an enemy, and the first player to the kill limit wins (`-- --match --ffa` starts one from the command line).

@@ -2644,9 +2644,9 @@ func _test_main_menu() -> void:
 			GameLaunch.match_settings.kill_limit, GameLaunch.match_settings.team_size, GameLaunch.match_settings.time_limit]
 	GameLaunch.clear()
 	_check("Playing Bomb leaves bomb rounds and remembers Bomb; Team Deathmatch with the defaults leaves team respawn, first to 50 or 10 minutes, 3v3, on the rotation from Depot",
-			bomb_launch == [MatchSettings.GameMode.ROUNDS, "res://maps/depot.tscn", 4, "rounds"]
+			bomb_launch == [MatchSettings.GameMode.ROUNDS, "res://maps/depot.tscn", 3, "rounds"]
 					and deathmatch_launch == [MatchSettings.GameMode.TEAM_RESPAWN, "res://maps/depot.tscn",
-							["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn", "res://maps/quarry.tscn"], "respawn", 50, 3, 600.0],
+							["res://maps/depot.tscn", "res://maps/square.tscn", "res://maps/spillway.tscn"], "respawn", 50, 3, 600.0],
 			"bomb %s, deathmatch %s" % [bomb_launch, deathmatch_launch])
 	settings.reset_to_defaults()
 
@@ -2803,10 +2803,10 @@ func _test_match_setup() -> void:
 	var fire_buttons := setup.get_segment_buttons(&"match_friendly_fire")
 	var map_buttons := setup.get_segment_buttons(&"match_map")
 	var card_names: Array = cards.map(func(card: Button) -> String: return (card.get_parent().find_children("Title", "Label", true, false)[0] as Label).text)
-	_check("The Play screen is hidden until opened; it offers the four mode cards (Team Deathmatch, marked Default, then Free-for-all, Bomb and Practice), and segments: the map (Depot, Square, Spillway, Quarry, Rotation), kill limit 25 / 50 / 75 / 100, rounds 5 / 10 / 15, 5 / 10 / 15 min, Easy / Normal / Hard, friendly fire Off / On, five chips per team, Back and Play",
+	_check("The Play screen is hidden until opened; it offers the four mode cards (Team Deathmatch, marked Default, then Free-for-all, Bomb and Practice), and segments: the map (Depot, Square, Spillway, Rotation), kill limit 25 / 50 / 75 / 100, rounds 5 / 10 / 15, 5 / 10 / 15 min, Easy / Normal / Hard, friendly fire Off / On, five chips per team, Back and Play",
 			not setup.visible and card_names == ["Team\nDeathmatch", "Free-for-\nall", "Bomb", "Practice"]
 					and cards[0].get_parent().find_children("Default", "Label", true, false).size() == 1
-					and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Quarry", "Rotation"] and _texts(kill_buttons) == ["25", "50", "75", "100"]
+					and _texts(map_buttons) == ["Depot", "Square", "Spillway", "Rotation"] and _texts(kill_buttons) == ["25", "50", "75", "100"]
 					and _texts(length_buttons) == ["5", "10", "15"] and _texts(time_buttons) == ["5 min", "10 min", "15 min"]
 					and _texts(difficulty_buttons) == ["Easy", "Normal", "Hard"] and _texts(fire_buttons) == ["Off", "On"]
 					and team_buttons.size() == 5 and enemy_buttons.size() == 5
@@ -2816,7 +2816,7 @@ func _test_match_setup() -> void:
 			setup.get_picked_mode() == "respawn" and cards[0].theme_type_variation == &"ModeButtonPicked" and cards[1].theme_type_variation == &"ModeButton"
 					and setup.get_card_line("respawn") == "Click to play" and setup.get_card_line("rounds") == "First to 5 rounds"
 					and _pressed(team_buttons) == 2 and _pressed(enemy_buttons) == 2 and _pressed(difficulty_buttons) == 1 and _pressed(kill_buttons) == 1
-					and _pressed(time_buttons) == 1 and _pressed(fire_buttons) == 0 and _pressed(map_buttons) == 4
+					and _pressed(time_buttons) == 1 and _pressed(fire_buttons) == 0 and _pressed(map_buttons) == 3
 					and setup.get_map_path() == Settings.DEFAULT_MATCH_MAP and rules.game_mode == MatchSettings.GameMode.TEAM_RESPAWN
 					and rules.kill_limit == 50 and rules.time_limit == 600.0
 					and rules.team_size == defaults.team_size and rules.enemy_team_size == defaults.enemy_team_size
@@ -2900,19 +2900,19 @@ func _test_match_setup() -> void:
 	second.queue_free()
 
 	# The map row: the quick maps (as on disk) and the rotation; a stored map that isn't one of them plays Depot.
-	(map_buttons[4] as Button).button_pressed = true
+	(map_buttons[3] as Button).button_pressed = true
 	var rotation_from_square := setup.get_rotation_maps()
 	stored.match_map = "res://maps/gone.tscn"
 	var fell_back := setup.get_map_path() == Settings.DEFAULT_MATCH_MAP
 	stored.match_rotation = false
 	var none_pressed := _pressed_count(map_buttons) == 0
-	_check("The map row offers the quick maps that exist (%s) and the rotation, never the hidden test map or the practice-only Shooting Range (D-141); the rotation starts on the chosen map (Square, Spillway, Quarry, Depot); a stored map that isn't a quick map plays Depot and no map is shown chosen" % [setup.get_map_paths()],
-			setup.get_map_paths() == GameLaunch.rotation_maps() and setup.get_map_paths().size() == 4
+	_check("The map row offers the quick maps that exist (%s) and the rotation, never the hidden test map or the practice-only Shooting Range (D-141); the rotation starts on the chosen map (Square, Spillway, Depot); a stored map that isn't a quick map plays Depot and no map is shown chosen" % [setup.get_map_paths()],
+			setup.get_map_paths() == GameLaunch.rotation_maps() and setup.get_map_paths().size() == 3
 					and not setup.get_map_paths().has("res://maps/test_map.tscn") and not setup.get_map_paths().has(Settings.DEFAULT_MAP)
 					and not _texts(map_buttons).has("Test Map") and not _texts(map_buttons).has("Shooting Range")
 					and GameLaunch.list_maps().size() == setup.get_map_paths().size() and GameLaunch.is_hidden_map("res://maps/test_map.tscn")
 					and not GameLaunch.is_hidden_map(Settings.DEFAULT_MATCH_MAP)
-					and rotation_from_square == ["res://maps/square.tscn", "res://maps/spillway.tscn", "res://maps/quarry.tscn", "res://maps/depot.tscn"]
+					and rotation_from_square == ["res://maps/square.tscn", "res://maps/spillway.tscn", "res://maps/depot.tscn"]
 					and fell_back and none_pressed,
 			"rotation %s, fell back %s, none pressed %s" % [rotation_from_square, fell_back, none_pressed])
 
@@ -4559,7 +4559,7 @@ func _test_lobby_menu() -> void:
 	await harness.wait_until(func() -> bool: return friend_lobby.info.get("summary", "") == rotation_summary, 320)
 	_check("The summary line is built from the choices: mode, map or rotation (starting at the chosen map), length, bot difficulty and friendly fire, and the friend sees the same line",
 			respawn_summary == "Team respawn · Depot · first to 75 kills · Hard bots · friendly fire" and respawn_published == respawn_summary
-					and rotation_summary == "Rounds · Rotation: Square, Spillway, Quarry, Depot · first to 5 rounds · Easy bots"
+					and rotation_summary == "Rounds · Rotation: Square, Spillway, Depot · first to 5 rounds · Easy bots"
 					and friend_lobby.info.get("summary", "") == rotation_summary and lobby_node.info.get("map", "") == "res://maps/square.tscn",
 			"respawn '%s', rotation '%s', friend sees '%s'" % [respawn_summary, rotation_summary, friend_lobby.info.get("summary", "")])
 	_check("The footer follows the same choices, mode over its name, map (\"Rotation · \" and the map it starts at for the rotation) and limit (kills and minutes, or the rounds to win), and the friend gets the same facts",

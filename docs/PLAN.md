@@ -2,7 +2,7 @@
 
 > Last updated: 2026-10-16
 >
-> **Current milestone:** **M17 Playing with friends is in progress** on branch `m17` (D-239 on): first M16's open finding, bots that stopped fighting in Team Deathmatch, fixed. **M16 Maintainability & debugging is built** (D-222 to D-226) on branch `m16` and waits for your checks (below): no flaky tests, release builds tested by machine, a log file and "Report a bug", debug commands, the systems map. Next: M17 Playing with friends, then v0.2.0 (D-221). Earlier: M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK). **M13 Sound design is built** on its branch (gun signatures with far variants, muffling through walls, reverb by place, a measured mix, menu music and stingers), waiting for your listen. **M14 Stats & training is built** (D-200 to D-209) and waits for your checks: the Stats screen in the main menu, the aim trainer and spray practice in the Shooting Range.
+> **Current milestone:** **M17 Playing with friends is built** on branch `m17` (D-239 to D-244) and waits for your checks: free-for-all, the killcam, the LAN game browser with recent hosts, text chat, map voting, and the fix for bots that stopped fighting in Team Deathmatch; no new maps (your change, D-221). Next: v0.2.0's optimization check, then the release (D-221). **M16 Maintainability & debugging is built** (D-222 to D-226) on branch `m16` and waits for your checks (below): no flaky tests, release builds tested by machine, a log file and "Report a bug", debug commands, the systems map. Next: M17 Playing with friends, then v0.2.0 (D-221). Earlier: M11 Polish: the UI fit, the weapons and models, and the optimization are built, waiting for your checks. **The roadmap M0 to M10 is built** and merged into main (2026-10-16), and waits for your playtest. Everything to try is in "Your open checks" below. Steam lobbies are in the Backlog; they need a download approval. **M12 Share & playtest is in progress** (licences, a clean public repo, export presets, Tailscale play; then a QA pass; the public repo and the release only after your OK). **M13 Sound design is built** on its branch (gun signatures with far variants, muffling through walls, reverb by place, a measured mix, menu music and stingers), waiting for your listen. **M14 Stats & training is built** (D-200 to D-209) and waits for your checks: the Stats screen in the main menu, the aim trainer and spray practice in the Shooting Range.
 
 ## Your open checks
 
@@ -104,7 +104,7 @@ Things only you can check, kept here until done instead of moving from milestone
 | M14 | Stats & training | ✅ | Match history and stats (K/D, ADR, headshot %, accuracy per weapon), an aim trainer and spray practice in the Shooting Range |
 | M15 | Accessibility & polish | 🟨 in progress | A colourblind-safe team-colour option, gamepad support, wallbangs, smarter team bots |
 | M16 | Maintainability & debugging | 🟨 built, waiting for your checks | Release-build tests, logs and bug reports, debug commands, a cleaner architecture, one short branch at a time |
-| M17 | Playing with friends | ⬜ | Free-for-all deathmatch, a LAN/Tailscale game browser and text chat, a killcam, map voting and new maps |
+| M17 | Playing with friends | 🟨 | Free-for-all deathmatch, a LAN/Tailscale game browser and text chat, a killcam, map voting (no new maps: your change, D-221) |
 | — | Backlog | — | Ideas for later |
 
 ---
@@ -629,7 +629,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 - [x] **One short branch at a time** (D-220): no more three or four parallel branches. One focused branch, merged soon after (M16 was built on the one branch `m16`); fewer merges and conflicts, and a clear cause when something breaks
 - [x] **No flaky tests** (D-222): a check that fails at random is fixed or quarantined at once, so a red result always means a real bug. Each suite runs with its own empty `user://`; `perf` checks the median of five stretches; `netplay` and `netjoin` no longer depend on where a character happens to stand
 
-## M17 — Playing with friends 🟨 *(in progress)*
+## M17 — Playing with friends 🟨 *(built, waiting for your checks)*
 
 **Goal:** make sessions with friends easier and more fun (D-221). Starts after M16, one short branch at a time. **v0.2.0 ships only once M17 is done**, after an optimization check (D-221). Branch `m17`; decisions from D-239.
 
@@ -640,7 +640,7 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 - [x] **Text chat** in the lobby and in matches: host-checked (length and rate limits, plain text only, no markup). Built (D-243): `NetChat` on the session, the lobby page's chat box, the HUD's feed with Enter to type; the host names the sender from its roster, cleans the text, cuts it to 100 characters and allows 3 lines in 5 s. New suite `chat` (11 checks)
 - [x] **Killcam:** after dying, the last few seconds through your killer's eyes (CoD-style); skippable, and off in Bomb mode if it reveals too much. Built (D-241): in Team Deathmatch and free-for-all only; recorded on each computer (`KillcamRecorder`), replayed with ghost bodies and the killer's gun (`Killcam`); your respawn waits for it, Space skips; an overlay on the HUD and a Game-tab setting. New suite `killcam` (22 checks)
 - [x] **Map voting** at the end of a match (D-244): with a rotation, the end screen offers the next three maps; everyone votes (and may change it), "Next map" plays the winner (the earlier choice on a tie, the rotation's next without votes) and the rotation carries on from it; online the host counts. New suite `vote` (6 checks), 3 checks in `rotation`
-- [x] **1–2 new maps** (or the first community maps through pull requests): **Quarry** (D-245), generated by `tools/make_quarry.py` from the map kit, the fourth map of the rotation; passes the maps test (first contact median 7.4 s, Team Deathmatch to 20 in 106 s), longest sightline 41 m, no spawn-to-spawn views. One map, not two: not dressed with lamps and signs yet
+- ~~1–2 new maps~~ **dropped** (your change, 2026-10-17: "zadne nove mapy", D-221): the map vote chooses among the existing maps
 
 ## Backlog (ideas, not scheduled)
 

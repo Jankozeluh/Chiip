@@ -2252,9 +2252,9 @@ The new way of working starts once the work in progress (the v0.1.1 hotfix and M
 - a free-for-all deathmatch (only if it stays simple)
 - a LAN/Tailscale game browser and text chat
 - a killcam
-- map voting and 1–2 new maps
+- map voting, among the existing maps
 
-Not now: first-launch tips, crosshair share codes, replays.
+Not now: first-launch tips, crosshair share codes, replays. **Changed 2026-10-17: no new maps in M17** (your words: "zadne nove mapy"); a new map that had been built and tested (Quarry) was taken out again, and the map vote (D-244) chooses among the rotation's existing maps.
 
 **Why:** Your choices from the list of what a CS/CoD-style game with friends still lacks. Stability (M16) comes first. You'd rather ship v0.2.0 with these features ("chtel bych v0.2.0 vydat az tam toto co jsi popsal bude") and check the optimization just before.
 
@@ -2477,14 +2477,6 @@ Not now: first-launch tips, crosshair share codes, replays.
 **Why:** CoD-style voting lets friends pick, but a timer that starts the next match by itself would take the host's control away (and a vote among bots offline would be pointless). Choosing from the rotation keeps the maps those the rotation was built from; the default without votes keeps the old behaviour.
 
 **Alternatives:** Every map of the game as a choice (the Shooting Range and the hidden test map would need excluding, and the list grows with every new map); a 15 s countdown; letting a client press Next map (the host decides, D-103).
-
-## D-245 — M17: one new map, Quarry, generated from a script; the rotation has four maps (2026-10-17)
-
-**Decision:** M17's new map is **Quarry**, a 48 × 60 m gravel yard (three lanes, two long concrete blocks with a passage each, S-bend walls in the side lanes, staggered walls and a weigh-house in mid, walls and a "crusher" block at each spawn end, sites in the north-west and north-east corners). Its `.map` is written by `tools/make_quarry.py` from tables (blocks, props, markers) with the kit gallery's helpers, then made into a scene with `tools/new_map.gd`; it uses the kit only (no new textures or props). It joins the rotation after Spillway, so the map vote (D-244) has four maps to offer. One map, not two, and not dressed with lamps and signs yet.
-
-**Why:** A layout written as data can be tuned and measured in minutes (generate, build, bake, maps test, map report) without TrenchBroom, which a session can't drive; the numbers decided the changes (the first layout had lane-long views). One map that passes every check is worth more than two half-tuned ones before v0.2.0.
-
-**Alternatives:** Drawing it in TrenchBroom (needs a person at the editor); a second generated map (doubles the tuning; the rotation and the vote already gain a choice with one); dressing it now (lamps and signs are a short follow-up).
 
 ## Open questions
 
