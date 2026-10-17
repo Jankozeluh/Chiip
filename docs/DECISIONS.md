@@ -2478,6 +2478,17 @@ Not now: first-launch tips, crosshair share codes, replays. **Changed 2026-10-17
 
 **Alternatives:** Every map of the game as a choice (the Shooting Range and the hidden test map would need excluding, and the list grows with every new map); a 15 s countdown; letting a client press Next map (the host decides, D-103).
 
+## D-246 — A bot's look-around never turns toward an unset yaw (2026-10-17)
+
+**Decision:** `BotController._lead_hunt()` treats an unset look-around yaw (`NAN`) as the bot's own yaw, as `_search()` already did. `respawn_test` has a check: a bot with its roam look cut short keeps a real yaw.
+
+**Why:** Found by the v0.2.0 optimization check: one free-for-all run on Depot had 2.8 ms ticks on average and 22 ms at the 99th percentile, with about 100,000 engine errors a second.
+- At a roam point a hunting bot looks left and right, turning toward `_look_around_yaw`. A fight in the middle of that look starts a search afterwards, and the search marks the yaw as unset (`NAN`).
+- Back to roaming with the look unfinished, the bot turned toward `NAN`. From then on its yaw was `NAN` for good: its body's transform turned to `NAN` (invisible, unhittable), its hand IK and the physics engine logged errors every tick, and every tick took ~20 ms.
+- The code is M8's (team respawn hunting). It shows up most in free-for-all and Team Deathmatch, where every bot hunts and fights interrupt it often: about one Depot free-for-all run in five within 40 s.
+
+**Alternatives:** a guard in `_turn_toward()` that ignores any non-finite target. It would hide the next such bug instead of finding it.
+
 ## Open questions
 
 | Question | Decide in |
