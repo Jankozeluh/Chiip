@@ -101,6 +101,8 @@ var _player: Character
 var _net_game: Node
 ## The killcam of a respawn match (M17, D-241), or null.
 var _killcam: Killcam
+## The vote for the next map of a match with a rotation (M17, D-244), or null.
+var _map_vote: MapVote
 ## True while the loading screen covers the game (it hides the HUD, see [method _update_hud_visibility]).
 var _loading_hides_hud: bool = false
 ## The maps of the rotation (empty without one), and which of them is playing.
@@ -231,7 +233,8 @@ func restart_match() -> void:
 
 
 ## Plays the next map of the rotation, a fresh match by the same rules (the
-## match-end screen's "Next map"); after the last map comes the first again.
+## match-end screen's "Next map"): the map the vote chose (M17, D-244), else the rotation's next;
+## the rotation carries on from there, and after the last map comes the first again.
 ## Does nothing without a rotation.
 ## With the loading screen (D-138) the band comes first: it is shown, two frames
 ## draw it (the first may already be under way when the button is pressed), and
@@ -240,12 +243,15 @@ func restart_match() -> void:
 func next_map() -> void:
 	if _rotation.is_empty() or _loading_screen.visible:
 		return
+	var next := (_rotation_index + 1) % _rotation.size()
+	# The vote's winner (D-244); without votes it is the rotation's next map, as before.
+	if _map_vote != null and _map_vote.is_open() and _rotation.has(_map_vote.get_winner()):
+		next = _rotation.find(_map_vote.get_winner())
 	if net_session != null:
 		if net_session.is_host():
-			var next := (_rotation_index + 1) % _rotation.size()
 			NetLobby.of(net_session).start_match(_rotation[next], match_settings, _rotation_from(next))
 		return
-	_rotation_index = (_rotation_index + 1) % _rotation.size()
+	_rotation_index = next
 	var path := _rotation[_rotation_index]
 	if not _shows_loading_screen():
 		change_map(path)
@@ -410,11 +416,15 @@ func _spawn_map(scene: PackedScene) -> void:
 	_hud.set_killcam(null)
 	if rules is RespawnMatch:
 		_add_killcam(rules as RespawnMatch, player)
+	_map_vote = null
+	if rules is RoundManager and not _rotation.is_empty():
+		_add_map_vote(rules as RoundManager)
 	# Hides the match-end screen of the previous map; it opens when this match ends,
 	# with "Next map" when there is a rotation.
 	_match_end_screen.set_round_manager(rules as RoundManager)
 	_match_end_screen.set_online(net_session != null, net_session != null and net_session.is_host())
 	_match_end_screen.set_next_map(GameLaunch.map_title(get_next_map()) if not _rotation.is_empty() else "")
+	_match_end_screen.set_map_vote(_map_vote)
 	# The round HUD (top bar, kill feed, banners) shows only in a match; null hides it.
 	_hud.set_round_manager(rules as RoundManager)
 	# The hold-Tab scoreboard also exists only in a match.
@@ -467,6 +477,24 @@ func _add_killcam(rules: RespawnMatch, player: Character) -> void:
 	_killcam.enabled = Settings.get_instance().killcam
 	_killcam.setup(rules, player, recorder)
 	_hud.set_killcam(_killcam)
+
+
+## Adds the vote for the next map (M17, D-244): made with the map, so a client already listens when the host
+## offers the choices; offline and on the host it opens when the match ends, with the rotation's next maps.
+func _add_map_vote(rules: RoundManager) -> void:
+	_map_vote = MapVote.new()
+	_map_vote.name = "MapVote"
+	_map_vote.session = net_session
+	_map.add_child(_map_vote)
+	if net_session == null or net_session.is_host():
+		var vote := _map_vote
+		rules.match_ended.connect(func(_winner: int) -> void:
+			vote.start(MapVote.pick_choices(_rotation, _rotation_index)))
+
+
+## The vote for the next map (null without a rotation).
+func get_map_vote() -> MapVote:
+	return _map_vote
 
 
 ## The killcam of the match (null outside respawn matches).

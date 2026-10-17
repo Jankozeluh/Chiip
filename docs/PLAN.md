@@ -639,7 +639,8 @@ Decisions D-200 to D-209. Tasks, one commit each (`M14: …`):
 - [x] **Game browser:** games on your LAN or tailnet show up in a list (no typing IPs), with join in one click. Built (D-242): the host's beacon on UDP 26001 (JSON, ≤ 512 bytes, to the broadcast address and each local /24's), "Games on your network" and "Recent" (last 8 joins, for Tailscale) on the Join page, one click joins. New suite `browser` (47 checks)
 - [x] **Text chat** in the lobby and in matches: host-checked (length and rate limits, plain text only, no markup). Built (D-243): `NetChat` on the session, the lobby page's chat box, the HUD's feed with Enter to type; the host names the sender from its roster, cleans the text, cuts it to 100 characters and allows 3 lines in 5 s. New suite `chat` (11 checks)
 - [x] **Killcam:** after dying, the last few seconds through your killer's eyes (CoD-style); skippable, and off in Bomb mode if it reveals too much. Built (D-241): in Team Deathmatch and free-for-all only; recorded on each computer (`KillcamRecorder`), replayed with ghost bodies and the killer's gun (`Killcam`); your respawn waits for it, Space skips; an overlay on the HUD and a Game-tab setting. New suite `killcam` (22 checks)
-- [ ] **Map voting** at the end of a match, and **1–2 new maps** (or the first community maps through pull requests)
+- [x] **Map voting** at the end of a match (D-244): with a rotation, the end screen offers the next three maps; everyone votes (and may change it), "Next map" plays the winner (the earlier choice on a tie, the rotation's next without votes) and the rotation carries on from it; online the host counts. New suite `vote` (6 checks), 3 checks in `rotation`
+- [ ] **1–2 new maps** (or the first community maps through pull requests)
 
 ## Backlog (ideas, not scheduled)
 

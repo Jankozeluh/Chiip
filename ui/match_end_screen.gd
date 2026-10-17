@@ -33,8 +33,15 @@ signal next_map_pressed
 
 var _manager: RoundManager
 ## Online on a client: only the leave button shows.
+## Where the vote row's bottom sits: above the buttons (pixels from the bottom at the 720-pixel design).
+const VOTE_BOTTOM := -104.0
+
 var _client: bool = false
 var _next_map_title: String = ""
+## The vote for the next map (M17, D-244), or null; its row of choices above the buttons.
+var _vote: MapVote
+var _vote_box: VBoxContainer
+var _vote_buttons: Array[Button] = []
 
 @onready var _title: Label = %Result
 @onready var _your_trim: Control = $Header/ScoreLine/YourTrim
@@ -56,6 +63,7 @@ func _ready() -> void:
 	_play_again.pressed.connect(play_again_pressed.emit)
 	_main_menu.pressed.connect(main_menu_pressed.emit)
 	_next_map.pressed.connect(next_map_pressed.emit)
+	_build_vote_box()
 	_refresh_chip()
 
 
@@ -77,7 +85,83 @@ func set_online(online: bool, host: bool) -> void:
 	set_next_map(_next_map_title)
 
 
+## Shows [param vote]'s choices above the buttons, a click picks one (null: no vote, no row). The "Next map"
+## button names the map that would win now. main.gd calls it whenever a map is loaded.
+func set_map_vote(vote: MapVote) -> void:
+	if _vote != null and is_instance_valid(_vote) and _vote.changed.is_connected(_refresh_vote):
+		_vote.changed.disconnect(_refresh_vote)
+	_vote = vote
+	if _vote != null:
+		_vote.changed.connect(_refresh_vote)
+	_refresh_vote()
+
+
+## The vote row: "Vote for the next map", then a segmented strip of up to [constant MapVote.CHOICES] maps.
+func _build_vote_box() -> void:
+	_vote_box = VBoxContainer.new()
+	_vote_box.name = "VoteBox"
+	_vote_box.theme_type_variation = &"ContentBox"
+	_vote_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vote_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_KEEP_SIZE)
+	_vote_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_vote_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_vote_box.offset_bottom = VOTE_BOTTOM
+	_vote_box.visible = false
+	add_child(_vote_box)
+	var label := Label.new()
+	label.text = "Vote for the next map"
+	label.theme_type_variation = &"DimLabel"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_vote_box.add_child(label)
+	var frame := PanelContainer.new()
+	frame.theme_type_variation = &"SegmentFrame"
+	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_vote_box.add_child(frame)
+	var strip := HBoxContainer.new()
+	strip.theme_type_variation = &"SegmentRow"
+	frame.add_child(strip)
+	var group := ButtonGroup.new()
+	for index in MapVote.CHOICES:
+		var button := Button.new()
+		button.theme_type_variation = &"SegmentButton"
+		button.toggle_mode = true
+		button.button_group = group
+		button.pressed.connect(func() -> void:
+			if _vote != null and is_instance_valid(_vote):
+				_vote.vote(index))
+		strip.add_child(button)
+		_vote_buttons.append(button)
+
+
+## The choices with their votes ("Square · 2"), your pick pressed, and "Next map · <the winner now>".
+func _refresh_vote() -> void:
+	var open := _vote != null and is_instance_valid(_vote) and _vote.is_open()
+	_vote_box.visible = open
+	if not open:
+		return
+	var counts := _vote.get_counts()
+	for index in _vote_buttons.size():
+		var button := _vote_buttons[index]
+		button.visible = index < _vote.choices.size()
+		if not button.visible:
+			continue
+		var count: int = counts[index] if index < counts.size() else 0
+		button.text = "%s · %d" % [GameLaunch.map_title(_vote.choices[index]), count]
+		button.set_pressed_no_signal(index == _vote.get_my_vote())
+	set_next_map(GameLaunch.map_title(_vote.get_winner()))
+
+
 # --- Test hooks ---
+
+
+## The vote's choice buttons (as many as there are choices showing).
+func get_vote_buttons() -> Array[Button]:
+	return _vote_buttons.filter(func(button: Button) -> bool: return button.visible)
+
+
+## The vote's row ("Vote for the next map" and its choices).
+func get_vote_box() -> Control:
+	return _vote_box
 
 
 ## The "Next map" button (hidden without a rotation).

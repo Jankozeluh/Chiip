@@ -18,7 +18,9 @@ Branch `m17` (D-220). Decisions from D-239. One commit per task.
 
 - Text chat (D-243): a Sonnet subagent built `NetChat`, the lobby page's chat box and the HUD's `ChatHud`, then lost its connection three times; I stopped it and finished it: a variable named `_input` hid the `_input()` callback, so the HUD's chat script didn't load (fixed); the new `chat` suite (11 checks) covers the host's rules, the lobby box and the match HUD. The class menu that opens at the match start keeps the chat shut, as any menu does.
 
-**Next:** map voting and new maps.
+- Map voting (D-244): `MapVote` (made with each map of a rotation, so a client listens before the host offers the choices), the end screen's "Vote for the next map" strip (segment toggles, "Square · 2"), "Next map · <winner>". Online the host offers the choices and counts one vote per player, by the session's flat messages; clients take only rotation maps from the host. `vote` suite (6) and 3 checks in `rotation`.
+
+**Next:** new maps.
 
 ## 2026-10-16 — M16 maintainability & debugging
 

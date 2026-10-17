@@ -135,7 +135,7 @@ Everyone who plays, host and friends, does step 1. The host does 2 and 3, the fr
 3. **The host starts the game:** main menu → **Host**. The lobby shows **Friends join at**, with the host's **Tailscale address** (it starts with `100.`) and a **Copy** button. Click **Copy** and send the address to your friends in chat.
 4. **A friend joins:** main menu → **Join**. Paste the address into **Join by IP** and press **Join**. Everyone sees the others in the lobby. Next time the host is under **Recent** on the Join page: one click joins (the last 8 hosts you joined).
 5. **In the lobby**, click **Switch team** to pick a side (your team is blue, the other red). The host's **Edit setup** opens the usual match setup (mode, map or rotation, team sizes, bot difficulty, length, friendly fire); empty slots are bots. The host presses **Start** and everyone's game loads.
-6. Pick your class in the first freeze time (**M**) as in a game alone. After the match the host chooses **Next map**, **Play again** or **Lobby**; the others can only **Leave**.
+6. Pick your class in the first freeze time (**M**) as in a game alone. After the match everyone can **vote for the next map** (with a rotation); the host chooses **Next map** (the most voted), **Play again** or **Lobby**; the others can only **Leave**.
 
 Someone who leaves during a match is taken over by a bot ("Name (bot)"); someone who joins a running match takes over a bot of their team. When the host quits, everyone goes back to the menu.
 

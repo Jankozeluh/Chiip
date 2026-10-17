@@ -2470,6 +2470,14 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** Team chat (not asked for; easy to add later as a flag); RichTextLabel with escaped BBCode (one escape missed is markup again); a separate RPC channel (the session's checked messages already exist); a mute list (later, if needed).
 
+## D-244 — M17: vote for the next map of the rotation; the host's "Next map" plays the winner (2026-10-17)
+
+**Decision:** At the end of a match played on a rotation, the end screen offers the **next three maps of the rotation** (the one just played comes last, only when the rotation is that short), each with its votes. Everyone votes with a click and may change their vote; "Next map" (the host's, online) plays the map with the **most votes**, the earlier choice on a tie, and the rotation's next map when nobody voted — what "Next map" did before. The rotation then carries on from the map played. Online the host decides like for the chat (D-243): it offers the choices and counts one vote per player (the sender as the session says), and sends the counts; clients accept only rotation maps from the host. No vote without a rotation, and no timer: the host still chooses when to go on (or Play again, or Lobby).
+
+**Why:** CoD-style voting lets friends pick, but a timer that starts the next match by itself would take the host's control away (and a vote among bots offline would be pointless). Choosing from the rotation keeps the maps those the rotation was built from; the default without votes keeps the old behaviour.
+
+**Alternatives:** Every map of the game as a choice (the Shooting Range and the hidden test map would need excluding, and the list grows with every new map); a 15 s countdown; letting a client press Next map (the host decides, D-103).
+
 ## Open questions
 
 | Question | Decide in |

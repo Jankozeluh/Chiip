@@ -29,6 +29,7 @@ var _match_ends: Array[int] = []
 func _ready() -> void:
 	await _test_setup()
 	await _test_rotation_in_game()
+	await _test_vote()
 	await _test_respawn_launch()
 	await _test_single_map()
 	_free_main()
@@ -143,6 +144,32 @@ func _test_rotation_in_game() -> void:
 	await _wait_ticks(3)
 	_check("After Spillway the rotation starts over with Depot", on_spillway == SPILLWAY and _map_path() == DEPOT
 			and next_button.text == "Next map · Square", "then %s, then %s" % [on_spillway, _map_path()])
+
+
+## M17 (D-244): at the end of a match with a rotation the end screen offers the next three maps to vote on;
+## "Next map" plays the winner and the rotation carries on from it.
+func _test_vote() -> void:
+	await _start_game(GameLaunch.rotation_maps(), _quick_rules())
+	var end_screen := _main.get_node("MatchEndScreen") as MatchEndScreen
+	var hidden_before := not end_screen.get_vote_box().visible
+	await _win_match()
+	var buttons := end_screen.get_vote_buttons()
+	var offered := _texts(buttons)
+	_check("After a rotation's match the end screen offers the next maps to vote on, the rotation's next first; Next map names it",
+			hidden_before and end_screen.get_vote_box().is_visible_in_tree() and offered == ["Square · 0", "Spillway · 0", "Depot · 0"]
+					and end_screen.get_next_map_button().text == "Next map · Square",
+			"hidden before %s, offered %s, button '%s'" % [hidden_before, offered, end_screen.get_next_map_button().text])
+	buttons[1].pressed.emit()
+	await _wait_ticks(2)
+	_check("A vote counts, stays pressed, and Next map follows the winner",
+			_texts(buttons) == ["Square · 0", "Spillway · 1", "Depot · 0"] and buttons[1].button_pressed
+					and end_screen.get_next_map_button().text == "Next map · Spillway",
+			"%s, button '%s'" % [_texts(buttons), end_screen.get_next_map_button().text])
+	end_screen.get_next_map_button().pressed.emit()
+	await _wait_ticks(3)
+	_check("Next map plays the voted map, and the rotation carries on from it (Depot next)",
+			_map_path() == SPILLWAY and _main.call("get_next_map") == DEPOT and not end_screen.get_vote_box().visible,
+			"map %s, next %s" % [_map_path(), _main.call("get_next_map")])
 
 
 func _test_respawn_launch() -> void:
