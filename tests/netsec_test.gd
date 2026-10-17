@@ -205,6 +205,38 @@ func _test_hostile_friend() -> void:
 	_check("A team that doesn't exist (99, -5) changes nothing: the friend is still on team 0 or 1",
 			_host_session.get_player(ana_id).get("team", -1) in [0, 1], "team %s" % _host_session.get_player(ana_id).get("team"))
 
+	# Chat from a hostile friend, straight at the host's door (the session message, below the chat box): what is not
+	# text, is too long, is empty or is only spaces never becomes a line; markup, direction marks and control
+	# characters come out plain; the name and the sender are the roster's, whatever the message says.
+	var host_chat := NetChat.of(_host_session)
+	var chat_before := host_chat.lines.size()
+	var hostile_chat: Array = [
+		{"chat": [1, 2, 3]}, {"chat": {"a": 1}}, {"chat": 12345}, {"chat": "x".repeat(5000)}, {"chat": ""}, {"chat": "     "},
+		{"chat": "[b]bold[/b] [url=javascript:alert(1)]click[/url] [img]res://icon.svg[/img] [color=red]red"},
+		{"chat": "evil" + String.chr(0x202E) + "txet" + String.chr(0) + "\n\t   zero" + String.chr(0x200B) + "width"},
+		{"chat": "an honest line", "from": 1, "name": "Host"},
+	]
+	for payload: Dictionary in hostile_chat:
+		ana._rpc_message_to_host.rpc_id(1, payload)
+		# One line a window, so the rate limit (3 in 5 s) isn't what this check is about.
+		await _harness.wait_ticks(int(NetChat.RATE_WINDOW * Engine.physics_ticks_per_second / 2.0) + 4)
+	var chat_lines := host_chat.lines.slice(chat_before)
+	var chat_plain := true
+	var chat_roster := true
+	for line in chat_lines:
+		var text: String = line["text"]
+		if text.length() > NetChat.MAX_CHAT_LENGTH or text != text.strip_edges():
+			chat_plain = false
+		for character in text:
+			var code := character.unicode_at(0)
+			if code < 32 or (code >= 0x200B and code <= 0x200F) or (code >= 0x202A and code <= 0x202E):
+				chat_plain = false
+		if line["peer_id"] != ana_id or line["name"] != "Ana":
+			chat_roster = false
+	_check("Nine hostile chat messages (a list, a dictionary, a number, 5,000 characters, empty, only spaces, BBCode with a javascript link, direction and control characters, and a line claiming to be the host's) give exactly the three that are text: plain, at most %d characters, and from the friend's own id and roster name" % NetChat.MAX_CHAT_LENGTH,
+			chat_lines.size() == 3 and chat_plain and chat_roster and String(chat_lines[0]["text"]).contains("[b]bold[/b]") and String(chat_lines[2]["text"]) == "an honest line",
+			"%d lines: %s" % [chat_lines.size(), chat_lines.map(func(line: Dictionary) -> String: return "%s: %s" % [line["name"], line["text"]])])
+
 	# The match.
 	var host_lobby := _lobby_of(_host_session, "Host")
 	_lobby_of(ana, "Ana")
@@ -267,7 +299,11 @@ func _test_hostile_friend() -> void:
 		[NetProtocol.Request.CLASS, [1, 2]], [NetProtocol.Request.CLASS, {"a": 1}], [NetProtocol.Request.BUY], [NetProtocol.Request.BUY, 12345],
 		[NetProtocol.Request.BUY, "x".repeat(3000)], [NetProtocol.Request.BUY, "not_an_item"], [NetProtocol.Request.BUY, [1]],
 		[[1, 2], 3], [{"a": 1}], ["text"], [NAN], [7777, 1], [-1, 1], [NetProtocol.Request.BUY, "rifle", "extra", "more"],
+		[NetProtocol.Request.SKIP_KILLCAM, [1]], [NetProtocol.Request.SKIP_KILLCAM, "x", "y"], [NetProtocol.Request.SKIP_KILLCAM, {"a": 1}],
 	]
+	# A skip request in a flood (the killcam only ever needs one): the request limit takes it.
+	for i in 60:
+		requests.append([NetProtocol.Request.SKIP_KILLCAM])
 	for values in requests:
 		garbage.append(NetProtocol.pack_values(NetProtocol.Message.REQUEST, values))
 	# Bytes that decode to something odd as a variant: a deeply nested array, a huge claimed length.
