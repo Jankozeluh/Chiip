@@ -2478,6 +2478,14 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** Every map of the game as a choice (the Shooting Range and the hidden test map would need excluding, and the list grows with every new map); a 15 s countdown; letting a client press Next map (the host decides, D-103).
 
+## D-245 — M17: one new map, Quarry, generated from a script; the rotation has four maps (2026-10-17)
+
+**Decision:** M17's new map is **Quarry**, a 48 × 60 m gravel yard (three lanes, two long concrete blocks with a passage each, S-bend walls in the side lanes, staggered walls and a weigh-house in mid, walls and a "crusher" block at each spawn end, sites in the north-west and north-east corners). Its `.map` is written by `tools/make_quarry.py` from tables (blocks, props, markers) with the kit gallery's helpers, then made into a scene with `tools/new_map.gd`; it uses the kit only (no new textures or props). It joins the rotation after Spillway, so the map vote (D-244) has four maps to offer. One map, not two, and not dressed with lamps and signs yet.
+
+**Why:** A layout written as data can be tuned and measured in minutes (generate, build, bake, maps test, map report) without TrenchBroom, which a session can't drive; the numbers decided the changes (the first layout had lane-long views). One map that passes every check is worth more than two half-tuned ones before v0.2.0.
+
+**Alternatives:** Drawing it in TrenchBroom (needs a person at the editor); a second generated map (doubles the tuning; the rotation and the vote already gain a choice with one); dressing it now (lamps and signs are a short follow-up).
+
 ## Open questions
 
 | Question | Decide in |
