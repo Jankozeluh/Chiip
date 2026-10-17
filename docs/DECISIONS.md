@@ -2530,7 +2530,7 @@ Not now: first-launch tips, crosshair share codes, replays. **Changed 2026-10-17
 **Alternatives:**
 - Comparing with M11's own numbers from 2026-10-16. That day the window had focus and the Mac was on battery. A window without focus gets lower priority from macOS, which made the same code look 40 % slower, so the M11 code was measured again under today's conditions.
 
-## D-247 — The v0.2.0 release content is prepared on a content branch, nothing published (2026-10-17)
+## D-248 — The v0.2.0 release content is prepared on a content branch, nothing published (2026-10-17)
 
 **Decision:** On the branch `v0.2-prep` (from main 236d788, content only, D-220) the release's words and pictures are ready, and nothing is exported, pushed or released: the owner decides about v0.2.0.
 - **Website:** the start page describes v0.2 (three modes and the killcam, maps and the training range, classes and arsenal, CS-style feel with wallbangs and smarter bots, online play with the game browser, Recent, chat and map voting, stats and training, sound, accessibility and gamepad, the look) with five fresh pictures of the v0.2 UI instead of the v0.1 ones: the main menu, the Play screen with its four mode cards, the killcam, the Stats screen and the Join page listing a game on the network (a real host process beaconing on the LAN). They were captured without touching the mouse (a scratch script that starts the real scenes in a window; the menu's build label was set to "Build 0.2.0" in the picture so it doesn't show a development commit). The Play page tells about the game browser (and that Tailscale doesn't carry it, so Recent), chat and map votes. No pictures of the designer's own renders were used: the designer's v0.2 file has no website screen.
