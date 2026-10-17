@@ -2,7 +2,7 @@
 
 > How the project is organized and which rules the code follows: the single source of truth for the code's structure (D-226). Updated whenever a folder, system or convention is added or changes.
 >
-> Last updated: 2026-10-16 (M17: free-for-all and `Teams.are_allies()`; M16: the systems map, the `audio/`, `stats/` and `debug/` folders).
+> Last updated: 2026-10-17 (M17: free-for-all and `Teams.are_allies()`; M16: the systems map, the `audio/`, `stats/` and `debug/` folders).
 
 ## Engine
 
@@ -666,14 +666,15 @@ That is about 830 checks in about four minutes on the development Mac. A change 
 - **The release builds are tested by machine (M16, D-223):** `tools/check_release.sh` exports all three presets (into a temporary folder, or `BUILDS=builds`; `SKIP_EXPORT=1` checks existing builds) and runs shooting in each, a full round in the Mac app (`debug/round_check.gd`, `RoundCheck`, added by `main.gd` for `-- --check-round`: a 2v2 match on Depot from `RoundCheck.rules()`, PASS when every bot walked 5 m in the live round, round 1 ended with a winner and round 2 started; `release_test` runs it too) and `tools/lan_check.sh` with `GAME=<the app's binary>`. Every game these scripts start runs with an empty `user://` of its own (`HOME` points at a temporary folder).
 - **Exported packed arrays need typed defaults:** `@export var x: PackedStringArray = PackedStringArray()`, never `= []`. With an Array literal the export's text-to-binary conversion dropped the stored values (v0.1.0's empty hit zones); `release_test` rejects the pattern. The export caches conversions by a file's content, so after fixing a script, change the resource files too (or delete `.godot/exported/`) before exporting.
 
-## Performance (M11, D-165 to D-169)
+## Performance (M11, D-165 to D-169; v0.2.0 check D-245 to D-247)
 
-**Budgets.** A physics tick has 7.8 ms (128 Hz); a frame on a 120 Hz display has 8.3 ms. A 5v5 uses about 1 ms of CPU per frame on an Apple M5 (physics with the bots and animation trees about 0.8 ms, scripts 0.1 ms), and a LAN host about 0.3 ms more.
+**Budgets.** A physics tick has 7.8 ms (128 Hz); a frame on a 120 Hz display has 8.3 ms. A 5v5 uses about 1 ms of CPU per frame on an Apple M5 (physics with the bots and animation trees about 0.8 ms, scripts 0.1 ms), and a LAN host about 0.3 ms more. Headless, a tick costs 0.6 ms in Bomb rounds, 0.9 ms in Team Deathmatch and about 1 ms in free-for-all, where every bot fights (v0.2.0, D-247).
 
 **Measuring** (`tools/frame_timing.gd`):
 - **With a window:** the frame rate and each frame's parts (physics, scripts, drawing, the rest), the frames whose CPU part goes over 8.33 ms, the spikes with what was added to the scene in that frame, and the pipelines compiled while drawing.
   - On macOS with V-Sync off, the system sometimes holds a frame while waiting for the display. These are the 12–17 ms "draw" spikes, which players with V-Sync on don't get; `--vsync` measures with it on.
   - Metal reports no GPU times. A window that is covered, or on another Space, is slowed down by macOS, so check that the run had focus and keep other GPU work away.
+- **Modes:** `--respawn` (Team Deathmatch) and `--ffa` (free-for-all: `--bots 5` is ten players); online `--lan-respawn` and `--lan-ffa`, and the report adds the host's `net_stats` lines (snapshot size, ping).
 - **Headless** (`--headless --fixed-fps 128 --spike 4`): the CPU side, about a minute of play in ten seconds of wall time. Best for finding hitches.
 - **LAN host** (`--lan <scene>` with the menu's `--host --start 2 --no-settings --port <n>`): the tool starts a headless client itself.
 - **`perf_test`** has the limits (see Testing).
@@ -681,6 +682,8 @@ That is about 830 checks in about four minutes on the development Mac. A change 
 **Rules for code that runs often** (every tick, every snapshot, or for every character at a round start):
 - Never `load()` or list resources there. `WeaponData.all()` reloads every weapon file whenever nothing holds them, so keep what you need in a `static var` (as `Shop` and `NetProtocol` do).
 - Don't search children for the same node every tick: keep it (`LagCompensation` keeps each zone's box as metadata).
+- A list of a group's nodes in one world that everyone asks for every tick: keep it and empty it when a member enters or leaves the tree (`WeaponPickup.all_in_world()`, D-245). Key such caches by `get_instance_id()`, not by the object, so they don't keep a finished game's world alive.
+- A `NAN` used as "unset" must be checked with `is_nan()` everywhere it is read: one turned into a bot's yaw broke the bot for the rest of the match and made every tick 20 ms (D-246).
 
 ## Stats and training (M14, D-200 to D-209)
 

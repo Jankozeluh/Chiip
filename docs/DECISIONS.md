@@ -4,7 +4,7 @@
 >
 > Decisions can be revisited. When one changes, add a new entry that replaces the old one instead of rewriting history, and mark the old one as *Replaced by D-xxx*.
 >
-> Last updated: 2026-10-16
+> Last updated: 2026-10-17
 
 ## D-001 — Engine: Godot 4.7.2 with GDScript (2026-10-15)
 
@@ -2500,6 +2500,34 @@ Not now: first-launch tips, crosshair share codes, replays. **Changed 2026-10-17
 - The code is M8's (team respawn hunting). It shows up most in free-for-all and Team Deathmatch, where every bot hunts and fights interrupt it often: about one Depot free-for-all run in five within 40 s.
 
 **Alternatives:** a guard in `_turn_toward()` that ignores any non-finite target. It would hide the next such bug instead of finding it.
+
+## D-247 — The optimization check before v0.2.0 (2026-10-17)
+
+**Decision:** v0.2.0 runs as smoothly as M11 did. The two problems the check found are fixed (D-245, D-246), and nothing else changes. Measured with D-165's method on an Apple M5 on its charger, 5v5 (ten players in free-for-all), on every map, plus a LAN host with a headless client:
+
+| CPU per 128 Hz tick, headless (average / 99 % / worst) | M11 code, re-measured today | Main before the fixes | After |
+|---|---|---|---|
+| Bomb rounds | 0.60–0.66 / 0.84–1.02 / 14–20 ms | 0.58–0.68 / 0.92–1.03 / 14–19 ms | 0.60–0.67 / 0.93–1.08 / 18 ms |
+| Team Deathmatch | 0.81–0.83 / 1.04–1.16 / 3–4 ms | 0.86–0.90 / 1.24–1.54 / 3–6 ms | 0.84–0.85 / 1.35–1.60 / 4–8 ms |
+| Free-for-all (new) | — | 0.94–0.99 / 1.8–2.7 / 3–6 ms | 0.86–0.96 / 1.6–2.8 / 4–6 ms |
+| LAN host on Depot, per frame (real time) | 1.93–1.95 ms | 1.90–1.93 ms | 1.72–1.80 ms |
+| perf_test (median of five stretches) | 0.60 / 0.71 / 18 ms | 0.61 / 0.73 / 18 ms | 0.59 / 0.71 / 18 ms |
+
+- **With a window** (1080p and 2294 × 960, which renders 3440 × 1440's world): the M11 code and main both used 1.9–2.0 ms of CPU per frame at the 120 fps the system gave a window without focus.
+  - Draw calls are 250–300 in Bomb and Team Deathmatch, and 320–365 in free-for-all, where more guns lie on the floor.
+  - Pipelines compiled while drawing: none.
+- **Online:** snapshots average 440–480 bytes (560–780 at most), 64 a second to each friend.
+- **The new suspects are cheap**, per free-for-all tick (script profiler):
+  - the killcam's recording: 0.017 ms
+  - sound occlusion rays: about 0.01 ms (a gunshot traces twice, for its near and far sound, which isn't worth a change)
+  - the hand IK: 0.019 ms
+  - the free-for-all standings the HUD sorts every frame: 0.035 ms
+- **Still the slowest moment:** the round start, 14–20 ms in one tick (`Weapon.create()` for every loadout, D-169).
+
+**Why:** v0.2.0 adds three modes' worth of fighting, wallbangs, sound occlusion, the killcam and stats. The check had to show whether they cost frames, and on which map. Free-for-all is the heaviest mode (every bot fights), and about 10 % of its tick was the floor-gun list (D-245). The one real regression was a bug, not slow code: a bot whose yaw turned `NAN` made every tick 20 ms for the rest of the match (D-246).
+
+**Alternatives:**
+- Comparing with M11's own numbers from 2026-10-16. That day the window had focus and the Mac was on battery. A window without focus gets lower priority from macOS, which made the same code look 40 % slower, so the M11 code was measured again under today's conditions.
 
 ## Open questions
 

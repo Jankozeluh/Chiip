@@ -2,6 +2,23 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-17 — Optimization check before v0.2.0
+
+**Done**
+- Measured main (577e031) on every map at 5v5 in Bomb, Team Deathmatch and free-for-all, headless and windowed (1080p and 3440 × 1440's world size), and as a LAN host with a client. The M11 code was measured again under the same conditions: a window without focus made the same code look 40 % slower than on 2026-10-16 (D-247).
+- No slowdown since M11:
+  - CPU per tick 0.6 ms in Bomb, 0.85 ms in Team Deathmatch, 0.9 ms in free-for-all (new)
+  - 1.9–2.0 ms per windowed frame
+  - snapshots of about 450 bytes
+  - perf_test passes its limits (0.59 / 0.71 / 18 ms)
+- The new suspects are cheap: the killcam's recording 0.017 ms per tick, sound occlusion about 0.01 ms, the hand IK 0.019 ms.
+- **Fixed:** a bot whose roam look-around a fight cut short turned toward an unset (`NAN`) yaw. It was broken for the rest of the match, with errors and ~20 ms ticks, in about one Depot free-for-all run in five (D-246). A new check in respawn_test covers it.
+- **Faster:** the floor-gun list is kept per world until a gun comes or goes (D-245): 0.105 → 0.063 ms of a free-for-all tick. The LAN host's frame is 1.72–1.80 ms (was 1.90–1.93).
+- `tools/frame_timing.gd`: `--ffa`, `--lan-ffa`, and the host's net stats in the report.
+- All 49 suites pass, 1603 checks. maps failed once under the parallel runner (markers "25 m off" the navigation mesh, the known late navmesh pickup) and passed on rerun.
+
+**Next:** the round start's weapon building (14–20 ms) is still the slowest moment; it needs `Weapon.create()` to skip what bots don't use.
+
 ## 2026-10-16 — M17 playing with friends
 
 Branch `m17` (D-220). Decisions from D-239. One commit per task.

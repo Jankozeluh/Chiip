@@ -2,7 +2,7 @@
 
 > Notes on Godot concepts as Chiip uses them. Each milestone adds a section with what was new and where it's used in the project.
 >
-> Last updated: 2026-10-16
+> Last updated: 2026-10-17
 
 ## Unity → Godot cheat sheet
 
@@ -748,6 +748,8 @@
 **Loading versus finding a resource** (`systems/shop.gd`, D-166)
 - `load()` returns the copy already in memory as long as something holds it. When nothing does, the resource was freed and `load()` parses the file again, like `Resources.Load` after `Resources.UnloadUnusedAssets`. Code that runs often keeps what it loaded in a `static var`. The class keeps it, as in a C# static field.
 - `set_meta()` / `get_meta()` hang a value on any `Object` (Unity: a component, or a dictionary keyed by the object). Chiip keeps a hit zone's box on the zone (`net/lag_compensation.gd`): it goes away with the zone, while a dictionary keyed by the zone could match a new zone that got a freed one's memory.
+- A `Dictionary` keyed by an object holds a reference to it if it's a `RefCounted` (a `World3D`, any `Resource`), like a C# `Dictionary<World, …>` keeps the world from being collected. Keying by `get_instance_id()` (an int) doesn't: `WeaponPickup` keeps its per-world lists that way (D-245).
+- `NAN` is contagious, as in C#: any arithmetic with it gives `NAN`, and `NAN == NAN` is false, so only `is_nan()` finds it. A transform with `NAN` in it makes Jolt complain every tick (D-246).
 
 ## M12: sharing the game
 
