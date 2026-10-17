@@ -69,6 +69,7 @@ The main menu offers **Play**, **Practice**, **Stats**, **Settings**, **Quit**, 
 | Last weapon / drop the gun in hand | Q / G |
 | Pick up a gun: walk over it (into a free slot), or look at it and press E to swap | E |
 | Buy menu (during the 15 s freeze time; any time in practice): the category's number then the item's, or click | B |
+| Chat (online, in a match): type, Enter sends, Esc cancels. In the lobby the chat box is on the lobby page | Enter |
 | Plant the bomb (inside a bomb site) / defuse it (next to it), on the quick maps | Hold E |
 | Class menu (opens by itself at the start of a match with your two drafted classes; during freeze time, any time in Team Deathmatch and practice mode; then click a card or press 1 or 2, 1 to 4 in practice) | M |
 | Scoreboard (in a match: both teams, kills, deaths, assists, damage, who is alive) | Hold Tab |

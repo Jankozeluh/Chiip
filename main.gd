@@ -127,6 +127,8 @@ func _ready() -> void:
 	UiSounds.attach(_match_end_screen)
 	_match_end_screen.play_again_pressed.connect(restart_match)
 	_match_end_screen.next_map_pressed.connect(next_map)
+	# The chat input stays shut while the match-end screen covers the HUD.
+	_match_end_screen.visibility_changed.connect(func() -> void: _hud.set_chat_blocked(_match_end_screen.visible))
 	_match_end_screen.main_menu_pressed.connect(return_to_menu)
 	# The pause menu (D-065): Settings opens the settings menu over it, Leave goes
 	# back to the main menu, and the menu comes back when the settings close.
@@ -422,6 +424,8 @@ func _spawn_map(scene: PackedScene) -> void:
 	# The buy menu opens on B in freeze time (any time in practice); team respawn has no money.
 	_buy_menu.set_rules(rules, player)
 	_hud.set_player(player)
+	# The online chat (M17, D-243): the feed and the Enter input; offline there is none.
+	_hud.set_net_session(net_session)
 	# Practice and team respawn bring you back; in rounds the dead watch a teammate instead.
 	var respawning := rules is ArenaRules or rules is RespawnMatch
 	# Only practice says "Respawning..." in the death message: a team respawn match counts

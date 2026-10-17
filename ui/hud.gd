@@ -145,6 +145,7 @@ var _killcam_killer: Character
 @onready var _smoke_overlay: ColorRect = $SmokeOverlay
 @onready var _flash_overlay: ColorRect = $FlashOverlay
 @onready var _compass: Compass = %Compass
+@onready var _chat_hud: ChatHud = %ChatHud
 @onready var _round_hud: RoundHud = $RoundHud
 @onready var _bomb_hud: BombHud = $BombHud
 
@@ -184,6 +185,7 @@ func set_player(new_player: Character) -> void:
 	player.flashed.connect(_on_player_flashed)
 	player.died.connect(_on_player_died)
 	player.respawned.connect(_on_player_respawned)
+	_chat_hud.set_player(player)
 	_crosshair.camera = player.get_camera()
 	set_view_target(player)
 	_update_money()
@@ -230,6 +232,22 @@ func set_view_target(target: Character) -> void:
 	_update_slots()
 	_show_weapon()
 	_update_view()
+
+
+## Follows the text chat of [param session] (M17, D-243): the feed over the health block and the Enter input line
+## ([ChatHud]). Null (offline): no chat, Enter does nothing. [code]main.gd[/code] calls it on every map load.
+func set_net_session(session: NetSession) -> void:
+	_chat_hud.set_session(session)
+
+
+## True while the chat's input must not open (the match-end screen covers the HUD).
+func set_chat_blocked(blocked: bool) -> void:
+	_chat_hud.set_blocked(blocked)
+
+
+## The chat part of the HUD. For tests.
+func get_chat_hud() -> ChatHud:
+	return _chat_hud
 
 
 ## Shows the overlay of [param killcam] while it replays your death, and hides the player's own view and the death
@@ -285,6 +303,7 @@ func set_ui_scale(factor: float) -> void:
 	_ui_scale = factor
 	for root: Control in [_bottom_left, _bottom_right, _spectate_box, _death_column, _killcam_overlay, _slots_label, _compass]:
 		UiScale.apply_tree(root, factor)
+	_chat_hud.set_ui_scale(factor)
 	_compass.set_ui_scale(factor)
 	_crosshair.set_ui_scale(factor)
 	_hit_marker.set_ui_scale(factor)

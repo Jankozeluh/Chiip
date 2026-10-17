@@ -226,6 +226,59 @@ layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"TightBox"
 
+[node name="ChatBox" type="VBoxContainer" parent="Page/Column/Body/Side"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"SideBox"
+
+[node name="ChatLabel" type="Label" parent="Page/Column/Body/Side/ChatBox"]
+layout_mode = 2
+theme_type_variation = &"DimLabel"
+text = "Chat"
+
+[node name="ChatPanel" type="PanelContainer" parent="Page/Column/Body/Side/ChatBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"InsetPanel"
+
+[node name="ChatMargin" type="MarginContainer" parent="Page/Column/Body/Side/ChatBox/ChatPanel"]
+layout_mode = 2
+theme_type_variation = &"RowMargin"
+
+[node name="ChatScroll" type="ScrollContainer" parent="Page/Column/Body/Side/ChatBox/ChatPanel/ChatMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 96)
+horizontal_scroll_mode = 0
+
+[node name="ChatLines" type="VBoxContainer" parent="Page/Column/Body/Side/ChatBox/ChatPanel/ChatMargin/ChatScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"TightBox"
+
+[node name="ChatRow" type="HBoxContainer" parent="Page/Column/Body/Side/ChatBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"FieldRow"
+
+[node name="ChatField" type="LineEdit" parent="Page/Column/Body/Side/ChatBox/ChatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 40)
+placeholder_text = "Say something"
+max_length = 100
+
+[node name="ChatSendButton" type="Button" parent="Page/Column/Body/Side/ChatBox/ChatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Send"
+
 [node name="BrowserScroll" type="ScrollContainer" parent="Page/Column/Body"]
 unique_name_in_owner = true
 layout_mode = 2

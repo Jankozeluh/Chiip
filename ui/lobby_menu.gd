@@ -35,6 +35,12 @@ extends CanvasLayer
 ## and port at the front of [member Settings.online_recent] ([RecentHosts]; Tailscale hosts are found
 ## there, since a broadcast doesn't cross it). The right half scrolls when the lists are long.
 ##
+## [b]The chat[/b] (M17, D-243): under the addresses on the left of the lobby page, a box with the lines said so far (the
+## newest at the bottom, the box scrolls; each line's name is in your team's colour, or the enemy's, and a line is a plain
+## [Label]: markup in it is just characters), and a text field with a Send button. Enter in the field sends too. The words
+## go through the session's [NetChat], which keeps its history, so coming back from a match shows the talk again; what the
+## host refuses ("Slow down...") shows as a dim line. Esc in the field leaves the field (a second Esc leaves the lobby).
+##
 ## The panel only drives a [NetSession] and its [NetLobby]: [method host_game] and
 ## [method join_game] open the session at the root of the tree ([method NetSession.open]), the
 ## host publishes the lobby's info (summary, slots, map, footer facts) whenever the lobby opens,
@@ -84,6 +90,8 @@ const GAME_MAP_COLUMN := [72.0, 2.0]
 const GAME_MODE_COLUMN := [120.0, 4.0]
 const GAME_PLAYERS_COLUMN := [64.0, 0.0]
 const GAME_STATE_COLUMN := [110.0, 3.0]
+## The lines the chat box keeps (the same as [constant NetChat.MAX_LINES]).
+const CHAT_LINES := 50
 ## The width of a recent host's name and address columns.
 const RECENT_NAME_WIDTH := 96.0
 const RECENT_ADDRESS_WIDTH := 200.0
@@ -149,6 +157,11 @@ var _recent_remove_buttons: Array[Button] = []
 @onready var _recent_empty: Label = %RecentEmpty
 @onready var _recent_list: VBoxContainer = %RecentList
 @onready var _friends_box: Control = %FriendsBox
+@onready var _chat_box: Control = %ChatBox
+@onready var _chat_scroll: ScrollContainer = %ChatScroll
+@onready var _chat_lines: VBoxContainer = %ChatLines
+@onready var _chat_field: LineEdit = %ChatField
+@onready var _chat_send_button: Button = %ChatSendButton
 @onready var _addresses_box: VBoxContainer = %Addresses
 @onready var _tailscale_box: Control = %TailscaleBox
 @onready var _tailscale_address_label: Label = %TailscaleAddress
@@ -185,6 +198,10 @@ func _ready() -> void:
 	_edit_button.pressed.connect(open_match_settings)
 	_start_button.pressed.connect(start_match)
 	_switch_button.pressed.connect(switch_team)
+	_chat_field.text_submitted.connect(func(_text: String) -> void: send_chat())
+	_chat_send_button.pressed.connect(send_chat)
+	# New lines grow the box's content: stay at the bottom, where the newest line is.
+	_chat_scroll.get_v_scroll_bar().changed.connect(_follow_chat)
 	_refresh_fields()
 	_show_connect_page()
 	UiSounds.attach(self)
@@ -198,7 +215,10 @@ func _exit_tree() -> void:
 func _input(event: InputEvent) -> void:
 	# Only the menu on top reacts to Esc: with the match settings open, they are on top.
 	if visible and MenuState.is_top(self) and event.is_action_pressed("pause"):
-		if _page == Page.LOBBY:
+		if _page == Page.LOBBY and _chat_field.has_focus():
+			# Esc ends the typing first; leaving the lobby takes a second one.
+			_chat_field.release_focus()
+		elif _page == Page.LOBBY:
 			leave()
 		else:
 			close()
@@ -535,6 +555,7 @@ func _show_connect_page() -> void:
 	_connect_box.visible = true
 	_browser.visible = true
 	_friends_box.visible = false
+	_chat_box.visible = false
 	_teams_box.visible = false
 	_footer.visible = false
 	# Your name is the one the session was opened with: it can only be changed before connecting.
@@ -556,6 +577,7 @@ func _show_lobby_page() -> void:
 	_connect_box.visible = false
 	_browser.visible = false
 	_teams_box.visible = true
+	_chat_box.visible = true
 	_footer.visible = true
 	_name_field.editable = false
 	_set_status("")
@@ -755,6 +777,14 @@ func _adopt(session: NetSession) -> void:
 		session.closed.connect(_on_session_closed)
 	if not lobby.info_changed.is_connected(_on_info_changed):
 		lobby.info_changed.connect(_on_info_changed)
+	var chat := NetChat.of(session)
+	if not chat.line_received.is_connected(_on_chat_line):
+		chat.line_received.connect(_on_chat_line)
+		chat.notice.connect(_on_chat_notice)
+		# What was said before this panel looked (the talk of an earlier lobby, before a match).
+		_clear_chat()
+		for line in chat.lines:
+			_add_chat_line(int(line["peer_id"]), String(line["name"]), String(line["text"]))
 
 
 ## Stops driving the session without ending it: forgets it and drops this panel's connections to
@@ -773,7 +803,91 @@ func _release_session() -> NetSession:
 		var lobby := session.get_node_or_null("NetLobby") as NetLobby
 		if lobby != null and lobby.info_changed.is_connected(_on_info_changed):
 			lobby.info_changed.disconnect(_on_info_changed)
+		var chat := session.get_node_or_null(NetChat.NODE_NAME) as NetChat
+		if chat != null and chat.line_received.is_connected(_on_chat_line):
+			chat.line_received.disconnect(_on_chat_line)
+			chat.notice.disconnect(_on_chat_notice)
+	_clear_chat()
 	return session
+
+
+# --- The chat ---
+
+
+## Sends what the chat field holds to the session's [NetChat] (the host decides what becomes of it) and clears the
+## field. Enter in the field and the Send button call it. Nothing happens for an empty field or without a session.
+func send_chat() -> void:
+	var text := _chat_field.text
+	if _session == null or not _session.is_active() or text.strip_edges().is_empty():
+		return
+	_chat_field.clear()
+	NetChat.of(_session).send(text)
+	# The button took the focus: back to the field, for the next line.
+	if visible and _chat_field.is_visible_in_tree():
+		_chat_field.grab_focus()
+
+
+func _on_chat_line(peer_id: int, name_text: String, text: String) -> void:
+	_add_chat_line(peer_id, name_text, text)
+
+
+func _on_chat_notice(text: String) -> void:
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.theme_type_variation = &"DimLabel"
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.text = text
+	_push_chat_row(label)
+
+
+## A line of the chat box: the name in its team's colour (yours: friendly, the other: enemy, everyone in a free-for-all
+## and a player who left: plain), then the words, wrapped. Both are labels, so what was said is never markup.
+func _add_chat_line(peer_id: int, name_text: String, text: String) -> void:
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.theme_type_variation = &"FieldRow"
+	var who := _add_label(row, "%s:" % name_text, _chat_name_role(peer_id))
+	who.name = "Name"
+	who.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var words := _add_label(row, text, &"")
+	words.name = "Text"
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_push_chat_row(row)
+
+
+## The role of a chat line's name label: see [method _add_chat_line].
+func _chat_name_role(peer_id: int) -> StringName:
+	if _session == null:
+		return &"DimLabel"
+	if bool((NetLobby.of(_session).info.get("facts", {}) as Dictionary).get("ffa", false)):
+		return &"BrightLabel"
+	var team := _session.get_team(peer_id)
+	if team < 0:
+		return &"DimLabel"
+	return &"FriendlyLabel" if team == _session.get_team(_session.local_peer_id) else &"EnemyLabel"
+
+
+## Adds [param row] at the bottom of the chat box, forgetting the oldest lines past [constant CHAT_LINES].
+func _push_chat_row(row: Control) -> void:
+	_chat_lines.add_child(row)
+	UiTheme.apply_sizes(row, _ui_scale)
+	while _chat_lines.get_child_count() > CHAT_LINES:
+		var oldest := _chat_lines.get_child(0)
+		_chat_lines.remove_child(oldest)
+		oldest.queue_free()
+
+
+func _clear_chat() -> void:
+	for row in _chat_lines.get_children():
+		_chat_lines.remove_child(row)
+		row.queue_free()
+
+
+## The box's content grew: show its bottom.
+func _follow_chat() -> void:
+	_chat_scroll.scroll_vertical = int(_chat_scroll.get_v_scroll_bar().max_value)
 
 
 ## The host tells everyone what the match is: the summary line, the slots of each team (the host's
@@ -1235,6 +1349,43 @@ func get_start_button() -> Button:
 ## The match settings panel (made if it wasn't yet).
 func get_match_setup() -> MatchSetup:
 	return _get_setup()
+
+
+## The chat box on the lobby page (Chat, its lines and the field with Send).
+func get_chat_box() -> Control:
+	return _chat_box
+
+
+## The chat's text field and its Send button.
+func get_chat_field() -> LineEdit:
+	return _chat_field
+
+
+func get_chat_send_button() -> Button:
+	return _chat_send_button
+
+
+## The scroll box around the chat's lines.
+func get_chat_scroll() -> ScrollContainer:
+	return _chat_scroll
+
+
+## The chat's lines as shown, oldest first: "Name: words" for a line somebody said, the plain text of a note.
+func get_chat_texts() -> Array[String]:
+	var texts: Array[String] = []
+	for row in _chat_lines.get_children():
+		if row is Label:
+			texts.append((row as Label).text)
+		else:
+			texts.append("%s %s" % [(row.get_node("Name") as Label).text, (row.get_node("Text") as Label).text])
+	return texts
+
+
+## The theme role of the name label of the chat line at [param index] ("" when there is no such line).
+func get_chat_name_role(index: int) -> StringName:
+	if index < 0 or index >= _chat_lines.get_child_count() or _chat_lines.get_child(index) is Label:
+		return &""
+	return (_chat_lines.get_child(index).get_node("Name") as Label).theme_type_variation
 
 
 ## The Tailscale group of "Friends join at" (shown when this computer has a Tailscale address).

@@ -48,6 +48,7 @@ const ACTION_NAMES := {
 	&"toggle_debug": "Debug overlay", &"toggle_console": "Console",
 	&"slot_primary": "Primary weapon", &"slot_pistol": "Pistol", &"slot_knife": "Knife",
 	&"slot_grenade": "Grenades (again: next)", &"last_weapon": "Last weapon", &"drop_weapon": "Drop weapon", &"buy_menu": "Buy menu",
+	&"chat": "Chat (online)",
 }
 ## The crosshair colours offered as swatches (the mockup's): name and colour (the opacity is kept).
 const CROSSHAIR_COLORS: Array = [

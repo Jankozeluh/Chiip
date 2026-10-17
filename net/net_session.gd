@@ -161,6 +161,10 @@ var bytes_sent: int = 0
 var bytes_received: int = 0
 ## Packets fake loss dropped.
 var packets_dropped: int = 0
+## The peer id of whoever sent the [signal match_message] being emitted right now (1: the host, also for its own
+## messages; a client's id on the host): read it inside a handler of the signal, it is only valid there (M17, D-243:
+## the chat takes a client's lines from the host alone).
+var match_message_sender: int = 0
 
 
 ## Creates a session node and adds it to the root of the tree (next to the current scene, so
@@ -324,6 +328,7 @@ func send_to_all(data: Dictionary) -> void:
 	if not is_host():
 		return
 	_rpc_match_message.rpc(data)
+	match_message_sender = local_peer_id
 	match_message.emit(data)
 
 
@@ -577,6 +582,7 @@ func _rpc_request_team(team: int) -> void:
 
 @rpc("authority", "call_remote", "reliable")
 func _rpc_match_message(data: Dictionary) -> void:
+	match_message_sender = multiplayer.get_remote_sender_id()
 	match_message.emit(data)
 
 
@@ -590,6 +596,7 @@ func _rpc_message_to_host(data: Dictionary) -> void:
 	var message := data.duplicate()
 	# The sender is whoever the connection says, whatever the message claims.
 	message["from"] = peer_id
+	match_message_sender = peer_id
 	match_message.emit(message)
 
 

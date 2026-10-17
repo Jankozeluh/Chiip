@@ -112,6 +112,7 @@ const BINDABLE_ACTIONS: Array[StringName] = [
 	&"move_forward", &"move_back", &"move_left", &"move_right", &"jump", &"crouch", &"walk",
 	&"shoot", &"aim", &"reload", &"use", &"scoreboard", &"class_menu", &"toggle_debug", &"toggle_console",
 	&"slot_primary", &"slot_pistol", &"slot_knife", &"slot_grenade", &"last_weapon", &"drop_weapon", &"buy_menu",
+	&"chat",
 ]
 
 ## The actions a gamepad button or trigger can be bound to (D-211): the bindable actions except

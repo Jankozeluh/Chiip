@@ -37,7 +37,7 @@ LOG_DIR="${LOG_DIR%/}/chiip-tests"
 # name:frames for --quit-after, the safety net. Every suite finishes in at most a
 # third of its frames (the match needs about 65000 of its 200000); a headless run
 # at 128 fixed fps goes through roughly 3500 frames a second.
-SUITES="movement:60000 weapon:60000 bot:100000 round:200000 tactics:200000 ui:60000 settings:60000 match:200000 bomb:100000 respawn:100000 sound:20000 maps:400000 crew:60000 class:200000 zone:60000 perf:100000 rotation:60000 arsenal:60000 gear:60000 guns:60000 grenade:60000 economy:100000 botgear:100000 kit:60000 range:60000 layout:60000 holds:100000 net:60000 netplay:200000 netjoin:200000 netstress:300000 netrespawn:200000 netarsenal:200000 release:60000 qa:200000 netsec:200000 stats:60000 statsrec:200000 aim:100000 spray:100000 access:60000 wallbang:60000 squad:200000 debug:100000 ffa:200000 killcam:120000 browser:60000"
+SUITES="movement:60000 weapon:60000 bot:100000 round:200000 tactics:200000 ui:60000 settings:60000 match:200000 bomb:100000 respawn:100000 sound:20000 maps:400000 crew:60000 class:200000 zone:60000 perf:100000 rotation:60000 arsenal:60000 gear:60000 guns:60000 grenade:60000 economy:100000 botgear:100000 kit:60000 range:60000 layout:60000 holds:100000 net:60000 netplay:200000 netjoin:200000 netstress:300000 netrespawn:200000 netarsenal:200000 release:60000 qa:200000 netsec:200000 stats:60000 statsrec:200000 aim:100000 spray:100000 access:60000 wallbang:60000 squad:200000 debug:100000 ffa:200000 killcam:120000 browser:60000 chat:60000"
 
 if [ ! -x "$GODOT" ]; then
 	echo "Godot not found at $GODOT (set GODOT=/path/to/Godot)" >&2

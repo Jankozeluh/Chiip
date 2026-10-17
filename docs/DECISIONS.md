@@ -2462,6 +2462,14 @@ Not now: first-launch tips, crosshair share codes, replays.
 
 **Alternatives:** Clients broadcasting a query that hosts answer (two ports to manage and a host that must listen); mDNS/Bonjour (no Godot API); asking Tailscale for the tailnet's peers (`tailscale status --json` is a shell command, not available to an exported game, and would list every device); a master server (out of scope: no servers, D-100).
 
+## D-243 — M17: chat goes through the host, which names the sender and keeps it plain (2026-10-17)
+
+**Decision:** Text chat in the online lobby and in matches. A player's line goes to the host as a session message (`{"chat": text}`, the session's own limits apply on the way); the host **cleans** it (control and invisible characters out, whitespace collapsed, trimmed; an empty line is dropped), **cuts** it to 100 characters, allows each sender **3 lines in 5 s** (a sliding window; a refused line gets a "Slow down" notice back to its sender only) and sends `{"chat": text, "from": id, "name": name}` to everyone, with the id and name from its own roster, never from the message. Clients take chat only from the host. Every view shows text in a plain `Label`, so markup is just characters. The lobby page has a chat box (lines and a field with Send); in a match **Enter** opens a line on the HUD (it registers as a menu, so you stop moving), Enter sends, Esc cancels, and the last 6 lines show bottom left, fading after 8 s. One chat for everyone (no team chat), online only.
+
+**Why:** The user asked for host-checked chat with length and rate limits and plain text (D-221). The host is already the authority for everything else (D-103); naming the sender from its roster stops impersonation, and cleaning on the host means one place to get right. The session object outlives the lobby/match switch, so one `NetChat` serves both.
+
+**Alternatives:** Team chat (not asked for; easy to add later as a flag); RichTextLabel with escaped BBCode (one escape missed is markup again); a separate RPC channel (the session's checked messages already exist); a mute list (later, if needed).
+
 ## Open questions
 
 | Question | Decide in |

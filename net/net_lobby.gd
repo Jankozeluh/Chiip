@@ -23,6 +23,8 @@ extends Node
 ## lobby is first published ([method publish]), follows the roster, the lobby's settings and the
 ## match's start and end, and stops when the session closes ([member discovery]).
 ##
+## Its sibling [NetChat] (M17, D-243) carries the text chat of the lobby and of the match; [method of] makes it too.
+##
 ## The match travels as a Dictionary ([method settings_to_dict]): every stored property of the
 ## [MatchSettings], with the bot difficulty by its file. The class each player plays is not in
 ## it: every player picks their own in the game (D-078).
@@ -66,6 +68,8 @@ static func of(game_session: NetSession) -> NetLobby:
 		lobby.name = "NetLobby"
 		lobby.session = game_session
 		game_session.add_child(lobby)
+		# The session's chat lives beside its lobby from the start, so no line said in the lobby is missed.
+		NetChat.of(game_session)
 	return lobby
 
 

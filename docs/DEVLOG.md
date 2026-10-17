@@ -16,7 +16,9 @@ Branch `m17` (D-220). Decisions from D-239. One commit per task.
 
 - Game browser (D-242, by a Sonnet subagent): `LanDiscovery` (the host's beacon every second while it hosts, a listener on the Join page; packets checked like everything from the network: size, JSON object, magic, types, printable text, port range, at most 32 games and 64 packets a frame), `RecentHosts` (the last 8 joins, a text setting `online_recent`, left out of bug reports), `PlainText` (shared text cleaning). The Join page's right half lists the games on your network and the recent hosts, each with Join. On this Mac a send to 255.255.255.255 failed ("No route to host"), so the beacon also goes to each local address's x.y.z.255. New `browser` suite (47 checks); a two-process check on the real port listed the host.
 
-**Next:** chat, map voting and new maps.
+- Text chat (D-243): a Sonnet subagent built `NetChat`, the lobby page's chat box and the HUD's `ChatHud`, then lost its connection three times; I stopped it and finished it: a variable named `_input` hid the `_input()` callback, so the HUD's chat script didn't load (fixed); the new `chat` suite (11 checks) covers the host's rules, the lobby box and the match HUD. The class menu that opens at the match start keeps the chat shut, as any menu does.
+
+**Next:** map voting and new maps.
 
 ## 2026-10-16 — M16 maintainability & debugging
 

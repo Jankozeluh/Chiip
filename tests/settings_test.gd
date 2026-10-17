@@ -826,6 +826,7 @@ func _default_bindings() -> Dictionary:
 		&"scoreboard": [_k(KEY_TAB), ""], &"class_menu": [_k(KEY_M), ""], &"toggle_debug": [_k(KEY_F3), ""], &"toggle_console": [_k(KEY_QUOTELEFT), ""],
 		&"slot_primary": [_k(KEY_1), ""], &"slot_pistol": [_k(KEY_2), ""], &"slot_knife": [_k(KEY_3), ""], &"slot_grenade": [_k(KEY_4), ""],
 		&"last_weapon": [_k(KEY_Q), ""], &"drop_weapon": [_k(KEY_G), ""], &"buy_menu": [_k(KEY_B), ""],
+		&"chat": [_k(KEY_ENTER), _k(KEY_KP_ENTER)],
 	}
 
 

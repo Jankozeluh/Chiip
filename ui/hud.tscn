@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://ui/hit_marker.gd" id="hit_marker_script"]
 [ext_resource type="Script" path="res://ui/toast_stack.gd" id="toast_stack_script"]
 [ext_resource type="Script" path="res://ui/compass.gd" id="compass_script"]
+[ext_resource type="Script" path="res://ui/chat_hud.gd" id="chat_hud_script"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("hud_script")
@@ -430,6 +431,66 @@ layout_mode = 2
 vertical_alignment = 1
 theme_type_variation = &"HudPlateDimLabel"
 text = "Click for next"
+
+[node name="ChatHud" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("chat_hud_script")
+
+[node name="ChatColumn" type="VBoxContainer" parent="ChatHud"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = -176.0
+offset_right = 32.0
+offset_bottom = -176.0
+grow_vertical = 0
+custom_minimum_size = Vector2(560, 0)
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+
+[node name="ChatFeed" type="VBoxContainer" parent="ChatHud/ChatColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudStack"
+
+[node name="ChatInputPlate" type="PanelContainer" parent="ChatHud/ChatColumn"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudPlate"
+
+[node name="ChatInputRow" type="HBoxContainer" parent="ChatHud/ChatColumn/ChatInputPlate"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HudRowBlock"
+
+[node name="ChatPrompt" type="Label" parent="ChatHud/ChatColumn/ChatInputPlate/ChatInputRow"]
+layout_mode = 2
+vertical_alignment = 1
+theme_type_variation = &"HudPlateDimLabel"
+text = "Say"
+
+[node name="ChatInput" type="LineEdit" parent="ChatHud/ChatColumn/ChatInputPlate/ChatInputRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ConsoleLineEdit"
+placeholder_text = "Message"
+max_length = 100
+context_menu_enabled = false
+virtual_keyboard_enabled = false
 
 [node name="DeathColumn" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
