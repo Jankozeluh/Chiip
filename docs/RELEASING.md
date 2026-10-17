@@ -30,7 +30,8 @@ BUILDS=builds bash tools/check_release.sh
 It exports the Windows, Linux and macOS builds into `builds/` and runs the smoke checks on what was exported (M16, D-223), because some bugs exist only in an export (v0.1.0 shipped without hit zones, D-159). It must end with `0 check(s) failed`:
 - shooting hits in each build (`tools/check_export.sh`, the game's own `--check-hits`; the Windows and Linux builds' game data runs in this Mac's Godot with `--main-pack`);
 - a full round in the Mac app (`--check-round`: the bots walk, round 1 ends with a winner, round 2 starts);
-- a LAN join with the Mac app (`tools/lan_check.sh` with `GAME=` the app: a host and two friends in three processes).
+- a LAN join with the Mac app (`tools/lan_check.sh` with `GAME=` the app: a host and two friends in three processes);
+- chat with the Mac build's game data (`tools/check_chat.gd`, v0.2.0: a host and a friend talk over real ENet, and a line with BBCode and a direction mark arrives as plain text; an exported game ignores `--script`, so this Mac's Godot runs the script on the build's pack).
 
 Logs are in `$TMPDIR/chiip-release-check/`. To export by hand instead, the commands are in [DEVELOPING.md](DEVELOPING.md), "Exporting the game"; then `SKIP_EXPORT=1 BUILDS=builds bash tools/check_release.sh` checks them. Start the Mac app once with a window and look at **Settings → Licences** (every document must show its text). Step 4 checks shooting in `builds/macos` once more and stops if it fails.
 

@@ -16,7 +16,10 @@
 #   3. a full round in the Mac app (--check-round, debug/round_check.gd: the bots walk, round 1
 #      ends with a winner, round 2 starts);
 #   4. a LAN join with the Mac app (tools/lan_check.sh with GAME=<the app>: a host and two friends
-#      as three processes on 127.0.0.1).
+#      as three processes on 127.0.0.1);
+#   5. chat with the Mac build's game data (tools/check_chat.gd, D-248: a friend's line with BBCode and a
+#      direction mark reaches the host and back as plain text; an exported game ignores --script, so this
+#      Mac's Godot runs the script on the build's pack).
 # Exit code = the number of failed checks. About two minutes. Export builds only when the owner
 # asks for them (CLAUDE.md). Every game runs with an empty user:// of its own. Logs:
 # ${TMPDIR:-/tmp}/chiip-release-check/.
@@ -96,7 +99,15 @@ lan() {
 }
 check "Two friends join a host over the network in the macOS build (tools/lan_check.sh)" lan
 
-grep -h "Chiip hit check\|Chiip round check" "$LOGS"/hits-*.log "$LOGS/round.log" 2>/dev/null | sed 's/^/      /'
+# 5. Chat, with the Mac build's game data (from a folder that is not the project, so only the pack is the game).
+chat() {
+	mkdir -p "$HOMES/chat" "$HOMES/chat-cwd"
+	( cd "$HOMES/chat-cwd" && HOME="$HOMES/chat" "$GODOT" --headless --main-pack "$BUILDS/macos/Chiip.app/Contents/Resources/Chiip.pck" \
+			--quit-after 4000 --script "$PROJECT/tools/check_chat.gd" > "$LOGS/chat.log" 2>&1 ) && grep -q "Chiip chat check: PASS" "$LOGS/chat.log"
+}
+check "Chat works with the macOS build's game data (tools/check_chat.gd)" chat
+
+grep -h "Chiip hit check\|Chiip round check\|Chiip chat check" "$LOGS"/hits-*.log "$LOGS/round.log" "$LOGS/chat.log" 2>/dev/null | sed 's/^/      /'
 grep -h "^FAIL" "$LOGS/lan.log" 2>/dev/null | sed 's/^/      lan: /'
 echo "$failed check(s) failed. Logs in $LOGS"
 exit "$failed"

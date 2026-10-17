@@ -4,6 +4,8 @@
 
 ## 2026-10-17 — v0.2.0 released
 
+**Checks:** the full suite three times in a row, 1609 checks each, no failure; `tools/check_release.sh` on fresh exports of all three builds, all PASS (shooting hits in each, a full round and a LAN join with the Mac app) and a new chat check (`tools/check_chat.gd`: a friend's line with BBCode and a direction mark reaches the host as plain text, run on the game data of each of the three builds).
+
 **Done** (the owner's go, via the coordinating session): main merged into `v0.2-prep` (the optimization check, D-245 to D-247); the security review of everything since v0.1.1 (D-248): the history of the 72 new commits and the whole history scanned clean; the new network surface read (chat: host-side cleaning, 100 characters, 3 lines in 5 s, names from the roster, shown in labels; the game browser's announcements: size, JSON object, types, ranges, plain text, at most 64 packets a frame, a listed game is never joined unasked; the killcam's skip request and the map vote go through the same checks as every client message) and `netsec` extended with hostile chat and skip requests; `NetProtocol.VERSION` 3; the Credits footer no longer says "all rights reserved" for everything; version 0.2.0; the release.
 
 ## 2026-10-17 — v0.2.0 release content prepared
