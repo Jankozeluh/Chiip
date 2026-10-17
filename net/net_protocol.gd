@@ -11,8 +11,9 @@ extends RefCounted
 ## A static class (no instances): both sides of a connection use the same functions, so what
 ## one side writes the other reads in the same order.
 
-## Bump when packets change: a host refuses clients with another version.
-const VERSION := 2
+## Bump when packets change: a host refuses clients with another version. 3 since v0.2.0 (free-for-all, the
+## killcam's skip request, chat, map votes and game announcements: a v0.1 game can't take part in a v0.2 one).
+const VERSION := 3
 
 ## What a packet is: its first byte.
 enum Message {

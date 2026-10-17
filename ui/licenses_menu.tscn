@@ -143,7 +143,7 @@ stretch_mode = 5
 [node name="Rights" type="Label" parent="Page/Column/Footer"]
 layout_mode = 2
 theme_type_variation = &"MuteLabel"
-text = "© Divocakos. All rights reserved."
+text = "© Divocakos · the name and logo: all rights reserved"
 
 [node name="Spacer" type="Control" parent="Page/Column/Footer"]
 layout_mode = 2
