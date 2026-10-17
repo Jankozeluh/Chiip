@@ -2,6 +2,54 @@
 
 Every release of Chiip, newest first. The section of a version is the text of its GitHub Release (`docs/RELEASING.md`), and the website's Updates page shows it. Versions follow `config/version` in `project.godot`.
 
+## [0.2.0] - 2026-10-17
+
+**Free-for-all, a killcam, a game browser and chat, stats and training, real sound, and gamepad and colour-blind options.**
+
+**Created by JK · Divocakos.** © Divocakos.
+
+### New
+
+- **Free-for-all**: everyone for themselves, first to the kill limit wins (a card on the Play screen, next to Team Deathmatch, Bomb and Practice).
+- **Killcam**: after a death in Team Deathmatch or free-for-all, the last seconds through your killer's eyes. **Space** skips it; Settings → Game turns it off.
+- **Playing with friends**: games on your network list themselves on the Join page (the game browser), the hosts you joined are kept under *Recent*, **text chat** works in the lobby and in a match (**Enter** to type, **Esc** to cancel, host-checked and plain text), and at the end of a rotation everyone **votes for the next map**.
+- **Stats**: a Stats screen with K/D, ADR, headshot %, accuracy per weapon, wins per mode and map and your last 100 matches, saved on your computer only (with an export to CSV and a reset).
+- **Training** on the Shooting Range: an **aim trainer** (30, 60 or 90-second runs of flick targets, with a best per gun) and a **spray wall** that draws the held gun's pattern against your own bullet holes.
+- **Sound**: every gun has its own close and far shot and its own reload; sound is **muffled through walls** and rings differently in yards, rooms and halls; menu music and round stingers; a music volume setting.
+- **Gamepad**: any controller, with button prompts that follow the device you used last, rebindable in Settings → Controls (a *Pad* column).
+- **Colour-blind-safe team colours** (Settings → Video: blue and orange), a **compass** with callouts, a **UI scale** setting, and an FPS counter and developer overlay on **F3**.
+- **Wallbangs**: bullets go through thin cover and lose damage by material; bots that hear you behind thin cover may spray through it.
+- **Smarter team bots**: they call out the enemies they spot and trade the death of a teammate.
+- **New menus**: the Settings, Stats, Credits and boot screens follow a new design (new Interface and Controller tabs in Settings).
+- **Bug reports**: **Report a bug** in the pause menu (or `bug_report` in the console) packs the game's log, version and settings, without your address, into a zip and opens its folder.
+
+### Fixed
+
+- Picking the colour-blind colours froze the game for several seconds.
+- Bots that stopped fighting in online Team Deathmatch.
+
+### Update
+
+Download 0.2.0 and use it instead of 0.1.1. Your settings are kept (unzip the new version anywhere and start it); the new stats file and logs are made on first use. For an online game **everyone should update**: play with friends on the same version.
+
+### Download
+
+| System | File |
+|---|---|
+| Windows 10 or newer, 64-bit | `Chiip-0.2.0-windows-x86_64.zip` |
+| macOS 11 or newer, Apple silicon and Intel | `Chiip-0.2.0-macos-universal.zip` |
+| Linux, 64-bit, with a Vulkan driver | `Chiip-0.2.0-linux-x86_64.zip` |
+
+The builds are **not signed**, so your system warns you the first time; the [README](https://github.com/Jankozeluh/Chiip#download-and-run) says how to get past it. Each release has a `SHA256SUMS.txt` with the checksum of every zip (the README says how to check yours).
+
+### Known issues
+
+See [KNOWN_ISSUES.md](https://github.com/Jankozeluh/Chiip/blob/main/docs/KNOWN_ISSUES.md). The Windows and Linux builds were made on a Mac and have not been tried on real Windows or Linux computers by the author; please report problems with your graphics card and driver. The gamepad support and the sound mix are new and have had little testing by hand.
+
+### Licences and credits
+
+Code under GPL-3.0, art, models, maps and sounds under CC BY-NC-SA 4.0; the name Divocakos and the studio logo are all rights reserved. Every download has `LICENSE`, `LICENSE-ASSETS` and `THIRD_PARTY_NOTICES.md` next to the game, and the game shows them under **Settings → Licences**.
+
 ## [0.1.1] - 2026-10-16
 
 **A fix for the first public playtest: bullets hit again.**

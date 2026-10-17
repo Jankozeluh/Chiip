@@ -1,8 +1,8 @@
 # Chiip: known issues
 
-> What doesn't work yet or hasn't been checked, for the first public playtest (v0.1.0). Reported bugs go to the GitHub issues. Written by the pre-release QA pass (M12, D-178; the test plan is [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)).
+> What doesn't work yet or hasn't been checked, for v0.2.0 (updated from the v0.1 list by the release preparation). Reported bugs go to the GitHub issues, or use **Report a bug** in the pause menu. The test plan is [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 >
-> Last updated: 2026-10-16
+> Last updated: 2026-10-17
 
 ## Builds
 
@@ -12,7 +12,7 @@
 
 ## Online play
 
-- Games are joined by typing (or pasting) the host's IP address; there is no server list and no automatic discovery of games on the LAN.
+- Games on the same network list themselves on the Join page (the game browser), but **over Tailscale you paste the host's address once** (Tailscale doesn't carry that announcement between devices); the hosts you joined are then kept under *Recent*. There is no server list on the internet.
 - The host plays too: there is no dedicated server, so the match ends for everyone when the host quits, and the host's connection decides how good it is for the others.
 - Everyone must run the same version of the game.
 - **A friend is trusted only so far.** The host checks and limits everything a friend's computer sends (a broken one can't crash or flood it), but it can't tell an aim bot or a lag switch from a good player: play with people you invited.
@@ -25,11 +25,12 @@
 
 - Fullscreen and window resizing are checked by an automated layout test at seven window sizes, not by a person on each system.
 - On a Mac, Ctrl + click may count as a right click (a macOS habit); if crouching with Ctrl misbehaves, rebind Crouch under Settings → Controls. Not confirmed either way yet.
-- No gamepad support and English only (planned, see the roadmap in `docs/PLAN.md`).
+- **Gamepad support is new** and was checked mostly with automated tests (simulated buttons and sticks): please report a controller that misbehaves, with its name.
+- English only (a Czech translation was dropped).
 
 ## Game
 
-- The sounds are simple, generated ones (a sound-design milestone is planned).
-- Bots are not smart in team tactics (no callouts, no coordinated site takes), and how a round goes varies from game to game.
-- Only three small maps, one bomb scenario, and no map voting. Community maps are welcome (CONTRIBUTING.md).
-- There are no statistics or training modes yet beyond the Shooting Range.
+- All sounds and the music are generated ones, and their mix was set by measurement; tuning by ear is still to come. Sound through doorways (a path, not just walls) is not done.
+- Bots call out enemies and trade kills now, but they don't take a bomb site together, and how a round goes varies from game to game.
+- Only three small maps and one bomb scenario (the map vote at the end of a rotation chooses among those three). Community maps are welcome (CONTRIBUTING.md).
+- Stats are kept on your computer only, with no charts over time yet, and the aim trainer has flick targets only (no tracking target). The killcam plays in Team Deathmatch and free-for-all, not in Bomb.

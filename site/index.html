@@ -4,12 +4,12 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Chiip: a tactical shooter with a retro Quake look</title>
-	<meta name="description" content="Chiip is a free tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game. Play against bots, or online with friends. Windows, macOS and Linux.">
+	<meta name="description" content="Chiip is a free tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game. Bomb rounds, team deathmatch and free-for-all, against bots or online with friends. Windows, macOS and Linux.">
 	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
 	<meta name="referrer" content="strict-origin-when-cross-origin">
 	<meta name="theme-color" content="#0b1017">
 	<meta property="og:title" content="Chiip: a tactical shooter with a retro Quake look">
-	<meta property="og:description" content="Chiip is a free tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game. Play against bots, or online with friends. Windows, macOS and Linux.">
+	<meta property="og:description" content="Chiip is a free tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game. Bomb rounds, team deathmatch and free-for-all, against bots or online with friends. Windows, macOS and Linux.">
 	<meta property="og:image" content="https://jankozeluh.github.io/Chiip/img/menu.png">
 	<link rel="icon" href="img/divocakos.png">
 	<link rel="stylesheet" href="css/style.css">
@@ -31,7 +31,7 @@
 		<section class="hero wrap">
 			<h1>Chiip</h1>
 			<div class="chips" aria-hidden="true"><span class="blue"></span><span class="red"></span><span class="lime"></span></div>
-			<p class="lead">A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game. You and your bot teammates against a team of bots, or with friends online in place of the bots. Free, for Windows, macOS and Linux.</p>
+			<p class="lead">A tactical shooter in the spirit of Counter-Strike, with the look of a 1990s Quake-era game. Bomb rounds, team deathmatch or everyone for themselves, with bot teammates and bot enemies, or online with friends in place of the bots. Free, for Windows, macOS and Linux.</p>
 			<div class="actions">
 				<a class="button primary" data-download-link href="https://github.com/Jankozeluh/Chiip/releases/latest">Download</a>
 				<a class="button" href="play.html">Play with friends</a>
@@ -40,24 +40,27 @@
 		</section>
 
 		<section class="wrap">
-			<div class="frame"><img src="img/menu.png" width="1280" height="720" alt="Chiip's main menu: Play, Practice, Settings and Quit, over a slow flight across a map"></div>
+			<div class="frame"><img src="img/menu.png" width="1280" height="720" alt="Chiip's main menu: Play, Practice, Stats, Settings and Quit, with Host and Join, over a slow flight across a map"></div>
 
 			<h2>What it is</h2>
 			<div class="cards">
-				<div class="card"><h3>Two modes</h3><p><strong>Bomb</strong>: CS-style rounds. Buy in the freeze time, plant or defuse, first to 5 rounds with a side swap. <strong>Team Deathmatch</strong>: respawning, first team to the kill limit.</p></div>
-				<div class="card"><h3>Three maps and a range</h3><p>Depot, Square and Spillway, small and fast, alone or in a rotation. The Shooting Range has targets at every distance and a stand for every gun.</p></div>
-				<div class="card"><h3>Four classes</h3><p>Two are offered at random each match. Rifleman, Bulwark, Marksman and Scout each bring a perk and a loadout.</p></div>
-				<div class="card"><h3>A full arsenal</h3><p>Rifle, carbine, SMG, shotgun, sniper, pistol, hand cannon, knife and three grenades, with armor, kits and a light economy.</p></div>
-				<div class="card"><h3>CS-style feel</h3><p>Counter-strafing, a spray pattern you can learn, headshots, a bunny-hop cap, and sensitivity in CS units. Bots on three difficulties.</p></div>
-				<div class="card"><h3>Online with friends</h3><p>One player hosts, friends join by address, bots fill the empty slots. Made for <a href="play.html">Tailscale</a>: nothing to open on your router.</p></div>
+				<div class="card"><h3>Three modes</h3><p><strong>Bomb</strong>: CS-style rounds. Buy in the freeze time, plant or defuse, first to 5 rounds with a side swap. <strong>Team Deathmatch</strong>: respawning, first team to the kill limit. <strong>Free-for-all</strong>: everyone for themselves. After a death the <strong>killcam</strong> shows the last seconds through your killer's eyes.</p></div>
+				<div class="card"><h3>Maps and a range</h3><p>Depot, Square and Spillway, small and fast, alone or in a rotation (at the end of a match everyone votes for the next map). The Shooting Range has targets at every distance, an <strong>aim trainer</strong> and a <strong>spray wall</strong> that draws each gun's pattern.</p></div>
+				<div class="card"><h3>Classes and arsenal</h3><p>Rifleman, Bulwark, Marksman and Scout (two are offered at random each match) and a full arsenal: rifle, carbine, SMG, shotgun, sniper, pistol, hand cannon, knife and three grenades, armor, kits and a light economy.</p></div>
+				<div class="card"><h3>CS-style feel</h3><p>Counter-strafing, a spray pattern you can learn, headshots, <strong>wallbangs</strong> through thin cover, and sensitivity in CS units. Bots on three difficulties that call out enemies and trade kills.</p></div>
+				<div class="card"><h3>Online with friends</h3><p>One player hosts, friends join, bots fill the empty slots. Made for <a href="play.html">Tailscale</a>: nothing to open on your router. Games on your network list themselves in the <strong>game browser</strong>; hosts you joined are remembered; <strong>text chat</strong> works in the lobby and in matches.</p></div>
+				<div class="card"><h3>Stats and training</h3><p>K/D, ADR, headshot % and accuracy per weapon, wins per mode and map, and your last 100 matches, all saved on your computer. Your bests in the aim trainer and the spray wall are kept too.</p></div>
+				<div class="card"><h3>Sound</h3><p>Every gun has its own close and far shot, sound is <strong>muffled through walls</strong> and rings in yards, rooms and halls, so you hear where a fight is and what is in the way. Menu music and round stingers included.</p></div>
+				<div class="card"><h3>For everyone</h3><p>A <strong>colour-blind-safe</strong> team colour option, <strong>gamepad</strong> support with button prompts, a compass with callouts, a UI that scales to any window, fullscreen and a UI scale setting.</p></div>
+				<div class="card"><h3>A look of its own</h3><p>Pixel-art menus in the Silkscreen font, a map kit with textures, props and lamps drawn for Chiip, a palette effect, and a free, open game: <a href="about.html">licences and credits</a>.</p></div>
 			</div>
 
 			<h2>Screens</h2>
 			<div class="shots">
-				<figure><div class="frame"><a href="img/bomb.png"><img src="img/bomb.png" width="1280" height="720" loading="lazy" alt="Planting the bomb at a site on Depot, with the round timer, score, money, health and ammo"></a></div><figcaption>Planting the bomb on Depot</figcaption></figure>
-				<figure><div class="frame"><a href="img/classes.png"><img src="img/classes.png" width="1280" height="720" loading="lazy" alt="The class menu offering the Scout and the Rifleman"></a></div><figcaption>Pick one of two classes</figcaption></figure>
-				<figure><div class="frame"><a href="img/buy.png"><img src="img/buy.png" width="1280" height="720" loading="lazy" alt="The buy menu with pistols, primaries, gear and grenades"></a></div><figcaption>The buy menu in the freeze time</figcaption></figure>
-				<figure><div class="frame"><a href="img/lobby.png"><img src="img/lobby.png" width="1280" height="720" loading="lazy" alt="The online lobby with two teams, bot slots and the address friends join at"></a></div><figcaption>The lobby: share the address, press Start</figcaption></figure>
+				<figure><div class="frame"><a href="img/modes.png"><img src="img/modes.png" width="1280" height="720" loading="lazy" alt="The Play screen with the four mode cards: Team Deathmatch, Free-for-all, Bomb and Practice, and the options under them"></a></div><figcaption>Team Deathmatch, free-for-all, bomb rounds, practice</figcaption></figure>
+				<figure><div class="frame"><a href="img/killcam.png"><img src="img/killcam.png" width="1280" height="720" loading="lazy" alt="The killcam: the last seconds before a death seen through the killer's eyes, with who killed you and how, and Space to skip"></a></div><figcaption>The killcam: your death through your killer's eyes</figcaption></figure>
+				<figure><div class="frame"><a href="img/stats.png"><img src="img/stats.png" width="1280" height="720" loading="lazy" alt="The Stats screen: K/D, ADR, headshot percentage and accuracy, accuracy per weapon, wins per mode and map, and the match history"></a></div><figcaption>Your numbers: K/D, ADR, accuracy per weapon</figcaption></figure>
+				<figure><div class="frame"><a href="img/browser.png"><img src="img/browser.png" width="1280" height="720" loading="lazy" alt="The Join page listing a game on the network with its map, mode and players, a Join button, and the Recent hosts"></a></div><figcaption>The game browser: games on your network, one click to join</figcaption></figure>
 			</div>
 		</section>
 

@@ -2479,6 +2479,18 @@ Not now: first-launch tips, crosshair share codes, replays. **Changed 2026-10-17
 
 **Alternatives:** Every map of the game as a choice (the Shooting Range and the hidden test map would need excluding, and the list grows with every new map); a 15 s countdown; letting a client press Next map (the host decides, D-103).
 
+## D-245 — The v0.2.0 release content is prepared on a content branch, nothing published (2026-10-17)
+
+**Decision:** On the branch `v0.2-prep` (from main 236d788, content only, D-220) the release's words and pictures are ready, and nothing is exported, pushed or released: the owner decides about v0.2.0.
+- **Website:** the start page describes v0.2 (three modes and the killcam, maps and the training range, classes and arsenal, CS-style feel with wallbangs and smarter bots, online play with the game browser, Recent, chat and map voting, stats and training, sound, accessibility and gamepad, the look) with five fresh pictures of the v0.2 UI instead of the v0.1 ones: the main menu, the Play screen with its four mode cards, the killcam, the Stats screen and the Join page listing a game on the network (a real host process beaconing on the LAN). They were captured without touching the mouse (a scratch script that starts the real scenes in a window; the menu's build label was set to "Build 0.2.0" in the picture so it doesn't show a development commit). The Play page tells about the game browser (and that Tailscale doesn't carry it, so Recent), chat and map votes. No pictures of the designer's own renders were used: the designer's v0.2 file has no website screen.
+- **CHANGELOG.md** has a `## [0.2.0]` section (the release notes: new, fixed, update, download, known issues, licences), player-facing. **KNOWN_ISSUES.md** is brought up to v0.2 (gamepad and sound by hand untested, Tailscale and the game browser, no tracking target, the killcam not in Bomb). The README's tagline and friends guide mention free-for-all, the game browser and chat.
+- **Not done on purpose:** the version bump (`config/version`, the Mac preset: RELEASING step 1), the date of the changelog heading (set on release day), `NetProtocol.VERSION`.
+- **Open findings for the code branch** (found while preparing; not changed here): (1) `NetProtocol.VERSION` is still 2 although M17 added chat, map votes, free-for-all and a killcam request: a v0.1.1 client could join a v0.2 host and meet messages it doesn't know; bump it so the host refuses the other version with its clear message. (2) The Credits screen's footer says "© Divocakos. All rights reserved." while the game is GPL-3.0 and its art CC BY-NC-SA 4.0: only the name and the logo are all rights reserved (D-174); the line should say so. (3) `tools/ui_screenshots.gd` hangs after a few screenshots (at the console or the first screenshot, depending on the run).
+
+**Why:** Your words, relayed: prepare v0.2.0 without publishing; the user decides.
+
+**Alternatives:** Bump the version and write the date now (it would put 0.2.0 on screen before the release exists, and the release test ties the version to the changelog); re-use the v0.1 pictures (they show the old UI); pictures from the designer's renders (a different look from the game's own screens).
+
 ## Open questions
 
 | Question | Decide in |

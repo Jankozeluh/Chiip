@@ -2,6 +2,17 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-17 — v0.2.0 release content prepared
+
+Branch `v0.2-prep` (Sonnet, content only, D-245), from main 236d788. Nothing exported, pushed or released.
+
+**Done**
+- **Website:** the start page's features and five fresh pictures of the v0.2 UI (menu, Play screen, killcam, Stats, the game browser), the Play page's game browser, Recent, chat and vote; `site/img` has `menu`, `modes`, `killcam`, `stats` and `browser`.
+- **CHANGELOG.md** `## [0.2.0]` (the release notes), **KNOWN_ISSUES.md** for v0.2, the README's tagline and friends guide.
+- **Findings for the code branch** (D-245): `NetProtocol.VERSION` is still 2; the Credits screen's footer says all rights reserved; `tools/ui_screenshots.gd` hangs.
+
+**Next:** your decision about v0.2.0; then RELEASING.md (bump the version and the date, the full suite, `tools/check_release.sh`, zips, checksums, push, release).
+
 ## 2026-10-17 — M15 fix: picking the colour-blind colours froze the game
 
 Branch `fix-colorblind` (Sonnet), from main 577e031. From your playtest: "spadne to kdyz vybero color blind" (it crashes when I pick colour blind).

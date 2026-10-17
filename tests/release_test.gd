@@ -310,7 +310,7 @@ func _test_website() -> void:
 	var files_ok := true
 	var missing := ""
 	for path in SITE_PAGES + ["css/style.css", "js/site.js", "fonts/Silkscreen-Regular.ttf", "fonts/Silkscreen-Bold.ttf", "fonts/Silkscreen-OFL.txt",
-			"img/menu.png", "img/bomb.png", "img/classes.png", "img/buy.png", "img/lobby.png", "img/divocakos.png", ".gdignore"]:
+			"img/menu.png", "img/modes.png", "img/killcam.png", "img/stats.png", "img/browser.png", "img/divocakos.png", ".gdignore"]:
 		if not FileAccess.file_exists("res://site/" + path):
 			files_ok = false
 			missing += " " + path
