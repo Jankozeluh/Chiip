@@ -50,6 +50,9 @@ const COLOR_TOLERANCE := 0.004
 
 ## Scaled copies already made: factor in thousandths → Theme (oldest first).
 static var _cache: Dictionary = {}
+## How many times a theme was recoloured ([method apply_team_scheme]). [UiScale] remembers the theme's
+## styleboxes per control and reads them again when this changed.
+static var scheme_epoch: int = 0
 ## Every scaled copy handed out and still alive: [method apply_team_scheme] recolours them in place,
 ## also the ones the cache has let go of, which menus may still hold.
 static var _copies: Array[WeakRef] = []
@@ -83,8 +86,9 @@ static func scaled(factor: float) -> Theme:
 
 ## Recolours the base theme and every scaled copy in use to the team colours of [member Teams.color_scheme]
 ## (D-210): every theme colour and every flat stylebox colour that is one of the previous scheme's team
-## colours becomes the new scheme's, in place, so menus and HUD parts that hold a theme change at once.
-## A HUD part that keeps its own scaled copy of a stylebox ([UiScale]) needs its scale applied again.
+## colours becomes the new scheme's, in the theme itself, so menus that hold a theme change at once. A flat
+## stylebox that changes is replaced by a recoloured copy ([constant scheme_epoch] counts the changes, and
+## [UiScale] reads the HUD's boxes again when it moved): apply the HUD's scale again after calling this.
 static func apply_team_scheme() -> void:
 	get_base()
 	var alive: Array[WeakRef] = []
@@ -104,22 +108,44 @@ static func _sync_scheme(theme: Theme) -> void:
 	var pairs: Array = []
 	for role: StringName in Teams.SCHEMES[shown]:
 		pairs.append([Teams.SCHEMES[shown][role], Teams.SCHEMES[Teams.color_scheme][role]])
-	var seen := {}
+	# Every change to a theme item makes every control that uses the theme restyle itself, so changing the
+	# hundreds of items one by one froze the game for seconds (found in the playtest: "it crashes when I pick
+	# colour blind"). The changes go into a patch theme (recoloured copies of the styleboxes, one copy per
+	# shared box) and the patch is merged once: one change for the whole theme.
+	var patch := Theme.new()
+	var copies := {}
 	for type in theme.get_type_list():
 		for item in theme.get_color_list(type):
 			var color := theme.get_color(item, type)
 			var swapped := _swap_team_color(color, pairs)
 			if swapped != color:
-				theme.set_color(item, type, swapped)
+				patch.set_color(item, type, swapped)
 		for item in theme.get_stylebox_list(type):
 			var box := theme.get_stylebox(item, type) as StyleBoxFlat
-			if box == null or seen.has(box):
+			if box == null:
 				continue
-			seen[box] = true
-			box.bg_color = _swap_team_color(box.bg_color, pairs)
-			box.border_color = _swap_team_color(box.border_color, pairs)
-			box.shadow_color = _swap_team_color(box.shadow_color, pairs)
+			if not copies.has(box):
+				copies[box] = _recoloured_copy(box, pairs)
+			if copies[box] != null:
+				patch.set_stylebox(item, type, copies[box])
+	theme.merge_with(patch)
 	theme.set_meta(SCHEME_META, Teams.color_scheme)
+	scheme_epoch += 1
+
+
+## A copy of [param box] with its team colours swapped ([param pairs] as in [method _swap_team_color]), or null if
+## none of its colours is a team colour.
+static func _recoloured_copy(box: StyleBoxFlat, pairs: Array) -> StyleBoxFlat:
+	var background := _swap_team_color(box.bg_color, pairs)
+	var border := _swap_team_color(box.border_color, pairs)
+	var shadow := _swap_team_color(box.shadow_color, pairs)
+	if background == box.bg_color and border == box.border_color and shadow == box.shadow_color:
+		return null
+	var copy := box.duplicate() as StyleBoxFlat
+	copy.bg_color = background
+	copy.border_color = border
+	copy.shadow_color = shadow
+	return copy
 
 
 ## [param color] with the team colour it is (within [constant COLOR_TOLERANCE], alpha ignored) replaced

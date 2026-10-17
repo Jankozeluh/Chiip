@@ -95,8 +95,10 @@ static func _scale_control(control: Control, factor: float) -> void:
 static func _scale_look(control: Control, original: Dictionary, factor: float) -> void:
 	var box_item := _box_item(control)
 	var role := control.theme_type_variation
-	if original.get("role") != role:
+	# The box is read again when the role changed, or when the theme was recoloured (its boxes are copies then, D-210).
+	if original.get("role") != role or original.get("epoch", 0) != UiTheme.scheme_epoch:
 		original["role"] = role
+		original["epoch"] = UiTheme.scheme_epoch
 		original["box"] = null
 		original["font"] = null
 		if box_item != &"":
