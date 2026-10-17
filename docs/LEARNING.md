@@ -867,4 +867,6 @@
 - Menus: Godot's `Control` focus does the navigation (`ui_up`/`ui_down`... from the D-pad and left stick, `ui_accept` presses). Nothing is focused until code calls `grab_focus()`.
 - `Input.parse_input_event()` queues an event; it reaches the action states at the next frame, or at once after `Input.flush_buffered_events()` (what a test does).
 
+**Changing a `Theme` item notifies every control that uses it** (D-210 follow-up). `theme.set_color()`, `set_stylebox()` and a change inside a stylebox each emit `changed`, and each one restyles every control under that theme: changing 500 items one by one is 500 passes over the whole UI (7 to 9 s here). Put the changes in a second `Theme` and call `theme.merge_with(patch)`: one pass. (Unity comparison: like changing a USS variable one at a time versus swapping a whole StyleSheet.) Replace a shared `StyleBox` by a recoloured `duplicate()` instead of editing it in place.
+
 **`WeakRef`** (D-210): a reference that doesn't keep an object alive. `UiTheme` keeps a list of the theme copies it handed out as weak references, so it can recolour the ones still in use without keeping dead ones.

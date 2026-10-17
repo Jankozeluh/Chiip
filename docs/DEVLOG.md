@@ -19,6 +19,15 @@
 
 **Next:** the round start's weapon building (14–20 ms) is still the slowest moment; it needs `Weapon.create()` to skip what bots don't use.
 
+## 2026-10-17 — M15 fix: picking the colour-blind colours froze the game
+
+Branch `fix-colorblind` (Sonnet), from main 577e031. From your playtest: "spadne to kdyz vybero color blind" (it crashes when I pick colour blind).
+
+- **Cause:** the window did not crash, it stopped answering for **7 to 9 seconds** (macOS shows that as a hang). M15's recolour changed the theme's colours and flat styleboxes one item at a time, and every change to a theme item makes every control using the theme restyle itself, so the cost was items × controls; the v0.2 UI has many more of both. Measured: 2.7 to 5.5 s headless, 7 to 9 s in a window. It did not show in M15's own tests (the UI was smaller) and not when the setting was only *loaded* at start, which is why only picking it hung.
+- **Fix:** the changes go into a patch theme (recoloured copies of the styleboxes) that is merged once (`Theme.merge_with`): 20 to 30 ms. `UiTheme.scheme_epoch` makes `UiScale` re-read the HUD controls' boxes after a recolour (D-210 follow-up, LEARNING).
+- **Test:** the new `scheme` suite picks the option with the settings menu's own buttons in the main menu, Team Deathmatch (and while the killcam plays), free-for-all and Bomb; a switch must take under a second (it takes 2.7 s and more on the old code, so the test fails there) and the characters, theme and HUD bars and pips must show the scheme and come back. Your saved setting is `colorblind`: it loads fine (the load was never slow).
+
+
 ## 2026-10-16 — M17 playing with friends
 
 Branch `m17` (D-220). Decisions from D-239. One commit per task.
