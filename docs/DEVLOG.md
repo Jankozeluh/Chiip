@@ -2,6 +2,10 @@
 
 > One entry per work session, newest at the top: what was done, which decisions were made, and what's next.
 
+## 2026-10-17 — v0.2.0 released
+
+**Done** (the owner's go, via the coordinating session): main merged into `v0.2-prep` (the optimization check, D-245 to D-247); the security review of everything since v0.1.1 (D-248): the history of the 72 new commits and the whole history scanned clean; the new network surface read (chat: host-side cleaning, 100 characters, 3 lines in 5 s, names from the roster, shown in labels; the game browser's announcements: size, JSON object, types, ranges, plain text, at most 64 packets a frame, a listed game is never joined unasked; the killcam's skip request and the map vote go through the same checks as every client message) and `netsec` extended with hostile chat and skip requests; `NetProtocol.VERSION` 3; the Credits footer no longer says "all rights reserved" for everything; version 0.2.0; the release.
+
 ## 2026-10-17 — v0.2.0 release content prepared
 
 Branch `v0.2-prep` (Sonnet, content only, D-248), from main 236d788. Nothing exported, pushed or released.
